@@ -12,8 +12,8 @@ namespace com.spacepuppy.Events
 
         #region Events
 
-        private System.EventHandler _triggerActivated;
-        public event System.EventHandler TriggerActivated
+        private System.EventHandler<TempEventArgs> _triggerActivated;
+        public event System.EventHandler<TempEventArgs> TriggerActivated
         {
             add
             {
@@ -26,8 +26,13 @@ namespace com.spacepuppy.Events
         }
         protected virtual void OnTriggerActivated(object sender, object arg)
         {
-            //TODO - TempEventArgs?
-            _triggerActivated?.Invoke(sender, System.EventArgs.Empty);
+            if (_triggerActivated != null)
+            {
+                var e = TempEventArgs.Create(arg);
+                var d = _triggerActivated;
+                d(sender, e);
+                TempEventArgs.Release(e);
+            }
         }
 
         #endregion

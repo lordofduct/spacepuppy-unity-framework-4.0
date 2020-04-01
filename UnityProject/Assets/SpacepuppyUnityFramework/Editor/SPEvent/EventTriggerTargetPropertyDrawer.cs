@@ -8,7 +8,9 @@ using com.spacepuppy;
 using com.spacepuppy.Events;
 using com.spacepuppy.Utils;
 
-namespace com.spacepuppyeditor.Base.Events
+using com.spacepuppyeditor.Core.PropertyDrawers;
+
+namespace com.spacepuppyeditor.Events
 {
 
     [CustomPropertyDrawer(typeof(EventTriggerTarget))]

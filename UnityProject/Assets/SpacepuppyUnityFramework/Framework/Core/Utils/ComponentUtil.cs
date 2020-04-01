@@ -1,0 +1,544 @@
+﻿using UnityEngine;
+using System.Collections.Generic;
+using System.Linq;
+
+using com.spacepuppy.Collections;
+
+namespace com.spacepuppy.Utils
+{
+    public static class ComponentUtil
+    {
+
+        public static bool IsComponentType(System.Type tp)
+        {
+            if (tp == null) return false;
+            return typeof(Component).IsAssignableFrom(tp) || typeof(IComponent).IsAssignableFrom(tp);
+        }
+
+        public static bool IsAcceptableComponentType(System.Type tp)
+        {
+            if (tp == null) return false;
+            return tp.IsInterface || typeof(Component).IsAssignableFrom(tp);
+        }
+
+        public static bool IsComponentSource(object obj)
+        {
+            return (obj is GameObject || obj is Component);
+        }
+
+        public static bool IsEnabled(this Component comp)
+        {
+            if (comp == null) return false;
+            if (comp is Behaviour) return (comp as Behaviour).enabled;
+            if (comp is Collider) return (comp as Collider).enabled;
+            return true;
+        }
+
+        /// <summary>
+        /// Implementation of 'Behaviour.isActiveAnEnabled' that also works for all Components (including Colliders).
+        /// </summary>
+        /// <param name="comp"></param>
+        /// <returns></returns>
+        public static bool IsActiveAndEnabled(this Component comp)
+        {
+            if (comp == null) return false;
+            if (comp is Behaviour) return (comp as Behaviour).isActiveAndEnabled;
+            if (!comp.gameObject.activeInHierarchy) return false;
+            if (comp is Collider) return (comp as Collider).enabled;
+            return true;
+        }
+
+        public static void SetEnabled(this Component comp, bool enabled)
+        {
+            if (comp == null) return;
+            else if (comp is Behaviour) (comp as Behaviour).enabled = enabled;
+            else if (comp is Collider) (comp as Collider).enabled = enabled;
+        }
+
+
+        #region HasComponent
+
+        public static bool HasComponent<T>(this GameObject obj, bool testIfEnabled = false) where T : class
+        {
+            return HasComponent(obj, typeof(T), testIfEnabled);
+        }
+        public static bool HasComponent<T>(this Component obj, bool testIfEnabled = false) where T : class
+        {
+            return HasComponent(obj, typeof(T), testIfEnabled);
+        }
+
+        public static bool HasComponent(this GameObject obj, System.Type tp, bool testIfEnabled = false)
+        {
+            if (obj == null) return false;
+
+            if (testIfEnabled)
+            {
+                foreach (var c in obj.GetComponents(tp))
+                {
+                    if (c.IsEnabled()) return true;
+                }
+                return false;
+            }
+            else
+            {
+                return (obj.GetComponent(tp) != null);
+            }
+        }
+        public static bool HasComponent(this Component obj, System.Type tp, bool testIfEnabled = false)
+        {
+            if (obj == null) return false;
+
+            if (testIfEnabled)
+            {
+                foreach (var c in obj.GetComponents(tp))
+                {
+                    if (c.IsEnabled()) return true;
+                }
+                return false;
+            }
+            else
+            {
+                return (obj.GetComponent(tp) != null);
+            }
+        }
+
+        #endregion
+
+        #region AddComponent
+
+        public static T AddComponent<T>(this Component c) where T : Component
+        {
+            if (c == null) return null;
+            return c.gameObject.AddComponent<T>();
+        }
+        public static Component AddComponent(this Component c, System.Type tp)
+        {
+            if (c == null) return null;
+            return c.gameObject.AddComponent(tp);
+        }
+
+        public static T AddOrGetComponent<T>(this GameObject obj) where T : Component
+        {
+            if (obj == null) return null;
+
+            T comp = obj.GetComponent<T>();
+            if (comp == null)
+            {
+                comp = obj.AddComponent<T>();
+            }
+
+            return comp;
+        }
+
+        public static T AddOrGetComponent<T>(this Component obj) where T : Component
+        {
+            if (obj == null) return null;
+
+            T comp = obj.GetComponent<T>();
+            if (comp == null)
+            {
+                comp = obj.gameObject.AddComponent<T>();
+            }
+
+            return comp;
+        }
+
+        public static Component AddOrGetComponent(this GameObject obj, System.Type tp)
+        {
+            if (obj == null) return null;
+            if (!TypeUtil.IsType(tp, typeof(Component))) return null;
+
+            var comp = obj.GetComponent(tp);
+            if (comp == null)
+            {
+                comp = obj.AddComponent(tp);
+            }
+
+            return comp;
+        }
+
+        public static Component AddOrGetComponent(this Component obj, System.Type tp)
+        {
+            if (obj == null) return null;
+            if (!TypeUtil.IsType(tp, typeof(Component))) return null;
+
+            var comp = obj.GetComponent(tp);
+            if (comp == null)
+            {
+                comp = obj.gameObject.AddComponent(tp);
+            }
+
+            return comp;
+        }
+
+        #endregion
+
+        #region GetComponent
+
+        public static bool GetComponent<T>(this GameObject obj, out T comp) where T : class
+        {
+            if (obj == null)
+            {
+                comp = null;
+                return false;
+            }
+            comp = obj.GetComponent<T>();
+            return ObjUtil.IsObjectAlive(comp as UnityEngine.Object);
+        }
+        public static bool GetComponent<T>(this Component obj, out T comp) where T : class
+        {
+            if (obj == null)
+            {
+                comp = null;
+                return false;
+            }
+            comp = obj.GetComponent<T>();
+            return ObjUtil.IsObjectAlive(comp as UnityEngine.Object);
+        }
+
+        public static bool GetComponent(this GameObject obj, System.Type tp, out Component comp)
+        {
+            if (obj == null)
+            {
+                comp = null;
+                return false;
+            }
+            comp = obj.GetComponent(tp);
+            return ObjUtil.IsObjectAlive(comp as UnityEngine.Object);
+        }
+        public static bool GetComponent(this Component obj, System.Type tp, out Component comp)
+        {
+            if (obj == null)
+            {
+                comp = null;
+                return false;
+            }
+            comp = obj.GetComponent(tp);
+            return ObjUtil.IsObjectAlive(comp as UnityEngine.Object);
+        }
+
+        #endregion
+
+        #region GetComponents
+
+        /// <summary>
+        /// Generic access of GetComponents that supports collections other than just List<T>/>
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public static void GetComponents<T>(this GameObject obj, ICollection<T> lst) where T : class
+        {
+            if (obj == null) return;
+
+            using (var tmpLst = TempCollection.GetList<Component>())
+            {
+                obj.GetComponents(typeof(T), tmpLst);
+                var e = tmpLst.GetEnumerator();
+                T c = null;
+                while (e.MoveNext())
+                {
+                    c = e.Current as T;
+                    if (ObjUtil.IsObjectAlive(c as UnityEngine.Object)) lst.Add(c);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Generic access of GetComponents that supports collections other than just List<T>/>
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public static void GetComponents<T>(this Component obj, ICollection<T> lst) where T : class
+        {
+            if (obj == null) return;
+
+            GetComponents<T>(obj.gameObject, lst);
+        }
+
+        public static void GetComponents<T>(this GameObject obj, ICollection<T> lst, System.Func<Component, T> filter) where T : class
+        {
+            if (obj == null) return;
+
+            using (var tmpLst = TempCollection.GetList<Component>())
+            {
+                obj.GetComponents(typeof(Component), tmpLst);
+                var e = tmpLst.GetEnumerator();
+                T c;
+                while (e.MoveNext())
+                {
+                    c = (filter != null) ? filter(e.Current) : e.Current as T;
+                    if (ObjUtil.IsObjectAlive(c as UnityEngine.Object)) lst.Add(c);
+                }
+            }
+        }
+
+        public static void GetComponents<T>(this Component obj, ICollection<T> lst, System.Func<Component, T> filter) where T : class
+        {
+            if (obj == null) return;
+
+            GetComponents(obj.gameObject, lst, filter);
+        }
+
+
+        public static Component[] GetComponents(this GameObject obj, params System.Type[] types)
+        {
+            if (obj == null) return ArrayUtil.Empty<Component>();
+
+            using (var tmpLst = TempCollection.GetList<Component>())
+            using (var set = ReduceLikeTypes(types))
+            {
+                var e = set.GetEnumerator();
+                while (e.MoveNext())
+                {
+                    obj.GetComponents(e.Current, tmpLst);
+                }
+                return tmpLst.ToArray();
+            }
+        }
+
+        public static void GetComponents(this GameObject obj, System.Type[] types, ICollection<Component> lst)
+        {
+            if (obj == null) return;
+
+            using (var tmpLst = TempCollection.GetList<Component>())
+            using (var set = ReduceLikeTypes(types))
+            {
+                var e = set.GetEnumerator();
+                while (e.MoveNext())
+                {
+                    obj.GetComponents(e.Current, tmpLst);
+                }
+
+                var e2 = tmpLst.GetEnumerator();
+                while (e2.MoveNext())
+                {
+                    lst.Add(e2.Current);
+                }
+            }
+        }
+
+        #endregion
+
+        #region Child Component
+
+        public static bool GetComponentInChildren<T>(this GameObject obj, out T comp) where T : class
+        {
+            if (obj == null)
+            {
+                comp = null;
+                return false;
+            }
+            comp = obj.GetComponentInChildren(typeof(T)) as T;
+            return ObjUtil.IsObjectAlive(comp as UnityEngine.Object);
+        }
+
+        public static bool GetComponentInChildren<T>(this Component obj, out T comp) where T : class
+        {
+            if (obj == null)
+            {
+                comp = null;
+                return false;
+            }
+            comp = obj.GetComponentInChildren(typeof(T)) as T;
+            return ObjUtil.IsObjectAlive(comp as UnityEngine.Object);
+        }
+
+        public static bool GetComponentInChildren<T>(this GameObject obj, System.Type tp, out Component comp)
+        {
+            if (obj == null)
+            {
+                comp = null;
+                return false;
+            }
+            comp = obj.GetComponentInChildren(tp);
+            return comp != null;
+        }
+
+        public static bool GetComponentInChildren<T>(this Component obj, System.Type tp, out Component comp)
+        {
+            if (obj == null)
+            {
+                comp = null;
+                return false;
+            }
+            comp = obj.GetComponentInChildren(tp);
+            return comp != null;
+        }
+
+        public static T GetComponentInChildrenAlt<T>(this GameObject obj) where T : class
+        {
+            if (obj == null) return null;
+            return obj.GetComponentInChildren(typeof(T)) as T;
+        }
+
+        public static T GetComponentInChildrenAlt<T>(this Component obj) where T : class
+        {
+            if (obj == null) return null;
+            return obj.GetComponentInChildren(typeof(T)) as T;
+        }
+
+        #endregion
+
+        #region Child Components
+
+        public static IEnumerable<T> GetChildComponents<T>(this GameObject obj, bool bIncludeSelf = false, bool bIncludeInactive = false) where T : class
+        {
+            if (obj == null) return Enumerable.Empty<T>();
+            if (bIncludeSelf)
+            {
+                return obj.GetComponentsInChildren(typeof(T), bIncludeInactive).Cast<T>();
+            }
+            else
+            {
+                using (var temp = TempCollection.GetList<T>())
+                {
+                    GetChildComponents<T>(obj, temp, false, bIncludeInactive);
+                    return temp.ToArray();
+                }
+            }
+        }
+
+        public static IEnumerable<T> GetChildComponents<T>(this Component obj, bool bIncludeSelf = false, bool bIncludeInactive = false) where T : class
+        {
+            if (obj == null) return Enumerable.Empty<T>();
+            return GetChildComponents<T>(obj.gameObject, bIncludeSelf, bIncludeInactive);
+        }
+
+        public static void GetChildComponents<T>(this GameObject obj, ICollection<T> coll, bool bIncludeSelf = false, bool bIncludeInactive = false) where T : class
+        {
+            if (coll == null) throw new System.ArgumentNullException("coll");
+            if (obj == null) return;
+
+            using (var tmpLst = TempCollection.GetList<T>())
+            {
+                if (bIncludeSelf)
+                {
+                    obj.GetComponentsInChildren<T>(bIncludeInactive, tmpLst);
+                    var e = tmpLst.GetEnumerator();
+                    while (e.MoveNext())
+                    {
+                        coll.Add(e.Current);
+                    }
+                }
+                else
+                {
+                    obj.GetComponentsInChildren<T>(bIncludeInactive, tmpLst);
+                    var e = tmpLst.GetEnumerator();
+                    while (e.MoveNext())
+                    {
+                        if ((e.Current as Component).gameObject != obj) coll.Add(e.Current);
+                    }
+                }
+            }
+        }
+
+        public static void GetChildComponents<T>(this Component obj, ICollection<T> coll, bool bIncludeSelf = false, bool bIncludeInactive = false) where T : class
+        {
+            if (obj == null) return;
+            GetChildComponents<T>(obj.gameObject, coll, bIncludeSelf, bIncludeInactive);
+        }
+
+
+
+
+        public static IEnumerable<Component> GetChildComponents(this GameObject obj, System.Type tp, bool bIncludeSelf = false, bool bIncludeInactive = false)
+        {
+            if (obj == null) return Enumerable.Empty<Component>();
+
+            if (bIncludeSelf)
+            {
+                return obj.GetComponentsInChildren(tp, bIncludeInactive);
+            }
+            else
+            {
+                using (var temp = TempCollection.GetList<Component>())
+                {
+                    GetChildComponents(obj, tp, temp, false, bIncludeInactive);
+                    return temp.ToArray();
+                }
+            }
+        }
+
+        public static IEnumerable<Component> GetChildComponents(this Component obj, System.Type tp, bool bIncludeSelf = false, bool bIncludeInactive = false)
+        {
+            if (obj == null) return Enumerable.Empty<Component>();
+            return GetChildComponents(obj.gameObject, tp, bIncludeSelf, bIncludeInactive);
+        }
+
+        public static void GetChildComponents(this GameObject obj, System.Type tp, ICollection<Component> coll, bool bIncludeSelf = false, bool bIncludeInactive = false)
+        {
+            if (coll == null) throw new System.ArgumentNullException("coll");
+            if (obj == null) return;
+
+            using (var tmpLst = TempCollection.GetList<Component>())
+            {
+                if (bIncludeSelf)
+                {
+                    obj.GetComponentsInChildren<Component>(bIncludeInactive, tmpLst);
+                    var e = tmpLst.GetEnumerator();
+                    while (e.MoveNext())
+                    {
+                        if (TypeUtil.IsType(e.Current.GetType(), tp)) coll.Add(e.Current);
+                    }
+                }
+                else
+                {
+                    obj.GetComponentsInChildren<Component>(bIncludeInactive, tmpLst);
+                    var e = tmpLst.GetEnumerator();
+                    while (e.MoveNext())
+                    {
+                        if (e.Current.gameObject != obj && TypeUtil.IsType(e.Current.GetType(), tp)) coll.Add(e.Current);
+                    }
+                }
+            }
+        }
+
+        public static void GetChildComponents(this Component obj, System.Type tp, ICollection<Component> coll, bool bIncludeSelf = false, bool bIncludeInactive = false)
+        {
+            if (obj == null) return;
+            GetChildComponents(obj.gameObject, tp, coll, bIncludeSelf, bIncludeInactive);
+        }
+
+        #endregion
+
+
+
+
+        #region Utils
+
+        private static TempHashSet<System.Type> ReduceLikeTypes(System.Type[] arr)
+        {
+            var set = TempCollection.GetSet<System.Type>();
+            foreach (var tp in arr)
+            {
+                if (set.Contains(tp)) continue;
+
+                var e = set.GetEnumerator();
+                bool donotadd = false;
+                while (e.MoveNext())
+                {
+                    if (TypeUtil.IsType(tp, e.Current))
+                    {
+                        donotadd = true;
+                        break;
+                    }
+                    if (TypeUtil.IsType(e.Current, tp))
+                    {
+                        set.Remove(e.Current);
+                        break;
+                    }
+                }
+
+                if (!donotadd)
+                    set.Add(tp);
+            }
+            return set;
+        }
+
+        #endregion
+
+    }
+
+}

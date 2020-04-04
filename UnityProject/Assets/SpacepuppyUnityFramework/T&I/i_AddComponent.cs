@@ -56,7 +56,7 @@ namespace com.spacepuppy.Events
         {
             if (!this.CanTrigger) return false;
 
-            var targ = SPEventUtils.GetTarget<GameObject>(_target, arg);
+            var targ = _target;
             if (targ == null) return false;
 
             try

@@ -95,7 +95,7 @@ namespace com.spacepuppy.Events
         {
             if (!this.CanTrigger) return false;
 
-            var src = SPEventUtils.GetTarget< AudioSource>(_targetAudioSource, arg);
+            var src = ObjUtil.GetAsFromSource<AudioSource>(_targetAudioSource);
             if (src == null)
             {
                 Debug.LogWarning("Failed to play audio due to a lack of AudioSource on the target.", this);

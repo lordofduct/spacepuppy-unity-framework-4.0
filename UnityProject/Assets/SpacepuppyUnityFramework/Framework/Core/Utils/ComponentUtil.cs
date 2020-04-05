@@ -545,6 +545,236 @@ namespace com.spacepuppy.Utils
 
         #endregion
 
+        #region EntityHasComponent
+
+        public static bool EntityHasComponent<T>(this GameObject obj, bool testIfEnabled = false) where T : class
+        {
+            return EntityHasComponent(obj, typeof(T), testIfEnabled);
+        }
+
+        public static bool EntityHasComponent<T>(this Component obj, bool testIfEnabled = false) where T : class
+        {
+            return EntityHasComponent(obj.gameObject, typeof(T), testIfEnabled);
+        }
+
+        public static bool EntityHasComponent(this GameObject obj, System.Type tp, bool testIfEnabled = false)
+        {
+            if (obj == null) return false;
+            var root = obj.FindRoot();
+
+            var c = root.GetComponentInChildren(tp);
+            if (c == null) return false;
+            return (testIfEnabled) ? c.IsEnabled() : true;
+        }
+
+        public static bool EntityHasComponent(this Component obj, System.Type tp, bool testIfEnabled = false)
+        {
+            return EntityHasComponent(obj.gameObject, tp, testIfEnabled);
+        }
+
+        #endregion
+
+        #region FindComponent
+
+        /// <summary>
+        /// Finds a component starting at a gameobjects root and digging downward. First component found will be returned. 
+        /// This method aught to be reserved for components that are unique to an Entity.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="go"></param>
+        /// <returns></returns>
+        public static T FindComponent<T>(this GameObject go) where T : class
+        {
+            if (go == null) return null;
+
+            var entity = SPEntity.Pool.GetFromSource(go);
+            if (entity != null) return entity.GetComponentInChildren<T>();
+            else
+            {
+                var root = go.FindRoot();
+                return root.GetComponentInChildren<T>();
+            }
+        }
+
+        /// <summary>
+        /// Finds a component starting at a gameobjects root and digging downward. First component found will be returned. 
+        /// This method aught to be reserved for components that are unique to an Entity.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="c"></param>
+        /// <returns></returns>
+        public static T FindComponent<T>(this Component c) where T : class
+        {
+            if (c == null) return null;
+            return FindComponent<T>(c.gameObject);
+        }
+
+        public static bool FindComponent<T>(this GameObject go, out T comp) where T : class
+        {
+            comp = FindComponent<T>(go);
+            return ObjUtil.IsObjectAlive(comp as UnityEngine.Object);
+        }
+
+        public static bool FindComponent<T>(this Component c, out T comp) where T : class
+        {
+            if (c == null)
+            {
+                comp = null;
+                return false;
+            }
+            comp = FindComponent<T>(c.gameObject);
+            return ObjUtil.IsObjectAlive(comp as UnityEngine.Object);
+        }
+
+        /// <summary>
+        /// Finds a component starting at a gameobjects root and digging downward. First component found will be returned. 
+        /// This method aught to be reserved for components that are unique to an Entity.
+        /// </summary>
+        /// <param name="go"></param>
+        /// <param name="tp"></param>
+        /// <returns></returns>
+        public static Component FindComponent(this GameObject go, System.Type tp)
+        {
+            if (go == null) return null;
+
+            var entity = SPEntity.Pool.GetFromSource(go);
+            if (entity != null) return entity.GetComponentInChildren(tp);
+            else
+            {
+                var root = go.FindRoot();
+                return root.GetComponentInChildren(tp);
+            }
+        }
+
+        /// <summary>
+        /// Finds a component starting at a gameobjects root and digging downward. First component found will be returned. 
+        /// This method aught to be reserved for components that are unique to an Entity.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="tp"></param>
+        /// <returns></returns>
+        public static Component FindComponent(this Component c, System.Type tp)
+        {
+            if (c == null) return null;
+            return FindComponent(c.gameObject, tp);
+        }
+
+        public static bool FindComponent(this GameObject go, System.Type tp, out Component comp)
+        {
+            comp = FindComponent(go, tp);
+            return comp != null;
+        }
+
+        public static bool FindComponent(this Component c, System.Type tp, out Component comp)
+        {
+            if (c == null)
+            {
+                comp = null;
+                return false;
+            }
+            comp = FindComponent(c.gameObject, tp);
+            return comp != null;
+        }
+
+        #endregion
+
+        #region FindComponents
+
+        public static T[] FindComponents<T>(this GameObject go, bool bIncludeInactive = false) where T : class
+        {
+            if (go == null) return ArrayUtil.Empty<T>();
+
+            var root = go.FindRoot();
+            return root.GetComponentsInChildren<T>(bIncludeInactive);
+        }
+        public static T[] FindComponents<T>(this Component c, bool bIncludeInactive = false) where T : class
+        {
+            if (c == null) return ArrayUtil.Empty<T>();
+            return FindComponents<T>(c.gameObject, bIncludeInactive);
+        }
+
+        public static Component[] FindComponents(this GameObject go, System.Type tp, bool bIncludeInactive = false)
+        {
+            if (go == null) return ArrayUtil.Empty<Component>();
+            return go.FindRoot().GetComponentsInChildren(tp, bIncludeInactive);
+        }
+        public static Component[] FindComponents(this Component c, System.Type tp, bool bIncludeInactive = false)
+        {
+            if (c == null) return ArrayUtil.Empty<Component>();
+            return FindComponents(c.gameObject, tp, bIncludeInactive);
+        }
+
+
+        public static void FindComponents<T>(this GameObject go, ICollection<T> coll, bool bIncludeInactive = false) where T : class
+        {
+            if (go == null) return;
+            GetChildComponents<T>(go.FindRoot(), coll, true, bIncludeInactive);
+        }
+        public static void FindComponents<T>(this Component c, ICollection<T> coll, bool bIncludeInactive = false) where T : class
+        {
+            if (c == null) return;
+            GetChildComponents<T>(c.FindRoot(), coll, true, bIncludeInactive);
+        }
+
+        public static void FindComponents(this GameObject go, System.Type tp, ICollection<Component> coll, bool bIncludeInactive = false)
+        {
+            if (go == null) return;
+            GetChildComponents(go.FindRoot(), tp, coll, true, bIncludeInactive);
+        }
+        public static void FindComponents(this Component c, System.Type tp, ICollection<Component> coll, bool bIncludeInactive = false)
+        {
+            if (c == null) return;
+            GetChildComponents(c.FindRoot(), tp, coll, true, bIncludeInactive);
+        }
+
+        public static Component[] FindComponents(this GameObject go, System.Type[] types, bool bIncludeInactive = false)
+        {
+            if (go == null) return ArrayUtil.Empty<Component>();
+
+            go = go.FindRoot();
+            using (var lst = TempCollection.GetList<Component>())
+            using (var set = ReduceLikeTypes(types))
+            {
+                var e = set.GetEnumerator();
+                while (e.MoveNext())
+                {
+                    GetChildComponents(go, e.Current, lst, true, bIncludeInactive);
+                }
+                return lst.ToArray();
+            }
+        }
+
+        public static Component[] FindComponents(this Component c, System.Type[] types, bool bIncludeInactive = false)
+        {
+            if (c == null) return ArrayUtil.Empty<Component>();
+
+            return FindComponents(c.gameObject, types, bIncludeInactive);
+        }
+
+        public static void FindComponents(this GameObject go, System.Type[] types, ICollection<Component> coll, bool bIncludeInactive = false)
+        {
+            if (go == null) return;
+
+            go = go.FindRoot();
+            using (var set = ReduceLikeTypes(types))
+            {
+                var e = set.GetEnumerator();
+                while (e.MoveNext())
+                {
+                    GetChildComponents(go, e.Current, coll, true, bIncludeInactive);
+                }
+            }
+        }
+
+        public static void FindComponents(this Component c, System.Type[] types, ICollection<Component> coll, bool bIncludeInactive = false)
+        {
+            if (c == null) return;
+
+            FindComponents(c.gameObject, types, coll, bIncludeInactive);
+        }
+
+        #endregion
+
 
 
 

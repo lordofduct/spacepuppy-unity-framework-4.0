@@ -819,9 +819,6 @@ namespace com.spacepuppy.Utils
             return v;
         }
 
-        /*
-         * TODO - CartesianAxis
-         * 
         public static Vector3 Set(this Vector3 v, CartesianAxis axis, float value)
         {
             switch (axis)
@@ -915,7 +912,6 @@ namespace com.spacepuppy.Utils
                     return Vector3.zero;
             }
         }
-         */
 
         public static Vector2 IncrementX(this Vector2 v, float x)
         {

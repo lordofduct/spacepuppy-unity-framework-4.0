@@ -3,6 +3,20 @@
 namespace com.spacepuppy.Events
 {
 
+    public enum EnableMode
+    {
+        Enable = 0,
+        Disable = 1,
+        Toggle = 2
+    }
+
+    public enum DisableMode
+    {
+        None,
+        DisableComponent,
+        DisableGameObject
+    }
+
     [System.Flags()]
     public enum ActivateEvent
     {

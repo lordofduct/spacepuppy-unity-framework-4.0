@@ -32,13 +32,6 @@ namespace com.spacepuppy
         Quit
     }
 
-    public enum EnableMode
-    {
-        Enable = 0,
-        Disable = 1,
-        Toggle = 2
-    }
-
     public enum EntityRelativity
     {
         Entity = 0,
@@ -68,6 +61,19 @@ namespace com.spacepuppy
         X = 0,
         Y = 1,
         Z = 2
+    }
+
+    [System.Flags()]
+    public enum ComparisonOperator
+    {
+        NotEqual = 0,
+        LessThan = 1,
+        GreaterThan = 2,
+        NotEqualAlt = 3,
+        Equal = 4,
+        LessThanEqual = 5,
+        GreatThanEqual = 6,
+        Always = 7
     }
 
 }

@@ -51,15 +51,14 @@ namespace com.spacepuppy
 
             _isAwake = true;
 
-            //TODO - Messaging
-            //var token = Messaging.CreateBroadcastToken<IEntityAwakeHandler>(this.gameObject, true, true);
-            //if (token != null && token.Count > 0)
-            //{
-            //    com.spacepuppy.Hooks.EarlyStartHook.Invoke(this.gameObject, () =>
-            //    {
-            //        token.Invoke((h) => h.OnEntityAwake(this));
-            //    });
-            //}
+            var token = Messaging.CreateBroadcastToken<IEntityAwakeHandler>(this.gameObject, true, true);
+            if (token != null && token.Count > 0)
+            {
+                com.spacepuppy.Hooks.EarlyStartHook.Invoke(this.gameObject, () =>
+                {
+                    token.Invoke((h) => h.OnEntityAwake(this));
+                });
+            }
         }
         
         protected override void OnDestroy()

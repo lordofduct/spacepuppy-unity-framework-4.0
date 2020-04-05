@@ -387,11 +387,9 @@ namespace com.spacepuppy.Utils
             if (go != null)
             {
                 var tp = typeof(T);
-                //TODO - SPEntity
-                //if (typeof(SPEntity).IsAssignableFrom(tp))
-                //    return SPEntity.Pool.GetFromSource(tp, go) as T;
-                //else if (ComponentUtil.IsAcceptableComponentType(tp))
-                if (ComponentUtil.IsAcceptableComponentType(tp))
+                if (typeof(SPEntity).IsAssignableFrom(tp))
+                    return SPEntity.Pool.GetFromSource(tp, go) as T;
+                else if (ComponentUtil.IsAcceptableComponentType(tp))
                     return go.GetComponent(tp) as T;
             }
 
@@ -434,17 +432,15 @@ namespace com.spacepuppy.Utils
             if (go != null)
             {
                 var tp = typeof(T);
-                //TODO - SPEntity
-                //if (typeof(SPEntity).IsAssignableFrom(tp))
-                //{
-                //    var uobj = SPEntity.Pool.GetFromSource(tp, go);
-                //    if (uobj == null) return false;
+                if (typeof(SPEntity).IsAssignableFrom(tp))
+                {
+                    var uobj = SPEntity.Pool.GetFromSource(tp, go);
+                    if (uobj == null) return false;
 
-                //    result = uobj as T;
-                //    return result != null;
-                //}
-                //else if (ComponentUtil.IsAcceptableComponentType(tp))
-                if (ComponentUtil.IsAcceptableComponentType(tp))
+                    result = uobj as T;
+                    return result != null;
+                }
+                else if (ComponentUtil.IsAcceptableComponentType(tp))
                 {
                     var uobj = go.GetComponent(tp);
                     if (uobj == null) return false;
@@ -474,11 +470,9 @@ namespace com.spacepuppy.Utils
 
             if (go != null)
             {
-                //TODO - SPEntity
-                //if (typeof(SPEntity).IsAssignableFrom(tp))
-                //    return SPEntity.Pool.GetFromSource(tp, go);
-                //else if (ComponentUtil.IsAcceptableComponentType(tp))
-                if (ComponentUtil.IsAcceptableComponentType(tp))
+                if (typeof(SPEntity).IsAssignableFrom(tp))
+                    return SPEntity.Pool.GetFromSource(tp, go);
+                else if (ComponentUtil.IsAcceptableComponentType(tp))
                     return go.GetComponent(tp);
             }
 
@@ -521,17 +515,15 @@ namespace com.spacepuppy.Utils
 
             if (go != null)
             {
-                //TODO - SPEntity
-                //if (typeof(SPEntity).IsAssignableFrom(tp))
-                //{
-                //    var uobj = SPEntity.Pool.GetFromSource(tp, go);
-                //    if (uobj == null) return false;
+                if (typeof(SPEntity).IsAssignableFrom(tp))
+                {
+                    var uobj = SPEntity.Pool.GetFromSource(tp, go);
+                    if (uobj == null) return false;
 
-                //    result = uobj;
-                //    return true;
-                //}
-                //else if (ComponentUtil.IsAcceptableComponentType(tp))
-                if (ComponentUtil.IsAcceptableComponentType(tp))
+                    result = uobj;
+                    return true;
+                }
+                else if (ComponentUtil.IsAcceptableComponentType(tp))
                 {
                     var uobj = go.GetComponent(tp);
                     if (uobj == null) return false;
@@ -568,11 +560,9 @@ namespace com.spacepuppy.Utils
             if (go != null)
             {
                 var tp = typeof(T);
-                //TODO - SPEntity
-                //if (typeof(SPEntity).IsAssignableFrom(tp))
-                //    return SPEntity.Pool.GetFromSource(tp, go) as T;
-                //else if (ComponentUtil.IsAcceptableComponentType(tp))
-                if (ComponentUtil.IsAcceptableComponentType(tp))
+                if (typeof(SPEntity).IsAssignableFrom(tp))
+                    return SPEntity.Pool.GetFromSource(tp, go) as T;
+                else if (ComponentUtil.IsAcceptableComponentType(tp))
                     return go.GetComponent(tp) as T;
             }
 
@@ -602,11 +592,9 @@ namespace com.spacepuppy.Utils
 
             if (go != null)
             {
-                //TODO - SPEntity
-                //if (typeof(SPEntity).IsAssignableFrom(tp))
-                //    return SPEntity.Pool.GetFromSource(tp, go);
-                //else if (ComponentUtil.IsAcceptableComponentType(tp))
-                if (ComponentUtil.IsAcceptableComponentType(tp))
+                if (typeof(SPEntity).IsAssignableFrom(tp))
+                    return SPEntity.Pool.GetFromSource(tp, go);
+                else if (ComponentUtil.IsAcceptableComponentType(tp))
                     return go.GetComponent(tp);
             }
 
@@ -634,14 +622,12 @@ namespace com.spacepuppy.Utils
                 if (go != null)
                 {
                     var tp = typeof(T);
-                    //TODO - SPEntity
-                    //if (typeof(SPEntity).IsAssignableFrom(tp))
-                    //{
-                    //    var entity = SPEntity.Pool.GetFromSource(tp, go) as T;
-                    //    if (entity != null) set.Add(entity);
-                    //}
-                    //else if (typeof(UnityEngine.GameObject).IsAssignableFrom(tp))
-                    if (typeof(UnityEngine.GameObject).IsAssignableFrom(tp))
+                    if (typeof(SPEntity).IsAssignableFrom(tp))
+                    {
+                        var entity = SPEntity.Pool.GetFromSource(tp, go) as T;
+                        if (entity != null) set.Add(entity);
+                    }
+                    else if (typeof(UnityEngine.GameObject).IsAssignableFrom(tp))
                     {
                         if (includeChildren)
                         {
@@ -687,14 +673,12 @@ namespace com.spacepuppy.Utils
                 var go = GameObjectUtil.GetGameObjectFromSource(obj);
                 if (go != null)
                 {
-                    //TODO - SPEntity
-                    //if (typeof(SPEntity).IsAssignableFrom(tp))
-                    //{
-                    //    var entity = SPEntity.Pool.GetFromSource(tp, go);
-                    //    if (entity != null) set.Add(entity);
-                    //}
-                    //else if (typeof(UnityEngine.GameObject).IsAssignableFrom(tp))
-                    if (typeof(UnityEngine.GameObject).IsAssignableFrom(tp))
+                    if (typeof(SPEntity).IsAssignableFrom(tp))
+                    {
+                        var entity = SPEntity.Pool.GetFromSource(tp, go);
+                        if (entity != null) set.Add(entity);
+                    }
+                    else if (typeof(UnityEngine.GameObject).IsAssignableFrom(tp))
                     {
                         if (includeChildren)
                         {

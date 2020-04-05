@@ -212,20 +212,16 @@ namespace com.spacepuppy
 
         public static bool IsValidTag(string stag)
         {
-            //TODO - need a way to find list of known tags
-            //return !string.IsNullOrEmpty(stag);
             return TagData.Tags.Contains(stag);
         }
 
         public static bool IsValidActiveTag(string stag)
         {
-            //return !string.IsNullOrEmpty(stag) && stag != SPConstants.TAG_UNTAGGED;
             return TagData.Tags.Contains(stag) && stag != SPConstants.TAG_UNTAGGED;
         }
 
         public static bool IsValidMultiTag(string stag)
         {
-            //return !string.IsNullOrEmpty(stag) && stag != SPConstants.TAG_UNTAGGED && stag != SPConstants.TAG_MULTITAG;
             return TagData.Tags.Contains(stag) && stag != SPConstants.TAG_UNTAGGED && stag != SPConstants.TAG_MULTITAG;
         }
 

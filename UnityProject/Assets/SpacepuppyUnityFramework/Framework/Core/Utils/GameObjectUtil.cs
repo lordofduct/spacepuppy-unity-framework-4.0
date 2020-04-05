@@ -49,6 +49,51 @@ namespace com.spacepuppy.Utils
             return null;
         }
 
+        public static Transform GetTransformFromSource(object obj, bool respectProxy = false)
+        {
+            if (obj == null) return null;
+
+            if (respectProxy && obj is IProxy)
+            {
+                obj = (obj as IProxy).GetTarget();
+                if (obj.IsNullOrDestroyed()) return null;
+            }
+
+            if (obj is Transform)
+                return obj as Transform;
+            if (obj is GameObject)
+                return ObjUtil.IsObjectAlive(obj as GameObject) ? (obj as GameObject).transform : null;
+            if (obj is Component)
+                return ObjUtil.IsObjectAlive(obj as Component) ? (obj as Component).transform : null;
+            if (obj is IGameObjectSource)
+                return obj.IsNullOrDestroyed() ? null : (obj as IGameObjectSource).transform;
+
+            return null;
+        }
+
+        public static GameObject GetRootFromSource(object obj, bool respectProxy = false)
+        {
+            if (obj.IsNullOrDestroyed()) return null;
+
+            if (respectProxy && obj is IProxy)
+            {
+                obj = (obj as IProxy).GetTarget();
+                if (obj.IsNullOrDestroyed()) return null;
+            }
+
+            if (obj is IComponent) obj = (obj as IComponent).component;
+
+            if (obj is Transform)
+                return (obj as Transform).FindRoot();
+            else if (obj is GameObject)
+                return (obj as GameObject).FindRoot();
+            else if (obj is Component)
+                return (obj as Component).FindRoot();
+            else if (obj is IGameObjectSource)
+                return (obj as IGameObjectSource).gameObject.FindRoot();
+
+            return null;
+        }
 
         #endregion
 
@@ -112,6 +157,152 @@ namespace com.spacepuppy.Utils
                 var root = FindParentWithTag(c.transform, SPConstants.TAG_ROOT);
                 return (root != null) ? root : c.gameObject; //we return self if no root was found...
             }
+        }
+
+        #endregion
+
+        #region Find By Name
+
+        /// <summary>
+        /// Recurses through all children until a child of some name is found.
+        /// </summary>
+        /// <param name="go"></param>
+        /// <param name="sname"></param>
+        /// <param name="bIgnoreCase"></param>
+        /// <returns></returns>
+        public static GameObject FindByName(this GameObject go, string sname, bool bIgnoreCase = false)
+        {
+            if (go == null) return null;
+            var result = FindByName(go.transform, sname, bIgnoreCase);
+            if (result != null)
+                return result.gameObject;
+            else
+                return null;
+        }
+
+        /// <summary>
+        /// Recurses through all children until a child of some name is found.
+        /// </summary>
+        /// <param name="trans"></param>
+        /// <param name="sname"></param>
+        /// <param name="bIgnoreCase"></param>
+        /// <returns></returns>
+        public static Transform FindByName(this Transform trans, string sname, bool bIgnoreCase = false)
+        {
+            if (trans == null) return null;
+            foreach (var child in trans.IterateAllChildren())
+            {
+                if (StringUtil.Equals(child.name, sname, bIgnoreCase)) return child;
+            }
+            return null;
+        }
+
+        public static IEnumerable<GameObject> FindAllByName(string sname, bool bIgnoreCase = false)
+        {
+            foreach (var go in Object.FindObjectsOfType<GameObject>())
+            {
+                if (StringUtil.Equals(go.name, sname, bIgnoreCase)) yield return go;
+            }
+        }
+
+        public static void FindAllByName(string sname, ICollection<GameObject> results, bool bIgnoreCase = false)
+        {
+            if (results == null) throw new System.ArgumentNullException("results");
+
+            foreach (var go in Object.FindObjectsOfType<GameObject>())
+            {
+                if (StringUtil.Equals(go.name, sname, bIgnoreCase)) results.Add(go);
+            }
+        }
+
+        public static Transform[] FindAllByName(this Transform trans, string sname, bool bIgnoreCase = false)
+        {
+            if (trans == null) return ArrayUtil.Empty<Transform>();
+
+            using (var results = TempCollection.GetList<Transform>())
+            {
+                FindAllByName(trans, sname, results, bIgnoreCase);
+                return results.ToArray();
+            }
+        }
+
+        public static void FindAllByName(this Transform trans, string sname, ICollection<Transform> results, bool bIgnoreCase = false)
+        {
+            if (results == null) throw new System.ArgumentNullException("results");
+            if (trans == null) return;
+
+            using (var lst = TempCollection.GetList<Transform>())
+            {
+                trans.GetAllChildrenAndSelf(lst);
+                var e = lst.GetEnumerator();
+                while (e.MoveNext())
+                {
+                    if (StringUtil.Equals(e.Current.name, sname, bIgnoreCase))
+                    {
+                        results.Add(e.Current);
+                    }
+                }
+            }
+        }
+
+        public static GameObject FindParentWithName(this GameObject go, string sname, bool bIgnoreCase = false)
+        {
+            if (go == null) return null;
+            var result = FindParentWithName(go.transform, sname, bIgnoreCase);
+            if (result != null)
+                return result.gameObject;
+            else
+                return null;
+        }
+
+        public static Transform FindParentWithName(this Transform trans, string sname, bool bIgnoreCase = false)
+        {
+            var p = trans.parent;
+            while (p != null)
+            {
+                if (StringUtil.Equals(p.name, sname, bIgnoreCase)) return p;
+                p = p.parent;
+            }
+            return null;
+        }
+
+
+
+        public static string GetPathNameRelativeTo(this GameObject go, Transform parent)
+        {
+            if (go == null) return null;
+            return GetPathNameRelativeTo(go.transform, parent);
+        }
+
+        public static string GetPathNameRelativeTo(this Transform t, Transform parent)
+        {
+            if (t == null) return null;
+            if (parent != null && !t.IsChildOf(parent)) return null;
+
+            var bldr = StringUtil.GetTempStringBuilder();
+            bldr.Append(t.name);
+            t = t.parent;
+            while (t != parent)
+            {
+                bldr.Insert(0, '/');
+                bldr.Insert(0, t.name);
+                t = t.parent;
+            }
+            return StringUtil.Release(bldr);
+        }
+
+        public static string GetFullPathName(this Transform t)
+        {
+            var bldr = StringUtil.GetTempStringBuilder();
+            bldr.Append(t.name);
+            t = t.parent;
+            while (t != null)
+            {
+                bldr.Insert(0, @"\");
+                bldr.Insert(0, t.name);
+                t = t.parent;
+            }
+            return StringUtil.Release(bldr);
         }
 
         #endregion
@@ -239,6 +430,141 @@ namespace com.spacepuppy.Utils
             {
                 foreach (var c in IterateAllChildren(trans.GetChild(i)))
                     yield return c;
+            }
+        }
+
+        public static Transform[] GetAllChildren(this GameObject go)
+        {
+            if (go == null) return null;
+            return GetAllChildren(go.transform);
+        }
+
+        public static Transform[] GetAllChildren(this Component c)
+        {
+            if (c == null) return null;
+            return GetAllChildren(c.transform);
+        }
+
+        public static Transform[] GetAllChildren(this Transform t)
+        {
+            using (var lst = TempCollection.GetList<Transform>())
+            {
+                GetAllChildren(t, lst);
+
+                return lst.ToArray();
+            }
+        }
+
+        public static void GetAllChildren(this Transform t, ICollection<Transform> coll)
+        {
+            if (coll is IList<Transform>)
+            {
+                GetAllChildren(t, coll as IList<Transform>);
+            }
+            else
+            {
+                using (var lst = TempCollection.GetList<Transform>())
+                {
+                    GetAllChildren(t, lst);
+                    var e = lst.GetEnumerator();
+                    while (e.MoveNext()) coll.Add(e.Current);
+                }
+            }
+        }
+
+        public static void GetAllChildren(this Transform t, IList<Transform> lst)
+        {
+            int i = lst.Count;
+
+            for (int j = 0; j < t.childCount; j++)
+            {
+                lst.Add(t.GetChild(j));
+            }
+
+            while (i < lst.Count)
+            {
+                t = lst[i];
+                for (int j = 0; j < t.childCount; j++)
+                {
+                    lst.Add(t.GetChild(j));
+                }
+                i++;
+            }
+        }
+
+        public static Transform[] GetAllChildrenAndSelf(this GameObject go)
+        {
+            if (go == null) return null;
+            return GetAllChildrenAndSelf(go.transform);
+        }
+
+        public static Transform[] GetAllChildrenAndSelf(this Component c)
+        {
+            if (c == null) return null;
+            return GetAllChildrenAndSelf(c.transform);
+        }
+
+        public static Transform[] GetAllChildrenAndSelf(this Transform t)
+        {
+            using (var lst = TempCollection.GetList<Transform>())
+            {
+                GetAllChildrenAndSelf(t, lst);
+                return lst.ToArray();
+            }
+        }
+
+        public static void GetAllChildrenAndSelf(this Transform t, ICollection<Transform> coll)
+        {
+            if (coll is IList<Transform>)
+            {
+                GetAllChildrenAndSelf(t, coll as IList<Transform>);
+            }
+            else
+            {
+                using (var lst = TempCollection.GetList<Transform>())
+                {
+                    GetAllChildrenAndSelf(t, lst);
+                    var e = lst.GetEnumerator();
+                    while (e.MoveNext()) coll.Add(e.Current);
+                }
+            }
+        }
+
+        public static void GetAllChildrenAndSelf(this Transform t, IList<Transform> lst)
+        {
+            int i = lst.Count;
+            lst.Add(t);
+
+            while (i < lst.Count)
+            {
+                t = lst[i];
+                for (int j = 0; j < t.childCount; j++)
+                {
+                    lst.Add(t.GetChild(j));
+                }
+                i++;
+            }
+        }
+
+        public static IEnumerable<Transform> GetParents(this GameObject go)
+        {
+            if (go == null) return null;
+            return GetParents(go.transform);
+        }
+
+        public static IEnumerable<Transform> GetParents(this Component c)
+        {
+            if (c == null) return null;
+            return GetParents(c.transform);
+        }
+
+        public static IEnumerable<Transform> GetParents(this Transform t)
+        {
+            t = t.parent;
+            while (t != null)
+            {
+                yield return t;
+                t = t.parent;
             }
         }
 

@@ -1,0 +1,17 @@
+{
+    "name": "com.spacepuppy.Motor",
+    "references": [
+        "GUID:ddd0eb9fc8f414a4d9750a013f135d36",
+        "GUID:18b35bcc13357ab4ebabf6cf62f8b6ac",
+        "GUID:ad6239a0379b2de43a4d9e723d51db80"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

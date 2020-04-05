@@ -75,7 +75,7 @@ namespace com.spacepuppyeditor.Internal
             {
                 var attribs = fieldInfo.GetCustomAttributes(typeof(PropertyAttribute), false) as PropertyAttribute[];
                 var isListType = property.isArray && !(property.propertyType == SerializedPropertyType.String);
-                result = new MultiPropertyAttributePropertyHandler(fieldInfo, isListType, attribs);
+                result = new MultiPropertyAttributePropertyHandler(property, fieldInfo, isListType, attribs);
                 _handlerCache.SetHandler(property, result);
                 return result;
             }

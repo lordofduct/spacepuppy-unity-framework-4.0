@@ -22,6 +22,44 @@ namespace com.spacepuppy
 
     }
 
+    [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = true, Inherited = true)]
+    public class RequireComponentInEntityAttribute : ComponentHeaderAttribute
+    {
+
+        private System.Type[] _types;
+
+        public RequireComponentInEntityAttribute(params System.Type[] tps)
+        {
+            _types = tps;
+        }
+
+        public System.Type[] Types
+        {
+            get { return _types; }
+        }
+
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+    public class RequireLayerAttribute : ComponentHeaderAttribute
+    {
+        public int Layer;
+
+        public RequireLayerAttribute(int layer)
+        {
+            this.Layer = layer;
+        }
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+    public class UniqueToEntityAttribute : ComponentHeaderAttribute
+    {
+
+        public bool MustBeAttachedToRoot;
+        public bool IgnoreInactive;
+
+    }
+
     [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
     public class ConstantlyRepaintEditorAttribute : System.Attribute
     {
@@ -299,6 +337,40 @@ namespace com.spacepuppy
     [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
     public class ReadOnlyAttribute : PropertyModifierAttribute
     {
+
+    }
+
+    #endregion
+
+    #region DecoratorDrawer Attributes
+
+    [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = true)]
+    public class InsertButtonAttribute : PropertyAttribute
+    {
+
+        public string Label;
+        public string OnClick;
+        public bool PrecedeProperty;
+        public bool RuntimeOnly;
+
+        public InsertButtonAttribute(string label, string onClick)
+        {
+            this.Label = label;
+            this.OnClick = onClick;
+        }
+
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Field | System.AttributeTargets.Class, AllowMultiple = false)]
+    public class InfoboxAttribute : ComponentHeaderAttribute
+    {
+        public string Message;
+        public InfoBoxMessageType MessageType = InfoBoxMessageType.Info;
+
+        public InfoboxAttribute(string msg)
+        {
+            this.Message = msg;
+        }
 
     }
 

@@ -26,14 +26,14 @@ namespace com.spacepuppyeditor.Internal
 
         #region CONSTRUCTOR
 
-        public MultiPropertyAttributePropertyHandler(System.Reflection.FieldInfo fieldInfo, bool propertyIsArray, PropertyAttribute[] attribs)
+        public MultiPropertyAttributePropertyHandler(SerializedProperty property, System.Reflection.FieldInfo fieldInfo, bool propertyIsArray, PropertyAttribute[] attribs)
         {
             if (fieldInfo == null) throw new System.ArgumentNullException("fieldInfo");
             if (attribs == null) throw new System.ArgumentNullException("attribs");
             _fieldInfo = fieldInfo;
             _propertyIsArray = propertyIsArray;
 
-            this.Init(attribs);
+            this.Init(property, attribs);
         }
 
         #endregion
@@ -51,7 +51,7 @@ namespace com.spacepuppyeditor.Internal
 
         #region Methods
 
-        protected virtual void Init(PropertyAttribute[] attribs)
+        protected virtual void Init(SerializedProperty property, PropertyAttribute[] attribs)
         {
             var fieldType = _fieldInfo.FieldType;
             if (fieldType.IsListType()) fieldType = fieldType.GetElementTypeOfListType();
@@ -68,7 +68,7 @@ namespace com.spacepuppyeditor.Internal
             {
                 foreach (var attrib in attribs)
                 {
-                    this.HandleAttribute(attrib, _fieldInfo, fieldType);
+                    this.HandleAttribute(property, attrib, _fieldInfo, fieldType);
                 }
             }
 
@@ -91,7 +91,7 @@ namespace com.spacepuppyeditor.Internal
             }
         }
 
-        protected override void HandleAttribute(PropertyAttribute attribute, System.Reflection.FieldInfo field, System.Type propertyType)
+        protected override void HandleAttribute(SerializedProperty property, PropertyAttribute attribute, System.Reflection.FieldInfo field, System.Type propertyType)
         {
             if(attribute is PropertyModifierAttribute)
             {
@@ -106,11 +106,11 @@ namespace com.spacepuppyeditor.Internal
             else if (attribute is TooltipAttribute)
             {
                 _customTooltip = (attribute as TooltipAttribute).tooltip;
-                base.HandleAttribute(attribute, field, propertyType);
+                base.HandleAttribute(property, attribute, field, propertyType);
             }
             else if (attribute is ContextMenuItemAttribute)
             {
-                base.HandleAttribute(attribute, field, propertyType);
+                base.HandleAttribute(property, attribute, field, propertyType);
             }
             else
             {
@@ -119,7 +119,7 @@ namespace com.spacepuppyeditor.Internal
                     return;
                 else if (typeof(PropertyDrawer).IsAssignableFrom(drawerTypeForType))
                 {
-                    base.HandleAttribute(attribute, field, propertyType);
+                    base.HandleAttribute(property, attribute, field, propertyType);
                     var drawer = this.InternalDrawer; //this retrieves the drawer that was selected by called 'base.HandleAttribute'
                     this.AppendDrawer(drawer);
                 }

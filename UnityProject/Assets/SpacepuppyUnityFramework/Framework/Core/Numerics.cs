@@ -299,4 +299,437 @@ namespace com.spacepuppy
 
     }
 
+    /// <summary>
+    /// Stores a whole number as a floating point value. You get the range of a float, as well as infinity representations. 
+    /// Implicit conversion between float and int is defined.
+    /// </summary>
+    [System.Serializable()]
+    public struct DiscreteFloat : INumeric, IConvertible, IComparable, IComparable<float>, IComparable<DiscreteFloat>, IEquatable<float>, IEquatable<DiscreteFloat>, IFormattable
+    {
+
+        [SerializeField()]
+        private float _value;
+
+        #region CONSTRUCTOR
+
+        public DiscreteFloat(float f)
+        {
+            _value = Mathf.Round(f);
+        }
+
+        #endregion
+
+        #region Properties
+
+        #endregion
+
+        #region Methods
+
+        /// <summary>
+        /// Returns the value as a positive value int where infinite is represented as -1.
+        /// </summary>
+        /// <returns></returns>
+        public int ToStandardMetricInt()
+        {
+            if (float.IsInfinity(_value)) return -1;
+            else return (int)Mathf.Abs(_value);
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is DiscreteFloat)
+            {
+                return _value == ((DiscreteFloat)obj)._value;
+            }
+            else if (obj is System.IConvertible)
+            {
+                try
+                {
+                    var f = System.Convert.ToSingle(obj);
+                    return _value == f;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public override int GetHashCode()
+        {
+            return _value.GetHashCode();
+        }
+
+        public override string ToString()
+        {
+            return _value.ToString();
+        }
+
+        #endregion
+
+        #region Static/Constants
+
+        public static DiscreteFloat Zero
+        {
+            get
+            {
+                return new DiscreteFloat()
+                {
+                    _value = 0f
+                };
+            }
+        }
+
+        public static DiscreteFloat PositiveInfinity { get { return new DiscreteFloat() { _value = float.PositiveInfinity }; } }
+        public static DiscreteFloat NegativeInfinity { get { return new DiscreteFloat() { _value = float.NegativeInfinity }; } }
+
+        public static bool IsNaN(DiscreteFloat value)
+        {
+            return float.IsNaN(value._value);
+        }
+
+        public static bool IsInfinity(DiscreteFloat value)
+        {
+            return float.IsInfinity(value._value);
+        }
+
+        public static bool IsPositiveInfinity(DiscreteFloat value)
+        {
+            return float.IsPositiveInfinity(value._value);
+        }
+
+        public static bool IsNegativeInfinity(DiscreteFloat value)
+        {
+            return float.IsNegativeInfinity(value._value);
+        }
+
+        public static bool IsReal(DiscreteFloat value)
+        {
+            return !(float.IsNaN(value._value) || float.IsInfinity(value._value));
+        }
+
+
+
+        #endregion
+
+        #region Operators
+
+        public static DiscreteFloat operator ++(DiscreteFloat df)
+        {
+            df._value++;
+            return df;
+        }
+
+        public static DiscreteFloat operator +(DiscreteFloat df)
+        {
+            return df;
+        }
+
+        public static DiscreteFloat operator +(DiscreteFloat a, DiscreteFloat b)
+        {
+            a._value = Mathf.Floor(a._value + b._value);
+            return a;
+        }
+
+        public static DiscreteFloat operator --(DiscreteFloat df)
+        {
+            df._value--;
+            return df;
+        }
+
+        public static DiscreteFloat operator -(DiscreteFloat df)
+        {
+            df._value = -df._value;
+            return df;
+        }
+
+        public static DiscreteFloat operator -(DiscreteFloat a, DiscreteFloat b)
+        {
+            a._value = Mathf.Floor(a._value - b._value);
+            return a;
+        }
+
+        public static DiscreteFloat operator *(DiscreteFloat a, DiscreteFloat b)
+        {
+            a._value = Mathf.Floor(a._value * b._value);
+            return a;
+        }
+
+        public static DiscreteFloat operator /(DiscreteFloat a, DiscreteFloat b)
+        {
+            a._value = Mathf.Floor(a._value / b._value);
+            return a;
+        }
+
+        public static bool operator >(DiscreteFloat a, DiscreteFloat b)
+        {
+            return a._value > b._value;
+        }
+
+        public static bool operator >=(DiscreteFloat a, DiscreteFloat b)
+        {
+            return a._value >= b._value;
+        }
+
+        public static bool operator <(DiscreteFloat a, DiscreteFloat b)
+        {
+            return a._value < b._value;
+        }
+
+        public static bool operator <=(DiscreteFloat a, DiscreteFloat b)
+        {
+            return a._value <= b._value;
+        }
+
+        public static bool operator ==(DiscreteFloat a, DiscreteFloat b)
+        {
+            return a._value == b._value;
+        }
+
+        public static bool operator !=(DiscreteFloat a, DiscreteFloat b)
+        {
+            return a._value != b._value;
+        }
+
+        #endregion
+
+        #region Conversions
+
+        public static implicit operator DiscreteFloat(int f)
+        {
+            return new DiscreteFloat((float)f);
+        }
+
+        public static implicit operator int(DiscreteFloat df)
+        {
+            return (int)df._value;
+        }
+
+        public static implicit operator DiscreteFloat(float f)
+        {
+            return new DiscreteFloat(f);
+        }
+
+        public static implicit operator float(DiscreteFloat df)
+        {
+            return df._value;
+        }
+
+        public static implicit operator DiscreteFloat(double d)
+        {
+            return new DiscreteFloat((float)d);
+        }
+
+        public static implicit operator double(DiscreteFloat df)
+        {
+            return (double)df._value;
+        }
+
+        public static implicit operator DiscreteFloat(decimal d)
+        {
+            return new DiscreteFloat((float)d);
+        }
+
+        public static implicit operator decimal(DiscreteFloat df)
+        {
+            return (decimal)df._value;
+        }
+
+        #endregion
+
+        #region INumeric Interface
+
+        TypeCode INumeric.GetUnderlyingTypeCode()
+        {
+            return TypeCode.Single;
+        }
+
+        public byte[] ToByteArray()
+        {
+            return Numerics.GetBytes(_value);
+        }
+
+        void INumeric.FromByteArray(byte[] data)
+        {
+            _value = Mathf.Round(Numerics.ToSingle(data));
+        }
+
+        void INumeric.FromLong(long value)
+        {
+            _value = Convert.ToSingle(value);
+        }
+
+        void INumeric.FromDouble(double value)
+        {
+            _value = (float)Math.Round(value);
+        }
+
+        public static DiscreteFloat FromByteArray(byte[] data)
+        {
+            var result = new DiscreteFloat();
+            result._value = Mathf.Round(Numerics.ToSingle(data));
+            return result;
+        }
+
+        #endregion
+
+        #region IConvertible
+
+        public TypeCode GetTypeCode()
+        {
+            return TypeCode.Single;
+        }
+
+        bool IConvertible.ToBoolean(IFormatProvider provider)
+        {
+            return _value != 0f;
+        }
+
+        char IConvertible.ToChar(IFormatProvider provider)
+        {
+            return Convert.ToChar(_value);
+        }
+
+        sbyte IConvertible.ToSByte(IFormatProvider provider)
+        {
+            return Convert.ToSByte(_value);
+        }
+
+        byte IConvertible.ToByte(IFormatProvider provider)
+        {
+            return Convert.ToByte(_value);
+        }
+
+        short IConvertible.ToInt16(IFormatProvider provider)
+        {
+            return Convert.ToInt16(_value);
+        }
+
+        ushort IConvertible.ToUInt16(IFormatProvider provider)
+        {
+            return Convert.ToUInt16(_value);
+        }
+
+        int IConvertible.ToInt32(IFormatProvider provider)
+        {
+            return Convert.ToInt32(_value);
+        }
+
+        uint IConvertible.ToUInt32(IFormatProvider provider)
+        {
+            return Convert.ToUInt32(_value);
+        }
+
+        long IConvertible.ToInt64(IFormatProvider provider)
+        {
+            return Convert.ToInt64(_value);
+        }
+
+        ulong IConvertible.ToUInt64(IFormatProvider provider)
+        {
+            return Convert.ToUInt64(_value);
+        }
+
+        float IConvertible.ToSingle(IFormatProvider provider)
+        {
+            return _value;
+        }
+
+        double IConvertible.ToDouble(IFormatProvider provider)
+        {
+            return Convert.ToDouble(_value);
+        }
+
+        decimal IConvertible.ToDecimal(IFormatProvider provider)
+        {
+            return Convert.ToDecimal(_value);
+        }
+
+        DateTime IConvertible.ToDateTime(IFormatProvider provider)
+        {
+            return Convert.ToDateTime(_value);
+        }
+
+        string IConvertible.ToString(IFormatProvider provider)
+        {
+            return _value.ToString(provider);
+        }
+
+        object IConvertible.ToType(Type conversionType, IFormatProvider provider)
+        {
+            return (_value as IConvertible).ToType(conversionType, provider);
+        }
+
+        #endregion
+
+        #region IComparable Interface
+
+        public int CompareTo(object obj)
+        {
+            return _value.CompareTo(obj);
+        }
+
+        public int CompareTo(float other)
+        {
+            return _value.CompareTo(other);
+        }
+
+        public int CompareTo(DiscreteFloat other)
+        {
+            return _value.CompareTo(other._value);
+        }
+
+        #endregion
+
+        #region IEquatable Interface
+
+        public bool Equals(float other)
+        {
+            return _value.Equals(other);
+        }
+
+        public bool Equals(DiscreteFloat other)
+        {
+            return _value.Equals(other._value);
+        }
+
+        #endregion
+
+        #region IFormattable Interface
+
+        public string ToString(string format, IFormatProvider formatProvider)
+        {
+            return _value.ToString(format, formatProvider);
+        }
+
+        #endregion
+
+        #region Special Types
+
+        public abstract class ConfigAttribute : System.Attribute
+        {
+
+            public abstract float Normalize(float value);
+
+        }
+
+        public class NonNegative : ConfigAttribute
+        {
+
+            public override float Normalize(float value)
+            {
+                if (value < 0f) return 0f;
+                else return value;
+            }
+
+        }
+
+        #endregion
+
+    }
+
 }

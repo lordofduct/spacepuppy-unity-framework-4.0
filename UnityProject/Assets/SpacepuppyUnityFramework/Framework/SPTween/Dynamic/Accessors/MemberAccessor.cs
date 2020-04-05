@@ -7,8 +7,11 @@
 using System;
 using System.Collections;
 using System.Reflection;
-using System.Reflection.Emit;
 using System.Threading;
+
+#if BLARGH
+using System.Reflection.Emit;
+#endif
 
 namespace com.spacepuppy.Dynamic.Accessors
 {
@@ -45,7 +48,65 @@ namespace com.spacepuppy.Dynamic.Accessors
 
     internal abstract class MemberAccessor : IMemberAccessor
     {
+
+        #region Fields
+
+        protected readonly Type _targetType;
+
+        #endregion
+
+        #region Properties
+
+        /// <summary>
+        /// The Type of object this member accessor was
+        /// created for.
+        /// </summary>
+        internal Type TargetType
+        {
+            get
+            {
+                return _targetType;
+            }
+        }
+
+        /// <summary>
+        /// The Type of the Member being accessed.
+        /// </summary>
+        internal abstract Type MemberType { get; }
+
+        /// <summary>
+        /// Whether or not the Member supports read access.
+        /// </summary>
+        internal abstract bool CanRead { get; }
+
+        /// <summary>
+        /// Whether or not the Member supports write access.
+        /// </summary>
+        internal abstract bool CanWrite { get; }
+
+        #endregion
+
+#if !BLARGH
+
+        /// <summary>
+        /// Creates a new member accessor.
+        /// </summary>
+        /// <param name="member">Member</param>
+        protected MemberAccessor(MemberInfo member)
+        {
+            _targetType = member.ReflectedType;
+        }
+
+        public abstract object Get(object target);
+        public abstract void Set(object target, object value);
+
+#else
         const string emmitedTypeName = "Member";
+        
+        protected static readonly Hashtable s_TypeHash;
+
+        protected readonly string _fieldName;
+        IMemberAccessor _emittedMemberAccessor;
 
         /// <summary>
         /// Creates a new member accessor.
@@ -125,41 +186,6 @@ namespace com.spacepuppy.Dynamic.Accessors
                                   _fieldName));
             }
         }
-
-        /// <summary>
-        /// Whether or not the Member supports read access.
-        /// </summary>
-        internal abstract bool CanRead { get; }
-
-        /// <summary>
-        /// Whether or not the Member supports write access.
-        /// </summary>
-        internal abstract bool CanWrite { get; }
-
-        /// <summary>
-        /// The Type of object this member accessor was
-        /// created for.
-        /// </summary>
-        internal Type TargetType
-        {
-            get
-            {
-                return _targetType;
-            }
-        }
-
-        /// <summary>
-        /// The Type of the Member being accessed.
-        /// </summary>
-        internal abstract Type MemberType { get; }
-
-        //
-        protected readonly Type _targetType;
-        protected readonly string _fieldName;
-        protected static readonly Hashtable s_TypeHash;
-        //
-        IMemberAccessor _emittedMemberAccessor;
-
         /// <summary>
         /// This method generates creates a new assembly containing
         /// the Type that will provide dynamic access.
@@ -226,5 +252,7 @@ namespace com.spacepuppy.Dynamic.Accessors
 
         protected abstract void _EmitGetter(TypeBuilder type);
         protected abstract void _EmitSetter(TypeBuilder type);
+#endif
+
     }
 }

@@ -1,6 +1,8 @@
 {
-    "name": "SpacepuppyUnityFramework",
-    "references": [],
+    "name": "com.spacepuppy.SPRadicalCoroutine",
+    "references": [
+        "GUID:ddd0eb9fc8f414a4d9750a013f135d36"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

@@ -66,29 +66,30 @@ namespace com.spacepuppy.Events
             var go = Instantiate(_effectPrefab.gameObject, this.transform.position, this.transform.rotation, (_spawnAsChild) ? this.transform : null);
             if (go == null) return null;
 
-            if(_duration.Seconds > 0.00001f)
-            {
-                GameLoop.InvokeGuaranteed(() =>
-                {
-                    Destroy(go);
-                }, _duration.Seconds, _duration.TimeSupplier);
-            }
-            else
-            {
-                var dur = _effectPrefab.main.duration;
-                if (!float.IsNaN(dur) && !float.IsInfinity(dur))
-                {
-                    GameLoop.InvokeGuaranteed(() =>
-                    {
-                        Destroy(go);
-                    }, dur, _effectPrefab.main.useUnscaledTime ? SPTime.Real : SPTime.Normal);
-                }
-            }
+            //TODO - InvokeGuaranteed
+            //if(_duration.Seconds > 0.00001f)
+            //{
+            //    GameLoop.InvokeGuaranteed(() =>
+            //    {
+            //        Destroy(go);
+            //    }, _duration.Seconds, _duration.TimeSupplier);
+            //}
+            //else
+            //{
+            //    var dur = _effectPrefab.main.duration;
+            //    if (!float.IsNaN(dur) && !float.IsInfinity(dur))
+            //    {
+            //        GameLoop.InvokeGuaranteed(() =>
+            //        {
+            //            Destroy(go);
+            //        }, dur, _effectPrefab.main.useUnscaledTime ? SPTime.Real : SPTime.Normal);
+            //    }
+            //}
 
             
 
-            if (_onSpawnedObject != null && _onSpawnedObject.HasReceivers)
-                _onSpawnedObject.ActivateTrigger(this, go);
+            //if (_onSpawnedObject != null && _onSpawnedObject.HasReceivers)
+            //    _onSpawnedObject.ActivateTrigger(this, go);
 
             return go;
         }

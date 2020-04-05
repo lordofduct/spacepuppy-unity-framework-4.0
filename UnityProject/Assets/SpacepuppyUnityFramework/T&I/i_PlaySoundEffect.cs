@@ -131,24 +131,25 @@ namespace com.spacepuppy.Events
 
             if (clip != null)
             {
-                if (_delay.Seconds > 0)
-                {
-                    GameLoop.InvokeGuaranteed(() =>
-                    {
-                        if (src != null)
-                        {
-                            _completeRoutine = GameLoop.InvokeGuaranteed(this.OnAudioCompleteHandler, clip.length, SPTime.Real);
-                            //src.Play();
-                            src.PlayOneShot(clip);
-                        }
-                    }, _delay.Seconds, _delay.TimeSupplier);
-                }
-                else
-                {
-                    _completeRoutine = GameLoop.InvokeGuaranteed(this.OnAudioCompleteHandler, clip.length, SPTime.Real);
-                    //src.Play();
-                    src.PlayOneShot(clip);
-                }
+                //TODO - InvokeGuaranteed
+                //if (_delay.Seconds > 0)
+                //{
+                //    GameLoop.InvokeGuaranteed(() =>
+                //    {
+                //        if (src != null)
+                //        {
+                //            _completeRoutine = GameLoop.InvokeGuaranteed(this.OnAudioCompleteHandler, clip.length, SPTime.Real);
+                //            //src.Play();
+                //            src.PlayOneShot(clip);
+                //        }
+                //    }, _delay.Seconds, _delay.TimeSupplier);
+                //}
+                //else
+                //{
+                //    _completeRoutine = GameLoop.InvokeGuaranteed(this.OnAudioCompleteHandler, clip.length, SPTime.Real);
+                //    //src.Play();
+                //    src.PlayOneShot(clip);
+                //}
 
                 return true;
             }

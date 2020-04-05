@@ -69,17 +69,18 @@ namespace com.spacepuppy.Events
         {
             if (!this.CanTrigger) return false;
 
-            if (_delay.Seconds > 0f)
-            {
-                GameLoop.InvokeGuaranteed(() =>
-                {
-                    this.DoTriggerNext(arg);
-                }, _delay.Seconds, _delay.TimeSupplier);
-            }
-            else
-            {
-                this.DoTriggerNext(arg);
-            }
+            //TODO - InvokeGuaranteed
+            //if (_delay.Seconds > 0f)
+            //{
+            //    GameLoop.InvokeGuaranteed(() =>
+            //    {
+            //        this.DoTriggerNext(arg);
+            //    }, _delay.Seconds, _delay.TimeSupplier);
+            //}
+            //else
+            //{
+            //    this.DoTriggerNext(arg);
+            //}
 
             return true;
         }

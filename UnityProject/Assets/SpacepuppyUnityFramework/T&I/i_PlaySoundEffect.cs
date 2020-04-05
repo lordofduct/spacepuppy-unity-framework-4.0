@@ -7,6 +7,13 @@ using com.spacepuppy.Events;
 namespace com.spacepuppy.Events
 {
 
+    public enum AudioInterruptMode
+    {
+        StopIfPlaying = 0,
+        DoNotPlayIfPlaying = 1,
+        PlayOverExisting = 2
+    }
+
     public class i_PlaySoundEffect : AutoTriggerable
     {
 

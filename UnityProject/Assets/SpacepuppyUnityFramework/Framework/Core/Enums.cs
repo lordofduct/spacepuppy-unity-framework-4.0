@@ -39,6 +39,13 @@ namespace com.spacepuppy
         Toggle = 2
     }
 
+    public enum EntityRelativity
+    {
+        Entity = 0,
+        Self = 1,
+        SelfAndChildren = 2
+    }
+
     /// <summary>
     /// Search parameter type
     /// </summary>
@@ -48,13 +55,6 @@ namespace com.spacepuppy
         Tag = 1,
         Name = 2,
         Type = 3
-    }
-
-    public enum AudioInterruptMode
-    {
-        StopIfPlaying = 0,
-        DoNotPlayIfPlaying = 1,
-        PlayOverExisting = 2
     }
 
 }

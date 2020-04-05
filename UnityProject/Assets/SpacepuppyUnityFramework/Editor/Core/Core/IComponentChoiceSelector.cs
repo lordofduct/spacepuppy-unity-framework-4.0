@@ -6,8 +6,6 @@ using System.Linq;
 using com.spacepuppy;
 using com.spacepuppy.Utils;
 
-using com.spacepuppyeditor.Core.PropertyDrawers;
-
 namespace com.spacepuppyeditor.Core
 {
     public interface IComponentChoiceSelector

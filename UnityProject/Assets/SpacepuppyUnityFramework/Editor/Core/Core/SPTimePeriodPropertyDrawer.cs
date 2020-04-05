@@ -4,7 +4,7 @@ using System.Linq;
 
 using com.spacepuppy;
 
-namespace com.spacepuppyeditor.Core.PropertyDrawers
+namespace com.spacepuppyeditor.Core
 {
 
     [CustomPropertyDrawer(typeof(SPTimePeriod))]

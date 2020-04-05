@@ -8,7 +8,7 @@ using com.spacepuppy;
 using com.spacepuppy.Collections;
 using com.spacepuppy.Utils;
 
-namespace com.spacepuppyeditor.Core.PropertyDrawers
+namespace com.spacepuppyeditor.Core
 {
     [CustomPropertyDrawer(typeof(TimeUnitsSelectorAttribute))]
     public class TimeUnitsSelectorPropertyDrawer : PropertyDrawer

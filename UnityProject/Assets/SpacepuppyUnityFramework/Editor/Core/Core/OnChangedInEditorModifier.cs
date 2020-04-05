@@ -5,7 +5,7 @@ using System.Linq;
 
 using com.spacepuppy;
 
-namespace com.spacepuppyeditor.Modifiers
+namespace com.spacepuppyeditor.Core
 {
 
     [CustomPropertyDrawer(typeof(OnChangedInEditorAttribute))]

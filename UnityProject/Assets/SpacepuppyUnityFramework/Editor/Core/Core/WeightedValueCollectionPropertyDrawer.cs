@@ -9,7 +9,7 @@ using com.spacepuppy.Utils;
 
 using com.spacepuppyeditor.Internal;
 
-namespace com.spacepuppyeditor.Core.PropertyDrawers
+namespace com.spacepuppyeditor.Core
 {
 
     [CustomPropertyDrawer(typeof(WeightedValueCollectionAttribute))]

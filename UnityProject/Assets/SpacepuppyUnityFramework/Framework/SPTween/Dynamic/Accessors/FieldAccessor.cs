@@ -6,7 +6,11 @@
 
 using System;
 using System.Reflection;
+
+#if BLARGH
 using System.Reflection.Emit;
+#endif
+
 
 namespace com.spacepuppy.Dynamic.Accessors
 {
@@ -16,15 +20,16 @@ namespace com.spacepuppy.Dynamic.Accessors
     /// </summary>
     internal class FieldAccessor : MemberAccessor
     {
+
+        readonly FieldInfo _fieldInfo;
+
         /// <summary>
         /// Creates a new property accessor.
         /// </summary>
         internal FieldAccessor(FieldInfo fieldInfo)
             : base(fieldInfo)
         {
-            _canRead = true;
-            _canWrite = !(fieldInfo.IsLiteral || fieldInfo.IsInitOnly);
-            _propertyType = fieldInfo.FieldType;
+            _fieldInfo = fieldInfo;
         }
 
         /// <summary>
@@ -34,7 +39,7 @@ namespace com.spacepuppy.Dynamic.Accessors
         {
             get
             {
-                return _propertyType;
+                return _fieldInfo.FieldType;
             }
         }
 
@@ -45,7 +50,7 @@ namespace com.spacepuppy.Dynamic.Accessors
         {
             get
             {
-                return _canRead;
+                return true;
             }
         }
 
@@ -56,15 +61,23 @@ namespace com.spacepuppy.Dynamic.Accessors
         {
             get
             {
-                return _canWrite;
+                return !(_fieldInfo.IsLiteral || _fieldInfo.IsInitOnly);
             }
         }
 
-        //
-        readonly Type _propertyType;
-        readonly bool _canRead;
-        readonly bool _canWrite;
+#if !BLARGH
 
+        public override object Get(object target)
+        {
+            return _fieldInfo.GetValue(target);
+        }
+
+        public override void Set(object target, object value)
+        {
+            _fieldInfo.SetValue(target, value);
+        }
+
+#else
         protected override void _EmitSetter(TypeBuilder myType)
         {
             //
@@ -180,5 +193,7 @@ namespace com.spacepuppy.Dynamic.Accessors
 
             getIL.Emit(OpCodes.Ret);
         }
+#endif
+
     }
 }

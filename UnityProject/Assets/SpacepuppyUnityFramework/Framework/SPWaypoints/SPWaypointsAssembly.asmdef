@@ -1,7 +1,10 @@
 {
-    "name": "com.spacepuppy.SPEvent",
+    "name": "com.spacepuppy.Waypoints",
     "references": [
-        "GUID:ddd0eb9fc8f414a4d9750a013f135d36"
+        "GUID:ddd0eb9fc8f414a4d9750a013f135d36",
+        "GUID:ad6239a0379b2de43a4d9e723d51db80",
+        "GUID:4dd151f1c8c7a9848b52a75012e7f580",
+        "GUID:6b6e5e70273576149b37a2bac053e1d6"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

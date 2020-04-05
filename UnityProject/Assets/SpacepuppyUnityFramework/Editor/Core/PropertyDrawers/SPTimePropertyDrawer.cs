@@ -4,6 +4,7 @@ using System.Linq;
 
 using com.spacepuppy;
 using com.spacepuppy.Collections;
+using com.spacepuppy.Project;
 
 namespace com.spacepuppyeditor.Core.PropertyDrawers
 {
@@ -43,11 +44,10 @@ namespace com.spacepuppyeditor.Core.PropertyDrawers
                 lst.Add("Real");
                 lst.Add("Smooth");
 
-                //TODO - CustomTimeSupplier
-                //foreach (var nm in CustomTimeLayersData.Layers)
-                //{
-                //    if (!lst.Contains(nm)) lst.Add(nm);
-                //}
+                foreach (var nm in CustomTimeLayersData.Layers)
+                {
+                    if (!lst.Contains(nm)) lst.Add(nm);
+                }
 
                 if (availableNames != null)
                 {

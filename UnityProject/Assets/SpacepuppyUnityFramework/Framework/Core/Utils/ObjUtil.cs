@@ -588,6 +588,36 @@ namespace com.spacepuppy.Utils
 
         #endregion
 
+        #region Misc
+
+        /// <summary>
+        /// Returns true if 'obj' is 'parent', attached to 'parent', or part of the child hiearchy of 'parent'.
+        /// </summary>
+        /// <param name="parent"></param>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public static bool IsRelatedTo(UnityEngine.Object parent, UnityEngine.Object obj)
+        {
+            if (parent == null || obj == null) return false;
+            if (parent == obj) return true;
+
+            var go = GameObjectUtil.GetGameObjectFromSource(parent);
+            if (go == null) return false;
+
+            var child = GameObjectUtil.GetGameObjectFromSource(obj);
+            if (child == null) return false;
+
+            if (go == child) return true;
+            return child.transform.IsChildOf(go.transform);
+        }
+
+        public static bool EqualsAny(System.Object obj, params System.Object[] others)
+        {
+            return System.Array.IndexOf(others, obj) >= 0;
+        }
+
+        #endregion
+
     }
 
 }

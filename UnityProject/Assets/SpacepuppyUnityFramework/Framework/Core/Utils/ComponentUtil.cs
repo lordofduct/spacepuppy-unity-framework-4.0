@@ -503,6 +503,48 @@ namespace com.spacepuppy.Utils
 
         #endregion
 
+        #region RemoveComponent
+
+        public static void RemoveComponents<T>(this GameObject obj) where T : class
+        {
+            RemoveComponents(obj, typeof(T));
+        }
+
+        public static void RemoveComponents<T>(this Component obj) where T : class
+        {
+            RemoveComponents(obj, typeof(T));
+        }
+
+        public static void RemoveComponents(this GameObject obj, System.Type tp)
+        {
+            if (obj == null) return;
+            var arr = obj.GetComponents(tp);
+            for (int i = 0; i < arr.Length; i++)
+            {
+                ObjUtil.SmartDestroy(arr[i]);
+            }
+        }
+
+        public static void RemoveComponents(this Component obj, System.Type tp)
+        {
+            if (obj == null) return;
+            var arr = obj.GetComponents(tp);
+            for (int i = 0; i < arr.Length; i++)
+            {
+                ObjUtil.SmartDestroy(arr[i]);
+            }
+        }
+
+        public static void Remove(this Component comp)
+        {
+            if (comp != null)
+            {
+                ObjUtil.SmartDestroy(comp);
+            }
+        }
+
+        #endregion
+
 
 
 

@@ -82,6 +82,12 @@ namespace com.spacepuppy.Utils
         //}
 
 
+        public static CoroutineToken InvokeGuaranteed(this MonoBehaviour behaviour, System.Action method, float delay, ITimeSupplier time = null)
+        {
+            //TODO - implement better
+            return CoroutineToken.Empty;
+        }
+
 
         private static System.Collections.IEnumerator InvokeRedirect(System.Action method, float delay, float repeatRate = -1f)
         {

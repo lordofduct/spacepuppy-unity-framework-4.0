@@ -304,6 +304,40 @@ namespace com.spacepuppy
 
     #endregion
 
+    #region DecoratorDrawer Attributes
+
+    [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = true)]
+    public class InsertButtonAttribute : PropertyAttribute
+    {
+
+        public string Label;
+        public string OnClick;
+        public bool PrecedeProperty;
+        public bool RuntimeOnly;
+
+        public InsertButtonAttribute(string label, string onClick)
+        {
+            this.Label = label;
+            this.OnClick = onClick;
+        }
+
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Field | System.AttributeTargets.Class, AllowMultiple = false)]
+    public class InfoboxAttribute : ComponentHeaderAttribute
+    {
+        public string Message;
+        public InfoBoxMessageType MessageType = InfoBoxMessageType.Info;
+
+        public InfoboxAttribute(string msg)
+        {
+            this.Message = msg;
+        }
+
+    }
+
+    #endregion
+
     #region NonSerialized Property Drawer Attributes
 
     public class ShowNonSerializedPropertyAttribute : System.Attribute

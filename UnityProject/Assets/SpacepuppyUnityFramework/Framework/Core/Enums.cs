@@ -76,4 +76,15 @@ namespace com.spacepuppy
         Always = 7
     }
 
+    /// <summary>
+    /// Enum used by InfoboxAttribute to define which message box type to display as.
+    /// </summary>
+    public enum InfoBoxMessageType
+    {
+        None = 0,
+        Info = 1,
+        Warning = 2,
+        Error = 3
+    }
+
 }

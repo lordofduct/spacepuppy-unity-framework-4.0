@@ -97,6 +97,174 @@ namespace com.spacepuppy.Utils
 
         #endregion
 
+        #region Kill Extension Methods
+
+        /// <summary>
+        /// Object is not null, dead/killed, and is active in hierarchy.
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public static bool IsAliveAndActive(this GameObject obj)
+        {
+            //TODO - IKillable
+            return obj != null && obj.activeInHierarchy; // && !obj.IsKilled();
+        }
+
+        /// <summary>
+        /// Object is not null, dead/killed, and is active in hierarchy as well as enabled.
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public static bool IsAliveAndActive(this Component obj)
+        {
+            //TODO - IKillable
+            return obj != null && obj.IsActiveAndEnabled(); // && !obj.IsKilled();
+        }
+
+        /// <summary>
+        /// Object is not null, dead/killed, and is active in hierarchy as well as enabled.
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public static bool IsAliveAndActive(this Behaviour obj)
+        {
+            //TODO - IKillable
+            return obj != null && obj.isActiveAndEnabled; // && !obj.IsKilled();
+        }
+
+        public static bool TrySetActive(this GameObject go, bool active)
+        {
+            if (go != null)
+            {
+                go.SetActive(active);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public static bool TrySetActive(this IGameObjectSource src, bool active)
+        {
+            if (src == null) return false;
+            var go = src.gameObject;
+            if (go != null)
+            {
+                go.SetActive(active);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        /*
+         * TODO - IKillable
+         * 
+        
+        /// <summary>
+        /// Tests if the object is either destroyed or killed.
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public static bool IsKilled(this GameObject obj)
+        {
+            if (obj == null) return true;
+
+            using (var lst = TempCollection.GetList<IKillableEntity>())
+            {
+                obj.GetComponents<IKillableEntity>(lst);
+                if (lst.Count > 0)
+                {
+                    var e = lst.GetEnumerator();
+                    while (e.MoveNext())
+                    {
+                        if (e.Current.IsDead) return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Tests if the object is either destroyed or killed.
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public static bool IsKilled(this Component obj)
+        {
+            if (obj == null) return true;
+
+            using (var lst = TempCollection.GetList<IKillableEntity>())
+            {
+                obj.GetComponents<IKillableEntity>(lst);
+                if (lst.Count > 0)
+                {
+                    var e = lst.GetEnumerator();
+                    while (e.MoveNext())
+                    {
+                        if (e.Current.IsDead) return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Destroys the GameObject and its children, if the GameObject contains a KillableEntity component that will handle the death first and foremost.
+        /// </summary>
+        /// <param name="obj"></param>
+        public static void Kill(this GameObject obj)
+        {
+            if (obj.IsNullOrDestroyed()) return;
+
+            if (Application.isEditor && !Application.isPlaying)
+            {
+                UnityEngine.Object.Destroy(obj);
+            }
+            else
+            {
+                using (var lst = TempCollection.GetList<IKillableEntity>())
+                {
+                    //this returns in the order from top down, we will loop backwards to kill bottom up
+                    obj.GetComponentsInChildren<IKillableEntity>(true, lst);
+                    if (lst.Count > 0)
+                    {
+                        for (int i = lst.Count - 1; i > -1; i--)
+                        {
+                            lst[i].Kill();
+                        }
+
+                        if (lst[0].gameObject != obj)
+                        {
+                            UnityEngine.Object.Destroy(obj);
+                        }
+                    }
+                    else
+                    {
+                        UnityEngine.Object.Destroy(obj);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Destroys the entire entity, if the entity contains a KillableEntity component that will handle death first and foremost.
+        /// </summary>
+        /// <param name="obj"></param>
+        public static void KillEntity(this GameObject obj)
+        {
+            Kill(obj.FindRoot());
+        }
+
+         */
+
+        #endregion
+
         #region Find Root
 
         /// <summary>

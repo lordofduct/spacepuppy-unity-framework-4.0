@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace com.spacepuppy
 {
 
-    public struct CoroutineToken
+    public struct CoroutineToken : System.IDisposable
     {
 
         public static readonly CoroutineToken Empty = new CoroutineToken();
@@ -25,6 +25,10 @@ namespace com.spacepuppy
             if (Owner != null && Token != null) Owner.StopCoroutine(Token);
         }
 
+        public void Dispose()
+        {
+            this.Cancel();
+        }
     }
 
 }

@@ -1,6 +1,9 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 
+using com.spacepuppy.Collections;
+using com.spacepuppy.Utils;
+
 namespace com.spacepuppy.Events
 {
 
@@ -504,6 +507,33 @@ namespace com.spacepuppy.Events
         public new virtual void ActivateTriggerAt(int index, object sender, object arg)
         {
             base.ActivateTriggerAt(index, sender, arg);
+        }
+
+        public virtual void ActivateRandomTrigger(object sender, object arg, bool considerWeights, bool selectOnlyIfActive)
+        {
+            if (this.Targets.Count > 0 && !this.CurrentlyHijacked)
+            {
+                EventTriggerTarget trig;
+                if (selectOnlyIfActive)
+                {
+                    using (var lst = TempCollection.GetList<EventTriggerTarget>())
+                    {
+                        for (int i = 0; i < this.Targets.Count; i++)
+                        {
+                            var go = GameObjectUtil.GetGameObjectFromSource(this.Targets[i].CalculateTarget(arg));
+                            if (object.ReferenceEquals(go, null) || go.IsAliveAndActive()) lst.Add(this.Targets[i]);
+                        }
+                        trig = (considerWeights) ? lst.PickRandom((t) => { return t.Weight; }) : lst.PickRandom();
+                    }
+                }
+                else
+                {
+                    trig = (considerWeights) ? this.Targets.PickRandom((t) => { return t.Weight; }) : this.Targets.PickRandom();
+                }
+                if (trig != null) trig.Trigger(sender, arg);
+            }
+
+            this.OnTriggerActivated(sender, arg);
         }
 
         #endregion

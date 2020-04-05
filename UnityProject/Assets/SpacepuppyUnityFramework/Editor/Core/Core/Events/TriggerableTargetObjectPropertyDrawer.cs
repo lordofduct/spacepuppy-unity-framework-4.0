@@ -152,7 +152,7 @@ namespace com.spacepuppyeditor.Core.Events
             else
                 rect = EditorGUI.PrefixLabel(rect, label);
 
-            var r0 = new Rect(rect.xMin, rect.yMin, Mathf.Min(rect.width * 0.25f, 50f), rect.height);
+            var r0 = new Rect(rect.xMin, rect.yMin, Mathf.Min(rect.width * 0.25f, 60f), rect.height);
             var e = (configProp.boolValue) ? TargetSource.Config : TargetSource.Arg;
             EditorGUI.BeginChangeCheck();
             e = (TargetSource)EditorGUI.EnumPopup(r0, e);

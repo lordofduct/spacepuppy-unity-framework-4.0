@@ -20,7 +20,7 @@ namespace com.spacepuppyeditor.Internal
         private System.Func<Rect, SerializedProperty, GUIContent, bool, bool> _imp_OnGUI;
         private System.Func<SerializedProperty, GUIContent, bool, GUILayoutOption[], bool> _imp_OnGUILayout;
 
-        private System.Action<PropertyAttribute, System.Reflection.FieldInfo, System.Type> _imp_HandleAttribute;
+        private System.Action<SerializedProperty, PropertyAttribute, System.Reflection.FieldInfo, System.Type> _imp_HandleAttribute;
 
         #endregion
 
@@ -65,10 +65,10 @@ namespace com.spacepuppyeditor.Internal
 
         #region Methods
 
-        protected virtual void HandleAttribute(PropertyAttribute attribute, System.Reflection.FieldInfo field, System.Type propertyType)
+        protected virtual void HandleAttribute(SerializedProperty property, PropertyAttribute attribute, System.Reflection.FieldInfo field, System.Type propertyType)
         {
-            if (_imp_HandleAttribute == null) _imp_HandleAttribute = _internalPropertyHandler.GetMethod("HandleAttribute", typeof(System.Action<PropertyAttribute, System.Reflection.FieldInfo, System.Type>)) as System.Action<PropertyAttribute, System.Reflection.FieldInfo, System.Type>;
-            _imp_HandleAttribute(attribute, field, propertyType);
+            if (_imp_HandleAttribute == null) _imp_HandleAttribute = _internalPropertyHandler.GetMethod("HandleAttribute", typeof(System.Action<SerializedProperty, PropertyAttribute, System.Reflection.FieldInfo, System.Type>)) as System.Action<SerializedProperty, PropertyAttribute, System.Reflection.FieldInfo, System.Type>;
+            _imp_HandleAttribute(property, attribute, field, propertyType);
         }
 
         #endregion

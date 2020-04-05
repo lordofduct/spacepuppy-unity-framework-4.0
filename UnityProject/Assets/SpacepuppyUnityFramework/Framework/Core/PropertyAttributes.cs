@@ -22,6 +22,44 @@ namespace com.spacepuppy
 
     }
 
+    [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = true, Inherited = true)]
+    public class RequireComponentInEntityAttribute : ComponentHeaderAttribute
+    {
+
+        private System.Type[] _types;
+
+        public RequireComponentInEntityAttribute(params System.Type[] tps)
+        {
+            _types = tps;
+        }
+
+        public System.Type[] Types
+        {
+            get { return _types; }
+        }
+
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+    public class RequireLayerAttribute : ComponentHeaderAttribute
+    {
+        public int Layer;
+
+        public RequireLayerAttribute(int layer)
+        {
+            this.Layer = layer;
+        }
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+    public class UniqueToEntityAttribute : ComponentHeaderAttribute
+    {
+
+        public bool MustBeAttachedToRoot;
+        public bool IgnoreInactive;
+
+    }
+
     [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
     public class ConstantlyRepaintEditorAttribute : System.Attribute
     {

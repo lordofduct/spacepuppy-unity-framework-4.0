@@ -190,41 +190,20 @@ namespace com.spacepuppy.Utils
             return StartRadicalCoroutine(behaviour, RadicalInvokeRedirect(method, delay, -1f, time), disableMode);
         }
 
+        public static InvokeHandle InvokeGuaranteed(this MonoBehaviour behaviour, System.Action method, float delay, ITimeSupplier time = null)
+        {
+            if (method == null) throw new System.ArgumentNullException("method");
+            //return StartRadicalCoroutine(GameLoop.Hook, RadicalInvokeRedirect(method, delay, -1f, time));
+
+            return InvokeHandle.Begin(GameLoop.UpdatePump, method, delay, time);
+        }
+
         public static RadicalCoroutine InvokeRepeating(this MonoBehaviour behaviour, System.Action method, float delay, float repeatRate, ITimeSupplier time = null, RadicalCoroutineDisableMode disableMode = RadicalCoroutineDisableMode.CancelOnDisable)
         {
             if (behaviour == null) throw new System.ArgumentNullException("behaviour");
             if (method == null) throw new System.ArgumentNullException("method");
 
             return StartRadicalCoroutine(behaviour, RadicalInvokeRedirect(method, delay, repeatRate, time), disableMode);
-        }
-
-
-
-        private static System.Collections.IEnumerator InvokeRedirect(System.Action method, float delay, float repeatRate = -1f)
-        {
-            yield return new WaitForSeconds(delay);
-
-            if (repeatRate < 0f)
-            {
-                method();
-            }
-            else if (repeatRate == 0f)
-            {
-                while (true)
-                {
-                    method();
-                    yield return null;
-                }
-            }
-            else
-            {
-                var w = new WaitForSeconds(repeatRate);
-                while (true)
-                {
-                    method();
-                    yield return w;
-                }
-            }
         }
 
         internal static System.Collections.IEnumerator RadicalInvokeRedirect(System.Action method, float delay, float repeatRate = -1f, ITimeSupplier time = null)

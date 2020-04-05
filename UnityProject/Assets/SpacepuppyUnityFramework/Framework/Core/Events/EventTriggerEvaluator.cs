@@ -1,6 +1,8 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
+
 using com.spacepuppy.Dynamic;
+using com.spacepuppy.Project;
 using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.Events
@@ -48,14 +50,13 @@ namespace com.spacepuppy.Events
                 cache = go.AddOrGetComponent<EventTriggerCache>();
                 return cache.Targets ?? cache.RefreshCache();
             }
-            //TODO - PrefabToken
-            //else if (go.HasComponent<PrefabToken>())
-            //{
-            //    cache = go.GetComponent<EventTriggerCache>();
-            //    if (cache != null) return cache.Targets ?? cache.RefreshCache();
+            else if (go.HasComponent<PrefabToken>())
+            {
+                cache = go.GetComponent<EventTriggerCache>();
+                if (cache != null) return cache.Targets ?? cache.RefreshCache();
 
-            //    return go.GetComponents<ITriggerable>();
-            //}
+                return go.GetComponents<ITriggerable>();
+            }
             else
             {
                 return ArrayUtil.Empty<ITriggerable>();

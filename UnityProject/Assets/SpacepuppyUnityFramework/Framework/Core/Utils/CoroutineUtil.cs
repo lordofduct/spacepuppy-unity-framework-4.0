@@ -9,21 +9,21 @@ namespace com.spacepuppy.Utils
 
         #region StartCoroutine
 
-        public static Coroutine StartCoroutine(this MonoBehaviour behaviour, System.Collections.IEnumerable enumerable)
+        public static CoroutineToken StartCoroutine(this MonoBehaviour behaviour, System.Collections.IEnumerable enumerable)
         {
             if (behaviour == null) throw new System.ArgumentNullException("behaviour");
-            return behaviour.StartCoroutine(enumerable.GetEnumerator());
+            return new CoroutineToken(behaviour, behaviour.StartCoroutine(enumerable.GetEnumerator()));
         }
 
-        public static Coroutine StartCoroutine(this MonoBehaviour behaviour, System.Func<System.Collections.IEnumerator> method)
+        public static CoroutineToken StartCoroutine(this MonoBehaviour behaviour, System.Func<System.Collections.IEnumerator> method)
         {
             if (behaviour == null) throw new System.ArgumentNullException("behaviour");
             if (method == null) throw new System.ArgumentNullException("method");
 
-            return behaviour.StartCoroutine(method());
+            return new CoroutineToken(behaviour, behaviour.StartCoroutine(method()));
         }
 
-        public static Coroutine StartCoroutine(this MonoBehaviour behaviour, System.Delegate method, params object[] args)
+        public static CoroutineToken StartCoroutine(this MonoBehaviour behaviour, System.Delegate method, params object[] args)
         {
             if (behaviour == null) throw new System.ArgumentNullException("behaviour");
             if (method == null) throw new System.ArgumentNullException("method");
@@ -42,7 +42,7 @@ namespace com.spacepuppy.Utils
                 throw new System.ArgumentException("Delegate must have a return type of IEnumerable or IEnumerator.", "method");
             }
 
-            return behaviour.StartCoroutine(e);
+            return new CoroutineToken(behaviour, behaviour.StartCoroutine(e));
         }
 
         #endregion
@@ -56,38 +56,6 @@ namespace com.spacepuppy.Utils
 
             return behaviour.StartCoroutine(InvokeRedirect(method, delay));
         }
-
-        //public static RadicalCoroutine Invoke(this MonoBehaviour behaviour, System.Action method, float delay, ITimeSupplier time = null, RadicalCoroutineDisableMode disableMode = RadicalCoroutineDisableMode.CancelOnDisable)
-        //{
-        //    if (behaviour == null) throw new System.ArgumentNullException("behaviour");
-        //    if (method == null) throw new System.ArgumentNullException("method");
-
-        //    return StartRadicalCoroutine(behaviour, RadicalInvokeRedirect(method, delay, -1f, time), disableMode);
-        //}
-
-        //public static InvokeHandle InvokeGuaranteed(this MonoBehaviour behaviour, System.Action method, float delay, ITimeSupplier time = null)
-        //{
-        //    if (method == null) throw new System.ArgumentNullException("method");
-        //    //return StartRadicalCoroutine(GameLoop.Hook, RadicalInvokeRedirect(method, delay, -1f, time));
-
-        //    return InvokeHandle.Begin(GameLoop.UpdatePump, method, delay, time);
-        //}
-
-        //public static RadicalCoroutine InvokeRepeating(this MonoBehaviour behaviour, System.Action method, float delay, float repeatRate, ITimeSupplier time = null, RadicalCoroutineDisableMode disableMode = RadicalCoroutineDisableMode.CancelOnDisable)
-        //{
-        //    if (behaviour == null) throw new System.ArgumentNullException("behaviour");
-        //    if (method == null) throw new System.ArgumentNullException("method");
-
-        //    return StartRadicalCoroutine(behaviour, RadicalInvokeRedirect(method, delay, repeatRate, time), disableMode);
-        //}
-
-
-        public static CoroutineToken InvokeGuaranteed(this MonoBehaviour behaviour, System.Action method, float delay, ITimeSupplier time = null)
-        {
-            //TODO - implement better
-            return CoroutineToken.Empty;
-        }
-
 
         private static System.Collections.IEnumerator InvokeRedirect(System.Action method, float delay, float repeatRate = -1f)
         {
@@ -115,49 +83,6 @@ namespace com.spacepuppy.Utils
                 }
             }
         }
-
-        //internal static System.Collections.IEnumerator RadicalInvokeRedirect(System.Action method, float delay, float repeatRate = -1f, ITimeSupplier time = null)
-        //{
-        //    if (delay < SPConstants.MIN_FRAME_DELTA)
-        //        yield return null;
-        //    else if (delay > 0f)
-        //        yield return WaitForDuration.Seconds(delay, time);
-
-        //    if (repeatRate < 0f)
-        //    {
-        //        method();
-        //    }
-        //    else if (repeatRate == 0f)
-        //    {
-        //        while (true)
-        //        {
-        //            method();
-        //            yield return null;
-        //        }
-        //    }
-        //    else
-        //    {
-        //        while (true)
-        //        {
-        //            method();
-        //            yield return WaitForDuration.Seconds(repeatRate, time);
-        //        }
-        //    }
-        //}
-
-        //public static RadicalCoroutine InvokeAfterYield(this MonoBehaviour behaviour, System.Action method, object yieldInstruction, RadicalCoroutineDisableMode disableMode = RadicalCoroutineDisableMode.CancelOnDisable)
-        //{
-        //    if (behaviour == null) throw new System.ArgumentNullException("behaviour");
-        //    if (method == null) throw new System.ArgumentNullException("method");
-
-        //    return StartRadicalCoroutine(behaviour, InvokeAfterYieldRedirect(method, yieldInstruction));
-        //}
-
-        //internal static System.Collections.IEnumerator InvokeAfterYieldRedirect(System.Action method, object yieldInstruction)
-        //{
-        //    yield return yieldInstruction;
-        //    method();
-        //}
 
         #endregion
 

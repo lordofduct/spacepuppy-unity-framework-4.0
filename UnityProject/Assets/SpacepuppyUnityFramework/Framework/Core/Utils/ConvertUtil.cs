@@ -2935,44 +2935,6 @@ namespace com.spacepuppy.Utils
         }
 
         /// <summary>
-        /// Format an abstract value as a string to a specific manner. Value is first converted to supplied type before formatting. 
-        /// Available types include:
-        /// str - string
-        /// float - a double floating-point value
-        /// dec - a decimal
-        /// int - an integer
-        /// num - a numeric value (includes hex)
-        /// bool - a boolean
-        /// ascii - converts the string to its ascii code
-        /// char - converts an integer value to its char
-        /// 
-        /// default is string
-        /// </summary>
-        /// <param name="value">Object Value to be converted</param>
-        /// <param name="sType">Type that value is to be converted to</param>
-        /// <param name="sFormatStr">Formatting characters</param>
-        /// <returns>Value converted to specified type and formated based on formatting string</returns>
-        /// <remarks>
-        /// TODO!: change around dict.config.xml so that we no longer have {0:...} in it, and rewrite this to enable a better method of formatting by the dict config
-        /// </remarks>
-        public static string LoDConvertTo(object value, string sType, string sFormatStr)
-        {
-            if (value == null)
-                return "";
-            if (string.IsNullOrEmpty(sType))
-                sType = "str";
-            if (string.IsNullOrEmpty(sFormatStr))
-                sFormatStr = "{0}";
-            else
-                sFormatStr = "{0:" + sFormatStr + "}";
-
-            value = LoDConvertTo(value, sType);
-
-            return string.Format(sFormatStr, value); //StringUtil.Format(sFormatStr, value);
-
-        }
-
-        /// <summary>
         /// Converts value to a Prim type of "T"
         /// </summary>
         /// <typeparam name="T">Prim type to be converted to</typeparam>

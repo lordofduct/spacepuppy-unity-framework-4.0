@@ -32,6 +32,50 @@ namespace com.spacepuppy
 
     #region Property Drawer Attributes
 
+    [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
+    public class EnumFlagsAttribute : SPPropertyAttribute
+    {
+
+        public System.Type EnumType;
+
+        public EnumFlagsAttribute()
+        {
+
+        }
+
+        public EnumFlagsAttribute(System.Type enumType)
+        {
+            this.EnumType = enumType;
+        }
+
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
+    public class EnumPopupExcludingAttribute : SPPropertyAttribute
+    {
+
+        public readonly int[] excludedValues;
+
+        public EnumPopupExcludingAttribute(params int[] excluded)
+        {
+            excludedValues = excluded;
+        }
+
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
+    public class EnumInCustomOrderAttribute : SPPropertyAttribute
+    {
+
+        public readonly int[] customOrder;
+
+        public EnumInCustomOrderAttribute(params int[] enumOrder)
+        {
+            this.customOrder = enumOrder;
+        }
+
+    }
+
     /// <summary>
     /// Restrict a value to be no greater than max.
     /// </summary>
@@ -147,6 +191,12 @@ namespace com.spacepuppy
     }
 
     [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
+    public class TagSelectorAttribute : SPPropertyAttribute
+    {
+        public bool AllowUntagged;
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
     public class TimeUnitsSelectorAttribute : SPPropertyAttribute
     {
         public string DefaultUnits;
@@ -208,6 +258,24 @@ namespace com.spacepuppy
         public bool IncludeChidrenOnDraw;
     }
 
+    /// <summary>
+    /// While in the editor, if the value is ever null, an attempt is made to get the value from self. You will still 
+    /// have to initialize the value on Awake if null. The cost of doing it automatically is too high for all components 
+    /// to test themselves for this attribute.
+    /// </summary>
+    [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
+    public class DefaultFromSelfAttribute : PropertyModifierAttribute
+    {
+        public EntityRelativity Relativity = EntityRelativity.Self;
+        public bool HandleOnce = true;
+
+        public DefaultFromSelfAttribute(EntityRelativity relativity = EntityRelativity.Self)
+        {
+            this.Relativity = relativity;
+        }
+
+    }
+
     [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
     public class DisableOnPlayAttribute : PropertyModifierAttribute
     {
@@ -225,6 +293,12 @@ namespace com.spacepuppy
         {
             this.MethodName = methodName;
         }
+
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
+    public class ReadOnlyAttribute : PropertyModifierAttribute
+    {
 
     }
 

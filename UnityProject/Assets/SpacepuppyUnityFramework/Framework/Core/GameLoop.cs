@@ -1,6 +1,9 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 
+using com.spacepuppy.Utils;
+using com.spacepuppy.Hooks;
+
 namespace com.spacepuppy
 {
     /// <summary>
@@ -9,92 +12,354 @@ namespace com.spacepuppy
     /// <remarks>
     /// Currently in 4.0 we're diverging from the classic 'GameLoop' of earlier SP versions. We may refactor this later.
     /// </remarks>
-    public class GameLoop : SPComponent
+    public class GameLoop : ServiceComponent<GameLoop>, IService
     {
 
-        #region Static Interface
+        #region Events
 
+        public static event System.EventHandler BeforeApplicationQuit;
+        public static event System.EventHandler ApplicatinQuit;
+
+        public static event System.EventHandler EarlyUpdate;
+        public static event System.EventHandler OnUpdate;
+        public static event System.EventHandler TardyUpdate;
+        public static event System.EventHandler EarlyFixedUpdate;
+        public static event System.EventHandler OnFixedUpdate;
+        public static event System.EventHandler TardyFixedUpdate;
+        public static event System.EventHandler EarlyLateUpdate;
+        public static event System.EventHandler OnLateUpdate;
+        public static event System.EventHandler TardyLateUpdate;
+
+        #endregion
+
+        #region Singleton Interface
+
+        private const string SPECIAL_NAME = "Spacepuppy.GameLoop";
         private static GameLoop _instance;
-        private static GameLoop GetInstance()
+
+        #endregion
+
+        #region Fields
+
+        private static UpdateSequence _currentSequence;
+        private static QuitState _quitState;
+        private static System.Action<bool> _internalEarlyUpdate;
+
+        private UpdateEventHooks _updateHook;
+        private TardyExecutionUpdateEventHooks _tardyUpdateHook;
+
+        [System.NonSerialized]
+        private static UpdatePump _earlyUpdatePump = new UpdatePump();
+        [System.NonSerialized]
+        private static UpdatePump _earlyFixedUpdatePump = new UpdatePump();
+        [System.NonSerialized]
+        private static UpdatePump _updatePump = new UpdatePump();
+        [System.NonSerialized]
+        private static UpdatePump _fixedUpdatePump = new UpdatePump();
+        [System.NonSerialized]
+        private static UpdatePump _lateUpdatePump = new UpdatePump();
+        [System.NonSerialized]
+        private static UpdatePump _tardyUpdatePump = new UpdatePump();
+        [System.NonSerialized]
+        private static UpdatePump _tardyFixedUpdatePump = new UpdatePump();
+
+        private static int _currentFrame;
+        private static int _currentLateFrame;
+
+        #endregion
+
+        #region CONSTRUCTOR
+
+        public static void Init()
         {
-            if(_instance == null)
+            if (!object.ReferenceEquals(_instance, null))
             {
-                var go = new GameObject("SP.GameLoop");
-                _instance = go.AddComponent<GameLoop>();
+                if (ObjUtil.IsDestroyed(_instance))
+                {
+                    ObjUtil.SmartDestroy(_instance.gameObject);
+                    _instance = null;
+                }
+                else
+                {
+                    return;
+                }
             }
-            return _instance;
+
+            _instance = Services.Create<GameLoop>(true, SPECIAL_NAME);
         }
-        
 
-        public static CoroutineToken InvokeGuaranteed(System.Action callback, float delay, ITimeSupplier timeSupplier)
+        protected override void OnValidAwake()
         {
-            if (callback == null) return CoroutineToken.Empty;
+            _instance = this;
 
-            var loop = GetInstance();
-            return new CoroutineToken(loop, loop.StartCoroutine(loop.InvokeRoutine(callback, delay, timeSupplier)));
+            _updateHook = this.gameObject.AddComponent<UpdateEventHooks>();
+            _tardyUpdateHook = this.gameObject.AddComponent<TardyExecutionUpdateEventHooks>();
+
+            _updateHook.UpdateHook += _updateHook_Update;
+            _tardyUpdateHook.UpdateHook += _tardyUpdateHook_Update;
+
+            _updateHook.FixedUpdateHook += _updateHook_FixedUpdate;
+            _tardyUpdateHook.FixedUpdateHook += _tardyUpdateHook_FixedUpdate;
+
+            _updateHook.LateUpdateHook += _updateHook_LateUpdate;
+            _tardyUpdateHook.LateUpdateHook += _tardyUpdateHook_LateUpdate;
+        }
+
+        #endregion
+
+        #region Properties
+
+        /// <summary>
+        /// Has the GameLoop service been initialized.
+        /// </summary>
+        public static bool Initialized { get { return _instance != null; } }
+
+        /// <summary>
+        /// Hook into the GameLoop MonoBehaviour. Can be used for invoking coroutines directly on the GameLoop (not advised unless you know what you're doing).
+        /// </summary>
+        public static GameLoop Hook
+        {
+            get
+            {
+                if (_instance == null) GameLoop.Init();
+                return _instance;
+            }
+        }
+
+        /// <summary>
+        /// Returns which event sequence that code is currently operating as. 
+        /// WARNING - during 'OnMouseXXX' messages this will report that we're in the FixedUpdate sequence. 
+        /// This is because there's no end of FixedUpdate available to hook into, so it reports FixedUpdate 
+        /// until Update starts, and 'OnMouseXXX' occurs in between those 2.
+        /// </summary>
+        public static UpdateSequence CurrentSequence { get { return _currentSequence; } }
+
+        /// <summary>
+        /// The current QuitState during BeforeApplicationQuit event.
+        /// </summary>
+        public static QuitState QuitState { get { return _quitState; } }
+
+        /// <summary>
+        /// Returns true if the OnApplicationQuit message has been received.
+        /// </summary>
+        public static bool ApplicationClosing { get { return _quitState == QuitState.Quit; } }
+
+        /// <summary>
+        /// The first Update call that frame.
+        /// </summary>
+        public static UpdatePump EarlyUpdatePump { get { return _earlyUpdatePump; } }
+
+        /// <summary>
+        /// A general Update call for that frame (timing unknown).
+        /// </summary>
+        public static UpdatePump UpdatePump { get { return _updatePump; } }
+
+        /// <summary>
+        /// The last Update call that frame.
+        /// </summary>
+        public static UpdatePump TardyUpdatePump { get { return _tardyUpdatePump; } }
+
+        /// <summary>
+        /// The first FixedUpdate call that fixed update frame.
+        /// </summary>
+        public static UpdatePump EarlyFixedUpdatePump { get { return _earlyFixedUpdatePump; } }
+
+        /// <summary>
+        /// A general FixedUpdate call that fixed update frame.
+        /// </summary>
+        public static UpdatePump FixedUpdatePump { get { return _fixedUpdatePump; } }
+
+        /// <summary>
+        /// The last FixedUpdate call that fixed update frame.
+        /// </summary>
+        public static UpdatePump TardyFixedUpdatePump { get { return _tardyFixedUpdatePump; } }
+
+        /// <summary>
+        /// A general LateUpdate call for that frame.
+        /// </summary>
+        public static UpdatePump LateUpdatePump { get { return _lateUpdatePump; } }
+
+        /// <summary>
+        /// Returns true if the UpdatePump and Update event were ran.
+        /// </summary>
+        public static bool UpdateWasCalled
+        {
+            get { return _currentFrame == UnityEngine.Time.frameCount; }
+        }
+
+        /// <summary>
+        /// Returns true if the LateUpdatePump and LateUpdate event were ran.
+        /// </summary>
+        public static bool LateUpdateWasCalled
+        {
+            get { return _currentFrame == UnityEngine.Time.frameCount; }
         }
 
         #endregion
 
         #region Methods
+
+        /// <summary>
+        /// Preferred method of closing application.
+        /// </summary>
         public static void QuitApplication()
         {
-            //if (_quitState == QuitState.None)
-            //{
-            //    _quitState = QuitState.BeforeQuit;
-            //    if (BeforeApplicationQuit != null) BeforeApplicationQuit(_instance, System.EventArgs.Empty);
-
-            //    if (_quitState == QuitState.BeforeQuit)
-            //    {
-            //        //wasn't cancelled, or force quit
-            //        if (UnityEngine.Application.isEditor)
-            //        {
-            //            try
-            //            {
-            //                var tp = com.spacepuppy.Utils.TypeUtil.FindType("UnityEditor.EditorApplication");
-            //                tp.GetProperty("isPlaying").SetValue(null, false, null);
-            //            }
-            //            catch
-            //            {
-            //                UnityEngine.Debug.Log("Failed to stop play in editor.");
-            //            }
-            //        }
-            //        else
-            //        {
-            //            UnityEngine.Application.Quit();
-            //        }
-
-            //    }
-            //}
-
-            //wasn't cancelled, or force quit
-            if (UnityEngine.Application.isEditor)
+            if (_quitState == QuitState.None)
             {
-                try
+                _quitState = QuitState.BeforeQuit;
+                if (BeforeApplicationQuit != null) BeforeApplicationQuit(_instance, System.EventArgs.Empty);
+
+                if (_quitState == QuitState.BeforeQuit)
                 {
-                    var tp = com.spacepuppy.Utils.TypeUtil.FindType("UnityEditor.EditorApplication");
-                    tp.GetProperty("isPlaying").SetValue(null, false, null);
+                    //wasn't cancelled, or force quit
+                    if (UnityEngine.Application.isEditor)
+                    {
+                        try
+                        {
+                            var tp = com.spacepuppy.Utils.TypeUtil.FindType("UnityEditor.EditorApplication");
+                            tp.GetProperty("isPlaying").SetValue(null, false, null);
+                        }
+                        catch
+                        {
+                            UnityEngine.Debug.Log("Failed to stop play in editor.");
+                        }
+                    }
+                    else
+                    {
+                        UnityEngine.Application.Quit();
+                    }
+
                 }
-                catch
-                {
-                    UnityEngine.Debug.Log("Failed to stop play in editor.");
-                }
-            }
-            else
-            {
-                UnityEngine.Application.Quit();
             }
         }
-        private System.Collections.IEnumerator InvokeRoutine(System.Action callback, float delay, ITimeSupplier timeSupplier)
-        {
-            if (timeSupplier == null) timeSupplier = SPTime.Normal;
 
-            while(delay > 0f)
+        /// <summary>
+        /// If you listen to the BeforeApplicationQuit event, you can call this from that event's callback to cancel the quit of the application.
+        /// </summary>
+        public static void CancelQuit()
+        {
+            if (_quitState == QuitState.BeforeQuit)
             {
-                yield return null;
-                delay -= timeSupplier.Delta;
+                _quitState = QuitState.None;
             }
-            callback();
+        }
+
+        public static void RegisterNextUpdate(IUpdateable obj)
+        {
+            if (UpdateWasCalled) _updatePump.Add(obj);
+            else _updatePump.DelayedAdd(obj);
+        }
+
+        public static void RegisterNextLateUpdate(IUpdateable obj)
+        {
+            if (LateUpdateWasCalled) _lateUpdatePump.Add(obj);
+            else _lateUpdatePump.DelayedAdd(obj);
+        }
+
+        /// <summary>
+        /// A special static, register once, earlyupdate event hook that preceeds ALL other events. 
+        /// This is used internally by some special static classes (namely SPTime) that needs extra 
+        /// high precedence early access.
+        /// </summary>
+        /// <param name="d"></param>
+        internal static void RegisterInternalEarlyUpdate(System.Action<bool> d)
+        {
+            _internalEarlyUpdate -= d;
+            _internalEarlyUpdate += d;
+        }
+
+        internal static void UnregisterInternalEarlyUpdate(System.Action<bool> d)
+        {
+            _internalEarlyUpdate -= d;
+        }
+
+        #endregion
+
+        #region Event Handlers
+
+        private void OnApplicationQuit()
+        {
+            _quitState = QuitState.Quit;
+            ApplicatinQuit?.Invoke(this, System.EventArgs.Empty);
+        }
+
+        //Update
+
+        private void Update()
+        {
+            //Track entry into update loop
+            _currentSequence = UpdateSequence.Update;
+
+            _internalEarlyUpdate?.Invoke(false);
+
+            _earlyUpdatePump.Update();
+
+            EarlyUpdate?.Invoke(this, System.EventArgs.Empty);
+        }
+
+        private void _updateHook_Update(object sender, System.EventArgs e)
+        {
+            _updatePump.Update();
+            OnUpdate?.Invoke(this, e);
+            _currentFrame = UnityEngine.Time.frameCount;
+        }
+
+        private void _tardyUpdateHook_Update(object sender, System.EventArgs e)
+        {
+            _tardyUpdatePump.Update();
+            TardyUpdate?.Invoke(this, e);
+        }
+
+        //Fixed Update
+
+        private void FixedUpdate()
+        {
+            //Track entry into fixedupdate loop
+            _currentSequence = UpdateSequence.FixedUpdate;
+
+            _internalEarlyUpdate?.Invoke(true);
+
+            _earlyFixedUpdatePump.Update();
+
+            EarlyFixedUpdate?.Invoke(this, System.EventArgs.Empty);
+        }
+
+        private void _updateHook_FixedUpdate(object sender, System.EventArgs e)
+        {
+            _fixedUpdatePump.Update();
+            if (OnFixedUpdate != null) OnFixedUpdate(this, e);
+        }
+
+        private void _tardyUpdateHook_FixedUpdate(object sender, System.EventArgs e)
+        {
+            _tardyFixedUpdatePump.Update();
+            TardyFixedUpdate?.Invoke(this, e);
+
+            ////Track exit of fixedupdate loop
+            //_currentSequence = UpdateSequence.None;
+        }
+
+        //LateUpdate
+
+        private void LateUpdate()
+        {
+            _currentSequence = UpdateSequence.LateUpdate;
+            EarlyLateUpdate?.Invoke(this, System.EventArgs.Empty);
+        }
+
+        private void _updateHook_LateUpdate(object sender, System.EventArgs e)
+        {
+            _lateUpdatePump.Update();
+            OnLateUpdate?.Invoke(this, e);
+            _currentLateFrame = UnityEngine.Time.frameCount;
+        }
+
+        private void _tardyUpdateHook_LateUpdate(object sender, System.EventArgs e)
+        {
+            TardyLateUpdate?.Invoke(this, e);
+
+            //Track exit of update loop
+            _currentSequence = UpdateSequence.None;
         }
 
         #endregion

@@ -316,10 +316,6 @@ namespace com.spacepuppy
                 return DeltaTimeType.Custom;
         }
 
-        /*
-         * TODO - CustomTimeSupplier
-         * 
-
         /// <summary>
         /// Retrieve a TimeSupplier by id or create a CustomTimeSupplier if it doesn't exist.
         /// </summary>
@@ -365,8 +361,6 @@ namespace com.spacepuppy
                 _customTimeSuppliers.Add(supplier as ICustomTimeSupplier);
             }
         }
-
-        */
 
         public static ITimeSupplier[] GetAll()
         {
@@ -470,9 +464,6 @@ namespace com.spacepuppy
             return supplier.Scale / Time.timeScale;
         }
 
-        /*
-         * TODO - CustomTimeSupplier
-         * 
         private static void Update(bool isFixed)
         {
             if (_customTimeSuppliers.Count > 0)
@@ -488,7 +479,6 @@ namespace com.spacepuppy
                 GameLoop.UnregisterInternalEarlyUpdate(SPTime.Update);
             }
         }
-         */
 
         #endregion
 

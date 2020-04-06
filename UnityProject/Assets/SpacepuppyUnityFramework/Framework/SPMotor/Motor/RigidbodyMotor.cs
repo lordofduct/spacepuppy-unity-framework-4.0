@@ -56,7 +56,7 @@ namespace com.spacepuppy.Motor
         {
             base.Awake();
 
-            if(!object.ReferenceEquals(_rigidbody, null) && _colliders == null || _colliders.Length == 0)
+            if (!object.ReferenceEquals(_rigidbody, null) && _colliders == null || _colliders.Length == 0)
             {
                 _colliders = _rigidbody.GetComponentsInChildren<Collider>();
             }
@@ -74,9 +74,8 @@ namespace com.spacepuppy.Motor
             _talliedMove = Vector3.zero;
             _lastDt = 0f;
             _fullTalliedMove = Vector3.zero;
-            
+
             GameLoop.TardyFixedUpdatePump.Add(this);
-            GameLoop.TardyFixedUpdate += this.OnTardyLateUpdate;
         }
 
         protected override void OnDisable()
@@ -84,7 +83,6 @@ namespace com.spacepuppy.Motor
             base.OnDisable();
 
             GameLoop.TardyFixedUpdatePump.Remove(this);
-            GameLoop.TardyFixedUpdate -= this.OnTardyLateUpdate;
         }
 
         #endregion
@@ -152,7 +150,7 @@ namespace com.spacepuppy.Motor
         {
             get
             {
-                for(int i = 0; i < _colliders.Length; i++)
+                for (int i = 0; i < _colliders.Length; i++)
                 {
                     if (!_colliders[i].enabled) return false;
                 }
@@ -206,6 +204,7 @@ namespace com.spacepuppy.Motor
             _fullTalliedMove += mv;
             _talliedMove += mv;
             _vel = _talliedMove / Time.deltaTime;
+            _moveCalledLastFrame = true;
         }
 
         public void AtypicalMove(Vector3 mv)
@@ -213,6 +212,7 @@ namespace com.spacepuppy.Motor
             if (object.ReferenceEquals(_rigidbody, null)) throw new System.InvalidOperationException("RigidbodyMotor must be initialized with an appropriate Rigidbody.");
 
             _fullTalliedMove += mv;
+            _moveCalledLastFrame = true;
         }
 
         public void MovePosition(Vector3 pos, bool setVelocityByChangeInPosition = false)
@@ -223,6 +223,7 @@ namespace com.spacepuppy.Motor
             _fullTalliedMove += mv;
             _talliedMove += mv;
             _vel = _talliedMove / Time.deltaTime;
+            _moveCalledLastFrame = true;
         }
 
         public void AddForce(Vector3 f, ForceMode mode)
@@ -351,7 +352,6 @@ namespace com.spacepuppy.Motor
                 if (_lastDt != 0f)
                 {
                     var actualMove = (_rigidbody.transform.position - _lastPos);
-
                     actualMove -= (_fullTalliedMove - _talliedMove);
 
                     //_vel = actualMove / _lastDt;
@@ -362,38 +362,18 @@ namespace com.spacepuppy.Motor
                     var n = _talliedMove.normalized;
                     _vel = n * Mathf.Max(Vector3.Dot(actualMove, n), 0f) / _lastDt;
                 }
+
+                _rigidbody.MovePosition(_rigidbody.position + _fullTalliedMove);
             }
 
             _fullTalliedMove = Vector3.zero;
             _talliedMove = Vector3.zero;
-        }
-
-
-        private void OnTardyLateUpdate_Imp(object sender, System.EventArgs e)
-        {
-            //if (_fullTalliedMove != Vector3.zero)
-            //{
-            //    _rigidbody.MovePosition(_rigidbody.position + _fullTalliedMove);
-            //}
-            if (_vel != Vector3.zero)
-            {
-                _rigidbody.MovePosition(_rigidbody.position + _vel);
-            }
 
             _lastDt = Time.deltaTime;
 
             //zero out rigidbody velocity, as this should ONLY use MovePosition
             _rigidbody.velocity = Vector3.zero;
             _rigidbody.angularVelocity = Vector3.zero;
-        }
-        private System.EventHandler _onTardyLateUpdate;
-        private System.EventHandler OnTardyLateUpdate
-        {
-            get
-            {
-                if (_onTardyLateUpdate == null) _onTardyLateUpdate = this.OnTardyLateUpdate_Imp;
-                return _onTardyLateUpdate;
-            }
         }
 
         #endregion

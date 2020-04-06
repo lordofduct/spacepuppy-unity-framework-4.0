@@ -564,11 +564,14 @@ namespace com.spacepuppy.Utils
         /// </summary>
         /// <param name="a"></param>
         /// <param name="b"></param>
-        /// <param name="epsilon"></param>
+        /// <param name="epsilon">A value considered close enough, translates as cos(theta)</param>
         /// <returns></returns>
         public static bool NearSameAxis(Vector3 a, Vector3 b, float epsilon = MathUtil.EPSILON)
         {
-            return MathUtil.FuzzyEqual(Mathf.Abs(Vector3.Dot(a.normalized, b.normalized)), 1.0f, epsilon);
+            //return MathUtil.FuzzyEqual(Mathf.Abs(Vector3.Dot(a.normalized, b.normalized)), 1.0f, epsilon);
+            float dot = Vector3.Dot(a, b);
+            dot = (dot * dot) / (a.sqrMagnitude * b.sqrMagnitude);
+            return dot >= epsilon * epsilon; //square epsilon to allow it to represent cos(theta)
         }
 
         public static bool NearZeroVector(this Vector4 v)

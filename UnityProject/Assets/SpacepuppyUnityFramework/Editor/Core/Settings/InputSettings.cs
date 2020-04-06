@@ -490,6 +490,7 @@ namespace com.spacepuppyeditor.Settings
         public const string PROP_JOYNUM = "JoyNum";
 
         private SPReorderableList _entryList;
+        private Vector2 _scrollPos;
 
         protected override void OnEnable()
         {
@@ -503,15 +504,20 @@ namespace com.spacepuppyeditor.Settings
         protected override void OnSPInspectorGUI()
         {
             this.serializedObject.Update();
-
             this.DrawPropertyField(EditorHelper.PROP_SCRIPT);
+
+            EditorGUILayout.BeginVertical();
+            float listMaxHeight = _entryList.GetHeight();
+            float maxHeight = Screen.height - (_entryList.index >= 0 ? 380f : 260f);
+            _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos, GUILayout.Height(Mathf.Min(listMaxHeight, maxHeight)));
             _entryList.DoLayoutList();
+            EditorGUILayout.EndScrollView();
             this.DrawDetailArea();
+            EditorGUILayout.EndVertical();
 
             this.serializedObject.ApplyModifiedProperties();
 
             EditorGUILayout.Space();
-
 
             const float R1_WIDTH = 90f;
             const float R2_WIDTH = 90f;
@@ -520,19 +526,19 @@ namespace com.spacepuppyeditor.Settings
             var r1 = new Rect(Mathf.Max(0f, rect.xMax - R1_WIDTH), rect.yMin, Mathf.Min(rect.width, R1_WIDTH), rect.height);
             var r2 = new Rect(Mathf.Max(0f, r1.xMin - PADDING - R2_WIDTH), rect.yMin, Mathf.Min(Mathf.Max(0f, rect.width - PADDING - R1_WIDTH), R2_WIDTH), rect.height);
 
-            if(GUI.Button(r1, "Apply Global"))
+            if (GUI.Button(r1, "Apply Global"))
             {
-                if(EditorUtility.DisplayDialog("Apply Settings to Global Input Manager?", "Applying these settings will overwrite the global input settings.", "Apply", "Cancel"))
+                if (EditorUtility.DisplayDialog("Apply Settings to Global Input Manager?", "Applying these settings will overwrite the global input settings.", "Apply", "Cancel"))
                 {
                     var obj = this.serializedObject.targetObject as InputSettings;
-                    if(obj != null)
+                    if (obj != null)
                     {
                         obj.ApplyToGlobal();
                     }
                 }
             }
 
-            if(GUI.Button(r2, "Load Global"))
+            if (GUI.Button(r2, "Load Global"))
             {
                 if (EditorUtility.DisplayDialog("Load Global Input Manager Settings?", "Loading Global Input Manager Settings will overwrite all entries in this config.", "Load", "Cancel"))
                 {

@@ -52,7 +52,7 @@ namespace com.spacepuppy.Waypoints
 
             for (int i = 0; i < _controlPoints.Length; i++)
             {
-                if (_controlPoints[i] != null) _controlPoints[i].Owner = this;
+                if (_controlPoints[i] != null) _controlPoints[i].Initialize(this);
             }
             _path = GetPath(this, false);
 
@@ -129,7 +129,7 @@ namespace com.spacepuppy.Waypoints
             {
                 for (int i = 0; i < _controlPoints.Length; i++)
                 {
-                    if (_controlPoints[i] != null) _controlPoints[i].Owner = null;
+                    if (_controlPoints[i] != null) _controlPoints[i].Initialize(this);
                 }
             }
 
@@ -194,6 +194,22 @@ namespace com.spacepuppy.Waypoints
             }
 
             _autoCleanRoutine = null;
+        }
+
+
+        /// <summary>
+        /// This adds the required component to a Transform to make it a control point with this WaypointPathComponent.
+        /// </summary>
+        /// <param name="t"></param>
+        /// <returns></returns>
+        public virtual TransformControlPoint InitializeTransformAsControlPoint(Transform t)
+        {
+            if (t == null) return null;
+
+            t.RemoveComponents<TransformControlPoint>();
+            var cp = t.AddComponent<TransformControlPoint>();
+            cp.Initialize(this);
+            return cp;
         }
 
         #endregion
@@ -275,12 +291,6 @@ namespace com.spacepuppy.Waypoints
 
         public static class EditorHelper
         {
-            public static void SetParent(TransformControlPoint waypoint, WaypointPathComponent owner)
-            {
-                if (Application.isPlaying) return;
-
-                waypoint.Owner = owner;
-            }
 
             public static void InsertAfter(WaypointPathComponent comp, TransformControlPoint waypointToInsert, TransformControlPoint waypointToFollow)
             {
@@ -296,7 +306,7 @@ namespace com.spacepuppy.Waypoints
                 {
                     lst.Insert(index + 1, waypointToInsert);
                 }
-                waypointToInsert.Owner = comp;
+                waypointToInsert.Initialize(comp);
                 comp._controlPoints = lst.ToArray();
             }
 

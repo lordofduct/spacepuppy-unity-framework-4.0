@@ -6,8 +6,7 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Waypoints
 {
 
-    [System.Serializable()]
-    public sealed class TransformControlPoint : MonoBehaviour, IWeightedControlPoint, IGameObjectSource
+    public class TransformControlPoint : MonoBehaviour, IWeightedControlPoint, IGameObjectSource
     {
 
         #region Fields
@@ -22,7 +21,15 @@ namespace com.spacepuppy.Waypoints
         public WaypointPathComponent Owner
         {
             get { return _owner; }
-            internal set { _owner = value; }
+        }
+
+        #endregion
+
+        #region Methods
+
+        public void Initialize(WaypointPathComponent owner)
+        {
+            _owner = owner;
         }
 
         #endregion

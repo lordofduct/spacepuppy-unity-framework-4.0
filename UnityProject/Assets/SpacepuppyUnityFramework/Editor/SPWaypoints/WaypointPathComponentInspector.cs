@@ -15,7 +15,7 @@ using com.spacepuppyeditor.Internal;
 namespace com.spacepuppyeditor.Waypoints
 {
 
-    [CustomEditor(typeof(WaypointPathComponent))]
+    [CustomEditor(typeof(WaypointPathComponent), true)]
     public class WaypointPathComponentInspector : SPEditor
     {
 
@@ -23,8 +23,11 @@ namespace com.spacepuppyeditor.Waypoints
 
         private const float SEG_LENGTH = 0.2f;
 
-        private const string PROP_CONTROLPOINTS = "_controlPoints";
-        private const string PROP_NODE_OWNER = "_owner";
+        public const string PROP_PATHTYPE = "_pathType";
+        public const string PROP_CLOSED = "_closed";
+        public const string PROP_TRANSFORMRELATIVETO = "_transformRelativeTo";
+        public const string PROP_CONTROLPOINTSANIMATE = "_controlPointsAnimate";
+        public const string PROP_CONTROLPOINTS = "_controlPoints";
         private const float ARG_BTN_WIDTH = 18f;
 
         private WaypointPathComponent _targ;
@@ -64,7 +67,11 @@ namespace com.spacepuppyeditor.Waypoints
         {
             this.serializedObject.Update();
 
-            this.DrawDefaultInspectorExcept(PROP_CONTROLPOINTS);
+            this.DrawPropertyField(EditorHelper.PROP_SCRIPT);
+            this.DrawPropertyField(PROP_PATHTYPE);
+            this.DrawPropertyField(PROP_CLOSED);
+            this.DrawPropertyField(PROP_TRANSFORMRELATIVETO);
+            this.DrawPropertyField(PROP_CONTROLPOINTSANIMATE);
 
             //clean nodes
             for (int i = 0; i < _nodesProp.arraySize; i++)
@@ -120,15 +127,16 @@ namespace com.spacepuppyeditor.Waypoints
                     _nodesProp.arraySize = arr.Length;
                     for (int i = 0; i < arr.Length; i++)
                     {
-                        var c = arr[i].AddOrGetComponent<TransformControlPoint>();
+                        var c = _targ.InitializeTransformAsControlPoint(arr[i]);
                         c.Strength = 0.5f;
-                        WaypointPathComponent.EditorHelper.SetParent(c, target as WaypointPathComponent);
                         Undo.RegisterCreatedObjectUndo(go, "Associate Node With Waypoint Path");
                         _nodesProp.GetArrayElementAtIndex(i).objectReferenceValue = c;
                     }
                 }
             }
             GUILayout.EndHorizontal();
+
+            this.DrawDefaultInspectorExcept(EditorHelper.PROP_SCRIPT, PROP_PATHTYPE, PROP_CLOSED, PROP_TRANSFORMRELATIVETO, PROP_CONTROLPOINTSANIMATE, PROP_CONTROLPOINTS);
 
             this.serializedObject.ApplyModifiedProperties();
         }
@@ -174,7 +182,7 @@ namespace com.spacepuppyeditor.Waypoints
                     else if (obj.Owner != owner)
                     {
                         Undo.RecordObject(obj, "Set Waypoint Path Node Owner");
-                        WaypointPathComponent.EditorHelper.SetParent(obj, owner);
+                        obj = _targ.InitializeTransformAsControlPoint(obj.transform);
                     }
                 }
                 elementProp.objectReferenceValue = obj;
@@ -223,8 +231,7 @@ namespace com.spacepuppyeditor.Waypoints
                 go.transform.localRotation = Quaternion.LookRotation(Vector3.forward);
                 go.transform.localScale = Vector3.one * 0.5f;
             }
-            var obj = go.AddOrGetComponent<TransformControlPoint>();
-            WaypointPathComponent.EditorHelper.SetParent(obj, this.serializedObject.targetObject as WaypointPathComponent);
+            var obj = _targ.InitializeTransformAsControlPoint(go.transform);
             Undo.RegisterCreatedObjectUndo(go, "Create Node For Waypoint Path");
             elementProp.objectReferenceValue = obj;
         }
@@ -247,7 +254,7 @@ namespace com.spacepuppyeditor.Waypoints
             var matrix = (c.started && c.TransformRelativeTo != null) ? Matrix4x4.TRS(c.TransformRelativeTo.position, c.TransformRelativeTo.rotation, Vector3.one) : Matrix4x4.identity;
 
             Gizmos.color = Color.red;
-            float seglength = Mathf.Max(0.2f, path.GetArcLength() / 5000f);
+            float seglength = Mathf.Max(SEG_LENGTH, path.GetArcLength() / 5000f);
             Vector3? lastPnt = null;
             using (var pnts = TempCollection.GetCallbackCollection<Vector3>((p) =>
             {
@@ -356,22 +363,23 @@ namespace com.spacepuppyeditor.Waypoints
 
     }
 
-    [CustomEditor(typeof(TransformControlPoint))]
+    [CustomEditor(typeof(TransformControlPoint), true)]
     public class TransformWaypointInspector : SPEditor
     {
+
+        public const string PROP_OWNER = "_owner";
+
         protected override void OnSPInspectorGUI()
         {
             this.serializedObject.Update();
 
+            this.DrawPropertyField(EditorHelper.PROP_SCRIPT);
+
             EditorGUILayout.LabelField("WAYPOINT NODE", EditorStyles.boldLabel);
 
             GUI.enabled = false;
-            EditorGUILayout.PropertyField(this.serializedObject.FindProperty("_owner"));
+            this.DrawPropertyField(PROP_OWNER);
             GUI.enabled = true;
-
-            this.serializedObject.ApplyModifiedProperties();
-
-
 
             var trans = ObjUtil.GetAsFromSource<Transform>(this.serializedObject.targetObject);
             float scale = ObjUtil.GetAsFromSource<Transform>(this.serializedObject.targetObject).localScale.z;
@@ -383,7 +391,12 @@ namespace com.spacepuppyeditor.Waypoints
                 trans.localScale = Vector3.one * scale;
             }
 
+            this.DrawDefaultInspectorExcept(EditorHelper.PROP_SCRIPT, PROP_OWNER);
 
+            this.serializedObject.ApplyModifiedProperties();
+
+
+            //draw button at bottom
             var targ = this.serializedObject.targetObject as TransformControlPoint;
             if (targ == null || targ.Owner == null || Application.isPlaying) return;
 
@@ -402,6 +415,7 @@ namespace com.spacepuppyeditor.Waypoints
 
                 Selection.activeObject = go;
             }
+
         }
     }
 

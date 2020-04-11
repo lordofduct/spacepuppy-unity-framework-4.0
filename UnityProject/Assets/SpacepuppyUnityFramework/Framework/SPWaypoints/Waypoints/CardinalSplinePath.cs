@@ -14,7 +14,8 @@ namespace com.spacepuppy.Waypoints
 
         #region Fields
 
-        private const int SUBDIVISIONS_MULTIPLIER = 16;
+        private const int MIN_SUBDIVISIONS_MULTIPLIER = 16;
+        private const int MAX_SUBDIVISIONS_MULTIPLIER = 64;
 
         private bool _isClosed;
         private List<IControlPoint> _controlPoints = new List<IControlPoint>();
@@ -22,6 +23,7 @@ namespace com.spacepuppy.Waypoints
 
         private Vector3[] _points;
         private CurveConstantSpeedTable _speedTable = new CurveConstantSpeedTable();
+        private int _subdivisionNultiplier;
 
         #endregion
 
@@ -69,8 +71,16 @@ namespace com.spacepuppy.Waypoints
             else
             {
                 //get points
+                float avglength = 0f;
+                Vector3 lastPos = _controlPoints[0].Position;
                 _points = (_isClosed) ? new Vector3[_controlPoints.Count + 3] : new Vector3[_controlPoints.Count + 2];
-                for (int i = 0; i < _controlPoints.Count; i++) _points[i + 1] = _controlPoints[i].Position;
+                for (int i = 0; i < _controlPoints.Count; i++)
+                {
+                    avglength += (_controlPoints[i].Position - lastPos).sqrMagnitude;
+                    lastPos = _controlPoints[i].Position;
+
+                    _points[i + 1] = _controlPoints[i].Position;
+                }
                 if (_isClosed)
                 {
                     _points[0] = _controlPoints[_controlPoints.Count - 1].Position;
@@ -85,7 +95,9 @@ namespace com.spacepuppy.Waypoints
                     _points[_points.Length - 1] = lastPnt + diffV;
                 }
 
-                _speedTable.Clean(SUBDIVISIONS_MULTIPLIER * _points.Length, this.GetRealPositionAt);
+                avglength = Mathf.Sqrt(avglength / _controlPoints.Count);
+                _subdivisionNultiplier = Mathf.Clamp(Mathf.RoundToInt(avglength), MIN_SUBDIVISIONS_MULTIPLIER, MAX_SUBDIVISIONS_MULTIPLIER);
+                _speedTable.Clean(_subdivisionNultiplier * _points.Length, this.GetRealPositionAt);
             }
         }
 
@@ -195,9 +207,9 @@ namespace com.spacepuppy.Waypoints
             if (_speedTable.IsDirty) this.Clean_Imp();
             if (_points.Length < 2) return (_points.Length == 0) ? VectorUtil.NaNVector3 : _points[0];
 
-            //index++; //index at 0 is an ignored control point, index should be 1-base
-            int i = index * SUBDIVISIONS_MULTIPLIER;
-            int j = (index + 1) * SUBDIVISIONS_MULTIPLIER;
+            //we add 1 to compensate for the control points in _points/_speedTable
+            int i = index * _subdivisionNultiplier + 1;
+            int j = (index + 1) * _subdivisionNultiplier + 1;
             float nt = _speedTable.GetTimeAtSubdivision(i) + (_speedTable.GetTimeAtSubdivision(j) - _speedTable.GetTimeAtSubdivision(i)) * t;
             return this.GetRealPositionAt(nt);
         }
@@ -208,9 +220,9 @@ namespace com.spacepuppy.Waypoints
             if (_speedTable.IsDirty) this.Clean_Imp();
             if (_points.Length < 2) return (_points.Length == 0) ? Waypoint.Invalid : new Waypoint(_points[0], Vector3.zero);
 
-            //index++; //index at 0 is an ignored control point, index should be 1-base
-            int i = index * SUBDIVISIONS_MULTIPLIER;
-            int j = (index + 1) * SUBDIVISIONS_MULTIPLIER;
+            //we add 1 to compensate for the control points in _points/_speedTable
+            int i = index * _subdivisionNultiplier + 1;
+            int j = (index + 1) * _subdivisionNultiplier + 1;
             float nt = _speedTable.GetTimeAtSubdivision(i) + (_speedTable.GetTimeAtSubdivision(j) - _speedTable.GetTimeAtSubdivision(i)) * t;
 
             var p1 = this.GetRealPositionAt(nt);
@@ -224,9 +236,9 @@ namespace com.spacepuppy.Waypoints
             if (_points == null) this.Clean_Imp();
             if (_points.Length < 2) return 0f;
 
-            //index++; //index at 0 is an ignored control point, index should be 1-base
-            int i = index * SUBDIVISIONS_MULTIPLIER;
-            int j = (index + 1) * SUBDIVISIONS_MULTIPLIER;
+            //we add 1 to compensate for the control points in _points/_speedTable
+            int i = index * _subdivisionNultiplier + 1;
+            int j = (index + 1) * _subdivisionNultiplier + 1;
             return _speedTable.GetArcLength(i, j);
         }
 

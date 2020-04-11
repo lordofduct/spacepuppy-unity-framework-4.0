@@ -33,7 +33,7 @@ namespace com.spacepuppyeditor.Waypoints
         private SPReorderableList _nodeList;
         private GUIContent _argBtnLabel = new GUIContent("||", "Toggle allowing to manually configure which Transform is this waypoint.");
 
-        private List<WaypointPathComponent.TransformControlPoint> _lastNodeCache = new List<WaypointPathComponent.TransformControlPoint>();
+        private List<TransformControlPoint> _lastNodeCache = new List<TransformControlPoint>();
 
         #endregion
 
@@ -120,7 +120,7 @@ namespace com.spacepuppyeditor.Waypoints
                     _nodesProp.arraySize = arr.Length;
                     for (int i = 0; i < arr.Length; i++)
                     {
-                        var c = arr[i].AddOrGetComponent<WaypointPathComponent.TransformControlPoint>();
+                        var c = arr[i].AddOrGetComponent<TransformControlPoint>();
                         c.Strength = 0.5f;
                         WaypointPathComponent.EditorHelper.SetParent(c, target as WaypointPathComponent);
                         Undo.RegisterCreatedObjectUndo(go, "Associate Node With Waypoint Path");
@@ -133,11 +133,11 @@ namespace com.spacepuppyeditor.Waypoints
             this.serializedObject.ApplyModifiedProperties();
         }
 
-        private IEnumerable<WaypointPathComponent.TransformControlPoint> GetCurrentNodes()
+        private IEnumerable<TransformControlPoint> GetCurrentNodes()
         {
             for (int i = 0; i < _nodesProp.arraySize; i++)
             {
-                yield return _nodesProp.GetArrayElementAtIndex(i).objectReferenceValue as WaypointPathComponent.TransformControlPoint;
+                yield return _nodesProp.GetArrayElementAtIndex(i).objectReferenceValue as TransformControlPoint;
             }
         }
 
@@ -164,7 +164,7 @@ namespace com.spacepuppyeditor.Waypoints
             if (elementProp.objectReferenceValue == null || elementProp.isExpanded)
             {
                 var owner = this.serializedObject.targetObject as WaypointPathComponent;
-                var obj = EditorGUI.ObjectField(propRect, EditorHelper.TempContent("Node"), elementProp.objectReferenceValue, typeof(WaypointPathComponent.TransformControlPoint), true) as WaypointPathComponent.TransformControlPoint;
+                var obj = EditorGUI.ObjectField(propRect, EditorHelper.TempContent("Node"), elementProp.objectReferenceValue, typeof(TransformControlPoint), true) as TransformControlPoint;
                 if (obj != null)
                 {
                     if (obj.transform.parent != ObjUtil.GetAsFromSource<Transform>(this.serializedObject.targetObject))
@@ -181,7 +181,7 @@ namespace com.spacepuppyeditor.Waypoints
             }
             else
             {
-                var t = elementProp.objectReferenceValue as WaypointPathComponent.TransformControlPoint;
+                var t = elementProp.objectReferenceValue as TransformControlPoint;
                 EditorGUI.LabelField(propRect, EditorHelper.TempContent(t.name), EditorHelper.TempContent("{ strength: " + t.Strength.ToString("0.00") + " }"));
 
                 if (ReorderableListHelper.IsClickingArea(area))
@@ -206,7 +206,7 @@ namespace com.spacepuppyeditor.Waypoints
             lst.index = lst.serializedProperty.arraySize - 1;
 
             var elementProp = lst.serializedProperty.GetArrayElementAtIndex(lst.index);
-            var lastNode = (lst.index > 1) ? lst.serializedProperty.GetArrayElementAtIndex(lst.index - 1).objectReferenceValue as WaypointPathComponent.TransformControlPoint : null;
+            var lastNode = (lst.index > 1) ? lst.serializedProperty.GetArrayElementAtIndex(lst.index - 1).objectReferenceValue as TransformControlPoint : null;
 
             var go = new GameObject("Node" + lst.index.ToString("000"));
             IconHelper.SetIconForObject(go, IconHelper.Icon.DiamondPurple);
@@ -223,7 +223,7 @@ namespace com.spacepuppyeditor.Waypoints
                 go.transform.localRotation = Quaternion.LookRotation(Vector3.forward);
                 go.transform.localScale = Vector3.one * 0.5f;
             }
-            var obj = go.AddOrGetComponent<WaypointPathComponent.TransformControlPoint>();
+            var obj = go.AddOrGetComponent<TransformControlPoint>();
             WaypointPathComponent.EditorHelper.SetParent(obj, this.serializedObject.targetObject as WaypointPathComponent);
             Undo.RegisterCreatedObjectUndo(go, "Create Node For Waypoint Path");
             elementProp.objectReferenceValue = obj;
@@ -238,6 +238,54 @@ namespace com.spacepuppyeditor.Waypoints
         private static void OnDrawGizmos(WaypointPathComponent c, GizmoType gizmoType)
         {
             if (gizmoType.HasFlag(GizmoType.NotInSelectionHierarchy) && !c.transform.IsParentOf(Selection.activeTransform)) return;
+
+            var cam = SceneView.lastActiveSceneView.camera;
+            if (cam == null) return;
+
+            var path = WaypointPathComponent.GetPath(c, false);
+            if (path == null || path.Count == 0) return;
+            var matrix = (c.started && c.TransformRelativeTo != null) ? Matrix4x4.TRS(c.TransformRelativeTo.position, c.TransformRelativeTo.rotation, Vector3.one) : Matrix4x4.identity;
+
+            Gizmos.color = Color.red;
+            float seglength = Mathf.Max(0.2f, path.GetArcLength() / 5000f);
+            Vector3? lastPnt = null;
+            using (var pnts = TempCollection.GetCallbackCollection<Vector3>((p) =>
+            {
+                var p0 = lastPnt ?? Vector3.zero;
+                lastPnt = p;
+                if (lastPnt == null || (!PointVisibleInCam(cam, p0) && !PointVisibleInCam(cam, p))) return;
+
+                Gizmos.DrawLine(matrix.MultiplyPoint3x4(p0), matrix.MultiplyPoint3x4(p));
+            }))
+            {
+                path.GetDetailedPositions(pnts, seglength);
+            }
+
+            //draw control points
+            for (int i = 0; i < path.Count; i++)
+            {
+                if (PointVisibleInCam(cam, path.ControlPoint(i).Position))
+                {
+                    if (i == 0)
+                    {
+                        Gizmos.color = Color.green;
+                        Gizmos.DrawWireCube(matrix.MultiplyPoint3x4(path.ControlPoint(i).Position), Vector3.one * 0.5f);
+                    }
+                    else if (i == path.Count - 1)
+                    {
+                        Gizmos.color = Color.red;
+                        Gizmos.DrawWireCube(matrix.MultiplyPoint3x4(path.ControlPoint(i).Position), Vector3.one * 0.5f);
+                    }
+                    else
+                    {
+                        Gizmos.color = Color.yellow;
+                        Gizmos.DrawWireSphere(matrix.MultiplyPoint3x4(path.ControlPoint(i).Position), 0.25f);
+                    }
+                }
+            }
+
+
+            /*
 
             var cam = SceneView.lastActiveSceneView.camera;
             if (cam == null) return;
@@ -291,6 +339,7 @@ namespace com.spacepuppyeditor.Waypoints
                     Gizmos.DrawWireCube(matrix.MultiplyPoint3x4(pnt.Position), Vector3.one * 0.5f);
                 }
             }
+            */
         }
 
         #endregion
@@ -307,8 +356,8 @@ namespace com.spacepuppyeditor.Waypoints
 
     }
 
-    [CustomEditor(typeof(WaypointPathComponent.TransformControlPoint))]
-    public class WaypointPathComponent_TransformWaypointInspector : SPEditor
+    [CustomEditor(typeof(TransformControlPoint))]
+    public class TransformWaypointInspector : SPEditor
     {
         protected override void OnSPInspectorGUI()
         {
@@ -335,7 +384,7 @@ namespace com.spacepuppyeditor.Waypoints
             }
 
 
-            var targ = this.serializedObject.targetObject as WaypointPathComponent.TransformControlPoint;
+            var targ = this.serializedObject.targetObject as TransformControlPoint;
             if (targ == null || targ.Owner == null || Application.isPlaying) return;
 
             if (GUILayout.Button("Add Node After This"))
@@ -345,10 +394,10 @@ namespace com.spacepuppyeditor.Waypoints
                 go.transform.position = targ.transform.position;
                 go.transform.rotation = targ.transform.rotation;
                 go.transform.localScale = targ.transform.localScale;
-                var newwaypoint = go.AddComponent<WaypointPathComponent.TransformControlPoint>();
-                WaypointPathComponent.EditorHelper.InsertAfter(targ.Owner, newwaypoint, targ);
+                var newwaypoint = go.AddComponent<TransformControlPoint>();
                 Undo.RegisterCreatedObjectUndo(go, "Create Node For Waypoint Path");
-                Undo.RecordObject(targ.Owner, "Add Node To Waypoint Path");
+                Undo.RecordObjects(new UnityEngine.Object[] { targ.Owner, newwaypoint }, "Add Node To Waypoint Path");
+                WaypointPathComponent.EditorHelper.InsertAfter(targ.Owner, newwaypoint, targ);
                 UnityEditor.SceneManagement.EditorSceneManager.MarkAllScenesDirty();
 
                 Selection.activeObject = go;

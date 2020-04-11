@@ -23,7 +23,7 @@ namespace com.spacepuppy.Waypoints
         private float _totalArcLength = float.NaN;
 
         #endregion
-        
+
         #region CONSTRUCTOR
 
         public BezierChainPath()
@@ -103,12 +103,7 @@ namespace com.spacepuppy.Waypoints
 
         #endregion
 
-        #region IIndexedWaypointPath Interface
-
-        public int Count
-        {
-            get { return _controlPoints.Count; }
-        }
+        #region IWaypointPath Interface
 
         public bool IsClosed
         {
@@ -119,16 +114,6 @@ namespace com.spacepuppy.Waypoints
                 _isClosed = value;
                 _points = null;
             }
-        }
-
-        public IControlPoint ControlPoint(int index)
-        {
-            return _controlPoints[index];
-        }
-
-        public int IndexOf(IControlPoint controlpoint)
-        {
-            return _controlPoints.IndexOf(controlpoint);
         }
 
         public float GetArcLength()
@@ -183,6 +168,36 @@ namespace com.spacepuppy.Waypoints
             float ht = tot / _totalArcLength;
             float dt = com.spacepuppy.Utils.MathUtil.PercentageMinMax(t, ht, lt);
             return this.GetWaypointAfter(i, dt);
+        }
+
+        public int GetDetailedPositions(ICollection<Vector3> coll, float segmentLength)
+        {
+            if (coll == null) throw new System.ArgumentNullException("coll");
+            int detail = Mathf.FloorToInt(this.GetArcLength() / segmentLength) + 1;
+            for (int i = 0; i <= detail; i++)
+            {
+                coll.Add(this.GetPositionAt((float)i / (float)detail));
+            }
+            return detail + 1;
+        }
+
+        #endregion
+
+        #region IIndexedWaypointPath Interface
+
+        public int Count
+        {
+            get { return _controlPoints.Count; }
+        }
+
+        public IControlPoint ControlPoint(int index)
+        {
+            return _controlPoints[index];
+        }
+
+        public int IndexOf(IControlPoint controlpoint)
+        {
+            return _controlPoints.IndexOf(controlpoint);
         }
 
         public Vector3 GetPositionAfter(int index, float t)
@@ -261,15 +276,13 @@ namespace com.spacepuppy.Waypoints
             return new Waypoint(p, tan);
         }
 
-        public int GetDetailedPositions(ICollection<Vector3> coll, float segmentLength)
+        public float GetArcLengthAfter(int index)
         {
-            if (coll == null) throw new System.ArgumentNullException("coll");
-            int detail = Mathf.FloorToInt(this.GetArcLength() / segmentLength) + 1;
-            for (int i = 0; i <= detail; i++)
-            {
-                coll.Add(this.GetPositionAt((float)i / (float)detail));
-            }
-            return detail + 1;
+            if (index < 0 || index >= _controlPoints.Count) throw new System.IndexOutOfRangeException();
+            if (_points == null) this.Clean_Imp();
+            if (_points.Length < 2) return 0f;
+
+            return _lengths[index];
         }
 
         public RelativePositionData GetRelativePositionData(float t)
@@ -300,7 +313,7 @@ namespace com.spacepuppy.Waypoints
                         float lt = (tot - len) / _totalArcLength;
                         float ht = tot / _totalArcLength;
                         float dt = com.spacepuppy.Utils.MathUtil.PercentageMinMax(t, ht, lt);
-                        
+
                         return new RelativePositionData(i, dt);
                     }
             }

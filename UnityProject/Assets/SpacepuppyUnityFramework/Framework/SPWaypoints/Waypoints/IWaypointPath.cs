@@ -23,6 +23,7 @@ namespace com.spacepuppy.Waypoints
         int IndexOf(IControlPoint waypoint);
         Vector3 GetPositionAfter(int index, float t);
         Waypoint GetWaypointAfter(int index, float t);
+        float GetArcLengthAfter(int index);
         /// <summary>
         /// Returns data pertaining to the relative position between the 2 control points on either side of 't'.
         /// </summary>
@@ -75,6 +76,38 @@ namespace com.spacepuppy.Waypoints
         /// <param name="index"></param>
         /// <param name="pos"></param>
         /// <returns></returns>
+        public static Waypoint EstimateNearestWaypointAfter(this IIndexedWaypointPath path, int index, Vector3 pos, out float tout)
+        {
+            if (path == null) throw new System.ArgumentNullException("path");
+            if (index < 0 || index >= path.Count) throw new System.IndexOutOfRangeException();
+
+            switch (path.Count)
+            {
+                case 0:
+                    tout = 0f;
+                    return Waypoint.Invalid;
+                case 1:
+                    tout = 0f;
+                    return new Waypoint(path.ControlPoint(0));
+                default:
+                    {
+                        if (index == path.Count - 1)
+                        {
+                            tout = 1f;
+                            return path.GetWaypointAt(1f);
+                        }
+
+                        var p0 = path.ControlPoint(index).Position;
+                        var p1 = path.ControlPoint(index + 1).Position;
+                        var forw = (p1 - p0);
+                        var seglen = forw.magnitude;
+                        forw /= seglen;
+                        tout = Mathf.Clamp01(Vector3.Dot(pos - p0, forw) / seglen);
+                        return path.GetWaypointAfter(index, tout);
+                    }
+            }
+        }
+
         public static Waypoint EstimateNearestWaypointAfter(this IIndexedWaypointPath path, int index, Vector3 pos)
         {
             if (path == null) throw new System.ArgumentNullException("path");

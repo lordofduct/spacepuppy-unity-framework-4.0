@@ -195,10 +195,9 @@ namespace com.spacepuppy.Waypoints
             if (_speedTable.IsDirty) this.Clean_Imp();
             if (_points.Length < 2) return (_points.Length == 0) ? VectorUtil.NaNVector3 : _points[0];
 
-            index++; //index at 0 is an ignored control point, index should be 1-base
+            //index++; //index at 0 is an ignored control point, index should be 1-base
             int i = index * SUBDIVISIONS_MULTIPLIER;
             int j = (index + 1) * SUBDIVISIONS_MULTIPLIER;
-            //float nt = _timesTable[i] + (_timesTable[j] - _timesTable[i]) * t;
             float nt = _speedTable.GetTimeAtSubdivision(i) + (_speedTable.GetTimeAtSubdivision(j) - _speedTable.GetTimeAtSubdivision(i)) * t;
             return this.GetRealPositionAt(nt);
         }
@@ -209,15 +208,26 @@ namespace com.spacepuppy.Waypoints
             if (_speedTable.IsDirty) this.Clean_Imp();
             if (_points.Length < 2) return (_points.Length == 0) ? Waypoint.Invalid : new Waypoint(_points[0], Vector3.zero);
 
-            index++; //index at 0 is an ignored control point, index should be 1-base
+            //index++; //index at 0 is an ignored control point, index should be 1-base
             int i = index * SUBDIVISIONS_MULTIPLIER;
             int j = (index + 1) * SUBDIVISIONS_MULTIPLIER;
-            //float nt = _timesTable[i] + (_timesTable[j] - _timesTable[i]) * t;
             float nt = _speedTable.GetTimeAtSubdivision(i) + (_speedTable.GetTimeAtSubdivision(j) - _speedTable.GetTimeAtSubdivision(i)) * t;
 
             var p1 = this.GetRealPositionAt(nt);
             var p2 = this.GetRealPositionAt(nt + 0.01f); //TODO - figure out a more efficient way of calculating the tangent
             return new Waypoint(p1, (p2 - p1).normalized);
+        }
+
+        public float GetArcLengthAfter(int index)
+        {
+            if (index < 0 || index >= _controlPoints.Count) throw new System.IndexOutOfRangeException();
+            if (_points == null) this.Clean_Imp();
+            if (_points.Length < 2) return 0f;
+
+            //index++; //index at 0 is an ignored control point, index should be 1-base
+            int i = index * SUBDIVISIONS_MULTIPLIER;
+            int j = (index + 1) * SUBDIVISIONS_MULTIPLIER;
+            return _speedTable.GetArcLength(i, j);
         }
 
         public RelativePositionData GetRelativePositionData(float t)
@@ -242,7 +252,7 @@ namespace com.spacepuppy.Waypoints
 
                         int index;
                         float segmentTime;
-                        if(_isClosed)
+                        if (_isClosed)
                         {
                             index = Mathf.FloorToInt(cnt * t);
                             segmentTime = 1f / cnt;
@@ -255,7 +265,7 @@ namespace com.spacepuppy.Waypoints
                         float lt = index * segmentTime;
                         float ht = (index + 1) * segmentTime;
                         float dt = MathUtil.PercentageMinMax(t, ht, lt);
-                        
+
                         return new RelativePositionData(index, dt);
                     }
             }

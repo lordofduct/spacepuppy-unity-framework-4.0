@@ -19,7 +19,7 @@ namespace com.spacepuppy.Waypoints
         private CurveConstantSpeedTable _speedTable = new CurveConstantSpeedTable();
 
         #endregion
-        
+
         #region CONSTRUCTOR
 
         public BezierSplinePath()
@@ -55,12 +55,12 @@ namespace com.spacepuppy.Waypoints
             {
                 var arr = this.GetPointArray();
                 float estimatedLength = 0f;
-                for(int i = 1; i < arr.Length; i++)
+                for (int i = 1; i < arr.Length; i++)
                 {
                     estimatedLength += (arr[i] - arr[i - 1]).magnitude;
                 }
                 int detail = Mathf.RoundToInt(estimatedLength / 0.1f);
-                
+
                 _speedTable.Clean(detail, this.GetRealPositionAt);
             }
         }
@@ -72,14 +72,14 @@ namespace com.spacepuppy.Waypoints
             if (_isClosed) cnt++;
             if (_points == null)
                 _points = new Vector3[cnt];
-            else if(_points.Length != cnt)
+            else if (_points.Length != cnt)
                 System.Array.Resize(ref _points, cnt);
 
-            for (int i = 0; i < l; i++ )
+            for (int i = 0; i < l; i++)
             {
                 _points[i] = _controlPoints[i].Position;
             }
-            if(_isClosed)
+            if (_isClosed)
             {
                 _points[cnt - 1] = _controlPoints[0].Position;
             }
@@ -190,10 +190,26 @@ namespace com.spacepuppy.Waypoints
             return this.GetWaypointAt(index * range + t * range);
         }
 
+        public float GetArcLengthAfter(int index)
+        {
+            if (index < 0 || index >= _controlPoints.Count) throw new System.IndexOutOfRangeException();
+            if (_points == null) this.Clean_Imp();
+            if (_points.Length < 2) return 0f;
+
+            if (index == _points.Length - 1)
+            {
+                return float.PositiveInfinity;
+            }
+            else
+            {
+                return 1f / (_controlPoints.Count - 1);
+            }
+        }
+
         public RelativePositionData GetRelativePositionData(float t)
         {
             int cnt = _controlPoints.Count;
-            switch(cnt)
+            switch (cnt)
             {
                 case 0:
                     return new RelativePositionData(-1, 0f);

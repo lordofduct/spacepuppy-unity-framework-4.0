@@ -166,10 +166,17 @@ namespace com.spacepuppy.Waypoints
 
             if (index == _points.Length - 1)
             {
-                var pa = _points[index - 1];
-                var pb = _points[index];
-                var v = pb - pa;
-                return pa + v * t;
+                if (_isClosed)
+                {
+                    return Vector3.Lerp(_points[index], _points[0], t);
+                }
+                else
+                {
+                    var pa = _points[index - 1];
+                    var pb = _points[index];
+                    var v = pb - pa;
+                    return pa + v * t;
+                }
             }
             else
             {
@@ -185,10 +192,20 @@ namespace com.spacepuppy.Waypoints
 
             if (index == _points.Length - 1)
             {
-                var pa = _points[index - 1];
-                var pb = _points[index];
-                var v = pb - pa;
-                return new Waypoint(pa + v * t, v.normalized);
+                if (_isClosed)
+                {
+                    var pa = _points[index];
+                    var pb = _points[0];
+                    var v = pb - pa;
+                    return new Waypoint(pa + v * t, v.normalized);
+                }
+                else
+                {
+                    var pa = _points[index - 1];
+                    var pb = _points[index];
+                    var v = pb - pa;
+                    return new Waypoint(pa + v * t, v.normalized);
+                }
             }
             else
             {
@@ -199,10 +216,33 @@ namespace com.spacepuppy.Waypoints
             }
         }
 
+        public float GetArcLengthAfter(int index)
+        {
+            if (index < 0 || index >= _controlPoints.Count) throw new System.IndexOutOfRangeException();
+            if (_points == null) this.Clean_Imp();
+            if (_points.Length < 2) return 0f;
+
+            if (index == _points.Length - 1)
+            {
+                if (_isClosed)
+                {
+                    return Vector3.Distance(_points[index], _points[0]);
+                }
+                else
+                {
+                    return float.PositiveInfinity;
+                }
+            }
+            else
+            {
+                return Vector3.Distance(_points[index], _points[index + 1]);
+            }
+        }
+
         public RelativePositionData GetRelativePositionData(float t)
         {
             var cnt = _controlPoints.Count;
-            switch(cnt)
+            switch (cnt)
             {
                 case 0:
                     return new RelativePositionData(-1, 0f);
@@ -227,7 +267,7 @@ namespace com.spacepuppy.Waypoints
                         float lt = (tot - len) / _totalArcLength;
                         float ht = tot / _totalArcLength;
                         float dt = MathUtil.PercentageMinMax(t, ht, lt);
-                        
+
                         return new RelativePositionData(i % cnt, dt);
                     }
             }

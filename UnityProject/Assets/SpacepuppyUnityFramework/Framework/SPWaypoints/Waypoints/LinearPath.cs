@@ -11,7 +11,7 @@ namespace com.spacepuppy.Waypoints
         #region Fields
 
         private bool _isClosed;
-        private List<IWaypoint> _waypoints = new List<IWaypoint>();
+        private List<IControlPoint> _controlPoints = new List<IControlPoint>();
 
         private Vector3[] _points; //null if dirty
         private float[] _lengths;
@@ -26,9 +26,9 @@ namespace com.spacepuppy.Waypoints
 
         }
 
-        public LinearPath(IEnumerable<IWaypoint> waypoints)
+        public LinearPath(IEnumerable<IControlPoint> waypoints)
         {
-            _waypoints.AddRange(waypoints);
+            _controlPoints.AddRange(waypoints);
             _points = null;
         }
 
@@ -38,20 +38,20 @@ namespace com.spacepuppy.Waypoints
 
         private void Clean_Imp()
         {
-            if (_waypoints.Count == 0)
+            if (_controlPoints.Count == 0)
             {
                 _points = new Vector3[] { };
                 _totalArcLength = float.NaN;
             }
-            else if (_waypoints.Count == 1)
+            else if (_controlPoints.Count == 1)
             {
-                _points = new Vector3[] { _waypoints[0].Position };
+                _points = new Vector3[] { _controlPoints[0].Position };
                 _totalArcLength = 0f;
             }
             else
             {
-                _points = (_isClosed) ? new Vector3[_waypoints.Count + 1] : new Vector3[_waypoints.Count];
-                for (int i = 0; i < _waypoints.Count; i++) _points[i] = _waypoints[i].Position;
+                _points = (_isClosed) ? new Vector3[_controlPoints.Count + 1] : new Vector3[_controlPoints.Count];
+                for (int i = 0; i < _controlPoints.Count; i++) _points[i] = _controlPoints[i].Position;
                 if (_isClosed) _points[_points.Length - 1] = _points[0];
 
                 _lengths = new float[_points.Length];
@@ -145,22 +145,22 @@ namespace com.spacepuppy.Waypoints
 
         public int Count
         {
-            get { return _waypoints.Count; }
+            get { return _controlPoints.Count; }
         }
 
-        public IWaypoint ControlPoint(int index)
+        public IControlPoint ControlPoint(int index)
         {
-            return _waypoints[index];
+            return _controlPoints[index];
         }
 
-        public int IndexOf(IWaypoint waypoint)
+        public int IndexOf(IControlPoint controlpoint)
         {
-            return _waypoints.IndexOf(waypoint);
+            return _controlPoints.IndexOf(controlpoint);
         }
 
         public Vector3 GetPositionAfter(int index, float t)
         {
-            if (index < 0 || index >= _waypoints.Count) throw new System.IndexOutOfRangeException();
+            if (index < 0 || index >= _controlPoints.Count) throw new System.IndexOutOfRangeException();
             if (_points == null) this.Clean_Imp();
             if (_points.Length < 2) return (_points.Length == 0) ? VectorUtil.NaNVector3 : _points[0];
 
@@ -179,7 +179,7 @@ namespace com.spacepuppy.Waypoints
 
         public Waypoint GetWaypointAfter(int index, float t)
         {
-            if (index < 0 || index >= _waypoints.Count) throw new System.IndexOutOfRangeException();
+            if (index < 0 || index >= _controlPoints.Count) throw new System.IndexOutOfRangeException();
             if (_points == null) this.Clean_Imp();
             if (_points.Length < 2) return (_points.Length == 0) ? Waypoint.Invalid : new Waypoint(_points[0], Vector3.zero);
 
@@ -201,7 +201,7 @@ namespace com.spacepuppy.Waypoints
 
         public RelativePositionData GetRelativePositionData(float t)
         {
-            var cnt = _waypoints.Count;
+            var cnt = _controlPoints.Count;
             switch(cnt)
             {
                 case 0:
@@ -242,33 +242,33 @@ namespace com.spacepuppy.Waypoints
 
         #region IConfigurableIndexedWaypointPath Interface
 
-        public void AddControlPoint(IWaypoint waypoint)
+        public void AddControlPoint(IControlPoint controlpoint)
         {
-            _waypoints.Add(waypoint);
+            _controlPoints.Add(controlpoint);
             _points = null;
         }
 
-        public void InsertControlPoint(int index, IWaypoint waypoint)
+        public void InsertControlPoint(int index, IControlPoint controlpoint)
         {
-            _waypoints.Insert(index, waypoint);
+            _controlPoints.Insert(index, controlpoint);
             _points = null;
         }
 
-        public void ReplaceControlPoint(int index, IWaypoint waypoint)
+        public void ReplaceControlPoint(int index, IControlPoint controlpoint)
         {
-            _waypoints[index] = waypoint;
+            _controlPoints[index] = controlpoint;
             _points = null;
         }
 
         public void RemoveControlPointAt(int index)
         {
-            _waypoints.RemoveAt(index);
+            _controlPoints.RemoveAt(index);
             _points = null;
         }
 
         public void Clear()
         {
-            _waypoints.Clear();
+            _controlPoints.Clear();
             _points = null;
         }
 
@@ -276,14 +276,14 @@ namespace com.spacepuppy.Waypoints
 
         #region IEnumerable Interface
 
-        public IEnumerator<IWaypoint> GetEnumerator()
+        public IEnumerator<IControlPoint> GetEnumerator()
         {
-            return _waypoints.GetEnumerator();
+            return _controlPoints.GetEnumerator();
         }
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
-            return _waypoints.GetEnumerator();
+            return _controlPoints.GetEnumerator();
         }
 
         #endregion

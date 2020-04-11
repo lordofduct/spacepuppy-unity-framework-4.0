@@ -31,11 +31,11 @@ namespace com.spacepuppy.Waypoints
         [Tooltip("When pathing on this path, use values relative to this transform instead of the global values.")]
         private Transform _transformRelativeTo;
         [SerializeField()]
-        private TransformWaypoint[] _waypoints;
+        private TransformControlPoint[] _controlPoints;
 
-        [Tooltip("If the waypoints move at runtime, and you'd like the WaypointPath to automatically update itself, flag this true.")]
+        [Tooltip("If the control points move at runtime, and you'd like the WaypointPath to automatically update itself, flag this true.")]
         [SerializeField()]
-        private bool _waypointsAnimate;
+        private bool _controlPointsAnimate;
 
         [System.NonSerialized()]
         private IConfigurableIndexedWaypointPath _path;
@@ -50,18 +50,23 @@ namespace com.spacepuppy.Waypoints
         {
             base.Awake();
 
-            for(int i = 0; i < _waypoints.Length; i++)
+            for (int i = 0; i < _controlPoints.Length; i++)
             {
-                if(_waypoints[i] != null) _waypoints[i].Owner = this;
+                if (_controlPoints[i] != null) _controlPoints[i].Owner = this;
             }
             _path = GetPath(this, false);
 
-            if (_waypointsAnimate) _autoCleanRoutine = this.StartRadicalCoroutine(this.AutoCleanRoutine(), RadicalCoroutineDisableMode.Pauses);
+            if (_controlPointsAnimate) _autoCleanRoutine = this.StartRadicalCoroutine(this.AutoCleanRoutine(), RadicalCoroutineDisableMode.Pauses);
         }
 
         #endregion
 
         #region Properties
+
+        public int Count
+        {
+            get { return _controlPoints.Length; }
+        }
 
         public PathType Type
         {
@@ -86,12 +91,12 @@ namespace com.spacepuppy.Waypoints
 
         public bool WaypointsAnimate
         {
-            get { return _waypointsAnimate; }
+            get { return _controlPointsAnimate; }
             set
             {
-                if (_waypointsAnimate == value) return;
-                _waypointsAnimate = value;
-                if(_waypointsAnimate && _autoCleanRoutine != null)
+                if (_controlPointsAnimate == value) return;
+                _controlPointsAnimate = value;
+                if (_controlPointsAnimate && _autoCleanRoutine != null)
                 {
                     _autoCleanRoutine = this.StartRadicalCoroutine(this.AutoCleanRoutine(), RadicalCoroutineDisableMode.Pauses);
                 }
@@ -112,15 +117,23 @@ namespace com.spacepuppy.Waypoints
         #endregion
 
         #region Methods
-       
+
         public IConfigurableIndexedWaypointPath GetPathClone()
         {
             return GetPath(this, true);
         }
 
-        public void SetWaypoints(IEnumerable<Transform> waypoints)
+        public void SetControlPoints(IEnumerable<Transform> controlpoints)
         {
-            _waypoints = (from t in waypoints select new TransformWaypoint(t)).ToArray();
+            if (_controlPoints != null)
+            {
+                for (int i = 0; i < _controlPoints.Length; i++)
+                {
+                    if (_controlPoints[i] != null) _controlPoints[i].Owner = null;
+                }
+            }
+
+            _controlPoints = (from t in controlpoints select t.AddOrGetComponent<TransformControlPoint>()).ToArray();
             this.Clean();
         }
 
@@ -130,42 +143,48 @@ namespace com.spacepuppy.Waypoints
             {
                 _path.IsClosed = _closed;
                 _path.Clear();
-                foreach (var wp in _waypoints) _path.AddControlPoint(wp);
+                foreach (var wp in _controlPoints) _path.AddControlPoint(wp);
             }
+        }
+
+        public Transform GetNodeTransform(int index)
+        {
+            if (index < 0 || index >= _controlPoints.Length) return null;
+            return _controlPoints[index].transform;
         }
 
         private System.Collections.IEnumerator AutoCleanRoutine()
         {
             yield return null;
 
-            while (_waypointsAnimate)
+            while (_controlPointsAnimate)
             {
                 _path.IsClosed = _closed;
-                if (_waypoints.Length != _path.Count)
+                if (_controlPoints.Length != _path.Count)
                 {
                     //refill path
                     _path.Clear();
-                    for(int i = 0; i < _waypoints.Length; i++)
+                    for (int i = 0; i < _controlPoints.Length; i++)
                     {
-                        _path.AddControlPoint(_waypoints[i]);
+                        _path.AddControlPoint(_controlPoints[i]);
                     }
                 }
                 else
                 {
                     bool needsCleaning = false;
-                    for (int i = 0; i < _waypoints.Length; i++)
+                    for (int i = 0; i < _controlPoints.Length; i++)
                     {
-                        if(!object.ReferenceEquals(_waypoints[i], _path.ControlPoint(i)))
+                        if (!object.ReferenceEquals(_controlPoints[i], _path.ControlPoint(i)))
                         {
-                            _path.ReplaceControlPoint(i, _waypoints[i]);
+                            _path.ReplaceControlPoint(i, _controlPoints[i]);
                         }
-                        else if (!needsCleaning && !Waypoint.Compare(_path.ControlPoint(i), _waypoints[i]))
+                        else if (!needsCleaning && !Waypoint.Compare(_path.ControlPoint(i), _controlPoints[i]))
                         {
                             needsCleaning = true;
                         }
                     }
 
-                    if(needsCleaning)
+                    if (needsCleaning)
                     {
                         _path.Clean();
                     }
@@ -184,7 +203,7 @@ namespace com.spacepuppy.Waypoints
         public static IConfigurableIndexedWaypointPath GetPath(WaypointPathComponent c, bool cloneWaypoints)
         {
             IConfigurableIndexedWaypointPath path = null;
-            switch(c._pathType)
+            switch (c._pathType)
             {
                 case PathType.Cardinal:
                     path = new CardinalSplinePath();
@@ -199,24 +218,24 @@ namespace com.spacepuppy.Waypoints
                     path = new BezierSplinePath();
                     break;
             }
-            if(path != null)
+            if (path != null)
             {
                 path.IsClosed = c._closed;
-                if(c._waypoints != null)
+                if (c._controlPoints != null)
                 {
-                    for (int i = 0; i < c._waypoints.Length; i++)
+                    for (int i = 0; i < c._controlPoints.Length; i++)
                     {
-                        if(cloneWaypoints)
-                            path.AddControlPoint(new Waypoint(c._waypoints[i]));
+                        if (cloneWaypoints)
+                            path.AddControlPoint(new Waypoint(c._controlPoints[i]));
                         else
-                            path.AddControlPoint(c._waypoints[i]);
+                            path.AddControlPoint(c._controlPoints[i]);
                     }
                 }
             }
             return path;
         }
 
-        public static IConfigurableIndexedWaypointPath GetPath(PathType type, IEnumerable<IWaypoint> waypoints, bool isClosed, bool cloneWaypoints)
+        public static IConfigurableIndexedWaypointPath GetPath(PathType type, IEnumerable<IControlPoint> waypoints, bool isClosed, bool cloneWaypoints)
         {
             IConfigurableIndexedWaypointPath path = null;
             switch (type)
@@ -237,9 +256,9 @@ namespace com.spacepuppy.Waypoints
             if (path != null)
             {
                 path.IsClosed = isClosed;
-                foreach(var wp in waypoints)
+                foreach (var wp in waypoints)
                 {
-                    if(cloneWaypoints)
+                    if (cloneWaypoints)
                         path.AddControlPoint(new Waypoint(wp));
                     else
                         path.AddControlPoint(wp);
@@ -253,25 +272,13 @@ namespace com.spacepuppy.Waypoints
         #region Special Types
 
         [System.Serializable()]
-        private class TransformWaypoint : IWeightedWaypoint, IGameObjectSource
+        public sealed class TransformControlPoint : MonoBehaviour, IWeightedControlPoint, IGameObjectSource
         {
 
             #region Fields
 
             [SerializeField()]
-            private Transform _transform;
-
-            [System.NonSerialized()]
             private WaypointPathComponent _owner;
-
-            #endregion
-
-            #region CONSTRUCTOR
-            
-            public TransformWaypoint(Transform t)
-            {
-                _transform = t;
-            }
 
             #endregion
 
@@ -283,12 +290,6 @@ namespace com.spacepuppy.Waypoints
                 internal set { _owner = value; }
             }
 
-            public Transform Transform
-            {
-                get { return _transform; }
-                set { _transform = value; }
-            }
-
             #endregion
 
             #region IWaypoint Interface
@@ -297,19 +298,14 @@ namespace com.spacepuppy.Waypoints
             {
                 get
                 {
-                    if (_transform == null) return Vector3.zero;
-                    //return _transform.position;
-                    
-                    return (!object.ReferenceEquals(_owner, null) && _owner._transformRelativeTo != null) ? _transform.GetRelativePosition(_owner._transformRelativeTo) : _transform.position;
+                    return (!object.ReferenceEquals(_owner, null) && _owner._transformRelativeTo != null) ? this.transform.GetRelativePosition(_owner._transformRelativeTo) : this.transform.position;
                 }
                 set
                 {
-                    if (_transform == null) return;
-                    //_transform.position = value;
                     if (!object.ReferenceEquals(_owner, null) && _owner._transformRelativeTo != null)
-                        _transform.localPosition = value;
+                        this.transform.localPosition = value;
                     else
-                        _transform.position = value;
+                        this.transform.position = value;
                 }
             }
 
@@ -317,18 +313,14 @@ namespace com.spacepuppy.Waypoints
             {
                 get
                 {
-                    if (_transform == null) return Vector3.forward;
-                    //return _transform.forward;
-                    return (!object.ReferenceEquals(_owner, null) && _owner._transformRelativeTo != null) ? _transform.GetRelativeRotation(_owner._transformRelativeTo) * Vector3.forward : _transform.forward;
+                    return (!object.ReferenceEquals(_owner, null) && _owner._transformRelativeTo != null) ? this.transform.GetRelativeRotation(_owner._transformRelativeTo) * Vector3.forward : this.transform.forward;
                 }
                 set
                 {
-                    if (_transform == null) return;
-                    //_transform.rotation = Quaternion.LookRotation(value);
                     if (!object.ReferenceEquals(_owner, null) && _owner._transformRelativeTo != null)
-                        _transform.localRotation = Quaternion.LookRotation(value);
+                        this.transform.localRotation = Quaternion.LookRotation(value);
                     else
-                        _transform.rotation = Quaternion.LookRotation(value);
+                        this.transform.rotation = Quaternion.LookRotation(value);
                 }
             }
 
@@ -336,13 +328,11 @@ namespace com.spacepuppy.Waypoints
             {
                 get
                 {
-                    if (_transform == null) return 0f;
-                    return _transform.localScale.z;
+                    return this.transform.localScale.z;
                 }
                 set
                 {
-                    if (_transform == null) return;
-                    _transform.localScale = Vector3.one * value;
+                    this.transform.localScale = Vector3.one * value;
                 }
             }
 
@@ -354,7 +344,7 @@ namespace com.spacepuppy.Waypoints
             {
                 get
                 {
-                    return (_transform != null) ? _transform.gameObject : null;
+                    return this.gameObject;
                 }
             }
 
@@ -362,7 +352,7 @@ namespace com.spacepuppy.Waypoints
             {
                 get
                 {
-                    return _transform;
+                    return this.transform;
                 }
             }
 
@@ -370,6 +360,39 @@ namespace com.spacepuppy.Waypoints
             #endregion
 
         }
+
+#if UNITY_EDITOR
+
+        public static class EditorHelper
+        {
+            public static void SetParent(TransformControlPoint waypoint, WaypointPathComponent owner)
+            {
+                if (Application.isPlaying) return;
+
+                waypoint.Owner = owner;
+            }
+
+            public static void InsertAfter(WaypointPathComponent comp, TransformControlPoint waypointToInsert, TransformControlPoint waypointToFollow)
+            {
+                if (Application.isPlaying) return;
+
+                var lst = new List<TransformControlPoint>(comp._controlPoints);
+                int index = lst.IndexOf(waypointToFollow);
+                if (index < 0)
+                {
+                    lst.Add(waypointToInsert);
+                }
+                else
+                {
+                    lst.Insert(index + 1, waypointToInsert);
+                }
+                waypointToInsert.Owner = comp;
+                comp._controlPoints = lst.ToArray();
+            }
+
+        }
+
+#endif
 
         #endregion
 

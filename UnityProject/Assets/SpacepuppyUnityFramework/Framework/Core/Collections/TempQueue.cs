@@ -1,31 +1,45 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace com.spacepuppy.Collections
 {
-    public class TempHashSet<T> : HashSet<T>, ITempCollection<T>
+    public class TempQueue<T> : Queue<T>, ITempCollection<T>
     {
 
         private const int MAX_SIZE_INBYTES = 1024;
 
         #region Fields
 
-        private static ObjectCachePool<TempHashSet<T>> _pool = new ObjectCachePool<TempHashSet<T>>(-1, () => new TempHashSet<T>());
+        private static ObjectCachePool<TempQueue<T>> _pool = new ObjectCachePool<TempQueue<T>>(-1, () => new TempQueue<T>());
 
         #endregion
 
         #region CONSTRUCTOR
 
-        public TempHashSet()
+        public TempQueue()
             : base()
         {
         }
 
-        public TempHashSet(IEnumerable<T> e)
+        public TempQueue(IEnumerable<T> e)
             : base(e)
         {
+        }
+
+        #endregion
+
+        #region ICollection Interface
+
+        bool ICollection<T>.IsReadOnly { get { return false; } }
+
+        void ICollection<T>.Add(T item)
+        {
+            this.Enqueue(item);
+        }
+
+        bool ICollection<T>.Remove(T item)
+        {
+            throw new NotSupportedException();
         }
 
         #endregion
@@ -42,29 +56,29 @@ namespace com.spacepuppy.Collections
 
         #region Static Methods
 
-        public static TempHashSet<T> GetSet()
+        public static TempQueue<T> GetQueue()
         {
             return _pool.GetInstance();
         }
 
-        public static TempHashSet<T> GetSet(IEnumerable<T> e)
+        public static TempQueue<T> GetQueue(IEnumerable<T> e)
         {
-            TempHashSet<T> result;
+            TempQueue<T> result;
             if (_pool.TryGetInstance(out result))
             {
                 var le = LightEnumerator.Create<T>(e);
-                while(le.MoveNext())
+                while (le.MoveNext())
                 {
-                    result.Add(le.Current);
+                    result.Enqueue(le.Current);
                 }
             }
             else
             {
-                result = new TempHashSet<T>(e);
+                result = new TempQueue<T>(e);
             }
             return result;
         }
-        
+
         #endregion
 
     }

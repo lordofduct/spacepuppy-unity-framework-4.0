@@ -259,10 +259,12 @@ namespace com.spacepuppyeditor.Waypoints
             using (var pnts = TempCollection.GetCallbackCollection<Vector3>((p) =>
             {
                 var p0 = lastPnt ?? Vector3.zero;
+                var pt0 = matrix.MultiplyPoint3x4(p0);
+                var pt1 = matrix.MultiplyPoint3x4(p);
                 lastPnt = p;
-                if (lastPnt == null || (!PointVisibleInCam(cam, p0) && !PointVisibleInCam(cam, p))) return;
+                if (lastPnt == null || (!PointVisibleInCam(cam, pt0) && !PointVisibleInCam(cam, pt1))) return;
 
-                Gizmos.DrawLine(matrix.MultiplyPoint3x4(p0), matrix.MultiplyPoint3x4(p));
+                Gizmos.DrawLine(pt0, pt1);
             }))
             {
                 path.GetDetailedPositions(pnts, seglength);
@@ -290,63 +292,6 @@ namespace com.spacepuppyeditor.Waypoints
                     }
                 }
             }
-
-
-            /*
-
-            var cam = SceneView.lastActiveSceneView.camera;
-            if (cam == null) return;
-
-            var path = WaypointPathComponent.GetPath(c, false);
-            if (path == null || path.Count == 0) return;
-            var matrix = (c.started && c.TransformRelativeTo != null) ? Matrix4x4.TRS(c.TransformRelativeTo.position, c.TransformRelativeTo.rotation, Vector3.one) : Matrix4x4.identity;
-
-            Gizmos.color = Color.red;
-
-            float arclength = path.GetArcLength();
-            float seglength = Mathf.Max(SEG_LENGTH, arclength / Mathf.Min(path.Count * 8, 5000));
-            Vector3? lastPnt = null;
-            using (var pnts = TempCollection.GetCallbackCollection<Vector3>((p) =>
-            {
-                var p0 = lastPnt ?? Vector3.zero;
-                lastPnt = p;
-                if (lastPnt == null || (!PointVisibleInCam(cam, p0) && !PointVisibleInCam(cam, p))) return;
-
-                Gizmos.DrawLine(matrix.MultiplyPoint3x4(p0), matrix.MultiplyPoint3x4(p));
-            }))
-            {
-                path.GetDetailedPositions(pnts, seglength);
-            }
-
-            IControlPoint pnt;
-
-            pnt = path.ControlPoint(0);
-            if (PointVisibleInCam(cam, pnt.Position))
-            {
-                Gizmos.color = Color.green;
-                Gizmos.DrawWireCube(matrix.MultiplyPoint3x4(pnt.Position), Vector3.one * 0.5f);
-            }
-
-            if (path.Count > 1)
-            {
-                Gizmos.color = Color.yellow;
-                for (int i = 1; i < path.Count - 1; i++)
-                {
-                    pnt = path.ControlPoint(i);
-                    if (PointVisibleInCam(cam, pnt.Position))
-                    {
-                        Gizmos.DrawWireSphere(matrix.MultiplyPoint3x4(pnt.Position), 0.25f);
-                    }
-                }
-
-                Gizmos.color = Color.red;
-                pnt = path.ControlPoint(path.Count - 1);
-                if (PointVisibleInCam(cam, pnt.Position))
-                {
-                    Gizmos.DrawWireCube(matrix.MultiplyPoint3x4(pnt.Position), Vector3.one * 0.5f);
-                }
-            }
-            */
         }
 
         #endregion

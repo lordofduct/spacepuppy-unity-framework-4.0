@@ -116,7 +116,7 @@ namespace com.spacepuppy.Waypoints
 
         public float GetArcLength(int low, int high)
         {
-            if (low < 0 || high < 0 || low > _timesTable.Length || high > _timesTable.Length) throw new System.IndexOutOfRangeException();
+            if (low < 0 || low > _lengthsTable.Length || high < 0 || high > _lengthsTable.Length) throw new System.IndexOutOfRangeException();
 
             float l = low == 0 ? 0f : _lengthsTable[low - 1];
             float h = high == 0 ? 0f : _lengthsTable[high - 1];

@@ -299,6 +299,44 @@ namespace com.spacepuppy
     }
 
     /// <summary>
+    /// ScriptableObject doesn't draw vectors correctly for some reason... this allows you to coerce it to.
+    /// </summary>
+    [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
+    public class VectorInspectorAttribute : SPPropertyAttribute
+    {
+
+        public VectorInspectorAttribute()
+        {
+
+        }
+
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
+    public class UnitVectorAttribute : SPPropertyAttribute
+    {
+
+        public UnitVectorAttribute() : base()
+        {
+
+        }
+
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
+    public class EulerRotationInspectorAttribute : SPPropertyAttribute
+    {
+
+        public bool UseRadians = false;
+
+        public EulerRotationInspectorAttribute()
+        {
+
+        }
+
+    }
+
+    /// <summary>
     /// A specialized PropertyDrawer that draws a struct/class in the shape:
     /// struct Pair
     /// {

@@ -14,14 +14,16 @@ namespace com.spacepuppy.Waypoints
 
         #region Fields
 
-        private const int SUBDIVISIONS_MULTIPLIER = 16;
+        private const int MIN_SUBDIVISIONS_MULTIPLIER = 16;
+        private const int MAX_SUBDIVISIONS_MULTIPLIER = 64;
 
         private bool _isClosed;
-        private List<IWaypoint> _waypoints = new List<IWaypoint>();
+        private List<IControlPoint> _controlPoints = new List<IControlPoint>();
         private bool _useConstantSpeed = true;
 
         private Vector3[] _points;
         private CurveConstantSpeedTable _speedTable = new CurveConstantSpeedTable();
+        private int _subdivisionNultiplier;
 
         #endregion
 
@@ -32,9 +34,9 @@ namespace com.spacepuppy.Waypoints
 
         }
 
-        public CardinalSplinePath(IEnumerable<IWaypoint> waypoints)
+        public CardinalSplinePath(IEnumerable<IControlPoint> waypoints)
         {
-            _waypoints.AddRange(waypoints);
+            _controlPoints.AddRange(waypoints);
             this.Clean_Imp();
         }
 
@@ -54,38 +56,48 @@ namespace com.spacepuppy.Waypoints
 
         private void Clean_Imp()
         {
-            if (_waypoints.Count == 0)
+            if (_controlPoints.Count == 0)
             {
                 _points = new Vector3[] { };
                 _speedTable.SetZero();
                 return;
             }
-            else if (_waypoints.Count == 1)
+            else if (_controlPoints.Count == 1)
             {
-                _points = new Vector3[] { _waypoints[0].Position };
+                _points = new Vector3[] { _controlPoints[0].Position };
                 _speedTable.SetZero();
                 return;
             }
             else
             {
                 //get points
-                _points = (_isClosed) ? new Vector3[_waypoints.Count + 3] : new Vector3[_waypoints.Count + 2];
-                for (int i = 0; i < _waypoints.Count; i++) _points[i + 1] = _waypoints[i].Position;
+                float avglength = 0f;
+                Vector3 lastPos = _controlPoints[0].Position;
+                _points = _isClosed ? new Vector3[_controlPoints.Count + 3] : new Vector3[_controlPoints.Count + 2];
+                for (int i = 0; i < _controlPoints.Count; i++)
+                {
+                    avglength += (_controlPoints[i].Position - lastPos).sqrMagnitude;
+                    lastPos = _controlPoints[i].Position;
+
+                    _points[i + 1] = _controlPoints[i].Position;
+                }
                 if (_isClosed)
                 {
-                    _points[0] = _waypoints[_waypoints.Count - 1].Position;
+                    _points[0] = _controlPoints[_controlPoints.Count - 1].Position;
                     _points[_points.Length - 2] = _points[1];
                     _points[_points.Length - 1] = _points[2];
                 }
                 else
                 {
                     _points[0] = _points[1];
-                    var lastPnt = _waypoints[_waypoints.Count - 1].Position;
-                    var diffV = lastPnt - _waypoints[_waypoints.Count - 2].Position;
+                    var lastPnt = _controlPoints[_controlPoints.Count - 1].Position;
+                    var diffV = lastPnt - _controlPoints[_controlPoints.Count - 2].Position;
                     _points[_points.Length - 1] = lastPnt + diffV;
                 }
 
-                _speedTable.Clean(SUBDIVISIONS_MULTIPLIER * _points.Length, this.GetRealPositionAt);
+                avglength = Mathf.Sqrt(avglength / _controlPoints.Count);
+                _subdivisionNultiplier = Mathf.Clamp(Mathf.RoundToInt(avglength), MIN_SUBDIVISIONS_MULTIPLIER, MAX_SUBDIVISIONS_MULTIPLIER);
+                _speedTable.Clean(_subdivisionNultiplier * _controlPoints.Count, this.GetRealPositionAt);
             }
         }
 
@@ -97,7 +109,7 @@ namespace com.spacepuppy.Waypoints
         /// <returns></returns>
         private Vector3 GetRealPositionAt(float t)
         {
-            int numSections = _points.Length - 3;
+            int numSections = _controlPoints.Count - 1;
             int tSec = Mathf.FloorToInt(t * numSections);
             int currPt = numSections - 1;
             if (currPt > tSec) currPt = tSec;
@@ -174,55 +186,71 @@ namespace com.spacepuppy.Waypoints
 
         #region IIndexedWaypointPath Interface
 
+        /*
+         * NOTE - Get*After never normalizes speed based on 'UseConstantSpeed' property. These values should treat t as a value from 0->1 from index to index + 1. Speed normalizes messes that up.
+         */
+
         public int Count
         {
-            get { return _waypoints.Count; }
+            get { return _controlPoints.Count; }
         }
 
-        public IWaypoint ControlPoint(int index)
+        public IControlPoint ControlPoint(int index)
         {
-            return _waypoints[index];
+            return _controlPoints[index];
         }
 
-        public int IndexOf(IWaypoint waypoint)
+        public int IndexOf(IControlPoint controlpoint)
         {
-            return _waypoints.IndexOf(waypoint);
+            return _controlPoints.IndexOf(controlpoint);
         }
 
         public Vector3 GetPositionAfter(int index, float t)
         {
-            if (index < 0 || index >= _waypoints.Count) throw new System.IndexOutOfRangeException();
+            if (index < 0 || index >= _controlPoints.Count) throw new System.IndexOutOfRangeException();
+            if (_controlPoints.Count < 2) return (_controlPoints.Count == 0) ? VectorUtil.NaNVector3 : _controlPoints[0].Position;
             if (_speedTable.IsDirty) this.Clean_Imp();
-            if (_points.Length < 2) return (_points.Length == 0) ? VectorUtil.NaNVector3 : _points[0];
 
-            index++; //index at 0 is an ignored control point, index should be 1-base
-            int i = index * SUBDIVISIONS_MULTIPLIER;
-            int j = (index + 1) * SUBDIVISIONS_MULTIPLIER;
-            //float nt = _timesTable[i] + (_timesTable[j] - _timesTable[i]) * t;
-            float nt = _speedTable.GetTimeAtSubdivision(i) + (_speedTable.GetTimeAtSubdivision(j) - _speedTable.GetTimeAtSubdivision(i)) * t;
+            float st = 1f / (float)(_controlPoints.Count - 1);
+            float nt = (float)index * st;
+            nt += st * t;
             return this.GetRealPositionAt(nt);
         }
 
         public Waypoint GetWaypointAfter(int index, float t)
         {
-            if (index < 0 || index >= _waypoints.Count) throw new System.IndexOutOfRangeException();
+            if (index < 0 || index >= _controlPoints.Count) throw new System.IndexOutOfRangeException();
+            if (_controlPoints.Count < 2) return (_controlPoints.Count == 0) ? Waypoint.Invalid : new Waypoint(_controlPoints[0].Position, Vector3.zero);
             if (_speedTable.IsDirty) this.Clean_Imp();
-            if (_points.Length < 2) return (_points.Length == 0) ? Waypoint.Invalid : new Waypoint(_points[0], Vector3.zero);
 
-            index++; //index at 0 is an ignored control point, index should be 1-base
-            int i = index * SUBDIVISIONS_MULTIPLIER;
-            int j = (index + 1) * SUBDIVISIONS_MULTIPLIER;
-            //float nt = _timesTable[i] + (_timesTable[j] - _timesTable[i]) * t;
-            float nt = _speedTable.GetTimeAtSubdivision(i) + (_speedTable.GetTimeAtSubdivision(j) - _speedTable.GetTimeAtSubdivision(i)) * t;
+            float st = 1f / (float)(_controlPoints.Count - 1);
+            float nt = (float)index * st;
+            nt += st * t;
 
             var p1 = this.GetRealPositionAt(nt);
             var p2 = this.GetRealPositionAt(nt + 0.01f); //TODO - figure out a more efficient way of calculating the tangent
             return new Waypoint(p1, (p2 - p1).normalized);
         }
 
+        public float GetArcLengthAfter(int index)
+        {
+            if (index < 0 || index >= _controlPoints.Count) throw new System.IndexOutOfRangeException();
+            if (_controlPoints.Count < 2) return 0f;
+            if (index == _controlPoints.Count - 1) return 0f; //length is 0 after the last index
+            if (_points == null) this.Clean_Imp();
+
+            float st = 1f / (float)(_controlPoints.Count - 1);
+            float tlow = (float)index * st;
+            float thigh = (float)(index + 1) * st;
+
+            int ilow = Mathf.FloorToInt(tlow * _speedTable.SubdivisionCount);
+            int ihigh = Mathf.CeilToInt(thigh * _speedTable.SubdivisionCount);
+            return _speedTable.GetArcLength(ilow, ihigh);
+        }
+
         public RelativePositionData GetRelativePositionData(float t)
         {
-            int cnt = _waypoints.Count;
+            int cnt = _controlPoints.Count;
             switch (cnt)
             {
                 case 0:
@@ -238,11 +266,11 @@ namespace com.spacepuppy.Waypoints
                         if (_useConstantSpeed) t = _speedTable.GetConstPathPercFromTimePerc(t);
 
                         t = Mathf.Clamp01(t);
-                        if (MathUtil.FuzzyEqual(t, 1f)) return new RelativePositionData(_waypoints.Count - 1, 0f);
+                        if (MathUtil.FuzzyEqual(t, 1f)) return new RelativePositionData(_controlPoints.Count - 1, 0f);
 
                         int index;
                         float segmentTime;
-                        if(_isClosed)
+                        if (_isClosed)
                         {
                             index = Mathf.FloorToInt(cnt * t);
                             segmentTime = 1f / cnt;
@@ -255,7 +283,7 @@ namespace com.spacepuppy.Waypoints
                         float lt = index * segmentTime;
                         float ht = (index + 1) * segmentTime;
                         float dt = MathUtil.PercentageMinMax(t, ht, lt);
-                        
+
                         return new RelativePositionData(index, dt);
                     }
             }
@@ -270,39 +298,39 @@ namespace com.spacepuppy.Waypoints
 
         #region IConfigurableIndexedWaypointPath Interface
 
-        public void AddControlPoint(IWaypoint waypoint)
+        public void AddControlPoint(IControlPoint controlpoint)
         {
-            _waypoints.Add(waypoint);
+            _controlPoints.Add(controlpoint);
             _points = null;
         }
 
-        public void InsertControlPoint(int index, IWaypoint waypoint)
+        public void InsertControlPoint(int index, IControlPoint controlpoint)
         {
-            _waypoints.Insert(index, waypoint);
+            _controlPoints.Insert(index, controlpoint);
             _points = null;
         }
 
-        public void ReplaceControlPoint(int index, IWaypoint waypoint)
+        public void ReplaceControlPoint(int index, IControlPoint controlpoint)
         {
-            _waypoints[index] = waypoint;
+            _controlPoints[index] = controlpoint;
             _points = null;
         }
 
         public void RemoveControlPointAt(int index)
         {
-            _waypoints.RemoveAt(index);
+            _controlPoints.RemoveAt(index);
             _points = null;
         }
 
         public void Clear()
         {
-            _waypoints.Clear();
+            _controlPoints.Clear();
             _points = null;
         }
 
         public void DrawGizmos(float segmentLength)
         {
-            if (_waypoints.Count <= 1) return;
+            if (_controlPoints.Count <= 1) return;
 
             var length = this.GetArcLength();
             int divisions = Mathf.FloorToInt(length / segmentLength) + 1;
@@ -320,14 +348,14 @@ namespace com.spacepuppy.Waypoints
 
         #region IEnumerable Interface
 
-        public IEnumerator<IWaypoint> GetEnumerator()
+        public IEnumerator<IControlPoint> GetEnumerator()
         {
-            return _waypoints.GetEnumerator();
+            return _controlPoints.GetEnumerator();
         }
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
-            return _waypoints.GetEnumerator();
+            return _controlPoints.GetEnumerator();
         }
 
         #endregion

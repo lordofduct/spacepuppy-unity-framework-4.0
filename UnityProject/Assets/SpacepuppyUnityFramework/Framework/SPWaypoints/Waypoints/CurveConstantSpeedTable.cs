@@ -11,7 +11,7 @@ namespace com.spacepuppy.Waypoints
     {
 
         #region Fields
-        
+
         private float _totalArcLength = float.NaN;
         private float[] _timesTable;
         private float[] _lengthsTable;
@@ -109,8 +109,18 @@ namespace com.spacepuppy.Waypoints
 
         public float GetTimeAtSubdivision(int index)
         {
-            if (_timesTable == null) return 0f;
-            return _timesTable[index];
+            if (index < 0 || index > _timesTable.Length) throw new System.IndexOutOfRangeException();
+            if (_timesTable == null || index == 0) return 0f;
+            return _timesTable[index - 1];
+        }
+
+        public float GetArcLength(int low, int high)
+        {
+            if (low < 0 || low > _lengthsTable.Length || high < 0 || high > _lengthsTable.Length) throw new System.IndexOutOfRangeException();
+
+            float l = low == 0 ? 0f : _lengthsTable[low - 1];
+            float h = high == 0 ? 0f : _lengthsTable[high - 1];
+            return h - l;
         }
 
         #endregion

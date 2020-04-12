@@ -3,7 +3,7 @@
 namespace com.spacepuppy.Waypoints
 {
 
-    public interface IWaypoint
+    public interface IControlPoint
     {
 
         Vector3 Position { get; set; }
@@ -11,7 +11,7 @@ namespace com.spacepuppy.Waypoints
 
     }
 
-    public interface IWeightedWaypoint : IWaypoint
+    public interface IWeightedControlPoint : IControlPoint
     {
         float Strength { get; set; }
     }

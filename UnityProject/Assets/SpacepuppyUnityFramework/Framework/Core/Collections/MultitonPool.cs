@@ -425,4 +425,80 @@ namespace com.spacepuppy.Collections
 
     }
 
+    public class UniqueToEntityMultitonPool<T> : MultitonPool<T> where T : class
+    {
+
+        #region CONSTRUCTOR
+
+        public UniqueToEntityMultitonPool() : base()
+        {
+        }
+
+        public UniqueToEntityMultitonPool(IEqualityComparer<T> comparer) : base(comparer)
+        {
+        }
+
+        #endregion
+
+        #region Methods
+
+        public bool IsSource(object obj)
+        {
+            return GetFromSource(obj) != null;
+        }
+
+        public T GetFromSource(object obj)
+        {
+            if (obj == null) return null;
+            if (obj is T) return this.Contains(obj as T) ? obj as T : null;
+
+            var entity = SPEntity.Pool.GetFromSource(obj);
+            if (entity == null) return null;
+            //if (entity is T) return this.Contains(entity as T) ? entity as T : null;
+            if (entity is T) return entity as T;
+
+            var result = entity.GetComponentInChildren<T>();
+            return this.Contains(result) ? result : null;
+        }
+
+        public bool GetFromSource(object obj, out T comp)
+        {
+            comp = GetFromSource(obj);
+            return comp != null;
+        }
+
+
+
+
+        public bool IsSource<TSub>(object obj) where TSub : class, T
+        {
+            if (obj is TSub) return true;
+
+            return GetFromSource<TSub>(obj) != null;
+        }
+
+        public TSub GetFromSource<TSub>(object obj) where TSub : class, T
+        {
+            if (obj == null) return null;
+            if (obj is TSub) return obj as TSub;
+
+            var entity = SPEntity.Pool.GetFromSource(obj);
+            if (entity == null) return null;
+            //if (entity is TSub) return this.Contains(entity as TSub) ? entity as TSub : null;
+            if (entity is TSub) return entity as TSub;
+
+            var result = entity.GetComponentInChildren<TSub>();
+            return this.Contains(result) ? result : null;
+        }
+
+        public bool GetFromSource<TSub>(object obj, out TSub comp) where TSub : class, T
+        {
+            comp = GetFromSource<TSub>(obj);
+            return comp != null;
+        }
+
+        #endregion
+
+    }
+
 }

@@ -5,32 +5,26 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Waypoints
 {
 
-    public struct Waypoint : IWaypoint
+    public struct Waypoint : IControlPoint
     {
         public Vector3 Position;
-        private Vector3 _heading;
+        public Vector3 Heading;
 
         public Waypoint(Vector3 p, Vector3 h)
         {
             Position = p;
-            _heading = h.normalized;
+            Heading = h.normalized;
         }
 
-        public Waypoint(IWaypoint waypoint)
+        public Waypoint(IControlPoint waypoint)
         {
             this.Position = waypoint.Position;
-            _heading = waypoint.Heading.normalized;
+            this.Heading = waypoint.Heading.normalized;
         }
 
-        #region IWaypoint Interface
+        #region IControlPoint Interface
 
-        public Vector3 Heading
-        {
-            get { return _heading; }
-            set { _heading = value.normalized; }
-        }
-
-        Vector3 IWaypoint.Position
+        Vector3 IControlPoint.Position
         {
             get
             {
@@ -42,64 +36,79 @@ namespace com.spacepuppy.Waypoints
             }
         }
 
-        #endregion
+        Vector3 IControlPoint.Heading
+        {
+            get
+            {
+                return this.Heading;
+            }
+            set
+            {
+                this.Heading = value.normalized;
+            }
+        }
 
+        public bool IsInvalid { get { return this.Heading == Vector3.zero; } }
+
+        #endregion
 
         #region Operator Interface
 
-        public static bool Compare(IWaypoint a, IWaypoint b)
+        public static bool Compare(IControlPoint a, IControlPoint b)
         {
-            //return (a.Position == b.Position) && (a.Heading == b.Heading);
             return VectorUtil.FuzzyEquals(a.Position, b.Position) && VectorUtil.FuzzyEquals(a.Heading, b.Heading);
         }
 
-        public static bool Compare(Waypoint a, IWaypoint b)
+        public static bool Compare(Waypoint a, IControlPoint b)
         {
-            //return (a.Position == b.Position) && (a._heading == b.Heading);
-            return VectorUtil.FuzzyEquals(a.Position, b.Position) && VectorUtil.FuzzyEquals(a.Heading, b.Heading);
+            return !a.IsInvalid && VectorUtil.FuzzyEquals(a.Position, b.Position) && VectorUtil.FuzzyEquals(a.Heading, b.Heading);
         }
 
-        public static bool Compare(IWaypoint a, Waypoint b)
+        public static bool Compare(IControlPoint a, Waypoint b)
         {
-            //return (a.Position == b.Position) && (a.Heading == b._heading);
-            return VectorUtil.FuzzyEquals(a.Position, b.Position) && VectorUtil.FuzzyEquals(a.Heading, b.Heading);
+            return !b.IsInvalid && VectorUtil.FuzzyEquals(a.Position, b.Position) && VectorUtil.FuzzyEquals(a.Heading, b.Heading);
+        }
+
+        public static bool Compare(Waypoint a, Waypoint b)
+        {
+            return (a.IsInvalid && b.IsInvalid) || (VectorUtil.FuzzyEquals(a.Position, b.Position) && VectorUtil.FuzzyEquals(a.Heading, b.Heading));
         }
 
         #endregion
 
-        public static Waypoint Invalid { get { return new Waypoint(new Vector3(float.NaN, float.NaN, float.NaN), new Vector3(float.NaN, float.NaN, float.NaN)); } }
+        public static readonly Waypoint Invalid = new Waypoint(Vector3.zero, Vector3.zero);
 
     }
 
-    public struct WeightedWaypoint : IWeightedWaypoint
+    public struct WeightedWaypoint : IWeightedControlPoint
     {
         public Vector3 Position;
-        private Vector3 _heading;
+        public Vector3 Heading;
         public float Strength;
 
         public WeightedWaypoint(Vector3 p, Vector3 h, float s)
         {
             Position = p;
-            _heading = h.normalized;
+            Heading = h.normalized;
             Strength = s;
         }
 
-        public WeightedWaypoint(IWeightedWaypoint waypoint)
+        public WeightedWaypoint(IWeightedControlPoint waypoint)
         {
             this.Position = waypoint.Position;
-            _heading = waypoint.Heading.normalized;
+            this.Heading = waypoint.Heading.normalized;
             this.Strength = waypoint.Strength;
         }
 
         #region IWaypoint Interface
 
-        public Vector3 Heading
+        Vector3 IControlPoint.Heading
         {
-            get { return _heading; }
-            set { _heading = value.normalized; }
+            get { return this.Heading; }
+            set { this.Heading = value.normalized; }
         }
 
-        Vector3 IWaypoint.Position
+        Vector3 IControlPoint.Position
         {
             get
             {
@@ -111,7 +120,7 @@ namespace com.spacepuppy.Waypoints
             }
         }
 
-        float IWeightedWaypoint.Strength
+        float IWeightedControlPoint.Strength
         {
             get
             {
@@ -123,26 +132,35 @@ namespace com.spacepuppy.Waypoints
             }
         }
 
+        public bool IsInvalid { get { return this.Heading == Vector3.zero; } }
+
         #endregion
 
         #region Operator Interface
 
-        public static bool Compare(IWeightedWaypoint a, IWeightedWaypoint b)
+        public static bool Compare(IWeightedControlPoint a, IWeightedControlPoint b)
         {
-            return (a.Position == b.Position) && (a.Heading == b.Heading) && (a.Strength == b.Strength);
+            return VectorUtil.FuzzyEquals(a.Position, b.Position) && VectorUtil.FuzzyEquals(a.Heading, b.Heading) && MathUtil.FuzzyEqual(a.Strength, b.Strength);
         }
 
-        public static bool Compare(WeightedWaypoint a, IWeightedWaypoint b)
+        public static bool Compare(WeightedWaypoint a, IWeightedControlPoint b)
         {
-            return (a.Position == b.Position) && (a._heading == b.Heading) && (a.Strength == b.Strength);
+            return !a.IsInvalid && VectorUtil.FuzzyEquals(a.Position, b.Position) && MathUtil.FuzzyEqual(a.Strength, b.Strength);
         }
 
-        public static bool Compare(IWeightedWaypoint a, WeightedWaypoint b)
+        public static bool Compare(IWeightedControlPoint a, WeightedWaypoint b)
         {
-            return (a.Position == b.Position) && (a.Heading == b._heading) && (a.Strength == b.Strength);
+            return !b.IsInvalid && VectorUtil.FuzzyEquals(a.Position, b.Position) && VectorUtil.FuzzyEquals(a.Heading, b.Heading) && MathUtil.FuzzyEqual(a.Strength, b.Strength);
+        }
+
+        public static bool Compare(WeightedWaypoint a, WeightedWaypoint b)
+        {
+            return (a.IsInvalid && b.IsInvalid) || (VectorUtil.FuzzyEquals(a.Position, b.Position) && VectorUtil.FuzzyEquals(a.Heading, b.Heading) && MathUtil.FuzzyEqual(a.Strength, b.Strength));
         }
 
         #endregion
+
+        public static readonly WeightedWaypoint Invalid = new WeightedWaypoint(Vector3.zero, Vector3.zero, 0f);
 
     }
 

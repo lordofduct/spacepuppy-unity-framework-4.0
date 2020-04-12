@@ -25,7 +25,7 @@ namespace com.spacepuppy.Collections
     {
 
         #region Static Interface
-        
+
         /// <summary>
         /// Returns the any available collection for use generically. 
         /// The collection could be a HashSet, List, or any temp implementation. 
@@ -88,6 +88,21 @@ namespace com.spacepuppy.Collections
         public static TempDictionary<TKey, TValue> GetDict<TKey, TValue>(IDictionary<TKey, TValue> dict)
         {
             return TempDictionary<TKey, TValue>.GetDict(dict);
+        }
+
+        public static TempQueue<T> GetQueue<T>()
+        {
+            return TempQueue<T>.GetQueue();
+        }
+
+        public static TempQueue<T> GetQueue<T>(IEnumerable<T> e)
+        {
+            return TempQueue<T>.GetQueue(e);
+        }
+
+        public static TempCallbackCollection<T> GetCallbackCollection<T>(Action<T> addCallback, Action<T> removeCallback = null)
+        {
+            return TempCallbackCollection<T>.GetCallbackCollection(addCallback, removeCallback);
         }
 
         #endregion

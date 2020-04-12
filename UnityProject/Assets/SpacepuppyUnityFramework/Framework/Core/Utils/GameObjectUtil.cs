@@ -625,17 +625,19 @@ namespace com.spacepuppy.Utils
 
         public static void GetAllChildren(this Transform t, ICollection<Transform> coll)
         {
-            if (coll is IList<Transform>)
+            using (var queue = TempCollection.GetQueue<Transform>())
             {
-                GetAllChildren(t, coll as IList<Transform>);
-            }
-            else
-            {
-                using (var lst = TempCollection.GetList<Transform>())
+                queue.Enqueue(t);
+
+                while(queue.Count > 0)
                 {
-                    GetAllChildren(t, lst);
-                    var e = lst.GetEnumerator();
-                    while (e.MoveNext()) coll.Add(e.Current);
+                    t = queue.Dequeue();
+                    for(int i = 0; i < t.childCount; i++)
+                    {
+                        var child = t.GetChild(i);
+                        coll.Add(child);
+                        queue.Enqueue(child);
+                    }
                 }
             }
         }

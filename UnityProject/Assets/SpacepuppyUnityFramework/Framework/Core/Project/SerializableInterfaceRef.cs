@@ -18,7 +18,7 @@ namespace com.spacepuppy.Project
     /// </summary>
     /// <typeparam name="T"></typeparam>
     [System.Serializable]
-    public class SerializableInterfaceRef<T> : BaseSerializableInterfaceRef, ISerializationCallbackReceiver where T : class
+    public abstract class SerializableInterfaceRef<T> : BaseSerializableInterfaceRef, ISerializationCallbackReceiver where T : class
     {
 
         #region Fields

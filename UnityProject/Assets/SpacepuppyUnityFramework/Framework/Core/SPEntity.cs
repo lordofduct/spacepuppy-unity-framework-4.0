@@ -170,16 +170,16 @@ namespace com.spacepuppy
             public virtual SPEntity GetFromSource(System.Type tp, object obj)
             {
                 if (tp == null || obj == null) return null;
-                if (obj is SPEntity) return TypeUtil.IsType(obj.GetType(), tp) ? obj as SPEntity : null;
+                if (obj is SPEntity) return tp.IsInstanceOfType(obj) ? obj as SPEntity : null;
 
                 var go = GameObjectUtil.GetGameObjectFromSource(obj, true);
                 if (go == null) return null;
 
                 var e = go.GetComponent<SPEntity>();
-                if (!object.ReferenceEquals(e, null)) return TypeUtil.IsType(e.GetType(), tp) ? e : null;
+                if (!object.ReferenceEquals(e, null)) return tp.IsInstanceOfType(e) ? e : null;
 
                 e = go.AddOrGetComponent<SPEntityHook>().GetEntity();
-                if (!object.ReferenceEquals(e, null)) return TypeUtil.IsType(e.GetType(), tp) ? e : null;
+                if (!object.ReferenceEquals(e, null)) return tp.IsInstanceOfType(e) ? e : null;
 
                 return null;
             }

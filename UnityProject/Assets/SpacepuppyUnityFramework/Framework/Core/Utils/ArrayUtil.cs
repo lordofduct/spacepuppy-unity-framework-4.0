@@ -94,22 +94,6 @@ namespace com.spacepuppy.Utils
             return -1;
         }
 
-        public static IEnumerable<T> Like<T>(this IEnumerable lst)
-        {
-            foreach (var obj in lst)
-            {
-                if (obj is T) yield return (T)obj;
-            }
-        }
-
-        public static IEnumerable Like(this IEnumerable lst, System.Type tp)
-        {
-            foreach (var obj in lst)
-            {
-                if (TypeUtil.IsType(obj.GetType(), tp)) yield return obj;
-            }
-        }
-
         public static bool Compare<T>(this IEnumerable<T> first, IEnumerable<T> second)
         {
             var e1 = first.GetEnumerator();

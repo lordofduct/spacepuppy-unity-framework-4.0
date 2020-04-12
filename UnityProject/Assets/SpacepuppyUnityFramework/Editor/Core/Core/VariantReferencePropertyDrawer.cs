@@ -251,7 +251,7 @@ namespace com.spacepuppyeditor.Core
                                         {
                                             variant.ObjectValue = null;
                                         }
-                                        else if(TypeUtil.IsType(obj.GetType(), _forcedObjectType))
+                                        else if(_forcedObjectType.IsInstanceOfType(obj))
                                         {
                                             variant.ObjectValue = obj;
                                         }

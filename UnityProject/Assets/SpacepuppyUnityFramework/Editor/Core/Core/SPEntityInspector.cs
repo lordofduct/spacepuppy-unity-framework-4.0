@@ -89,7 +89,7 @@ namespace com.spacepuppyeditor.Core
                 if (go != null)
                 {
                     var e = go.GetComponentInParent<SPEntity>();
-                    if (TypeUtil.IsType(e.GetType(), tp)) return e;
+                    if (tp.IsInstanceOfType(e)) return e;
                 }
 
                 return null;

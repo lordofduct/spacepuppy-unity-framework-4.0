@@ -22,7 +22,7 @@ namespace com.spacepuppy.Dynamic
         IEnumerable<string> GetMemberNames(bool includeNonPublic);
         IEnumerable<MemberInfo> GetMembers(bool includeNonPublic);
         MemberInfo GetMember(string sMemberName, bool includeNonPublic);
-        
+
     }
 
     [System.Flags()]
@@ -657,7 +657,7 @@ namespace com.spacepuppy.Dynamic
 
             return null;
         }
-        
+
         public static bool HasMemberDirect(object obj, string name, bool includeNonPublic)
         {
             if (obj == null) return false;
@@ -1084,7 +1084,7 @@ namespace com.spacepuppy.Dynamic
         public static object GetValueWithMember(MemberInfo info, object targObj, bool ignoreMethod)
         {
             if (info == null || targObj == null) return null;
-            if (!TypeUtil.IsType(targObj.GetType(), info.DeclaringType)) return null;
+            if (!info.DeclaringType.IsInstanceOfType(targObj)) return null;
 
             try
             {
@@ -1323,7 +1323,7 @@ namespace com.spacepuppy.Dynamic
                 {
                     continue;
                 }
-                if (args[i].GetType().IsAssignableFrom(paramInfos[i].ParameterType))
+                else if (paramInfos[i].ParameterType.IsInstanceOfType(args[i]))
                 {
                     continue;
                 }
@@ -1348,12 +1348,11 @@ namespace com.spacepuppy.Dynamic
                 {
                     continue;
                 }
-                var atp = args[i].GetType();
-                if (atp.IsAssignableFrom(paramInfos[i].ParameterType))
+                else if (paramInfos[i].ParameterType.IsInstanceOfType(args[i]))
                 {
                     continue;
                 }
-                if (ConvertUtil.IsNumericType(atp) && ConvertUtil.IsNumericType(paramInfos[i].ParameterType))
+                else if (ConvertUtil.IsNumericType(args[i].GetType()) && ConvertUtil.IsNumericType(paramInfos[i].ParameterType))
                 {
                     continue;
                 }
@@ -1371,12 +1370,11 @@ namespace com.spacepuppy.Dynamic
                         {
                             continue;
                         }
-                        var atp = args[i].GetType();
-                        if (atp.IsAssignableFrom(paramInfos[i].ParameterType))
+                        else if (paramInfos[i].ParameterType.IsInstanceOfType(args[i]))
                         {
                             continue;
                         }
-                        if (ConvertUtil.IsNumericType(atp) && ConvertUtil.IsNumericType(paramInfos[i].ParameterType))
+                        else if (ConvertUtil.IsNumericType(args[i].GetType()) && ConvertUtil.IsNumericType(paramInfos[i].ParameterType))
                         {
                             args[i] = ConvertUtil.ToPrim(args[i], paramInfos[i].ParameterType);
                         }

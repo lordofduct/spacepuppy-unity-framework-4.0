@@ -489,7 +489,7 @@ namespace com.spacepuppy.Utils
                     var e = tmpLst.GetEnumerator();
                     while (e.MoveNext())
                     {
-                        if (TypeUtil.IsType(e.Current.GetType(), tp)) coll.Add(e.Current);
+                        if (tp.IsInstanceOfType(e.Current)) coll.Add(e.Current);
                     }
                 }
                 else
@@ -498,7 +498,7 @@ namespace com.spacepuppy.Utils
                     var e = tmpLst.GetEnumerator();
                     while (e.MoveNext())
                     {
-                        if (e.Current.gameObject != obj && TypeUtil.IsType(e.Current.GetType(), tp)) coll.Add(e.Current);
+                        if (e.Current.gameObject != obj && tp.IsInstanceOfType(e.Current)) coll.Add(e.Current);
                     }
                 }
             }

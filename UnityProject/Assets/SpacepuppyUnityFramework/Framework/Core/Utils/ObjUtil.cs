@@ -470,12 +470,11 @@ namespace com.spacepuppy.Utils
             obj = obj.SanitizeRef();
             if (obj == null) return null;
 
-            var otp = obj.GetType();
-            if (TypeUtil.IsType(otp, tp)) return obj;
+            if (tp.IsInstanceOfType(obj)) return obj;
             if (obj is IComponent)
             {
                 var c = (obj as IComponent).component;
-                if (!object.ReferenceEquals(c, null) && TypeUtil.IsType(c.GetType(), tp)) return c;
+                if (!object.ReferenceEquals(c, null) && tp.IsInstanceOfType(c)) return c;
             }
 
             var go = GameObjectUtil.GetGameObjectFromSource(obj);
@@ -504,8 +503,7 @@ namespace com.spacepuppy.Utils
                 if (obj == null) return false;
             }
 
-            var otp = obj.GetType();
-            if (TypeUtil.IsType(otp, tp))
+            if (tp.IsInstanceOfType(obj))
             {
                 result = obj;
                 return true;
@@ -513,7 +511,7 @@ namespace com.spacepuppy.Utils
             if (obj is IComponent)
             {
                 var c = (obj as IComponent).component;
-                if (!object.ReferenceEquals(c, null) && TypeUtil.IsType(c.GetType(), tp))
+                if (!object.ReferenceEquals(c, null) && tp.IsInstanceOfType(c))
                 {
                     result = c;
                     return true;
@@ -595,12 +593,11 @@ namespace com.spacepuppy.Utils
                 if (obj == null) return null;
             }
 
-            var otp = obj.GetType();
-            if (TypeUtil.IsType(otp, tp)) return obj;
+            if (tp.IsInstanceOfType(obj)) return obj;
             if (obj is IComponent)
             {
                 var c = (obj as IComponent).component;
-                if (!object.ReferenceEquals(c, null) && TypeUtil.IsType(c.GetType(), tp)) return c;
+                if (!object.ReferenceEquals(c, null) && tp.IsInstanceOfType(c)) return c;
             }
 
             var go = GameObjectUtil.GetGameObjectFromSource(obj);
@@ -680,12 +677,11 @@ namespace com.spacepuppy.Utils
 
             using (var set = TempCollection.GetSet<object>())
             {
-                var otp = obj.GetType();
-                if (TypeUtil.IsType(otp, tp)) set.Add(obj);
+                if (tp.IsInstanceOfType(obj)) set.Add(obj);
                 if (obj is IComponent)
                 {
                     var c = (obj as IComponent).component;
-                    if (!object.ReferenceEquals(c, null) && TypeUtil.IsType(c.GetType(), tp)) set.Add(c);
+                    if (!object.ReferenceEquals(c, null) && tp.IsInstanceOfType(c)) set.Add(c);
                 }
 
                 var go = GameObjectUtil.GetGameObjectFromSource(obj);
@@ -742,7 +738,7 @@ namespace com.spacepuppy.Utils
         {
             if (obj == null) return false;
 
-            return TypeUtil.IsType(obj.GetType(), tp);
+            return tp.IsInstanceOfType(obj);
         }
 
         public static bool IsType(object obj, System.Type tp, bool respectProxy)
@@ -755,7 +751,7 @@ namespace com.spacepuppy.Utils
             }
             else
             {
-                return TypeUtil.IsType(obj.GetType(), tp);
+                return tp.IsInstanceOfType(obj);
             }
         }
 

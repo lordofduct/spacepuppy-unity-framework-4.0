@@ -1004,7 +1004,7 @@ namespace com.spacepuppyeditor
                 {
                     foreach (var c in go.GetComponents(inheritsFromType))
                     {
-                        if (TypeUtil.IsType(c.GetType(), targetComponentType))
+                        if (targetComponentType.IsInstanceOfType(c))
                         {
                             return c as Component;
                         }

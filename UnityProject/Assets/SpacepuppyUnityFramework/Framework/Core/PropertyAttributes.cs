@@ -70,6 +70,41 @@ namespace com.spacepuppy
 
     #region Property Drawer Attributes
 
+    public class DisplayFlatAttribute : SPPropertyAttribute
+    {
+
+        public bool CanShrinkAndExpand;
+
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
+    public class DisplayNestedPropertyAttribute : SPPropertyAttribute
+    {
+
+        public readonly string InnerPropName;
+        public readonly string Label;
+        public readonly string Tooltip;
+
+        public DisplayNestedPropertyAttribute(string innerPropName)
+        {
+            InnerPropName = innerPropName;
+        }
+
+        public DisplayNestedPropertyAttribute(string innerPropName, string label)
+        {
+            InnerPropName = innerPropName;
+            Label = label;
+        }
+
+        public DisplayNestedPropertyAttribute(string innerPropName, string label, string tooltip)
+        {
+            InnerPropName = innerPropName;
+            Label = label;
+            Tooltip = tooltip;
+        }
+
+    }
+
     [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
     public class EnumFlagsAttribute : SPPropertyAttribute
     {

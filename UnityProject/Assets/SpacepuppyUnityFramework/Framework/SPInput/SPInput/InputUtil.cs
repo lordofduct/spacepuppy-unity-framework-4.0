@@ -187,6 +187,25 @@ namespace com.spacepuppy.SPInput
             }
         }
 
+        public static bool GetButtonRecentlyDown(this IInputDevice device, string id, float duration)
+        {
+            if (device == null) return false;
+
+            var sig = device.GetSignature(id) as IButtonInputSignature;
+            if (sig == null) return false;
+
+            return (Time.realtimeSinceStartup - sig.LastDownTime) <= duration;
+        }
+
+        public static bool GetButtonRecentlyDown<T>(this IMappedInputDevice<T> device, T id, float duration) where T : struct, System.IConvertible
+        {
+            if (device == null) return false;
+
+            var sig = device.GetSignature(id) as IButtonInputSignature;
+            if (sig == null) return false;
+
+            return (Time.realtimeSinceStartup - sig.LastDownTime) <= duration;
+        }
 
         public static bool GetInputIsActivated(this IInputSignature sig)
         {

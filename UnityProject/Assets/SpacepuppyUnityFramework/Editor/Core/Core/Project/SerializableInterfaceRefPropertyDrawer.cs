@@ -77,6 +77,17 @@ namespace com.spacepuppyeditor.Core.Project
             Debug.LogError("Malformed SerializedInterfaceRef - make sure you inherit from 'SerializableInterfaceRef'.");
         }
 
+
+        public static void SetSerializedProperty(SerializedProperty property, UnityEngine.Object obj)
+        {
+            if (property == null) throw new System.ArgumentNullException(nameof(property));
+            var objProp = property.FindPropertyRelative(PROP_OBJ);
+            if (objProp != null && objProp.propertyType == SerializedPropertyType.ObjectReference)
+            {
+                objProp.objectReferenceValue = obj;
+            }
+        }
+
     }
 
 }

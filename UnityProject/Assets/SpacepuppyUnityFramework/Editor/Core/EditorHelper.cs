@@ -528,6 +528,18 @@ namespace com.spacepuppyeditor
                     break;
                 case SerializedPropertyType.Gradient:
                     throw new System.InvalidOperationException("Can not handle Gradient types.");
+                case SerializedPropertyType.Generic:
+                    {
+                        var targType = prop.GetTargetType();
+                        if (targType != null)
+                        {
+                            if (TypeUtil.IsType(targType, typeof(com.spacepuppy.Project.BaseSerializableInterfaceRef)))
+                            {
+                                com.spacepuppyeditor.Core.Project.SerializableInterfaceRefPropertyDrawer.SetSerializedProperty(prop, value as UnityEngine.Object);
+                            }
+                        }
+                    }
+                    break;
             }
         }
 
@@ -705,6 +717,16 @@ namespace com.spacepuppyeditor
                     return true;
                 default:
                     return false;
+            }
+        }
+
+        public static IEnumerable<SerializedProperty> EnumerateArray(this SerializedProperty prop)
+        {
+            if (!prop.isArray) yield break;
+
+            for (int i = 0; i < prop.arraySize; i++)
+            {
+                yield return prop.GetArrayElementAtIndex(i);
             }
         }
 

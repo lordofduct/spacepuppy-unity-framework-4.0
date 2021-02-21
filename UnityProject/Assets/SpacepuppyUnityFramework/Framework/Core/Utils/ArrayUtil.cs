@@ -47,6 +47,16 @@ namespace com.spacepuppy.Utils
 
         #region General Methods
 
+        public static HashSet<T> ToHashSet<T>(this IEnumerable<T> e)
+        {
+            return new HashSet<T>(e);
+        }
+
+        public static HashSet<T> ToHashSet<T>(this IEnumerable<T> e, IEqualityComparer<T> comparer)
+        {
+            return new HashSet<T>(e, comparer);
+        }
+
         public static bool IsEmpty(this IEnumerable lst)
         {
             if(lst is IList)

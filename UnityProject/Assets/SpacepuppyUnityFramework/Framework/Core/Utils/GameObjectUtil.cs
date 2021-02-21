@@ -587,6 +587,18 @@ namespace com.spacepuppy.Utils
 
         #region Parenting
 
+        public static GameObject SetParent(this GameObject obj, Transform parent)
+        {
+            obj.transform.parent = parent;
+            return obj;
+        }
+
+        public static Transform SetParent(this Transform obj, Transform parent)
+        {
+            obj.parent = parent;
+            return obj;
+        }
+
         public static IEnumerable<Transform> IterateAllChildren(this Transform trans)
         {
             for (int i = 0; i < trans.childCount; i++)

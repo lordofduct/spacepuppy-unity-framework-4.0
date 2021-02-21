@@ -20,6 +20,7 @@ namespace com.spacepuppyeditor.Internal
 
         private PropertyDrawer _drawer;
         private List<PropertyModifier> _modifiers;
+        private string _customDisplayName;
         private string _customTooltip;
 
         #endregion
@@ -101,6 +102,16 @@ namespace com.spacepuppyeditor.Internal
                     var modifier = PropertyDrawerActivator.Create(mtp, attribute, field) as PropertyModifier;
                     if (_modifiers == null) _modifiers = new List<PropertyModifier>();
                     _modifiers.Add(modifier);
+                }
+            }
+            else if (attribute is DisplayNameAttribute)
+            {
+                var dattrib = attribute as DisplayNameAttribute;
+                _customDisplayName = dattrib.DisplayName;
+                if (dattrib.tooltip != null)
+                {
+                    _customTooltip = dattrib.tooltip;
+                    base.HandleAttribute(property, attribute, field, propertyType);
                 }
             }
             else if (attribute is TooltipAttribute)
@@ -215,7 +226,7 @@ namespace com.spacepuppyeditor.Internal
         {
             if (label == null)
             {
-                label = EditorHelper.TempContent(property.displayName, _customTooltip ?? property.tooltip);
+                label = EditorHelper.TempContent(_customDisplayName ?? property.displayName, _customTooltip ?? property.tooltip);
             }
             else if (string.IsNullOrEmpty(label.tooltip) && !string.IsNullOrEmpty(_customTooltip))
             {
@@ -252,7 +263,7 @@ namespace com.spacepuppyeditor.Internal
         {
             if (label == null)
             {
-                label = EditorHelper.TempContent(property.displayName, _customTooltip ?? property.tooltip);
+                label = EditorHelper.TempContent(_customDisplayName ?? property.displayName, _customTooltip ?? property.tooltip);
             }
             else if (string.IsNullOrEmpty(label.tooltip) && !string.IsNullOrEmpty(_customTooltip))
             {

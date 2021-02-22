@@ -471,7 +471,7 @@ namespace com.spacepuppyeditor
             }
         }
 
-        public static void SetPropertyValue(this SerializedProperty prop, object value)
+        public static void SetPropertyValue(this SerializedProperty prop, object value, bool ignoreSpecialWrappers = false)
         {
             if (prop == null) throw new System.ArgumentNullException("prop");
 
@@ -526,12 +526,33 @@ namespace com.spacepuppyeditor
                 case SerializedPropertyType.Bounds:
                     prop.boundsValue = (Bounds)value;
                     break;
-                case SerializedPropertyType.Gradient:
-                    throw new System.InvalidOperationException("Can not handle Gradient types.");
+                case SerializedPropertyType.Generic:
+                    {
+                        if (!ignoreSpecialWrappers)
+                        {
+                            var fieldType = prop.GetTargetType();
+                            if (fieldType != null)
+                            {
+                                if (TypeUtil.IsType(fieldType, typeof(VariantReference)))
+                                {
+                                    com.spacepuppyeditor.Core.VariantReferencePropertyDrawer.SetSerializedProperty(prop, value);
+                                    return;
+                                }
+                                else if (TypeUtil.IsType(fieldType, typeof(com.spacepuppy.Project.BaseSerializableInterfaceRef)))
+                                {
+                                    com.spacepuppyeditor.Core.Project.SerializableInterfaceRefPropertyDrawer.SetSerializedProperty(prop, value as UnityEngine.Object);
+                                    return;
+                                }
+                            }
+
+                            SetTargetObjectOfProperty(prop, value);
+                        }
+                    }
+                    break;
             }
         }
 
-        public static object GetPropertyValue(this SerializedProperty prop)
+        public static object GetPropertyValue(this SerializedProperty prop, bool ignoreSpecialWrappers = false)
         {
             if (prop == null) throw new System.ArgumentNullException("prop");
 
@@ -569,16 +590,34 @@ namespace com.spacepuppyeditor
                     return prop.animationCurveValue;
                 case SerializedPropertyType.Bounds:
                     return prop.boundsValue;
-                case SerializedPropertyType.Gradient:
-                    throw new System.InvalidOperationException("Can not handle Gradient types.");
+                case SerializedPropertyType.Generic:
+                    {
+                        if (!ignoreSpecialWrappers)
+                        {
+                            var fieldType = prop.GetTargetType();
+                            if (fieldType != null)
+                            {
+                                if (TypeUtil.IsType(fieldType, typeof(VariantReference)))
+                                {
+                                    return com.spacepuppyeditor.Core.VariantReferencePropertyDrawer.GetFromSerializedProperty(prop);
+                                }
+                                else if (TypeUtil.IsType(fieldType, typeof(com.spacepuppy.Project.BaseSerializableInterfaceRef)))
+                                {
+                                    return com.spacepuppyeditor.Core.Project.SerializableInterfaceRefPropertyDrawer.GetFromSerializedProperty(prop);
+                                }
+                            }
+                        }
+
+                        return GetTargetObjectOfProperty(prop);
+                    }
             }
 
             return null;
         }
 
-        public static T GetPropertyValue<T>(this SerializedProperty prop)
+        public static T GetPropertyValue<T>(this SerializedProperty prop, bool ignoreSpecialWrappers = false)
         {
-            var obj = GetPropertyValue(prop);
+            var obj = GetPropertyValue(prop, ignoreSpecialWrappers);
             if (obj is T) return (T)obj;
 
             var tp = typeof(T);
@@ -590,6 +629,28 @@ namespace com.spacepuppyeditor
             {
                 return default(T);
             }
+        }
+
+        /// <summary>
+        /// Returns the type that the SerializedProperty is interpreted as when calling SetPropertyValue or GetPropertyValue.
+        /// </summary>
+        /// <param name="prop"></param>
+        /// <param name="ignoreSpecialWrappers"></param>
+        /// <returns></returns>
+        public static System.Type GetPropertyValueType(this SerializedProperty prop, bool ignoreSpecialWrappers = false)
+        {
+            if (prop == null) throw new System.ArgumentNullException("prop");
+
+            var fieldType = prop.GetTargetType();
+            if (fieldType != null && !ignoreSpecialWrappers)
+            {
+                if (TypeUtil.IsType(fieldType, typeof(com.spacepuppy.Project.BaseSerializableInterfaceRef)))
+                {
+                    fieldType = com.spacepuppyeditor.Core.Project.SerializableInterfaceRefPropertyDrawer.GetRefTypeFromSerializedProperty(prop);
+                }
+            }
+
+            return fieldType ?? typeof(object);
         }
 
         public static SerializedPropertyType GetPropertyType(System.Type tp)
@@ -705,6 +766,16 @@ namespace com.spacepuppyeditor
                     return true;
                 default:
                     return false;
+            }
+        }
+
+        public static IEnumerable<SerializedProperty> EnumerateArray(this SerializedProperty prop)
+        {
+            if (!prop.isArray) yield break;
+
+            for (int i = 0; i < prop.arraySize; i++)
+            {
+                yield return prop.GetArrayElementAtIndex(i);
             }
         }
 

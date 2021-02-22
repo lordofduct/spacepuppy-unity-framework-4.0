@@ -88,6 +88,27 @@ namespace com.spacepuppyeditor.Core.Project
             }
         }
 
+        public static UnityEngine.Object GetFromSerializedProperty(SerializedProperty property)
+        {
+            if (property == null) throw new System.ArgumentNullException(nameof(property));
+
+            return property.FindPropertyRelative(PROP_OBJ)?.objectReferenceValue;
+        }
+
+        public static System.Type GetRefTypeFromSerializedProperty(SerializedProperty property)
+        {
+            if (property == null) throw new System.ArgumentNullException(nameof(property));
+
+            var wrapperType = property.GetTargetType();
+            if (TypeUtil.IsType(wrapperType, typeof(SerializableInterfaceRef<>)))
+            {
+                var valueprop = wrapperType.GetProperty("Value", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                return valueprop?.PropertyType ?? typeof(UnityEngine.Object);
+            }
+
+            return typeof(UnityEngine.Object);
+        }
+
     }
 
 }

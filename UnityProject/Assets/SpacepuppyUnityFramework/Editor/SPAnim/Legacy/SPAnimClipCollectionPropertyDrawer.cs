@@ -264,18 +264,19 @@ namespace com.spacepuppyeditor.Anim.Legacy
                     {
                         if (listArea.Contains(ev.mousePosition))
                         {
-                            var refs = (from o in DragAndDrop.objectReferences let obj = ObjUtil.GetAsFromSource<AnimationClip>(o) where obj != null select obj);
+                            //var refs = (from o in DragAndDrop.objectReferences let obj = ObjUtil.GetAsFromSource<AnimationClip>(o) where obj != null select obj);
+                            var refs = (from o in DragAndDrop.objectReferences let objs = SPAnimClipPropertyDrawer.GetAnimClipsFromSource(o) where objs.Any() select objs).SelectMany(o => o).ToList();
                             DragAndDrop.visualMode = refs.Any() ? DragAndDropVisualMode.Link : DragAndDropVisualMode.Rejected;
 
                             if (ev.type == EventType.DragPerform && refs.Any())
                             {
                                 DragAndDrop.AcceptDrag();
 
-                                var names = _animList.serializedProperty.EnumerateArray().Select(o => o.FindPropertyRelative("_name").stringValue).ToHashSet();
+                                var names = _animList.serializedProperty.EnumerateArray().Select(o => o.FindPropertyRelative(SPAnimClipPropertyDrawer.PROP_NAME).stringValue).ToHashSet();
                                 foreach (var clip in refs)
                                 {
                                     var stateprop = this.AddNewState(_animList);
-                                    stateprop.FindPropertyRelative("_clip").objectReferenceValue = clip;
+                                    stateprop.FindPropertyRelative(SPAnimClipPropertyDrawer.PROP_CLIP).objectReferenceValue = clip;
 
                                     string nm = clip.name;
                                     string format = nm + "{0:00}";
@@ -284,7 +285,7 @@ namespace com.spacepuppyeditor.Anim.Legacy
                                     {
                                         nm = string.Format(format, ++cnt);
                                     }
-                                    stateprop.FindPropertyRelative("_name").stringValue = nm;
+                                    stateprop.FindPropertyRelative(SPAnimClipPropertyDrawer.PROP_NAME).stringValue = nm;
                                 }
 
                                 GUI.changed = true;

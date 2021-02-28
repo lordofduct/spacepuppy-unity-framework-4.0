@@ -15,8 +15,8 @@ namespace com.spacepuppyeditor.Anim.Legacy
     [CustomPropertyDrawer(typeof(SPAnimClip))]
     public class SPAnimClipPropertyDrawer : PropertyDrawer
     {
-        private const string PROP_NAME = "_name";
-        private const string PROP_CLIP = "_clip";
+        public const string PROP_NAME = "_name";
+        public const string PROP_CLIP = "_clip";
         private static string[] FULL_DETAIL_PROPS = new string[] {SPAnimClip.PROP_WEIGHT,
                                                             SPAnimClip.PROP_SPEED,
                                                             "ScaledDuration",
@@ -175,11 +175,12 @@ namespace com.spacepuppyeditor.Anim.Legacy
             }
             else
             {
+                EditorGUI.BeginChangeCheck();
                 obj = EditorGUI.ObjectField(clipRect, obj, typeof(UnityEngine.Object), true);
-                if (obj == null || obj is AnimationClip || obj is IScriptableAnimationClip)
-                    clipProp.objectReferenceValue = obj;
-                else if (GameObjectUtil.IsGameObjectSource(obj))
-                    clipProp.objectReferenceValue = ObjUtil.GetAsFromSource<IScriptableAnimationClip>(obj) as UnityEngine.Object;
+                if(EditorGUI.EndChangeCheck())
+                {
+                    clipProp.objectReferenceValue = GetAnimClipsFromSource(obj).FirstOrDefault();
+                }
             }
             EditorGUI.EndProperty();
 
@@ -255,6 +256,27 @@ namespace com.spacepuppyeditor.Anim.Legacy
         }
 
         #endregion
+
+        public static IEnumerable<UnityEngine.Object> GetAnimClipsFromSource(UnityEngine.Object obj)
+        {
+            if (obj == null) return null;
+            if (obj is AnimationClip) return new[] { obj };
+            if (obj is IScriptableAnimationClip) return new[] { obj };
+
+            if (obj is GameObject && AssetDatabase.IsMainAsset(obj))
+            {
+                var clips = AnimationUtility.GetAnimationClips(obj as GameObject);
+                if (clips != null && clips.Length > 0) return clips;
+            }
+
+            if(GameObjectUtil.IsGameObjectSource(obj))
+            {
+                var clip = ObjUtil.GetAsFromSource<IScriptableAnimationClip>(obj) as UnityEngine.Object;
+                if (clip != null) return new[] { clip };
+            }
+
+            return Enumerable.Empty<UnityEngine.Object>();
+        }
 
     }
 

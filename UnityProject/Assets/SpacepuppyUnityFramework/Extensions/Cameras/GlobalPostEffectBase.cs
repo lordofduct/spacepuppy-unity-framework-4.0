@@ -1,9 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 
-using com.spacepuppy.Cameras.LegacyRender;
-
-namespace com.spacepuppy.Cameras.LegacyRender
+namespace com.spacepuppy.Cameras
 {
     public abstract class GlobalPostEffectBase : ScriptableObject, IPostProcessingEffect
     {

@@ -432,9 +432,10 @@ namespace com.spacepuppyeditor.Settings
                 case BuildTarget.StandaloneWindows:
                 case BuildTarget.StandaloneWindows64:
                     return "exe";
-                case BuildTarget.StandaloneLinux:
-                case BuildTarget.StandaloneLinuxUniversal:
-                    return "x86";
+                //NOTE - as of 2019.2 only 64-bit linux is supported
+                //case BuildTarget.StandaloneLinux:
+                //case BuildTarget.StandaloneLinuxUniversal:
+                //    return "x86";
                 case BuildTarget.StandaloneLinux64:
                     return "x86_64";
                 case BuildTarget.StandaloneOSX:

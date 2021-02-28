@@ -8,8 +8,8 @@ using System.Collections;
 namespace com.spacepuppy.Project
 {
 
-    [CreateAssetMenu(fileName = "TextDocument", menuName = "Spacepuppy/TextDocument")]
-    public class TextDocument : ScriptableObject, ITextSource
+    [CreateAssetMenu(fileName = "WeightedTextDocument", menuName = "Spacepuppy/WeightedTextDocument")]
+    public class WeightedTextDocument : ScriptableObject, ITextSource
     {
 
         #region Fields
@@ -18,6 +18,12 @@ namespace com.spacepuppy.Project
         [ReorderableArray()]
         [TextArea(3, 10)]
         private string[] _text;
+        [SerializeField]
+        private float[] _weights;
+
+        #endregion
+
+        #region Properties
 
         #endregion
 

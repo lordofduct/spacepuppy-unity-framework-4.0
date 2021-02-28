@@ -18,8 +18,7 @@ namespace com.spacepuppyeditor.Serialization
 
             this.DrawPropertyField(EditorHelper.PROP_SCRIPT);
 
-
-
+            //TODO - refactor this to account for Unity's new nested-prefabs
             var assetIdProp = this.serializedObject.FindProperty(PROP_ASSETID);
             var go = GameObjectUtil.GetGameObjectFromSource(this.serializedObject.targetObject);
             if (go != null)

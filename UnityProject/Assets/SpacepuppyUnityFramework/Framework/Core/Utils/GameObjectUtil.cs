@@ -106,8 +106,7 @@ namespace com.spacepuppy.Utils
         /// <returns></returns>
         public static bool IsAliveAndActive(this GameObject obj)
         {
-            //TODO - IKillable
-            return obj != null && obj.activeInHierarchy; // && !obj.IsKilled();
+            return obj != null && obj.activeInHierarchy && !obj.IsKilled();
         }
 
         /// <summary>
@@ -117,8 +116,7 @@ namespace com.spacepuppy.Utils
         /// <returns></returns>
         public static bool IsAliveAndActive(this Component obj)
         {
-            //TODO - IKillable
-            return obj != null && obj.IsActiveAndEnabled(); // && !obj.IsKilled();
+            return obj != null && obj.IsActiveAndEnabled() && !obj.IsKilled();
         }
 
         /// <summary>
@@ -128,8 +126,7 @@ namespace com.spacepuppy.Utils
         /// <returns></returns>
         public static bool IsAliveAndActive(this Behaviour obj)
         {
-            //TODO - IKillable
-            return obj != null && obj.isActiveAndEnabled; // && !obj.IsKilled();
+            return obj != null && obj.isActiveAndEnabled && !obj.IsKilled();
         }
 
         public static bool TrySetActive(this GameObject go, bool active)
@@ -160,10 +157,6 @@ namespace com.spacepuppy.Utils
             }
         }
 
-        /*
-         * TODO - IKillable
-         * 
-        
         /// <summary>
         /// Tests if the object is either destroyed or killed.
         /// </summary>
@@ -260,8 +253,6 @@ namespace com.spacepuppy.Utils
         {
             Kill(obj.FindRoot());
         }
-
-         */
 
         #endregion
 

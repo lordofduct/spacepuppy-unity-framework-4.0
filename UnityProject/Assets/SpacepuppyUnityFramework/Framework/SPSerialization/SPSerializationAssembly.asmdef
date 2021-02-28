@@ -1,5 +1,5 @@
 {
-    "name": "SPSerializationAsmDef",
+    "name": "com.spacepuppy.Serialization",
     "references": [
         "GUID:ddd0eb9fc8f414a4d9750a013f135d36"
     ],

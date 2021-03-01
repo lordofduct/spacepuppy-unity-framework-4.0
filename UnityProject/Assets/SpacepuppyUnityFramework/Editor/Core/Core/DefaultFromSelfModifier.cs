@@ -46,7 +46,7 @@ namespace com.spacepuppyeditor.Core
                         targ = targ.FindRoot();
 
                         var obj = ObjUtil.GetAsFromSource(restrictionType, targ);
-                        if (obj == null && ComponentUtil.IsAcceptableComponentType(restrictionType)) obj = targ.GetComponentInChildren(restrictionType);
+                        if (object.ReferenceEquals(obj, null) && ComponentUtil.IsAcceptableComponentType(restrictionType)) obj = targ.GetComponentInChildren(restrictionType);
                         return obj;
                     }
                 case EntityRelativity.Self:
@@ -56,7 +56,7 @@ namespace com.spacepuppyeditor.Core
                 case EntityRelativity.SelfAndChildren:
                     {
                         var obj = ObjUtil.GetAsFromSource(restrictionType, targ);
-                        if (obj == null && ComponentUtil.IsAcceptableComponentType(restrictionType)) obj = targ.GetComponentInChildren(restrictionType);
+                        if (object.ReferenceEquals(targ, null) && ComponentUtil.IsAcceptableComponentType(restrictionType)) obj = targ.GetComponentInChildren(restrictionType);
                         return obj;
                     }
                 default:
@@ -66,9 +66,11 @@ namespace com.spacepuppyeditor.Core
 
         private static void ApplyDefaultAsSingle(SerializedProperty property, System.Type restrictionType, EntityRelativity relativity)
         {
+            object value = property.GetPropertyValue(false);
+            if (value != null) return;
+
             var targ = GameObjectUtil.GetGameObjectFromSource(property.serializedObject.targetObject);
-            object value = null;
-            if (targ == null)
+            if (object.ReferenceEquals(targ, null))
             {
                 value = ObjUtil.GetAsFromSource(restrictionType, property.serializedObject.targetObject);
             }
@@ -91,7 +93,7 @@ namespace com.spacepuppyeditor.Core
             if (TypeUtil.IsType(elementType, typeof(VariantReference)))
             {
                 var targ = GameObjectUtil.GetGameObjectFromSource(property.serializedObject.targetObject);
-                if (targ == null)
+                if (object.ReferenceEquals(targ, null))
                 {
                     var obj = ObjUtil.GetAsFromSource(restrictionType, property.serializedObject.targetObject);
                     if (obj != null)
@@ -161,7 +163,7 @@ namespace com.spacepuppyeditor.Core
             else if (TypeUtil.IsType(elementType, typeof(UnityEngine.Object)))
             {
                 var targ = GameObjectUtil.GetGameObjectFromSource(property.serializedObject.targetObject);
-                if (targ == null)
+                if (object.ReferenceEquals(targ, null))
                 {
                     var obj = ObjUtil.GetAsFromSource(restrictionType, property.serializedObject.targetObject) as UnityEngine.Object;
                     if (obj != null)
@@ -219,4 +221,5 @@ namespace com.spacepuppyeditor.Core
         }
 
     }
+
 }

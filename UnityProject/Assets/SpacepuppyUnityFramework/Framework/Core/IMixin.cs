@@ -1,7 +1,7 @@
-﻿using System;
+﻿using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using com.spacepuppy.Utils;
 
 namespace com.spacepuppy
 {
@@ -38,7 +38,7 @@ namespace com.spacepuppy
     [System.AttributeUsage(System.AttributeTargets.Interface, AllowMultiple = false, Inherited = true)]
     public abstract class MixinConstructorAttribute : System.Attribute
     {
-        public abstract void OnConstructed(IMixin obj);
+        public abstract void OnConstructed(IMixin obj, System.Type mixinType);
     }
 
     /// <summary>
@@ -65,7 +65,7 @@ namespace com.spacepuppy
                 {
                     for (int i = 0; i < constructedAttribs.Length; i++)
                     {
-                        (constructedAttribs[i] as MixinConstructorAttribute).OnConstructed(obj);
+                        (constructedAttribs[i] as MixinConstructorAttribute).OnConstructed(obj, mixinType);
                     }
                 }
             }
@@ -94,7 +94,7 @@ namespace com.spacepuppy
     public class MStartOrEnableReceiverConstructorAttribute : MixinConstructorAttribute
     {
 
-        public override void OnConstructed(IMixin obj)
+        public override void OnConstructed(IMixin obj, System.Type mixinType)
         {
             var c = obj as IMStartOrEnableReceiver;
             if (c != null)

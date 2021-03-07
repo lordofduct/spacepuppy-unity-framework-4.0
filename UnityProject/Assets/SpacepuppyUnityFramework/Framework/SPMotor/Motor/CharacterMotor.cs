@@ -1,11 +1,9 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
-using System.Linq;
 
-using com.spacepuppy.Collections;
 using com.spacepuppy.Geom;
+using com.spacepuppy.Hooks;
 using com.spacepuppy.Utils;
-using System;
 
 namespace com.spacepuppy.Motor
 {
@@ -14,7 +12,7 @@ namespace com.spacepuppy.Motor
     /// Treats a CharacterController as an IMotor for a more uniform interface.
     /// </summary>
     [RequireComponentInEntity(typeof(CharacterController))]
-    public class CharacterMotor : SPComponent, IMotor, IUpdateable
+    public class CharacterMotor : SPComponent, IMotor, IUpdateable, ISignalEnabledHandler<IMotorCollisionHandler>
     {
 
         #region Fields
@@ -36,6 +34,11 @@ namespace com.spacepuppy.Motor
         [System.NonSerialized()]
         private Vector3 _lastVel;
 
+        [System.NonSerialized]
+        private Messaging.MessageToken<IMotorCollisionHandler> _onCollisionMessage;
+        [System.NonSerialized]
+        private ControllerColliderHitEventHooks _collisionHook;
+
         #endregion
 
         #region CONSTRUCTOR
@@ -45,6 +48,8 @@ namespace com.spacepuppy.Motor
             if (object.ReferenceEquals(_controller, null)) throw new System.InvalidOperationException("CharacterMotor must be initialized with an appropriate CharacterController.");
 
             base.OnEnable();
+
+            _onCollisionMessage = Messaging.CreateBroadcastToken<IMotorCollisionHandler>(this.gameObject);
 
             _lastPos = !object.ReferenceEquals(_controller, null) ? _controller.transform.position : Vector3.zero;
             _lastVel = Vector3.zero;
@@ -286,7 +291,44 @@ namespace com.spacepuppy.Motor
             _vel = Vector3.zero;
             _talliedVel = Vector3.zero;
         }
-        
+
+        #endregion
+
+        #region CollisionHandler Implementation
+
+        private void ValidateCollisionHandler()
+        {
+            if (_collisionHook == null && _onCollisionMessage?.Count > 0)
+            {
+                _collisionHook = this.AddComponent<ControllerColliderHitEventHooks>();
+                _collisionHook.ControllerColliderHit += _collisionHook_ControllerColliderHit;
+            }
+        }
+
+        private void _collisionHook_ControllerColliderHit(object sender, ControllerColliderHit hit)
+        {
+            if(_onCollisionMessage.Count > 0)
+            {
+                _onCollisionMessage.Invoke(new MotorCollisionInfo(this, hit), MotorCollisionHandlerHelper.OnCollisionFunctor);
+            }
+            else if(_collisionHook != null)
+            {
+                ObjUtil.SmartDestroy(_collisionHook);
+                _collisionHook = null;
+            }
+        }
+
+        void ISignalEnabledHandler<IMotorCollisionHandler>.OnComponentEnabled(IMotorCollisionHandler component)
+        {
+            _onCollisionMessage?.SetDirty();
+            this.ValidateCollisionHandler();
+        }
+
+        void ISignalEnabledHandler<IMotorCollisionHandler>.OnComponentDisabled(IMotorCollisionHandler component)
+        {
+            _onCollisionMessage?.SetDirty();
+        }
+
         #endregion
 
     }

@@ -35,6 +35,7 @@ namespace com.spacepuppy.Sensors.Visual
         private float _angle = 360.0f;
 
         [Tooltip("Allows offsetting the cylinder, useful for creating a frustum like view. Line of sight is still from the position of the gameobject this is attached to.")]
+        [VectorInspector]
         [SerializeField()]
         private Vector3 _center;
 

@@ -26,8 +26,6 @@ namespace com.spacepuppy.Geom
 
         private Dictionary<Collider, CompoundTriggerMember> _colliders = new Dictionary<Collider, CompoundTriggerMember>();
         private HashSet<Collider> _active = new HashSet<Collider>();
-        private System.Action<ICompoundTriggerEnterResponder, Collider> _onEnter;
-        private System.Action<ICompoundTriggerExitResponder, Collider> _onExit;
 
         #endregion
 
@@ -156,14 +154,12 @@ namespace com.spacepuppy.Geom
 
         protected virtual void OnCompoundTriggerEnter(Collider other)
         {
-            if (_onEnter == null) _onEnter = (x, y) => x.OnCompoundTriggerEnter(y);
-            Messaging.Execute<ICompoundTriggerEnterResponder, Collider>(this.gameObject, other, _onEnter);
+            Messaging.Signal(this.gameObject, other, OnEnterFunctor);
         }
 
         protected virtual void OnCompoundTriggerExit(Collider other)
         {
-            if (_onExit == null) _onExit = (x, y) => x.OnCompoundTriggerExit(y);
-            Messaging.Execute<ICompoundTriggerExitResponder, Collider>(this.gameObject, other, _onExit);
+            Messaging.Signal(this.gameObject, other, OnExitFunctor);
         }
 
         #endregion
@@ -223,6 +219,8 @@ namespace com.spacepuppy.Geom
 
         #endregion
 
+        public static readonly System.Action<ICompoundTriggerEnterResponder, Collider> OnEnterFunctor = (x, y) => x.OnCompoundTriggerEnter(y);
+        public static readonly System.Action<ICompoundTriggerExitResponder, Collider> OnExitFunctor = (x, y) => x.OnCompoundTriggerExit(y);
     }
 
 }

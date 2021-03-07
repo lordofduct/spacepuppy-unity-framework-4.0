@@ -4,6 +4,7 @@ using System.Linq;
 
 using com.spacepuppy.Collections;
 using com.spacepuppy.Geom;
+using com.spacepuppy.Hooks;
 using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.Motor
@@ -15,7 +16,7 @@ namespace com.spacepuppy.Motor
     /// Velocity/Forces are used to move.
     /// </summary>
     [RequireComponentInEntity(typeof(Rigidbody))]
-    public class SimulatedRigidbodyMotor : SPComponent, IMotor, IUpdateable
+    public class SimulatedRigidbodyMotor : SPComponent, IMotor, IUpdateable, ISignalEnabledHandler<IMotorCollisionHandler>
     {
 
         #region Fields
@@ -45,6 +46,11 @@ namespace com.spacepuppy.Motor
         [System.NonSerialized]
         private bool _moveCalled;
 
+        [System.NonSerialized]
+        private Messaging.MessageToken<IMotorCollisionHandler> _onCollisionMessage;
+        [System.NonSerialized]
+        private CollisionHooks _collisionHook;
+
         #endregion
 
         #region CONSTRUCTOR
@@ -57,6 +63,7 @@ namespace com.spacepuppy.Motor
             {
                 _colliders = _rigidbody.GetComponentsInChildren<Collider>();
             }
+            _onCollisionMessage = Messaging.CreateBroadcastToken<IMotorCollisionHandler>(this.gameObject);
         }
 
         protected override void OnEnable()
@@ -354,9 +361,48 @@ namespace com.spacepuppy.Motor
             _talliedMove = Vector3.zero;
             _moveCalled = false;
         }
-        
+
         #endregion
-        
+
+        #region CollisionHandler Implementation
+
+        private void ValidateCollisionHandler()
+        {
+            if (_collisionHook == null && _onCollisionMessage?.Count > 0)
+            {
+                _collisionHook = this.AddComponent<CollisionHooks>();
+                _collisionHook.OnEnter += _collisionHook_ControllerColliderHit;
+                _collisionHook.OnStay += _collisionHook_ControllerColliderHit;
+                _collisionHook.OnExit += _collisionHook_ControllerColliderHit;
+            }
+        }
+
+        private void _collisionHook_ControllerColliderHit(object sender, Collision hit)
+        {
+            if (_onCollisionMessage.Count > 0)
+            {
+                _onCollisionMessage.Invoke(new MotorCollisionInfo(this, hit), MotorCollisionHandlerHelper.OnCollisionFunctor);
+            }
+            else if (_collisionHook != null)
+            {
+                ObjUtil.SmartDestroy(_collisionHook);
+                _collisionHook = null;
+            }
+        }
+
+        void ISignalEnabledHandler<IMotorCollisionHandler>.OnComponentEnabled(IMotorCollisionHandler component)
+        {
+            _onCollisionMessage?.SetDirty();
+            this.ValidateCollisionHandler();
+        }
+
+        void ISignalEnabledHandler<IMotorCollisionHandler>.OnComponentDisabled(IMotorCollisionHandler component)
+        {
+            _onCollisionMessage?.SetDirty();
+        }
+
+        #endregion
+
     }
 
 }

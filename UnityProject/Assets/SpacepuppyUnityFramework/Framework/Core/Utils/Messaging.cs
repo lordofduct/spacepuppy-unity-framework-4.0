@@ -128,18 +128,14 @@ namespace com.spacepuppy.Utils
         {
             if (functor == null) throw new System.ArgumentNullException("functor");
 
-            using (var lst = TempCollection.GetList<Component>())
+            //a alloc free version of GetComponentsInChildren by Type doesn't exist
+            var arr = go.GetComponentsInChildren(receiverType, includeInactiveObjects);
+            if (arr?.Length > 0)
             {
-                go.GetComponentsInChildren<Component>(includeInactiveObjects, lst);
-                if (lst.Count > 0)
+                for (int i = 0; i < arr.Length; i++)
                 {
-                    for (int i = 0; i < lst.Count; i++)
-                    {
-                        if (!TypeUtil.IsType(lst[i].GetType(), receiverType)) continue;
-
-                        if (includeDisabledComponents || TargetIsValid(lst[i]))
-                            functor(lst[i]);
-                    }
+                    if (includeDisabledComponents || TargetIsValid(arr[i]))
+                        functor(arr[i]);
                 }
             }
         }

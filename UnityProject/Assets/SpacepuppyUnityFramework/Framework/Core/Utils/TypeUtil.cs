@@ -39,15 +39,29 @@ namespace com.spacepuppy.Utils
 
         public static bool IsType(System.Type tp, System.Type assignableType)
         {
-            if (assignableType.IsGenericType)
+            if (tp == null) return false;
+
+            if (assignableType.IsGenericTypeDefinition)
             {
-                while (tp != null && tp != typeof(object))
+                if(assignableType.IsInterface)
                 {
-                    var ctp = tp.IsGenericType ? tp.GetGenericTypeDefinition() : tp;
-                    if (ctp == assignableType) return true;
-                    tp = tp.BaseType;
+                    foreach(var itp in tp.GetInterfaces())
+                    {
+                        var ctp = itp.IsGenericType ? itp.GetGenericTypeDefinition() : itp;
+                        if (ctp == assignableType) return true;
+                    }
+                    return false;
                 }
-                return false;
+                else
+                {
+                    while (tp != null && tp != typeof(object))
+                    {
+                        var ctp = tp.IsGenericType ? tp.GetGenericTypeDefinition() : tp;
+                        if (ctp == assignableType) return true;
+                        tp = tp.BaseType;
+                    }
+                    return false;
+                }
             }
             else
             {

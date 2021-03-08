@@ -12,7 +12,7 @@ namespace com.spacepuppy.Motor
     /// Treats a CharacterController as an IMotor for a more uniform interface.
     /// </summary>
     [RequireComponentInEntity(typeof(CharacterController))]
-    public class CharacterMotor : SPComponent, IMotor, IUpdateable, ISignalEnabledHandler<IMotorCollisionHandler>
+    public class CharacterMotor : SPComponent, IMotor, IUpdateable, ISignalEnabledMessageHandler
     {
 
         #region Fields
@@ -35,7 +35,7 @@ namespace com.spacepuppy.Motor
         private Vector3 _lastVel;
 
         [System.NonSerialized]
-        private Messaging.MessageToken<IMotorCollisionHandler> _onCollisionMessage;
+        private Messaging.MessageToken<IMotorCollisionMessageHandler> _onCollisionMessage;
         [System.NonSerialized]
         private ControllerColliderHitEventHooks _collisionHook;
 
@@ -49,7 +49,7 @@ namespace com.spacepuppy.Motor
 
             base.OnEnable();
 
-            _onCollisionMessage = Messaging.CreateBroadcastToken<IMotorCollisionHandler>(this.gameObject);
+            _onCollisionMessage = Messaging.CreateBroadcastToken<IMotorCollisionMessageHandler>(this.gameObject);
 
             _lastPos = !object.ReferenceEquals(_controller, null) ? _controller.transform.position : Vector3.zero;
             _lastVel = Vector3.zero;
@@ -318,15 +318,23 @@ namespace com.spacepuppy.Motor
             }
         }
 
-        void ISignalEnabledHandler<IMotorCollisionHandler>.OnComponentEnabled(IMotorCollisionHandler component)
+        void ISignalEnabledMessageHandler.OnComponentEnabled(IEventfulComponent component)
         {
-            _onCollisionMessage?.SetDirty();
-            this.ValidateCollisionHandler();
+            if (component is IMotorCollisionMessageHandler)
+            {
+                _onCollisionMessage?.SetDirty();
+                this.ValidateCollisionHandler();
+                Debug.Log("Bird Up");
+            }
         }
 
-        void ISignalEnabledHandler<IMotorCollisionHandler>.OnComponentDisabled(IMotorCollisionHandler component)
+        void ISignalEnabledMessageHandler.OnComponentDisabled(IEventfulComponent component)
         {
-            _onCollisionMessage?.SetDirty();
+            if (component is IMotorCollisionMessageHandler)
+            {
+                _onCollisionMessage?.SetDirty();
+                Debug.Log("Bird Down");
+            }
         }
 
         #endregion

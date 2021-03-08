@@ -16,7 +16,7 @@ namespace com.spacepuppy.Motor
     /// Velocity/Forces are used to move.
     /// </summary>
     [RequireComponentInEntity(typeof(Rigidbody))]
-    public class SimulatedRigidbodyMotor : SPComponent, IMotor, IUpdateable, ISignalEnabledHandler<IMotorCollisionHandler>
+    public class SimulatedRigidbodyMotor : SPComponent, IMotor, IUpdateable, ISignalEnabledMessageHandler
     {
 
         #region Fields
@@ -47,7 +47,7 @@ namespace com.spacepuppy.Motor
         private bool _moveCalled;
 
         [System.NonSerialized]
-        private Messaging.MessageToken<IMotorCollisionHandler> _onCollisionMessage;
+        private Messaging.MessageToken<IMotorCollisionMessageHandler> _onCollisionMessage;
         [System.NonSerialized]
         private CollisionHooks _collisionHook;
 
@@ -63,7 +63,7 @@ namespace com.spacepuppy.Motor
             {
                 _colliders = _rigidbody.GetComponentsInChildren<Collider>();
             }
-            _onCollisionMessage = Messaging.CreateBroadcastToken<IMotorCollisionHandler>(this.gameObject);
+            _onCollisionMessage = Messaging.CreateBroadcastToken<IMotorCollisionMessageHandler>(this.gameObject);
         }
 
         protected override void OnEnable()
@@ -390,15 +390,21 @@ namespace com.spacepuppy.Motor
             }
         }
 
-        void ISignalEnabledHandler<IMotorCollisionHandler>.OnComponentEnabled(IMotorCollisionHandler component)
+        void ISignalEnabledMessageHandler.OnComponentEnabled(IEventfulComponent component)
         {
-            _onCollisionMessage?.SetDirty();
-            this.ValidateCollisionHandler();
+            if (component is IMotorCollisionMessageHandler)
+            {
+                _onCollisionMessage?.SetDirty();
+                this.ValidateCollisionHandler();
+            }
         }
 
-        void ISignalEnabledHandler<IMotorCollisionHandler>.OnComponentDisabled(IMotorCollisionHandler component)
+        void ISignalEnabledMessageHandler.OnComponentDisabled(IEventfulComponent component)
         {
-            _onCollisionMessage?.SetDirty();
+            if (component is IMotorCollisionMessageHandler)
+            {
+                _onCollisionMessage?.SetDirty();
+            }
         }
 
         #endregion

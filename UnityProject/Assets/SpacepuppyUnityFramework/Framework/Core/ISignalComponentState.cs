@@ -1,546 +1,244 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Linq;
 using com.spacepuppy.Utils;
 
 namespace com.spacepuppy
 {
 
-    public interface ISignalAwakeHandler<T>
+    public interface ISignalAwakeMessageHandler
     {
-        void OnComponentAwake(T component);
+        void OnComponentAwake(Component component);
     }
 
-    [MSignalAwake]
-    public interface IMSignalAwake<T> : IMixin
+    public class MSignalAwake : IAutoMixin
     {
 
-    }
-
-    [System.AttributeUsage(System.AttributeTargets.Interface)]
-    public class MSignalAwakeAttribute : MixinConstructorAttribute
-    {
-
-        public override void OnConstructed(IMixin obj, System.Type mixinType)
+        [System.AttributeUsage(System.AttributeTargets.Interface, AllowMultiple = false, Inherited = false)]
+        public class ConfigAttribute : System.Attribute
         {
-            if (mixinType == null) return;
-            if (!TypeUtil.IsType(mixinType, typeof(ISignalAwakeHandler<>))) return;
 
-            System.Type receiverType = null;
-            System.Reflection.MethodInfo method = null;
-            try
-            {
-                var componentType = mixinType.GetGenericArguments().FirstOrDefault();
-                if (componentType == null) return;
-
-                receiverType = typeof(ISignalAwakeHandler<>).MakeGenericType(componentType);
-                if (receiverType == null) return;
-
-                method = receiverType.GetMethod(nameof(ISignalAwakeHandler<object>.OnComponentAwake));
-                if (method == null) return;
-            }
-            catch (System.Exception) { }
-
-            var go = GameObjectUtil.GetGameObjectFromSource(obj, true);
-            if (go != null)
-            {
-                var args = new object[] { obj };
-                go.Signal(receiverType, (c) => method.Invoke(c, args), true);
-            }
+            public EntityRelativity EntityRelativity { get; set; }
+            public bool IncludeInactiveObjects { get; set; }
+            public bool IncludeDisabledComponents { get; set; }
         }
-    }
 
-    [MSignalAwakeUpwards]
-    public interface IMSignalAwakeUpwards<T> : IMixin
-    {
-
-    }
-
-    [System.AttributeUsage(System.AttributeTargets.Interface)]
-    public class MSignalAwakeUpwardsAttribute : MixinConstructorAttribute
-    {
-
-        public override void OnConstructed(IMixin obj, System.Type mixinType)
+        [AutoMixinConfig(typeof(MSignalAwake))]
+        public interface IAutoDecorator : IAutoMixinDecorator
         {
-            if (mixinType == null) return;
-            if (!TypeUtil.IsType(mixinType, typeof(IMSignalAwakeUpwards<>))) return;
 
-            System.Type receiverType = null;
-            System.Reflection.MethodInfo method = null;
-            try
-            {
-                var componentType = mixinType.GetGenericArguments().FirstOrDefault();
-                if (componentType == null) return;
-
-                receiverType = typeof(ISignalAwakeHandler<>).MakeGenericType(componentType);
-                if (receiverType == null) return;
-
-                method = receiverType.GetMethod(nameof(ISignalAwakeHandler<object>.OnComponentAwake));
-                if (method == null) return;
-            }
-            catch (System.Exception) { }
-
-            var go = GameObjectUtil.GetGameObjectFromSource(obj, true);
-            if (go != null)
-            {
-                var args = new object[] { obj };
-                go.SignalUpwards(receiverType, (c) => method.Invoke(c, args), true);
-            }
         }
-    }
 
-    [MBroadcastAwake]
-    public interface IMBroadcastAwake<T> : IMixin
-    {
+        private static readonly System.Action<ISignalAwakeMessageHandler, Component> Functor = (o, d) => o.OnComponentAwake(d);
 
-    }
+        public EntityRelativity EntityRelativity { get; set; }
+        public bool IncludeInactiveObjects { get; set; }
+        public bool IncludeDisabledComponents { get; set; }
 
-    [System.AttributeUsage(System.AttributeTargets.Interface)]
-    public class MBroadcastAwakeAttribute : MixinConstructorAttribute
-    {
-
-        public override void OnConstructed(IMixin obj, System.Type mixinType)
+        void spacepuppy.IAutoMixin.OnAutoCreated(IAutoMixinDecorator owner, System.Type autoMixinType)
         {
-            if (mixinType == null) return;
-            if (!TypeUtil.IsType(mixinType, typeof(IMBroadcastAwake<>))) return;
-
-            System.Type receiverType = null;
-            System.Reflection.MethodInfo method = null;
-            try
-            {
-                var componentType = mixinType.GetGenericArguments().FirstOrDefault();
-                if (componentType == null) return;
-
-                receiverType = typeof(ISignalAwakeHandler<>).MakeGenericType(componentType);
-                if (receiverType == null) return;
-
-                method = receiverType.GetMethod(nameof(ISignalAwakeHandler<object>.OnComponentAwake));
-                if (method == null) return;
-            }
-            catch (System.Exception) { }
-
-            var go = GameObjectUtil.GetGameObjectFromSource(obj, true);
-            if (go != null)
-            {
-                var args = new object[] { obj };
-                go.Broadcast(receiverType, (c) => method.Invoke(c, args), true);
-            }
+            var attrib = autoMixinType.GetCustomAttribute<ConfigAttribute>(false);
+            this.EntityRelativity = attrib?.EntityRelativity ?? EntityRelativity.Entity;
+            this.IncludeInactiveObjects = attrib?.IncludeInactiveObjects ?? false;
+            this.IncludeDisabledComponents = attrib?.IncludeDisabledComponents ?? false;
         }
-    }
 
-    [MBroadcastAwakeToEntity]
-    public interface IMBroadcastAwakeToEntity<T> : IMixin
-    {
-
-    }
-
-    [System.AttributeUsage(System.AttributeTargets.Interface)]
-    public class MBroadcastAwakeToEntityAttribute : MixinConstructorAttribute
-    {
-
-        public override void OnConstructed(IMixin obj, System.Type mixinType)
+        bool IMixin.Awake(object owner)
         {
-            if (mixinType == null) return;
-            if (!TypeUtil.IsType(mixinType, typeof(IMBroadcastAwakeToEntity<>))) return;
+            var c = owner as Component;
+            if (c == null) return false;
 
-            System.Type receiverType = null;
-            System.Reflection.MethodInfo method = null;
-            try
+            var includeInactiveObjs = this.IncludeInactiveObjects;
+            var includeDisabledComps = this.IncludeDisabledComponents;
+
+            switch (this.EntityRelativity)
             {
-                var componentType = mixinType.GetGenericArguments().FirstOrDefault();
-                if (componentType == null) return;
-
-                receiverType = typeof(ISignalAwakeHandler<>).MakeGenericType(componentType);
-                if (receiverType == null) return;
-
-                method = receiverType.GetMethod(nameof(ISignalAwakeHandler<object>.OnComponentAwake));
-                if (method == null) return;
+                case EntityRelativity.Entity:
+                    {
+                        c.gameObject.FindRoot().Broadcast(c, Functor, includeInactiveObjs, includeDisabledComps);
+                    }
+                    break;
+                case EntityRelativity.Self:
+                    {
+                        c.gameObject.Signal(c, Functor, includeDisabledComps);
+                    }
+                    break;
+                case EntityRelativity.SelfAndChildren:
+                    {
+                        c.gameObject.Broadcast(c, Functor, includeInactiveObjs, includeDisabledComps);
+                    }
+                    break;
             }
-            catch (System.Exception) { }
-
-            var go = GameObjectUtil.GetRootFromSource(obj, true);
-            if (go != null)
-            {
-                var args = new object[] { obj };
-                go.Broadcast(receiverType, (c) => method.Invoke(c, args), true);
-            }
+            return false;
         }
     }
 
 
-    public interface ISignalEnabledHandler<T>
+    public interface ISignalEnabledMessageHandler
     {
-        void OnComponentEnabled(T component);
-        void OnComponentDisabled(T component);
+        void OnComponentEnabled(IEventfulComponent component);
+        void OnComponentDisabled(IEventfulComponent component);
     }
 
-    [MSignalEnabled]
-    public interface IMSignalEnabled<T> : IMixin, IEventfulComponent
+    public class MSignalEnabled : IAutoMixin
     {
 
-    }
-
-    [System.AttributeUsage(System.AttributeTargets.Interface)]
-    public class MSignalEnabledAttribute : MixinConstructorAttribute
-    {
-
-        public override void OnConstructed(IMixin obj, System.Type mixinType)
+        [System.AttributeUsage(System.AttributeTargets.Interface, AllowMultiple = false, Inherited = false)]
+        public class ConfigAttribute : System.Attribute
         {
-            if (mixinType == null) return;
-            if (!TypeUtil.IsType(mixinType, typeof(IMSignalEnabled<>))) return;
 
-            var c = obj as IEventfulComponent;
-            if (c == null) return;
-
-            System.Type receiverType = null;
-            System.Reflection.MethodInfo enabledmethod = null;
-            System.Reflection.MethodInfo disabledmethod = null;
-            try
-            {
-                var componentType = mixinType.GetGenericArguments().FirstOrDefault();
-                if (componentType == null) return;
-
-                receiverType = typeof(ISignalEnabledHandler<>).MakeGenericType(componentType);
-                if (receiverType == null) return;
-
-                enabledmethod = receiverType.GetMethod(nameof(ISignalEnabledHandler<object>.OnComponentEnabled));
-                disabledmethod = receiverType.GetMethod(nameof(ISignalEnabledHandler<object>.OnComponentDisabled));
-                if (enabledmethod == null || disabledmethod == null) return;
-            }
-            catch (System.Exception) { }
-
-            var args = new object[] { obj };
-            var enabledfunctor = new System.Action<Component>((o) => enabledmethod.Invoke(o, args));
-            var disabledfunctor = new System.Action<Component>((o) => disabledmethod.Invoke(o, args));
-            c.OnEnabled += (s, e) =>
-            {
-                c.gameObject.Signal(receiverType, enabledfunctor, true);
-            };
-            c.OnDisabled += (s, e) =>
-            {
-                c.gameObject.Signal(receiverType, disabledfunctor, true);
-            };
+            public EntityRelativity EntityRelativity { get; set; }
+            public bool IncludeInactiveObjects { get; set; }
+            public bool IncludeDisabledComponents { get; set; }
         }
-    }
 
-    [MSignalEnabledUpwards]
-    public interface IMSignalEnabledUpwards<T> : IMixin, IEventfulComponent
-    {
-
-    }
-
-    [System.AttributeUsage(System.AttributeTargets.Interface)]
-    public class MSignalEnabledUpwardsAttribute : MixinConstructorAttribute
-    {
-
-        public override void OnConstructed(IMixin obj, System.Type mixinType)
+        [AutoMixinConfig(typeof(MSignalEnabled))]
+        public interface IAutoDecorator : IAutoMixinDecorator, IEventfulComponent
         {
-            if (mixinType == null) return;
-            if (!TypeUtil.IsType(mixinType, typeof(IMSignalEnabledUpwards<>))) return;
 
-            var c = obj as IEventfulComponent;
-            if (c == null) return;
-
-            System.Type receiverType = null;
-            System.Reflection.MethodInfo enabledmethod = null;
-            System.Reflection.MethodInfo disabledmethod = null;
-            try
-            {
-                var componentType = mixinType.GetGenericArguments().FirstOrDefault();
-                if (componentType == null) return;
-
-                receiverType = typeof(ISignalEnabledHandler<>).MakeGenericType(componentType);
-                if (receiverType == null) return;
-
-                enabledmethod = receiverType.GetMethod(nameof(ISignalEnabledHandler<object>.OnComponentEnabled));
-                disabledmethod = receiverType.GetMethod(nameof(ISignalEnabledHandler<object>.OnComponentDisabled));
-                if (enabledmethod == null || disabledmethod == null) return;
-            }
-            catch (System.Exception) { }
-
-            var args = new object[] { obj };
-            var enabledfunctor = new System.Action<Component>((o) => enabledmethod.Invoke(o, args));
-            var disabledfunctor = new System.Action<Component>((o) => disabledmethod.Invoke(o, args));
-            c.OnEnabled += (s, e) =>
-            {
-                c.gameObject.SignalUpwards(receiverType, enabledfunctor, true);
-            };
-            c.OnDisabled += (s, e) =>
-            {
-                c.gameObject.SignalUpwards(receiverType, disabledfunctor, true);
-            };
         }
-    }
 
-    [MBroadcastEnabled]
-    public interface IMBroadcastEnabled<T> : IMixin, IEventfulComponent
-    {
+        private static readonly System.Action<ISignalEnabledMessageHandler, IEventfulComponent> EnabledFunctor = (o, d) => o.OnComponentEnabled(d);
+        private static readonly System.Action<ISignalEnabledMessageHandler, IEventfulComponent> DisabledFunctor = (o, d) => o.OnComponentDisabled(d);
 
-    }
+        public EntityRelativity EntityRelativity { get; set; }
+        public bool IncludeInactiveObjects { get; set; }
+        public bool IncludeDisabledComponents { get; set; }
 
-    [System.AttributeUsage(System.AttributeTargets.Interface)]
-    public class MBroadcastEnabledAttribute : MixinConstructorAttribute
-    {
-
-        public override void OnConstructed(IMixin obj, System.Type mixinType)
+        void spacepuppy.IAutoMixin.OnAutoCreated(IAutoMixinDecorator owner, System.Type autoMixinType)
         {
-            if (mixinType == null) return;
-            if (!TypeUtil.IsType(mixinType, typeof(IMBroadcastEnabled<>))) return;
-
-            var c = obj as IEventfulComponent;
-            if (c == null) return;
-
-            System.Type receiverType = null;
-            System.Reflection.MethodInfo enabledmethod = null;
-            System.Reflection.MethodInfo disabledmethod = null;
-            try
-            {
-                var componentType = mixinType.GetGenericArguments().FirstOrDefault();
-                if (componentType == null) return;
-
-                receiverType = typeof(ISignalEnabledHandler<>).MakeGenericType(componentType);
-                if (receiverType == null) return;
-
-                enabledmethod = receiverType.GetMethod(nameof(ISignalEnabledHandler<object>.OnComponentEnabled));
-                disabledmethod = receiverType.GetMethod(nameof(ISignalEnabledHandler<object>.OnComponentDisabled));
-                if (enabledmethod == null || disabledmethod == null) return;
-            }
-            catch (System.Exception) { }
-
-            var args = new object[] { obj };
-            var enabledfunctor = new System.Action<Component>((o) => enabledmethod.Invoke(o, args));
-            var disabledfunctor = new System.Action<Component>((o) => disabledmethod.Invoke(o, args));
-            c.OnEnabled += (s, e) =>
-            {
-                c.gameObject.Broadcast(receiverType, enabledfunctor, true);
-            };
-            c.OnDisabled += (s, e) =>
-            {
-                c.gameObject.Broadcast(receiverType, disabledfunctor, true);
-            };
+            var attrib = autoMixinType.GetCustomAttribute<ConfigAttribute>(false);
+            this.EntityRelativity = attrib?.EntityRelativity ?? EntityRelativity.Entity;
+            this.IncludeInactiveObjects = attrib?.IncludeInactiveObjects ?? false;
+            this.IncludeDisabledComponents = attrib?.IncludeDisabledComponents ?? false;
         }
-    }
 
-    [MBroadcastEnabledToEntity]
-    public interface IMBroadcastEnabledToEntity<T> : IMixin, IEventfulComponent
-    {
-
-    }
-
-    [System.AttributeUsage(System.AttributeTargets.Interface)]
-    public class MBroadcastEnabledToEntityAttribute : MixinConstructorAttribute
-    {
-
-        public override void OnConstructed(IMixin obj, System.Type mixinType)
+        bool IMixin.Awake(object owner)
         {
-            if (mixinType == null) return;
-            if (!TypeUtil.IsType(mixinType, typeof(IMBroadcastEnabledToEntity<>))) return;
+            var c = owner as IEventfulComponent;
+            if (c == null) return false;
 
-            var c = obj as IEventfulComponent;
-            if (c == null) return;
+            var includeInactiveObjs = this.IncludeInactiveObjects;
+            var includeDisabledComps = this.IncludeDisabledComponents;
 
-            System.Type receiverType = null;
-            System.Reflection.MethodInfo enabledmethod = null;
-            System.Reflection.MethodInfo disabledmethod = null;
-            try
+            switch(this.EntityRelativity)
             {
-                var componentType = mixinType.GetGenericArguments().FirstOrDefault();
-                if (componentType == null) return;
-
-                receiverType = typeof(ISignalEnabledHandler<>).MakeGenericType(componentType);
-                if (receiverType == null) return;
-
-                enabledmethod = receiverType.GetMethod(nameof(ISignalEnabledHandler<object>.OnComponentEnabled));
-                disabledmethod = receiverType.GetMethod(nameof(ISignalEnabledHandler<object>.OnComponentDisabled));
-                if (enabledmethod == null || disabledmethod == null) return;
+                case EntityRelativity.Entity:
+                    {
+                        c.OnEnabled += (s, e) =>
+                        {
+                            c.gameObject.FindRoot().Broadcast(c, EnabledFunctor, includeInactiveObjs, includeDisabledComps);
+                        };
+                        c.OnDisabled += (s, e) =>
+                        {
+                            c.gameObject.FindRoot().Broadcast(c, DisabledFunctor, includeInactiveObjs, includeDisabledComps);
+                        };
+                    }
+                    break;
+                case EntityRelativity.Self:
+                    {
+                        c.OnEnabled += (s, e) =>
+                        {
+                            c.gameObject.Signal(c, EnabledFunctor, includeDisabledComps);
+                        };
+                        c.OnDisabled += (s, e) =>
+                        {
+                            c.gameObject.Signal(c, DisabledFunctor, includeDisabledComps);
+                        };
+                    }
+                    break;
+                case EntityRelativity.SelfAndChildren:
+                    {
+                        c.OnEnabled += (s, e) =>
+                        {
+                            c.gameObject.Broadcast(c, EnabledFunctor, includeInactiveObjs, includeDisabledComps);
+                        };
+                        c.OnDisabled += (s, e) =>
+                        {
+                            c.gameObject.Broadcast(c, DisabledFunctor, includeInactiveObjs, includeDisabledComps);
+                        };
+                    }
+                    break;
             }
-            catch (System.Exception) { }
-
-            var args = new object[] { obj };
-            var enabledfunctor = new System.Action<Component>((o) => enabledmethod.Invoke(o, args));
-            var disabledfunctor = new System.Action<Component>((o) => disabledmethod.Invoke(o, args));
-            c.OnEnabled += (s, e) =>
-            {
-                c.gameObject.FindRoot().Broadcast(receiverType, enabledfunctor, true);
-            };
-            c.OnDisabled += (s, e) =>
-            {
-                c.gameObject.FindRoot().Broadcast(receiverType, disabledfunctor, true);
-            };
+            return false;
         }
     }
 
 
-    public interface ISignalDestroyedHandler<T>
+    public interface ISignalDestroyedMessageHandler
     {
-        void OnComponentDestroyed(T component);
+        void OnComponentDestroyed(IEventfulComponent component);
     }
 
-    [MSignalDestroyed]
-    public interface IMSignalDestroyed<T> : IMixin, IEventfulComponent
+    public class MSignalDestroyed : IAutoMixin
     {
 
-    }
-
-    [System.AttributeUsage(System.AttributeTargets.Interface)]
-    public class MSignalDestroyedAttribute : MixinConstructorAttribute
-    {
-
-        public override void OnConstructed(IMixin obj, System.Type mixinType)
+        [System.AttributeUsage(System.AttributeTargets.Interface, AllowMultiple = false, Inherited = false)]
+        public class ConfigAttribute : System.Attribute
         {
-            if (mixinType == null) return;
-            if (!TypeUtil.IsType(mixinType, typeof(IMSignalDestroyed<>))) return;
 
-            var c = obj as IEventfulComponent;
-            if (c == null) return;
-
-            System.Type receiverType = null;
-            System.Reflection.MethodInfo method = null;
-            try
-            {
-                var componentType = mixinType.GetGenericArguments().FirstOrDefault();
-                if (componentType == null) return;
-
-                receiverType = typeof(ISignalDestroyedHandler<>).MakeGenericType(componentType);
-                if (receiverType == null) return;
-
-                method = receiverType.GetMethod(nameof(ISignalDestroyedHandler<object>.OnComponentDestroyed));
-                if (method == null) return;
-            }
-            catch (System.Exception) { }
-
-            var args = new object[] { obj };
-            var functor = new System.Action<Component>((o) => method.Invoke(o, args));
-            c.OnEnabled += (s, e) =>
-            {
-                c.gameObject.Signal(receiverType, functor, true);
-            };
+            public EntityRelativity EntityRelativity { get; set; }
+            public bool IncludeInactiveObjects { get; set; }
+            public bool IncludeDisabledComponents { get; set; }
         }
-    }
 
-    [MSignalDestroyedUpwards]
-    public interface IMSignalDestroyedUpwards<T> : IMixin, IEventfulComponent
-    {
-
-    }
-
-    [System.AttributeUsage(System.AttributeTargets.Interface)]
-    public class MSignalDestroyedUpwardsAttribute : MixinConstructorAttribute
-    {
-
-        public override void OnConstructed(IMixin obj, System.Type mixinType)
+        [AutoMixinConfig(typeof(MSignalDestroyed))]
+        public interface IAutoDecorator : IAutoMixinDecorator, IEventfulComponent
         {
-            if (mixinType == null) return;
-            if (!TypeUtil.IsType(mixinType, typeof(IMSignalDestroyedUpwards<>))) return;
 
-            var c = obj as IEventfulComponent;
-            if (c == null) return;
-
-            System.Type receiverType = null;
-            System.Reflection.MethodInfo method = null;
-            try
-            {
-                var componentType = mixinType.GetGenericArguments().FirstOrDefault();
-                if (componentType == null) return;
-
-                receiverType = typeof(ISignalDestroyedHandler<>).MakeGenericType(componentType);
-                if (receiverType == null) return;
-
-                method = receiverType.GetMethod(nameof(ISignalDestroyedHandler<object>.OnComponentDestroyed));
-                if (method == null) return;
-            }
-            catch (System.Exception) { }
-
-            var args = new object[] { obj };
-            var functor = new System.Action<Component>((o) => method.Invoke(o, args));
-            c.OnEnabled += (s, e) =>
-            {
-                c.gameObject.SignalUpwards(receiverType, functor, true);
-            };
         }
-    }
 
-    [MBroadcastDestroyed]
-    public interface IMBroadcastDestroyed<T> : IMixin, IEventfulComponent
-    {
+        private static readonly System.Action<ISignalDestroyedMessageHandler, IEventfulComponent> Functor = (o, d) => o.OnComponentDestroyed(d);
 
-    }
+        public EntityRelativity EntityRelativity { get; set; }
+        public bool IncludeInactiveObjects { get; set; }
+        public bool IncludeDisabledComponents { get; set; }
 
-    [System.AttributeUsage(System.AttributeTargets.Interface)]
-    public class MBroadcastDestroyedAttribute : MixinConstructorAttribute
-    {
-
-        public override void OnConstructed(IMixin obj, System.Type mixinType)
+        void spacepuppy.IAutoMixin.OnAutoCreated(IAutoMixinDecorator owner, System.Type autoMixinType)
         {
-            if (mixinType == null) return;
-            if (!TypeUtil.IsType(mixinType, typeof(IMBroadcastDestroyed<>))) return;
-
-            var c = obj as IEventfulComponent;
-            if (c == null) return;
-
-            System.Type receiverType = null;
-            System.Reflection.MethodInfo method = null;
-            try
-            {
-                var componentType = mixinType.GetGenericArguments().FirstOrDefault();
-                if (componentType == null) return;
-
-                receiverType = typeof(ISignalDestroyedHandler<>).MakeGenericType(componentType);
-                if (receiverType == null) return;
-
-                method = receiverType.GetMethod(nameof(ISignalDestroyedHandler<object>.OnComponentDestroyed));
-                if (method == null) return;
-            }
-            catch (System.Exception) { }
-
-            var args = new object[] { obj };
-            var functor = new System.Action<Component>((o) => method.Invoke(o, args));
-            c.OnEnabled += (s, e) =>
-            {
-                c.gameObject.Broadcast(receiverType, functor, true);
-            };
+            var attrib = autoMixinType.GetCustomAttribute<ConfigAttribute>(false);
+            this.EntityRelativity = attrib?.EntityRelativity ?? EntityRelativity.Entity;
+            this.IncludeInactiveObjects = attrib?.IncludeInactiveObjects ?? false;
+            this.IncludeDisabledComponents = attrib?.IncludeDisabledComponents ?? false;
         }
-    }
 
-    [MBroadcastDestroyedToEntity]
-    public interface IMBroadcastDestroyedToEntity<T> : IMixin, IEventfulComponent
-    {
-
-    }
-
-    [System.AttributeUsage(System.AttributeTargets.Interface)]
-    public class MBroadcastDestroyedToEntityAttribute : MixinConstructorAttribute
-    {
-
-        public override void OnConstructed(IMixin obj, System.Type mixinType)
+        bool IMixin.Awake(object owner)
         {
-            if (mixinType == null) return;
-            if (!TypeUtil.IsType(mixinType, typeof(IMBroadcastDestroyedToEntity<>))) return;
+            var c = owner as IEventfulComponent;
+            if (c == null) return false;
 
-            var c = obj as IEventfulComponent;
-            if (c == null) return;
+            var includeInactiveObjs = this.IncludeInactiveObjects;
+            var includeDisabledComps = this.IncludeDisabledComponents;
 
-            System.Type receiverType = null;
-            System.Reflection.MethodInfo method = null;
-            try
+            switch (this.EntityRelativity)
             {
-                var componentType = mixinType.GetGenericArguments().FirstOrDefault();
-                if (componentType == null) return;
-
-                receiverType = typeof(ISignalDestroyedHandler<>).MakeGenericType(componentType);
-                if (receiverType == null) return;
-
-                method = receiverType.GetMethod(nameof(ISignalDestroyedHandler<object>.OnComponentDestroyed));
-                if (method == null) return;
+                case EntityRelativity.Entity:
+                    {
+                        c.ComponentDestroyed += (s, e) =>
+                        {
+                            c.gameObject.FindRoot().Broadcast(c, Functor, includeInactiveObjs, includeDisabledComps);
+                        };
+                    }
+                    break;
+                case EntityRelativity.Self:
+                    {
+                        c.ComponentDestroyed += (s, e) =>
+                        {
+                            c.gameObject.Signal(c, Functor, includeDisabledComps);
+                        };
+                    }
+                    break;
+                case EntityRelativity.SelfAndChildren:
+                    {
+                        c.ComponentDestroyed += (s, e) =>
+                        {
+                            c.gameObject.Broadcast(c, Functor, includeInactiveObjs, includeDisabledComps);
+                        };
+                    }
+                    break;
             }
-            catch (System.Exception) { }
-
-            var args = new object[] { obj };
-            var functor = new System.Action<Component>((o) => method.Invoke(o, args));
-            c.OnEnabled += (s, e) =>
-            {
-                c.gameObject.FindRoot().Broadcast(receiverType, functor, true);
-            };
+            return false;
         }
     }
 

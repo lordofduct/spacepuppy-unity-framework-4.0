@@ -547,11 +547,12 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1346090574}
+  - component: {fileID: 1346090577}
   - component: {fileID: 1346090576}
   - component: {fileID: 1346090575}
   m_Layer: 0
   m_Name: MotorTest
-  m_TagString: Untagged
+  m_TagString: Root
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -604,6 +605,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _controller: {fileID: 1346090575}
   _mass: 0
+--- !u!114 &1346090577
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1346090573}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15adeb1567e7ccb4db0766f56b7aa2de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1764567204
 GameObject:
   m_ObjectHideFlags: 0

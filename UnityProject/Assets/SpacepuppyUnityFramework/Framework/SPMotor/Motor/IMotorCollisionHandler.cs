@@ -4,14 +4,15 @@ using System.Collections.Generic;
 namespace com.spacepuppy.Motor
 {
 
-    public interface IMotorCollisionHandler : IMSignalEnabledUpwards<IMotorCollisionHandler>
+    [MSignalEnabled.Config(EntityRelativity = EntityRelativity.Entity, IncludeDisabledComponents = false, IncludeInactiveObjects = false)]
+    public interface IMotorCollisionMessageHandler : MSignalEnabled.IAutoDecorator
     {
         void OnCollision(MotorCollisionInfo info);
     }
 
     public static class MotorCollisionHandlerHelper
     {
-        public static readonly System.Action<IMotorCollisionHandler, MotorCollisionInfo> OnCollisionFunctor = (c, d) => c.OnCollision(d);
+        public static readonly System.Action<IMotorCollisionMessageHandler, MotorCollisionInfo> OnCollisionFunctor = (c, d) => c.OnCollision(d);
     }
 
     public enum MotorCollisionType

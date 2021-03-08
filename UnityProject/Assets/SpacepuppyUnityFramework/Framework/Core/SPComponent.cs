@@ -1,4 +1,6 @@
 ﻿using UnityEngine;
+using System.Collections.Generic;
+using System.Linq;
 
 using com.spacepuppy.Utils;
 
@@ -24,8 +26,8 @@ namespace com.spacepuppy
 
         #region Fields
         
-        [System.NonSerialized()]
-        private bool _started = false;
+        [System.NonSerialized]
+        private List<IMixin> _mixins;
 
         #endregion
 
@@ -33,28 +35,28 @@ namespace com.spacepuppy
 
         protected virtual void Awake()
         {
-            if (this is IMixin) MixinUtil.Initialize(this as IMixin);
+            if (this is IAutoMixinDecorator) this.RegisterMixins(MixinUtil.CreateAutoMixins(this as IAutoMixinDecorator));
         }
 
         protected virtual void Start()
         {
-            _started = true;
-            if (this.OnStarted != null) this.OnStarted(this, System.EventArgs.Empty);
+            this.started = true;
+            this.OnStarted?.Invoke(this, System.EventArgs.Empty);
         }
         
         protected virtual void OnEnable()
         {
-            if (this.OnEnabled != null) this.OnEnabled(this, System.EventArgs.Empty);
+            this.OnEnabled?.Invoke(this, System.EventArgs.Empty);
         }
 
         protected virtual void OnDisable()
         {
-            if (this.OnDisabled != null) this.OnDisabled(this, System.EventArgs.Empty);
+            this.OnDisabled?.Invoke(this, System.EventArgs.Empty);
         }
         
         protected virtual void OnDestroy()
         {
-            if (this.ComponentDestroyed != null) this.ComponentDestroyed(this, System.EventArgs.Empty);
+            this.ComponentDestroyed?.Invoke(this, System.EventArgs.Empty);
         }
 
         #endregion
@@ -64,11 +66,30 @@ namespace com.spacepuppy
         /// <summary>
         /// Start has been called on this component.
         /// </summary>
-        public bool started { get { return _started; } }
+        public bool started { get; private set; }
 
         #endregion
 
         #region Methods
+
+        public void RegisterMixins(IEnumerable<IMixin> mixins)
+        {
+            if (mixins == null) throw new System.ArgumentNullException(nameof(mixins));
+            foreach(var mixin in mixins)
+            {
+                this.RegisterMixin(mixin);
+            }
+        }
+
+        public void RegisterMixin(IMixin mixin)
+        {
+            if (mixin == null) throw new System.ArgumentNullException(nameof(mixin));
+
+            if(mixin.Awake(this))
+            {
+                (_mixins = _mixins ?? new List<IMixin>()).Add(mixin);
+            }
+        }
 
         //TODO - RadicalCoroutine
         //public new void StopAllCoroutines()

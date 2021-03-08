@@ -14,6 +14,7 @@ namespace com.spacepuppy
     [DisallowMultipleComponent()]
     public class SPEntity : SPComponent, INameable
     {
+        public static readonly System.Action<IEntityAwakeHandler, SPEntity> OnEntityAwakeFunctor = (o, d) => o.OnEntityAwake(d);
 
         #region Multiton Interface
 
@@ -52,11 +53,11 @@ namespace com.spacepuppy
             _isAwake = true;
 
             var token = Messaging.CreateBroadcastToken<IEntityAwakeHandler>(this.gameObject, true, true);
-            if (token != null && token.Count > 0)
+            if (token.Count > 0)
             {
                 com.spacepuppy.Hooks.EarlyStartHook.Invoke(this.gameObject, () =>
                 {
-                    token.Invoke((h) => h.OnEntityAwake(this));
+                    token.Invoke(this, OnEntityAwakeFunctor);
                 });
             }
         }

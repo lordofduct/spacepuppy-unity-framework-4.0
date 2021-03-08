@@ -7,6 +7,7 @@ namespace com.spacepuppy.Scenes
 
     public class LoadSceneWaitHandle : System.EventArgs, IProgressingYieldInstruction, IRadicalWaitHandle, ISPDisposable
     {
+        public static readonly System.Action<ISceneLoadedGlobalHandler, LoadSceneWaitHandle> OnSceneLoadedFunctor = (o, d) => o.OnSceneLoaded(d);
 
         #region Fields
 
@@ -131,8 +132,8 @@ namespace com.spacepuppy.Scenes
                 var d = _onComplete;
                 _onComplete = null;
                 if (d != null) d(this);
-                
-                com.spacepuppy.Utils.Messaging.Broadcast<ISceneLoadedGlobalHandler>((o) => o.OnSceneLoaded(this));
+
+                com.spacepuppy.Utils.Messaging.Broadcast(this, OnSceneLoadedFunctor);
             }
         }
 

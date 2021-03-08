@@ -12,7 +12,7 @@ namespace com.spacepuppy.Utils
 
         #region Standard Execute Methods
 
-        public static void Execute<T>(this GameObject go, System.Action<T> functor, bool includeDisabledComponents = false) where T : class
+        public static void Signal<T>(this GameObject go, System.Action<T> functor, bool includeDisabledComponents = false) where T : class
         {
             if (functor == null) throw new System.ArgumentNullException("functor");
 
@@ -30,7 +30,7 @@ namespace com.spacepuppy.Utils
             }
         }
 
-        public static void Execute<TInterface, TArg>(this GameObject go, TArg arg, System.Action<TInterface, TArg> functor, bool includeDisabledComponents = false) where TInterface : class
+        public static void Signal<TInterface, TArg>(this GameObject go, TArg arg, System.Action<TInterface, TArg> functor, bool includeDisabledComponents = false) where TInterface : class
         {
             if (functor == null) throw new System.ArgumentNullException("functor");
 
@@ -43,6 +43,24 @@ namespace com.spacepuppy.Utils
                     {
                         if (includeDisabledComponents || TargetIsValid(lst[i]))
                             functor(lst[i], arg);
+                    }
+                }
+            }
+        }
+
+        public static void Signal(this GameObject go, System.Type receiverType, System.Action<Component> functor, bool includeDisabledComponents = false)
+        {
+            if (functor == null) throw new System.ArgumentNullException("functor");
+
+            using (var lst = TempCollection.GetList<Component>())
+            {
+                go.GetComponents(receiverType, lst);
+                if (lst.Count > 0)
+                {
+                    for (int i = 0; i < lst.Count; i++)
+                    {
+                        if (includeDisabledComponents || TargetIsValid(lst[i]))
+                            functor(lst[i]);
                     }
                 }
             }
@@ -100,22 +118,54 @@ namespace com.spacepuppy.Utils
             }
         }
 
-        public static void ExecuteUpwards<T>(this GameObject go, System.Action<T> functor, bool includeDisabledComponents = false) where T : class
+        /// <summary>
+        /// Broadcast message to all children of a GameObject
+        /// </summary>
+        /// <param name="go"></param>
+        /// <param name="functor"></param>
+        /// <param name="includeInactive"></param>
+        public static void Broadcast(this GameObject go, System.Type receiverType, System.Action<Component> functor, bool includeInactiveObjects = false, bool includeDisabledComponents = false)
+        {
+            if (functor == null) throw new System.ArgumentNullException("functor");
+
+            //a alloc free version of GetComponentsInChildren by Type doesn't exist
+            var arr = go.GetComponentsInChildren(receiverType, includeInactiveObjects);
+            if (arr?.Length > 0)
+            {
+                for (int i = 0; i < arr.Length; i++)
+                {
+                    if (includeDisabledComponents || TargetIsValid(arr[i]))
+                        functor(arr[i]);
+                }
+            }
+        }
+
+        public static void SignalUpwards<T>(this GameObject go, System.Action<T> functor, bool includeDisabledComponents = false) where T : class
         {
             var p = go.transform;
             while (p != null)
             {
-                Execute<T>(p.gameObject, functor, includeDisabledComponents);
+                Signal<T>(p.gameObject, functor, includeDisabledComponents);
                 p = p.parent;
             }
         }
 
-        public static void ExecuteUpwards<TInterface, TArg>(this GameObject go, TArg arg, System.Action<TInterface, TArg> functor, bool includeDisabledComponents = false) where TInterface : class
+        public static void SignalUpwards<TInterface, TArg>(this GameObject go, TArg arg, System.Action<TInterface, TArg> functor, bool includeDisabledComponents = false) where TInterface : class
         {
             var p = go.transform;
             while (p != null)
             {
-                Execute<TInterface, TArg>(p.gameObject, arg, functor, includeDisabledComponents);
+                Signal<TInterface, TArg>(p.gameObject, arg, functor, includeDisabledComponents);
+                p = p.parent;
+            }
+        }
+
+        public static void SignalUpwards(this GameObject go, System.Type receiverType, System.Action<Component> functor, bool includeDisabledComponents = false)
+        {
+            var p = go.transform;
+            while (p != null)
+            {
+                Signal(p.gameObject, receiverType, functor, includeDisabledComponents);
                 p = p.parent;
             }
         }
@@ -162,7 +212,7 @@ namespace com.spacepuppy.Utils
         {
             if (functor == null) throw new System.ArgumentNullException("functor");
 
-            GlobalMessagePool<T>.Execute(functor);
+            GlobalMessagePool<T>.Signal(functor);
         }
 
         /// <summary>
@@ -177,7 +227,7 @@ namespace com.spacepuppy.Utils
         {
             if (functor == null) throw new System.ArgumentNullException("functor");
 
-            GlobalMessagePool<TInterface>.Execute<TArg>(arg, functor);
+            GlobalMessagePool<TInterface>.Signal<TArg>(arg, functor);
         }
 
         /// <summary>
@@ -231,24 +281,16 @@ namespace com.spacepuppy.Utils
         #region Broadcast Token
 
         /// <summary>
-        /// Create a MessageToken to invoke at a later point. If no targets found null is returned.
+        /// Create a MessageToken to invoke at a later point.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="go"></param>
         /// <returns></returns>
-        public static MessageToken<T> CreateExecuteToken<T>(GameObject go) where T : class
+        public static MessageToken<T> CreateSignalToken<T>(GameObject go) where T : class
         {
-            using (var lst = TempCollection.GetList<T>())
-            {
-                go.GetComponents<T>(lst);
-                if (lst.Count > 0)
-                {
-                    return new MessageToken<T>(lst.ToArray());
-                }
-            }
+            if (object.ReferenceEquals(go, null)) throw new System.ArgumentNullException("go");
 
-
-            return null;
+            return new MessageToken<T>(() => go.GetComponents<T>());
         }
 
         /// <summary>
@@ -257,22 +299,24 @@ namespace com.spacepuppy.Utils
         /// <typeparam name="T"></typeparam>
         /// <param name="go"></param>
         /// <returns></returns>
-        public static MessageToken<T> CreateExecuteUpwardsToken<T>(GameObject go) where T : class
+        public static MessageToken<T> CreateSignalUpwardsToken<T>(GameObject go) where T : class
         {
-            using (var lst = TempCollection.GetList<T>())
+            if (object.ReferenceEquals(go, null)) throw new System.ArgumentNullException("go");
+
+            return new MessageToken<T>(() =>
             {
-                var p = go.transform;
-                while (p != null)
+                using (var lst = TempCollection.GetList<T>())
                 {
-                    p.GetComponents<T>(lst);
-                    p = p.parent;
+                    var p = go.transform;
+                    while (p != null)
+                    {
+                        p.GetComponents<T>(lst);
+                        p = p.parent;
+                    }
+
+                    return lst.ToArray();
                 }
-
-                if (lst.Count > 0)
-                    return new MessageToken<T>(lst.ToArray());
-            }
-
-            return null;
+            });
         }
 
         /// <summary>
@@ -285,18 +329,9 @@ namespace com.spacepuppy.Utils
         /// <returns></returns>
         public static MessageToken<T> CreateBroadcastToken<T>(GameObject go, bool includeInactiveObjects = false, bool includeDisabledComponents = false) where T : class
         {
-            if (go == null) return null;
+            if (object.ReferenceEquals(go, null)) throw new System.ArgumentNullException("go");
 
-            using (var lst = TempCollection.GetList<T>())
-            {
-                go.GetComponentsInChildren<T>(includeInactiveObjects, lst);
-                if (lst.Count > 0)
-                {
-                    return new MessageToken<T>(lst.ToArray());
-                }
-            }
-
-            return null;
+            return new MessageToken<T>(() => go.GetComponentsInChildren<T>(includeInactiveObjects));
         }
 
         /// <summary>
@@ -308,7 +343,7 @@ namespace com.spacepuppy.Utils
         {
             if (GlobalMessagePool<T>.Count == 0) return null;
 
-            return new MessageToken<T>(GlobalMessagePool<T>.CopyReceivers());
+            return new MessageToken<T>(() => GlobalMessagePool<T>.CopyReceivers());
         }
 
         /// <summary>
@@ -319,51 +354,52 @@ namespace com.spacepuppy.Utils
         /// <returns></returns>
         public static MessageToken<T> CreateFindAndBroadcastToken<T>(bool includeDisabledComponents = false) where T : class
         {
-            using (var lst = TempCollection.GetSet<T>())
+            return new MessageToken<T>(() =>
             {
-                ObjUtil.FindObjectsOfInterface<T>(lst);
-                if (lst.Count == 0) return null;
-
-                if (includeDisabledComponents)
-                    return new MessageToken<T>(lst.ToArray());
-
-                using (var lst2 = TempCollection.GetList<T>(lst.Count))
+                using (var lst = TempCollection.GetSet<T>())
                 {
-                    var e = lst.GetEnumerator();
-                    while (e.MoveNext())
+                    ObjUtil.FindObjectsOfInterface<T>(lst);
+                    if (lst.Count == 0) return null;
+
+                    if (includeDisabledComponents)
+                        return lst.ToArray();
+
+                    using (var lst2 = TempCollection.GetList<T>(lst.Count))
                     {
-                        if (TargetIsValid(e.Current)) lst.Add(e.Current);
+                        var e = lst.GetEnumerator();
+                        while (e.MoveNext())
+                        {
+                            if (TargetIsValid(e.Current)) lst.Add(e.Current);
+                        }
+
+                        return lst2.ToArray();
                     }
-
-                    if (lst.Count > 0)
-                        return new MessageToken<T>(lst2.ToArray());
                 }
-            }
-
-            return null;
+            });
         }
 
         public class MessageToken<T> where T : class
         {
 
+            private System.Func<T[]> _getTargets;
             private T[] _targets;
 
-            public MessageToken(T[] targets)
+            internal MessageToken(System.Func<T[]> getTargets)
             {
-                if (targets == null) throw new System.ArgumentNullException("targets");
-                _targets = targets;
+                if (getTargets == null) throw new System.ArgumentNullException("getTargets");
+                _getTargets = getTargets;
             }
 
             public int Count
             {
-                get { return _targets.Length; }
+                get { return GetTargets().Length; }
             }
 
             public void Invoke(System.Action<T> functor)
             {
                 if (functor == null) throw new System.ArgumentNullException("functor");
 
-                foreach (var t in _targets)
+                foreach (var t in GetTargets())
                 {
                     functor(t);
                 }
@@ -373,10 +409,21 @@ namespace com.spacepuppy.Utils
             {
                 if (functor == null) throw new System.ArgumentNullException("functor");
 
-                foreach (var t in _targets)
+                foreach (var t in GetTargets())
                 {
                     functor(t, arg);
                 }
+            }
+
+            public void SetDirty()
+            {
+                _targets = null;
+            }
+
+            private T[] GetTargets()
+            {
+                if (_targets == null) _targets = _getTargets();
+                return _targets;
             }
 
         }
@@ -415,7 +462,7 @@ namespace com.spacepuppy.Utils
 
             public static int Count
             {
-                get { return _receivers.Count; }
+                get { return _receivers?.Count ?? 0; }
             }
 
             public static void Add(T listener)
@@ -480,7 +527,7 @@ namespace com.spacepuppy.Utils
                 return coll.Count - cnt;
             }
 
-            public static void Execute(System.Action<T> functor)
+            public static void Signal(System.Action<T> functor)
             {
                 if (_state != ExecutingState.None) throw new System.InvalidOperationException("Can not globally broadcast a message currently executing.");
                 if (_receivers == null || _receivers.Count == 0) return;
@@ -539,7 +586,7 @@ namespace com.spacepuppy.Utils
                 }
             }
 
-            public static void Execute<TArg>(TArg arg, System.Action<T, TArg> functor)
+            public static void Signal<TArg>(TArg arg, System.Action<T, TArg> functor)
             {
                 if (_state != ExecutingState.None) throw new System.InvalidOperationException("Can not globally broadcast a message currently executing.");
                 if (_receivers == null || _receivers.Count == 0) return;

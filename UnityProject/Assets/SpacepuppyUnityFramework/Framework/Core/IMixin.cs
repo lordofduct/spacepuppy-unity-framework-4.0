@@ -101,6 +101,7 @@ namespace com.spacepuppy
     /// In earlier versions of Spacepuppy Framework this was implemented directly on SPComponent. I've since moved it to here to match our new IMixin interface, and so that only those components 
     /// that need OnStartOrEnable actually have it implemented. No need for empty method calls on ALL components.
     /// </remarks>
+    [AutoMixinConfig(typeof(MStartOrEnableReceiver))]
     public interface IMStartOrEnableReceiver : IAutoMixinDecorator, IEventfulComponent
     {
 

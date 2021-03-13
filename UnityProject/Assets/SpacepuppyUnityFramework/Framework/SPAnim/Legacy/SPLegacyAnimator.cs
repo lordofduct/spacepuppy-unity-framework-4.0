@@ -7,7 +7,7 @@ namespace com.spacepuppy.Anim.Legacy
     /// <summary>
     /// It is usually more convenient to break Animation scripts into several parts for the various tasks they handle. Each script should inherit from this class as it handles a lot of boilerplate.
     /// </summary>
-    public abstract class SPLegacyAnimator : SPComponent, ISPAnimator
+    public abstract class SPLegacyAnimator : SPComponent, ISPLegacyAnimator
     {
 
         #region Fields
@@ -60,10 +60,6 @@ namespace com.spacepuppy.Anim.Legacy
             get { return _initialized; }
         }
 
-        #endregion
-
-        #region ISPAnimator Interface
-        
         #endregion
 
     }

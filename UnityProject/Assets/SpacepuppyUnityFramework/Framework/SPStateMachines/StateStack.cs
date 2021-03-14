@@ -67,11 +67,18 @@ namespace com.spacepuppy.StateMachine
 
         #region Methods
 
-        public void Reset(T state)
+        /// <summary>
+        /// Reset what the initial state is.
+        /// </summary>
+        /// <param name="state">The state to replace initial state with.</param>
+        /// <param name="preserveStack">True if the override stack should stay in place.</param>
+        public void Reset(T state, bool preserveStack = false)
         {
             if (_comparer.Equals(state, null)) throw new ArgumentNullException(nameof(state));
 
             _getInitialState = () => state;
+            if (preserveStack) return;
+            
             if(_stack.Count == 0 && !_comparer.Equals(_current, state))
             {
                 var c = _current;
@@ -87,19 +94,34 @@ namespace com.spacepuppy.StateMachine
             }
         }
 
-        public void Reset(Func<T> initialStateReceiver)
+        /// <summary>
+        /// Reset what the initial state is.
+        /// </summary>
+        /// <param name="initialStateReceiver">The state receiver callback called to get the initial state.</param>
+        /// <param name="preserveStack">True if the override stack should stay in place.</param>
+        public void Reset(Func<T> initialStateReceiver, bool preserveStack = false)
         {
             if (initialStateReceiver == null) throw new ArgumentNullException(nameof(initialStateReceiver));
 
             _getInitialState = initialStateReceiver;
+            if (preserveStack) return;
 
-            var c = _current;
             var next = _getInitialState();
             if (_comparer.Equals(next, null)) throw new InvalidOperationException("Initial state receiver entered a faulted state.");
-            if (_stack.Count == 0 && _comparer.Equals(c, next)) return;
 
-            _current = next;
-            OnStateChanged(c, _current);
+            if (_stack.Count == 0 && !_comparer.Equals(_current, next))
+            {
+                var c = _current;
+                _current = next;
+                OnStateChanged(c, next);
+            }
+            else
+            {
+                var c = _current;
+                _current = next;
+                _stack.Clear();
+                OnStateChanged(c, _current);
+            }
         }
 
         /// <summary>

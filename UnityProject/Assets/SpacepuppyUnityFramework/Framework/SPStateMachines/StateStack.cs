@@ -68,6 +68,16 @@ namespace com.spacepuppy.StateMachine
         #region Methods
 
         /// <summary>
+        /// If no overrides are stacked, validate that the initial state is what is returned by the initialStateReceiver.
+        /// </summary>
+        public void ValidateInitialState()
+        {
+            if (_stack.Count > 0) return;
+
+            this.PopAllStates();
+        }
+
+        /// <summary>
         /// Reset what the initial state is.
         /// </summary>
         /// <param name="state">The state to replace initial state with.</param>

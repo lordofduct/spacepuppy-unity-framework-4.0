@@ -11,6 +11,7 @@ namespace com.spacepuppy.StateMachine
 
         #region Fields
 
+        private IEqualityComparer<T> _comparer;
         private Stack<T> _stack = new Stack<T>();
         private T _current;
         private Func<T> _getInitialState;
@@ -23,7 +24,7 @@ namespace com.spacepuppy.StateMachine
 
         #region CONSTRUCTOR
 
-        public StateStack(T initialState, bool allowEmptyStack = false)
+        public StateStack(T initialState, bool allowEmptyStack = false, IEqualityComparer<T> comparer = default)
         {
             if(allowEmptyStack)
             {
@@ -38,9 +39,10 @@ namespace com.spacepuppy.StateMachine
                 _current = initialState;
                 _getInitialState = () => initialState;
             }
+            this.Comparer = comparer;
         }
 
-        public StateStack(Func<T> initialStateReceiver)
+        public StateStack(Func<T> initialStateReceiver, IEqualityComparer<T> comparer = default)
         {
             if (initialStateReceiver == null) throw new ArgumentNullException(nameof(initialStateReceiver));
 
@@ -48,6 +50,17 @@ namespace com.spacepuppy.StateMachine
             if (object.ReferenceEquals(_current, null)) throw new InvalidOperationException("Initial state receiver entered a faulted state.");
 
             _getInitialState = initialStateReceiver;
+            this.Comparer = comparer;
+        }
+
+        #endregion
+
+        #region Properties
+
+        public IEqualityComparer<T> Comparer
+        {
+            get { return _comparer; }
+            set { _comparer = value ?? EqualityComparer<T>.Default; }
         }
 
         #endregion
@@ -56,10 +69,10 @@ namespace com.spacepuppy.StateMachine
 
         public void Reset(T state)
         {
-            if (state == null) throw new ArgumentNullException(nameof(state));
+            if (_comparer.Equals(state, null)) throw new ArgumentNullException(nameof(state));
 
             _getInitialState = () => state;
-            if(_stack.Count == 0 && _current != state)
+            if(_stack.Count == 0 && !_comparer.Equals(_current, state))
             {
                 var c = _current;
                 _current = state;
@@ -82,20 +95,71 @@ namespace com.spacepuppy.StateMachine
 
             var c = _current;
             var next = _getInitialState();
-            if (object.ReferenceEquals(next, null)) throw new InvalidOperationException("Initial state receiver entered a faulted state.");
-            if (_stack.Count == 0 && c == next) return;
+            if (_comparer.Equals(next, null)) throw new InvalidOperationException("Initial state receiver entered a faulted state.");
+            if (_stack.Count == 0 && _comparer.Equals(c, next)) return;
 
             _current = next;
             OnStateChanged(c, _current);
         }
 
         /// <summary>
+        /// Removes the top-most instance of a state in the override statck, ignoring the initial state.
+        /// </summary>
+        /// <param name="state"></param>
+        public bool PopState(T state)
+        {
+            if (_comparer.Equals(state, null)) return false;
+            if (_stack.Count == 0) return false;
+
+            int index = -1;
+            int cnt = 0;
+            var e = _stack.GetEnumerator();
+            while (e.MoveNext())
+            {
+                if (_comparer.Equals(e.Current, state)) index = cnt;
+                cnt++;
+            }
+            if (index < 0) return false;
+
+            using (var lst = TempCollection.GetList<T>())
+            {
+                while(_stack.Count > index)
+                {
+                    lst.Add(_stack.Pop());
+                }
+                for(int i = lst.Count - 1; i >= 0; i--)
+                {
+                    _stack.Push(lst[i]);
+                }
+
+                if (_comparer.Equals(_current, state))
+                {
+                    if (_getInitialState == null)
+                    {
+                        _current = _stack.Count > 0 ? _stack.Peek() : null;
+                        OnStateChanged(state, _current);
+                    }
+                    else
+                    {
+                        var next = _stack.Count > 0 ? _stack.Peek() : _getInitialState();
+                        if (_comparer.Equals(next, null)) throw new InvalidOperationException("Initial state receiver entered a faulted state.");
+                        _current = next;
+                        OnStateChanged(state, _current);
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// Searches the state stack for a state and purges it no matter its location. Unless its the initial state.
         /// </summary>
         /// <param name="state"></param>
-        public void PurgeState(T state)
+        public bool PurgeState(T state)
         {
-            if (_stack.Count == 0) return;
+            if (_comparer.Equals(state, null)) return false;
+            if (_stack.Count == 0) return false;
 
             using (var lst = TempCollection.GetList<T>())
             {
@@ -103,7 +167,7 @@ namespace com.spacepuppy.StateMachine
                 var e = _stack.GetEnumerator();
                 while(e.MoveNext())
                 {
-                    if(e.Current == state)
+                    if(_comparer.Equals(e.Current, state))
                     {
                         found = true;
                     }
@@ -121,7 +185,7 @@ namespace com.spacepuppy.StateMachine
                         _stack.Push(lst[i]);
                     }
 
-                    if(_current == state)
+                    if(_comparer.Equals(_current, state))
                     {
                         if(_getInitialState == null)
                         {
@@ -131,22 +195,24 @@ namespace com.spacepuppy.StateMachine
                         else
                         {
                             var next = _stack.Count > 0 ? _stack.Peek() : _getInitialState();
-                            if (object.ReferenceEquals(next, null)) throw new InvalidOperationException("Initial state receiver entered a faulted state.");
+                            if (_comparer.Equals(next, null)) throw new InvalidOperationException("Initial state receiver entered a faulted state.");
                             _current = next;
                             OnStateChanged(state, _current);
                         }
                     }
                 }
+                return found;
             }
         }
 
-        public void PurgeStates(IEnumerable<T> states)
+        public bool PurgeStates(IEnumerable<T> states)
         {
-            if (_stack.Count == 0) return;
+            if (states == null) return false;
+            if (_stack.Count == 0) return false;
 
-            using (var set = TempCollection.GetSet<T>(states))
+            using (var set = TempCollection.GetSet<T>(states, _comparer))
             {
-                if (set.Count == 0) return;
+                if (set.Count == 0) return false;
 
                 using (var lst = TempCollection.GetList<T>())
                 {
@@ -183,12 +249,13 @@ namespace com.spacepuppy.StateMachine
                             else
                             {
                                 var next = _stack.Count > 0 ? _stack.Peek() : _getInitialState();
-                                if (object.ReferenceEquals(next, null)) throw new InvalidOperationException("Initial state receiver entered a faulted state.");
+                                if (_comparer.Equals(next, null)) throw new InvalidOperationException("Initial state receiver entered a faulted state.");
                                 _current = next;
                                 OnStateChanged(c, _current);
                             }
                         }
                     }
+                    return found;
                 }
             }
         }
@@ -237,14 +304,14 @@ namespace com.spacepuppy.StateMachine
 
         public bool Contains(T state)
         {
-            if (state == null) return false;
-            if (object.ReferenceEquals(_current, state)) return true;
+            if (_comparer.Equals(state, null)) return false;
+            if (_comparer.Equals(_current, state)) return true;
             return _stack.Contains(state);
         }
 
         public void PushState(T state)
         {
-            if (state == null) throw new ArgumentNullException(nameof(state));
+            if (_comparer.Equals(state, null)) throw new ArgumentNullException(nameof(state));
 
             var c = _current;
             _current = state;
@@ -274,8 +341,8 @@ namespace com.spacepuppy.StateMachine
                 else
                 {
                     var next = _getInitialState();
-                    if (object.ReferenceEquals(next, null)) throw new InvalidOperationException("Initial state receiver entered a faulted state.");
-                    if (_stack.Count == 0 && c == next) return _current; //already at bottom, don't change
+                    if (_comparer.Equals(next, null)) throw new InvalidOperationException("Initial state receiver entered a faulted state.");
+                    if (_stack.Count == 0 && _comparer.Equals(c, next)) return _current; //already at bottom, don't change
 
                     _stack.Clear();
                     _current = next;
@@ -300,8 +367,8 @@ namespace com.spacepuppy.StateMachine
             else
             {
                 var next = _getInitialState();
-                if (object.ReferenceEquals(next, null)) throw new InvalidOperationException("Initial state receiver entered a faulted state.");
-                if (_stack.Count == 0 && c == next) return; //already at bottom, don't change
+                if (_comparer.Equals(next, null)) throw new InvalidOperationException("Initial state receiver entered a faulted state.");
+                if (_stack.Count == 0 && _comparer.Equals(c, next)) return; //already at bottom, don't change
 
                 _stack.Clear();
                 _current = next;

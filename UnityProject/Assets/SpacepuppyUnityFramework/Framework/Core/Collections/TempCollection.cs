@@ -75,9 +75,19 @@ namespace com.spacepuppy.Collections
             return TempHashSet<T>.GetSet();
         }
 
+        public static TempHashSet<T> GetSet<T>(IEqualityComparer<T> comparer)
+        {
+            return TempHashSet<T>.GetSet(comparer);
+        }
+
         public static TempHashSet<T> GetSet<T>(IEnumerable<T> e)
         {
             return TempHashSet<T>.GetSet(e);
+        }
+
+        public static TempHashSet<T> GetSet<T>(IEnumerable<T> e, IEqualityComparer<T> comparer)
+        {
+            return TempHashSet<T>.GetSet(e, comparer);
         }
 
         public static TempDictionary<TKey, TValue> GetDict<TKey, TValue>()
@@ -85,9 +95,19 @@ namespace com.spacepuppy.Collections
             return TempDictionary<TKey, TValue>.GetDict();
         }
 
+        public static TempDictionary<TKey, TValue> GetDict<TKey, TValue>(IEqualityComparer<TKey> comparer)
+        {
+            return TempDictionary<TKey, TValue>.GetDict(comparer);
+        }
+
         public static TempDictionary<TKey, TValue> GetDict<TKey, TValue>(IDictionary<TKey, TValue> dict)
         {
             return TempDictionary<TKey, TValue>.GetDict(dict);
+        }
+
+        public static TempDictionary<TKey, TValue> GetDict<TKey, TValue>(IDictionary<TKey, TValue> dict, IEqualityComparer<TKey> comparer)
+        {
+            return TempDictionary<TKey, TValue>.GetDict(dict, comparer);
         }
 
         public static TempQueue<T> GetQueue<T>()

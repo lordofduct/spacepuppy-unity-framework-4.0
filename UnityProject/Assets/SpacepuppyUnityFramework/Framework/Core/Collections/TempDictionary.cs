@@ -11,7 +11,7 @@ namespace com.spacepuppy.Collections
 
         #region Fields
 
-        private static ObjectCachePool<TempDictionary<TKey, TValue>> _pool = new ObjectCachePool<TempDictionary<TKey, TValue>>(-1, () => new TempDictionary<TKey, TValue>());
+        private static ObjectCachePool<TempDictionary<TKey, TValue>> _pool = new ObjectCachePool<TempDictionary<TKey, TValue>>(-1, () => new TempDictionary<TKey, TValue>(), (c) => c.Comparer = null);
 
         private int _maxCapacityOnRelease;
         //private int _version;
@@ -21,7 +21,7 @@ namespace com.spacepuppy.Collections
         #region CONSTRUCTOR
 
         public TempDictionary()
-            : base()
+            : base(new OverridableEqualityComparer<TKey>())
         {
             var tp = typeof(TKey);
             int sz = (tp.IsValueType && !tp.IsEnum) ? System.Runtime.InteropServices.Marshal.SizeOf(tp) : 4;
@@ -30,12 +30,25 @@ namespace com.spacepuppy.Collections
         }
 
         public TempDictionary(IDictionary<TKey, TValue> dict)
-            : base()
+            : base(new OverridableEqualityComparer<TKey>())
         {
             var tp = typeof(TKey);
             int sz = (tp.IsValueType && !tp.IsEnum) ? System.Runtime.InteropServices.Marshal.SizeOf(tp) : 4;
             _maxCapacityOnRelease = MAX_SIZE_INBYTES / sz;
             //_version = 1;
+        }
+
+        #endregion
+
+        #region Properties
+
+        public new IEqualityComparer<TKey> Comparer
+        {
+            get { return base.Comparer; }
+            set
+            {
+                (base.Comparer as OverridableEqualityComparer<TKey>).Comparer = value;
+            }
         }
 
         #endregion
@@ -57,6 +70,13 @@ namespace com.spacepuppy.Collections
             return _pool.GetInstance();
         }
 
+        public static TempDictionary<TKey, TValue> GetDict(IEqualityComparer<TKey> comparer)
+        {
+            var result = _pool.GetInstance();
+            result.Comparer = comparer;
+            return result;
+        }
+
         public static TempDictionary<TKey, TValue> GetDict(IDictionary<TKey, TValue> dict)
         {
             TempDictionary<TKey, TValue> result;
@@ -71,6 +91,26 @@ namespace com.spacepuppy.Collections
             else
             {
                 result = new TempDictionary<TKey, TValue>(dict);
+            }
+            return result;
+        }
+
+        public static TempDictionary<TKey, TValue> GetDict(IDictionary<TKey, TValue> dict, IEqualityComparer<TKey> comparer)
+        {
+            TempDictionary<TKey, TValue> result;
+            if (_pool.TryGetInstance(out result))
+            {
+                result.Comparer = comparer;
+                var le = LightEnumerator.Create(dict);
+                while (le.MoveNext())
+                {
+                    result.Add(le.Current.Key, le.Current.Value);
+                }
+            }
+            else
+            {
+                result = new TempDictionary<TKey, TValue>(dict);
+                result.Comparer = comparer;
             }
             return result;
         }

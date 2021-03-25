@@ -13,6 +13,7 @@ namespace com.spacepuppy.Dynamic.Accessors
         private System.Action<Transform, object> _setter;
         private System.Func<Transform, object> _getter;
         private IMemberAccessor _alternate;
+        private MemberInfo _memberInfo;
 
         #endregion
 
@@ -101,6 +102,10 @@ namespace com.spacepuppy.Dynamic.Accessors
 
         #region IMemberAccessor Interface
 
+        string IMemberAccessor.GetMemberName() { return (_alternate != null) ? _alternate.GetMemberName() :_memberInfo?.Name; }
+
+        System.Type IMemberAccessor.GetMemberType() { return (_alternate != null) ? _alternate.GetMemberType() : DynamicUtil.GetReturnType(_memberInfo); }
+
         public object Get(object target)
         {
             return (_alternate != null) ? _alternate.Get(target) : _getter(target as Transform);
@@ -130,36 +135,43 @@ namespace com.spacepuppy.Dynamic.Accessors
                     obj = new FastTransformMemberAccessor();
                     obj._setter = obj.SetPosition;
                     obj._getter = obj.GetPosition;
+                    obj._memberInfo = info;
                     break;
                 case "localPosition":
                     obj = new FastTransformMemberAccessor();
                     obj._setter = obj.SetLocalPosition;
                     obj._getter = obj.GetLocalPosition;
+                    obj._memberInfo = info;
                     break;
                 case "localScale":
                     obj = new FastTransformMemberAccessor();
                     obj._setter = obj.SetLocalScale;
                     obj._getter = obj.GetLocalScale;
+                    obj._memberInfo = info;
                     break;
                 case "eulerAngles":
                     obj = new FastTransformMemberAccessor();
                     obj._setter = obj.SetEulerAngles;
                     obj._getter = obj.GetEulerAngles;
+                    obj._memberInfo = info;
                     break;
                 case "localEulerAngles":
                     obj = new FastTransformMemberAccessor();
                     obj._setter = obj.SetLocalEulerAngles;
                     obj._getter = obj.GetLocalEulerAngles;
+                    obj._memberInfo = info;
                     break;
                 case "rotation":
                     obj = new FastTransformMemberAccessor();
                     obj._setter = obj.SetRotation;
                     obj._getter = obj.GetRotation;
+                    obj._memberInfo = info;
                     break;
                 case "localRotation":
                     obj = new FastTransformMemberAccessor();
                     obj._setter = obj.SetLocalRotation;
                     obj._getter = obj.GetLocalRotation;
+                    obj._memberInfo = info;
                     break;
                 default:
                     obj = new FastTransformMemberAccessor();

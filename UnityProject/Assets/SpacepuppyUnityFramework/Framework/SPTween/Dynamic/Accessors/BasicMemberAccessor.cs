@@ -22,6 +22,10 @@ namespace com.spacepuppy.Dynamic.Accessors
 
         #region IMemberAccessor Interface
 
+        public string GetMemberName() { return _memberInfo?.Name; }
+
+        public System.Type GetMemberType() { return DynamicUtil.GetReturnType(_memberInfo); }
+
         public object Get(object target)
         {
             if (_memberInfo is PropertyInfo)

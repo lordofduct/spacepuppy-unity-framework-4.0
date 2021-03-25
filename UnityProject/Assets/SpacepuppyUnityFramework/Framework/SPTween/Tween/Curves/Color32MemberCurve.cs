@@ -5,8 +5,7 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Tween.Curves
 {
 
-    [CustomMemberCurve(typeof(Color32))]
-    public class Color32MemberCurve : MemberCurve, ISupportRedirectToMemberCurve
+    public class Color32MemberCurve : MemberCurve<Color32>
     {
 
         #region Fields
@@ -18,39 +17,42 @@ namespace com.spacepuppy.Tween.Curves
 
         #region CONSTRUCTOR
 
-        protected Color32MemberCurve()
+        protected internal Color32MemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor)
+            : base(accessor)
         {
 
         }
 
-        public Color32MemberCurve(string propName, float dur, Color32 start, Color32 end)
-            : base(propName, dur)
+        public Color32MemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, float dur, Color32 start, Color32 end)
+            : base(accessor, null, dur)
         {
             _start = start;
             _end = end;
         }
 
-        public Color32MemberCurve(string propName, Ease ease, float dur, Color32 start, Color32 end)
-            : base(propName, ease, dur)
+        public Color32MemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, Ease ease, float dur, Color32 start, Color32 end)
+            : base(accessor, ease, dur)
         {
             _start = start;
             _end = end;
         }
 
-        protected override void ReflectiveInit(System.Type memberType, object start, object end, object option)
+        protected internal override void Configure(Ease ease, float dur, Color32 start, Color32 end, int option = 0)
         {
-            _start = ConvertUtil.ToColor32(start);
-            _end = ConvertUtil.ToColor32(end);
+            this.Ease = ease;
+            this.Duration = dur;
+            _start = start;
+            _end = end;
         }
 
-        void ISupportRedirectToMemberCurve.ConfigureAsRedirectTo(System.Type memberType, float totalDur, object current, object start, object end, object option)
+        protected internal override void ConfigureAsRedirectTo(Ease ease, float totalDur, Color32 current, Color32 start, Color32 end, int option = 0)
         {
-            var sc = ConvertUtil.ToColor32(start);
-            _start = ConvertUtil.ToColor32(current);
-            _end = ConvertUtil.ToColor32(end);
+            this.Ease = ease;
+            _start = current;
+            _end = end;
 
             var c = ConvertUtil.ToVector4(_start);
-            var s = ConvertUtil.ToVector4(sc);
+            var s = ConvertUtil.ToVector4(start);
             var e = ConvertUtil.ToVector4(_end);
 
             c -= e;
@@ -85,7 +87,7 @@ namespace com.spacepuppy.Tween.Curves
 
         #region MemberCurve Interface
 
-        protected override object GetValueAt(float dt, float t)
+        protected override Color32 GetValueAt(float dt, float t)
         {
             if (this.Duration == 0f) return _end;
             t = this.Ease(t, 0f, 1f, this.Duration);

@@ -7,8 +7,7 @@ namespace com.spacepuppy.Tween.Curves
     /// <summary>
     /// The BoolMemberCurve favors 'true'.
     /// </summary>
-    [CustomMemberCurve(typeof(bool))]
-    public class BoolMemberCurve : MemberCurve, ISupportRedirectToMemberCurve
+    public class BoolMemberCurve : MemberCurve<bool>
     {
 
         #region Fields
@@ -20,35 +19,34 @@ namespace com.spacepuppy.Tween.Curves
 
         #region CONSTRUCTOR
 
-        protected BoolMemberCurve()
+        protected internal BoolMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor) : base(accessor)
         {
 
         }
 
-        public BoolMemberCurve(string propName, float dur, bool start, bool end)
-            : base(propName, dur)
+        public BoolMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, float dur, bool start, bool end) : base(accessor, null, dur)
         {
             _start = start;
             _end = end;
         }
 
-        public BoolMemberCurve(string propName, Ease ease, float dur, bool start, bool end)
-            : base(propName, ease, dur)
+        public BoolMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, Ease ease, float dur, bool start, bool end) : base(accessor, ease, dur)
         {
             _start = start;
             _end = end;
         }
 
-        protected override void ReflectiveInit(System.Type memberType, object start, object end, object option)
+        protected internal override void Configure(Ease ease, float dur, bool start, bool end, int option = 0)
         {
-            _start = ConvertUtil.ToBool(start);
-            _end = ConvertUtil.ToBool(end);
+            this.Ease = ease;
+            this.Duration = dur;
+            _start = start;
+            _end = end;
         }
 
-        void ISupportRedirectToMemberCurve.ConfigureAsRedirectTo(System.Type memberType, float totalDur, object current, object start, object end, object option)
+        protected internal override void ConfigureAsRedirectTo(Ease ease, float totalDur, bool c, bool s, bool e, int option = 0)
         {
-            var c = ConvertUtil.ToBool(current);
-            var e = ConvertUtil.ToBool(end);
+            this.Ease = ease;
             _start = c;
             _end = e;
             this.Duration = (c == e) ? 0f : totalDur;
@@ -74,7 +72,7 @@ namespace com.spacepuppy.Tween.Curves
 
         #region MemberCurve Interface
 
-        protected override object GetValueAt(float dt, float t)
+        protected override bool GetValueAt(float dt, float t)
         {
             if (this.Duration == 0f) return _end;
             //return this.Ease(t, _start, _end - _start, this.Duration);

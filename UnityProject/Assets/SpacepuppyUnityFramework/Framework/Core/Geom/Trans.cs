@@ -116,6 +116,19 @@ namespace com.spacepuppy.Geom
             return new Trans(pos, rot, sc);
         }
 
+        public static Trans Massage(object obj)
+        {
+            if (obj is Trans) return (Trans)obj;
+            if (obj is Matrix4x4) return Trans.Transform((Matrix4x4)obj);
+            if (obj is Vector3) return Trans.Translation((Vector3)obj);
+            if (obj is Quaternion) return Trans.Rotated((Quaternion)obj);
+
+            var t = ObjUtil.GetAsFromSource<Transform>(obj);
+            if (t != null) return Trans.GetGlobal(t);
+
+            return Trans.Identity;
+        }
+
         #endregion
 
         #region Properties

@@ -11,26 +11,21 @@ using com.spacepuppy.Dynamic.Accessors;
 namespace com.spacepuppy.Tween
 {
     
-    public interface ISupportRedirectToMemberCurve
+    public interface ISupportBoxedConfigurableTweenCurve
     {
-        void ConfigureAsRedirectTo(System.Type memberType, float totalDur, object current, object start, object end, object option);
+        void Configure(Ease ease, float dur, object start, object end, int option = 0);
+        void ConfigureAsRedirectTo(Ease ease, float dur, object current, object start, object end, int option = 0);
     }
 
-    /// <summary>
-    /// Base class for curves that reflectively access members of a target object.
-    /// If the member curve is a CustomMemberCurve that should be buildable by the MemberCurve.Create factory method, 
-    /// it MUST contain a 0 parameter constructor.
-    /// </summary>
-    public abstract class MemberCurve : TweenCurve
+    public abstract class MemberCurve<TProp> : TweenCurve, ISupportBoxedConfigurableTweenCurve
     {
 
         #region Fields
 
+        IMemberAccessor _accessor;
+        private System.Action<object, TProp> _setter;
         private Ease _ease;
         private float _dur;
-
-        private string _memberName;
-        private IMemberAccessor _accessor;
 
         #endregion
 
@@ -39,43 +34,51 @@ namespace com.spacepuppy.Tween
         /// <summary>
         /// This MUST exist for reflective creation.
         /// </summary>
-        protected MemberCurve()
+        protected MemberCurve(IMemberAccessor accessor)
+            : this(accessor, null, 0f)
         {
         }
 
-        public MemberCurve(string propName, float dur)
+        protected MemberCurve(IMemberAccessor accessor, Ease ease, float dur)
         {
-            _memberName = propName;
-            _ease = EaseMethods.LinearEaseNone;
+            if (accessor == null) throw new System.ArgumentNullException(nameof(accessor));
+
+            _accessor = accessor;
+            if (accessor is IMemberAccessor<TProp> acc)
+            {
+                _setter = acc.Set;
+            }
+            else
+            {
+                var tp = accessor.GetMemberType();
+                if (tp == typeof(TProp))
+                    _setter = (t, v) => accessor.Set(t, v);
+                else
+                    _setter = (t, v) => accessor.Set(t, ConvertUtil.Coerce(v, tp));
+            }
+            _ease = ease ?? EaseMethods.LinearEaseNone;
             _dur = dur;
         }
 
-        public MemberCurve(string propName, Ease ease, float dur)
-        {
-            _memberName = propName;
-            _ease = ease;
-            _dur = dur;
-        }
+        protected internal abstract void Configure(Ease ease, float dur, TProp start, TProp end, int option = 0);
 
-        /// <summary>
-        /// Override this method to handle the reflective creation of this object.
-        /// </summary>
-        /// <param name="start"></param>
-        /// <param name="end"></param>
-        /// <param name="option"></param>
-        protected abstract void ReflectiveInit(System.Type memberType, object start, object end, object option);
+        protected internal abstract void ConfigureAsRedirectTo(Ease ease, float totalDur, TProp current, TProp start, TProp end, int option = 0);
 
         #endregion
 
         #region Properties
+
+        public IMemberAccessor Accessor
+        {
+            get { return _accessor; }
+        }
 
         public Ease Ease
         {
             get { return _ease; }
             set
             {
-                if (value == null) throw new System.ArgumentNullException("value");
-                _ease = value;
+                _ease = value ?? EaseMethods.LinearEaseNone;
             }
         }
 
@@ -94,16 +97,11 @@ namespace com.spacepuppy.Tween
         /// </summary>
         /// <param name="t">The percentage of completion across the curve that the member is at.</param>
         /// <returns></returns>
-        protected abstract object GetValueAt(float dt, float t);
+        protected abstract TProp GetValueAt(float dt, float t);
 
         #endregion
 
         #region ICurve Interface
-
-        public float TotalDuration
-        {
-            get { return _dur; }
-        }
 
         public override float TotalTime
         {
@@ -114,218 +112,35 @@ namespace com.spacepuppy.Tween
         {
             if (t > _dur) t = _dur;
             var value = GetValueAt(dt, t);
-            if (_accessor == null)
-            {
-                System.Type memberType;
-                _accessor = MemberCurve.GetAccessor(targ, _memberName, out memberType);
-            }
-            _accessor.Set(targ, value);
+            _setter(targ, value);
         }
 
         #endregion
 
-        #region Static Factory
+        #region ISupportBoxedConfigurableTweenCurve Interface
 
-        private static IMemberAccessor GetAccessor(object target, string propName, out System.Type memberType)
+        void ISupportBoxedConfigurableTweenCurve.Configure(Ease ease, float dur, object start, object end, int option = 0)
         {
-            string args = null;
-            if (propName != null)
-            {
-                int fi = propName.IndexOf("(");
-                if (fi >= 0)
-                {
-                    int li = propName.LastIndexOf(")");
-                    if (li < fi) li = propName.Length;
-                    args = propName.Substring(fi + 1, li - fi - 1);
-                    propName = propName.Substring(0, fi);
-                }
-            }
-
-            ITweenMemberAccessor acc;
-            if (CustomTweenMemberAccessorFactory.TryGetMemberAccessor(target, propName, out acc))
-            {
-                memberType = acc.Init(target, propName, args);
-                return acc;
-            }
-
-            //return MemberAccessorPool.GetAccessor(target.GetType(), propName, out memberType);
-            return MemberAccessorPool.GetDynamicAccessor(target, propName, out memberType);
+            this.ConfigureBoxed(ease, dur, start, end, option);
         }
 
-
-
-
-        #region Curve Accessors
-
-        private static Dictionary<System.Type, System.Type> _memberTypeToCurveType;
-
-        private static void BuildCurveTypeDictionary()
+        protected virtual void ConfigureBoxed(Ease ease, float dur, object start, object end, int option = 0)
         {
-            _memberTypeToCurveType = new Dictionary<System.Type, System.Type>();
-
-            var priorities = new Dictionary<System.Type, int>();
-            foreach (var tp in TypeUtil.GetTypesAssignableFrom(typeof(MemberCurve)))
-            {
-                var attribs = tp.GetCustomAttributes(typeof(CustomMemberCurveAttribute), false).Cast<CustomMemberCurveAttribute>().ToArray();
-                foreach (var attrib in attribs)
-                {
-                    if (!priorities.ContainsKey(attrib.HandledMemberType) || priorities[attrib.HandledMemberType] < attrib.priority)
-                    {
-                        priorities[attrib.HandledMemberType] = attrib.priority;
-                        _memberTypeToCurveType[attrib.HandledMemberType] = tp;
-                    }
-                }
-            }
+            this.Configure(ease, dur, ConvertUtil.Coerce<TProp>(start), ConvertUtil.Coerce<TProp>(end), option);
         }
 
-        private static MemberCurve Create(System.Type memberType, IMemberAccessor accessor, Ease ease, float dur, object start, object end, object option)
+        void ISupportBoxedConfigurableTweenCurve.ConfigureAsRedirectTo(Ease ease, float dur, object current, object start, object end, int option = 0)
         {
-            if (_memberTypeToCurveType == null) BuildCurveTypeDictionary();
-
-            if (_memberTypeToCurveType.ContainsKey(memberType))
-            {
-                try
-                {
-                    if (ease == null) throw new System.ArgumentNullException("ease");
-                    var curve = System.Activator.CreateInstance(_memberTypeToCurveType[memberType], true) as MemberCurve;
-                    curve._dur = dur;
-                    curve._ease = ease;
-                    curve._accessor = accessor;
-                    curve.ReflectiveInit(memberType, start, end, option);
-                    return curve;
-                }
-                catch (System.Exception ex)
-                {
-                    throw new System.InvalidOperationException("Failed to create a MemberCurve for the desired MemberInfo.", ex);
-                }
-            }
-            else
-            {
-                throw new System.ArgumentException("MemberInfo is for a member type that is not supported.", "info");
-            }
+            this.ConfigureAsRedirectToBoxed(ease, dur, current, start, end, option);
         }
 
-        private static MemberCurve CreateUnitializedCurve(System.Type memberType, IMemberAccessor accessor)
+        protected virtual void ConfigureAsRedirectToBoxed(Ease ease, float dur, object current, object start, object end, int option = 0)
         {
-            if (_memberTypeToCurveType == null) BuildCurveTypeDictionary();
-
-            if (_memberTypeToCurveType.ContainsKey(memberType))
-            {
-                try
-                {
-                    return System.Activator.CreateInstance(_memberTypeToCurveType[memberType], true) as MemberCurve;
-                }
-                catch (System.Exception ex)
-                {
-                    throw new System.InvalidOperationException("Failed to create a MemberCurve for the desired MemberInfo.", ex);
-                }
-            }
-            else
-            {
-                throw new System.ArgumentException("MemberInfo is for a member type that is not supported.", "info");
-            }
-        }
-
-        #endregion
-
-
-
-        public new static MemberCurve CreateTo(object target, string propName, Ease ease, object end, float dur, object option = null)
-        {
-            if (target == null) throw new System.ArgumentNullException("target");
-            System.Type memberType;
-            var accessor = MemberCurve.GetAccessor(target, propName, out memberType);
-
-            object start = accessor.Get(target);
-
-            return MemberCurve.Create(memberType, accessor, ease, dur, start, end, option);
-        }
-
-        public new static MemberCurve CreateFrom(object target, string propName, Ease ease, object start, float dur, object option = null)
-        {
-            if (target == null) throw new System.ArgumentNullException("target");
-            System.Type memberType;
-            var accessor = MemberCurve.GetAccessor(target, propName, out memberType);
-
-            object end = accessor.Get(target);
-
-            return MemberCurve.Create(memberType, accessor, ease, dur, start, end, option);
-        }
-
-        public new static MemberCurve CreateBy(object target, string propName, Ease ease, object amt, float dur, object option = null)
-        {
-            if (target == null) throw new System.ArgumentNullException("target");
-            System.Type memberType;
-            var accessor = MemberCurve.GetAccessor(target, propName, out memberType);
-
-            object start = accessor.Get(target);
-            object end = TweenCurve.TrySum(memberType, start, amt);
-
-            return MemberCurve.Create(memberType, accessor, ease, dur, start, end, option);
-        }
-
-        public new static MemberCurve CreateFromTo(object target, string propName, Ease ease, object start, object end, float dur, object option = null)
-        {
-            if (target == null) throw new System.ArgumentNullException("target");
-            System.Type memberType;
-            var accessor = MemberCurve.GetAccessor(target, propName, out memberType);
-
-            return MemberCurve.Create(memberType, accessor, ease, dur, start, end, option);
-        }
-
-        /// <summary>
-        /// Creates a curve that will animate from the current value to the end value, but will rescale the duration from how long it should have 
-        /// taken from start to end, but already animated up to current.
-        /// </summary>
-        /// <param name="target"></param>
-        /// <param name="propName"></param>
-        /// <param name="ease"></param>
-        /// <param name="start"></param>
-        /// <param name="end"></param>
-        /// <param name="dur"></param>
-        /// <param name="option"></param>
-        /// <returns></returns>
-        public new static MemberCurve CreateRedirectTo(object target, string propName, Ease ease, float start, float end, float dur, object option = null)
-        {
-            if (target == null) throw new System.ArgumentNullException("target");
-            System.Type memberType;
-            var accessor = MemberCurve.GetAccessor(target, propName, out memberType);
-
-            var current = accessor.Get(target);
-            dur = (1f - MathUtil.PercentageOffMinMax(ConvertUtil.ToSingle(current), end, start)) * dur;
-
-            return MemberCurve.Create(memberType, accessor, ease, dur, current, ConvertUtil.ToPrim(end, memberType), option);
-        }
-
-        public static MemberCurve CreateRedirectTo(object target, string propName, Ease ease, object start, object end, float dur, object option = null)
-        {
-            if (target == null) throw new System.ArgumentNullException("target");
-            if (ease == null) throw new System.ArgumentNullException("ease");
-
-            System.Type memberType;
-            var accessor = MemberCurve.GetAccessor(target, propName, out memberType);
-
-            var curve = CreateUnitializedCurve(memberType, accessor);
-            curve._ease = ease;
-            curve._accessor = accessor;
-            if (curve is ISupportRedirectToMemberCurve)
-            {
-                (curve as ISupportRedirectToMemberCurve).ConfigureAsRedirectTo(memberType, dur, accessor.Get(target), start, end, option);
-            }
-            else
-            {
-                //try to coerce
-                curve._dur = dur;
-                var current = accessor.Get(target);
-                dur = (1f - MathUtil.PercentageOffMinMax(ConvertUtil.ToSingle(current), ConvertUtil.ToSingle(end), ConvertUtil.ToSingle(start))) * dur;
-                return MemberCurve.Create(memberType, accessor, ease, dur, current, ConvertUtil.ToPrim(end, memberType), option);
-            }
-
-            return curve;
+            this.ConfigureAsRedirectTo(ease, dur, ConvertUtil.Coerce<TProp>(current), ConvertUtil.Coerce<TProp>(start), ConvertUtil.Coerce<TProp>(end), option);
         }
 
         #endregion
 
     }
-    
+
 }

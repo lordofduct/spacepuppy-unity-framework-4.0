@@ -4,8 +4,7 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Tween.Curves
 {
 
-    [CustomMemberCurve(typeof(float))]
-    public class FloatMemberCurve : MemberCurve, ISupportRedirectToMemberCurve
+    public class FloatMemberCurve : MemberCurve<float>
     {
 
         #region Fields
@@ -17,36 +16,37 @@ namespace com.spacepuppy.Tween.Curves
 
         #region CONSTRUCTOR
 
-        protected FloatMemberCurve()
+        protected internal FloatMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor)
+            : base(accessor)
         {
 
         }
 
-        public FloatMemberCurve(string propName, float dur, float start, float end)
-            : base(propName, dur)
+        public FloatMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, float dur, float start, float end)
+            : base(accessor, null, dur)
         {
             _start = start;
             _end = end;
         }
 
-        public FloatMemberCurve(string propName, Ease ease, float dur, float start, float end)
-            : base(propName, ease, dur)
+        public FloatMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, Ease ease, float dur, float start, float end)
+            : base(accessor, ease, dur)
         {
             _start = start;
             _end = end;
         }
 
-        protected override void ReflectiveInit(System.Type memberType, object start, object end, object option)
+        protected internal override void Configure(Ease ease, float dur, float start, float end, int option = 0)
         {
-            _start = ConvertUtil.ToSingle(start);
-            _end = ConvertUtil.ToSingle(end);
+            this.Ease = ease;
+            this.Duration = dur;
+            _start = start;
+            _end = end;
         }
 
-        void ISupportRedirectToMemberCurve.ConfigureAsRedirectTo(System.Type memberType, float totalDur, object current, object start, object end, object option)
+        protected internal override void ConfigureAsRedirectTo(Ease ease, float totalDur, float c, float s, float e, int option = 0)
         {
-            var c = ConvertUtil.ToSingle(current);
-            var s = ConvertUtil.ToSingle(_start);
-            var e = ConvertUtil.ToSingle(end);
+            this.Ease = ease;
             _start = c;
             _end = e;
 
@@ -75,7 +75,7 @@ namespace com.spacepuppy.Tween.Curves
 
         #region MemberCurve Interface
 
-        protected override object GetValueAt(float dt, float t)
+        protected override float GetValueAt(float dt, float t)
         {
             if (this.Duration == 0f) return _end;
             return this.Ease(t, _start, _end - _start, this.Duration);

@@ -4,6 +4,7 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Events
 {
 
+    [DefaultExecutionOrder(31901)]
     public sealed class t_OnEnable : TriggerComponent, IMStartOrEnableReceiver
     {
 

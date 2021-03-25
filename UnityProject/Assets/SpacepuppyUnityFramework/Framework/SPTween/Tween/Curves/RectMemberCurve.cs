@@ -5,8 +5,7 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Tween.Curves
 {
 
-    [CustomMemberCurve(typeof(Rect))]
-    public class RectMemberCurve : MemberCurve, ISupportRedirectToMemberCurve
+    public class RectMemberCurve : MemberCurve<Rect>
     {
 
         #region Fields
@@ -18,42 +17,46 @@ namespace com.spacepuppy.Tween.Curves
 
         #region CONSTRUCTOR
 
-        protected RectMemberCurve()
+        protected internal RectMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor)
+            : base(accessor)
         {
 
         }
 
-        public RectMemberCurve(string propName, float dur, Rect start, Rect end)
-            : base(propName, dur)
+        public RectMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, float dur, Rect start, Rect end)
+            : base(accessor, null, dur)
         {
             _start = start;
             _end = end;
         }
 
-        public RectMemberCurve(string propName, float dur, Rect start, Rect end, bool slerp)
-            : base(propName, dur)
+        public RectMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, float dur, Rect start, Rect end, bool slerp)
+            : base(accessor, null, dur)
         {
             _start = start;
             _end = end;
         }
 
-        public RectMemberCurve(string propName, Ease ease, float dur, Rect start, Rect end)
-            : base(propName, ease, dur)
+        public RectMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, Ease ease, float dur, Rect start, Rect end)
+            : base(accessor, ease, dur)
         {
             _start = start;
             _end = end;
         }
 
-        protected override void ReflectiveInit(System.Type memberType, object start, object end, object option)
+        protected internal override void Configure(Ease ease, float dur, Rect start, Rect end, int option = 0)
         {
-            _start = (start is Rect) ? (Rect)start : new Rect();
-            _end = (end is Rect) ? (Rect)end : new Rect();
+            this.Ease = ease;
+            this.Duration = dur;
+            _start = start;
+            _end = end;
         }
 
-        void ISupportRedirectToMemberCurve.ConfigureAsRedirectTo(System.Type memberType, float totalDur, object current, object start, object end, object option)
+        protected internal override void ConfigureAsRedirectTo(Ease ease, float totalDur, Rect c, Rect s, Rect e, int option = 0)
         {
-            //TODO - determine mid point
-            this.ReflectiveInit(memberType, current, end, option);
+            this.Ease = ease;
+            _start = c;
+            _end = e;
             this.Duration = totalDur;
         }
 
@@ -77,7 +80,7 @@ namespace com.spacepuppy.Tween.Curves
 
         #region MemberCurve Interface
 
-        protected override object GetValueAt(float dt, float t)
+        protected override Rect GetValueAt(float dt, float t)
         {
             if (this.Duration == 0f) return _end;
             t = this.Ease(t, 0f, 1f, this.Duration);

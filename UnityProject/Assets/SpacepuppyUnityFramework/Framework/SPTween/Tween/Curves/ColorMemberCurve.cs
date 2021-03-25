@@ -5,8 +5,7 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Tween.Curves
 {
 
-    [CustomMemberCurve(typeof(Color))]
-    public class ColorMemberCurve : MemberCurve, ISupportRedirectToMemberCurve
+    public class ColorMemberCurve : MemberCurve<Color>
     {
 
         #region Fields
@@ -19,64 +18,67 @@ namespace com.spacepuppy.Tween.Curves
 
         #region CONSTRUCTOR
 
-        protected ColorMemberCurve()
+        protected internal ColorMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor)
+            : base(accessor)
         {
 
         }
 
-        public ColorMemberCurve(string propName, float dur, Color start, Color end)
-            : base(propName, dur)
+        public ColorMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, float dur, Color start, Color end)
+            : base(accessor, null, dur)
         {
             _start = start;
             _end = end;
             _useSlerp = false;
         }
 
-        public ColorMemberCurve(string propName, Ease ease, float dur, Color start, Color end)
-            : base(propName, ease, dur)
+        public ColorMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, Ease ease, float dur, Color start, Color end)
+            : base(accessor, ease, dur)
         {
             _start = start;
             _end = end;
             _useSlerp = false;
         }
 
-        public ColorMemberCurve(string propName, float dur, Color start, Color end, bool useSlerp)
-            : base(propName, dur)
+        public ColorMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, float dur, Color start, Color end, bool useSlerp)
+            : base(accessor, null, dur)
         {
             _start = start;
             _end = end;
             _useSlerp = useSlerp;
         }
 
-        public ColorMemberCurve(string propName, Ease ease, float dur, Color start, Color end, bool useSlerp)
-            : base(propName, ease, dur)
+        public ColorMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, Ease ease, float dur, Color start, Color end, bool useSlerp)
+            : base(accessor, ease, dur)
         {
             _start = start;
             _end = end;
             _useSlerp = useSlerp;
         }
 
-        protected override void ReflectiveInit(System.Type memberType, object start, object end, object option)
+        protected internal override void Configure(Ease ease, float dur, Color start, Color end, int option = 0)
         {
-            _start = ConvertUtil.ToColor(start);
-            _end = ConvertUtil.ToColor(end);
-            _useSlerp = ConvertUtil.ToBool(option);
+            this.Ease = ease;
+            this.Duration = dur;
+            _start = start;
+            _end = end;
+            _useSlerp = option != 0;
         }
 
-        void ISupportRedirectToMemberCurve.ConfigureAsRedirectTo(System.Type memberType, float totalDur, object current, object start, object end, object option)
+        protected internal override void ConfigureAsRedirectTo(Ease ease, float totalDur, Color current, Color start, Color end, int option = 0)
         {
-            var sc = ConvertUtil.ToColor(start);
-            _start = ConvertUtil.ToColor(current);
-            _end = ConvertUtil.ToColor(end);
-            _useSlerp = ConvertUtil.ToBool(option);
+            this.Ease = ease;
+            _start = current;
+            _end = end;
+            _useSlerp = option != 0;
 
             if (_useSlerp)
             {
                 var c = (ColorHSV)_start;
-                var s = (ColorHSV)sc;
+                var s = (ColorHSV)start;
                 var e = (ColorHSV)_end;
 
-                var t = ColorHSV.InverseSlerp((ColorHSV)_start, (ColorHSV)sc, (ColorHSV)e);
+                var t = ColorHSV.InverseSlerp(c, s, e);
                 if (float.IsNaN(t))
                     this.Duration = totalDur;
                 else
@@ -85,7 +87,7 @@ namespace com.spacepuppy.Tween.Curves
             else
             {
                 var c = ConvertUtil.ToVector4(_start);
-                var s = ConvertUtil.ToVector4(sc);
+                var s = ConvertUtil.ToVector4(start);
                 var e = ConvertUtil.ToVector4(_end);
 
                 c -= e;
@@ -127,7 +129,7 @@ namespace com.spacepuppy.Tween.Curves
 
         #region MemberCurve Interface
 
-        protected override object GetValueAt(float dt, float t)
+        protected override Color GetValueAt(float dt, float t)
         {
             if (this.Duration == 0f) return _end;
             t = this.Ease(t, 0f, 1f, this.Duration);

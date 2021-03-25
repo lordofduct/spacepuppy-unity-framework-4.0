@@ -2080,6 +2080,38 @@ namespace com.spacepuppy.Utils
 
         #endregion
 
+        #region ToVector2Int
+
+        public static Vector2Int ToVector2Int(Vector2 v)
+        {
+            return new Vector2Int((int)v.x, (int)v.y);
+        }
+
+        public static Vector2Int ToVector2Int(object value)
+        {
+            if (value == null) return Vector2Int.zero;
+            if (value is Vector2Int) return (Vector2Int)value;
+            return ToVector2Int(ToVector2(value));
+        }
+
+        #endregion
+
+        #region ToVector3Int
+
+        public static Vector3Int ToVector3Int(Vector3 v)
+        {
+            return new Vector3Int((int)v.x, (int)v.y, (int)v.z);
+        }
+
+        public static Vector3Int ToVector3Int(object value)
+        {
+            if (value == null) return Vector3Int.zero;
+            if (value is Vector3Int) return (Vector3Int)value;
+            return ToVector3Int(ToVector3(value));
+        }
+
+        #endregion
+
         #region ToQuaternion
 
         public static Quaternion ToQuaternion(Vector2 vec)
@@ -2239,6 +2271,9 @@ namespace com.spacepuppy.Utils
                 else if (tp == typeof(Vector4)) return true;
                 else if (tp == typeof(Quaternion)) return true;
                 else if (tp == typeof(Color)) return true;
+                else if (tp == typeof(Color32)) return true;
+                else if (tp == typeof(Vector2Int)) return true;
+                else if (tp == typeof(Vector3Int)) return true;
                 else if (typeof(INumeric).IsAssignableFrom(tp) && !tp.IsAbstract) return true;
                 else return false;
             }
@@ -2957,7 +2992,7 @@ namespace com.spacepuppy.Utils
 
         public static object ToPrim(object value, System.Type tp)
         {
-            if (tp == null) throw new System.ArgumentException("Type must be non-null", "tp");
+            if (tp == null) throw new System.ArgumentNullException(nameof(tp));
             if (value != null && tp.IsInstanceOfType(value)) return value;
 
             System.TypeCode code = System.Type.GetTypeCode(tp);
@@ -3047,6 +3082,9 @@ namespace com.spacepuppy.Utils
                     else if (tp == typeof(Vector4)) return ToVector4(value);
                     else if (tp == typeof(Quaternion)) return ToQuaternion(value);
                     else if (tp == typeof(Color)) return ToColor(value);
+                    else if (tp == typeof(Color32)) return ToColor32(value);
+                    else if (tp == typeof(Vector2Int)) return ToVector2Int(value);
+                    else if (tp == typeof(Vector3Int)) return ToVector3Int(value);
                     else if (typeof(INumeric).IsAssignableFrom(tp) && !tp.IsAbstract) return ToNumeric(tp, value);
                     else return null;
 
@@ -3103,6 +3141,56 @@ namespace com.spacepuppy.Utils
             }
         }
         
+
+        /// <summary>
+        /// Will do whatever it can to convert the value to T, if it fails default(T) is returned.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static T Coerce<T>(object value)
+        {
+            if (value is T) return (T)value;
+            if (value == null) return default(T);
+
+            if(IsSupportedType(typeof(T), System.Type.GetTypeCode(typeof(T))))
+            {
+                return ToPrim<T>(value);
+            }
+            else if(value is System.IConvertible)
+            {
+                try
+                {
+                    return (T)System.Convert.ChangeType(value, typeof(T));
+                }
+                catch { }
+            }
+
+            return default(T);
+        }
+
+        public static object Coerce(object value, System.Type tp)
+        {
+            if (tp == null) throw new System.ArgumentNullException(nameof(tp));
+            if (value != null && tp.IsInstanceOfType(value)) return value;
+
+            var tc = System.Type.GetTypeCode(tp);
+            if(IsSupportedType(tp, tc))
+            {
+                return ToPrim(value, tp, tc);
+            }
+            else if(value is System.IConvertible)
+            {
+                try
+                {
+                    return System.Convert.ChangeType(value, tp);
+                }
+                catch { }
+            }
+
+            return tp.IsValueType ? System.Activator.CreateInstance(tp) : null;
+        }
+
         #endregion
 
         #region "BitArray"

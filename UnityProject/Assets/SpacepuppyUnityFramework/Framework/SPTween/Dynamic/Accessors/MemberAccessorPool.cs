@@ -154,16 +154,11 @@ namespace com.spacepuppy.Dynamic.Accessors
             DynamicMemberAccessor accessor;
             if (_dynPool != null && _dynPool.TryGetValue(memberName, out accessor)) return accessor;
 
-            accessor = new DynamicMemberAccessor(memberName);
+            accessor = new DynamicMemberAccessor(memberName, memberType);
             if (_dynPool == null) _dynPool = new Dictionary<string, DynamicMemberAccessor>();
             _dynPool[memberName] = accessor;
             return accessor;
         }
-
-
-
-
-
 
         #region Special Types
 

@@ -11,7 +11,7 @@ namespace com.spacepuppy.Waypoints
     /// <summary>
     /// Used to translate a target Vector3 property of any object with name 'propName' along a IWaypointPath.
     /// </summary>
-    public class WaypointPathTweenCurve : MemberCurve
+    public class WaypointPathTweenCurve : MemberCurve<Vector3>
     {
 
         #region Fields
@@ -23,19 +23,20 @@ namespace com.spacepuppy.Waypoints
 
         #region CONSTRUCTOR
 
-        protected WaypointPathTweenCurve()
+        protected internal WaypointPathTweenCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor)
+            : base(accessor)
         {
-            //REQUIRED - all MemberCurves need a zero-param constructor
+
         }
 
-        public WaypointPathTweenCurve(string propName, float dur, IWaypointPath path)
-            : base(propName, dur)
+        public WaypointPathTweenCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, float dur, IWaypointPath path)
+            : base(accessor, null, dur)
         {
             _path = path;
         }
 
-        public WaypointPathTweenCurve(string propName, Ease ease, float dur, IWaypointPath path)
-            : base(propName, ease, dur)
+        public WaypointPathTweenCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, Ease ease, float dur, IWaypointPath path)
+            : base(accessor, ease, dur)
         {
             _path = path;
         }
@@ -60,12 +61,17 @@ namespace com.spacepuppy.Waypoints
 
         #region MemberCurve Interface
 
-        protected override void ReflectiveInit(System.Type memberType, object start, object end, object option)
+        protected override void Configure(Ease ease, float dur, Vector3 start, Vector3 end, int option = 0)
         {
             //do nothing
         }
 
-        protected override object GetValueAt(float dt, float t)
+        protected override void ConfigureAsRedirectTo(Ease ease, float totalDur, Vector3 current, Vector3 start, Vector3 end, int option = 0)
+        {
+            //do nothing
+        }
+
+        protected override Vector3 GetValueAt(float dt, float t)
         {
             if (_path == null) return Vector3.zero;
 

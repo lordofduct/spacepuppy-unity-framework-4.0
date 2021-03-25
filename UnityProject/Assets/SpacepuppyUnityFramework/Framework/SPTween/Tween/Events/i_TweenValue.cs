@@ -102,7 +102,6 @@ namespace com.spacepuppy.Tween.Events
         public class TweenData
         {
             [SerializeField()]
-            [EnumPopupExcluding((int)TweenHash.AnimMode.AnimCurve, (int)TweenHash.AnimMode.Curve)]
             public TweenHash.AnimMode Mode;
             [SerializeField()]
             public string MemberName;

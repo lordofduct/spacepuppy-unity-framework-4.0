@@ -16,12 +16,6 @@ namespace com.spacepuppy.Tween
     {
 
         /// <summary>
-        /// Return the member type that Get/Set expects.
-        /// </summary>
-        /// <returns></returns>
-        System.Type GetMemberType();
-
-        /// <summary>
         /// Initialize the member accessor, and return the type this accessor is supposed to handle.
         /// </summary>
         /// <param name="propName"></param>

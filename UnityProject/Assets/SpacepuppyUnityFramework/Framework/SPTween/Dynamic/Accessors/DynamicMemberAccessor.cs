@@ -12,19 +12,24 @@
         #region Fields
 
         private string _memberName;
+        private System.Type _memberType;
 
         #endregion
 
         #region CONSTRUCTOR
 
-        public DynamicMemberAccessor(string memberName)
+        public DynamicMemberAccessor(string memberName, System.Type memberType)
         {
             _memberName = memberName;
+            _memberType = memberType ?? typeof(object);
         }
 
         #endregion
 
 
+        public string GetMemberName() { return _memberName; }
+
+        public System.Type GetMemberType() { return _memberType; }
 
         public object Get(object target)
         {

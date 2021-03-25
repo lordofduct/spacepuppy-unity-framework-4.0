@@ -28,7 +28,6 @@ namespace com.spacepuppy.Tween.Events
         private TriggerableTargetObject _sourceAlt;
 
         [SerializeField]
-        [EnumPopupExcluding((int)TweenHash.AnimMode.AnimCurve, (int)TweenHash.AnimMode.Curve)]
         private TweenHash.AnimMode _mode;
         [SerializeField()]
         private EaseStyle _ease;

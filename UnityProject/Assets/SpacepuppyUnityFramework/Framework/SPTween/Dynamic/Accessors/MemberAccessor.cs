@@ -9,7 +9,7 @@ using System.Collections;
 using System.Reflection;
 using System.Threading;
 
-#if BLARGH
+#if ENABLE_MONO && NET_4_6
 using System.Reflection.Emit;
 #endif
 
@@ -30,6 +30,13 @@ namespace com.spacepuppy.Dynamic.Accessors
             _pimp = impl;
             _chain = chain;
         }
+
+        string IMemberAccessor.GetMemberName()
+        {
+            return _pimp?.GetMemberName();
+        }
+
+        System.Type IMemberAccessor.GetMemberType() { return _pimp.GetMemberType(); }
 
         public object Get(object target)
         {
@@ -69,6 +76,8 @@ namespace com.spacepuppy.Dynamic.Accessors
             }
         }
 
+        internal abstract string MemberName { get; }
+
         /// <summary>
         /// The Type of the Member being accessed.
         /// </summary>
@@ -86,21 +95,12 @@ namespace com.spacepuppy.Dynamic.Accessors
 
         #endregion
 
-#if !BLARGH
+        string IMemberAccessor.GetMemberName() { return this.MemberName; }
 
-        /// <summary>
-        /// Creates a new member accessor.
-        /// </summary>
-        /// <param name="member">Member</param>
-        protected MemberAccessor(MemberInfo member)
-        {
-            _targetType = member.ReflectedType;
-        }
+        System.Type IMemberAccessor.GetMemberType() { return this.MemberType; }
 
-        public abstract object Get(object target);
-        public abstract void Set(object target, object value);
+#if ENABLE_MONO && NET_4_6
 
-#else
         const string emmitedTypeName = "Member";
         
         protected static readonly Hashtable s_TypeHash;
@@ -252,6 +252,21 @@ namespace com.spacepuppy.Dynamic.Accessors
 
         protected abstract void _EmitGetter(TypeBuilder type);
         protected abstract void _EmitSetter(TypeBuilder type);
+
+#else
+
+        /// <summary>
+        /// Creates a new member accessor.
+        /// </summary>
+        /// <param name="member">Member</param>
+        protected MemberAccessor(MemberInfo member)
+        {
+            _targetType = member.ReflectedType;
+        }
+
+        public abstract object Get(object target);
+        public abstract void Set(object target, object value);
+
 #endif
 
     }

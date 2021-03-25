@@ -327,11 +327,27 @@ namespace com.spacepuppy.Utils
         /// <param name="includeInactiveObjects"></param>
         /// <param name="includeDisabledComponents"></param>
         /// <returns></returns>
-        public static MessageToken<T> CreateBroadcastToken<T>(GameObject go, bool includeInactiveObjects = false, bool includeDisabledComponents = false) where T : class
+        public static MessageToken<T> CreateBroadcastToken<T>(GameObject go, bool includeInactiveObjects = false) where T : class
         {
             if (object.ReferenceEquals(go, null)) throw new System.ArgumentNullException("go");
 
             return new MessageToken<T>(() => go.GetComponentsInChildren<T>(includeInactiveObjects));
+        }
+
+        public static MessageToken<T> CreateBroadcastTokenIfReceiversExist<T>(GameObject go, bool includeInactiveObjects = false) where T : class
+        {
+            if (object.ReferenceEquals(go, null)) throw new System.ArgumentNullException("go");
+
+            using(var lst = TempCollection.GetList<T>())
+            {
+                go.GetComponentsInChildren<T>(includeInactiveObjects, lst);
+                if(lst.Count > 0)
+                {
+                    return new MessageToken<T>(() => go.GetComponentsInChildren<T>(includeInactiveObjects));
+                }
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -340,6 +356,11 @@ namespace com.spacepuppy.Utils
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
         public static MessageToken<T> CreateBroadcastToken<T>() where T : class
+        {
+            return new MessageToken<T>(() => GlobalMessagePool<T>.CopyReceivers());
+        }
+
+        public static MessageToken<T> CreateBroadcastTokenIfReceiversExist<T>() where T : class
         {
             if (GlobalMessagePool<T>.Count == 0) return null;
 

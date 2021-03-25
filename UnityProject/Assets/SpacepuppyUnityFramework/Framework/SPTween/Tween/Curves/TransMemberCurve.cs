@@ -5,8 +5,7 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Tween.Curves
 {
 
-    [CustomMemberCurve(typeof(Trans))]
-    public class TransMemberCurve : MemberCurve, ISupportRedirectToMemberCurve
+    public class TransMemberCurve : MemberCurve<Trans>
     {
 
         #region Fields
@@ -19,62 +18,71 @@ namespace com.spacepuppy.Tween.Curves
 
         #region CONSTRUCTOR
 
-        protected TransMemberCurve()
+        protected internal TransMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor)
+            : base(accessor)
         {
 
         }
 
-        public TransMemberCurve(string propName, float dur, Trans start, Trans end)
-            : base(propName, dur)
+        public TransMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, float dur, Trans start, Trans end)
+            : base(accessor, null, dur)
         {
             _start = start;
             _end = end;
             _useSlerp = false;
         }
 
-        public TransMemberCurve(string propName, float dur, Trans start, Trans end, bool slerp)
-            : base(propName, dur)
+        public TransMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, float dur, Trans start, Trans end, bool slerp)
+            : base(accessor, null, dur)
         {
             _start = start;
             _end = end;
             _useSlerp = slerp;
         }
 
-        public TransMemberCurve(string propName, Ease ease, float dur, Trans start, Trans end)
-            : base(propName, ease, dur)
+        public TransMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, Ease ease, float dur, Trans start, Trans end)
+            : base(accessor, ease, dur)
         {
             _start = start;
             _end = end;
             _useSlerp = false;
         }
 
-        public TransMemberCurve(string propName, Ease ease, float dur, Trans start, Trans end, bool slerp)
-            : base(propName, ease, dur)
+        public TransMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, Ease ease, float dur, Trans start, Trans end, bool slerp)
+            : base(accessor, ease, dur)
         {
             _start = start;
             _end = end;
             _useSlerp = slerp;
         }
 
-        protected override void ReflectiveInit(System.Type memberType, object start, object end, object option)
+        protected internal override void Configure(Ease ease, float dur, Trans start, Trans end, int option = 0)
         {
-            _start = (start is Trans) ? (Trans)start : Trans.Identity;
-            if (end is Trans)
-                _end = (Trans)end;
-            else if (end is UnityEngine.Transform)
-                _end = Trans.GetGlobal((UnityEngine.Transform)end);
-            else if (GameObjectUtil.IsGameObjectSource(end))
-                _end = Trans.GetGlobal(GameObjectUtil.GetGameObjectFromSource(end).transform);
-            else
-                _end = Trans.Identity;
+            this.Ease = ease;
+            this.Duration = dur;
+            _start = start;
+            _end = end;
             _useSlerp = ConvertUtil.ToBool(option);
         }
 
-        void ISupportRedirectToMemberCurve.ConfigureAsRedirectTo(System.Type memberType, float totalDur, object current, object start, object end, object option)
+        protected internal override void ConfigureAsRedirectTo(Ease ease, float totalDur, Trans c, Trans s, Trans e, int option = 0)
         {
-            //TODO - determine mid point
-            this.ReflectiveInit(memberType, current, end, option);
+            //redirectto isn't really supported
+            this.Ease = ease;
+            _start = c;
+            _end = e;
+            _useSlerp = ConvertUtil.ToBool(option);
             this.Duration = totalDur;
+        }
+
+        protected override void ConfigureBoxed(Ease ease, float dur, object start, object end, int option = 0)
+        {
+            this.Configure(ease, dur, Trans.Massage(start), Trans.Massage(end), option);
+        }
+
+        protected override void ConfigureAsRedirectToBoxed(Ease ease, float dur, object current, object start, object end, int option = 0)
+        {
+            this.ConfigureAsRedirectTo(ease, dur, Trans.Massage(current), Trans.Massage(start), Trans.Massage(end), option);
         }
 
         #endregion
@@ -103,7 +111,7 @@ namespace com.spacepuppy.Tween.Curves
 
         #region MemberCurve Interface
 
-        protected override object GetValueAt(float dt, float t)
+        protected override Trans GetValueAt(float dt, float t)
         {
             if (this.Duration == 0f) return _end;
             t = this.Ease(t, 0f, 1f, this.Duration);

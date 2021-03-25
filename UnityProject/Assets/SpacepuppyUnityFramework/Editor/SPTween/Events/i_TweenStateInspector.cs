@@ -35,12 +35,6 @@ namespace com.spacepuppyeditor.Tween.Events
             var propSourceAlt = this.serializedObject.FindProperty(PROP_ANIMMODE);
             switch (propSourceAlt.GetEnumValue<TweenHash.AnimMode>())
             {
-                case TweenHash.AnimMode.AnimCurve:
-                case TweenHash.AnimMode.Curve:
-                    propSourceAlt.SetEnumValue(TweenHash.AnimMode.To);
-                    this.DrawPropertyField(PROP_SOURCE, "Values", false);
-                    TriggerableTargetObjectPropertyDrawer.ResetTriggerableTargetObjectTarget(this.serializedObject.FindProperty(PROP_SOURCEALT));
-                    break;
                 case TweenHash.AnimMode.To:
                 case TweenHash.AnimMode.From:
                 case TweenHash.AnimMode.By:

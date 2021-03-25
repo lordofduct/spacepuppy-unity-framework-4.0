@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 
 using com.spacepuppy.Utils;
+using com.spacepuppy.Dynamic.Accessors;
 
 namespace com.spacepuppy.Tween.Accessors
 {
@@ -8,11 +9,13 @@ namespace com.spacepuppy.Tween.Accessors
     [CustomTweenMemberAccessor(typeof(GameObject), typeof(Vector3), "*Move")]
     [CustomTweenMemberAccessor(typeof(Component), typeof(Vector3), "*Move")]
     [CustomTweenMemberAccessor(typeof(IGameObjectSource), typeof(Vector3), "*Move")]
-    public class GeneralMoveAccessor : ITweenMemberAccessor
+    public class GeneralMoveAccessor : ITweenMemberAccessor, IMemberAccessor<Vector3>
     {
 
 
         #region ImplicitCurve Interface
+
+        string com.spacepuppy.Dynamic.Accessors.IMemberAccessor.GetMemberName() { return "*Move"; }
 
         public System.Type GetMemberType()
         {
@@ -24,7 +27,17 @@ namespace com.spacepuppy.Tween.Accessors
             return typeof(Vector3);
         }
 
-        public object Get(object target)
+        object IMemberAccessor.Get(object target)
+        {
+            return this.Get(target);
+        }
+
+        public void Set(object targ, object valueObj)
+        {
+            this.Set(targ, ConvertUtil.ToVector3(valueObj));
+        }
+
+        public Vector3 Get(object target)
         {
             var t = GameObjectUtil.GetTransformFromSource(target);
             if (t != null)
@@ -34,10 +47,8 @@ namespace com.spacepuppy.Tween.Accessors
             return Vector3.zero;
         }
 
-        public void Set(object targ, object valueObj)
+        public void Set(object targ, Vector3 value)
         {
-            var value = ConvertUtil.ToVector3(valueObj);
-
             if (targ is Rigidbody)
             {
                 var rb = targ as Rigidbody;

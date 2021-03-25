@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 
 using com.spacepuppy.Utils;
+using com.spacepuppy.Dynamic.Accessors;
 
 namespace com.spacepuppy.Tween.Accessors
 {
@@ -8,10 +9,15 @@ namespace com.spacepuppy.Tween.Accessors
     [CustomTweenMemberAccessor(typeof(GameObject), typeof(Quaternion), "*Rotate")]
     [CustomTweenMemberAccessor(typeof(Component), typeof(Quaternion), "*Rotate")]
     [CustomTweenMemberAccessor(typeof(IGameObjectSource), typeof(Quaternion), "*Rotate")]
-    public class GeneralRotateAccessor : ITweenMemberAccessor
+    public class GeneralRotateAccessor : ITweenMemberAccessor, IMemberAccessor<Quaternion>
     {
 
         #region ImplicitCurve Interface
+
+        string com.spacepuppy.Dynamic.Accessors.IMemberAccessor.GetMemberName()
+        {
+            return "*Rotate";
+        }
 
         public System.Type GetMemberType()
         {
@@ -23,7 +29,17 @@ namespace com.spacepuppy.Tween.Accessors
             return typeof(Quaternion);
         }
 
-        public object Get(object target)
+        object IMemberAccessor.Get(object target)
+        {
+            return this.Get(target);
+        }
+
+        public void Set(object targ, object valueObj)
+        {
+            this.Set(targ, QuaternionUtil.MassageAsQuaternion(valueObj));
+        }
+
+        public Quaternion Get(object target)
         {
             var t = GameObjectUtil.GetTransformFromSource(target);
             if (t != null)
@@ -33,13 +49,10 @@ namespace com.spacepuppy.Tween.Accessors
             return Quaternion.identity;
         }
 
-        public void Set(object targ, object valueObj)
+        public void Set(object targ, Quaternion value)
         {
-            var value = ConvertUtil.ToQuaternion(valueObj);
-
-            if (targ is Rigidbody)
+            if (targ is Rigidbody rb)
             {
-                var rb = targ as Rigidbody;
                 rb.MoveRotation(QuaternionUtil.FromToRotation(rb.rotation, value));
             }
             else
@@ -47,7 +60,7 @@ namespace com.spacepuppy.Tween.Accessors
                 var trans = GameObjectUtil.GetTransformFromSource(targ);
                 if (trans == null) return;
 
-                var rb = trans.GetComponent<Rigidbody>();
+                rb = trans.GetComponent<Rigidbody>();
                 if (rb != null && !rb.isKinematic)
                 {
                     rb.MoveRotation(QuaternionUtil.FromToRotation(rb.rotation, value));

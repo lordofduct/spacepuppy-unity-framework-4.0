@@ -14,6 +14,7 @@ namespace com.spacepuppy.Anim.Legacy
     /// This is the main entry point into controlling animations through the SP Legacy Animation system. Use this in place of the Unity Animation class (or together with).
     /// </summary>
     [DisallowMultipleComponent()]
+    [DefaultExecutionOrder(-31950)]
     public class SPLegacyAnimController : SPComponent, ISPAnimationSource
     {
 

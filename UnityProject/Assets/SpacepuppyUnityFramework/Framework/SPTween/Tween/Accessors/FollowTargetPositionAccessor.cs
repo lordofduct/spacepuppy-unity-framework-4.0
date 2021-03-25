@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 
 using com.spacepuppy.Utils;
+using com.spacepuppy.Dynamic.Accessors;
 
 namespace com.spacepuppy.Tween.Accessors
 {
@@ -8,10 +9,13 @@ namespace com.spacepuppy.Tween.Accessors
     [CustomTweenMemberAccessor(typeof(GameObject), typeof(Vector3), "*Follow")]
     [CustomTweenMemberAccessor(typeof(Component), typeof(Vector3), "*Follow")]
     [CustomTweenMemberAccessor(typeof(IGameObjectSource), typeof(Vector3), "*Follow")]
-    public class FollowTargetPositionAccessor : ITweenMemberAccessor
+    public class FollowTargetPositionAccessor : ITweenMemberAccessor, IMemberAccessor<Vector3>
     {
 
-
+        string com.spacepuppy.Dynamic.Accessors.IMemberAccessor.GetMemberName()
+        {
+            return "*Follow";
+        }
 
         public System.Type GetMemberType()
         {
@@ -23,7 +27,17 @@ namespace com.spacepuppy.Tween.Accessors
             return typeof(Vector3);
         }
 
-        public object Get(object target)
+        object IMemberAccessor.Get(object target)
+        {
+            return this.Get(target);
+        }
+
+        public void Set(object targ, object valueObj)
+        {
+            this.Set(targ, ConvertUtil.ToVector3(valueObj));
+        }
+
+        public Vector3 Get(object target)
         {
             var t = GameObjectUtil.GetTransformFromSource(target);
             if (t != null)
@@ -34,13 +48,10 @@ namespace com.spacepuppy.Tween.Accessors
         }
 
 
-        public void Set(object targ, object valueObj)
+        public void Set(object targ, Vector3 value)
         {
-            var value = ConvertUtil.ToVector3(valueObj);
-
-            if (targ is Rigidbody)
+            if (targ is Rigidbody rb)
             {
-                var rb = targ as Rigidbody;
                 rb.MovePosition(value - rb.position);
             }
             else
@@ -48,7 +59,7 @@ namespace com.spacepuppy.Tween.Accessors
                 var trans = GameObjectUtil.GetTransformFromSource(targ);
                 if (trans == null) return;
 
-                var rb = trans.GetComponent<Rigidbody>();
+                rb = trans.GetComponent<Rigidbody>();
                 if (rb != null && !rb.isKinematic)
                 {
                     var dp = value - rb.position;

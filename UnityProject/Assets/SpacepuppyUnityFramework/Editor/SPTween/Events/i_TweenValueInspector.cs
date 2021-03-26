@@ -100,20 +100,23 @@ namespace com.spacepuppyeditor.Tween.Events
             System.Type propType;
             memberProp.stringValue = i_TweenValueInspector.ReflectedPropertyAndCustomTweenAccessorField(position,
                                                                                                         EditorHelper.TempContent("Property", "The property on the target to set."),
-                                                                                                        targType, targObj,
+                                                                                                        targObj,
                                                                                                         memberProp.stringValue,
                                                                                                         com.spacepuppy.Dynamic.DynamicMemberAccess.ReadWrite,
                                                                                                         out propType);
+            var curveGenerator = TweenCurveFactory.LookupTweenCurveGenerator(targObj?.GetType(), memberProp.stringValue, propType);
 
             position = CalcNextRect(ref area);
             SPEditorGUI.PropertyField(position, el.FindPropertyRelative(PROP_DATA_EASE));
 
             position = CalcNextRect(ref area);
-            this.DrawOption(position, ref propType, el.FindPropertyRelative(PROP_DATA_OPTION));
+            var propOption = el.FindPropertyRelative(PROP_DATA_OPTION);
+            this.DrawOption(position, curveGenerator, propOption);
 
             position = CalcNextRect(ref area);
             SPEditorGUI.PropertyField(position, el.FindPropertyRelative(PROP_DATA_DUR));
 
+            propType = curveGenerator?.GetExpectedMemberType(propOption.intValue) ?? propType;
             if (propType != null)
             {
                 switch (el.FindPropertyRelative(PROP_DATA_MODE).GetEnumValue<TweenHash.AnimMode>())
@@ -188,29 +191,32 @@ namespace com.spacepuppyeditor.Tween.Events
             return pos;
         }
 
-        private void DrawOption(Rect position, ref System.Type propType, SerializedProperty optionProp)
+        private void DrawOption(Rect position, ITweenCurveGenerator generator, SerializedProperty optionProp)
         {
-            if (propType == typeof(Vector2) || propType == typeof(Vector3) || propType == typeof(Vector4) || propType == typeof(Color))
+            var etp = generator?.GetOptionEnumType();
+            if(etp != null)
             {
-                bool value = ConvertUtil.ToBool(optionProp.intValue);
-                value = EditorGUI.Toggle(position, "Option (Use Slerp)", value);
-                optionProp.intValue = value ? 1 : 0;
-            }
-            else if (propType == typeof(Quaternion))
-            {
-                QuaternionTweenOption value = QuaternionTweenOption.Spherical;
-                if (System.Enum.IsDefined(typeof(QuaternionTweenOption), optionProp.intValue))
-                    value = (QuaternionTweenOption)optionProp.intValue;
+                System.Enum evalue = null;
+                if (!System.Enum.IsDefined(etp, optionProp.intValue))
+                {
+                    var arr = System.Enum.GetValues(etp) as System.Enum[];
+                    evalue = arr?.FirstOrDefault();
+                }
+                else
+                {
+                    evalue = System.Enum.ToObject(etp, optionProp.intValue) as System.Enum;
+                }
 
-                value = (QuaternionTweenOption)EditorGUI.EnumPopup(position, "Option", value);
-                optionProp.intValue = (int)value;
-                if (value == QuaternionTweenOption.Long)
-                    propType = typeof(Vector3);
+                if (evalue != null)
+                {
+                    evalue = EditorGUI.EnumPopup(position, "Option", evalue);
+                    optionProp.intValue = ConvertUtil.ToInt(evalue);
+                    return;
+                }
             }
-            else
-            {
-                EditorGUI.LabelField(position, "Option", "(no option available)");
-            }
+
+            optionProp.intValue = 0;
+            EditorGUI.LabelField(position, "Option", "(no option available)");
         }
 
         #endregion
@@ -220,16 +226,12 @@ namespace com.spacepuppyeditor.Tween.Events
 
         public static string ReflectedPropertyAndCustomTweenAccessorField(Rect position, GUIContent label, object targObj, string selectedMemberName, DynamicMemberAccess access, out System.Type propType)
         {
-            return ReflectedPropertyAndCustomTweenAccessorField(position, label, targObj != null ? targObj.GetType() : null, targObj, selectedMemberName, access, out propType);
-        }
-
-        public static string ReflectedPropertyAndCustomTweenAccessorField(Rect position, GUIContent label, System.Type targType, object targObj, string selectedMemberName, DynamicMemberAccess access, out System.Type propType)
-        {
-            if (targType != null)
+            if (targObj != null)
             {
                 //var members = DynamicUtil.GetEasilySerializedMembers(targObj, System.Reflection.MemberTypes.Field | System.Reflection.MemberTypes.Property, access).ToArray();
-                var members = DynamicUtil.GetEasilySerializedMembersFromType(targType, System.Reflection.MemberTypes.Field | System.Reflection.MemberTypes.Property, access).ToArray();
-                var accessors = CustomTweenMemberAccessorFactory.GetCustomAccessorIds(targType, (d) => VariantReference.AcceptableType(d.MemberType));
+                var targTp = targObj.GetType();
+                var members = DynamicUtil.GetEasilySerializedMembersFromType(targTp, System.Reflection.MemberTypes.Field | System.Reflection.MemberTypes.Property, access).ToArray();
+                var accessors = CustomTweenMemberAccessorFactory.GetCustomAccessorIds(targTp, (d) => VariantReference.AcceptableType(d.MemberType));
                 System.Array.Sort(accessors);
 
                 using (var entries = TempCollection.GetList<GUIContent>(members.Length))
@@ -278,7 +280,7 @@ namespace com.spacepuppyeditor.Tween.Events
                     {
                         var nm = accessors[index - members.Length];
                         CustomTweenMemberAccessorFactory.CustomAccessorData info;
-                        if(CustomTweenMemberAccessorFactory.TryGetMemberAccessorInfoByType(targType, nm, out info))
+                        if(CustomTweenMemberAccessorFactory.TryGetMemberAccessorInfoByType(targTp, nm, out info))
                         {
                             propType = info.MemberType;
                             if (VariantReference.AcceptableType(propType))

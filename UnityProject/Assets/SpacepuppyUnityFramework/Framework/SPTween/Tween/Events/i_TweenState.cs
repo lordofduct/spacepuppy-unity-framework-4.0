@@ -10,8 +10,21 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Tween.Events
 {
 
+    /// <summary>
+    /// Tweens all the properties found on the source token for the target. 
+    /// This is useful if you've saved a StateToken of a something like a Transform (position, rotation, scale). 
+    /// You could just tween To that token to tween back to that saved state. 
+    /// </summary>
     public class i_TweenState : AutoTriggerable
     {
+
+        public const string PROP_TARGET = nameof(_target);
+        public const string PROP_SOURCE = nameof(_source);
+        public const string PROP_SOURCEALT = nameof(_sourceAlt);
+        public const string PROP_ANIMMODE = nameof(_mode);
+        public const string PROP_EASE = nameof(_ease);
+        public const string PROP_DURATION = nameof(_duration);
+        public const string PROP_TWEENTOKEN = nameof(_tweenToken);
 
         #region Fields
 

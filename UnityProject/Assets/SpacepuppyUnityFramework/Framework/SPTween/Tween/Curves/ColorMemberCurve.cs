@@ -40,20 +40,20 @@ namespace com.spacepuppy.Tween.Curves
             _useSlerp = false;
         }
 
-        public ColorMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, float dur, Color start, Color end, bool useSlerp)
+        public ColorMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, float dur, Color start, Color end, VectorTweenOptions option)
             : base(accessor, null, dur)
         {
             _start = start;
             _end = end;
-            _useSlerp = useSlerp;
+            _useSlerp = option == VectorTweenOptions.Slerp;
         }
 
-        public ColorMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, Ease ease, float dur, Color start, Color end, bool useSlerp)
+        public ColorMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, Ease ease, float dur, Color start, Color end, VectorTweenOptions option)
             : base(accessor, ease, dur)
         {
             _start = start;
             _end = end;
-            _useSlerp = useSlerp;
+            _useSlerp = option == VectorTweenOptions.Slerp;
         }
 
         protected internal override void Configure(Ease ease, float dur, Color start, Color end, int option = 0)
@@ -62,7 +62,7 @@ namespace com.spacepuppy.Tween.Curves
             this.Duration = dur;
             _start = start;
             _end = end;
-            _useSlerp = option != 0;
+            _useSlerp = (VectorTweenOptions)option == VectorTweenOptions.Slerp;
         }
 
         protected internal override void ConfigureAsRedirectTo(Ease ease, float totalDur, Color current, Color start, Color end, int option = 0)
@@ -70,7 +70,7 @@ namespace com.spacepuppy.Tween.Curves
             this.Ease = ease;
             _start = current;
             _end = end;
-            _useSlerp = option != 0;
+            _useSlerp = (VectorTweenOptions)option == VectorTweenOptions.Slerp;
 
             if (_useSlerp)
             {

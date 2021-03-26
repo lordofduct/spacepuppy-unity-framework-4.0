@@ -6,15 +6,18 @@ using com.spacepuppy.Dynamic.Accessors;
 namespace com.spacepuppy.Tween.Accessors
 {
 
-    [CustomTweenMemberAccessor(typeof(GameObject), typeof(Vector3), "*Follow")]
-    [CustomTweenMemberAccessor(typeof(Component), typeof(Vector3), "*Follow")]
-    [CustomTweenMemberAccessor(typeof(IGameObjectSource), typeof(Vector3), "*Follow")]
+    [CustomTweenMemberAccessor(typeof(GameObject), typeof(Vector3), FollowTargetPositionAccessor.PROP_NAME)]
+    [CustomTweenMemberAccessor(typeof(Component), typeof(Vector3), FollowTargetPositionAccessor.PROP_NAME)]
+    [CustomTweenMemberAccessor(typeof(IGameObjectSource), typeof(Vector3), FollowTargetPositionAccessor.PROP_NAME)]
+    [CustomTweenMemberAccessor(typeof(Rigidbody), typeof(Vector3), FollowTargetPositionAccessor.PROP_NAME)]
     public class FollowTargetPositionAccessor : ITweenMemberAccessor, IMemberAccessor<Vector3>
     {
 
+        public const string PROP_NAME = "*Follow";
+
         string com.spacepuppy.Dynamic.Accessors.IMemberAccessor.GetMemberName()
         {
-            return "*Follow";
+            return PROP_NAME;
         }
 
         public System.Type GetMemberType()

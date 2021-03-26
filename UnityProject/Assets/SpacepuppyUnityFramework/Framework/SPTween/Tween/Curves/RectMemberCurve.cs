@@ -30,13 +30,6 @@ namespace com.spacepuppy.Tween.Curves
             _end = end;
         }
 
-        public RectMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, float dur, Rect start, Rect end, bool slerp)
-            : base(accessor, null, dur)
-        {
-            _start = start;
-            _end = end;
-        }
-
         public RectMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, Ease ease, float dur, Rect start, Rect end)
             : base(accessor, ease, dur)
         {

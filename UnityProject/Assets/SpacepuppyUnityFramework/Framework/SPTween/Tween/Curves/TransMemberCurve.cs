@@ -32,12 +32,12 @@ namespace com.spacepuppy.Tween.Curves
             _useSlerp = false;
         }
 
-        public TransMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, float dur, Trans start, Trans end, bool slerp)
+        public TransMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, float dur, Trans start, Trans end, VectorTweenOptions option)
             : base(accessor, null, dur)
         {
             _start = start;
             _end = end;
-            _useSlerp = slerp;
+            _useSlerp = option == VectorTweenOptions.Slerp;
         }
 
         public TransMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, Ease ease, float dur, Trans start, Trans end)
@@ -48,12 +48,12 @@ namespace com.spacepuppy.Tween.Curves
             _useSlerp = false;
         }
 
-        public TransMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, Ease ease, float dur, Trans start, Trans end, bool slerp)
+        public TransMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, Ease ease, float dur, Trans start, Trans end, VectorTweenOptions option)
             : base(accessor, ease, dur)
         {
             _start = start;
             _end = end;
-            _useSlerp = slerp;
+            _useSlerp = option == VectorTweenOptions.Slerp;
         }
 
         protected internal override void Configure(Ease ease, float dur, Trans start, Trans end, int option = 0)
@@ -62,7 +62,7 @@ namespace com.spacepuppy.Tween.Curves
             this.Duration = dur;
             _start = start;
             _end = end;
-            _useSlerp = ConvertUtil.ToBool(option);
+            _useSlerp = (VectorTweenOptions)option == VectorTweenOptions.Slerp;
         }
 
         protected internal override void ConfigureAsRedirectTo(Ease ease, float totalDur, Trans c, Trans s, Trans e, int option = 0)
@@ -71,7 +71,7 @@ namespace com.spacepuppy.Tween.Curves
             this.Ease = ease;
             _start = c;
             _end = e;
-            _useSlerp = ConvertUtil.ToBool(option);
+            _useSlerp = (VectorTweenOptions)option == VectorTweenOptions.Slerp;
             this.Duration = totalDur;
         }
 

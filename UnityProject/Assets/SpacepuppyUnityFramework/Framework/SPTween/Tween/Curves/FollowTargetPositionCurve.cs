@@ -6,7 +6,6 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Tween.Curves
 {
 
-    //[CustomMemberCurve(typeof(FollowTargetPositionAccessor))]
     public sealed class FollowTargetPositionCurve : MemberCurve<Vector3>
     {
 
@@ -81,6 +80,9 @@ namespace com.spacepuppy.Tween.Curves
 
         protected override void ConfigureBoxed(Ease ease, float dur, object start, object end, int option = 0)
         {
+            this.Ease = ease;
+            this.Duration = dur;
+
             var trans = GameObjectUtil.GetTransformFromSource(start);
             if (trans != null)
                 _start = trans.position;
@@ -93,6 +95,9 @@ namespace com.spacepuppy.Tween.Curves
 
         protected override void ConfigureAsRedirectToBoxed(Ease ease, float dur, object current, object start, object end, int option = 0)
         {
+            this.Ease = ease;
+            this.Duration = dur;
+
             var trans = GameObjectUtil.GetTransformFromSource(start);
             if (trans != null)
                 _start = trans.position;

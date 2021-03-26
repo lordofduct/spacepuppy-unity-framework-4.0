@@ -6,7 +6,7 @@ using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.Dynamic.Accessors
 {
-    public static class MemberAccessorPool
+    internal static class MemberAccessorPool
     {
 
         static MemberAccessorPool()

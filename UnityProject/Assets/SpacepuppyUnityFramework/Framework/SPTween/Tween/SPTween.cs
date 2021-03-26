@@ -370,7 +370,8 @@ namespace com.spacepuppy.Tween
         {
             if (curve == null) throw new System.ArgumentNullException(nameof(curve));
             float dur = (curve.keys.Length > 0) ? curve.keys.Last().time : 0f;
-            var tween = new ObjectTweener(targ, TweenCurveFactory.CreateFromTo(TweenCurveFactory.GetAccessor(targ, propName),
+            var tween = new ObjectTweener(targ, TweenCurveFactory.CreateFromTo(targ,
+                                                                               TweenCurveFactory.GetAccessor(targ, propName),
                                                                                EaseMethods.FromAnimationCurve(curve),
                                                                                dur, null, null, option));
             tween.Play();
@@ -380,7 +381,8 @@ namespace com.spacepuppy.Tween
         public static Tweener PlayCurve(object targ, string propName, AnimationCurve curve, float dur, int option = 0)
         {
             if (curve == null) throw new System.ArgumentNullException(nameof(curve));
-            var tween = new ObjectTweener(targ, TweenCurveFactory.CreateFromTo(TweenCurveFactory.GetAccessor(targ, propName),
+            var tween = new ObjectTweener(targ, TweenCurveFactory.CreateFromTo(targ,
+                                                                               TweenCurveFactory.GetAccessor(targ, propName),
                                                                                EaseMethods.FromAnimationCurve(curve),
                                                                                dur, null, null, option));
             tween.Play();
@@ -389,56 +391,56 @@ namespace com.spacepuppy.Tween
 
         public static Tweener PlayTo(object targ, string propName, object end, float dur, int option = 0)
         {
-            var tween = new ObjectTweener(targ, TweenCurveFactory.CreateTo(TweenCurveFactory.GetAccessor(targ, propName), targ, EaseMethods.LinearEaseNone, dur, end, option));
+            var tween = new ObjectTweener(targ, TweenCurveFactory.CreateTo(targ, TweenCurveFactory.GetAccessor(targ, propName), EaseMethods.LinearEaseNone, dur, end, option));
             tween.Play();
             return tween;
         }
 
         public static Tweener PlayTo(object targ, string propName, Ease ease, object end, float dur, int option = 0)
         {
-            var tween = new ObjectTweener(targ, TweenCurveFactory.CreateTo(TweenCurveFactory.GetAccessor(targ, propName), targ, ease, dur, end, option));
+            var tween = new ObjectTweener(targ, TweenCurveFactory.CreateTo(targ, TweenCurveFactory.GetAccessor(targ, propName), ease, dur, end, option));
             tween.Play();
             return tween;
         }
 
         public static Tweener PlayFrom(object targ, string propName, object start, float dur, int option = 0)
         {
-            var tween = new ObjectTweener(targ, TweenCurveFactory.CreateFrom(TweenCurveFactory.GetAccessor(targ, propName), targ, EaseMethods.LinearEaseNone, dur, start, option));
+            var tween = new ObjectTweener(targ, TweenCurveFactory.CreateFrom(targ, TweenCurveFactory.GetAccessor(targ, propName), EaseMethods.LinearEaseNone, dur, start, option));
             tween.Play();
             return tween;
         }
 
         public static Tweener PlayFrom(object targ, string propName, Ease ease, object start, float dur, int option = 0)
         {
-            var tween = new ObjectTweener(targ, TweenCurveFactory.CreateFrom(TweenCurveFactory.GetAccessor(targ, propName), targ, ease, dur, start, option));
+            var tween = new ObjectTweener(targ, TweenCurveFactory.CreateFrom(targ, TweenCurveFactory.GetAccessor(targ, propName), ease, dur, start, option));
             tween.Play();
             return tween;
         }
 
         public static Tweener PlayBy(object targ, string propName, object amt, float dur, int option = 0)
         {
-            var tween = new ObjectTweener(targ, TweenCurveFactory.CreateBy(TweenCurveFactory.GetAccessor(targ, propName), targ, EaseMethods.LinearEaseNone, dur, amt, option));
+            var tween = new ObjectTweener(targ, TweenCurveFactory.CreateBy(targ, TweenCurveFactory.GetAccessor(targ, propName), EaseMethods.LinearEaseNone, dur, amt, option));
             tween.Play();
             return tween;
         }
 
         public static Tweener PlayBy(object targ, string propName, Ease ease, object amt, float dur, int option = 0)
         {
-            var tween = new ObjectTweener(targ, TweenCurveFactory.CreateBy(TweenCurveFactory.GetAccessor(targ, propName), targ, ease, dur, amt, option));
+            var tween = new ObjectTweener(targ, TweenCurveFactory.CreateBy(targ, TweenCurveFactory.GetAccessor(targ, propName), ease, dur, amt, option));
             tween.Play();
             return tween;
         }
 
         public static Tweener PlayFromTo(object targ, string propName, object start, object end, float dur, int option = 0)
         {
-            var tween = new ObjectTweener(targ, TweenCurveFactory.CreateFromTo(TweenCurveFactory.GetAccessor(targ, propName), EaseMethods.LinearEaseNone, dur, start, end, option));
+            var tween = new ObjectTweener(targ, TweenCurveFactory.CreateFromTo(targ, TweenCurveFactory.GetAccessor(targ, propName), EaseMethods.LinearEaseNone, dur, start, end, option));
             tween.Play();
             return tween;
         }
 
         public static Tweener PlayFromTo(object targ, string propName, Ease ease, object start, object end, float dur, int option = 0)
         {
-            var tween = new ObjectTweener(targ, TweenCurveFactory.CreateFromTo(TweenCurveFactory.GetAccessor(targ, propName), ease, dur, start, end, option));
+            var tween = new ObjectTweener(targ, TweenCurveFactory.CreateFromTo(targ, TweenCurveFactory.GetAccessor(targ, propName), ease, dur, start, end, option));
             tween.Play();
             return tween;
         }

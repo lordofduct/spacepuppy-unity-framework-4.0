@@ -9,6 +9,7 @@ namespace com.spacepuppy.Tween.Accessors
     [CustomTweenMemberAccessor(typeof(GameObject), typeof(Vector3), "*Move")]
     [CustomTweenMemberAccessor(typeof(Component), typeof(Vector3), "*Move")]
     [CustomTweenMemberAccessor(typeof(IGameObjectSource), typeof(Vector3), "*Move")]
+    [CustomTweenMemberAccessor(typeof(Rigidbody), typeof(Vector3), "*Move")]
     public class GeneralMoveAccessor : ITweenMemberAccessor, IMemberAccessor<Vector3>
     {
 

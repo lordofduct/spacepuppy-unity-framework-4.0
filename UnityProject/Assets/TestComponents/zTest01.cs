@@ -10,6 +10,7 @@ using com.spacepuppy.Tween;
 public class zTest01 : SPComponent
 {
 
+    public Transform Target;
 
     private void Update()
     {
@@ -17,7 +18,7 @@ public class zTest01 : SPComponent
 
         Debug.Log("TWEENING zTest01");
         SPTween.Tween(this)
-               .FromTo("*Move", EaseMethods.ExpoEaseIn, 1f, this.transform.position, this.transform.position + Vector3.right * 5f)
+               .To("*Follow", EaseMethods.LinearEaseNone, 10f, Target)
                .Play();
     }
 

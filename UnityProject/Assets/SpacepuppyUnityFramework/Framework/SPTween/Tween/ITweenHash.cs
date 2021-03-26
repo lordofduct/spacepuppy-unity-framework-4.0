@@ -42,6 +42,8 @@
 
         public static T Reverse<T>(this T hash) where T : ITweenHash { hash.Reverse(true); return hash; }
 
+        public static T Ease<T>(this T hash, EaseStyle ease) where T : ITweenHash { hash.Ease(EaseMethods.GetEase(ease)); return hash; }
+
         /// <summary>
         /// Play the ITweenHash disposing the hash in the process.
         /// </summary>

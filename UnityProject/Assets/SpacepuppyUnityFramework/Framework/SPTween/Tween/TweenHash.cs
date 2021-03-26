@@ -463,8 +463,9 @@ namespace com.spacepuppy.Tween
             public TweenHash FromTo(Ease ease, float dur, object start, object end, int option = 0)
             {
                 var fact = _hash?._curveFactory;
-                var acc = _accessor;
                 var targ = _hash?._targ;
+                var acc = _accessor;
+                ease = ease ?? _hash?._defaultEase;
                 return _hash?.UseCurve(() => fact.CreateFromTo(targ, acc, ease, dur, start, end, option), acc);
             }
 
@@ -475,8 +476,9 @@ namespace com.spacepuppy.Tween
             public TweenHash To(Ease ease, float dur, object end, int option = 0)
             {
                 var fact = _hash?._curveFactory;
-                var acc = _accessor;
                 var targ = _hash?._targ;
+                var acc = _accessor;
+                ease = ease ?? _hash?._defaultEase;
                 return _hash?.UseCurve(() => fact.CreateTo(targ, acc, ease, dur, end, option), acc);
             }
 
@@ -487,8 +489,9 @@ namespace com.spacepuppy.Tween
             public TweenHash From(Ease ease, float dur, object start, int option = 0)
             {
                 var fact = _hash?._curveFactory;
-                var acc = _accessor;
                 var targ = _hash?._targ;
+                var acc = _accessor;
+                ease = ease ?? _hash?._defaultEase;
                 return _hash?.UseCurve(() => fact.CreateFrom(targ, acc, ease, dur, start, option), acc);
             }
 
@@ -499,8 +502,9 @@ namespace com.spacepuppy.Tween
             public TweenHash By(Ease ease, float dur, object amt, int option = 0)
             {
                 var fact = _hash?._curveFactory;
-                var acc = _accessor;
                 var targ = _hash?._targ;
+                var acc = _accessor;
+                ease = ease ?? _hash?._defaultEase;
                 return _hash?.UseCurve(() => fact.CreateBy(targ, acc, ease, dur, amt, option), acc);
             }
 
@@ -511,16 +515,17 @@ namespace com.spacepuppy.Tween
             public TweenHash RedirectTo(Ease ease, float dur, object start, object end, int option = 0)
             {
                 var fact = _hash?._curveFactory;
-                var acc = _accessor;
                 var targ = _hash?._targ;
+                var acc = _accessor;
+                ease = ease ?? _hash?._defaultEase;
                 return _hash?.UseCurve(() => fact.CreateRedirectTo(targ, acc, ease, dur, start, end, option), acc);
             }
 
             public TweenHash UseCurve(AnimationCurve curve, int option = 0)
             {
                 var fact = _hash?._curveFactory;
-                var acc = _accessor;
                 var targ = _hash?._targ;
+                var acc = _accessor;
                 float dur = (curve.keys.Length > 0) ? curve.keys.Last().time : 0f;
                 return _hash?.UseCurve(() => fact.CreateFromTo(targ, acc, EaseMethods.FromAnimationCurve(curve), dur, null, null, option), acc);
             }
@@ -528,8 +533,8 @@ namespace com.spacepuppy.Tween
             public TweenHash UseCurve(AnimationCurve curve, float dur, int option = 0)
             {
                 var fact = _hash?._curveFactory;
-                var acc = _accessor;
                 var targ = _hash?._targ;
+                var acc = _accessor;
                 return _hash?.UseCurve(() => fact.CreateFromTo(targ, acc, EaseMethods.FromAnimationCurve(curve), dur, null, null, option), acc);
             }
 
@@ -556,6 +561,7 @@ namespace com.spacepuppy.Tween
                 var fact = _hash?._curveFactory;
                 var acc = _accessor;
                 var targ = _hash?._targ;
+                ease = ease ?? _hash?._defaultEase;
                 return _hash?.UseCurve(() => fact.CreateFromTo<TProp>(targ, acc, ease, dur, start, end, option), acc);
             }
 
@@ -568,6 +574,7 @@ namespace com.spacepuppy.Tween
                 var fact = _hash?._curveFactory;
                 var acc = _accessor;
                 var targ = _hash?._targ;
+                ease = ease ?? _hash?._defaultEase;
                 return _hash?.UseCurve(() => fact.CreateTo<TProp>(targ, acc, ease, dur, end, option), acc);
             }
 
@@ -580,6 +587,7 @@ namespace com.spacepuppy.Tween
                 var fact = _hash?._curveFactory;
                 var acc = _accessor;
                 var targ = _hash?._targ;
+                ease = ease ?? _hash?._defaultEase;
                 return _hash?.UseCurve(() => fact.CreateFrom<TProp>(targ, acc, ease, dur, start, option), acc);
             }
 
@@ -592,6 +600,7 @@ namespace com.spacepuppy.Tween
                 var fact = _hash?._curveFactory;
                 var acc = _accessor;
                 var targ = _hash?._targ;
+                ease = ease ?? _hash?._defaultEase;
                 return _hash?.UseCurve(() => fact.CreateBy<TProp>(targ, acc, ease, dur, amt, option), acc);
             }
 
@@ -604,6 +613,7 @@ namespace com.spacepuppy.Tween
                 var fact = _hash?._curveFactory;
                 var acc = _accessor;
                 var targ = _hash?._targ;
+                ease = ease ?? _hash?._defaultEase;
                 return _hash?.UseCurve(() => fact.CreateRedirectTo<TProp>(targ, acc, ease, dur, start, end, option), acc);
             }
 
@@ -669,6 +679,11 @@ namespace com.spacepuppy.Tween
             return hash.Prop(memberName).UseCurve(curve, dur, option);
         }
 
+        public static TweenHash To(this TweenHash hash, string memberName, EaseStyle ease, float dur, object end, int option = 0)
+        {
+            return hash.Prop(memberName).To(EaseMethods.GetEase(ease), dur, end, option);
+        }
+
         public static TweenHash To(this TweenHash hash, string memberName, Ease ease, float dur, object end, int option = 0)
         {
             return hash.Prop(memberName).To(ease, dur, end, option);
@@ -677,6 +692,11 @@ namespace com.spacepuppy.Tween
         public static TweenHash To(this TweenHash hash, string memberName, float dur, object end, int option = 0)
         {
             return hash.Prop(memberName).To(null, dur, end, option);
+        }
+
+        public static TweenHash From(this TweenHash hash, string memberName, EaseStyle ease, float dur, object start, int option = 0)
+        {
+            return hash.Prop(memberName).From(EaseMethods.GetEase(ease), dur, start, option);
         }
 
         public static TweenHash From(this TweenHash hash, string memberName, Ease ease, float dur, object start, int option = 0)
@@ -689,6 +709,11 @@ namespace com.spacepuppy.Tween
             return hash.Prop(memberName).From(null, dur, start, option);
         }
 
+        public static TweenHash By(this TweenHash hash, string memberName, EaseStyle ease, float dur, object amt, int option = 0)
+        {
+            return hash.Prop(memberName).By(EaseMethods.GetEase(ease), dur, amt, option);
+        }
+
         public static TweenHash By(this TweenHash hash, string memberName, Ease ease, float dur, object amt, int option = 0)
         {
             return hash.Prop(memberName).By(ease, dur, amt, option);
@@ -699,6 +724,11 @@ namespace com.spacepuppy.Tween
             return hash.Prop(memberName).By(null, dur, amt, option);
         }
 
+        public static TweenHash FromTo(this TweenHash hash, string memberName, EaseStyle ease, float dur, object start, object end, int option = 0)
+        {
+            return hash.Prop(memberName).FromTo(EaseMethods.GetEase(ease), dur, start, end, option);
+        }
+
         public static TweenHash FromTo(this TweenHash hash, string memberName, Ease ease, float dur, object start, object end, int option = 0)
         {
             return hash.Prop(memberName).FromTo(ease, dur, start, end, option);
@@ -707,6 +737,11 @@ namespace com.spacepuppy.Tween
         public static TweenHash FromTo(this TweenHash hash, string memberName, float dur, object start, object end, int option = 0)
         {
             return hash.Prop(memberName).FromTo(null, dur, start, end, option);
+        }
+
+        public static TweenHash RedirectTo(this TweenHash hash, string memberName, EaseStyle ease, float dur, object start, object end, int option = 0)
+        {
+            return hash.Prop(memberName).RedirectTo(EaseMethods.GetEase(ease), dur, start, end, option);
         }
 
         /// <summary>

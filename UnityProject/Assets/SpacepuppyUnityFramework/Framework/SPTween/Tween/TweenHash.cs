@@ -456,6 +456,10 @@ namespace com.spacepuppy.Tween
                 _accessor = acc;
             }
 
+            public TweenHash FromTo(float dur, object start, object end, int option = 0)
+            {
+                return FromTo(null, dur, start, end, option);
+            }
             public TweenHash FromTo(Ease ease, float dur, object start, object end, int option = 0)
             {
                 var fact = _hash?._curveFactory;
@@ -464,6 +468,10 @@ namespace com.spacepuppy.Tween
                 return _hash?.UseCurve(() => fact.CreateFromTo(targ, acc, ease, dur, start, end, option), acc);
             }
 
+            public TweenHash To(float dur, object end, int option = 0)
+            {
+                return To(null, dur, end, option);
+            }
             public TweenHash To(Ease ease, float dur, object end, int option = 0)
             {
                 var fact = _hash?._curveFactory;
@@ -472,6 +480,10 @@ namespace com.spacepuppy.Tween
                 return _hash?.UseCurve(() => fact.CreateTo(targ, acc, ease, dur, end, option), acc);
             }
 
+            public TweenHash From(float dur, object start, int option = 0)
+            {
+                return From(null, dur, start, option);
+            }
             public TweenHash From(Ease ease, float dur, object start, int option = 0)
             {
                 var fact = _hash?._curveFactory;
@@ -480,6 +492,10 @@ namespace com.spacepuppy.Tween
                 return _hash?.UseCurve(() => fact.CreateFrom(targ, acc, ease, dur, start, option), acc);
             }
 
+            public TweenHash By(float dur, object amt, int option = 0)
+            {
+                return By(null, dur, amt, option);
+            }
             public TweenHash By(Ease ease, float dur, object amt, int option = 0)
             {
                 var fact = _hash?._curveFactory;
@@ -488,6 +504,10 @@ namespace com.spacepuppy.Tween
                 return _hash?.UseCurve(() => fact.CreateBy(targ, acc, ease, dur, amt, option), acc);
             }
 
+            public TweenHash RedirectTo(float dur, object start, object end, int option = 0)
+            {
+                return RedirectTo(null, dur, start, end, option);
+            }
             public TweenHash RedirectTo(Ease ease, float dur, object start, object end, int option = 0)
             {
                 var fact = _hash?._curveFactory;
@@ -527,6 +547,10 @@ namespace com.spacepuppy.Tween
                 _accessor = acc;
             }
 
+            public TweenHash FromTo(float dur, TProp start, TProp end, int option = 0)
+            {
+                return FromTo(dur, start, end, option);
+            }
             public TweenHash FromTo(Ease ease, float dur, TProp start, TProp end, int option = 0)
             {
                 var fact = _hash?._curveFactory;
@@ -535,6 +559,10 @@ namespace com.spacepuppy.Tween
                 return _hash?.UseCurve(() => fact.CreateFromTo<TProp>(targ, acc, ease, dur, start, end, option), acc);
             }
 
+            public TweenHash To(float dur, TProp end, int option = 0)
+            {
+                return To(null, dur, end, option);
+            }
             public TweenHash To(Ease ease, float dur, TProp end, int option = 0)
             {
                 var fact = _hash?._curveFactory;
@@ -543,6 +571,10 @@ namespace com.spacepuppy.Tween
                 return _hash?.UseCurve(() => fact.CreateTo<TProp>(targ, acc, ease, dur, end, option), acc);
             }
 
+            public TweenHash From(float dur, TProp start, int option = 0)
+            {
+                return From(null, dur, start, option);
+            }
             public TweenHash From(Ease ease, float dur, TProp start, int option = 0)
             {
                 var fact = _hash?._curveFactory;
@@ -551,6 +583,10 @@ namespace com.spacepuppy.Tween
                 return _hash?.UseCurve(() => fact.CreateFrom<TProp>(targ, acc, ease, dur, start, option), acc);
             }
 
+            public TweenHash By(float dur, TProp amt, int option = 0)
+            {
+                return By(null, dur, amt, option);
+            }
             public TweenHash By(Ease ease, float dur, TProp amt, int option = 0)
             {
                 var fact = _hash?._curveFactory;
@@ -559,6 +595,10 @@ namespace com.spacepuppy.Tween
                 return _hash?.UseCurve(() => fact.CreateBy<TProp>(targ, acc, ease, dur, amt, option), acc);
             }
 
+            public TweenHash RedirectTo(float dur, TProp start, TProp end, int option = 0)
+            {
+                return RedirectTo(dur, start, end, option);
+            }
             public TweenHash RedirectTo(Ease ease, float dur, TProp start, TProp end, int option = 0)
             {
                 var fact = _hash?._curveFactory;

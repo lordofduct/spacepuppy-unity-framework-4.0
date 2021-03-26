@@ -23,24 +23,24 @@
     public static class ITweenHashExtensions
     {
 
-        public static ITweenHash UseUpdate(this ITweenHash hash) { return hash.Use(UpdateSequence.Update); }
-        public static ITweenHash UseFixedUpdate(this ITweenHash hash) { return hash.Use(UpdateSequence.FixedUpdate); }
-        public static ITweenHash UseLateUpdate(this ITweenHash hash) { return hash.Use(UpdateSequence.LateUpdate); }
+        public static T UseUpdate<T>(this T hash) where T : ITweenHash { hash.Use(UpdateSequence.Update); return hash; }
+        public static T UseFixedUpdate<T>(this T hash) where T : ITweenHash { hash.Use(UpdateSequence.FixedUpdate); return hash; }
+        public static T UseLateUpdate<T>(this T hash) where T : ITweenHash { hash.Use(UpdateSequence.LateUpdate); return hash; }
 
-        public static ITweenHash UseNormalTime(this ITweenHash hash) { return hash.Use(SPTime.Normal); }
-        public static ITweenHash UseRealTime(this ITweenHash hash) { return hash.Use(SPTime.Real); }
-        public static ITweenHash UseSmoothTime(this ITweenHash hash) { return hash.Use(SPTime.Smooth); }
+        public static T UseNormalTime<T>(this T hash) where T : ITweenHash { hash.Use(SPTime.Normal); return hash; }
+        public static T UseRealTime<T>(this T hash) where T : ITweenHash { hash.Use(SPTime.Real); return hash; }
+        public static T UseSmoothTime<T>(this T hash) where T : ITweenHash { hash.Use(SPTime.Smooth); return hash; }
 
-        public static ITweenHash PlayOnce(this ITweenHash hash) { return hash.Wrap(TweenWrapMode.Once); }
-        public static ITweenHash Loop(this ITweenHash hash, int count = -1) { return hash.Wrap(TweenWrapMode.Loop, count); }
-        public static ITweenHash PingPong(this ITweenHash hash, int count = -1) { return hash.Wrap(TweenWrapMode.PingPong, count); }
+        public static T PlayOnce<T>(this T hash) where T : ITweenHash { hash.Wrap(TweenWrapMode.Once); return hash; }
+        public static T Loop<T>(this T hash, int count = -1) where T : ITweenHash { hash.Wrap(TweenWrapMode.Loop, count); return hash; }
+        public static T PingPong<T>(this T hash, int count = -1) where T : ITweenHash { hash.Wrap(TweenWrapMode.PingPong, count); return hash; }
 
-        public static ITweenHash OnStep(this ITweenHash hash, System.Action<Tweener> d) { return d == null ? hash : hash.OnStep((s, e) => d(s as Tweener)); }
-        public static ITweenHash OnWrap(this ITweenHash hash, System.Action<Tweener> d) { return d == null ? hash : hash.OnWrap((s, e) => d(s as Tweener)); }
-        public static ITweenHash OnFinish(this ITweenHash hash, System.Action<Tweener> d) { return d == null ? hash : hash.OnFinish((s, e) => d(s as Tweener)); }
-        public static ITweenHash OnStopped(this ITweenHash hash, System.Action<Tweener> d) { return d == null ? hash : hash.OnStopped((s, e) => d(s as Tweener)); }
+        public static T OnStep<T>(this T hash, System.Action<Tweener> d) where T : ITweenHash { if (d != null) hash.OnStep((s, e) => d(s as Tweener)); return hash; }
+        public static T OnWrap<T>(this T hash, System.Action<Tweener> d) where T : ITweenHash { if (d != null) hash.OnWrap((s, e) => d(s as Tweener)); return hash; }
+        public static T OnFinish<T>(this T hash, System.Action<Tweener> d) where T : ITweenHash { if (d != null) hash.OnFinish((s, e) => d(s as Tweener)); return hash; }
+        public static T OnStopped<T>(this T hash, System.Action<Tweener> d) where T : ITweenHash { if (d != null) hash.OnStopped((s, e) => d(s as Tweener)); return hash; }
 
-        public static ITweenHash Reverse(this ITweenHash hash) { return hash.Reverse(true); }
+        public static T Reverse<T>(this T hash) where T : ITweenHash { hash.Reverse(true); return hash; }
 
         /// <summary>
         /// Play the ITweenHash disposing the hash in the process.

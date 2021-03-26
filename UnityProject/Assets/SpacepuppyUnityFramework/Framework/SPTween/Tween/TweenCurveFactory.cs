@@ -171,6 +171,7 @@ namespace com.spacepuppy.Tween
                 _accessorFactory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("localEulerAngles"), FindAccessor.TransformLocalEulerAngles);
                 _accessorFactory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("rotation"), FindAccessor.TransformRotation);
                 _accessorFactory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("localRotation"), FindAccessor.TransformLocalRotation);
+                _accessorFactory.RegisterPerminentlyCachedAccessor(typeof(RectTransform).GetProperty("sizeDelta"), FindAccessor.RectTransformSizeDelta);
 
                 //register member type generators
                 RegisterTweenCurveGenerator(typeof(bool), new TweenCurveGenerator(CreateUninitializedBoolMemberCurve, typeof(bool)));
@@ -581,6 +582,15 @@ namespace com.spacepuppy.Tween
                     Accessor = accessor
                 };
 
+                //if this is a direct public member of the type, just register that
+                var memberInfo = DynamicUtil.GetMemberFromType(info.TargetType, memberName, false, System.Reflection.MemberTypes.Field | System.Reflection.MemberTypes.Property);
+                if(memberInfo != null)
+                {
+                    this.RegisterPerminentlyCachedAccessor(memberInfo, accessor);
+                    return;
+                }
+
+                //the memberName is not present on the type, so we're going to register it as a special name
                 IList<SpecialNameAccessorInfo> lst;
                 if (_specialMemberNameTable.Lists.TryGetList(memberName, out lst))
                 {

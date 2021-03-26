@@ -48,6 +48,14 @@ namespace com.spacepuppy.Tween
 
         #endregion
 
+        #region RectTransform
+
+        private static IMemberAccessor<Vector2> _rectTransformSizeDelta;
+        public static IMemberAccessor<Vector2> RectTransformSizeDelta { get { return _rectTransformSizeDelta ?? (_rectTransformSizeDelta = new GetterSetterMemberAccessor<RectTransform, Vector2>(t => t.sizeDelta, (t, v) => t.sizeDelta = v)); } }
+        public static IMemberAccessor<Vector2> sizeDelta_ref(this RectTransform t) { return RectTransformSizeDelta; }
+
+        #endregion
+
         //TODO - add more helpers to quickly lookup accessors for common properties/fields on commonly tweened objects
 
     }

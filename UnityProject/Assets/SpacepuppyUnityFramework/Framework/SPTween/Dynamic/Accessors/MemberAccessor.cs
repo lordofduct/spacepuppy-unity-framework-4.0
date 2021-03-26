@@ -157,7 +157,7 @@ namespace com.spacepuppy.Dynamic.Accessors
             }
             else
             {
-                throw new MemberAccessorException(
+                throw new InvalidOperationException(
                     string.Format("Member \"{0}\" does not have a get method.",
                                   _fieldName));
             }
@@ -181,7 +181,7 @@ namespace com.spacepuppy.Dynamic.Accessors
             }
             else
             {
-                throw new MemberAccessorException(
+                throw new InvalidOperationException(
                     string.Format("Member \"{0}\" does not have a set method.",
                                   _fieldName));
             }

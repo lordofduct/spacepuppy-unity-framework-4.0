@@ -7,7 +7,7 @@
 using System;
 using System.Reflection;
 
-#if BLARGH
+#if ENABLE_MONO && NET_4_6
 using System.Reflection.Emit;
 #endif
 
@@ -31,6 +31,8 @@ namespace com.spacepuppy.Dynamic.Accessors
         {
             _propInfo = info;
         }
+
+        internal override string MemberName {  get { return _propInfo.Name; } }
 
         /// <summary>
         /// The Type of the Property being accessed.
@@ -65,19 +67,8 @@ namespace com.spacepuppy.Dynamic.Accessors
             }
         }
 
-#if !BLARGH
+#if ENABLE_MONO && NET_4_6
 
-        public override object Get(object target)
-        {
-            return _propInfo.GetValue(target);
-        }
-
-        public override void Set(object target, object value)
-        {
-            _propInfo.SetValue(target, value);
-        }
-
-#else
         protected override void _EmitSetter(TypeBuilder myType)
         {
             //
@@ -193,6 +184,19 @@ namespace com.spacepuppy.Dynamic.Accessors
 
             getIL.Emit(OpCodes.Ret);
         }
+
+#else
+
+        public override object Get(object target)
+        {
+            return _propInfo.GetValue(target);
+        }
+
+        public override void Set(object target, object value)
+        {
+            _propInfo.SetValue(target, value);
+        }
+
 #endif
 
     }

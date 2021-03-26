@@ -2,18 +2,18 @@
 using System.Collections.Generic;
 using System.Linq;
 
+using com.spacepuppy.Collections;
+using com.spacepuppy.Dynamic.Accessors;
 using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.Tween
 {
 
-    public class TweenHash : ITweenHash, System.ICloneable
+    public class TweenHash : ITweenHash
     {
 
         public enum AnimMode
         {
-            AnimCurve = -2,
-            Curve = -1,
             To = 0,
             From = 1,
             By = 2,
@@ -23,11 +23,12 @@ namespace com.spacepuppy.Tween
 
         #region Fields
 
+        private TweenCurveFactory _curveFactory;
         private TweenHash _prevNode;
 
         private object _id;
         private object _targ;
-        private List<PropInfo> _props = new List<PropInfo>();
+        private List<CurveGeneratorToken> _curves = new List<CurveGeneratorToken>();
         private Ease _defaultEase = EaseMethods.LinearEaseNone;
         private float _delay;
         private UpdateSequence _updateType;
@@ -45,23 +46,25 @@ namespace com.spacepuppy.Tween
 
         #region CONSTRUCTOR
 
-        public TweenHash(object targ)
+        protected TweenHash()
         {
-            if (targ == null) throw new System.ArgumentNullException("targ");
-            _targ = targ;
-            _id = null;
+            //used for pooling constructor
+            _curveFactory = SPTween.CurveFactory;
         }
 
-        public TweenHash(object targ, object id)
+        public TweenHash(object target, object id = null, TweenCurveFactory curveFactory = null)
         {
-            if (targ == null) throw new System.ArgumentNullException("targ");
-            _targ = targ;
+            if (target == null) throw new System.ArgumentNullException(nameof(target));
+            _targ = target;
             _id = id;
+            _curveFactory = curveFactory ?? SPTween.CurveFactory;
         }
 
         #endregion
 
         #region Properties
+
+        public object Target { get { return _targ; } }
 
         #endregion
 
@@ -91,45 +94,9 @@ namespace com.spacepuppy.Tween
             return this;
         }
 
-        public TweenHash UseUpdate()
-        {
-            _updateType = UpdateSequence.Update;
-            return this;
-        }
-
-        public TweenHash UseFixedUpdate()
-        {
-            _updateType = UpdateSequence.FixedUpdate;
-            return this;
-        }
-
-        public TweenHash UseLateUpdate()
-        {
-            _updateType = UpdateSequence.LateUpdate;
-            return this;
-        }
-
         public TweenHash Use(UpdateSequence type)
         {
             _updateType = type;
-            return this;
-        }
-
-        public TweenHash UseNormalTime()
-        {
-            _timeSupplier = SPTime.Normal;
-            return this;
-        }
-
-        public TweenHash UseRealTime()
-        {
-            _timeSupplier = SPTime.Real;
-            return this;
-        }
-
-        public TweenHash UseSmoothTime()
-        {
-            _timeSupplier = SPTime.Smooth;
             return this;
         }
 
@@ -139,36 +106,10 @@ namespace com.spacepuppy.Tween
             return this;
         }
 
-        public TweenHash PlayOnce()
-        {
-            _wrap = TweenWrapMode.Once;
-            return this;
-        }
-
-        public TweenHash Loop(int count = -1)
-        {
-            _wrap = TweenWrapMode.Loop;
-            _wrapCount = count;
-            return this;
-        }
-
-        public TweenHash PingPong(int count = -1)
-        {
-            _wrap = TweenWrapMode.PingPong;
-            _wrapCount = count;
-            return this;
-        }
-
         public TweenHash Wrap(TweenWrapMode wrap, int count = -1)
         {
             _wrap = wrap;
             _wrapCount = count;
-            return this;
-        }
-
-        public TweenHash Reverse()
-        {
-            _reverse = true;
             return this;
         }
 
@@ -191,24 +132,10 @@ namespace com.spacepuppy.Tween
             return this;
         }
 
-        public TweenHash OnStep(System.Action<Tweener> d)
-        {
-            if (d == null) return this;
-            _onStep += (s, e) => d(s as Tweener);
-            return this;
-        }
-
         public TweenHash OnWrap(System.EventHandler d)
         {
             if (d == null) return this;
             _onWrap += d;
-            return this;
-        }
-
-        public TweenHash OnWrap(System.Action<Tweener> d)
-        {
-            if (d == null) return this;
-            _onWrap += (s, e) => d(s as Tweener);
             return this;
         }
 
@@ -219,214 +146,11 @@ namespace com.spacepuppy.Tween
             return this;
         }
 
-        public TweenHash OnFinish(System.Action<Tweener> d)
-        {
-            if (d == null) return this;
-            _onFinish += (s, e) => d(s as Tweener);
-            return this;
-        }
-
         public TweenHash OnStopped(System.EventHandler d)
         {
             if (d == null) return this;
             _onStopped += d;
             return this;
-        }
-
-        public TweenHash OnStopped(System.Action<Tweener> d)
-        {
-            if (d == null) return this;
-            _onStopped += (s, e) => d(s as Tweener);
-            return this;
-        }
-
-        #endregion
-
-
-
-        #region Curve Methods
-
-        /// <summary>
-        /// Follow this tween with another tween.
-        /// 
-        /// Inherits updateType and timeSupplier, unless otherwise changed.
-        /// </summary>
-        /// <returns></returns>
-        public TweenHash FollowOn()
-        {
-            var hash = new TweenHash(_targ, _id);
-            hash._prevNode = this;
-            hash._updateType = _updateType;
-            hash._timeSupplier = _timeSupplier;
-            return hash;
-        }
-
-        public TweenHash Apply(TweenConfigCallback callback, Ease ease, float dur)
-        {
-            if (callback != null) callback(this, ease, dur);
-            return this;
-        }
-
-        //#########################
-        // CURVES
-        //
-
-        public TweenHash UseCurve(TweenCurve curve)
-        {
-            _props.Add(new PropInfo(AnimMode.Curve, null, null, float.NaN, curve, null));
-            return this;
-        }
-
-        public TweenHash UseCurve(string memberName, AnimationCurve curve, object option = null)
-        {
-            if (curve == null) throw new System.ArgumentNullException("curve");
-            float dur = (curve.keys.Length > 0) ? curve.keys.Last().time : 0f;
-            _props.Add(new PropInfo(AnimMode.AnimCurve, memberName,
-                                    EaseMethods.FromAnimationCurve(curve),
-                                    dur, null, option));
-            return this;
-        }
-
-        public TweenHash UseCurve(string memberName, AnimationCurve curve, float dur, object option = null)
-        {
-            if (curve == null) throw new System.ArgumentNullException("curve");
-            _props.Add(new PropInfo(AnimMode.AnimCurve, memberName,
-                                    EaseMethods.FromAnimationCurve(curve),
-                                    dur, null, option));
-            return this;
-        }
-
-        public TweenHash To(string memberName, Ease ease, float dur, object end, object option = null)
-        {
-            _props.Add(new PropInfo(AnimMode.To, memberName, ease, dur, end, option));
-            return this;
-        }
-
-        public TweenHash To(string memberName, float dur, object end, object option = null)
-        {
-            _props.Add(new PropInfo(AnimMode.To, memberName, null, dur, end, option));
-            return this;
-        }
-
-        public TweenHash From(string memberName, Ease ease, float dur, object start, object option = null)
-        {
-            _props.Add(new PropInfo(AnimMode.From, memberName, ease, dur, start, option));
-            return this;
-        }
-
-        public TweenHash From(string memberName, float dur, object start, object option = null)
-        {
-            _props.Add(new PropInfo(AnimMode.From, memberName, null, dur, start, option));
-            return this;
-        }
-
-        public TweenHash By(string memberName, Ease ease, float dur, object amt, object option = null)
-        {
-            _props.Add(new PropInfo(AnimMode.By, memberName, ease, dur, amt, option));
-            return this;
-        }
-
-        public TweenHash By(string memberName, float dur, object amt, object option = null)
-        {
-            _props.Add(new PropInfo(AnimMode.By, memberName, null, dur, amt, option));
-            return this;
-        }
-
-        public TweenHash FromTo(string memberName, Ease ease, float dur, object start, object end, object option = null)
-        {
-            _props.Add(new PropInfo(AnimMode.FromTo, memberName, ease, dur, start, option, end));
-            return this;
-        }
-
-        public TweenHash FromTo(string memberName, float dur, object start, object end, object option = null)
-        {
-            _props.Add(new PropInfo(AnimMode.FromTo, memberName, null, dur, start, option, end));
-            return this;
-        }
-
-        public TweenHash ByAnimMode(AnimMode mode, string memberName, Ease ease, float dur, object value, object end)
-        {
-            _props.Add(new PropInfo(mode, memberName, ease, dur, value, null, end));
-            return this;
-        }
-
-        public TweenHash ByAnimMode(AnimMode mode, string memberName, Ease ease, float dur, object value, object end, object option)
-        {
-            _props.Add(new PropInfo(mode, memberName, ease, dur, value, option, end));
-            return this;
-        }
-
-        /// <summary>
-        /// Creates a curve that will animate from the current value to the end value, but will rescale the duration from how long it should have 
-        /// taken from start to end, but already animated up to current.
-        /// </summary>
-        /// <param name="memberName"></param>
-        /// <param name="ease"></param>
-        /// <param name="start"></param>
-        /// <param name="end"></param>
-        /// <param name="dur"></param>
-        /// <param name="option"></param>
-        /// <returns></returns>
-        public TweenHash RedirectTo(string memberName, Ease ease, float dur, object start, object end, object option = null)
-        {
-            _props.Add(new PropInfo(AnimMode.RedirectTo, memberName, ease, dur, start, option, end));
-            return this;
-        }
-
-        /// <summary>
-        /// Creates a curve that will animate from the current value to the end value, but will rescale the duration from how long it should have 
-        /// taken from start to end, but already animated up to current.
-        /// </summary>
-        /// <param name="memberName"></param>
-        /// <param name="start"></param>
-        /// <param name="end"></param>
-        /// <param name="dur"></param>
-        /// <param name="option"></param>
-        /// <returns></returns>
-        public TweenHash RedirectTo(string memberName, float dur, object start, object end, object option = null)
-        {
-            _props.Add(new PropInfo(AnimMode.RedirectTo, memberName, null, dur, start, option, end));
-            return this;
-        }
-
-        #endregion
-
-        #region Play Methods
-
-        public Tweener Play(bool autoKill, object autoKillToken = null)
-        {
-            if (_targ == null) return null;
-
-            var tween = this.Create();
-            if (autoKill)
-            {
-                tween.AutoKillToken = autoKillToken;
-                tween.Play();
-                if (tween.IsPlaying) SPTween.AutoKill(tween);
-            }
-            else
-            {
-                tween.Play();
-            }
-            return tween;
-        }
-
-        public Tweener Play(float playHeadPos, bool autoKill, object autoKillToken = null)
-        {
-            if (_targ == null) return null;
-
-            var tween = this.Create();
-            if (autoKill)
-            {
-                tween.AutoKillToken = autoKillToken;
-                tween.Play(playHeadPos);
-                SPTween.AutoKill(tween);
-            }
-            else
-            {
-                tween.Play(playHeadPos);
-            }
-            return tween;
         }
 
         public Tweener Create()
@@ -435,25 +159,25 @@ namespace com.spacepuppy.Tween
 
             //set curves
             Tweener tween = null;
-            if (_props.Count > 1)
+            if (_curves.Count > 1)
             {
                 var grp = new TweenCurveGroup();
-                for (int i = 0; i < _props.Count; i++)
+                for (int i = 0; i < _curves.Count; i++)
                 {
-                    var curve = this.CreateCurve(_props[i]);
+                    var curve = _curves[i].Callback?.Invoke();
                     if (curve == null)
-                        Debug.LogWarning("Failed to create tween for property '" + _props[i].name + "' on target.", _targ as Object);
+                        Debug.LogWarning("Failed to create tween for property '" + _curves[i].Accessor?.GetMemberName() ?? "UNKNOWN" + "' on target.", _targ as Object);
                     else
                         grp.Curves.Add(curve);
                 }
                 tween = new ObjectTweener(_targ, grp);
             }
-            else if (_props.Count == 1)
+            else if (_curves.Count == 1)
             {
-                var curve = this.CreateCurve(_props[0]);
+                var curve = _curves[0].Callback?.Invoke();
                 if (curve == null)
                 {
-                    Debug.LogWarning("Failed to create tween for property '" + _props[0].name + "' on target.", _targ as UnityEngine.Object);
+                    Debug.LogWarning("Failed to create tween for property '" + _curves[0].Accessor?.GetMemberName() ?? "UNKNOWN" + "' on target.", _targ as UnityEngine.Object);
                     return new ObjectTweener(_targ, TweenCurve.Null);
                 }
                 else
@@ -497,36 +221,90 @@ namespace com.spacepuppy.Tween
             return tween;
         }
 
-        private TweenCurve CreateCurve(PropInfo prop)
-        {
-            try
-            {
-                Ease ease = (prop.ease == null) ? _defaultEase : prop.ease;
-                float dur = prop.dur;
-                switch (prop.mode)
-                {
-                    case AnimMode.AnimCurve:
-                        return MemberCurve.CreateFromTo(_targ, prop.name, ease, null, null, dur, prop.option);
-                    case AnimMode.Curve:
-                        return prop.value as TweenCurve;
-                    case AnimMode.To:
-                        return MemberCurve.CreateTo(_targ, prop.name, ease, prop.value, dur, prop.option);
-                    case AnimMode.From:
-                        return MemberCurve.CreateFrom(_targ, prop.name, ease, prop.value, dur, prop.option);
-                    case AnimMode.By:
-                        return MemberCurve.CreateBy(_targ, prop.name, ease, prop.value, dur, prop.option);
-                    case AnimMode.FromTo:
-                        return MemberCurve.CreateFromTo(_targ, prop.name, ease, prop.value, prop.altValue, dur, prop.option);
-                    case AnimMode.RedirectTo:
-                        return MemberCurve.CreateRedirectTo(_targ, prop.name, ease, prop.value, prop.altValue, dur, prop.option);
-                }
-            }
-            catch
-            {
-                return null;
-            }
+        #endregion
 
-            return null;
+        #region Curve Methods
+
+        public CurveGenerator Prop(string memberName)
+        {
+            return new CurveGenerator(this, _curveFactory.GetAccessor(_targ, memberName));
+        }
+
+        public CurveGenerator<TProp> Prop<T, TProp>(MemberGetter<T, TProp> getter, MemberSetter<T, TProp> setter) where T : class
+        {
+            return new CurveGenerator<TProp>(this, new GetterSetterMemberAccessor<T, TProp>(getter, setter));
+        }
+
+        public CurveGenerator<TProp> Prop<TProp>(IMemberAccessor<TProp> accessor)
+        {
+            if (accessor == null) throw new System.ArgumentNullException(nameof(accessor));
+            return new CurveGenerator<TProp>(this, accessor);
+        }
+
+        /// <summary>
+        /// Follow this tween with another tween.
+        /// 
+        /// Inherits updateType and timeSupplier, unless otherwise changed.
+        /// </summary>
+        /// <returns></returns>
+        public TweenHash FollowOn()
+        {
+            var hash = GetTweenHash(_targ, _id);
+            hash._prevNode = this;
+            hash._updateType = _updateType;
+            hash._timeSupplier = _timeSupplier;
+            return hash;
+        }
+
+        public TweenHash Apply(TweenConfigCallback callback, Ease ease, float dur)
+        {
+            if (callback != null) callback(this, ease, dur);
+            return this;
+        }
+
+        //#########################
+        // CURVES
+        //
+
+        public TweenHash UseCurve(System.Func<TweenCurve> callback, IMemberAccessor accessor = null)
+        {
+            if (callback == null) throw new System.ArgumentNullException(nameof(callback));
+            _curves.Add(new CurveGeneratorToken()
+            {
+                Callback = callback,
+                Accessor = accessor,
+            });
+            return this;
+        }
+
+        public TweenHash UseCurve(TweenCurve curve, IMemberAccessor accessor = null)
+        {
+            if (curve == null) throw new System.ArgumentNullException(nameof(curve));
+            _curves.Add(new CurveGeneratorToken()
+            {
+                Callback = () => curve,
+                Accessor = accessor,
+            });
+            return this;
+        }
+
+        public TweenHash ByAnimMode(AnimMode mode, string memberName, Ease ease, float dur, object value, object end, int option = 0)
+        {
+            switch (mode)
+            {
+                case AnimMode.To:
+                    return this.Prop(memberName).To(ease, dur, value, option);
+                case AnimMode.From:
+                    return this.Prop(memberName).From(ease, dur, value, option);
+                case AnimMode.By:
+                    return this.Prop(memberName).By(ease, dur, value, option);
+                case AnimMode.FromTo:
+                    return this.Prop(memberName).FromTo(ease, dur, value, end, option);
+                case AnimMode.RedirectTo:
+                    return this.Prop(memberName).RedirectTo(ease, dur, value, end, option);
+                default:
+                    return this;
+            }
         }
 
         #endregion
@@ -548,39 +326,9 @@ namespace com.spacepuppy.Tween
             return this.Delay(delay);
         }
 
-        ITweenHash ITweenHash.UseUpdate()
-        {
-            return this.UseUpdate();
-        }
-
-        ITweenHash ITweenHash.UseFixedUpdate()
-        {
-            return this.UseFixedUpdate();
-        }
-
-        ITweenHash ITweenHash.UseLateUpdate()
-        {
-            return this.UseLateUpdate();
-        }
-
         ITweenHash ITweenHash.Use(UpdateSequence type)
         {
             return this.Use(type);
-        }
-
-        ITweenHash ITweenHash.UseNormalTime()
-        {
-            return this.UseNormalTime();
-        }
-
-        ITweenHash ITweenHash.UseRealTime()
-        {
-            return this.UseRealTime();
-        }
-
-        ITweenHash ITweenHash.UseSmoothTime()
-        {
-            return this.UseSmoothTime();
         }
 
         ITweenHash ITweenHash.Use(ITimeSupplier time)
@@ -588,29 +336,9 @@ namespace com.spacepuppy.Tween
             return this.Use(time);
         }
 
-        ITweenHash ITweenHash.PlayOnce()
-        {
-            return this.PlayOnce();
-        }
-
-        ITweenHash ITweenHash.Loop(int count)
-        {
-            return this.Loop(count);
-        }
-
-        ITweenHash ITweenHash.PingPong(int count)
-        {
-            return this.PingPong(count);
-        }
-
         ITweenHash ITweenHash.Wrap(TweenWrapMode wrap, int count)
         {
             return this.Wrap(wrap, count);
-        }
-
-        ITweenHash ITweenHash.Reverse()
-        {
-            return this.Reverse();
         }
 
         ITweenHash ITweenHash.Reverse(bool reverse)
@@ -628,17 +356,7 @@ namespace com.spacepuppy.Tween
             return this.OnStep(d);
         }
 
-        ITweenHash ITweenHash.OnStep(System.Action<Tweener> d)
-        {
-            return this.OnStep(d);
-        }
-
         ITweenHash ITweenHash.OnWrap(System.EventHandler d)
-        {
-            return this.OnWrap(d);
-        }
-
-        ITweenHash ITweenHash.OnWrap(System.Action<Tweener> d)
         {
             return this.OnWrap(d);
         }
@@ -648,29 +366,14 @@ namespace com.spacepuppy.Tween
             return this.OnFinish(d);
         }
 
-        ITweenHash ITweenHash.OnFinish(System.Action<Tweener> d)
-        {
-            return this.OnFinish(d);
-        }
-
         ITweenHash ITweenHash.OnStopped(System.EventHandler d)
         {
             return this.OnStopped(d);
         }
 
-        ITweenHash ITweenHash.OnStopped(System.Action<Tweener> d)
+        Tweener ITweenHash.Create()
         {
-            return this.OnFinish(d);
-        }
-
-        Tweener ITweenHash.Play(bool autoKill, object autoKillToken)
-        {
-            return this.Play(autoKill, autoKillToken);
-        }
-
-        Tweener ITweenHash.Play(float playHeadPosition, bool autoKill, object autoKillToken)
-        {
-            return this.Play(playHeadPosition, autoKill, autoKillToken);
+            return this.Create();
         }
 
         #endregion
@@ -679,8 +382,9 @@ namespace com.spacepuppy.Tween
 
         public TweenHash Clone()
         {
-            var hash = new TweenHash(_targ, _id);
-            hash._props = _props;
+            var hash = GetTweenHash(_targ, _id);
+            hash._curveFactory = _curveFactory;
+            hash._curves = _curves.ToList();
             hash._defaultEase = _defaultEase;
             hash._delay = _delay;
             hash._updateType = _updateType;
@@ -703,45 +407,298 @@ namespace com.spacepuppy.Tween
 
         #endregion
 
+        #region IDisposable Interface
 
+        public virtual void Dispose()
+        {
+            _prevNode?.Dispose();
+
+            if (this.GetType() == typeof(TweenHash) && _pool.Release(this))
+            {
+                _curveFactory = null;
+                _id = null;
+                _targ = null;
+                _curves.Clear();
+                _defaultEase = EaseMethods.LinearEaseNone;
+                _delay = 0f;
+                _updateType = UpdateSequence.Update;
+                _timeSupplier = null;
+                _wrap = TweenWrapMode.Once;
+                _wrapCount = 0;
+                _reverse = false;
+                _speedScale = 1.0f;
+                _onStep = null;
+                _onWrap = null;
+                _onFinish = null;
+                _onStopped = null;
+            }
+        }
+
+        #endregion
 
         #region Special Types
 
-        private struct PropInfo
+        private struct CurveGeneratorToken
         {
-            public AnimMode mode;
-            public string name;
-            public Ease ease;
-            public float dur;
-            public object value;
-            public object altValue;
-            public object option;
+            public IMemberAccessor Accessor;
+            public System.Func<TweenCurve> Callback;
+        }
 
-            public PropInfo(AnimMode mode, string nm, Ease e, float d, object v, object option)
+        public struct CurveGenerator
+        {
+
+            private TweenHash _hash;
+            private IMemberAccessor _accessor;
+
+            internal CurveGenerator(TweenHash hash, IMemberAccessor acc)
             {
-                this.mode = mode;
-                this.name = nm;
-                this.ease = e;
-                this.value = v;
-                this.dur = d;
-                this.altValue = null;
-                this.option = option;
+                _hash = hash;
+                _accessor = acc;
             }
 
-            public PropInfo(AnimMode mode, string nm, Ease e, float d, object v, object option, object altV)
+            public TweenHash FromTo(Ease ease, float dur, object start, object end, int option = 0)
             {
-                this.mode = mode;
-                this.name = nm;
-                this.ease = e;
-                this.value = v;
-                this.dur = d;
-                this.altValue = altV;
-                this.option = option;
+                var fact = _hash?._curveFactory;
+                var acc = _accessor;
+                var targ = _hash?._targ;
+                return _hash?.UseCurve(() => fact.CreateFromTo(targ, acc, ease, dur, start, end, option), acc);
+            }
+
+            public TweenHash To(Ease ease, float dur, object end, int option = 0)
+            {
+                var fact = _hash?._curveFactory;
+                var acc = _accessor;
+                var targ = _hash?._targ;
+                return _hash?.UseCurve(() => fact.CreateTo(targ, acc, ease, dur, end, option), acc);
+            }
+
+            public TweenHash From(Ease ease, float dur, object start, int option = 0)
+            {
+                var fact = _hash?._curveFactory;
+                var acc = _accessor;
+                var targ = _hash?._targ;
+                return _hash?.UseCurve(() => fact.CreateFrom(targ, acc, ease, dur, start, option), acc);
+            }
+
+            public TweenHash By(Ease ease, float dur, object amt, int option = 0)
+            {
+                var fact = _hash?._curveFactory;
+                var acc = _accessor;
+                var targ = _hash?._targ;
+                return _hash?.UseCurve(() => fact.CreateBy(targ, acc, ease, dur, amt, option), acc);
+            }
+
+            public TweenHash RedirectTo(Ease ease, float dur, object start, object end, int option = 0)
+            {
+                var fact = _hash?._curveFactory;
+                var acc = _accessor;
+                var targ = _hash?._targ;
+                return _hash?.UseCurve(() => fact.CreateRedirectTo(targ, acc, ease, dur, start, end, option), acc);
+            }
+
+            public TweenHash UseCurve(AnimationCurve curve, int option = 0)
+            {
+                var fact = _hash?._curveFactory;
+                var acc = _accessor;
+                var targ = _hash?._targ;
+                float dur = (curve.keys.Length > 0) ? curve.keys.Last().time : 0f;
+                return _hash?.UseCurve(() => fact.CreateFromTo(targ, acc, EaseMethods.FromAnimationCurve(curve), dur, null, null, option), acc);
+            }
+
+            public TweenHash UseCurve(AnimationCurve curve, float dur, int option = 0)
+            {
+                var fact = _hash?._curveFactory;
+                var acc = _accessor;
+                var targ = _hash?._targ;
+                return _hash?.UseCurve(() => fact.CreateFromTo(targ, acc, EaseMethods.FromAnimationCurve(curve), dur, null, null, option), acc);
+            }
+
+        }
+
+        public struct CurveGenerator<TProp>
+        {
+
+            private TweenHash _hash;
+            private IMemberAccessor<TProp> _accessor;
+
+            internal CurveGenerator(TweenHash hash, IMemberAccessor<TProp> acc)
+            {
+                _hash = hash;
+                _accessor = acc;
+            }
+
+            public TweenHash FromTo(Ease ease, float dur, TProp start, TProp end, int option = 0)
+            {
+                var fact = _hash?._curveFactory;
+                var acc = _accessor;
+                var targ = _hash?._targ;
+                return _hash?.UseCurve(() => fact.CreateFromTo<TProp>(targ, acc, ease, dur, start, end, option), acc);
+            }
+
+            public TweenHash To(Ease ease, float dur, TProp end, int option = 0)
+            {
+                var fact = _hash?._curveFactory;
+                var acc = _accessor;
+                var targ = _hash?._targ;
+                return _hash?.UseCurve(() => fact.CreateTo<TProp>(targ, acc, ease, dur, end, option), acc);
+            }
+
+            public TweenHash From(Ease ease, float dur, TProp start, int option = 0)
+            {
+                var fact = _hash?._curveFactory;
+                var acc = _accessor;
+                var targ = _hash?._targ;
+                return _hash?.UseCurve(() => fact.CreateFrom<TProp>(targ, acc, ease, dur, start, option), acc);
+            }
+
+            public TweenHash By(Ease ease, float dur, TProp amt, int option = 0)
+            {
+                var fact = _hash?._curveFactory;
+                var acc = _accessor;
+                var targ = _hash?._targ;
+                return _hash?.UseCurve(() => fact.CreateBy<TProp>(targ, acc, ease, dur, amt, option), acc);
+            }
+
+            public TweenHash RedirectTo(Ease ease, float dur, TProp start, TProp end, int option = 0)
+            {
+                var fact = _hash?._curveFactory;
+                var acc = _accessor;
+                var targ = _hash?._targ;
+                return _hash?.UseCurve(() => fact.CreateRedirectTo<TProp>(targ, acc, ease, dur, start, end, option), acc);
+            }
+
+            public TweenHash UseCurve(AnimationCurve curve, int option = 0)
+            {
+                var fact = _hash?._curveFactory;
+                var acc = _accessor;
+                var targ = _hash?._targ;
+                float dur = (curve.keys.Length > 0) ? curve.keys.Last().time : 0f;
+                return _hash?.UseCurve(() => fact.CreateFromTo<TProp>(targ, acc, EaseMethods.FromAnimationCurve(curve), dur, default(TProp), default(TProp), option), acc);
+            }
+
+            public TweenHash UseCurve(AnimationCurve curve, float dur, int option = 0)
+            {
+                var fact = _hash?._curveFactory;
+                var acc = _accessor;
+                var targ = _hash?._targ;
+                return _hash?.UseCurve(() => fact.CreateFromTo<TProp>(targ, acc, EaseMethods.FromAnimationCurve(curve), dur, default(TProp), default(TProp), option), acc);
             }
 
         }
 
         #endregion
+
+        #region Static Factory
+
+        private static ObjectCachePool<TweenHash> _pool = new ObjectCachePool<TweenHash>(-1, () => new TweenHash());
+
+        public static TweenHash GetTweenHash(object target, object id = null, TweenCurveFactory curveFactory = null)
+        {
+            if (object.ReferenceEquals(target, null)) throw new System.ArgumentNullException(nameof(target));
+
+            TweenHash result;
+            if (_pool.TryGetInstance(out result))
+            {
+                result._targ = target;
+                result._id = id;
+                result._curveFactory = curveFactory ?? SPTween.CurveFactory;
+            }
+            else
+            {
+                result = new TweenHash(target, id, curveFactory);
+            }
+            return result;
+        }
+
+        #endregion
+
+    }
+
+    public static class TweenHashExtensions
+    {
+
+        public static TweenHash UseCurve(this TweenHash hash, string memberName, AnimationCurve curve, int option = 0)
+        {
+            if (curve == null) throw new System.ArgumentNullException(nameof(curve));
+            return hash.Prop(memberName).UseCurve(curve, option);
+        }
+
+        public static TweenHash UseCurve(this TweenHash hash, string memberName, AnimationCurve curve, float dur, int option = 0)
+        {
+            if (curve == null) throw new System.ArgumentNullException(nameof(curve));
+            return hash.Prop(memberName).UseCurve(curve, dur, option);
+        }
+
+        public static TweenHash To(this TweenHash hash, string memberName, Ease ease, float dur, object end, int option = 0)
+        {
+            return hash.Prop(memberName).To(ease, dur, end, option);
+        }
+
+        public static TweenHash To(this TweenHash hash, string memberName, float dur, object end, int option = 0)
+        {
+            return hash.Prop(memberName).To(null, dur, end, option);
+        }
+
+        public static TweenHash From(this TweenHash hash, string memberName, Ease ease, float dur, object start, int option = 0)
+        {
+            return hash.Prop(memberName).From(ease, dur, start, option);
+        }
+
+        public static TweenHash From(this TweenHash hash, string memberName, float dur, object start, int option = 0)
+        {
+            return hash.Prop(memberName).From(null, dur, start, option);
+        }
+
+        public static TweenHash By(this TweenHash hash, string memberName, Ease ease, float dur, object amt, int option = 0)
+        {
+            return hash.Prop(memberName).By(ease, dur, amt, option);
+        }
+
+        public static TweenHash By(this TweenHash hash, string memberName, float dur, object amt, int option = 0)
+        {
+            return hash.Prop(memberName).By(null, dur, amt, option);
+        }
+
+        public static TweenHash FromTo(this TweenHash hash, string memberName, Ease ease, float dur, object start, object end, int option = 0)
+        {
+            return hash.Prop(memberName).FromTo(ease, dur, start, end, option);
+        }
+
+        public static TweenHash FromTo(this TweenHash hash, string memberName, float dur, object start, object end, int option = 0)
+        {
+            return hash.Prop(memberName).FromTo(null, dur, start, end, option);
+        }
+
+        /// <summary>
+        /// Creates a curve that will animate from the current value to the end value, but will rescale the duration from how long it should have 
+        /// taken from start to end, but already animated up to current.
+        /// </summary>
+        /// <param name="memberName"></param>
+        /// <param name="ease"></param>
+        /// <param name="start"></param>
+        /// <param name="end"></param>
+        /// <param name="dur"></param>
+        /// <param name="option"></param>
+        /// <returns></returns>
+        public static TweenHash RedirectTo(this TweenHash hash, string memberName, Ease ease, float dur, object start, object end, int option = 0)
+        {
+            return hash.Prop(memberName).RedirectTo(ease, dur, start, end, option);
+        }
+
+        /// <summary>
+        /// Creates a curve that will animate from the current value to the end value, but will rescale the duration from how long it should have 
+        /// taken from start to end, but already animated up to current.
+        /// </summary>
+        /// <param name="memberName"></param>
+        /// <param name="start"></param>
+        /// <param name="end"></param>
+        /// <param name="dur"></param>
+        /// <param name="option"></param>
+        /// <returns></returns>
+        public static TweenHash RedirectTo(this TweenHash hash, string memberName, float dur, object start, object end, int option = 0)
+        {
+            return hash.Prop(memberName).RedirectTo(null, dur, start, end, option);
+        }
 
     }
 

@@ -5,8 +5,7 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Tween.Curves
 {
 
-    [CustomMemberCurve(typeof(Vector4))]
-    public class Vector4MemberCurve : MemberCurve, ISupportRedirectToMemberCurve
+    public class Vector4MemberCurve : MemberCurve<Vector4>
     {
 
         #region Fields
@@ -18,36 +17,36 @@ namespace com.spacepuppy.Tween.Curves
 
         #region CONSTRUCTOR
 
-        protected Vector4MemberCurve()
+        protected internal Vector4MemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor) : base(accessor)
         {
 
         }
 
-        public Vector4MemberCurve(string propName, float dur, Vector4 start, Vector4 end)
-            : base(propName, dur)
+        public Vector4MemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, float dur, Vector4 start, Vector4 end)
+             : base(accessor, null, dur)
         {
             _start = start;
             _end = end;
         }
 
-        public Vector4MemberCurve(string propName, Ease ease, float dur, Vector4 start, Vector4 end)
-            : base(propName, ease, dur)
+        public Vector4MemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, Ease ease, float dur, Vector4 start, Vector4 end)
+             : base(accessor, ease, dur)
         {
             _start = start;
             _end = end;
         }
 
-        protected override void ReflectiveInit(System.Type memberType, object start, object end, object option)
+        protected internal override void Configure(Ease ease, float dur, Vector4 start, Vector4 end, int option = 0)
         {
-            _start = ConvertUtil.ToVector4(start);
-            _end = ConvertUtil.ToVector4(end);
+            this.Ease = ease;
+            this.Duration = dur;
+            _start = start;
+            _end = end;
         }
 
-        void ISupportRedirectToMemberCurve.ConfigureAsRedirectTo(System.Type memberType, float totalDur, object current, object start, object end, object option)
+        protected internal override void ConfigureAsRedirectTo(Ease ease, float totalDur, Vector4 c, Vector4 s, Vector4 e, int option = 0)
         {
-            var c = ConvertUtil.ToVector4(current);
-            var s = ConvertUtil.ToVector4(start);
-            var e = ConvertUtil.ToVector4(end);
+            this.Ease = ease;
             _start = c;
             _end = e;
 
@@ -59,7 +58,7 @@ namespace com.spacepuppy.Tween.Curves
             }
             else
             {
-                this.Duration = totalDur * Vector3.Dot(c, s.normalized) / Vector3.Dot(s, c.normalized);
+                this.Duration = totalDur * Vector4.Dot(c, s.normalized) / Vector4.Dot(s, c.normalized);
             }
         }
 
@@ -83,7 +82,7 @@ namespace com.spacepuppy.Tween.Curves
 
         #region MemberCurve Interface
 
-        protected override object GetValueAt(float dt, float t)
+        protected override Vector4 GetValueAt(float dt, float t)
         {
             if (this.Duration == 0f) return _end;
             t = this.Ease(t, 0f, 1f, this.Duration);

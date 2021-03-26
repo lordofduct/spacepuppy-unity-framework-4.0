@@ -5,8 +5,7 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Tween.Curves
 {
 
-    [CustomMemberCurve(typeof(string))]
-    public class StringCurve : MemberCurve, ISupportRedirectToMemberCurve
+    public class StringCurve : MemberCurve<string>
     {
 
         #region Fields
@@ -19,42 +18,46 @@ namespace com.spacepuppy.Tween.Curves
 
         #region CONSTRUCTOR
 
-        protected StringCurve()
+        protected internal StringCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor)
+            : base(accessor)
         {
             _start = string.Empty;
             _end = string.Empty;
         }
 
-        public StringCurve(string propName, float dur, string start, string end, StringTweenStyle style)
-            : base(propName, dur)
+        public StringCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, float dur, string start, string end, StringTweenStyle style)
+            : base(accessor, null, dur)
         {
             _start = start;
             _end = end;
             _style = style;
         }
 
-        public StringCurve(string propName, Ease ease, float dur, string start, string end, StringTweenStyle style)
-            : base(propName, ease, dur)
+        public StringCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, Ease ease, float dur, string start, string end, StringTweenStyle style)
+            : base(accessor, ease, dur)
         {
             _start = start;
             _end = end;
             _style = style;
         }
 
-        protected override void ReflectiveInit(System.Type memberType, object start, object end, object option)
+        protected internal override void Configure(Ease ease, float dur, string start, string end, int option = 0)
         {
-            _start = Convert.ToString(start) ?? string.Empty;
-            _end = Convert.ToString(end) ?? string.Empty;
+            this.Ease = ease;
+            this.Duration = dur;
+            _start = start;
+            _end = end;
             _style = ConvertUtil.ToEnum<StringTweenStyle>(option, StringTweenStyle.Default);
         }
 
-        void ISupportRedirectToMemberCurve.ConfigureAsRedirectTo(System.Type memberType, float totalDur, object current, object start, object end, object option)
+        protected internal override void ConfigureAsRedirectTo(Ease ease, float totalDur, string current, string start, string end, int option = 0)
         {
+            this.Ease = ease;
             _style = ConvertUtil.ToEnum<StringTweenStyle>(option, StringTweenStyle.Default);
 
-            var c = Convert.ToString(current) ?? string.Empty;
-            var s = Convert.ToString(start) ?? string.Empty;
-            var e = Convert.ToString(end) ?? string.Empty;
+            var c = current ?? string.Empty;
+            var s = start ?? string.Empty;
+            var e = end ?? string.Empty;
             _start = c;
             _end = e;
 
@@ -101,7 +104,7 @@ namespace com.spacepuppy.Tween.Curves
 
         #region MemberCurve Interface
 
-        protected override object GetValueAt(float delta, float t)
+        protected override string GetValueAt(float delta, float t)
         {
             t = (this.Duration == 0) ? 1f : this.Ease(t, 0f, 1f, this.Duration);
             if (float.IsNaN(t)) throw new System.ArgumentException("t must be a real number.", "t");

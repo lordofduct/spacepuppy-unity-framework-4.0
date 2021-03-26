@@ -1,15 +1,21 @@
 ﻿using UnityEngine;
 
 using com.spacepuppy.Utils;
+using com.spacepuppy.Dynamic.Accessors;
 
 namespace com.spacepuppy.Tween.Accessors
 {
 
     [CustomTweenMemberAccessor(typeof(Rigidbody), typeof(Vector3), "MovePosition")]
-    public class RigidbodyMovePositionAccessor : ITweenMemberAccessor
+    public class RigidbodyMovePositionAccessor : ITweenMemberAccessor, IMemberAccessor<Vector3>
     {
 
         #region ITweenMemberAccessor Interface
+
+        string com.spacepuppy.Dynamic.Accessors.IMemberAccessor.GetMemberName()
+        {
+            return "MovePosition";
+        }
 
         public System.Type GetMemberType()
         {
@@ -21,22 +27,30 @@ namespace com.spacepuppy.Tween.Accessors
             return typeof(Vector3);
         }
 
-        public object Get(object target)
+        object IMemberAccessor.Get(object target)
         {
-            var rb = target as Rigidbody;
-            if (rb != null)
+            return this.Get(target);
+        }
+
+        public void Set(object targ, object valueObj)
+        {
+            this.Set(targ, ConvertUtil.ToVector3(valueObj));
+        }
+
+        public Vector3 Get(object target)
+        {
+            if (target is Rigidbody rb)
             {
                 return rb.position;
             }
             return Vector3.zero;
         }
 
-        public void Set(object target, object value)
+        public void Set(object target, Vector3 value)
         {
-            var rb = target as Rigidbody;
-            if (rb != null)
+            if (target is Rigidbody rb)
             {
-                rb.MovePosition(ConvertUtil.ToVector3(value) - rb.position);
+                rb.MovePosition(value - rb.position);
             }
         }
 

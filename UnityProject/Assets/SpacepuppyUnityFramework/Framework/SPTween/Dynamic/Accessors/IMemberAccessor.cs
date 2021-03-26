@@ -12,6 +12,15 @@ namespace com.spacepuppy.Dynamic.Accessors
     /// </summary>
     public interface IMemberAccessor
     {
+
+        string GetMemberName();
+
+        /// <summary>
+        /// Return the member type that Get/Set expects.
+        /// </summary>
+        /// <returns></returns>
+        System.Type GetMemberType();
+
         /// <summary>
         /// Gets the value stored in the member for
         /// the specified target.
@@ -31,4 +40,10 @@ namespace com.spacepuppy.Dynamic.Accessors
         void Set(object target, object value);
     }
     
+    public interface IMemberAccessor<T> : IMemberAccessor
+    {
+        T Get(object target);
+        void Set(object target, T value);
+    }
+
 }

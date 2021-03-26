@@ -21,7 +21,7 @@ namespace com.spacepuppy.Tween
         RightToLeftJumble = 3
     }
 
-    public enum QuaternionTweenOption
+    public enum QuaternionTweenOptions
     {
         Spherical,
         Linear,
@@ -30,6 +30,12 @@ namespace com.spacepuppy.Tween
         /// it will rotate the full 720 degrees.
         /// </summary>
         Long
+    }
+
+    public enum VectorTweenOptions
+    {
+        Lerp = 0,
+        Slerp = 1
     }
 
 }

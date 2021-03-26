@@ -12,6 +12,7 @@ namespace com.spacepuppy
     /// <remarks>
     /// Currently in 4.0 we're diverging from the classic 'GameLoop' of earlier SP versions. We may refactor this later.
     /// </remarks>
+    [DefaultExecutionOrder(-32000)]
     public class GameLoop : ServiceComponent<GameLoop>, IService
     {
 

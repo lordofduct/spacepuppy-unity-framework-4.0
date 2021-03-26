@@ -4,6 +4,7 @@ using System.Collections.Generic;
 namespace com.spacepuppy.Hooks
 {
 
+    [DefaultExecutionOrder(-31999)]
     public sealed class EarlyStartHook : MonoBehaviour
     {
 

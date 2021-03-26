@@ -1,11 +1,12 @@
 ﻿
 using com.spacepuppy.Utils;
+using com.spacepuppy.Dynamic.Accessors;
 
 namespace com.spacepuppy.Tween.Accessors
 {
 
     [CustomTweenMemberAccessor(typeof(ITimeSupplier), typeof(float), "Scale")]
-    public class TimeScaleMemberAccessor : ITweenMemberAccessor
+    public class TimeScaleMemberAccessor : ITweenMemberAccessor, IMemberAccessor<float>
     {
 
         public const string DEFAULT_TIMESCALE_ID = "SPTween.TimeScale";
@@ -17,6 +18,11 @@ namespace com.spacepuppy.Tween.Accessors
         #endregion
 
         #region ITweenMemberAccessor Interface
+
+        string com.spacepuppy.Dynamic.Accessors.IMemberAccessor.GetMemberName()
+        {
+            return "Scale";
+        }
 
         public System.Type GetMemberType()
         {
@@ -30,22 +36,31 @@ namespace com.spacepuppy.Tween.Accessors
             return typeof(float);
         }
 
-        public object Get(object target)
+        object IMemberAccessor.Get(object target)
         {
-            var supplier = target as IScalableTimeSupplier;
-            if (supplier != null && supplier.HasScale(_id))
+            return this.Get(target);
+        }
+
+        public void Set(object targ, object valueObj)
+        {
+            this.Set(targ, ConvertUtil.ToSingle(valueObj));
+        }
+
+        public float Get(object target)
+        {
+            if ((target is IScalableTimeSupplier supplier) && supplier.HasScale(_id))
             {
                 return supplier.GetScale(_id);
             }
             return 1f;
         }
 
-        public void Set(object target, object value)
+        public void Set(object target, float value)
         {
             var supplier = target as IScalableTimeSupplier;
             if (supplier != null)
             {
-                supplier.SetScale(_id, ConvertUtil.ToSingle(value));
+                supplier.SetScale(_id, value);
             }
         }
 

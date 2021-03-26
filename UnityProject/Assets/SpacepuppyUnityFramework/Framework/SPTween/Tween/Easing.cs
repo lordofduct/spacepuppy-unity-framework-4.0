@@ -401,35 +401,11 @@ namespace com.spacepuppy.Tween
 
         #region Back Ease
 
-        private static Ease _backEaseIn;
-        public static Ease BackEaseIn
-        {
-            get
-            {
-                if (_backEaseIn == null) _backEaseIn = ConcreteEaseMethods.BackEaseIn;
-                return _backEaseIn;
-            }
-        }
+        public static Ease BackEaseIn { get; } = ConcreteEaseMethods.BackEaseIn;
 
-        private static Ease _backEaseOut;
-        public static Ease BackEaseOut
-        {
-            get
-            {
-                if (_backEaseOut == null) _backEaseOut = ConcreteEaseMethods.BackEaseOut;
-                return _backEaseOut;
-            }
-        }
+        public static Ease BackEaseOut { get; } = ConcreteEaseMethods.BackEaseOut;
 
-        private static Ease _backEaseInOut;
-        public static Ease BackEaseInOut
-        {
-            get
-            {
-                if (_backEaseInOut == null) _backEaseInOut = ConcreteEaseMethods.BackEaseInOut;
-                return _backEaseInOut;
-            }
-        }
+        public static Ease BackEaseInOut { get; } = ConcreteEaseMethods.BackEaseInOut;
 
         #endregion
 
@@ -886,7 +862,6 @@ namespace com.spacepuppy.Tween
 
 
 
-
         public static Vector2 EaseVector2(Ease ease, Vector2 start, Vector2 end, float t, float dur)
         {
             return (ease(t, 0, 1, dur) * (end - start)) + start;
@@ -912,6 +887,11 @@ namespace com.spacepuppy.Tween
         {
             return Quaternion.Slerp(start, end, ease(t, 0, 1, dur));
         }
+
+
+
+
+
     }
 
 }

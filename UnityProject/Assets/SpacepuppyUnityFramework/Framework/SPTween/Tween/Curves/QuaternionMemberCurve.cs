@@ -1,12 +1,36 @@
 ﻿using UnityEngine;
 
 using com.spacepuppy.Utils;
+using com.spacepuppy.Dynamic.Accessors;
 
 namespace com.spacepuppy.Tween.Curves
 {
 
-    [CustomMemberCurve(typeof(Quaternion))]
-    public class QuaternionMemberCurve : MemberCurve, ISupportRedirectToMemberCurve
+    public sealed class QuaternionMemberCurveGenerator : ITweenCurveGenerator
+    {
+        public TweenCurve CreateCurve(IMemberAccessor accessor, int option)
+        {
+            return TweenCurveFactory.CreateUninitializedQuaternionMemberCurve(accessor, option);
+        }
+
+        public System.Type GetExpectedMemberType(int option)
+        {
+            switch ((QuaternionTweenOptions)option)
+            {
+                case QuaternionTweenOptions.Long:
+                    return typeof(UnityEngine.Vector3);
+                default:
+                    return typeof(UnityEngine.Quaternion);
+            }
+        }
+
+        public System.Type GetOptionEnumType()
+        {
+            return typeof(QuaternionTweenOptions);
+        }
+    }
+
+    public class QuaternionMemberCurve : MemberCurve<Quaternion>
     {
 
         #region Fields
@@ -15,59 +39,60 @@ namespace com.spacepuppy.Tween.Curves
         private Quaternion _end;
         private Vector3 _startLong;
         private Vector3 _endLong;
-        private QuaternionTweenOption _option;
+        private QuaternionTweenOptions _option;
 
         #endregion
 
         #region CONSTRUCTOR
 
-        protected QuaternionMemberCurve()
+        protected internal QuaternionMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor)
+            : base(accessor)
         {
 
         }
 
-        public QuaternionMemberCurve(string propName, float dur, Quaternion start, Quaternion end)
-            : base(propName, dur)
-        {
-            _start = start;
-            _end = end;
-            _startLong = start.eulerAngles;
-            _endLong = end.eulerAngles;
-            _option = QuaternionTweenOption.Spherical;
-        }
-
-        public QuaternionMemberCurve(string propName, float dur, Quaternion start, Quaternion end, QuaternionTweenOption mode)
-            : base(propName, dur)
+        public QuaternionMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, float dur, Quaternion start, Quaternion end)
+            : base(accessor, null, dur)
         {
             _start = start;
             _end = end;
             _startLong = start.eulerAngles;
             _endLong = end.eulerAngles;
-            _option = mode == QuaternionTweenOption.Long ? QuaternionTweenOption.Spherical : mode;
+            _option = QuaternionTweenOptions.Spherical;
         }
 
-        public QuaternionMemberCurve(string propName, Ease ease, float dur, Quaternion start, Quaternion end)
-            : base(propName, ease, dur)
+        public QuaternionMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, float dur, Quaternion start, Quaternion end, QuaternionTweenOptions mode)
+            : base(accessor, null, dur)
         {
             _start = start;
             _end = end;
             _startLong = start.eulerAngles;
             _endLong = end.eulerAngles;
-            _option = QuaternionTweenOption.Spherical;
+            _option = mode == QuaternionTweenOptions.Long ? QuaternionTweenOptions.Spherical : mode;
         }
 
-        public QuaternionMemberCurve(string propName, Ease ease, float dur, Quaternion start, Quaternion end, QuaternionTweenOption mode)
-            : base(propName, ease, dur)
+        public QuaternionMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, Ease ease, float dur, Quaternion start, Quaternion end)
+            : base(accessor, ease, dur)
         {
             _start = start;
             _end = end;
             _startLong = start.eulerAngles;
             _endLong = end.eulerAngles;
-            _option = mode == QuaternionTweenOption.Long ? QuaternionTweenOption.Spherical : mode;
+            _option = QuaternionTweenOptions.Spherical;
         }
 
-        public QuaternionMemberCurve(string propName, Ease ease, float dur, Vector3 eulerStart, Vector3 eulerEnd, QuaternionTweenOption mode)
-            : base(propName, ease, dur)
+        public QuaternionMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, Ease ease, float dur, Quaternion start, Quaternion end, QuaternionTweenOptions mode)
+            : base(accessor, ease, dur)
+        {
+            _start = start;
+            _end = end;
+            _startLong = start.eulerAngles;
+            _endLong = end.eulerAngles;
+            _option = mode == QuaternionTweenOptions.Long ? QuaternionTweenOptions.Spherical : mode;
+        }
+
+        public QuaternionMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, Ease ease, float dur, Vector3 eulerStart, Vector3 eulerEnd, QuaternionTweenOptions mode)
+            : base(accessor, ease, dur)
         {
             _option = mode;
             _start = Quaternion.Euler(eulerStart);
@@ -76,33 +101,36 @@ namespace com.spacepuppy.Tween.Curves
             _endLong = eulerEnd;
         }
 
-        protected override void ReflectiveInit(System.Type memberType, object start, object end, object option)
+        protected internal override void Configure(Ease ease, float dur, Quaternion start, Quaternion end, int option = 0)
         {
-            _option = ConvertUtil.ToEnum<QuaternionTweenOption>(option);
-            if (_option == QuaternionTweenOption.Long)
+            this.Ease = ease;
+            this.Duration = dur;
+            _option = ConvertUtil.ToEnum<QuaternionTweenOptions>(option);
+            if (_option == QuaternionTweenOptions.Long)
             {
-                _startLong = QuaternionUtil.MassageAsEuler(start);
-                _endLong = QuaternionUtil.MassageAsEuler(end);
+                _startLong = start.eulerAngles;
+                _endLong = end.eulerAngles;
                 _start = Quaternion.Euler(_startLong);
                 _end = Quaternion.Euler(_endLong);
             }
             else
             {
-                _start = QuaternionUtil.MassageAsQuaternion(start);
-                _end = QuaternionUtil.MassageAsQuaternion(end);
+                _start = start;
+                _end = end;
                 _startLong = _start.eulerAngles;
                 _endLong = _end.eulerAngles;
             }
         }
 
-        void ISupportRedirectToMemberCurve.ConfigureAsRedirectTo(System.Type memberType, float totalDur, object current, object start, object end, object option)
+        protected internal override void ConfigureAsRedirectTo(Ease ease, float totalDur, Quaternion current, Quaternion start, Quaternion end, int option = 0)
         {
-            _option = ConvertUtil.ToEnum<QuaternionTweenOption>(option);
-            if (_option == QuaternionTweenOption.Long)
+            this.Ease = ease;
+            _option = ConvertUtil.ToEnum<QuaternionTweenOptions>(option);
+            if (_option == QuaternionTweenOptions.Long)
             {
-                var c = QuaternionUtil.MassageAsEuler(current);
-                var s = QuaternionUtil.MassageAsEuler(start);
-                var e = QuaternionUtil.MassageAsEuler(end);
+                var c = current.eulerAngles;
+                var s = start.eulerAngles;
+                var e = end.eulerAngles;
 
                 c.x = MathUtil.NormalizeAngleToRange(c.x, s.x, e.x, false);
                 c.y = MathUtil.NormalizeAngleToRange(c.y, s.y, e.y, false);
@@ -120,25 +148,32 @@ namespace com.spacepuppy.Tween.Curves
             else
             {
                 //treat as quat
-                var c = QuaternionUtil.MassageAsQuaternion(current);
-                var s = QuaternionUtil.MassageAsQuaternion(start);
-                var e = QuaternionUtil.MassageAsQuaternion(end);
-                _start = c;
-                _end = e;
+                _start = current;
+                _end = end;
                 _startLong = _start.eulerAngles;
                 _endLong = _end.eulerAngles;
 
-                var at = Quaternion.Angle(s, e);
+                var at = Quaternion.Angle(start, end);
                 if ((System.Math.Abs(at) < MathUtil.EPSILON))
                 {
                     this.Duration = 0f;
                 }
                 else
                 {
-                    var ap = Quaternion.Angle(s, c);
+                    var ap = Quaternion.Angle(start, current);
                     this.Duration = (1f - ap / at) * totalDur;
                 }
             }
+        }
+
+        protected override void ConfigureBoxed(Ease ease, float dur, object start, object end, int option = 0)
+        {
+            this.Configure(ease, dur, QuaternionUtil.MassageAsQuaternion(start), QuaternionUtil.MassageAsQuaternion(end), option);
+        }
+
+        protected override void ConfigureAsRedirectToBoxed(Ease ease, float dur, object current, object start, object end, int option = 0)
+        {
+            this.ConfigureAsRedirectTo(ease, dur, QuaternionUtil.MassageAsQuaternion(current), QuaternionUtil.MassageAsQuaternion(start), QuaternionUtil.MassageAsQuaternion(end), option);
         }
 
         #endregion
@@ -185,7 +220,7 @@ namespace com.spacepuppy.Tween.Curves
             }
         }
 
-        public QuaternionTweenOption Option
+        public QuaternionTweenOptions Option
         {
             get { return _option; }
             set { _option = value; }
@@ -195,17 +230,17 @@ namespace com.spacepuppy.Tween.Curves
 
         #region MemberCurve Interface
 
-        protected override object GetValueAt(float dt, float t)
+        protected override Quaternion GetValueAt(float dt, float t)
         {
             if (this.Duration == 0f) return _end;
             t = this.Ease(t, 0f, 1f, this.Duration);
             switch (_option)
             {
-                case QuaternionTweenOption.Spherical:
+                case QuaternionTweenOptions.Spherical:
                     return Quaternion.SlerpUnclamped(_start, _end, t);
-                case QuaternionTweenOption.Linear:
+                case QuaternionTweenOptions.Linear:
                     return Quaternion.LerpUnclamped(_start, _end, t);
-                case QuaternionTweenOption.Long:
+                case QuaternionTweenOptions.Long:
                     {
                         var v = Vector3.LerpUnclamped(_startLong, _endLong, t);
                         return Quaternion.Euler(v);

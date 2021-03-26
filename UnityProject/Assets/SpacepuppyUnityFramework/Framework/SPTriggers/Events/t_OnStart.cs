@@ -4,6 +4,7 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Events
 {
 
+    [DefaultExecutionOrder(31900)]
     public class t_OnStart : TriggerComponent
     {
 

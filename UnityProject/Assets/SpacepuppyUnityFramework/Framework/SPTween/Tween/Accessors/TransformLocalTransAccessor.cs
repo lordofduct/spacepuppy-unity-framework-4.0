@@ -2,6 +2,7 @@
 
 using com.spacepuppy.Geom;
 using com.spacepuppy.Utils;
+using com.spacepuppy.Dynamic.Accessors;
 
 namespace com.spacepuppy.Tween.Accessors
 {
@@ -9,12 +10,17 @@ namespace com.spacepuppy.Tween.Accessors
     [CustomTweenMemberAccessor(typeof(GameObject), typeof(Trans), "*LocalTrans")]
     [CustomTweenMemberAccessor(typeof(Component), typeof(Trans), "*LocalTrans")]
     [CustomTweenMemberAccessor(typeof(IGameObjectSource), typeof(Trans), "*LocalTrans")]
-    public class TransformLocalTransAccessor : ITweenMemberAccessor
+    public class TransformLocalTransAccessor : ITweenMemberAccessor, IMemberAccessor<Trans>
     {
 
         private bool _includeScale;
 
         #region ITweenMemberAccessor Interface
+
+        string com.spacepuppy.Dynamic.Accessors.IMemberAccessor.GetMemberName()
+        {
+            return "*LocalTrans";
+        }
 
         public System.Type GetMemberType()
         {
@@ -28,7 +34,17 @@ namespace com.spacepuppy.Tween.Accessors
             return typeof(Trans);
         }
 
-        public object Get(object target)
+        object IMemberAccessor.Get(object target)
+        {
+            return this.Get(target);
+        }
+
+        public void Set(object targ, object valueObj)
+        {
+            this.Set(targ, Trans.Massage(valueObj));
+        }
+
+        public Trans Get(object target)
         {
             var trans = GameObjectUtil.GetTransformFromSource(target);
             if (trans != null)
@@ -38,13 +54,12 @@ namespace com.spacepuppy.Tween.Accessors
             return Trans.Identity;
         }
 
-        public void Set(object target, object value)
+        public void Set(object target, Trans value)
         {
-            if (!(value is Trans)) return;
             var trans = GameObjectUtil.GetTransformFromSource(target);
             if (trans != null)
             {
-                ((Trans)value).SetToLocal(trans, _includeScale);
+                value.SetToLocal(trans, _includeScale);
             }
         }
 

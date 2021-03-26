@@ -5,105 +5,58 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Tween.Curves
 {
 
-    [CustomMemberCurve(typeof(Vector3))]
-    public class Vector3MemberCurve : MemberCurve, ISupportRedirectToMemberCurve
+    public class Vector3LerpMemberCurve : MemberCurve<Vector3>
     {
 
         #region Fields
 
         private Vector3 _start;
         private Vector3 _end;
-        private bool _useSlerp;
 
         #endregion
 
         #region CONSTRUCTOR
 
-        protected Vector3MemberCurve()
+        protected internal Vector3LerpMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor) : base(accessor)
         {
 
         }
 
-        public Vector3MemberCurve(string propName, float dur, Vector3 start, Vector3 end)
-            : base(propName, dur)
+        public Vector3LerpMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, float dur, Vector3 start, Vector3 end) : base(accessor, null, dur)
         {
             _start = start;
             _end = end;
-            _useSlerp = false;
         }
 
-        public Vector3MemberCurve(string propName, float dur, Vector3 start, Vector3 end, bool slerp)
-            : base(propName, dur)
+        public Vector3LerpMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, Ease ease, float dur, Vector3 start, Vector3 end) : base(accessor, ease, dur)
         {
             _start = start;
             _end = end;
-            _useSlerp = slerp;
         }
 
-        public Vector3MemberCurve(string propName, Ease ease, float dur, Vector3 start, Vector3 end)
-            : base(propName, ease, dur)
+        protected internal override void Configure(Ease ease, float dur, Vector3 start, Vector3 end, int option = 0)
         {
+            this.Ease = ease;
+            this.Duration = dur;
             _start = start;
             _end = end;
-            _useSlerp = false;
         }
 
-        public Vector3MemberCurve(string propName, Ease ease, float dur, Vector3 start, Vector3 end, bool slerp)
-            : base(propName, ease, dur)
+        protected internal override void ConfigureAsRedirectTo(Ease ease, float totalDur, Vector3 c, Vector3 s, Vector3 e, int option = 0)
         {
-            _start = start;
-            _end = end;
-            _useSlerp = slerp;
-        }
+            this.Ease = ease;
+            _start = c;
+            _end = e;
 
-        protected override void ReflectiveInit(System.Type memberType, object start, object end, object option)
-        {
-            _start = ConvertUtil.ToVector3(start);
-            _end = ConvertUtil.ToVector3(end);
-            _useSlerp = ConvertUtil.ToBool(option);
-        }
-
-        void ISupportRedirectToMemberCurve.ConfigureAsRedirectTo(System.Type memberType, float totalDur, object current, object start, object end, object option)
-        {
-            _useSlerp = ConvertUtil.ToBool(option);
-
-            if (_useSlerp)
+            c -= e;
+            s -= e;
+            if (VectorUtil.NearZeroVector(s))
             {
-                var c = ConvertUtil.ToVector3(current);
-                var s = ConvertUtil.ToVector3(start);
-                var e = ConvertUtil.ToVector3(end);
-                _start = c;
-                _end = e;
-
-                var at = Vector3.Angle(s, e);
-                if ((System.Math.Abs(at) < MathUtil.EPSILON))
-                {
-                    this.Duration = 0f;
-                }
-                else
-                {
-                    var ap = Vector3.Angle(c, e);
-                    this.Duration = totalDur * ap / at;
-                }
+                this.Duration = 0f;
             }
             else
             {
-                var c = ConvertUtil.ToVector3(current);
-                var s = ConvertUtil.ToVector3(start);
-                var e = ConvertUtil.ToVector3(end);
-                _start = c;
-                _end = e;
-
-                c -= e;
-                s -= e;
-                if (VectorUtil.NearZeroVector(s))
-                {
-                    this.Duration = 0f;
-                }
-                else
-                {
-                    this.Duration = totalDur * Vector3.Dot(c, s.normalized) / Vector3.Dot(s, c.normalized);
-                }
+                this.Duration = totalDur * Vector3.Dot(c, s.normalized) / Vector3.Dot(s, c.normalized);
             }
         }
 
@@ -111,36 +64,101 @@ namespace com.spacepuppy.Tween.Curves
 
         #region Properties
 
-        public Vector3 Start
-        {
-            get { return _start; }
-            set { _start = value; }
-        }
+        public Vector3 Start { get { return _start; } }
 
-        public Vector3 End
-        {
-            get { return _end; }
-            set { _end = value; }
-        }
-
-        public bool UseSlerp
-        {
-            get { return _useSlerp; }
-            set { _useSlerp = value; }
-        }
+        public Vector3 End { get { return _end; } }
 
         #endregion
 
-        #region MemberCurve Interface
+        #region Methods
 
-        protected override object GetValueAt(float dt, float t)
+        protected override Vector3 GetValueAt(float dt, float t)
         {
             if (this.Duration == 0f) return _end;
             t = this.Ease(t, 0f, 1f, this.Duration);
-            return (_useSlerp) ? Vector3.SlerpUnclamped(_start, _end, t) : Vector3.LerpUnclamped(_start, _end, t);
+            return Vector3.LerpUnclamped(_start, _end, t);
         }
 
         #endregion
 
     }
+
+    public class Vector3SlerpMemberCurve : MemberCurve<Vector3>
+    {
+
+        #region Fields
+
+        private Vector3 _start;
+        private Vector3 _end;
+
+        #endregion
+
+        #region CONSTRUCTOR
+
+        protected internal Vector3SlerpMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor) : base(accessor)
+        {
+
+        }
+
+        public Vector3SlerpMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, float dur, Vector3 start, Vector3 end) : base(accessor, null, dur)
+        {
+            _start = start;
+            _end = end;
+        }
+
+        public Vector3SlerpMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, Ease ease, float dur, Vector3 start, Vector3 end) : base(accessor, ease, dur)
+        {
+            _start = start;
+            _end = end;
+        }
+
+        protected internal override void Configure(Ease ease, float dur, Vector3 start, Vector3 end, int option = 0)
+        {
+            this.Ease = ease;
+            this.Duration = dur;
+            _start = start;
+            _end = end;
+        }
+
+        protected internal override void ConfigureAsRedirectTo(Ease ease, float totalDur, Vector3 c, Vector3 s, Vector3 e, int option = 0)
+        {
+            this.Ease = ease;
+            _start = c;
+            _end = e;
+
+            c -= e;
+            s -= e;
+            if (VectorUtil.NearZeroVector(s))
+            {
+                this.Duration = 0f;
+            }
+            else
+            {
+                this.Duration = totalDur * Vector3.Dot(c, s.normalized) / Vector3.Dot(s, c.normalized);
+            }
+        }
+
+        #endregion
+
+        #region Properties
+
+        public Vector3 Start { get { return _start; } }
+
+        public Vector3 End { get { return _end; } }
+
+        #endregion
+
+        #region Methods
+
+        protected override Vector3 GetValueAt(float dt, float t)
+        {
+            if (this.Duration == 0f) return _end;
+            t = this.Ease(t, 0f, 1f, this.Duration);
+            return Vector3.SlerpUnclamped(_start, _end, t);
+        }
+
+        #endregion
+
+    }
+
 }

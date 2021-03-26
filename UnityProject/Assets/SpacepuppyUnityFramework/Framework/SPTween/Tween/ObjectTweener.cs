@@ -72,30 +72,6 @@ namespace com.spacepuppy.Tween
 
         #endregion
 
-        #region Special Types
-
-        private struct TokenPairing
-        {
-            public object Target;
-            public object TokenUid;
-
-            public TokenPairing(object targ, object uid)
-            {
-                this.Target = targ;
-                this.TokenUid = uid;
-            }
-
-            //public override bool Equals(object obj)
-            //{
-            //    if (obj == null) return false;
-            //    if (!(obj is TokenPairing)) return false;
-
-            //    var token = (TokenPairing)obj;
-            //    return token.Target == this.Target && token.TokenUid == this.TokenUid;
-            //}
-        }
-
-        #endregion
-
     }
+
 }

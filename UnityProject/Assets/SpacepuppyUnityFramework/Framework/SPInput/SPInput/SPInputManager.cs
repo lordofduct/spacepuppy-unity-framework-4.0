@@ -4,6 +4,7 @@ using System.Collections.Generic;
 namespace com.spacepuppy.SPInput
 {
 
+    [DefaultExecutionOrder(-31990)]
     public class SPInputManager : ServiceComponent<IInputManager>, IInputManager
     {
 

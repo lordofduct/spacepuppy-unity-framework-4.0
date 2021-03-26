@@ -130,13 +130,12 @@ namespace com.spacepuppy.Tween.Events
             var loc = _location.GetTarget<Transform>(arg);
             if (targ == null || loc == null) return false;
 
-            var twn = SPTween.Tween(targ);
+            var twn = SPTween.Tween(targ)
+                             .Prop(targ.position_ref()).To(EaseMethods.GetEase(_ease), _duration.Seconds, loc.position)
+                             .Use(_duration.TimeSupplier)
+                             .SetId(_target);
 
-            twn.To("position", _duration.Seconds, loc.position);
-            if (_orientWithLocationRotation) twn.To("rotation", _duration.Seconds, loc.rotation);
-
-            twn.Use(_duration.TimeSupplier);
-            twn.SetId(_target);
+            if (_orientWithLocationRotation) twn.Prop(targ.rotation_ref()).To(EaseMethods.GetEase(_ease), _duration.Seconds, loc.rotation);
 
             if (_onComplete?.HasReceivers ?? false)
                 twn.OnFinish((t) => _onComplete.ActivateTrigger(this, null));

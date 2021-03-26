@@ -1,59 +1,20 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 
 using com.spacepuppy.Collections;
+using com.spacepuppy.Dynamic;
+using com.spacepuppy.Dynamic.Accessors;
 using com.spacepuppy.Tween.Accessors;
 using com.spacepuppy.Tween.Curves;
 using com.spacepuppy.Utils;
-using com.spacepuppy.Dynamic.Accessors;
 
 namespace com.spacepuppy.Tween
 {
-    public static class TweenCurveFactory
+    public class TweenCurveFactory
     {
 
-        #region Static Fields
-
-        private static ListDictionary<string, SpecialNameGeneratorInfo> _memberTypeNamePairToCurveType = new ListDictionary<string, SpecialNameGeneratorInfo>();
-        private static Dictionary<System.Type, ITweenCurveGenerator> _memberTypeToCurveType = new Dictionary<System.Type, ITweenCurveGenerator>();
-
-        #endregion
-
-        #region Static Constructor
-
-        static TweenCurveFactory()
-        {
-            //register member type generators
-            RegisterTweenCurveGenerator(typeof(bool), new TweenCurveGenerator(CreateUninitializedBoolMemberCurve, typeof(bool)));
-            RegisterTweenCurveGenerator(typeof(Color32), new TweenCurveGenerator(CreateUninitializedColor32MemberCurve, typeof(Color32)));
-            RegisterTweenCurveGenerator(typeof(Color), new TweenCurveGenerator(CreateUninitializedColorMemberCurve, typeof(Color), typeof(VectorTweenOptions)));
-            RegisterTweenCurveGenerator(typeof(float), new TweenCurveGenerator(CreateUninitializedFloatMemberCurve, typeof(float)));
-            RegisterTweenCurveGenerator(typeof(double), new TweenCurveGenerator(CreateUninitializedDoubleMemberCurve, typeof(double)));
-            RegisterTweenCurveGenerator(typeof(decimal), new TweenCurveGenerator(CreateUninitializedDecimalMemberCurve, typeof(decimal)));
-            RegisterTweenCurveGenerator(typeof(sbyte), new TweenCurveGenerator(CreateUninitializedSByteMemberCurve, typeof(sbyte)));
-            RegisterTweenCurveGenerator(typeof(int), new TweenCurveGenerator(CreateUninitializedIntMemberCurve, typeof(int)));
-            RegisterTweenCurveGenerator(typeof(long), new TweenCurveGenerator(CreateUninitializedLongMemberCurve, typeof(long)));
-            RegisterTweenCurveGenerator(typeof(byte), new TweenCurveGenerator(CreateUninitializedByteMemberCurve, typeof(byte)));
-            RegisterTweenCurveGenerator(typeof(uint), new TweenCurveGenerator(CreateUninitializedUIntMemberCurve, typeof(uint)));
-            RegisterTweenCurveGenerator(typeof(ulong), new TweenCurveGenerator(CreateUninitializedULongMemberCurve, typeof(ulong)));
-            RegisterTweenCurveGenerator(typeof(Vector2), new TweenCurveGenerator(CreateUninitializedVector2MemberCurve, typeof(Vector2), typeof(VectorTweenOptions)));
-            RegisterTweenCurveGenerator(typeof(Vector3), new TweenCurveGenerator(CreateUninitializedVector3MemberCurve, typeof(Vector3), typeof(VectorTweenOptions)));
-            RegisterTweenCurveGenerator(typeof(Vector4), new TweenCurveGenerator(CreateUninitializedVector4MemberCurve, typeof(Vector4)));
-            RegisterTweenCurveGenerator(typeof(Quaternion), new QuaternionMemberCurveGenerator());
-            RegisterTweenCurveGenerator(typeof(string), new TweenCurveGenerator(CreateUninintializedStringCurve, typeof(string), typeof(StringTweenStyle)));
-            RegisterTweenCurveGenerator(typeof(Rect), new TweenCurveGenerator(CreateUninitializedRectMemberCurve, typeof(Rect)));
-            RegisterTweenCurveGenerator(typeof(com.spacepuppy.Geom.Trans), new TweenCurveGenerator(CreateUninitializedTransMemberCurve, typeof(com.spacepuppy.Geom.Trans), typeof(VectorTweenOptions)));
-            RegisterTweenCurveGenerator(typeof(INumeric), new TweenCurveGenerator(CreateUninitializedINumericMemberCurve, typeof(INumeric)));
-
-            //register special prop name associated generators
-            RegisterTweenCurveGenerator(typeof(object), FollowTargetPositionAccessor.PROP_NAME, new TweenCurveGenerator((a, o) => new FollowTargetPositionCurve(a), typeof(Transform)));
-        }
-
-        #endregion
-
-        #region MemberCurve Constructors
+        #region MemberCurve Static Constructors
 
         public static BoolMemberCurve CreateUninitializedBoolMemberCurve(IMemberAccessor accessor, int option)
         {
@@ -155,9 +116,108 @@ namespace com.spacepuppy.Tween
             return new NumericMemberCurve<INumeric>(accessor);
         }
 
+        public static FollowTargetPositionCurve CreateUninitializeFollowTargetPositionCurve(IMemberAccessor accessor, int option)
+        {
+            return new FollowTargetPositionCurve(accessor);
+        }
+
         #endregion
 
-        #region MemberCurve Lookup
+        #region Fields
+
+        private TweenMemberAccessorFactory _accessorFactory = new TweenMemberAccessorFactory();
+        private ListDictionary<string, SpecialNameGeneratorInfo> _memberTypeNamePairToCurveType = new ListDictionary<string, SpecialNameGeneratorInfo>();
+        private Dictionary<System.Type, ITweenCurveGenerator> _memberTypeToCurveType = new Dictionary<System.Type, ITweenCurveGenerator>();
+
+        #endregion
+
+        #region Constructor
+
+        public TweenCurveFactory(bool donotRegisterDefaultGenerators = false)
+        {
+            _accessorFactory.MemberAccessMaxLifetime = System.TimeSpan.FromMinutes(5);
+            _accessorFactory.ResolveIDynamicContracts = true;
+            if (!donotRegisterDefaultGenerators)
+            {
+                this.Reset();
+            }
+        }
+
+        #endregion
+
+        #region Properties
+
+        public TweenMemberAccessorFactory AccessorFactory { get { return _accessorFactory; } }
+
+        #endregion
+
+        #region Configuration
+
+        public void Reset(bool donotRegisterDefaultGenerators = false)
+        {
+            _accessorFactory.Purge();
+            _accessorFactory.MemberAccessMaxLifetime = System.TimeSpan.FromMinutes(5);
+            _accessorFactory.ResolveIDynamicContracts = true;
+            _memberTypeNamePairToCurveType.Clear();
+            _memberTypeToCurveType.Clear();
+
+            if (!donotRegisterDefaultGenerators)
+            {
+                //register fast accessors
+                _accessorFactory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("position"), FindAccessor.TransformPosition);
+                _accessorFactory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("localPosition"), FindAccessor.TransformLocalPosition);
+                _accessorFactory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("localScale"), FindAccessor.TransformLocalScale);
+                _accessorFactory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("eulerAngles"), FindAccessor.TransformEulerAngles);
+                _accessorFactory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("localEulerAngles"), FindAccessor.TransformLocalEulerAngles);
+                _accessorFactory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("rotation"), FindAccessor.TransformRotation);
+                _accessorFactory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("localRotation"), FindAccessor.TransformLocalRotation);
+
+                //register member type generators
+                RegisterTweenCurveGenerator(typeof(bool), new TweenCurveGenerator(CreateUninitializedBoolMemberCurve, typeof(bool)));
+                RegisterTweenCurveGenerator(typeof(Color32), new TweenCurveGenerator(CreateUninitializedColor32MemberCurve, typeof(Color32)));
+                RegisterTweenCurveGenerator(typeof(Color), new TweenCurveGenerator(CreateUninitializedColorMemberCurve, typeof(Color), typeof(VectorTweenOptions)));
+                RegisterTweenCurveGenerator(typeof(float), new TweenCurveGenerator(CreateUninitializedFloatMemberCurve, typeof(float)));
+                RegisterTweenCurveGenerator(typeof(double), new TweenCurveGenerator(CreateUninitializedDoubleMemberCurve, typeof(double)));
+                RegisterTweenCurveGenerator(typeof(decimal), new TweenCurveGenerator(CreateUninitializedDecimalMemberCurve, typeof(decimal)));
+                RegisterTweenCurveGenerator(typeof(sbyte), new TweenCurveGenerator(CreateUninitializedSByteMemberCurve, typeof(sbyte)));
+                RegisterTweenCurveGenerator(typeof(int), new TweenCurveGenerator(CreateUninitializedIntMemberCurve, typeof(int)));
+                RegisterTweenCurveGenerator(typeof(long), new TweenCurveGenerator(CreateUninitializedLongMemberCurve, typeof(long)));
+                RegisterTweenCurveGenerator(typeof(byte), new TweenCurveGenerator(CreateUninitializedByteMemberCurve, typeof(byte)));
+                RegisterTweenCurveGenerator(typeof(uint), new TweenCurveGenerator(CreateUninitializedUIntMemberCurve, typeof(uint)));
+                RegisterTweenCurveGenerator(typeof(ulong), new TweenCurveGenerator(CreateUninitializedULongMemberCurve, typeof(ulong)));
+                RegisterTweenCurveGenerator(typeof(Vector2), new TweenCurveGenerator(CreateUninitializedVector2MemberCurve, typeof(Vector2), typeof(VectorTweenOptions)));
+                RegisterTweenCurveGenerator(typeof(Vector3), new TweenCurveGenerator(CreateUninitializedVector3MemberCurve, typeof(Vector3), typeof(VectorTweenOptions)));
+                RegisterTweenCurveGenerator(typeof(Vector4), new TweenCurveGenerator(CreateUninitializedVector4MemberCurve, typeof(Vector4)));
+                RegisterTweenCurveGenerator(typeof(Quaternion), new QuaternionMemberCurveGenerator());
+                RegisterTweenCurveGenerator(typeof(string), new TweenCurveGenerator(CreateUninintializedStringCurve, typeof(string), typeof(StringTweenStyle)));
+                RegisterTweenCurveGenerator(typeof(Rect), new TweenCurveGenerator(CreateUninitializedRectMemberCurve, typeof(Rect)));
+                RegisterTweenCurveGenerator(typeof(com.spacepuppy.Geom.Trans), new TweenCurveGenerator(CreateUninitializedTransMemberCurve, typeof(com.spacepuppy.Geom.Trans), typeof(VectorTweenOptions)));
+                RegisterTweenCurveGenerator(typeof(INumeric), new TweenCurveGenerator(CreateUninitializedINumericMemberCurve, typeof(INumeric)));
+
+                //register special prop name associated generators
+                RegisterTweenCurveGenerator(typeof(object), FollowTargetPositionAccessor.PROP_NAME, new TweenCurveGenerator(CreateUninitializeFollowTargetPositionCurve, typeof(Transform)));
+
+                //register special prop name associated accessors
+                var groups = CustomTweenMemberAccessorAttribute.FindCustomTweenMemberAccessorTypes()
+                                                               .GroupBy(o => new { o.HandledPropName, o.HandledTargetType });
+                foreach (var grp in groups)
+                {
+                    foreach (var attrib in grp.OrderByDescending(o => o.priority))
+                    {
+                        try
+                        {
+                            var acc = System.Activator.CreateInstance(attrib.DeclaringType) as IMemberAccessor;
+                            if (acc != null)
+                            {
+                                _accessorFactory.RegisterPerminentlyCachedAccessor(attrib.HandledTargetType, attrib.HandledPropName, acc);
+                                break;
+                            }
+                        }
+                        catch { }
+                    }
+                }
+            }
+        }
 
         /// <summary>
         /// Register an ITweenCurveGenerator for a specific property name. 
@@ -171,7 +231,7 @@ namespace com.spacepuppy.Tween
         /// <param name="targetType">The targetType with the property by name, this can be an inherited type including System.Object (if left null, object is selected)</param>
         /// <param name="memberName">The name of the member.</param>
         /// <param name="generator">The generator that will be used to create the curve.</param>
-        public static void RegisterTweenCurveGenerator(System.Type targetType, string memberName, ITweenCurveGenerator generator)
+        public void RegisterTweenCurveGenerator(System.Type targetType, string memberName, ITweenCurveGenerator generator)
         {
             if (memberName == null) throw new System.ArgumentNullException(nameof(memberName)); //can't be null, that's reserved for the 'general' type registering
             if (generator == null) throw new System.ArgumentNullException(nameof(generator));
@@ -186,7 +246,7 @@ namespace com.spacepuppy.Tween
             IList<SpecialNameGeneratorInfo> lst;
             if (_memberTypeNamePairToCurveType.Lists.TryGetList(memberName, out lst))
             {
-                for(int i = 0; i < lst.Count; i++)
+                for (int i = 0; i < lst.Count; i++)
                 {
                     if (lst[i].TargetType == info.TargetType)
                     {
@@ -194,7 +254,7 @@ namespace com.spacepuppy.Tween
                         return;
                     }
 
-                    if(TypeUtil.IsType(info.TargetType, lst[i].TargetType))
+                    if (TypeUtil.IsType(info.TargetType, lst[i].TargetType))
                     {
                         lst.Insert(i, info);
                         return;
@@ -209,7 +269,7 @@ namespace com.spacepuppy.Tween
             }
         }
 
-        public static void RegisterTweenCurveGenerator(System.Type memberType, ITweenCurveGenerator generator)
+        public void RegisterTweenCurveGenerator(System.Type memberType, ITweenCurveGenerator generator)
         {
             if (memberType == null) throw new System.ArgumentNullException(nameof(memberType));
             if (generator == null) throw new System.ArgumentNullException(nameof(generator));
@@ -217,7 +277,11 @@ namespace com.spacepuppy.Tween
             _memberTypeToCurveType[memberType] = generator;
         }
 
-        public static ITweenCurveGenerator LookupTweenCurveGenerator(System.Type targetType, string memberName, System.Type memberType)
+        #endregion
+
+        #region MemberCurve Lookup
+
+        public ITweenCurveGenerator LookupTweenCurveGenerator(System.Type targetType, string memberName, System.Type memberType)
         {
             ITweenCurveGenerator callback;
             if (memberName != null)
@@ -246,14 +310,14 @@ namespace com.spacepuppy.Tween
             return null;
         }
 
-        public static ITweenCurveGenerator LookupTweenCurveGenerator(System.Type targetType, IMemberAccessor accessor)
+        public ITweenCurveGenerator LookupTweenCurveGenerator(System.Type targetType, IMemberAccessor accessor)
         {
             if (accessor == null) throw new System.ArgumentNullException(nameof(accessor));
 
             return LookupTweenCurveGenerator(targetType, accessor.GetMemberName(), accessor.GetMemberType());
         }
 
-        public static TweenCurve CreateUnInitializedTweenCurve(System.Type targetType, IMemberAccessor accessor, int option)
+        public TweenCurve CreateUnInitializedTweenCurve(System.Type targetType, IMemberAccessor accessor, int option)
         {
             var result = LookupTweenCurveGenerator(targetType, accessor)?.CreateCurve(accessor, option);
             return result ?? throw new System.InvalidOperationException("IMemberAccessor is for a member type that is not supported.");
@@ -263,7 +327,7 @@ namespace com.spacepuppy.Tween
 
         #region Accessor Builders
 
-        public static IMemberAccessor GetAccessor(object target, string propName)
+        public IMemberAccessor GetAccessor(object target, string propName)
         {
             string args = null;
             if (propName != null)
@@ -278,35 +342,21 @@ namespace com.spacepuppy.Tween
                 }
             }
 
-            ITweenMemberAccessor acc;
-            System.Type memberType;
-            if (CustomTweenMemberAccessorFactory.TryGetMemberAccessor(target, propName, out acc))
-            {
-                memberType = acc.Init(target, propName, args);
-                return acc;
-            }
-
-            //return MemberAccessorPool.GetAccessor(target.GetType(), propName, out memberType);
-            return MemberAccessorPool.GetDynamicAccessor(target, propName, out memberType);
-        }
-
-        public static IMemberAccessor<TProp> GetAccessor<T, TProp>(MemberGetter<T, TProp> getter, MemberSetter<T, TProp> setter) where T : class
-        {
-            return new GetterSetterMemberAccessor<T, TProp>(getter, setter);
+            return _accessorFactory.GetAccessor(target, propName);
         }
 
         #endregion
 
         #region MemberCurve Builders
 
-        public static TweenCurve CreateFromTo(object target, IMemberAccessor accessor, Ease ease, float dur, object start, object end, int option)
+        public TweenCurve CreateFromTo(object target, IMemberAccessor accessor, Ease ease, float dur, object start, object end, int option)
         {
             var result = CreateUnInitializedTweenCurve(target?.GetType(), accessor, option);
             (result as ISupportBoxedConfigurableTweenCurve)?.Configure(ease, dur, start, end, option);
             return result;
         }
 
-        public static TweenCurve CreateTo(object target, IMemberAccessor accessor, Ease ease, float dur, object end, int option)
+        public TweenCurve CreateTo(object target, IMemberAccessor accessor, Ease ease, float dur, object end, int option)
         {
             var result = CreateUnInitializedTweenCurve(target?.GetType(), accessor, option);
             var start = accessor.Get(target);
@@ -314,7 +364,7 @@ namespace com.spacepuppy.Tween
             return result;
         }
 
-        public static TweenCurve CreateFrom(object target, IMemberAccessor accessor, Ease ease, float dur, object start, int option)
+        public TweenCurve CreateFrom(object target, IMemberAccessor accessor, Ease ease, float dur, object start, int option)
         {
             var result = CreateUnInitializedTweenCurve(target?.GetType(), accessor, option);
             var end = accessor.Get(target);
@@ -322,7 +372,7 @@ namespace com.spacepuppy.Tween
             return result;
         }
 
-        public static TweenCurve CreateBy(object target, IMemberAccessor accessor, Ease ease, float dur, object amt, int option)
+        public TweenCurve CreateBy(object target, IMemberAccessor accessor, Ease ease, float dur, object amt, int option)
         {
             var result = CreateUnInitializedTweenCurve(target?.GetType(), accessor, option);
             var start = accessor.Get(target);
@@ -331,14 +381,14 @@ namespace com.spacepuppy.Tween
             return result;
         }
 
-        public static TweenCurve CreateRedirectTo(object target, IMemberAccessor accessor, Ease ease, float dur, object start, object end, int option)
+        public TweenCurve CreateRedirectTo(object target, IMemberAccessor accessor, Ease ease, float dur, object start, object end, int option)
         {
             var result = CreateUnInitializedTweenCurve(target?.GetType(), accessor, option);
             (result as ISupportBoxedConfigurableTweenCurve)?.ConfigureAsRedirectTo(ease, dur, start, end, option);
             return result;
         }
 
-        public static TweenCurve CreateFromTo<TProp>(object target, IMemberAccessor<TProp> accessor, Ease ease, float dur, TProp start, TProp end, int option)
+        public TweenCurve CreateFromTo<TProp>(object target, IMemberAccessor<TProp> accessor, Ease ease, float dur, TProp start, TProp end, int option)
         {
             var result = CreateUnInitializedTweenCurve(target?.GetType(), accessor, option);
             if (result is MemberCurve<TProp> memcurve)
@@ -348,7 +398,7 @@ namespace com.spacepuppy.Tween
             return result;
         }
 
-        public static TweenCurve CreateTo<TProp>(object target, IMemberAccessor<TProp> accessor, Ease ease, float dur, TProp end, int option)
+        public TweenCurve CreateTo<TProp>(object target, IMemberAccessor<TProp> accessor, Ease ease, float dur, TProp end, int option)
         {
             var result = CreateUnInitializedTweenCurve(target?.GetType(), accessor, option);
             var start = accessor.Get(target);
@@ -359,7 +409,7 @@ namespace com.spacepuppy.Tween
             return result;
         }
 
-        public static TweenCurve CreateFrom<TProp>(object target, IMemberAccessor<TProp> accessor, Ease ease, float dur, TProp start, int option)
+        public TweenCurve CreateFrom<TProp>(object target, IMemberAccessor<TProp> accessor, Ease ease, float dur, TProp start, int option)
         {
             var result = CreateUnInitializedTweenCurve(target?.GetType(), accessor, option);
             var end = accessor.Get(target);
@@ -370,7 +420,7 @@ namespace com.spacepuppy.Tween
             return result;
         }
 
-        public static TweenCurve CreateBy<TProp>(object target, IMemberAccessor<TProp> accessor, Ease ease, float dur, TProp amt, int option)
+        public TweenCurve CreateBy<TProp>(object target, IMemberAccessor<TProp> accessor, Ease ease, float dur, TProp amt, int option)
         {
             var result = CreateUnInitializedTweenCurve(target?.GetType(), accessor, option);
             var start = accessor.Get(target);
@@ -382,7 +432,7 @@ namespace com.spacepuppy.Tween
             return result;
         }
 
-        public static TweenCurve CreateRedirectTo<TProp>(object target, IMemberAccessor<TProp> accessor, Ease ease, float dur, TProp start, TProp end, int option)
+        public TweenCurve CreateRedirectTo<TProp>(object target, IMemberAccessor<TProp> accessor, Ease ease, float dur, TProp start, TProp end, int option)
         {
             var result = CreateUnInitializedTweenCurve(target?.GetType(), accessor, option);
             if (result is MemberCurve<TProp> memcurve)
@@ -499,6 +549,138 @@ namespace com.spacepuppy.Tween
             public System.Type TargetType;
             public string MemberName;
             public ITweenCurveGenerator Generator;
+        }
+
+        public struct SpecialNameAccessorInfo
+        {
+            public System.Type TargetType;
+            public string MemberName;
+            public IMemberAccessor Accessor;
+        }
+
+        public class TweenMemberAccessorFactory : MemberAccessorFactory
+        {
+
+            private ListDictionary<string, SpecialNameAccessorInfo> _specialMemberNameTable = new ListDictionary<string, SpecialNameAccessorInfo>();
+
+            public override void Purge()
+            {
+                _specialMemberNameTable.Clear();
+                base.Purge();
+            }
+
+            public void RegisterPerminentlyCachedAccessor(System.Type targetType, string memberName, IMemberAccessor accessor)
+            {
+                if (memberName == null) throw new System.ArgumentNullException(nameof(memberName)); //can't be null, that's reserved for the 'general' type registering
+                if (accessor == null) throw new System.ArgumentNullException(nameof(accessor));
+
+                var info = new SpecialNameAccessorInfo()
+                {
+                    TargetType = targetType ?? typeof(object),
+                    MemberName = memberName,
+                    Accessor = accessor
+                };
+
+                IList<SpecialNameAccessorInfo> lst;
+                if (_specialMemberNameTable.Lists.TryGetList(memberName, out lst))
+                {
+                    for (int i = 0; i < lst.Count; i++)
+                    {
+                        if (lst[i].TargetType == info.TargetType)
+                        {
+                            lst[i] = info;
+                            return;
+                        }
+
+                        if (TypeUtil.IsType(info.TargetType, lst[i].TargetType))
+                        {
+                            lst.Insert(i, info);
+                            return;
+                        }
+                    }
+
+                    lst.Add(info);
+                }
+                else
+                {
+                    _specialMemberNameTable.Add(memberName, info);
+                }
+            }
+
+            public override IMemberAccessor GetAccessor(System.Type targetType, string memberName)
+            {
+                IList<SpecialNameAccessorInfo> lst;
+                if(_specialMemberNameTable.Lists.TryGetList(memberName, out lst))
+                {
+                    for(int i = 0; i < lst.Count; i++)
+                    {
+                        if(TypeUtil.IsType(targetType, lst[i].TargetType))
+                        {
+                            return lst[i].Accessor;
+                        }
+                    }
+                }
+
+                return base.GetAccessor(targetType, memberName);
+            }
+
+
+
+
+            public bool TryGetMemberAccessorInfoByType(System.Type tp, string name, out SpecialNameAccessorInfo data)
+            {
+                if (tp == null)
+                {
+                    data = default(SpecialNameAccessorInfo);
+                    return false;
+                }
+
+                IList<SpecialNameAccessorInfo> lst;
+                if (_specialMemberNameTable.Lists.TryGetList(name, out lst))
+                {
+                    SpecialNameAccessorInfo d2;
+                    int cnt = lst.Count;
+                    for (int i = 0; i < cnt; i++)
+                    {
+                        d2 = lst[i];
+                        if (d2.TargetType.IsAssignableFrom(tp))
+                        {
+                            data = d2;
+                            return true;
+                        }
+                    }
+                }
+
+                data = default(SpecialNameAccessorInfo);
+                return false;
+            }
+
+
+            public string[] GetCustomAccessorIds(System.Type tp, System.Predicate<SpecialNameAccessorInfo> predicate = null)
+            {
+                if (tp == null) throw new System.ArgumentNullException(nameof(tp));
+
+                using (var set = TempCollection.GetSet<string>())
+                {
+                    var e = _specialMemberNameTable.GetEnumerator();
+                    while (e.MoveNext())
+                    {
+                        var lst = e.Current.Value;
+                        for (int i = 0; i < lst.Count; i++)
+                        {
+                            if (lst[i].TargetType.IsAssignableFrom(tp) &&
+                                (predicate == null || predicate(lst[i])))
+                            {
+                                set.Add(e.Current.Key);
+                                break;
+                            }
+                        }
+                    }
+
+                    return set.ToArray();
+                }
+            }
+
         }
 
         #endregion

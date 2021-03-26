@@ -104,7 +104,7 @@ namespace com.spacepuppyeditor.Tween.Events
                                                                                                         memberProp.stringValue,
                                                                                                         com.spacepuppy.Dynamic.DynamicMemberAccess.ReadWrite,
                                                                                                         out propType);
-            var curveGenerator = TweenCurveFactory.LookupTweenCurveGenerator(targObj?.GetType(), memberProp.stringValue, propType);
+            var curveGenerator = SPTween.CurveFactory.LookupTweenCurveGenerator(targObj?.GetType(), memberProp.stringValue, propType);
 
             position = CalcNextRect(ref area);
             SPEditorGUI.PropertyField(position, el.FindPropertyRelative(PROP_DATA_EASE));
@@ -231,7 +231,7 @@ namespace com.spacepuppyeditor.Tween.Events
                 //var members = DynamicUtil.GetEasilySerializedMembers(targObj, System.Reflection.MemberTypes.Field | System.Reflection.MemberTypes.Property, access).ToArray();
                 var targTp = targObj.GetType();
                 var members = DynamicUtil.GetEasilySerializedMembersFromType(targTp, System.Reflection.MemberTypes.Field | System.Reflection.MemberTypes.Property, access).ToArray();
-                var accessors = CustomTweenMemberAccessorFactory.GetCustomAccessorIds(targTp, (d) => VariantReference.AcceptableType(d.MemberType));
+                var accessors = SPTween.CurveFactory.AccessorFactory.GetCustomAccessorIds(targTp, (d) => VariantReference.AcceptableType(d.Accessor.GetMemberType()));
                 System.Array.Sort(accessors);
 
                 using (var entries = TempCollection.GetList<GUIContent>(members.Length))
@@ -279,10 +279,10 @@ namespace com.spacepuppyeditor.Tween.Events
                     else
                     {
                         var nm = accessors[index - members.Length];
-                        CustomTweenMemberAccessorFactory.CustomAccessorData info;
-                        if(CustomTweenMemberAccessorFactory.TryGetMemberAccessorInfoByType(targTp, nm, out info))
+                        TweenCurveFactory.SpecialNameAccessorInfo info;
+                        if (SPTween.CurveFactory.AccessorFactory.TryGetMemberAccessorInfoByType(targTp, nm, out info))
                         {
-                            propType = info.MemberType;
+                            propType = info.Accessor.GetMemberType();
                             if (VariantReference.AcceptableType(propType))
                             {
                                 return nm;

@@ -31,6 +31,21 @@ namespace com.spacepuppy.Tween
         public static IMemberAccessor<Quaternion> TransformLocalRotation { get { return _transformLocalRotation ?? (_transformLocalRotation = new GetterSetterMemberAccessor<Transform, Quaternion>(t => t.localRotation, (t, v) => t.localRotation = v)); } }
         public static IMemberAccessor<Quaternion> localRotation_ref(this Transform t) { return TransformLocalRotation; }
 
+
+        private static IMemberAccessor<Vector3> _transformLocalScale;
+        public static IMemberAccessor<Vector3> TransformLocalScale { get { return _transformLocalScale ?? (_transformLocalScale = new GetterSetterMemberAccessor<Transform, Vector3>(t => t.localScale, (t, v) => t.localScale = v)); } }
+        public static IMemberAccessor<Vector3> localScale_ref(this Transform t) { return TransformLocalScale; }
+
+
+        private static IMemberAccessor<Vector3> _transformEulerAngles;
+        public static IMemberAccessor<Vector3> TransformEulerAngles { get { return _transformEulerAngles ?? (_transformEulerAngles = new GetterSetterMemberAccessor<Transform, Vector3>(t => t.eulerAngles, (t, v) => t.eulerAngles = v)); } }
+        public static IMemberAccessor<Vector3> eulerAngles_ref(this Transform t) { return TransformEulerAngles; }
+
+
+        private static IMemberAccessor<Vector3> _transformLocalEulerAngles;
+        public static IMemberAccessor<Vector3> TransformLocalEulerAngles { get { return _transformLocalEulerAngles ?? (_transformLocalEulerAngles = new GetterSetterMemberAccessor<Transform, Vector3>(t => t.localEulerAngles, (t, v) => t.localEulerAngles = v)); } }
+        public static IMemberAccessor<Vector3> localEulerAngles_ref(this Transform t) { return TransformLocalEulerAngles; }
+
         #endregion
 
         //TODO - add more helpers to quickly lookup accessors for common properties/fields on commonly tweened objects

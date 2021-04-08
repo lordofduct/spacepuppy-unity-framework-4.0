@@ -769,16 +769,12 @@ namespace com.spacepuppy.Utils
             }
             else
             {
-                /*
-                 * TODO - IKillable Interface
-                 * 
                 if (obj is UnityEngine.GameObject)
                     (obj as UnityEngine.GameObject).Kill();
                 else if (obj is UnityEngine.Transform)
                     (obj as UnityEngine.Transform).gameObject.Kill();
                 else
                     UnityEngine.Object.Destroy(obj);
-                 */
                 UnityEngine.Object.Destroy(obj);
             }
         }

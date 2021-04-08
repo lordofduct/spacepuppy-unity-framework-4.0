@@ -88,7 +88,7 @@ namespace com.spacepuppy
                     var c = stateChanged[i];
                     if (c == null)
                     {
-                        this.PurgeCoroutines(c);
+                        this.PurgeCoroutines(c, true);
                     }
                     else if (c.isActiveAndEnabled)
                     {
@@ -129,7 +129,7 @@ namespace com.spacepuppy
             }
         }
 
-        internal void PurgeCoroutines(MonoBehaviour component)
+        internal void PurgeCoroutines(MonoBehaviour component, bool skipCancellingPhase)
         {
             using (var lst = TempCollection.GetList<RadicalCoroutine>())
             {
@@ -143,7 +143,7 @@ namespace com.spacepuppy
                 {
                     for (int i = 0; i < lst.Count; i++)
                     {
-                        lst[i].ManagerCancel();
+                        lst[i].ManagerCancel(skipCancellingPhase);
                         _routines.Remove(lst[i]);
                     }
                 }
@@ -211,7 +211,7 @@ namespace com.spacepuppy
                 RadicalCoroutine old;
                 if (_autoKillTable.TryGetValue(autoKillToken, out old))
                 {
-                    old.ManagerCancel();
+                    old.ManagerCancel(false);
                 }
             }
             _autoKillTable[autoKillToken] = routine;
@@ -262,9 +262,13 @@ namespace com.spacepuppy
         {
             var component = sender as MonoBehaviour;
             if (object.ReferenceEquals(component, null)) return;
-            this.PurgeCoroutines(component);
+            this.PurgeCoroutines(component, true);
         }
 
+        private void RadicalCoroutineManager_InternalHook_StopAllCoroutinesCalled(SPComponent component)
+        {
+            this.PurgeCoroutines(component, true);
+        }
 
         private void DealWithEnable(MonoBehaviour component)
         {
@@ -341,7 +345,7 @@ namespace com.spacepuppy
                             routine = lst[i];
                             if ((routine.DisableMode & RadicalCoroutineDisableMode.CancelOnDisable) != 0)
                             {
-                                routine.ManagerCancel();
+                                routine.ManagerCancel(false);
                                 _routines.Remove(routine);
                             }
                             else if ((routine.DisableMode & RadicalCoroutineDisableMode.StopOnDisable) != 0)
@@ -377,7 +381,7 @@ namespace com.spacepuppy
                             }
                             else
                             {
-                                routine.ManagerCancel();
+                                routine.ManagerCancel(true);
                                 _routines.Remove(routine);
                             }
                         }
@@ -408,7 +412,7 @@ namespace com.spacepuppy
                 RadicalCoroutine old;
                 if (_autoKillTable.TryGetValue(autoKillToken, out old))
                 {
-                    old.ManagerCancel();
+                    old.ManagerCancel(false);
                     _autoKillTable.Remove(autoKillToken);
                 }
             }
@@ -416,18 +420,19 @@ namespace com.spacepuppy
 
         #endregion
 
-        #region Special Types
+    }
 
-        //private class NaiveComponentTracker
-        //{
-
-        //    public MonoBehaviour Component;
-        //    public bool Active;
-
-        //}
-
-        #endregion
-
+    public static class RadicalCoroutineExtensions
+    {
+        public static void StopAllRadicalCoroutines(this MonoBehaviour component)
+        {
+            var manager = component.GetComponent<RadicalCoroutineManager>();
+            if(manager != null)
+            {
+                manager.PurgeCoroutines(component, true);
+            }
+            component.StopAllCoroutines();
+        }
     }
 
 }

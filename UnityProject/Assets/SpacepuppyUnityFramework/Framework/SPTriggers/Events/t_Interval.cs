@@ -8,9 +8,6 @@ namespace com.spacepuppy.Events
 
     /// <summary>
     /// Perform an action on some interval.
-    /// 
-    /// TODO - Need to remove the old float for interval that is now replaced with TimePeriod. It's kept for now 
-    /// until all the scripts are updated. Remove ISerializationCallbackReceiver when that is done.
     /// </summary>
     public class t_Interval : AutoTriggerComponent
     {

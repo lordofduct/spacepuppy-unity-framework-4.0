@@ -10,22 +10,40 @@ using com.spacepuppy.Tween;
 public class zTest01 : SPComponent
 {
 
-    public Transform Target;
+    private RadicalCoroutine _routine;
+
+    protected override void Start()
+    {
+        base.Start();
+
+        _routine = this.StartRadicalCoroutine(this.DoStuff());
+    }
+
+    protected override void OnDisable()
+    {
+        Debug.Log("DISABLE");
+        base.OnDisable();
+    }
 
     private void Update()
     {
-        if (!Input.GetKeyDown(KeyCode.Space)) return;
-
-        Debug.Log("TWEENING zTest01");
-        SPTween.Tween(this)
-               .To("*Follow", EaseMethods.LinearEaseNone, 10f, Target)
-               .Play();
+        if(Input.GetKeyDown(KeyCode.Space))
+        {
+            this.StopAllCoroutines();
+        }
+        //else
+        //{
+        //    Debug.Log(_routine.OperatingState);
+        //}
     }
 
-    public decimal PropX
+    private IEnumerator DoStuff()
     {
-        get { return (decimal)this.transform.position.x; }
-        set { this.transform.position = this.transform.position.SetX((float)value); }
+        while(true)
+        {
+            Debug.Log(Time.frameCount);
+            yield return null;
+        }
     }
 
 }

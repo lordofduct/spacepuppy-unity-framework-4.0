@@ -91,16 +91,12 @@ namespace com.spacepuppy
             }
         }
 
-        //TODO - RadicalCoroutine
-        //public new void StopAllCoroutines()
-        //{
-        //    RadicalCoroutineManager manager = this.GetComponent<RadicalCoroutineManager>();
-        //    if (manager != null)
-        //    {
-        //        manager.PurgeCoroutines(this);
-        //    }
-        //    base.StopAllCoroutines();
-        //}
+        public new void StopAllCoroutines()
+        {
+            //this is an attempt to capture this method, it's not guaranteed and honestly you should avoid calling StopAllCoroutines all together and instead call StopAllRadicalCoroutines.
+            this.SendMessage("RadicalCoroutineManager_InternalHook_StopAllCoroutinesCalled", this);
+            base.StopAllCoroutines();
+        }
 
         #endregion
 

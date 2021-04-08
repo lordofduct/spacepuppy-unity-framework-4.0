@@ -948,7 +948,7 @@ namespace com.spacepuppy.Utils
         /// <param name="provider"></param>
         /// <returns></returns>
         /// <remarks>
-        /// TODO: I would also like to possibly include support for other number system bases. At least binary and octal.
+        /// TODO - I would also like to possibly include support for other number system bases. At least binary and octal.
         /// </remarks>
         public static double ToDouble(string value, System.Globalization.NumberStyles style, System.IFormatProvider provider)
         {

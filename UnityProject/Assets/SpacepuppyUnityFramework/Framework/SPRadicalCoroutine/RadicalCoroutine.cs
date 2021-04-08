@@ -439,9 +439,13 @@ namespace com.spacepuppy
         /// <summary>
         /// Should only be ever called from RadicalCoroutineManager.
         /// </summary>
-        internal void ManagerCancel()
+        internal void ManagerCancel(bool skipCancellingPhase)
         {
             _manager = null;
+            if(skipCancellingPhase && !this.Finished)
+            {
+                _state = RadicalCoroutineOperatingState.Cancelling;
+            }
             this.Cancel();
         }
 
@@ -744,22 +748,6 @@ namespace com.spacepuppy
                 {
                     //do nothing
                 }
-                else if (current is YieldInstruction)
-                {
-                    if (current is WaitForSeconds && (_disableMode & RadicalCoroutineDisableMode.Resumes) != 0)
-                    {
-                        _currentIEnumeratorYieldValue = null;
-                        _stack.Push(WaitForDuration.FromWaitForSeconds(current as WaitForSeconds));
-                    }
-                    else
-                    {
-                        _currentIEnumeratorYieldValue = current;
-                    }
-                }
-                else if (current is WWW)
-                {
-                    _currentIEnumeratorYieldValue = current;
-                }
                 else if (current is RadicalCoroutine)
                 {
                     // //v3
@@ -796,6 +784,18 @@ namespace com.spacepuppy
                     else
                     {
                         if (_stack.CurrentOperation == instruction) _stack.Pop();
+                    }
+                }
+                else if (current is YieldInstruction)
+                {
+                    if (current is WaitForSeconds && (_disableMode & RadicalCoroutineDisableMode.Resumes) != 0)
+                    {
+                        _currentIEnumeratorYieldValue = null;
+                        _stack.Push(WaitForDuration.FromWaitForSeconds(current as WaitForSeconds));
+                    }
+                    else
+                    {
+                        _currentIEnumeratorYieldValue = current;
                     }
                 }
                 else if (current is IEnumerable)

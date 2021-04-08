@@ -64,6 +64,13 @@ namespace com.spacepuppy
         [System.NonSerialized]
         private static UpdatePump _tardyFixedUpdatePump = new UpdatePump();
 
+        [System.NonSerialized]
+        private static com.spacepuppy.Async.InvokePump _updateInvokeHandle = new com.spacepuppy.Async.InvokePump();
+        [System.NonSerialized]
+        private static com.spacepuppy.Async.InvokePump _lateUpdateInvokeHandle = new com.spacepuppy.Async.InvokePump();
+        [System.NonSerialized]
+        private static com.spacepuppy.Async.InvokePump _fixedUpdateInvokeHandle = new com.spacepuppy.Async.InvokePump();
+
         private static int _currentFrame;
         private static int _currentLateFrame;
 
@@ -181,6 +188,21 @@ namespace com.spacepuppy
         public static UpdatePump LateUpdatePump { get { return _lateUpdatePump; } }
 
         /// <summary>
+        /// Used to schedule an action on the next Update regardless of threading.
+        /// </summary>
+        public static com.spacepuppy.Async.InvokePump UpdateHandle { get { return _updateInvokeHandle; } }
+
+        /// <summary>
+        /// Used to schedule an action on the next LateUpdate regardless of threading.
+        /// </summary>
+        public static com.spacepuppy.Async.InvokePump LateUpdateHandle { get { return _lateUpdateInvokeHandle; } }
+
+        /// <summary>
+        /// Used to schedule an action on the next FixedUpdate regardless of threading.
+        /// </summary>
+        public static com.spacepuppy.Async.InvokePump FixedUpdateHandle { get { return _fixedUpdateInvokeHandle; } }
+
+        /// <summary>
         /// Returns true if the UpdatePump and Update event were ran.
         /// </summary>
         public static bool UpdateWasCalled
@@ -294,6 +316,7 @@ namespace com.spacepuppy
             _internalEarlyUpdate?.Invoke(false);
 
             _earlyUpdatePump.Update();
+            _updateInvokeHandle.Update();
 
             EarlyUpdate?.Invoke(this, System.EventArgs.Empty);
         }
@@ -321,6 +344,7 @@ namespace com.spacepuppy
             _internalEarlyUpdate?.Invoke(true);
 
             _earlyFixedUpdatePump.Update();
+            _fixedUpdateInvokeHandle.Update();
 
             EarlyFixedUpdate?.Invoke(this, System.EventArgs.Empty);
         }
@@ -357,6 +381,7 @@ namespace com.spacepuppy
 
         private void _tardyUpdateHook_LateUpdate(object sender, System.EventArgs e)
         {
+            _lateUpdateInvokeHandle.Update();
             TardyLateUpdate?.Invoke(this, e);
 
             //Track exit of update loop

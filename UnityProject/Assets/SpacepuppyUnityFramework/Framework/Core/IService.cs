@@ -594,6 +594,17 @@ namespace com.spacepuppy
 
         #region CONSTRUCTOR
 
+        public ServiceScriptableObject()
+        {
+
+        }
+
+        public ServiceScriptableObject(bool autoRegister, bool destroyIfMultiple)
+        {
+            _autoRegisterService = autoRegister;
+            _destroyIfMultiple = destroyIfMultiple;
+        }
+
         protected virtual void OnEnable() //NOTE - using OnEnable now since it appears Awake doesn't occur on SOs that are created as an asset and loaded that way.
         {
             if (!(this is T))

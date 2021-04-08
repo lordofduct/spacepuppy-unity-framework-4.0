@@ -134,4 +134,72 @@ namespace com.spacepuppy
 
     }
 
+    /// <summary>
+    /// Sometimes you want to run Start late, to allow Start to be called on all other scripts. Basically adding a final ordering for Start similar to LateUpdate.
+    /// </summary>
+    [AutoMixinConfig(typeof(MLateStartReceiver))]
+    public interface IMLateStartReceiver : IAutoMixinDecorator, IEventfulComponent
+    {
+        void OnLateStart();
+    }
+
+    internal class MLateStartReceiver : IAutoMixin
+    {
+
+        bool IMixin.Awake(object owner)
+        {
+            return false;
+        }
+
+        void IAutoMixin.OnAutoCreated(IAutoMixinDecorator owner, System.Type autoMixinType)
+        {
+            var c = owner as IMLateStartReceiver;
+            if (c != null)
+            {
+                c.OnStarted += (s, e) =>
+                {
+                    GameLoop.LateUpdateHandle.BeginInvoke(() =>
+                    {
+                        c.OnLateStart();
+                    });
+                };
+            }
+        }
+    }
+
+    /// <summary>
+    /// Sometimes you want to run StartOrEnable late, to allow Start to be called on all other scripts. Basically adding a final ordering point for Start similar to LateUpdate.
+    /// </summary>
+    [AutoMixinConfig(typeof(MLateStartOrEnableReceiver))]
+    public interface IMLateStartOrEnableReceiver : IAutoMixinDecorator, IEventfulComponent
+    {
+
+        void OnLateStartOrEnable();
+
+    }
+
+    internal class MLateStartOrEnableReceiver : IAutoMixin
+    {
+
+        bool IMixin.Awake(object owner)
+        {
+            return false;
+        }
+
+        void IAutoMixin.OnAutoCreated(IAutoMixinDecorator owner, System.Type autoMixinType)
+        {
+            var c = owner as IMLateStartOrEnableReceiver;
+            if (c != null)
+            {
+                c.OnEnabled += (s, e) =>
+                {
+                    GameLoop.LateUpdateHandle.BeginInvoke(() =>
+                    {
+                        c.OnLateStartOrEnable();
+                    });
+                };
+            }
+        }
+    }
+
 }

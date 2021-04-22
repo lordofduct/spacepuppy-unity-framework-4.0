@@ -183,7 +183,7 @@ namespace com.spacepuppy
 
     }
 
-    [CreateAssetMenu(fileName = "QueryProxy", menuName = "Spacepuppy/QueryProxy")]
+    [CreateAssetMenu(fileName = "QueryProxy", menuName = "Spacepuppy/Proxy/QueryProxy")]
     public class QueryProxyToken : ScriptableObject, IProxy
     {
 

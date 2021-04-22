@@ -146,7 +146,7 @@ namespace com.spacepuppy
 
     }
 
-    [CreateAssetMenu(fileName = "MemberProxy", menuName = "Spacepuppy/MemberProxy")]
+    [CreateAssetMenu(fileName = "MemberProxy", menuName = "Spacepuppy/Proxy/MemberProxy")]
     public class MemberProxyToken : ScriptableObject, IProxy
     {
 

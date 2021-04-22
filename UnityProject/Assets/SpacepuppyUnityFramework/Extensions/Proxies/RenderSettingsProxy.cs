@@ -7,7 +7,7 @@ using com.spacepuppy.Dynamic;
 namespace com.spacepuppy.Render
 {
 
-    [CreateAssetMenu(fileName = "RenderSettingsProxy", menuName = "Services/RenderSettingsProxy")]
+    [CreateAssetMenu(fileName = "RenderSettingsProxy", menuName = "Spacepuppy/Proxy/RenderSettingsProxy")]
     public class RenderSettingsProxy : ScriptableObject, ITokenizable
     {
 

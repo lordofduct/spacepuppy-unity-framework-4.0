@@ -1264,7 +1264,9 @@ namespace com.spacepuppyeditor
                 for (int i = 0; i < members.Length; i++)
                 {
                     var m = members[i];
-                    if ((DynamicUtil.GetMemberAccessLevel(m) & DynamicMemberAccess.Write) != 0)
+                    if (targObj is IProxy)
+                        entries[i] = EditorHelper.TempContent(string.Format("{0} ({1})", m.Name, DynamicUtil.GetReturnType(m).Name));
+                    else if ((DynamicUtil.GetMemberAccessLevel(m) & DynamicMemberAccess.Write) != 0)
                         entries[i] = EditorHelper.TempContent(string.Format("{0} ({1}) -> {2}", m.Name, DynamicUtil.GetReturnType(m).Name, EditorHelper.GetValueWithMemberSafe(m, targObj, true)));
                     else
                         entries[i] = EditorHelper.TempContent(string.Format("{0} (readonly - {1}) -> {2}", m.Name, DynamicUtil.GetReturnType(m).Name, EditorHelper.GetValueWithMemberSafe(m, targObj, true)));

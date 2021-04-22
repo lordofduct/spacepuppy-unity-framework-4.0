@@ -4,7 +4,8 @@ using System.Collections.Generic;
 namespace com.spacepuppy
 {
 
-    public class ServiceProxy : MonoBehaviour, IProxy
+    [CreateAssetMenu(fileName = "ServiceProxy", menuName = "Spacepuppy/Proxy/ServiceProxy")]
+    public class ServiceProxy : ScriptableObject, IProxy
     {
 
         [SerializeField]

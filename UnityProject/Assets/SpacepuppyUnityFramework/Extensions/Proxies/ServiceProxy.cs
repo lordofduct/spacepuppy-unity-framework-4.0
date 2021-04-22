@@ -1,0 +1,36 @@
+﻿using UnityEngine;
+using System.Collections.Generic;
+
+namespace com.spacepuppy
+{
+
+    public class ServiceProxy : MonoBehaviour, IProxy
+    {
+
+        [SerializeField]
+        [TypeReference.Config(typeof(IService), allowAbstractClasses = true, allowInterfaces = true)]
+        private TypeReference _serviceType;
+
+        bool IProxy.QueriesTarget
+        {
+            get { return false; }
+        }
+
+        public object GetTarget()
+        {
+            return Services.Get(_serviceType.Type);
+        }
+
+        public object GetTarget(object arg)
+        {
+            return Services.Get(_serviceType.Type);
+        }
+
+        public System.Type GetTargetType()
+        {
+            return _serviceType.Type;
+        }
+
+    }
+
+}

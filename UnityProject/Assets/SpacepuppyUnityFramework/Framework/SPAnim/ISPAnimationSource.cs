@@ -7,7 +7,7 @@ namespace com.spacepuppy.Anim
 {
 
     /// <summary>
-    /// A source of SPAnim's, like SPAnimationController.
+    /// A source of SPAnim's, like SPLegacyAnimController.
     /// </summary>
     public interface ISPAnimationSource
     {

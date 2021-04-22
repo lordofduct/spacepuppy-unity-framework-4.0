@@ -19,12 +19,12 @@ namespace com.spacepuppy
 
         public object GetTarget()
         {
-            return Services.Get(_serviceType.Type);
+            return Services.Find(_serviceType.Type);
         }
 
         public object GetTarget(object arg)
         {
-            return Services.Get(_serviceType.Type);
+            return Services.Find(_serviceType.Type);
         }
 
         public System.Type GetTargetType()

@@ -25,11 +25,18 @@ namespace com.spacepuppy
 
     /// <summary>
     /// Access point for all registered Services.
+    /// Services are registered by type, generally an interface type. When calling 'Get' you must use the type it was registered as, not the concrete type that it is. Instead use 'Find' for that.
     /// 
     /// Note - the reflected System.Type versions of these methods will not work on AOT systems.
     /// </summary>
     public static class Services
     {
+
+        #region Fields
+
+        private static readonly HashSet<IService> _services = new HashSet<IService>();
+
+        #endregion
 
         #region Methods
 
@@ -43,10 +50,24 @@ namespace com.spacepuppy
             var result = Entry<T>.Instance;
             if (!object.ReferenceEquals(result, null) && result.IsNullOrDestroyed())
             {
-                result = null;
                 Entry<T>.Instance = null;
+                _services.Remove(result);
+                result = null;
             }
             return result;
+        }
+
+        public static T Find<T>() where T : class, IService
+        {
+            var e = _services.GetEnumerator();
+            while(e.MoveNext())
+            {
+                if(e.Current is T && e.Current.IsAlive())
+                {
+                    return e.Current as T;
+                }
+            }
+            return default(T);
         }
 
         public static void Register<T>(T service) where T : class, IService
@@ -54,19 +75,24 @@ namespace com.spacepuppy
             var other = Entry<T>.Instance;
             if (!other.IsNullOrDestroyed() && !object.ReferenceEquals(other, service)) throw new System.InvalidOperationException("You must first unregister a service before registering a new one.");
             Entry<T>.Instance = service;
+            _services.Add(service);
         }
 
         public static void Unregister<T>(bool destroyIfCan = false, bool donotSignalUnregister = false) where T : class, IService
         {
             var inst = Entry<T>.Instance;
-            if (!inst.IsNullOrDestroyed())
+            if(!object.ReferenceEquals(inst, null))
             {
                 Entry<T>.Instance = null;
-                if (!donotSignalUnregister)
-                    inst.SignalServiceUnregistered();
-                
-                if (destroyIfCan && inst is UnityEngine.Object)
-                    ObjUtil.SmartDestroy(inst as UnityEngine.Object);
+                _services.Add(inst);
+                if (!inst.IsNullOrDestroyed())
+                {
+                    if (!donotSignalUnregister)
+                        inst.SignalServiceUnregistered();
+
+                    if (destroyIfCan && inst is UnityEngine.Object)
+                        ObjUtil.SmartDestroy(inst as UnityEngine.Object);
+                }
             }
         }
 
@@ -85,8 +111,9 @@ namespace com.spacepuppy
 
                 if (!object.ReferenceEquals(result, null) && result.IsNullOrDestroyed())
                 {
-                    result = null;
                     field.SetValue(null, null);
+                    if (result is IService serv) _services.Remove(serv);
+                    result = null;
                 }
             }
             catch (System.Exception ex)
@@ -95,6 +122,24 @@ namespace com.spacepuppy
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Unlike 'Get', this will search all services for the one that is of type 'tp'.
+        /// </summary>
+        /// <param name="tp"></param>
+        /// <returns></returns>
+        public static object Find(Type tp)
+        {
+            var e = _services.GetEnumerator();
+            while (e.MoveNext())
+            {
+                if (e.Current.IsAlive() && TypeUtil.IsType(e.Current.GetType(), tp))
+                {
+                    return e.Current;
+                }
+            }
+            return null;
         }
 
         public static void Register(System.Type tp, IService service)

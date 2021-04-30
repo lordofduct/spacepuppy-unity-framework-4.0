@@ -354,6 +354,22 @@ namespace com.spacepuppy
 
     }
 
+    [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
+    public class AnimationCurveConstraintAttribute : PropertyAttribute
+    {
+        public float x;
+        public float y;
+        public float width = float.PositiveInfinity;
+        public float height = float.PositiveInfinity;
+        public Color color = Color.green;
+    }
+
+    public class AnimationCurveEaseScaleAttribute : PropertyAttribute
+    {
+        public float overscan = 1f;
+        public Color color = Color.green;
+    }
+
     /// <summary>
     /// A specialized PropertyDrawer that draws a struct/class in the shape:
     /// struct Pair
@@ -408,6 +424,35 @@ namespace com.spacepuppy
     [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
     public class DisableOnPlayAttribute : PropertyModifierAttribute
     {
+
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
+    public class DisableIfAttribute : PropertyModifierAttribute
+    {
+        public readonly string MemberName;
+        public bool DisableIfNot;
+
+        public DisableIfAttribute(string memberName)
+        {
+            this.MemberName = memberName;
+        }
+
+    }
+
+    /// <summary>
+    /// Display a field in the inspector only if the property/method returns true (supports private).
+    /// </summary>
+    [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
+    public class DisplayIfAttribute : SPPropertyAttribute
+    {
+        public readonly string MemberName;
+        public bool DisplayIfNot;
+
+        public DisplayIfAttribute(string memberName)
+        {
+            this.MemberName = memberName;
+        }
 
     }
 

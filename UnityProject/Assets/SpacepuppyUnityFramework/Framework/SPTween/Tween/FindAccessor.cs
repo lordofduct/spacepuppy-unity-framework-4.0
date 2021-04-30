@@ -56,6 +56,14 @@ namespace com.spacepuppy.Tween
 
         #endregion
 
+        #region UnityEngine.UI.Text
+
+        private static IMemberAccessor<string> _textGraphicText;
+        public static IMemberAccessor<string> TextGraphicText { get { return _textGraphicText ?? (_textGraphicText = new GetterSetterMemberAccessor<UnityEngine.UI.Text, string>(t => t.text, (t, v) => t.text = v)); } }
+        public static IMemberAccessor<string> text_ref(this UnityEngine.UI.Text t) { return TextGraphicText; }
+
+        #endregion
+
         //TODO - add more helpers to quickly lookup accessors for common properties/fields on commonly tweened objects
 
     }

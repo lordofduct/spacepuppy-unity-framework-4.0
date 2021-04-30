@@ -412,6 +412,19 @@ namespace com.spacepuppy
     }
 
     [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
+    public class ForceFromSelfAttribute : PropertyModifierAttribute
+    {
+
+        public EntityRelativity Relativity = EntityRelativity.Self;
+
+        public ForceFromSelfAttribute(EntityRelativity relativity = EntityRelativity.Self)
+        {
+            this.Relativity = relativity;
+        }
+
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
     public class OnChangedInEditorAttribute : PropertyModifierAttribute
     {
 

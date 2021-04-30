@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 using com.spacepuppy.Utils;
 
-namespace com.spacepuppy.Audio
+namespace com.spacepuppy
 {
 
     public interface IAudioManager : IService

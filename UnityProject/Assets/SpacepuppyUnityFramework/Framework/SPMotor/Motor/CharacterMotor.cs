@@ -77,6 +77,17 @@ namespace com.spacepuppy.Motor
 
         #endregion
 
+        #region Methods
+
+        public com.spacepuppy.Geom.Capsule GetGeom(bool ignoreSkin)
+        {
+            var cap = com.spacepuppy.Geom.Capsule.FromCollider(_controller);
+            if (!ignoreSkin) cap.Radius += this.SkinWidth;
+            return cap;
+        }
+
+        #endregion
+
         #region IMotor Interface
 
         public bool PrefersFixedUpdate
@@ -222,6 +233,10 @@ namespace com.spacepuppy.Motor
             }
         }
 
+        #endregion
+
+        #region IForceReceiver Interface
+
         public void AddForce(Vector3 f, ForceMode mode)
         {
             if (object.ReferenceEquals(_controller, null)) throw new System.InvalidOperationException("CharacterMotor must be initialized with an appropriate CharacterController.");
@@ -254,6 +269,16 @@ namespace com.spacepuppy.Motor
         public void AddForceAtPosition(Vector3 f, Vector3 pos, ForceMode mode)
         {
             this.AddForce(f, mode);
+        }
+
+        public void AddExplosionForce(float explosionForce, Vector3 explosionPosition, float explosionRadius, float upwardsModifier = 0f, ForceMode mode = ForceMode.Force)
+        {
+            var geom = this.GetGeom(true);
+            var v = geom.Center - explosionPosition;
+            var force = v.normalized * Mathf.Clamp01(v.magnitude / explosionRadius) * explosionForce;
+            //TODO - apply upwards modifier
+
+            this.AddForce(force, mode);
         }
 
         #endregion

@@ -232,6 +232,10 @@ namespace com.spacepuppy.Motor
             _moveCalledLastFrame = true;
         }
 
+        #endregion
+
+        #region IForceReceiver Interface
+
         public void AddForce(Vector3 f, ForceMode mode)
         {
             if (object.ReferenceEquals(_rigidbody, null)) throw new System.InvalidOperationException("RigidbodyMotor must be initialized with an appropriate Rigidbody.");
@@ -264,6 +268,15 @@ namespace com.spacepuppy.Motor
         public void AddForceAtPosition(Vector3 f, Vector3 pos, ForceMode mode)
         {
             this.AddForce(f, mode);
+        }
+
+        public void AddExplosionForce(float explosionForce, Vector3 explosionPosition, float explosionRadius, float upwardsModifier = 0f, ForceMode mode = ForceMode.Force)
+        {
+            var v = _rigidbody.centerOfMass - explosionPosition;
+            var force = v.normalized * Mathf.Clamp01(v.magnitude / explosionRadius) * explosionForce;
+            //TODO - apply upwards modifier
+
+            this.AddForce(force, mode);
         }
 
         #endregion

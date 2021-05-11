@@ -538,6 +538,25 @@ namespace com.spacepuppy.Tween
                 return _hash?.UseCurve(() => fact.CreateFromTo(targ, acc, EaseMethods.FromAnimationCurve(curve), dur, null, null, option), acc);
             }
 
+            public TweenHash ByAnimMode(AnimMode mode, Ease ease, float dur, object value, object end, int option = 0)
+            {
+                switch (mode)
+                {
+                    case AnimMode.To:
+                        return this.To(ease, dur, value, option);
+                    case AnimMode.From:
+                        return this.From(ease, dur, value, option);
+                    case AnimMode.By:
+                        return this.By(ease, dur, value, option);
+                    case AnimMode.FromTo:
+                        return this.FromTo(ease, dur, value, end, option);
+                    case AnimMode.RedirectTo:
+                        return this.RedirectTo(ease, dur, value, end, option);
+                    default:
+                        return _hash;
+                }
+            }
+
         }
 
         public struct CurveGenerator<TProp>
@@ -632,6 +651,25 @@ namespace com.spacepuppy.Tween
                 var acc = _accessor;
                 var targ = _hash?._targ;
                 return _hash?.UseCurve(() => fact.CreateFromTo<TProp>(targ, acc, EaseMethods.FromAnimationCurve(curve), dur, default(TProp), default(TProp), option), acc);
+            }
+
+            public TweenHash ByAnimMode(AnimMode mode, Ease ease, float dur, TProp value, TProp end, int option = 0)
+            {
+                switch (mode)
+                {
+                    case AnimMode.To:
+                        return this.To(ease, dur, value, option);
+                    case AnimMode.From:
+                        return this.From(ease, dur, value, option);
+                    case AnimMode.By:
+                        return this.By(ease, dur, value, option);
+                    case AnimMode.FromTo:
+                        return this.FromTo(ease, dur, value, end, option);
+                    case AnimMode.RedirectTo:
+                        return this.RedirectTo(ease, dur, value, end, option);
+                    default:
+                        return _hash;
+                }
             }
 
         }

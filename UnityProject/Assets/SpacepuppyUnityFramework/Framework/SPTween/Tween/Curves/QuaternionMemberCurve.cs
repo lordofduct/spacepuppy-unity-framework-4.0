@@ -168,12 +168,47 @@ namespace com.spacepuppy.Tween.Curves
 
         protected override void ConfigureBoxed(Ease ease, float dur, object start, object end, int option = 0)
         {
-            this.Configure(ease, dur, QuaternionUtil.MassageAsQuaternion(start), QuaternionUtil.MassageAsQuaternion(end), option);
+            if(option == (int)QuaternionTweenOptions.Long)
+            {
+                _option = QuaternionTweenOptions.Long;
+                _startLong = QuaternionUtil.MassageAsEuler(start);
+                _endLong = QuaternionUtil.MassageAsEuler(end);
+                _start = Quaternion.Euler(_startLong);
+                _end = Quaternion.Euler(_endLong);
+            }
+            else
+            {
+                this.Configure(ease, dur, QuaternionUtil.MassageAsQuaternion(start), QuaternionUtil.MassageAsQuaternion(end), option);
+            }
         }
 
         protected override void ConfigureAsRedirectToBoxed(Ease ease, float dur, object current, object start, object end, int option = 0)
         {
-            this.ConfigureAsRedirectTo(ease, dur, QuaternionUtil.MassageAsQuaternion(current), QuaternionUtil.MassageAsQuaternion(start), QuaternionUtil.MassageAsQuaternion(end), option);
+            if (option == (int)QuaternionTweenOptions.Long)
+            {
+                _option = QuaternionTweenOptions.Long;
+
+                var c = QuaternionUtil.MassageAsEuler(current);
+                var s = QuaternionUtil.MassageAsEuler(start);
+                var e = QuaternionUtil.MassageAsEuler(end);
+
+                c.x = MathUtil.NormalizeAngleToRange(c.x, s.x, e.x, false);
+                c.y = MathUtil.NormalizeAngleToRange(c.y, s.y, e.y, false);
+                c.z = MathUtil.NormalizeAngleToRange(c.z, s.z, e.z, false);
+
+                _startLong = c;
+                _endLong = e;
+                _start = Quaternion.Euler(_startLong);
+                _end = Quaternion.Euler(_endLong);
+
+                c -= s;
+                e -= s;
+                this.Duration = dur * (VectorUtil.NearZeroVector(e) ? 0f : 1f - c.magnitude / e.magnitude);
+            }
+            else
+            {
+                this.ConfigureAsRedirectTo(ease, dur, QuaternionUtil.MassageAsQuaternion(current), QuaternionUtil.MassageAsQuaternion(start), QuaternionUtil.MassageAsQuaternion(end), option);
+            }
         }
 
         #endregion

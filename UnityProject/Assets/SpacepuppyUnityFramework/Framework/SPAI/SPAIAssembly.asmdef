@@ -1,0 +1,19 @@
+{
+    "name": "com.spacepuppy.AI",
+    "references": [
+        "GUID:ddd0eb9fc8f414a4d9750a013f135d36",
+        "GUID:c3dba6655ca9c2343a46b81ee2ba8e85",
+        "GUID:6f3be19149224ec488e944fe34ec9ac5",
+        "GUID:18b35bcc13357ab4ebabf6cf62f8b6ac",
+        "GUID:ad6239a0379b2de43a4d9e723d51db80"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

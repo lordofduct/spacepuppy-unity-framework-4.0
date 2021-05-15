@@ -231,6 +231,14 @@ namespace com.spacepuppy.Utils
             }
         }
 
+        /// <summary>
+        /// Gets the element in the collection just after 'element'. If 'element' is not in the collection the first element is returned. If the collection is empty default(T) is returned.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="lst"></param>
+        /// <param name="element"></param>
+        /// <param name="loop"></param>
+        /// <returns></returns>
         public static T GetValueAfterOrDefault<T>(this IEnumerable<T> lst, T element, bool loop = false)
         {
             if (lst is IList<T>)

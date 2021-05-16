@@ -71,7 +71,7 @@ namespace com.spacepuppy.AI
 
         #region Properties
 
-        public IStateMachine<IAIState> States { get { return _stateMachine; } }
+        public IStateGroup<IAIState> States { get { return _stateMachine; } }
 
         public IAIState DefaultState
         {

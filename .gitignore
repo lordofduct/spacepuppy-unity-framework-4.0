@@ -40,3 +40,7 @@ RawAssets/PSD/MagazineArticles/Episode2 - Magazine Preview.psd
 #ignore temp files
 **/.~lock.*
 RawAssets/Screenshots/KickstarterScreenshots.psd
+
+#ignore Aron Granberge Project so it's not shared in repo
+UnityProject/Assets/3rdParty/AstarPathfindingProject
+UnityProject/Assets/3rdParty/AstarPathfindingProject.meta

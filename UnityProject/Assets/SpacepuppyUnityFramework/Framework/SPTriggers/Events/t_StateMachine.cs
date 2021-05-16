@@ -2,11 +2,13 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using com.spacepuppy.Collections;
+using System;
 
 namespace com.spacepuppy.Events
 {
 
-    public class t_StateMachine : SPComponent, IEnumerable<t_StateMachine.State>
+    public class t_StateMachine : SPComponent, IRadicalEnumerable<t_StateMachine.State>
     {
 
         #region Fields
@@ -41,7 +43,7 @@ namespace com.spacepuppy.Events
             if (_notifyFirstStateOnStart && _currentState != null)
             {
                 _currentState.OnEnterState.ActivateTrigger(this, null);
-                _onStateChanged.ActivateTrigger(this, null);
+                this.OnStateChanged();
             }
         }
 
@@ -104,7 +106,7 @@ namespace com.spacepuppy.Events
             if (lastState != null) lastState.OnExitState.ActivateTrigger(this, null);
             if (_currentState != null) _currentState.OnEnterState.ActivateTrigger(this, null);
 
-            _onStateChanged.ActivateTrigger(this, null);
+            this.OnStateChanged();
             return _currentState;
         }
 
@@ -112,6 +114,11 @@ namespace com.spacepuppy.Events
 
         #region StateMachine Interface
         
+        protected virtual void OnStateChanged()
+        {
+            if (_onStateChanged.HasReceivers) _onStateChanged.ActivateTrigger(this, null);
+        }
+
         public bool Contains(string state)
         {
             foreach (var s in _states)
@@ -135,7 +142,7 @@ namespace com.spacepuppy.Events
                     if (lastState != null) lastState.OnExitState.ActivateTrigger(this, null);
                     _currentState.OnEnterState.ActivateTrigger(this, null);
 
-                    _onStateChanged.ActivateTrigger(this, null);
+                    this.OnStateChanged();
 
                     return state;
                 }
@@ -156,6 +163,28 @@ namespace com.spacepuppy.Events
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
             return this.GetEnumerator();
+        }
+
+        public int Enumerate(ICollection<State> coll)
+        {
+            for(int i = 0; i < _states.Length; i++)
+            {
+                coll.Add(_states[i]);
+            }
+            return _states.Length;
+        }
+
+        public int Enumerate(Action<State> callback)
+        {
+            if (callback == null) return 0;
+
+            int cnt = 0;
+            for(int i = 0; i < _states.Length; i++)
+            {
+                callback(_states[i]);
+                cnt++;
+            }
+            return cnt;
         }
 
         #endregion

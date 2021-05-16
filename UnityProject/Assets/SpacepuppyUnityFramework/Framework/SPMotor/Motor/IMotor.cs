@@ -25,9 +25,9 @@ namespace com.spacepuppy.Motor
         
         void AtypicalMove(Vector3 mv);
         void MovePosition(Vector3 pos, bool setVelocityByChangeInPosition = false);
-        void Move(Vector3 mv);
-        void AddForce(Vector3 f, ForceMode mode);
-        void AddForceAtPosition(Vector3 f, Vector3 pos, ForceMode mode);
+        //void Move(Vector3 mv);
+        //void AddForce(Vector3 f, ForceMode mode);
+        //void AddForceAtPosition(Vector3 f, Vector3 pos, ForceMode mode);
 
     }
 

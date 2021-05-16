@@ -421,6 +421,25 @@ namespace com.spacepuppy
 
     }
 
+    /// <summary>
+    /// While in the editor, if the value is ever null, an attempt is made to find the value on a GameObject in itself 
+    /// that matches the name given.
+    /// 
+    /// You whil still have to initialize the value on Awake if null. The cost of doing it automatically is too high for all 
+    /// components to test themselves for this attribute.
+    /// </summary>
+    [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
+    public class FindInSelfAttribute : PropertyModifierAttribute
+    {
+        public string Name;
+        public bool UseEntity = false;
+
+        public FindInSelfAttribute(string name)
+        {
+            this.Name = name;
+        }
+    }
+
     [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
     public class DisableOnPlayAttribute : PropertyModifierAttribute
     {

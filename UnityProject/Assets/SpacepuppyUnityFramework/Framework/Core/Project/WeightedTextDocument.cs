@@ -25,6 +25,11 @@ namespace com.spacepuppy.Project
 
         #region Properties
 
+        public float[] Weights
+        {
+            get { return _weights; }
+        }
+
         #endregion
 
         #region ITextSource Interface

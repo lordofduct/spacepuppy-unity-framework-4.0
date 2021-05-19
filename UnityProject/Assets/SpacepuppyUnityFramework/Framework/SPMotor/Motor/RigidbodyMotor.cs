@@ -31,6 +31,8 @@ namespace com.spacepuppy.Motor
         private float _stepOffset;
         [SerializeField()]
         private float _skinWidth;
+        [SerializeField]
+        private bool _paused;
 
         [System.NonSerialized()]
         private Vector3 _vel;
@@ -171,6 +173,8 @@ namespace com.spacepuppy.Motor
             }
         }
 
+        public bool Paused { get { return _paused; } set { _paused = value; } }
+
         public Vector3 Velocity
         {
             get { return _vel; }
@@ -206,6 +210,7 @@ namespace com.spacepuppy.Motor
         public void Move(Vector3 mv)
         {
             if (object.ReferenceEquals(_rigidbody, null)) throw new System.InvalidOperationException("RigidbodyMotor must be initialized with an appropriate Rigidbody.");
+            if (_paused) return;
 
             _fullTalliedMove += mv;
             _talliedMove += mv;
@@ -216,6 +221,7 @@ namespace com.spacepuppy.Motor
         public void AtypicalMove(Vector3 mv)
         {
             if (object.ReferenceEquals(_rigidbody, null)) throw new System.InvalidOperationException("RigidbodyMotor must be initialized with an appropriate Rigidbody.");
+            if (_paused) return;
 
             _fullTalliedMove += mv;
             _moveCalledLastFrame = true;
@@ -224,6 +230,7 @@ namespace com.spacepuppy.Motor
         public void MovePosition(Vector3 pos, bool setVelocityByChangeInPosition = false)
         {
             if (object.ReferenceEquals(_rigidbody, null)) throw new System.InvalidOperationException("RigidbodyMotor must be initialized with an appropriate Rigidbody.");
+            if (_paused) return;
 
             var mv = (pos - _rigidbody.position);
             _fullTalliedMove += mv;
@@ -239,6 +246,7 @@ namespace com.spacepuppy.Motor
         public void AddForce(Vector3 f, ForceMode mode)
         {
             if (object.ReferenceEquals(_rigidbody, null)) throw new System.InvalidOperationException("RigidbodyMotor must be initialized with an appropriate Rigidbody.");
+            if (_paused) return;
 
             switch (mode)
             {
@@ -272,6 +280,8 @@ namespace com.spacepuppy.Motor
 
         public void AddExplosionForce(float explosionForce, Vector3 explosionPosition, float explosionRadius, float upwardsModifier = 0f, ForceMode mode = ForceMode.Force)
         {
+            if (_paused) return;
+
             var v = _rigidbody.centerOfMass - explosionPosition;
             var force = v.normalized * Mathf.Clamp01(v.magnitude / explosionRadius) * explosionForce;
             //TODO - apply upwards modifier

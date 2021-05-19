@@ -152,7 +152,7 @@ namespace com.spacepuppyeditor.Core
 
         private void EndOnGUI(SerializedProperty property, GUIContent label)
         {
-            _lst.serializedProperty = null;
+            //_lst.serializedProperty = null;
             _labelContent = null;
         }
 
@@ -335,8 +335,8 @@ namespace com.spacepuppyeditor.Core
 
                 if (_disallowFoldout)
                 {
-                    listArea = new Rect(position.xMin, position.yMin, position.width, _lst.GetHeight());
                     this.StartOnGUI(property, label);
+                    listArea = new Rect(position.xMin, position.yMin, position.width, _lst.GetHeight());
                     //_lst.DoList(EditorGUI.IndentedRect(position));
                     _lst.DoList(listArea);
                     this.EndOnGUI(property, label);
@@ -345,8 +345,8 @@ namespace com.spacepuppyeditor.Core
                 {
                     if (property.isExpanded)
                     {
-                        listArea = new Rect(position.xMin, position.yMin, position.width, _lst.GetHeight());
                         this.StartOnGUI(property, label);
+                        listArea = new Rect(position.xMin, position.yMin, position.width, _lst.GetHeight());
                         property.isExpanded = EditorGUI.Foldout(foldoutRect, property.isExpanded, GUIContent.none);
                         //_lst.DoList(EditorGUI.IndentedRect(position));
                         _lst.DoList(listArea);

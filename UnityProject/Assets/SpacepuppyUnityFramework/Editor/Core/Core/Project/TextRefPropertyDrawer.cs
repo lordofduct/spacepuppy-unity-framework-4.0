@@ -151,7 +151,7 @@ namespace com.spacepuppyeditor.Project
         {
             if(_lst != null)
             {
-                _lst.serializedProperty = null;
+                //_lst.serializedProperty = null;
             }
             if(_textProp != null)
             {
@@ -179,14 +179,7 @@ namespace com.spacepuppyeditor.Project
                 var lst = CachedReorderableList.GetListDrawer(textProp, _maskList_DrawHeader, _maskList_DrawElement);
                 lst.headerHeight = EditorGUIUtility.singleLineHeight + 2f;
 
-                if (objProp.objectReferenceValue == null)
-                {
-                    lst.displayAdd = true;
-                    lst.displayRemove = true;
-                    lst.elementHeight = EditorGUIUtility.singleLineHeight * TEXTSRC_AREA_LINES + EditorGUIUtility.singleLineHeight + 3f;
-                    h += lst.GetHeight();
-                }
-                else if (objProp.objectReferenceValue is ITextSource)
+                if (objProp.objectReferenceValue is ITextSource)
                 {
                     var src = objProp.objectReferenceValue as ITextSource;
                     int cnt = src.Count;
@@ -203,6 +196,14 @@ namespace com.spacepuppyeditor.Project
 
                     lst.displayAdd = false;
                     lst.displayRemove = false;
+                    lst.elementHeight = EditorGUIUtility.singleLineHeight * TEXTSRC_AREA_LINES + EditorGUIUtility.singleLineHeight + 3f;
+                    h += lst.GetHeight();
+                }
+                else
+                {
+                    objProp.objectReferenceValue = null;
+                    lst.displayAdd = true;
+                    lst.displayRemove = true;
                     lst.elementHeight = EditorGUIUtility.singleLineHeight * TEXTSRC_AREA_LINES + EditorGUIUtility.singleLineHeight + 3f;
                     h += lst.GetHeight();
                 }
@@ -251,7 +252,9 @@ namespace com.spacepuppyeditor.Project
         {
             var objArea = new Rect(area.xMin, area.yMin + 1f, area.width, EditorGUIUtility.singleLineHeight);
             //_objProp.objectReferenceValue = EditorGUI.ObjectField(objArea, _label, _objProp.objectReferenceValue, typeof(UnityEngine.Object), true);
-            _objProp.objectReferenceValue = SPEditorGUI.ObjectFieldX(objArea, _label, _objProp.objectReferenceValue, typeof(UnityEngine.Object), true);
+            var obj = SPEditorGUI.ObjectFieldX(objArea, _label, _objProp.objectReferenceValue, typeof(UnityEngine.Object), true);
+            if (!(obj is TextAsset) || !(obj is ITextSource)) obj = null;
+            _objProp.objectReferenceValue = obj;
         }
 
         private void _maskList_DrawElement(Rect area, int index, bool isActive, bool isFocused)

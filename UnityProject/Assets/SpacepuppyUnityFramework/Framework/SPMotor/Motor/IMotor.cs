@@ -17,6 +17,10 @@ namespace com.spacepuppy.Motor
         float StepOffset { get; set; }
         float SkinWidth { get; set; }
         bool CollisionEnabled { get; set; }
+        /// <summary>
+        /// If true calls to any Move or ApplyForce on this motor do not do anything. Can be used to easily disable input motion on a motor.
+        /// </summary>
+        bool Paused { get; set; }
 
         Vector3 Velocity { get; set; }
         Vector3 Position { get; set; }

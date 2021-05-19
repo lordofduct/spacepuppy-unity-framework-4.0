@@ -135,7 +135,7 @@ namespace com.spacepuppyeditor.Internal
             this.list = null;
         }
 
-        private void ReInit(System.Collections.IList memberList)
+        private void ReInit(System.Collections.IList memberList, SerializedProperty tokenProperty)
         {
             try
             {
@@ -148,7 +148,8 @@ namespace com.spacepuppyeditor.Internal
                 UnityEngine.Debug.LogWarning("This version of Spacepuppy Framework does not support the version of Unity it's being used with (CachedReorderableList).");
             }
 
-            this.serializedProperty = null;
+            //this.serializedProperty = null;
+            if (this.serializedProperty != null) this.serializedProperty = tokenProperty;
             this.list = memberList;
         }
 
@@ -219,7 +220,7 @@ namespace com.spacepuppyeditor.Internal
             CachedReorderableList lst;
             if (_lstCache.TryGetValue(hash, out lst))
             {
-                lst.ReInit(memberList);
+                lst.ReInit(memberList, tokenProperty);
             }
             else
             {

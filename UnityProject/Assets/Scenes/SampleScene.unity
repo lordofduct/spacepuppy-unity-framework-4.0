@@ -156,11 +156,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 81371d21e3cba584abca09f0de652681, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Speed: 25
-  Radius: 5
-  TextR:
-    _text: []
-    _obj: {fileID: 0}
+  Behaviour: 0
 --- !u!135 &674546611
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -767,7 +763,7 @@ GameObject:
   - component: {fileID: 1828243427}
   - component: {fileID: 1828243426}
   m_Layer: 0
-  m_Name: GameObject
+  m_Name: Blargh
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -785,11 +781,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 81371d21e3cba584abca09f0de652681, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Speed: 10
-  Radius: 5
-  TextR:
-    _text: []
-    _obj: {fileID: 0}
+  Behaviour: 0
 --- !u!4 &1828243427
 Transform:
   m_ObjectHideFlags: 0

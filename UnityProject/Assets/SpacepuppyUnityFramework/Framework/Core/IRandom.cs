@@ -16,4 +16,10 @@ namespace com.spacepuppy
 
     }
 
+    [System.Serializable]
+    public class RandomRef : com.spacepuppy.Project.SerializableInterfaceRef<IRandom>
+    {
+
+    }
+
 }

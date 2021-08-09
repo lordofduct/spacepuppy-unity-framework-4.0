@@ -33,13 +33,13 @@ namespace com.spacepuppyeditor.Scenes
 
             const float TOGGLE_WIDTH = 30f;
             Rect rObjField = new Rect(position.xMin, position.yMin, Mathf.Max(position.width - TOGGLE_WIDTH, 0f), EditorGUIUtility.singleLineHeight);
-            if (assetProp.objectReferenceValue != null)
+            if (assetProp.objectReferenceValue is SceneAsset)
             {
                 EditorGUI.BeginChangeCheck();
                 assetProp.objectReferenceValue = EditorGUI.ObjectField(rObjField, GUIContent.none, assetProp.objectReferenceValue, typeof(SceneAsset), false);
-                if (EditorGUI.EndChangeCheck())
+                var scene = assetProp.objectReferenceValue as SceneAsset;
+                if (EditorGUI.EndChangeCheck() || nameProp.stringValue != scene?.name)
                 {
-                    var scene = assetProp.objectReferenceValue as SceneAsset;
                     nameProp.stringValue = (scene != null) ? scene.name : string.Empty;
                 }
             }

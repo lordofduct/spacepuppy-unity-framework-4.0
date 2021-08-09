@@ -29,10 +29,9 @@ namespace com.spacepuppy.Sensors.Collision
         [SerializeField()]
         [EnumFlags()]
         private AllowedColliderMode _allowedColliders = AllowedColliderMode.Both;
-        [SerializeField()]
-        private LayerMask _aspectLayerMask = -1;
-        [SerializeField()]
-        private TagMask _aspectTagMask;
+        [SerializeField]
+        [Tooltip("A mask for things we can sense, leave blank to sense all possible aspects.")]
+        private EventActivatorMaskRef _mask;
 
         [SerializeField()]
         [Tooltip("The line of sight is naive and works as from the position of this to the center of the bounds of the target collider.")]
@@ -69,14 +68,11 @@ namespace com.spacepuppy.Sensors.Collision
             get { return _allowedColliders; }
             set { _allowedColliders = value; }
         }
-        public LayerMask AspectLayerMask
+
+        public IEventActivatorMask Mask
         {
-            get { return _aspectLayerMask; }
-            set { _aspectLayerMask = value; }
-        }
-        public TagMask AspectTagMask
-        {
-            get { return _aspectTagMask; }
+            get { return _mask.Value; }
+            set { _mask.Value = value; }
         }
 
         public bool RequiresLineOfSight
@@ -126,8 +122,7 @@ namespace com.spacepuppy.Sensors.Collision
             if (coll == null) return false;
             var mode = (coll.isTrigger) ? AllowedColliderMode.Trigger : AllowedColliderMode.Solid;
             if ((_allowedColliders & mode) == 0) return false;
-            if (_aspectLayerMask != -1 && !_aspectLayerMask.Intersects(coll.gameObject)) return false;
-            if (!_aspectTagMask.Intersects(coll)) return false;
+            if (_mask.Value != null && !_mask.Value.Intersects(coll.gameObject)) return false;
 
             if (!_canDetectSelf)
             {

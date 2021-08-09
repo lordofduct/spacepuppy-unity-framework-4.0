@@ -21,6 +21,9 @@ namespace com.spacepuppy.Events
 
         #region Fields
 
+        [SerializeField]
+        private RandomRef _rng;
+
         [SerializeField()]
         [SPEvent.Config(Weighted = true)]
         private SPEvent _targets;
@@ -76,6 +79,12 @@ namespace com.spacepuppy.Events
             get { return _onComplete; }
         }
 
+        public IRandom RNG
+        {
+            get { return _rng.Value; }
+            set { _rng.Value = value; }
+        }
+
         #endregion
 
         #region Methods
@@ -106,7 +115,7 @@ namespace com.spacepuppy.Events
                 _used.Clear();
             }
 
-            var targ = _targets.Targets.Where((t) => !_used.Contains(t)).PickRandom((t) => t.Weight);
+            var targ = _targets.Targets.Where((t) => !_used.Contains(t)).PickRandom((t) => t.Weight, _rng.Value);
             if (targ != null)
             {
                 _used.Add(targ);

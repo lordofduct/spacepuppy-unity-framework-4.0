@@ -28,6 +28,9 @@ namespace com.spacepuppy.Spawn.Events
         [Tooltip("ParticleEffects available for spawning. When spawn is called with no arguments a prefab is selected at random.")]
         private List<PrefabEntry> _prefabs;
 
+        [SerializeField]
+        private RandomRef _rng;
+
         [SerializeField()]
         private OnSpawnEvent _onSpawnedObject = new OnSpawnEvent();
 
@@ -51,6 +54,12 @@ namespace com.spacepuppy.Spawn.Events
             get { return _onSpawnedObject; }
         }
 
+        public IRandom RNG
+        {
+            get { return _rng.Value; }
+            set { _rng.Value = value; }
+        }
+
         #endregion
 
         #region Methods
@@ -67,7 +76,7 @@ namespace com.spacepuppy.Spawn.Events
             }
             else
             {
-                return this.Spawn(_prefabs.PickRandom((o) => o.Weight));
+                return this.Spawn(_prefabs.PickRandom((o) => o.Weight, _rng.Value));
             }
         }
 

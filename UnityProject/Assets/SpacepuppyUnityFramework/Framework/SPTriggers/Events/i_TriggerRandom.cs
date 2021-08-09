@@ -12,6 +12,9 @@ namespace com.spacepuppy.Events
 
         #region Fields
 
+        [SerializeField]
+        private RandomRef _rng;
+
         [SerializeField()]
         [SPEvent.Config(Weighted = true)]
         private SPEvent _targets;
@@ -47,6 +50,12 @@ namespace com.spacepuppy.Events
             set { _delay = value; }
         }
 
+        public IRandom RNG
+        {
+            get { return _rng.Value; }
+            set { _rng.Value = value; }
+        }
+
         #endregion
         
         #region ITriggerableMechanism Interface
@@ -60,17 +69,17 @@ namespace com.spacepuppy.Events
                 this.InvokeGuaranteed(() =>
                 {
                     if (this._passAlongTriggerArg)
-                        _targets.ActivateRandomTrigger(this, arg, true, _selectOnlyActiveTargets);
+                        _targets.ActivateRandomTrigger(this, arg, true, _selectOnlyActiveTargets, _rng.Value);
                     else
-                        _targets.ActivateRandomTrigger(this, null, true, _selectOnlyActiveTargets);
+                        _targets.ActivateRandomTrigger(this, null, true, _selectOnlyActiveTargets, _rng.Value);
                 }, _delay.Seconds, _delay.TimeSupplier);
             }
             else
             {
                 if (this._passAlongTriggerArg)
-                    _targets.ActivateRandomTrigger(this, arg, true, _selectOnlyActiveTargets);
+                    _targets.ActivateRandomTrigger(this, arg, true, _selectOnlyActiveTargets, _rng.Value);
                 else
-                    _targets.ActivateRandomTrigger(this, null, true, _selectOnlyActiveTargets);
+                    _targets.ActivateRandomTrigger(this, null, true, _selectOnlyActiveTargets, _rng.Value);
             }
 
             return true;

@@ -8,14 +8,20 @@ namespace com.spacepuppy
     public interface ISceneManager : IService
     {
 
-        event System.EventHandler<LoadSceneWaitHandle> BeforeSceneLoaded;
+        event System.EventHandler<LoadSceneOptions> BeforeSceneLoaded;
         event System.EventHandler<SceneUnloadedEventArgs> BeforeSceneUnloaded;
         event System.EventHandler<SceneUnloadedEventArgs> SceneUnloaded;
-        event System.EventHandler<LoadSceneWaitHandle> SceneLoaded;
+        event System.EventHandler<LoadSceneOptions> SceneLoaded;
         event System.EventHandler<ActiveSceneChangedEventArgs> ActiveSceneChanged;
 
-        LoadSceneWaitHandle LoadScene(string sceneName, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async);
-        LoadSceneWaitHandle LoadScene(int sceneBuildIndex, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async);
+        /// <summary>
+        /// A MonoBehaviour that can be used to hook coroutines into that lives through the load.
+        /// </summary>
+        MonoBehaviour Hook { get; }
+
+        void LoadScene(LoadSceneOptions options);
+        LoadSceneWaitHandle LoadScene(string sceneName, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async, object persistentToken = null);
+        LoadSceneWaitHandle LoadScene(int sceneBuildIndex, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async, object persistentToken = null);
 
         AsyncOperation UnloadScene(Scene scene);
         Scene GetActiveScene();

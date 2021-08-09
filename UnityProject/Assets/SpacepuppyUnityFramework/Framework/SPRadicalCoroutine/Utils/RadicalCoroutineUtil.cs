@@ -1,11 +1,31 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
+using System.Collections;
 
 namespace com.spacepuppy.Utils
 {
 
     public static class RadicalCoroutineUtil 
     {
+
+        private class YieldArgAdapter : CustomYieldInstruction
+        {
+            private IRadicalYieldInstruction _instruction;
+            private object _current;
+            public YieldArgAdapter(IRadicalYieldInstruction inst)
+            {
+                _instruction = inst;
+            }
+
+            public override bool keepWaiting => !_instruction.IsComplete;
+        }
+        public static System.Collections.IEnumerator ToStandardYieldArg(this IRadicalYieldInstruction inst)
+        {
+            if (inst is CustomYieldInstruction)
+                return inst as CustomYieldInstruction;
+            else
+                return new YieldArgAdapter(inst);
+        }
 
         #region RadicalCoroutine
 

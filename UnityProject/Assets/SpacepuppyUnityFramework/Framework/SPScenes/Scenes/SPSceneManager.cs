@@ -22,7 +22,8 @@ namespace com.spacepuppy.Scenes
         private SceneUnloadedEventArgs _unloadArgs;
         private ActiveSceneChangedEventArgs _activeChangeArgs;
 
-        private Dictionary<Scene, LoadSceneWaitHandle> _table = new Dictionary<Scene, LoadSceneWaitHandle>();
+        private HashSet<LoadSceneOptions> _activeLoadOptions = new HashSet<LoadSceneOptions>();
+        private System.EventHandler<LoadSceneOptions> _sceneLoadOptionsCompleteCallback;
 
         #endregion
 
@@ -48,95 +49,46 @@ namespace com.spacepuppy.Scenes
 
         #region ISceneManager Interface
 
-        public event System.EventHandler<LoadSceneWaitHandle> BeforeSceneLoaded;
+        public event System.EventHandler<LoadSceneOptions> BeforeSceneLoaded;
         public event System.EventHandler<SceneUnloadedEventArgs> BeforeSceneUnloaded;
         public event System.EventHandler<SceneUnloadedEventArgs> SceneUnloaded;
-        public event System.EventHandler<LoadSceneWaitHandle> SceneLoaded;
+        public event System.EventHandler<LoadSceneOptions> SceneLoaded;
         public event System.EventHandler<ActiveSceneChangedEventArgs> ActiveSceneChanged;
 
-        public LoadSceneWaitHandle LoadScene(string sceneName, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async)
-        {
-            switch (behaviour)
-            {
-                case LoadSceneBehaviour.Standard:
-                    {
-                        var handle = new LoadSceneWaitHandle(sceneName, mode, behaviour);
-                        this.OnBeforeSceneLoaded(handle);
-                        SceneManager.LoadScene(sceneName, mode);
-                        var scene = SceneManager.GetSceneAt(SceneManager.sceneCount - 1);
-                        _table[scene] = handle;
-                        handle.Init(scene, null);
-                        return handle;
-                    }
-                case LoadSceneBehaviour.Async:
-                    {
-                        var handle = new LoadSceneWaitHandle(sceneName, mode, behaviour);
-                        this.OnBeforeSceneLoaded(handle);
-                        var op = SceneManager.LoadSceneAsync(sceneName, mode);
-                        var scene = SceneManager.GetSceneAt(SceneManager.sceneCount - 1);
-                        _table[scene] = handle;
-                        handle.Init(scene, op);
-                        return handle;
-                    }
-                case LoadSceneBehaviour.AsyncAndWait:
-                    {
-                        var handle = new LoadSceneWaitHandle(sceneName, mode, behaviour);
-                        this.OnBeforeSceneLoaded(handle);
-                        var op = SceneManager.LoadSceneAsync(sceneName, mode);
-                        op.allowSceneActivation = false;
-                        var scene = SceneManager.GetSceneAt(SceneManager.sceneCount - 1);
-                        _table[scene] = handle;
-                        handle.Init(scene, op);
-                        return handle;
-                    }
-            }
+        public MonoBehaviour Hook { get { return GameLoop.Hook; } }
 
-            throw new System.InvalidOperationException("Unsupported LoadSceneBehaviour.");
+        public void LoadScene(LoadSceneOptions options)
+        {
+            if (options == null) throw new System.ArgumentNullException(nameof(options));
+
+            if(_activeLoadOptions.Add(options))
+            {
+                if(_sceneLoadOptionsCompleteCallback == null) _sceneLoadOptionsCompleteCallback = (s, e) =>
+                {
+                    _activeLoadOptions.Remove(e);
+                    this.OnSceneLoaded(e);
+                };
+
+                this.OnBeforeSceneLoaded(options);
+                options.Complete += _sceneLoadOptionsCompleteCallback;
+                options.Begin(this);
+            }
         }
 
-        public LoadSceneWaitHandle LoadScene(int sceneBuildIndex, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async)
+        public LoadSceneWaitHandle LoadScene(string sceneName, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async, object persistentToken = null)
+        {
+            var handle = new LoadSceneWaitHandle(sceneName, mode, behaviour, persistentToken);
+            this.LoadScene(handle);
+            return handle;
+        }
+
+        public LoadSceneWaitHandle LoadScene(int sceneBuildIndex, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async, object persistentToken = null)
         {
             if (sceneBuildIndex < 0 || sceneBuildIndex >= SceneManager.sceneCountInBuildSettings) throw new System.IndexOutOfRangeException("sceneBuildIndex");
 
-            //string sceneName = "#" + sceneBuildIndex.ToString();
-            string sceneName = SceneUtility.GetScenePathByBuildIndex(sceneBuildIndex);
-
-            switch (behaviour)
-            {
-                case LoadSceneBehaviour.Standard:
-                    {
-                        var handle = new LoadSceneWaitHandle(sceneName, mode, behaviour);
-                        this.OnBeforeSceneLoaded(handle);
-                        SceneManager.LoadScene(sceneBuildIndex, mode);
-                        var scene = SceneManager.GetSceneAt(SceneManager.sceneCount - 1);
-                        _table[scene] = handle;
-                        handle.Init(scene, null);
-                        return handle;
-                    }
-                case LoadSceneBehaviour.Async:
-                    {
-                        var handle = new LoadSceneWaitHandle(sceneName, mode, behaviour);
-                        this.OnBeforeSceneLoaded(handle);
-                        var op = SceneManager.LoadSceneAsync(sceneBuildIndex, mode);
-                        var scene = SceneManager.GetSceneAt(SceneManager.sceneCount - 1);
-                        _table[scene] = handle;
-                        handle.Init(scene, op);
-                        return handle;
-                    }
-                case LoadSceneBehaviour.AsyncAndWait:
-                    {
-                        var handle = new LoadSceneWaitHandle(sceneName, mode, behaviour);
-                        this.OnBeforeSceneLoaded(handle);
-                        var op = SceneManager.LoadSceneAsync(sceneBuildIndex, mode);
-                        op.allowSceneActivation = false;
-                        var scene = SceneManager.GetSceneAt(SceneManager.sceneCount - 1);
-                        _table[scene] = handle;
-                        handle.Init(scene, op);
-                        return handle;
-                    }
-            }
-
-            throw new System.InvalidOperationException("Unsupported LoadSceneBehaviour.");
+            var handle = new LoadSceneWaitHandle(sceneBuildIndex, mode, behaviour, persistentToken);
+            this.LoadScene(handle);
+            return handle;
         }
 
         public AsyncOperation UnloadScene(Scene scene)
@@ -167,12 +119,9 @@ namespace com.spacepuppy.Scenes
 
         #region EventHandlers
 
-        protected virtual void OnBeforeSceneLoaded(LoadSceneWaitHandle handle)
+        protected virtual void OnBeforeSceneLoaded(LoadSceneOptions handle)
         {
-            var d = this.BeforeSceneLoaded;
-            if (d == null) return;
-
-            d(this, handle);
+            this.BeforeSceneLoaded?.Invoke(this, handle);
         }
 
         protected virtual void OnBeforeSceneUnloaded(Scene scene)
@@ -213,21 +162,33 @@ namespace com.spacepuppy.Scenes
 
         protected virtual void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            LoadSceneWaitHandle handle;
-            if (_table.TryGetValue(scene, out handle))
+            LoadSceneOptions handle = null;
+            if(_activeLoadOptions.Count > 0)
             {
-                _table.Remove(scene);
+                var e = _activeLoadOptions.GetEnumerator();
+                while(e.MoveNext())
+                {
+                    if(e.Current.HandlesScene(scene))
+                    {
+                        handle = e.Current;
+                        break;
+                    }
+                }
             }
+
             var d = this.SceneLoaded;
             if (d == null) return;
 
             if (handle == null)
             {
-                handle = new LoadSceneWaitHandle(scene.name, mode, LoadSceneBehaviour.Standard);
-                handle.Init(scene, null);
+                handle = new UnmanagedSceneLoadedEventArgs(scene);
             }
 
             d(this, handle);
+        }
+        protected virtual void OnSceneLoaded(LoadSceneOptions options)
+        {
+            this.SceneLoaded?.Invoke(this, options);
         }
 
         protected virtual void OnActiveSceneChanged(Scene lastScene, Scene nextScene)
@@ -253,7 +214,7 @@ namespace com.spacepuppy.Scenes
         }
 
         #endregion
-        
+
     }
 
 }

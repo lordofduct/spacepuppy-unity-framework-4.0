@@ -14,6 +14,9 @@ namespace com.spacepuppy.Events
         #region Fields
 
         [SerializeField]
+        private RandomRef _rng;
+
+        [SerializeField]
         private SPTime _timeSupplier;
         [SerializeField()]
         private Interval _interval = com.spacepuppy.Geom.Interval.MinMax(0f, 1f);
@@ -50,6 +53,12 @@ namespace com.spacepuppy.Events
         #endregion
 
         #region Properties
+
+        public IRandom RNG
+        {
+            get { return _rng.Value; }
+            set { _rng.Value = value; }
+        }
 
         public SPTime TimeSupplier
         {
@@ -98,7 +107,7 @@ namespace com.spacepuppy.Events
 
             while (true)
             {
-                yield return WaitForDuration.Seconds(RandomUtil.Standard.Range(_interval.Max, _interval.Min), _timeSupplier.TimeSupplier);
+                yield return WaitForDuration.Seconds(_rng.Value.SelfOrDefault().Range(_interval.Max, _interval.Min), _timeSupplier.TimeSupplier);
 
                 this.ActivateTrigger();
 

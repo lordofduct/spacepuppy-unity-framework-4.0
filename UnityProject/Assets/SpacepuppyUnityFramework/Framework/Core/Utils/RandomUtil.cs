@@ -32,6 +32,11 @@ namespace com.spacepuppy.Utils
             return new SimplePCG(seed);
         }
         
+        public static IRandom SelfOrDefault(this IRandom rng)
+        {
+            return rng ?? Standard;
+        }
+
         #endregion
 
         #region Static Properties
@@ -287,7 +292,7 @@ namespace com.spacepuppy.Utils
             }
         }
 
-        private class MicrosoftRNG : System.Random, IRandom
+        public class MicrosoftRNG : System.Random, IRandom
         {
 
             public MicrosoftRNG() : base()

@@ -243,6 +243,12 @@ namespace com.spacepuppy.Utils
             return value.Trim();
         }
 
+        public static string TrimAllWhitespace(this string value)
+        {
+            if (value == null) return null;
+            return value.Trim().Trim('\r', '\n');
+        }
+
         public static string[] Split(string value, string delim)
         {
             if (value == null) return null;

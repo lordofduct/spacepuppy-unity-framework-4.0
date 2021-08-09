@@ -24,6 +24,11 @@ namespace com.spacepuppy.Scenes.Events
         [Tooltip("A token used to persist data across scenes.")]
         VariantReference _persistentToken;
 
+        [Space(10f)]
+        [Infobox("If the targets of this complete event get destroyed during the load they will not activate.")]
+        [SerializeField]
+        private SPEvent _onComplete;
+
         #endregion
 
         #region Properties
@@ -60,8 +65,10 @@ namespace com.spacepuppy.Scenes.Events
             if (!this.CanTrigger) return false;
             if (string.IsNullOrEmpty(_scene.SceneName)) return false;
 
-            var nm = _scene.SceneName;
-            LoadSceneWaitHandle handle;
+            var persistentToken = com.spacepuppy.Utils.ObjUtil.ReduceIfProxy(_persistentToken.Value);
+
+            IRadicalWaitHandle handle;
+            var nm = _scene.SceneName ?? string.Empty;
             if (nm.StartsWith("#"))
             {
                 nm = nm.Substring(1);
@@ -71,16 +78,16 @@ namespace com.spacepuppy.Scenes.Events
                 if (index < 0 || index >= SceneManager.sceneCountInBuildSettings)
                     return false;
 
-                handle = SceneManagerUtils.LoadScene(index, _mode, _behaviour);
+                handle = SceneManagerUtils.LoadScene(index, _mode, _behaviour, persistentToken);
             }
             else
             {
-                handle = SceneManagerUtils.LoadScene(nm, _mode, _behaviour);
+                handle = SceneManagerUtils.LoadScene(nm, _mode, _behaviour, persistentToken);
             }
 
-            if (handle != null)
+            if(_onComplete.HasReceivers && handle != null)
             {
-                handle.PersistentToken = com.spacepuppy.Utils.ObjUtil.ReduceIfProxy(_persistentToken.Value);
+                handle.OnComplete(o => _onComplete.ActivateTrigger(this, null));
             }
 
             return true;

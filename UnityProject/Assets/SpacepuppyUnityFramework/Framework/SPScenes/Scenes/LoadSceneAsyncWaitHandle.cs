@@ -5,60 +5,41 @@ using System.Collections.Generic;
 namespace com.spacepuppy.Scenes
 {
 
-    public class LoadSceneWaitHandle : System.EventArgs, IProgressingYieldInstruction, IRadicalWaitHandle, ISPDisposable
+    /// <summary>
+    /// Blocks until load is complete. If Behaviour is LoadAndWait, it'll stop blocking, but the scene isn't actually loaded until ActivateScene is called.
+    /// </summary>
+    public class LoadSceneWaitHandle : LoadSceneOptions
     {
-        public static readonly System.Action<ISceneLoadedGlobalHandler, LoadSceneWaitHandle> OnSceneLoadedFunctor = (o, d) => o.OnSceneLoaded(d);
 
         #region Fields
 
         private string _sceneName;
         private LoadSceneMode _mode;
         private LoadSceneBehaviour _behaviour;
-        private Scene _scene;
-        private AsyncOperation _op;
-        private System.Action<LoadSceneWaitHandle> _onComplete;
+        private UnityLoadResults _loadResults;
 
-        private bool _initialized;
+        private bool _loaded;
 
         #endregion
 
         #region CONSTRUCTOR
 
-        public LoadSceneWaitHandle(string sceneName, LoadSceneMode mode, LoadSceneBehaviour behaviour)
+        public LoadSceneWaitHandle(string sceneName, LoadSceneMode mode, LoadSceneBehaviour behaviour, object persistentToken = null)
         {
             _sceneName = sceneName;
             _mode = mode;
             _behaviour = behaviour;
-            _op = null;
-            _scene = default(Scene);
-            _initialized = false;
+            _loaded = false;
+            this.PersistentToken = persistentToken;
         }
 
-        public void Init(Scene sc, AsyncOperation op)
+        public LoadSceneWaitHandle(int buildIndex, LoadSceneMode mode, LoadSceneBehaviour behaviour, object persistentToken = null)
         {
-            if (_disposed) throw new System.InvalidOperationException("LoadSceneAsyncWaitHandle was disposed.");
-            if (_initialized) throw new System.InvalidOperationException("LoadSceneAsyncWaitHandle has already been initialized.");
-            _initialized = true;
-            _scene = sc;
-            _op = op;
-            if (_behaviour == LoadSceneBehaviour.AsyncAndWait && _op != null && !_op.isDone)
-            {
-                _op.allowSceneActivation = false;
-            }
-            SceneManager.sceneLoaded += this.OnSceneLoaded;
-        }
-
-        /// <summary>
-        /// Initialize the handle after load for use as an EventArgs.
-        /// </summary>
-        /// <param name="sc"></param>
-        public void FalseInit(Scene sc)
-        {
-            if (_disposed) throw new System.InvalidOperationException("LoadSceneAsyncWaitHandle was disposed.");
-            if (_initialized) throw new System.InvalidOperationException("LoadSceneAsyncWaitHandle has already been initialized.");
-            _initialized = true;
-            _scene = sc;
-            _op = null;
+            _sceneName = SceneUtility.GetScenePathByBuildIndex(buildIndex);
+            _mode = mode;
+            _behaviour = behaviour;
+            _loaded = false;
+            this.PersistentToken = persistentToken;
         }
 
         #endregion
@@ -80,207 +61,107 @@ namespace com.spacepuppy.Scenes
             get { return _behaviour; }
         }
 
-        public Scene Scene
+        public override Scene Scene
         {
-            get { return _scene; }
+            get { return _loadResults.Scene; }
         }
 
         public bool ReadyAndWaitingToActivate
         {
-            get { return !object.ReferenceEquals(_op, null) && _op.progress >= 0.9f && !_op.isDone; }
-        }
-
-        /// <summary>
-        /// Use this to pass some token between scenes. 
-        /// Anything that handles the ISceneLoadedMessageReceiver will receiver a reference to this handle, and therefore this token.
-        /// The token should not be something that is destroyed by the load process.
-        /// </summary>
-        public object PersistentToken
-        {
-            get;
-            set;
+            get { return _loaded && !object.ReferenceEquals(_loadResults.Op, null) && !_loadResults.Op.isDone; }
         }
 
         #endregion
 
         #region Methods
 
+        public override void Begin(ISceneManager manager)
+        {
+            (manager?.Hook ?? GameLoop.Hook).StartCoroutine(this.DoLoad());
+        }
+
+        private System.Collections.IEnumerator DoLoad()
+        {
+            this.OnBeforeLoad();
+
+            _loadResults = this.LoadScene(_sceneName, _mode, _behaviour);
+            switch(_behaviour)
+            {
+                case LoadSceneBehaviour.Standard:
+                    yield return null;
+                    break;
+                case LoadSceneBehaviour.Async:
+                    yield return _loadResults.Op;
+                    break;
+                case LoadSceneBehaviour.AsyncAndWait:
+                    while(!_loadResults.Op.isDone && _loadResults.Op.progress < 0.9f)
+                    {
+                        yield return null;
+                    }
+                    break;
+            }
+
+            _loaded = true;
+
+            if (_loadResults.Op != null)
+            {
+                while (!_loadResults.Op.isDone)
+                {
+                    yield return null;
+                }
+            }
+
+            this.OnComplete();
+            com.spacepuppy.Utils.Messaging.Broadcast(this, OnSceneLoadedFunctor);
+        }
+
+        public override bool HandlesScene(Scene scene)
+        {
+            return scene == _loadResults.Scene;
+        }
+
         public void WaitToActivate()
         {
             if (_behaviour >= LoadSceneBehaviour.Async)
             {
                 _behaviour = LoadSceneBehaviour.AsyncAndWait;
-                if (_op != null && !_op.isDone)
+                var op = _loadResults.Op;
+                if (op != null && !op.isDone)
                 {
-                    _op.allowSceneActivation = false;
+                    op.allowSceneActivation = false;
                 }
             }
         }
 
         public void ActivateScene()
         {
-            if (_op != null) _op.allowSceneActivation = true;
-        }
-
-        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-        {
-            //note Scene == Scene compares the handle and works just fine
-            if (_scene == scene)
-            {
-                SceneManager.sceneLoaded -= this.OnSceneLoaded;
-
-                var d = _onComplete;
-                _onComplete = null;
-                if (d != null) d(this);
-
-                com.spacepuppy.Utils.Messaging.Broadcast(this, OnSceneLoadedFunctor);
-            }
+            if (_loadResults.Op != null) _loadResults.Op.allowSceneActivation = true;
         }
 
         #endregion
 
         #region IProgressingAsyncOperation Interface
 
-        public float Progress
+        public override float Progress
         {
             get
             {
-                switch (_behaviour)
-                {
-                    case LoadSceneBehaviour.Standard:
-                        return _initialized ? 0f : 1f;
-                    case LoadSceneBehaviour.Async:
-                    case LoadSceneBehaviour.AsyncAndWait:
-                        if (object.ReferenceEquals(_op, null))
-                            return 0f;
-                        else
-                            return _op.progress;
-                    default:
-                        return 1f;
-                }
+                return _loadResults.Op?.progress ?? (_loaded ? 1f : 0f);
             }
         }
 
-        public bool IsComplete
+        public override bool IsComplete
         {
             get
             {
-                switch (_behaviour)
-                {
-                    case LoadSceneBehaviour.Standard:
-                        return _initialized;
-                    case LoadSceneBehaviour.Async:
-                    case LoadSceneBehaviour.AsyncAndWait:
-                        if (object.ReferenceEquals(_op, null))
-                            return false;
-                        else
-                            return _op.isDone;
-                    default:
-                        return true;
-                }
+                return _loaded;
             }
         }
 
-        bool IRadicalYieldInstruction.Tick(out object yieldObject)
+        protected override bool Tick(out object yieldObject)
         {
-            if (!_initialized)
-            {
-                yieldObject = null;
-                return false;
-            }
-
-            switch (_behaviour)
-            {
-                case LoadSceneBehaviour.Standard:
-                    if (_initialized)
-                    {
-                        yieldObject = null;
-                        return false;
-                    }
-                    else
-                    {
-                        yieldObject = null;
-                        return true;
-                    }
-                case LoadSceneBehaviour.Async:
-                    if (!object.ReferenceEquals(_op, null) && _op.isDone)
-                    {
-                        yieldObject = null;
-                        return false;
-                    }
-                    else
-                    {
-                        yieldObject = _op;
-                        return true;
-                    }
-                case LoadSceneBehaviour.AsyncAndWait:
-                    if (object.ReferenceEquals(_op, null))
-                    {
-                        yieldObject = null;
-                        return false;
-                    }
-                    else if (_op.isDone || this.ReadyAndWaitingToActivate)
-                    {
-                        yieldObject = null;
-                        return false;
-                    }
-                    else
-                    {
-                        yieldObject = _op;
-                        return true;
-                    }
-                default:
-                    yieldObject = null;
-                    return false;
-            }
-        }
-
-        #endregion
-
-        #region IRadicalWaitHandle Interface
-
-        public void OnComplete(System.Action<LoadSceneWaitHandle> callback)
-        {
-            _onComplete += callback;
-        }
-
-        bool IRadicalWaitHandle.Cancelled
-        {
-            get { return !_disposed; }
-        }
-
-        void IRadicalWaitHandle.OnComplete(System.Action<IRadicalWaitHandle> callback)
-        {
-            if (callback == null) return;
-            _onComplete += (h) => callback(h);
-        }
-
-        #endregion
-
-        #region IDisposable Interface
-
-        private bool _disposed;
-        public bool IsDisposed
-        {
-            get { return _disposed; }
-        }
-
-        public void Dispose()
-        {
-            if (!_disposed)
-            {
-                _sceneName = null;
-                _op = null;
-                SceneManager.sceneLoaded -= this.OnSceneLoaded;
-            }
-
-            _disposed = true;
-        }
-
-        ~LoadSceneWaitHandle()
-        {
-            //make sure we clean ourselves up
-            this.Dispose();
+            yieldObject = null;
+            return !_loaded;
         }
 
         #endregion

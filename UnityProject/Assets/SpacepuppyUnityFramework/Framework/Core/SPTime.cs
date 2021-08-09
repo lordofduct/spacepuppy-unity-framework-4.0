@@ -321,6 +321,30 @@ namespace com.spacepuppy
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
+        public static ITimeSupplier GetOrCreate(string id)
+        {
+            if (id == null) return null;
+
+            ITimeSupplier ts;
+            if (_registeredTimeSuppliers.TryGetValue(id, out ts))
+            {
+                return ts;
+            }
+            else
+            {
+                var ct = new CustomTimeSupplier(id);
+                _registeredTimeSuppliers[id] = ct;
+                if (_customTimeSuppliers.Count == 0) GameLoop.RegisterInternalEarlyUpdate(SPTime.Update);
+                _customTimeSuppliers.Add(ct);
+                return ct;
+            }
+        }
+
+        /// <summary>
+        /// Retrieve a TimeSupplier by id or create a CustomTimeSupplier if it doesn't exist.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns>Returns the timesupplier cast as type T, otherwise null.</returns>
         public static T GetOrCreate<T>(string id) where T : class, ITimeSupplier
         {
             if (id == null) return null;

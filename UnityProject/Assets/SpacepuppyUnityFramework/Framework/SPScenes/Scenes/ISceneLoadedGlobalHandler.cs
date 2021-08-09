@@ -9,7 +9,7 @@ namespace com.spacepuppy.Scenes
     public interface ISceneLoadedGlobalHandler
     {
 
-        void OnSceneLoaded(LoadSceneWaitHandle handle);
+        void OnSceneLoaded(LoadSceneOptions options);
 
     }
 

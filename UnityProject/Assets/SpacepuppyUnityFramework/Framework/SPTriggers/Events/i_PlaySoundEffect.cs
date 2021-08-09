@@ -26,6 +26,9 @@ namespace com.spacepuppy.Events
         [SerializeField()]
         private SPTimePeriod _delay;
 
+        [SerializeField]
+        private RandomRef _rng;
+
         [Tooltip("Trigger something at the end of the sound effect. This is NOT perfectly accurate and really just starts a timer for the duration of the sound being played.")]
         [SerializeField()]
         private SPEvent _onAudioComplete;
@@ -125,7 +128,7 @@ namespace com.spacepuppy.Events
                 clip = _clips[0].Clip;
             else
             {
-                clip = _clips.PickRandom((e) => e.Weight).Clip;
+                clip = _clips.PickRandom((e) => e.Weight, _rng.Value).Clip;
             }
 
 

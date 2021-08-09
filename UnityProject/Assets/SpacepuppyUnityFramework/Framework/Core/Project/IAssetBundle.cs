@@ -29,6 +29,12 @@ namespace com.spacepuppy.Project
 
     }
 
+    [System.Serializable]
+    public class AssetBundleRef : SerializableInterfaceRef<IAssetBundle>
+    {
+
+    }
+
     /// <summary>
     /// A wrapper around the global 'Resources' class so it can be used as an IAssetBundle.
     /// </summary>

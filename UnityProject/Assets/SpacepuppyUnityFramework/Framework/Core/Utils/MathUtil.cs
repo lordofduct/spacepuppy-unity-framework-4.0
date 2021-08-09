@@ -1101,6 +1101,16 @@ namespace com.spacepuppy.Utils
             return (float)Math.Ceiling((value - mean) / interval) * interval + mean;
         }
 
+        public static float SpeedLerp(float a, float b, float speed, float dt)
+        {
+            var v = b - a;
+            var dv = speed * dt;
+            if (dv > Math.Abs(v))
+                return b;
+            else
+                return a + Math.Sign(v) * dv;
+        }
+
         #endregion
 
         #region "Simple fuzzy arithmetic"

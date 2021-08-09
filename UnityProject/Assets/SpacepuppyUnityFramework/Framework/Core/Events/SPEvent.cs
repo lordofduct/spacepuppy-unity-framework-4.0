@@ -509,7 +509,7 @@ namespace com.spacepuppy.Events
             base.ActivateTriggerAt(index, sender, arg);
         }
 
-        public virtual void ActivateRandomTrigger(object sender, object arg, bool considerWeights, bool selectOnlyIfActive)
+        public virtual void ActivateRandomTrigger(object sender, object arg, bool considerWeights, bool selectOnlyIfActive, IRandom rng = null)
         {
             if (this.Targets.Count > 0 && !this.CurrentlyHijacked)
             {
@@ -523,12 +523,12 @@ namespace com.spacepuppy.Events
                             var go = GameObjectUtil.GetGameObjectFromSource(this.Targets[i].CalculateTarget(arg));
                             if (object.ReferenceEquals(go, null) || go.IsAliveAndActive()) lst.Add(this.Targets[i]);
                         }
-                        trig = (considerWeights) ? lst.PickRandom((t) => { return t.Weight; }) : lst.PickRandom();
+                        trig = (considerWeights) ? lst.PickRandom((t) => { return t.Weight; }, rng) : lst.PickRandom(rng);
                     }
                 }
                 else
                 {
-                    trig = (considerWeights) ? this.Targets.PickRandom((t) => { return t.Weight; }) : this.Targets.PickRandom();
+                    trig = (considerWeights) ? this.Targets.PickRandom((t) => { return t.Weight; }, rng) : this.Targets.PickRandom(rng);
                 }
                 if (trig != null) trig.Trigger(sender, arg);
             }

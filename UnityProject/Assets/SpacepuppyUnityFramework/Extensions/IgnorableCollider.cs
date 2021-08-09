@@ -10,18 +10,9 @@ namespace com.spacepuppy
 
         #region Fields
 
+        [SerializeField]
+        [DefaultFromSelf()]
         private Collider _collider;
-
-        #endregion
-
-        #region CONSTRUCTOR
-
-        protected override void Awake()
-        {
-            base.Awake();
-
-            _collider = this.GetComponent<Collider>();
-        }
 
         #endregion
 
@@ -55,7 +46,22 @@ namespace com.spacepuppy
         {
             if (coll == null) return null;
 
-            return coll.AddOrGetComponent<IgnorableCollider>();
+            using(var lst = com.spacepuppy.Collections.TempCollection.GetList<IgnorableCollider>())
+            {
+                coll.GetComponents<IgnorableCollider>(lst);
+                
+                if(lst.Count > 0)
+                {
+                    for(int i = 0; i < lst.Count; i++)
+                    {
+                        if (lst[i].Collider == coll) return lst[i];
+                    }
+                }
+
+                var result = coll.AddComponent<IgnorableCollider>();
+                result._collider = coll;
+                return result;
+            }
         }
 
         #endregion

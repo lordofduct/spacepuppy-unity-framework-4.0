@@ -43,6 +43,18 @@ namespace com.spacepuppy.Project
 
         #endregion
 
+        #region Methods
+
+        public static void RegisterTimeLayers()
+        {
+            foreach (var str in Layers)
+            {
+                SPTime.GetOrCreate(str);
+            }
+        }
+
+        #endregion
+
         #region ISerializationCallbackReceiver Interface
         void ISerializationCallbackReceiver.OnAfterDeserialize()
         {

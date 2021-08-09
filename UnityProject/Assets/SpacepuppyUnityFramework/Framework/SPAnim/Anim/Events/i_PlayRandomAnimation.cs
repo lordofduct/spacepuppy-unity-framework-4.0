@@ -26,7 +26,10 @@ namespace com.spacepuppy.Anim.Events
 
         [SerializeField]
         private List<PlayAnimInfo> _clips;
-        
+
+        [SerializeField]
+        private RandomRef _rng;
+
         [SerializeField()]
         private SPEvent _onAnimComplete = new SPEvent(TRG_ONANIMCOMPLETE);
         [SerializeField()]
@@ -204,7 +207,7 @@ namespace com.spacepuppy.Anim.Events
             var targ = this.ResolveTargetAnimator(arg);
             if (targ == null) return false;
 
-            var info = _clips.Count == 1 ? _clips[0] : _clips.PickRandom((e) => e != null ? e.Weight : 0f);
+            var info = _clips.Count == 1 ? _clips[0] : _clips.PickRandom((e) => e != null ? e.Weight : 0f, _rng.Value);
             if (info == null) return false;
 
             var anim = this.TryPlay(targ, info);

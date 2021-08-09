@@ -18,6 +18,7 @@ namespace com.spacepuppy.SPInput.Events
 
         [SerializeField]
         [DisableOnPlay]
+        [InputID]
         private string _inputId;
         
         #endregion

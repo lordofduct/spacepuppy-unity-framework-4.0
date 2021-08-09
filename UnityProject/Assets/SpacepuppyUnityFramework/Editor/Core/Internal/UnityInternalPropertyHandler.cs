@@ -61,6 +61,16 @@ namespace com.spacepuppyeditor.Internal
             }
         }
 
+        protected bool isCurrentlyNested
+        {
+            get { return (bool)_internalPropertyHandler.GetProperty("isCurrentlyNested"); }
+        }
+
+        protected string tooltip
+        {
+            get { return _internalPropertyHandler.GetProperty("tooltip") as string; }
+        }
+
         #endregion
 
         #region Methods
@@ -75,10 +85,51 @@ namespace com.spacepuppyeditor.Internal
 
         #region IPropertyHandler Interface
 
+        //TODO - SP4.0 - Unity has added support for their own reorderablearray which conflicts with SP's. This logic here works around that for now, BUT we probably should just gut that and go to their implementation and enhance as we need. Don't really have the time for that right now though.
+
         public virtual float GetHeight(UnityEditor.SerializedProperty property, UnityEngine.GUIContent label, bool includeChildren)
         {
-            if (_imp_GetHeight == null) _imp_GetHeight = _internalPropertyHandler.GetMethod("GetHeight", typeof(System.Func<SerializedProperty, GUIContent, bool, float>)) as System.Func<SerializedProperty, GUIContent, bool, float>;
-            return _imp_GetHeight(property, label, includeChildren);
+            if (this.InternalDrawer is IArrayHandlingPropertyDrawer)
+            {
+                float num1 = 0.0f;
+                if (this.DecoratorDrawers != null && !this.isCurrentlyNested)
+                {
+                    foreach (DecoratorDrawer decoratorDrawer in this.DecoratorDrawers)
+                    {
+                        num1 += decoratorDrawer.GetHeight();
+                    }
+                }
+                float num2;
+                if (this.InternalDrawer != null)
+                    num2 = num1 + this.InternalDrawer.GetPropertyHeight(property.Copy(), label ?? EditorHelper.TempContent(property.displayName, this.tooltip));
+                else if (!includeChildren)
+                {
+                    num2 = num1 + EditorGUIUtility.singleLineHeight;
+                }
+                else
+                {
+                    property = property.Copy();
+                    num2 = num1 + EditorGUIUtility.singleLineHeight;
+                    bool enterChildren = property.isExpanded && property.hasVisibleChildren; // EditorGUI.HasVisibleChildFields(property, false);
+                    GUIContent label1 = EditorHelper.TempContent(property.displayName, this.tooltip);
+                    if (enterChildren)
+                    {
+                        SerializedProperty endProperty = property.GetEndProperty();
+                        while (property.NextVisible(enterChildren) && !SerializedProperty.EqualContents(property, endProperty))
+                        {
+                            float num3 = num2 + ScriptAttributeUtility.GetHandler(property).GetHeight(property, label1, true);
+                            enterChildren = false;
+                            num2 = num3 + 2f;
+                        }
+                    }
+                }
+                return num2;
+            }
+            else
+            {
+                if (_imp_GetHeight == null) _imp_GetHeight = _internalPropertyHandler.GetMethod("GetHeight", typeof(System.Func<SerializedProperty, GUIContent, bool, float>)) as System.Func<SerializedProperty, GUIContent, bool, float>;
+                return _imp_GetHeight(property, label, includeChildren);
+            }
         }
 
         public virtual bool OnGUI(UnityEngine.Rect position, UnityEditor.SerializedProperty property, UnityEngine.GUIContent label, bool includeChildren)
@@ -89,8 +140,16 @@ namespace com.spacepuppyeditor.Internal
 
         public virtual bool OnGUILayout(UnityEditor.SerializedProperty property, UnityEngine.GUIContent label, bool includeChildren, UnityEngine.GUILayoutOption[] options)
         {
-            if (_imp_OnGUILayout == null) _imp_OnGUILayout = _internalPropertyHandler.GetMethod("OnGUILayout", typeof(System.Func<SerializedProperty, GUIContent, bool, GUILayoutOption[], bool>)) as System.Func<SerializedProperty, GUIContent, bool, GUILayoutOption[], bool>;
-            return _imp_OnGUILayout(property, label, includeChildren, options);
+            if (this.InternalDrawer is IArrayHandlingPropertyDrawer)
+            {
+                var rect = EditorGUILayout.GetControlRect(LabelHasContent(label), this.GetHeight(property, label, includeChildren), options);
+                return this.OnGUI(rect, property, label, includeChildren);
+            }
+            else
+            {
+                if (_imp_OnGUILayout == null) _imp_OnGUILayout = _internalPropertyHandler.GetMethod("OnGUILayout", typeof(System.Func<SerializedProperty, GUIContent, bool, GUILayoutOption[], bool>)) as System.Func<SerializedProperty, GUIContent, bool, GUILayoutOption[], bool>;
+                return _imp_OnGUILayout(property, label, includeChildren, options);
+            }
         }
 
         public virtual void OnValidate(SerializedProperty property)
@@ -99,6 +158,11 @@ namespace com.spacepuppyeditor.Internal
         }
 
         #endregion
-
+        static bool LabelHasContent(GUIContent label)
+        {
+            if (label == null)
+                return true;
+            return !string.IsNullOrEmpty(label.text) || (UnityEngine.Object)label.image != null;
+        }
     }
 }

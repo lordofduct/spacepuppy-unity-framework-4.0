@@ -13,11 +13,11 @@ using com.spacepuppyeditor.Core.Events;
 
 namespace com.spacepuppyeditor.Anim
 {
-    
+
     [CustomEditor(typeof(i_PlayAnimation), true)]
     public class i_PlayAnimationInspector : SPEditor
     {
-        
+
         public const string PROP_ORDER = "_order";
         public const string PROP_ACTIVATEON = "_activateOn";
         public const string PROP_MODE = "_mode";
@@ -52,64 +52,73 @@ namespace com.spacepuppyeditor.Anim
             this.DrawTargetAnimatorProperty();
 
             var controller = this.serializedObject.FindProperty(PROP_TARGETANIMATOR).FindPropertyRelative(TriggerableTargetObjectPropertyDrawer.PROP_TARGET).objectReferenceValue;
-            if (controller is Animation || controller is SPLegacyAnimController)
+            System.Type tp;
+            switch (GetAnimatorType(controller, out tp))
             {
-                var propMode = this.serializedObject.FindProperty(PROP_MODE);
-                SPEditorGUILayout.PropertyField(propMode);
+                case AnimatorType.Unknown:
+                case AnimatorType.Animation:
+                case AnimatorType.SPLegacyAnimController:
+                    {
+                        var propMode = this.serializedObject.FindProperty(PROP_MODE);
+                        SPEditorGUILayout.PropertyField(propMode);
 
-                switch (propMode.GetEnumValue<i_PlayAnimation.PlayByMode>())
-                {
-                    case i_PlayAnimation.PlayByMode.PlayAnim:
+                        switch (propMode.GetEnumValue<i_PlayAnimation.PlayByMode>())
                         {
-                            this.serializedObject.FindProperty(PROP_ID).stringValue = string.Empty;
+                            case i_PlayAnimation.PlayByMode.PlayAnim:
+                                {
+                                    this.serializedObject.FindProperty(PROP_ID).stringValue = string.Empty;
 
-                            var clipProp = this.serializedObject.FindProperty(PROP_CLIP);
-                            var obj = EditorGUILayout.ObjectField(EditorHelper.TempContent(clipProp.displayName, clipProp.tooltip), clipProp.objectReferenceValue, typeof(UnityEngine.Object), true);
-                            if (obj == null || obj is AnimationClip || obj is IScriptableAnimationClip)
-                                clipProp.objectReferenceValue = obj;
-                            else if (GameObjectUtil.IsGameObjectSource(obj))
-                                clipProp.objectReferenceValue = ObjUtil.GetAsFromSource<IScriptableAnimationClip>(obj) as UnityEngine.Object;
+                                    var clipProp = this.serializedObject.FindProperty(PROP_CLIP);
+                                    var obj = EditorGUILayout.ObjectField(EditorHelper.TempContent(clipProp.displayName, clipProp.tooltip), clipProp.objectReferenceValue, typeof(UnityEngine.Object), true);
+                                    if (obj == null || obj is AnimationClip || obj is IScriptableAnimationClip)
+                                        clipProp.objectReferenceValue = obj;
+                                    else if (GameObjectUtil.IsGameObjectSource(obj))
+                                        clipProp.objectReferenceValue = ObjUtil.GetAsFromSource<IScriptableAnimationClip>(obj) as UnityEngine.Object;
+                                }
+                                break;
+                            case i_PlayAnimation.PlayByMode.PlayAnimByID:
+                                {
+                                    this.serializedObject.FindProperty(PROP_CLIP).objectReferenceValue = null;
+
+                                    //this.DrawPropertyField(PROP_ID);
+                                    this.DrawAnimIdSelector(controller);
+                                }
+                                break;
+                            case i_PlayAnimation.PlayByMode.PlayAnimFromResource:
+                                {
+                                    this.serializedObject.FindProperty(PROP_CLIP).objectReferenceValue = null;
+
+                                    this.DrawPropertyField(PROP_ID);
+                                }
+                                break;
                         }
-                        break;
-                    case i_PlayAnimation.PlayByMode.PlayAnimByID:
-                        {
-                            this.serializedObject.FindProperty(PROP_CLIP).objectReferenceValue = null;
 
-                            //this.DrawPropertyField(PROP_ID);
-                            this.DrawAnimIdSelector(controller);
-                        }
-                        break;
-                    case i_PlayAnimation.PlayByMode.PlayAnimFromResource:
-                        {
-                            this.serializedObject.FindProperty(PROP_CLIP).objectReferenceValue = null;
+                        this.DrawAnimSettings();
+                        this.DrawPropertyField(PROP_QUEUEMODE);
+                        this.DrawPropertyField(PROP_PLAYMODE);
+                        this.DrawPropertyField(PROP_CROSSFADEDUR);
+                    }
+                    break;
+                case AnimatorType.SPAnimator:
+                    {
+                        var propId = this.serializedObject.FindProperty(PROP_ID);
+                        propId.stringValue = DrawSPAnimatorFunctionPopup(EditorGUILayout.GetControlRect(), controller as ISPAnimator, propId.stringValue);
+                    }
+                    break;
+                case AnimatorType.SPAnimSource:
+                    {
+                        this.serializedObject.FindProperty(PROP_MODE).SetEnumValue<i_PlayAnimation.PlayByMode>(i_PlayAnimation.PlayByMode.PlayAnimByID);
+                        this.serializedObject.FindProperty(PROP_CLIP).objectReferenceValue = null;
 
-                            this.DrawPropertyField(PROP_ID);
-                        }
-                        break;
-                }
-
-                this.DrawAnimSettings();
-                this.DrawPropertyField(PROP_QUEUEMODE);
-                this.DrawPropertyField(PROP_PLAYMODE);
-                this.DrawPropertyField(PROP_CROSSFADEDUR);
+                        this.DrawPropertyField(PROP_ID);
+                        this.DrawAnimSettings();
+                        this.DrawPropertyField(PROP_QUEUEMODE);
+                        this.DrawPropertyField(PROP_PLAYMODE);
+                        this.DrawPropertyField(PROP_CROSSFADEDUR);
+                    }
+                    break;
             }
-            else if (controller is ISPAnimator)
-            {
-                var propId = this.serializedObject.FindProperty(PROP_ID);
-                propId.stringValue = DrawSPAnimatorFunctionPopup(EditorGUILayout.GetControlRect(), controller as ISPAnimator, propId.stringValue);
-            }
-            else if (controller is ISPAnimationSource)
-            {
-                this.serializedObject.FindProperty(PROP_MODE).SetEnumValue<i_PlayAnimation.PlayByMode>(i_PlayAnimation.PlayByMode.PlayAnimByID);
-                this.serializedObject.FindProperty(PROP_CLIP).objectReferenceValue = null;
-
-                this.DrawPropertyField(PROP_ID);
-                this.DrawAnimSettings();
-                this.DrawPropertyField(PROP_QUEUEMODE);
-                this.DrawPropertyField(PROP_PLAYMODE);
-                this.DrawPropertyField(PROP_CROSSFADEDUR);
-            }
-
+            
             this.DrawDefaultInspectorExcept(EditorHelper.PROP_SCRIPT, PROP_ORDER, PROP_ACTIVATEON, PROP_MODE, PROP_TARGETANIMATOR, PROP_ID, PROP_CLIP, PROP_SETTINGSMASK, PROP_SETTINGS, PROP_QUEUEMODE, PROP_PLAYMODE, PROP_CROSSFADEDUR);
 
             this.serializedObject.ApplyModifiedProperties();
@@ -248,7 +257,7 @@ namespace com.spacepuppyeditor.Anim
             if (methods.Length > 0)
             {
                 var names = (from o in methods select o.m.Name).ToArray();
-                
+
                 int index = System.Array.IndexOf(names, functionName);
                 index = EditorGUI.Popup(position, "Function", index, names);
                 if (index < 0) index = 0;
@@ -258,6 +267,25 @@ namespace com.spacepuppyeditor.Anim
             {
                 EditorGUI.LabelField(position, "Function", "No functions found on animator");
                 return string.Empty;
+            }
+        }
+
+        private static AnimatorType GetAnimatorType(object obj, out System.Type tp)
+        {
+            if (obj is IProxy)
+            {
+                tp = (obj as IProxy).GetTargetType();
+                return AnimUtil.GetAnimatorType(tp);
+            }
+            else if (obj != null)
+            {
+                tp = obj.GetType();
+                return AnimUtil.GetAnimatorType(tp);
+            }
+            else
+            {
+                tp = null;
+                return AnimatorType.Unknown;
             }
         }
 

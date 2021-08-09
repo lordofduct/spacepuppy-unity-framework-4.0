@@ -5,8 +5,62 @@ using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.Anim
 {
+
+    public enum AnimatorType
+    {
+        Unknown = 0,
+        Animation,
+        Animator,
+        SPLegacyAnimController,
+        SPAnimator,
+        SPAnimSource
+    }
+
     public static class AnimUtil
     {
+
+        #region AnimatorType Enum
+
+        public static AnimatorType GetAnimatorType(System.Type tp)
+        {
+            if (tp == null)
+                return AnimatorType.Unknown;
+            else if (TypeUtil.IsType(tp, typeof(Animation)))
+                return AnimatorType.Animation;
+            else if (TypeUtil.IsType(tp, typeof(Animator)))
+                return AnimatorType.Animator;
+            else if (TypeUtil.IsType(tp, typeof(com.spacepuppy.Anim.Legacy.SPLegacyAnimController)))
+                return AnimatorType.SPLegacyAnimController;
+            else if (TypeUtil.IsType(tp, typeof(ISPAnimator)))
+                return AnimatorType.SPAnimator;
+            else if (TypeUtil.IsType(tp, typeof(ISPAnimationSource)))
+                return AnimatorType.SPAnimSource;
+            else
+                return AnimatorType.Unknown;
+        }
+
+        public static AnimatorType GetAnimatorType(object obj)
+        {
+            if (obj == null) return AnimatorType.Unknown;
+            if (obj is System.Type) return GetAnimatorType(obj as System.Type);
+
+            if (obj is Animation)
+                return AnimatorType.Animation;
+            else if (obj is Animator)
+                return AnimatorType.Animator;
+            else if (obj is com.spacepuppy.Anim.Legacy.SPLegacyAnimController)
+                return AnimatorType.SPLegacyAnimController;
+            else if (obj is ISPAnimator)
+                return AnimatorType.SPAnimator;
+            else if (obj is ISPAnimationSource)
+                return AnimatorType.SPAnimSource;
+            else if (obj is IProxy)
+                return GetAnimatorType((obj as IProxy).GetTargetType());
+            else
+                return AnimatorType.Unknown;
+        }
+
+        #endregion
 
         #region Animation Extension Methods
 

@@ -20,7 +20,7 @@ namespace com.spacepuppyeditor.Events
 
         private const float MARGIN = 2.0f;
         private const float BTN_ACTIVATE_HEIGHT = 24f;
-        
+
         public const string PROP_TARGETS = "_targets";
         private const string PROP_WEIGHT = "_weight";
 
@@ -48,7 +48,7 @@ namespace com.spacepuppyeditor.Events
 
             _targetList = CachedReorderableList.GetListDrawer(prop.FindPropertyRelative(PROP_TARGETS), _targetList_DrawHeader, _targetList_DrawElement, _targetList_OnAdd);
 
-            if(!_customInspector)
+            if (!_customInspector)
             {
                 if (this.fieldInfo != null)
                 {
@@ -108,7 +108,7 @@ namespace com.spacepuppyeditor.Events
             if (EditorHelper.AssertMultiObjectEditingNotSupportedHeight(property, label, out h)) return h;
 
             this.Init(property, label);
-            
+
             if (_alwaysExpanded || property.isExpanded)
             {
                 h = MARGIN * 2f;
@@ -154,13 +154,12 @@ namespace com.spacepuppyeditor.Events
             {
                 if (_drawWeight) this.CalculateTotalWeight();
 
-                if(!_alwaysExpanded) GUI.Box(position, GUIContent.none);
+                if (!_alwaysExpanded) GUI.Box(position, GUIContent.none);
 
                 position = new Rect(position.xMin + MARGIN, position.yMin + MARGIN, position.width - MARGIN * 2f, position.height - MARGIN * 2f);
                 EditorGUI.BeginProperty(position, label, property);
-                
-                position = this.DrawList(position, property);
-                position = this.DrawAdvancedTargetSettings(position, property);
+
+                position = this.DrawTargets(position, property);
 
                 EditorGUI.EndProperty();
 
@@ -191,14 +190,20 @@ namespace com.spacepuppyeditor.Events
         private void CalculateTotalWeight()
         {
             _totalWeight = 0f;
-            for(int i = 0; i < _targetList.serializedProperty.arraySize; i++)
+            for (int i = 0; i < _targetList.serializedProperty.arraySize; i++)
             {
                 _totalWeight += _targetList.serializedProperty.GetArrayElementAtIndex(i).FindPropertyRelative(PROP_WEIGHT).floatValue;
             }
         }
 
+        protected virtual Rect DrawTargets(Rect position, SerializedProperty property)
+        {
+            position = this.DrawList(position, property);
+            position = this.DrawAdvancedTargetSettings(position, property);
+            return position;
+        }
 
-        private Rect DrawList(Rect position, SerializedProperty property)
+        protected Rect DrawList(Rect position, SerializedProperty property)
         {
             var listRect = new Rect(position.xMin, position.yMin, position.width, _targetList.GetHeight());
 
@@ -235,7 +240,7 @@ namespace com.spacepuppyeditor.Events
             return new Rect(position.xMin, listRect.yMax, position.width, position.height - listRect.height);
         }
 
-        private Rect DrawAdvancedTargetSettings(Rect position, SerializedProperty property)
+        protected Rect DrawAdvancedTargetSettings(Rect position, SerializedProperty property)
         {
             const float FOLDOUT_MRG = 12f;
             var foldoutRect = new Rect(position.xMin + FOLDOUT_MRG, position.yMin, position.width - FOLDOUT_MRG, EditorGUIUtility.singleLineHeight); //for some reason the foldout needs to be pushed in an extra amount for the arrow...
@@ -264,7 +269,7 @@ namespace com.spacepuppyeditor.Events
 
             return position;
         }
-        
+
         #endregion
 
         #region ReorderableList Handlers
@@ -412,4 +417,5 @@ namespace com.spacepuppyeditor.Events
         #endregion
 
     }
+
 }

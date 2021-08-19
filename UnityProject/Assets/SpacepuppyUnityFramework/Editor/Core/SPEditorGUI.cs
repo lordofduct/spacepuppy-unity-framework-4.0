@@ -634,7 +634,7 @@ namespace com.spacepuppyeditor
         public static string OptionPopupWithCustom(Rect position, string label, string value, string[] options)
         {
             if (options == null) options = ArrayUtil.Empty<string>();
-            
+
             var guiOptions = (from s in options select EditorHelper.TempContent(s)).Append(EditorHelper.TempContent("Custom...")).ToArray();
 
             int index = System.Array.IndexOf(options, value);
@@ -642,22 +642,19 @@ namespace com.spacepuppyeditor
 
             if (index == options.Length)
             {
-                var fw = position.width - EditorGUIUtility.labelWidth;
-                var wl = EditorGUIUtility.labelWidth + (fw / 4f);
-                var wr = position.width - wl - 1f;
+                position = EditorGUI.PrefixLabel(position, EditorHelper.TempContent(label));
 
-                var rl = new Rect(position.xMin, position.yMin, wl, EditorGUIUtility.singleLineHeight);
-                var rr = new Rect(rl.xMax + 1f, rl.yMin, wr, EditorGUIUtility.singleLineHeight);
+                float w = Mathf.Min(position.width, 20f);
+                var r0 = new Rect(position.xMin, position.yMin, position.width - w, EditorGUIUtility.singleLineHeight);
+                var r1 = new Rect(r0.xMax, position.yMin, w, EditorGUIUtility.singleLineHeight);
 
-                index = EditorGUI.Popup(rl, EditorHelper.TempContent(label), index, guiOptions);
+                value = EditorGUI.TextField(r0, label, value);
+                index = EditorGUI.Popup(r1, index, guiOptions);
                 if (index >= 0 && index < options.Length)
                 {
-                    return options[index];
+                    value = options[index];
                 }
-                else
-                {
-                    return EditorGUI.TextField(rr, value);
-                }
+                return value;
             }
             else
             {
@@ -677,22 +674,19 @@ namespace com.spacepuppyeditor
 
             if (index == options.Length)
             {
-                var fw = position.width - EditorGUIUtility.labelWidth;
-                var wl = EditorGUIUtility.labelWidth + (fw / 4f);
-                var wr = position.width - wl - 1f;
+                position = EditorGUI.PrefixLabel(position, label);
 
-                var rl = new Rect(position.xMin, position.yMin, wl, EditorGUIUtility.singleLineHeight);
-                var rr = new Rect(rl.xMax + 1f, rl.yMin, wr, EditorGUIUtility.singleLineHeight);
+                float w = Mathf.Min(position.width, 20f);
+                var r0 = new Rect(position.xMin, position.yMin, position.width - w, EditorGUIUtility.singleLineHeight);
+                var r1 = new Rect(r0.xMax, position.yMin, w, EditorGUIUtility.singleLineHeight);
 
-                index = EditorGUI.Popup(rl, label, index, guiOptions);
+                value = EditorGUI.TextField(r0, label, value);
+                index = EditorGUI.Popup(r1, index, guiOptions);
                 if (index >= 0 && index < options.Length)
                 {
-                    return options[index];
+                    value = options[index];
                 }
-                else
-                {
-                    return EditorGUI.TextField(rr, value);
-                }
+                return value;
             }
             else
             {

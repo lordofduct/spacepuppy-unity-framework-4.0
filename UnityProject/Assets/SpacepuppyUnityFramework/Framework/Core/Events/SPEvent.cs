@@ -603,4 +603,93 @@ namespace com.spacepuppy.Events
 
     }
 
+
+
+
+    [System.Serializable]
+    public class SPAnimatorStateMachineEvent : BaseSPEvent
+    {
+
+        #region Fields
+
+        [SerializeField]
+        private AnimatorTriggerTarget[] _animatorTargets;
+
+        #endregion
+
+        #region CONSTRUCTOR
+
+        public SPAnimatorStateMachineEvent()
+        {
+        }
+
+        public SPAnimatorStateMachineEvent(string id) : base(id)
+        {
+        }
+
+        #endregion
+
+        #region Methods
+
+        public virtual void ActivateTrigger(Animator animator, object arg)
+        {
+            base.ActivateTrigger(animator, arg);
+
+            foreach (var obj in _animatorTargets)
+            {
+                obj.ActivateTrigger(animator);
+            }
+        }
+
+        #endregion
+
+        #region Special Types
+
+        [System.Serializable]
+        public class AnimatorTriggerTarget
+        {
+
+            public AnimatorTriggerAction Action;
+            public string Id;
+            public float Value;
+
+            public void ActivateTrigger(Animator animator)
+            {
+                if (animator == null) return;
+
+                switch (this.Action)
+                {
+                    case AnimatorTriggerAction.SetTrigger:
+                        animator.SetTrigger(this.Id);
+                        break;
+                    case AnimatorTriggerAction.ResetTrigger:
+                        animator.ResetTrigger(this.Id);
+                        break;
+                    case AnimatorTriggerAction.SetBool:
+                        animator.SetBool(this.Id, this.Value != 0f);
+                        break;
+                    case AnimatorTriggerAction.SetInt:
+                        animator.SetInteger(this.Id, Mathf.RoundToInt(this.Value));
+                        break;
+                    case AnimatorTriggerAction.SetFloat:
+                        animator.SetFloat(this.Id, this.Value);
+                        break;
+                }
+            }
+
+        }
+
+        public enum AnimatorTriggerAction
+        {
+            SetTrigger = 0,
+            ResetTrigger = 1,
+            SetBool = 2,
+            SetInt = 3,
+            SetFloat = 4,
+        }
+
+        #endregion
+
+    }
+
 }

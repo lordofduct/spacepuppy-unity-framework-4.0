@@ -34,6 +34,11 @@ RawAssets/PSD/Terrain Maps/Terrain Map - Mines.tga
 RawAssets/PSD/Terrain Maps/Terrain Map - Mines.psd
 RawAssets/PSD/MagazineArticles/Episode2 - Magazine Preview.psd
 
+#ignore test stuff in Assets
+UnityProject/Assets/Resources
+UnityProject/Assets/Scenes
+UnityProject/Assets/TestComponents
+
 ##ignore ProBuilderPreferences
 **/ProBuilderPreferences.asset
 **/ProBuilderPreferences.asset.meta

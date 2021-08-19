@@ -1,5 +1,6 @@
 {
     "name": "com.spacepuppy.Serialization",
+    "rootNamespace": "com.spacepuppy",
     "references": [
         "GUID:ddd0eb9fc8f414a4d9750a013f135d36"
     ],

@@ -22,7 +22,7 @@ namespace com.spacepuppy.Motor
         private CharacterController _controller;
 
         [SerializeField]
-        private float _mass;
+        private float _mass = 1f;
         [SerializeField]
         private bool _paused;
 
@@ -323,7 +323,6 @@ namespace com.spacepuppy.Motor
         {
             _lastPos = _controller.transform.position;
             _lastVel = _vel;
-            _vel = Vector3.zero;
             _talliedVel = Vector3.zero;
         }
 

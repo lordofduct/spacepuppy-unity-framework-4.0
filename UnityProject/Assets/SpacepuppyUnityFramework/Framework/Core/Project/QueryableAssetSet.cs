@@ -16,6 +16,9 @@ namespace com.spacepuppy.Project
         #region Fields
 
         [SerializeField]
+        private bool _supportNestedGroups;
+
+        [SerializeField]
         [ReorderableArray()]
         private UnityEngine.Object[] _assets;
 
@@ -23,6 +26,32 @@ namespace com.spacepuppy.Project
         private Dictionary<string, UnityEngine.Object> _table;
         [System.NonSerialized]
         private bool _clean;
+        [System.NonSerialized]
+        private bool _nested;
+
+        #endregion
+
+        #region CONSTRUCTOR
+
+        public QueryableAssetSet()
+        {
+            _nameCache = new NameCache.UnityObjectNameCache(this);
+        }
+
+        #endregion
+
+        #region Properties
+
+        public bool SupportNestedGroups
+        {
+            get { return _supportNestedGroups; }
+            set
+            {
+                if (_supportNestedGroups == value) return;
+                _supportNestedGroups = value;
+                _clean = false;
+            }
+        }
 
         #endregion
 
@@ -35,42 +64,179 @@ namespace com.spacepuppy.Project
             else
                 _table.Clear();
 
+            _nested = false;
             for (int i = 0; i < _assets.Length; i++)
             {
                 _table[_assets[i].name] = _assets[i];
+                if (_supportNestedGroups && _assets[i] is IAssetBundle) _nested = true;
             }
             _clean = true;
         }
 
+        public IEnumerable<string> GetAllAssetNames(bool shallow = false)
+        {
+            if (!_clean) this.SetupTable();
+
+            if (!shallow && _nested)
+            {
+                return _table.Keys.Union(_assets.OfType<IAssetBundle>().SelectMany(o => o.GetAllAssetNames()));
+            }
+            else
+            {
+                return _table.Keys;
+            }
+        }
+
+        public bool TryGetAsset(string name, out UnityEngine.Object obj)
+        {
+            if (!_clean) this.SetupTable();
+
+            if (_table.TryGetValue(name, out obj))
+            {
+                return true;
+            }
+            else if (_nested)
+            {
+                for (int i = 0; i < _assets.Length; i++)
+                {
+                    if (_assets[i] is QueryableAssetSet assetset)
+                    {
+                        if (assetset.TryGetAsset(name, out obj)) return true;
+                    }
+                    else if (_assets[i] is IAssetBundle bundle)
+                    {
+                        obj = bundle.LoadAsset(name);
+                        if (!object.ReferenceEquals(obj, null)) return true;
+                    }
+                }
+            }
+
+            obj = null;
+            return false;
+        }
+
+        public bool TryGetAsset(string name, System.Type tp, out UnityEngine.Object obj)
+        {
+            if (!_clean) this.SetupTable();
+
+            if (_table.TryGetValue(name, out obj))
+            {
+                obj = ObjUtil.GetAsFromSource(tp, obj) as UnityEngine.Object;
+                if (!object.ReferenceEquals(obj, null)) return true;
+            }
+
+            if (_nested)
+            {
+                for (int i = 0; i < _assets.Length; i++)
+                {
+                    if (_assets[i] is QueryableAssetSet assetset)
+                    {
+                        if (assetset.TryGetAsset(name, tp, out obj)) return true;
+                    }
+                    else if (_assets[i] is IAssetBundle bundle)
+                    {
+                        obj = bundle.LoadAsset(name, tp);
+                        if (!object.ReferenceEquals(obj, null)) return true;
+                    }
+                }
+            }
+
+            obj = null;
+            return false;
+        }
+
+        public bool TryGetAsset<T>(string name, out T obj) where T : class
+        {
+            if (!_clean) this.SetupTable();
+
+            UnityEngine.Object o;
+            if (_table.TryGetValue(name, out o))
+            {
+                obj = ObjUtil.GetAsFromSource<T>(o);
+                if (!object.ReferenceEquals(obj, null)) return true;
+            }
+            
+            if (_nested)
+            {
+                for (int i = 0; i < _assets.Length; i++)
+                {
+                    if (_assets[i] is QueryableAssetSet assetset)
+                    {
+                        if (assetset.TryGetAsset<T>(name, out obj)) return true;
+                    }
+                    else if (_assets[i] is IAssetBundle bundle)
+                    {
+                        obj = bundle.LoadAsset(name, typeof(T)) as T;
+                        if (!object.ReferenceEquals(obj, null)) return true;
+                    }
+                }
+            }
+
+            obj = null;
+            return false;
+        }
+
         public UnityEngine.Object GetAsset(string name)
         {
-            if (!_clean) this.SetupTable();
-
             UnityEngine.Object obj;
-            if (_table.TryGetValue(name, out obj))
-                return obj;
-            else
-                return null;
+            TryGetAsset(name, out obj);
+            return obj;
         }
 
-        public IEnumerable<UnityEngine.Object> GetAllAssets()
+        public UnityEngine.Object GetAsset(string name, System.Type tp)
+        {
+            UnityEngine.Object obj;
+            TryGetAsset(name, tp, out obj);
+            return obj;
+        }
+
+        public T GetAsset<T>(string name) where T : class
+        {
+            T obj;
+            TryGetAsset<T>(name, out obj);
+            return obj;
+        }
+
+        public IEnumerable<UnityEngine.Object> GetAllAssets(bool shallow = false)
         {
             if (!_clean) this.SetupTable();
 
-            return _table.Values;
-        }
-
-        public IEnumerable<T> GetAllAssets<T>() where T : class
-        {
-            if (!_clean) this.SetupTable();
-
-            var e = _table.Values.GetEnumerator();
-            while (e.MoveNext())
+            if (!shallow && _nested)
             {
-                var obj = ObjUtil.GetAsFromSource<T>(e.Current);
-                if (!object.ReferenceEquals(obj, null))
+                return this.GetAllAssetNames().Select(o => this.GetAsset(o));
+            }
+            else
+            {
+                return _table.Values;
+            }
+        }
+
+        public IEnumerable<UnityEngine.Object> GetAllAssets(System.Type tp, bool shallow = false)
+        {
+            return this.GetAllAssets(shallow).Select(o => ObjUtil.GetAsFromSource(tp, o) as UnityEngine.Object).Where(o => !object.ReferenceEquals(o, null));
+        }
+
+        public IEnumerable<T> GetAllAssets<T>(bool shallow = false) where T : class
+        {
+            if (!_clean) this.SetupTable();
+
+            if (!shallow && _nested)
+            {
+                foreach (var obj in this.GetAllAssets().Select(o => ObjUtil.GetAsFromSource<T>(o)).Where(o => !object.ReferenceEquals(o, null)))
                 {
                     yield return obj;
+                }
+            }
+            else
+            {
+                var e = _table.Values.GetEnumerator();
+                while (e.MoveNext())
+                {
+                    var obj = ObjUtil.GetAsFromSource<T>(e.Current);
+                    if (!object.ReferenceEquals(obj, null))
+                    {
+                        yield return obj;
+                    }
                 }
             }
         }
@@ -89,59 +255,22 @@ namespace com.spacepuppy.Project
             }
         }
 
-        #endregion
-
-        #region IAssetBundle Interface
-
-        public bool Contains(string name)
-        {
-            if (!_clean) this.SetupTable();
-
-            return _table.ContainsKey(name);
-        }
 
         public bool Contains(UnityEngine.Object asset)
         {
-            return System.Array.IndexOf(_assets, asset) >= 0;
-        }
-
-        public IEnumerable<string> GetAllAssetNames()
-        {
             if (!_clean) this.SetupTable();
 
-            return _table.Keys;
-        }
+            if (_table.Values.Contains(asset)) return true;
 
-        UnityEngine.Object IAssetBundle.LoadAsset(string name)
-        {
-            return this.GetAsset(name);
-        }
-
-        UnityEngine.Object IAssetBundle.LoadAsset(string name, System.Type tp)
-        {
-            var obj = this.GetAsset(name);
-            if (object.ReferenceEquals(obj, null)) return null;
-
-            if (TypeUtil.IsType(obj.GetType(), tp)) return obj;
-            else return null;
-        }
-
-        T IAssetBundle.LoadAsset<T>(string name)
-        {
-            return this.GetAsset(name) as T;
-        }
-
-        public void UnloadAllAssets()
-        {
-            if (_table != null) _table.Clear();
-            for (int i = 0; i < _assets.Length; i++)
+            if (_nested)
             {
-                if (!(_assets[i] is GameObject))
+                for (int i = 0; i < _assets.Length; i++)
                 {
-                    Resources.UnloadAsset(_assets[i]);
+                    if (_assets[i] is QueryableAssetSet bundle && bundle.Contains(asset)) return true;
                 }
             }
-            _clean = false;
+
+            return false;
         }
 
         public void UnloadAsset(UnityEngine.Object asset)
@@ -152,11 +281,114 @@ namespace com.spacepuppy.Project
             }
         }
 
+        #endregion
+
+        #region IAssetBundle Interface
+
+        public string Name { get { return this.name; } }
+
+        public bool Contains(string name)
+        {
+            if (!_clean) this.SetupTable();
+
+            if (_table.ContainsKey(name)) return true;
+
+            if (_nested)
+            {
+                for (int i = 0; i < _assets.Length; i++)
+                {
+                    if (_assets[i] is IAssetBundle bundle && bundle.Contains(name))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        IEnumerable<string> IAssetBundle.GetAllAssetNames()
+        {
+            return this.GetAllAssetNames();
+        }
+
+        UnityEngine.Object IAssetBundle.LoadAsset(string name)
+        {
+            return this.GetAsset(name);
+        }
+
+        UnityEngine.Object IAssetBundle.LoadAsset(string name, System.Type tp)
+        {
+            return this.GetAsset(name, tp);
+        }
+
+        T IAssetBundle.LoadAsset<T>(string name)
+        {
+            return this.GetAsset<T>(name);
+        }
+
+        IEnumerable<UnityEngine.Object> IAssetBundle.LoadAllAssets()
+        {
+            return this.GetAllAssets();
+        }
+
+        IEnumerable<UnityEngine.Object> IAssetBundle.LoadAllAssets(System.Type tp)
+        {
+            return this.GetAllAssets(tp);
+        }
+
+        IEnumerable<T> IAssetBundle.LoadAllAssets<T>()
+        {
+            return this.GetAllAssets<T>();
+        }
+
+        public void UnloadAllAssets()
+        {
+            if (_table != null) _table.Clear();
+            for (int i = 0; i < _assets.Length; i++)
+            {
+                if (_assets[i] is GameObject) continue;
+
+                if (_supportNestedGroups && _assets[i] is IAssetBundle bundle)
+                {
+                    bundle.UnloadAllAssets();
+                }
+
+                Resources.UnloadAsset(_assets[i]);
+            }
+            _clean = false;
+        }
+
 
 
         public void Dispose()
         {
+            this.UnloadAllAssets();
             Resources.UnloadAsset(this);
+        }
+
+        #endregion
+
+        #region INameable Interface
+
+        private NameCache.UnityObjectNameCache _nameCache;
+        public new string name
+        {
+            get { return _nameCache.Name; }
+            set { _nameCache.Name = value; }
+        }
+        string INameable.Name
+        {
+            get { return _nameCache.Name; }
+            set { _nameCache.Name = value; }
+        }
+        public bool CompareName(string nm)
+        {
+            return _nameCache.CompareName(nm);
+        }
+        void INameable.SetDirty()
+        {
+            _nameCache.SetDirty();
         }
 
         #endregion

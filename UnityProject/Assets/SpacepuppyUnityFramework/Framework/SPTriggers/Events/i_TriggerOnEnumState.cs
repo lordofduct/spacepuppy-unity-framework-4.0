@@ -125,7 +125,7 @@ namespace com.spacepuppy.Events
             return (from c in _conditions select c.Trigger).Append(_defaultCondition).ToArray();
         }
 
-        #endregion
+#endregion
 
     }
 

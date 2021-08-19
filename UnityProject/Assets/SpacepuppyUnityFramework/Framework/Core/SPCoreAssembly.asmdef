@@ -1,5 +1,6 @@
 {
     "name": "com.spacepuppy",
+    "rootNamespace": "com.spacepuppy",
     "references": [],
     "includePlatforms": [],
     "excludePlatforms": [],

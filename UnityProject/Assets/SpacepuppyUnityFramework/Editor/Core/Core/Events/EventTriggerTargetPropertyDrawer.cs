@@ -411,7 +411,7 @@ DrawMethodName:
                 //var members = GetAvailableMethods(tp).ToArray();
 
                 //var members = com.spacepuppy.Dynamic.DynamicUtil.GetEasilySerializedMembers(targProp.objectReferenceValue, System.Reflection.MemberTypes.Method).ToArray();
-                var members = com.spacepuppy.Dynamic.DynamicUtil.GetEasilySerializedMembers(targProp.objectReferenceValue, System.Reflection.MemberTypes.All, spacepuppy.Dynamic.DynamicMemberAccess.Write).ToArray();
+                var members = (targProp.objectReferenceValue is IProxy proxy) ? com.spacepuppy.Dynamic.DynamicUtil.GetEasilySerializedMembersFromType(proxy.GetTargetType()).ToArray() : com.spacepuppy.Dynamic.DynamicUtil.GetEasilySerializedMembers(targProp.objectReferenceValue, System.Reflection.MemberTypes.All, spacepuppy.Dynamic.DynamicMemberAccess.Write).ToArray();
                 System.Array.Sort(members, (a, b) => string.Compare(a.Name, b.Name, true));
                 var memberNames = members.Select((m) => m.Name).ToArray();
 

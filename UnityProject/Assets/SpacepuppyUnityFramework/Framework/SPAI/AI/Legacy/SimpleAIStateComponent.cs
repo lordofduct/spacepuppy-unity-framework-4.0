@@ -7,7 +7,7 @@ using System.Linq;
 using com.spacepuppy.Events;
 using com.spacepuppy.Utils;
 
-namespace com.spacepuppy.AI
+namespace com.spacepuppy.AI.Legacy
 {
 
     public abstract class SimpleAIStateComponent : SPComponent, IAIState

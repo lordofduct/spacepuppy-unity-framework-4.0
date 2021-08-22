@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 using com.spacepuppy;
-using com.spacepuppy.AI;
+using com.spacepuppy.AI.Legacy;
 using com.spacepuppy.StateMachine;
 using com.spacepuppy.Utils;
 
@@ -16,8 +16,8 @@ namespace com.spacepuppyeditor.AI
     /// </summary>
     /// <notes>
     /// </notes>
-    [CustomEditor(typeof(AISubController), true)]
-    public class AISubControllerInspector : SPEditor
+    [CustomEditor(typeof(AIController), true)]
+    public class AIControllerInspector : SPEditor
     {
 
         public const string PROP_STATESOURCE = "_stateSource";
@@ -27,18 +27,18 @@ namespace com.spacepuppyeditor.AI
         {
             this.serializedObject.Update();
 
-            var targ = this.target as AISubController;
+            var targ = this.target as AIController;
             if (targ == null) return;
 
             this.DrawPropertyField(EditorHelper.PROP_SCRIPT);
 
             var sourceProp = this.serializedObject.FindProperty(PROP_STATESOURCE);
             SPEditorGUILayout.PropertyField(sourceProp);
-
+            
             var cache = SPGUI.DisableIfPlaying();
             var stateProp = this.serializedObject.FindProperty(PROP_DEFAULTSTATE);
-
-            switch (sourceProp.GetEnumValue<AIStateMachineSourceMode>())
+            
+            switch(sourceProp.GetEnumValue<AIStateMachineSourceMode>())
             {
                 case AIStateMachineSourceMode.SelfSourced:
                     {
@@ -75,7 +75,9 @@ namespace com.spacepuppyeditor.AI
             {
                 if (targ.States != null && targ.States.Current != null)
                 {
-                    EditorGUILayout.HelpBox("Currently active state is '" + targ.States.Current.GetType().Name + "'.", MessageType.Info);
+                    var c = targ.States.Current;
+                    var msg = string.Format("Currently active state is {0} ({1}).", c.DisplayName, c.GetType().Name);
+                    EditorGUILayout.HelpBox(msg, MessageType.Info);
                 }
                 else
                 {
@@ -90,4 +92,5 @@ namespace com.spacepuppyeditor.AI
         }
 
     }
+
 }

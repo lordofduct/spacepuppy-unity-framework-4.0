@@ -2,7 +2,7 @@
 using UnityEditor;
 
 using com.spacepuppy;
-using com.spacepuppy.AI;
+using com.spacepuppy.AI.Legacy;
 using com.spacepuppy.Utils;
 
 namespace com.spacepuppyeditor.AI

@@ -8,7 +8,7 @@ using com.spacepuppy.Sensors;
 using com.spacepuppy.StateMachine;
 using com.spacepuppy.Utils;
 
-namespace com.spacepuppy.AI
+namespace com.spacepuppy.AI.Legacy
 {
 
     /// <summary>

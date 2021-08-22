@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.Animations;
 using System.Collections.Generic;
-
+using System;
 
 namespace com.spacepuppy
 {
@@ -14,6 +14,11 @@ namespace com.spacepuppy
     public static class BridgedStateMachineBehaviourExtensions
     {
 
+        /// <summary>
+        /// Should be called during Start from the script acting as the IAnimatorStateMachineBridge.
+        /// </summary>
+        /// <param name="animator"></param>
+        /// <param name="bridge"></param>
         public static void Initialize<T>(this T bridge, Animator animator) where T : IAnimatorStateMachineBridge
         {
             BridgedStateMachineBehaviour.Initialize(animator, bridge);
@@ -34,27 +39,37 @@ namespace com.spacepuppy
 
         #region Fields
 
+        [System.NonSerialized]
         private Animator _animator;
-
+        [System.NonSerialized]
         private UpdateTransitionState _transitionState;
 
         #endregion
 
         #region CONSTRUCTOR
 
+        /// <summary>
+        /// Should be called during Start from the script acting as the IAnimatorStateMachineBridge.
+        /// </summary>
+        /// <param name="animator"></param>
+        /// <param name="bridge"></param>
         public static void Initialize(Animator animator, IAnimatorStateMachineBridge bridge)
         {
-            var behaviours = animator.GetBehaviours<BridgedStateMachineBehaviour>();
+            if (object.ReferenceEquals(animator, null)) throw new ArgumentNullException(nameof(animator));
 
+            var behaviours = animator.GetBehaviours<BridgedStateMachineBehaviour>();
             for (int i = 0; i < behaviours.Length; i++)
             {
-                behaviours[i]._animator = animator;
-                behaviours[i].InternalInitialize(animator, bridge);
-                behaviours[i].OnStart();
+                if (object.ReferenceEquals(behaviours[i]._animator, null))
+                {
+                    behaviours[i]._animator = animator;
+                    behaviours[i].InternalInitialize(animator, bridge);
+                    behaviours[i].OnInitialized();
+                }
             }
         }
 
-        protected abstract void InternalInitialize(Animator animator, System.Object bridge);
+        protected abstract void InternalInitialize(Animator animator, IAnimatorStateMachineBridge bridge);
 
         #endregion
 
@@ -68,17 +83,17 @@ namespace com.spacepuppy
 
         #region Methods
 
-        protected virtual void OnStart() { }
+        protected virtual void OnInitialized() { }
 
-        protected virtual void OnStateEnter(AnimatorStateInfo stateInfo, int layerIndex, AnimatorControllerPlayable controller) { }
+        protected virtual void OnEnter(AnimatorStateInfo stateInfo, int layerIndex, AnimatorControllerPlayable controller) { }
 
         protected virtual void OnTransitionToComplete(AnimatorStateInfo stateInfo, int layerIndex, AnimatorControllerPlayable controller) { }
 
-        protected virtual void OnStateUpdate(AnimatorStateInfo stateInfo, int layerIndex, AnimatorControllerPlayable controller) { }
+        protected virtual void OnUpdate(AnimatorStateInfo stateInfo, int layerIndex, AnimatorControllerPlayable controller) { }
 
         protected virtual void OnTrasitionFromStart(AnimatorStateInfo stateInfo, int layerIndex, AnimatorControllerPlayable controller) { }
 
-        protected virtual void OnStateExit(AnimatorStateInfo stateInfo, int layerIndex, AnimatorControllerPlayable controller) { }
+        protected virtual void OnExit(AnimatorStateInfo stateInfo, int layerIndex, AnimatorControllerPlayable controller) { }
 
         #endregion
 
@@ -95,7 +110,7 @@ namespace com.spacepuppy
             if (animator != _animator) throw new System.ArgumentException(nameof(OnStateEnter) + " was called by an animator it was not configured for.", nameof(animator));
 
             _transitionState = UpdateTransitionState.Entering;
-            OnStateEnter(stateInfo, layerIndex, controller);
+            OnEnter(stateInfo, layerIndex, controller);
         }
 
         public sealed override void OnStateUpdate(Animator animator, AnimatorStateInfo stateInfo, int layerIndex, AnimatorControllerPlayable controller)
@@ -130,7 +145,7 @@ namespace com.spacepuppy
                             OnTrasitionFromStart(stateInfo, layerIndex, controller);
                         }
 
-                        OnStateUpdate(stateInfo, layerIndex, controller);
+                        OnUpdate(stateInfo, layerIndex, controller);
                     }
                     break;
                 case UpdateTransitionState.Active:
@@ -140,12 +155,12 @@ namespace com.spacepuppy
                             _transitionState = UpdateTransitionState.Exiting;
                             OnTrasitionFromStart(stateInfo, layerIndex, controller);
                         }
-                        OnStateUpdate(stateInfo, layerIndex, controller);
+                        OnUpdate(stateInfo, layerIndex, controller);
                     }
                     break;
                 case UpdateTransitionState.Exiting:
                     {
-                        OnStateUpdate(stateInfo, layerIndex, controller);
+                        OnUpdate(stateInfo, layerIndex, controller);
                     }
                     break;
             }
@@ -157,7 +172,7 @@ namespace com.spacepuppy
 
             try
             {
-                OnStateExit(stateInfo, layerIndex, controller);
+                OnExit(stateInfo, layerIndex, controller);
             }
             finally
             {
@@ -190,7 +205,7 @@ namespace com.spacepuppy
 
         #region Methods
 
-        protected sealed override void InternalInitialize(Animator animator, object bridge)
+        protected sealed override void InternalInitialize(Animator animator, IAnimatorStateMachineBridge bridge)
         {
             if (!(bridge is T)) throw new System.ArgumentException("Bridge must be of type '" + typeof(T).Name + "'.", nameof(bridge));
             _bridge = bridge as T;

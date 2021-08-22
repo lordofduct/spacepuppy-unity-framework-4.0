@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace com.spacepuppy.AI
+namespace com.spacepuppy.AI.Legacy
 {
 
     public interface IAIState : IAINode

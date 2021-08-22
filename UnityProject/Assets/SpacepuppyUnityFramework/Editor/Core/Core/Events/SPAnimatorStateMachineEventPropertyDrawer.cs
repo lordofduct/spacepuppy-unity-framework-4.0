@@ -59,7 +59,10 @@ namespace com.spacepuppyeditor.Events
             this.Init(property, label);
 
             float h = base.GetPropertyHeight(property, label);
-            h += _targetList?.GetHeight() ?? 0f;
+            if (property.isExpanded)
+            {
+                h += _targetList?.GetHeight() ?? 0f;
+            }
             return h;
         }
 
@@ -67,7 +70,18 @@ namespace com.spacepuppyeditor.Events
         {
             this.Init(property, label);
 
-            base.OnGUI(position, property, EditorHelper.TempContent(" "));
+            if (property.isExpanded)
+            {
+                base.OnGUI(position, property, EditorHelper.TempContent(" "));
+            }
+            else
+            {
+                if (!this.AlwaysExpanded) property.isExpanded = EditorGUI.Foldout(new Rect(position.xMin, position.yMin, position.width, EditorGUIUtility.singleLineHeight), property.isExpanded, GUIContent.none, true);
+
+                EditorGUI.BeginProperty(position, label, property);
+                ReorderableListHelper.DrawRetractedHeader(position, label, EditorHelper.TempContent("Animator Targets"));
+                EditorGUI.EndProperty();
+            }
             _controller = null;
         }
 

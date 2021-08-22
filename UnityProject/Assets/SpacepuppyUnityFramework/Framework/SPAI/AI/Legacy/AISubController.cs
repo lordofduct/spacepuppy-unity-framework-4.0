@@ -8,7 +8,7 @@ using com.spacepuppy.Collections;
 using com.spacepuppy.StateMachine;
 using com.spacepuppy.Utils;
 
-namespace com.spacepuppy.AI
+namespace com.spacepuppy.AI.Legacy
 {
     public class AISubController : SimpleAIStateComponent, IAIStateMachine
     {

@@ -7,9 +7,9 @@ using System.Linq;
 using com.spacepuppy.Events;
 using com.spacepuppy.Utils;
 
-namespace com.spacepuppy.AI.Scenario
+namespace com.spacepuppy.AI.Legacy.Events
 {
-    public class i_ChangeAIState : Triggerable
+    public class i_ChangeLegacyAIState : Triggerable
     {
 
         #region Fields

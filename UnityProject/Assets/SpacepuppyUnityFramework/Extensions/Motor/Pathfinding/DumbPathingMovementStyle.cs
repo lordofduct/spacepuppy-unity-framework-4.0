@@ -8,8 +8,7 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Motor.Pathfinding
 {
 
-    [RequireComponent(typeof(MovementStyleController))]
-    public class PathingMovementStyle : DumbMovementStyle, IPathFollower
+    public class DumbPathingMovementStyle : DumbMovementStyle, IPathFollower
     {
 
         public enum PathingStatus
@@ -30,12 +29,17 @@ namespace com.spacepuppy.Motor.Pathfinding
         [Tooltip("If motion is truly 3d set this true, otherwise motion is calculated on a plane with y-up.")]
         private bool _motion3D = false;
         [SerializeField]
+        private bool _faceDirectionOfMotion;
+        [SerializeField]
+        [Range(0f, 1f)]
+        private float _faceDirectionSlerpSpeed = 0.5f;
+        [SerializeField]
         private SPTime _timeSupplier;
 
         [System.NonSerialized]
         private IPath _currentPath;
         [System.NonSerialized]
-        private int _currentNode;
+        private int _currentIndex;
         [System.NonSerialized]
         private bool _paused;
 
@@ -66,6 +70,18 @@ namespace com.spacepuppy.Motor.Pathfinding
             set { _motion3D = value; }
         }
 
+        public bool FaceDirectionOfMotion
+        {
+            get { return _faceDirectionOfMotion; }
+            set { _faceDirectionOfMotion = value; }
+        }
+
+        public float FaceDirectionSlerpSpeed
+        {
+            get { return _faceDirectionSlerpSpeed; }
+            set { _faceDirectionSlerpSpeed = Mathf.Clamp01(value); }
+        }
+
         public SPTime TimeSupplier
         {
             get { return _timeSupplier; }
@@ -76,26 +92,21 @@ namespace com.spacepuppy.Motor.Pathfinding
         {
             get
             {
-                if (_currentPath == null)
+                if (_currentPath == null || _currentPath.Status == PathCalculateStatus.Invalid)
                     return PathingStatus.Invalid;
-                else if (_currentPath.Status == PathCalculateStatus.Partial || _currentNode < _currentPath.Waypoints.Count)
+                else if (_currentPath.Status == PathCalculateStatus.Uncalculated || _currentIndex < _currentPath.Waypoints.Count)
                     return PathingStatus.Pathing;
                 else
                     return PathingStatus.Complete;
             }
         }
 
-        public IPath Path
-        {
-            get { return _currentPath; }
-        }
-
         public int CurrentNodeIndex
         {
-            get { return _currentNode; }
+            get { return _currentIndex; }
             set
             {
-                _currentNode = Mathf.Clamp(value, 0, _currentPath != null ? _currentPath.Waypoints.Count : 0);
+                _currentIndex = Mathf.Clamp(value, -1, _currentPath != null ? _currentPath.Waypoints.Count : 0);
             }
         }
 
@@ -111,44 +122,47 @@ namespace com.spacepuppy.Motor.Pathfinding
         /// <summary>
         /// Returns zero vector if no waypoint.
         /// </summary>
-        public Vector3 GetCurrentWaypoint()
+        public Vector3 GetNextWaypoint()
         {
-            if (_currentPath == null) return Vector3.zero;
-            int cnt = _currentPath.Waypoints.Count;
-            if (cnt == 0) return Vector3.zero;
-            if (_currentNode >= cnt) return _currentPath.Waypoints[cnt - 1];
-            return _currentPath.Waypoints[_currentNode];
+            int index = _currentIndex;
+            return _currentPath != null ? _currentPath.GetNextTarget(this.Position, ref index) : Vector3.zero;
         }
 
         #endregion
 
         #region IPathFollower Interface
 
+        public IPath CurrentPath { get { return _currentPath; } }
+
         public bool IsTraversing
         {
             get
             {
-                return _currentPath != null && !VectorUtil.NearZeroVector(this.Velocity);
+                return this.Status == PathingStatus.Pathing;
             }
         }
 
         public virtual void SetPath(IPath path)
         {
-            if (path == null) throw new System.ArgumentNullException("path");
-
             _currentPath = path;
-            _currentNode = 0;
+            _currentIndex = -1;
+            _paused = _currentPath == null;
         }
 
         public virtual void ResetPath()
         {
             _currentPath = null;
-            _paused = false;
+            _currentIndex = -1;
+            _paused = true;
         }
 
         public virtual void ResumePath()
         {
-            _paused = false;
+            if (_paused && _currentPath != null)
+            {
+                _paused = false;
+                _currentIndex = -1;
+            }
         }
 
         public virtual void StopPath()
@@ -170,15 +184,16 @@ namespace com.spacepuppy.Motor.Pathfinding
                 case PathingStatus.Complete:
                     break;
                 case PathingStatus.Pathing:
+                    if (_currentPath.Status != PathCalculateStatus.Uncalculated)
                     {
-                        Vector3 target = _currentPath.Waypoints[_currentNode];
                         Vector3 pos = this.Position;
+                        var target = _currentPath.GetNextTarget(pos, ref _currentIndex);
                         Vector3 dir = target - pos;
                         if (!_motion3D) dir.y = 0f;
                         float dist = dir.sqrMagnitude;
                         if (dist <= _waypointTolerance * _waypointTolerance)
                         {
-                            _currentNode++;
+                            _currentIndex++;
                             goto Start;
                         }
                         dir.Normalize();
@@ -186,16 +201,19 @@ namespace com.spacepuppy.Motor.Pathfinding
                         Vector3 mv = dir * _speed * _timeSupplier.Delta;
                         if (mv.sqrMagnitude > dist)
                         {
-                            _currentNode++;
+                            _currentIndex++;
                         }
 
                         this.Move(mv);
+
+                        if(_faceDirectionOfMotion && !VectorUtil.NearZeroVector(dir))
+                        {
+                            this.entityRoot.transform.rotation = Quaternion.Slerp(this.entityRoot.transform.rotation, Quaternion.LookRotation(dir), _faceDirectionSlerpSpeed);
+                        }
                     }
                     break;
             }
         }
-
-
 
         #endregion
 

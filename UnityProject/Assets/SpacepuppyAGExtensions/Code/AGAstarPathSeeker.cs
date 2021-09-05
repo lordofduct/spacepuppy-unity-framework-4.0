@@ -54,7 +54,7 @@ namespace com.spacepuppy.Pathfinding
         /// <returns></returns>
         public bool ValidPath(IPath path)
         {
-            return path is AGAstarABPath;
+            return AGAstarPath.GetInnerPath(path) != null;
         }
 
         public void CalculatePath(IPath path)
@@ -63,6 +63,7 @@ namespace com.spacepuppy.Pathfinding
 
             var p = AGAstarPath.GetInnerPath(path);
             if (p == null) throw new PathArgumentException();
+
             this.StartPath(p, AGAstarPath.OnPathCallback);
         }
 

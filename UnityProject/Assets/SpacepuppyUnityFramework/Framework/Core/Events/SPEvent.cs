@@ -3,6 +3,7 @@ using System.Collections.Generic;
 
 using com.spacepuppy.Collections;
 using com.spacepuppy.Utils;
+using System.Linq;
 
 namespace com.spacepuppy.Events
 {
@@ -625,6 +626,15 @@ namespace com.spacepuppy.Events
 
         public SPAnimatorStateMachineEvent(string id) : base(id)
         {
+        }
+
+        #endregion
+
+        #region Properties
+
+        public override bool HasReceivers
+        {
+            get { return base.HasReceivers || _animatorTargets.Length > 0; }
         }
 
         #endregion

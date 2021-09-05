@@ -347,8 +347,8 @@ namespace com.spacepuppy.Motor
 
         protected UpdateMode DetermineUpdateMode()
         {
+            _controller = this.GetComponent<MovementStyleController>(); //movementstylecontroller must be on the same gameobject
             _motor = this.entityRoot.GetComponent<IMotor>();
-            _controller = this.entityRoot.GetComponent<MovementStyleController>();
             _charController = this.entityRoot.GetComponent<CharacterController>();
             _rigidbody = this.entityRoot.GetComponent<Rigidbody>();
 

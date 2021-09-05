@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using com.spacepuppy.Project;
 
 namespace com.spacepuppy.Pathfinding
 {
@@ -23,7 +24,7 @@ namespace com.spacepuppy.Pathfinding
     public interface IPathFollower
     {
 
-        bool IsTraversing { get; }
+        IPath CurrentPath { get; }
 
         void SetPath(IPath path);
 
@@ -51,14 +52,28 @@ namespace com.spacepuppy.Pathfinding
     {
 
         /// <summary>
+        /// Returns true if agent is currently pathing.
+        /// </summary>
+        bool IsTraversing { get; }
+
+        /// <summary>
         /// Start automatically pathing to target.
         /// </summary>
         /// <param name="target"></param>
-        void PathTo(Vector3 target);
+        IPath PathTo(Vector3 target);
 
         void PathTo(IPath path);
         
 
     }
+
+    [System.Serializable]
+    public class PathSeekerRef : SerializableInterfaceRef<IPathSeeker> { }
+
+    [System.Serializable]
+    public class PathFollowerRef : SerializableInterfaceRef<IPathFollower> { }
+
+    [System.Serializable]
+    public class PathAgentRef : SerializableInterfaceRef<IPathAgent> { }
 
 }

@@ -48,7 +48,7 @@ namespace com.spacepuppy.Pathfinding
                     case PathCompleteState.Partial:
                         return PathCalculateStatus.Partial;
                     case PathCompleteState.Complete:
-                        return PathCalculateStatus.Success;
+                        return this.IsDone() ? PathCalculateStatus.Success : PathCalculateStatus.Uncalculated;
                     default:
                         return PathCalculateStatus.Invalid;
                 }
@@ -110,7 +110,7 @@ namespace com.spacepuppy.Pathfinding
                     case PathCompleteState.Partial:
                         return PathCalculateStatus.Partial;
                     case PathCompleteState.Complete:
-                        return PathCalculateStatus.Success;
+                        return _path.IsDone() ? PathCalculateStatus.Success : PathCalculateStatus.Uncalculated;
                     default:
                         return PathCalculateStatus.Invalid;
                 }
@@ -149,7 +149,7 @@ namespace com.spacepuppy.Pathfinding
 
         public static Path GetInnerPath(IPath path)
         {
-            if (path is AGAstarABPath)
+            if (path is Path)
             {
                 return path as Path;
             }

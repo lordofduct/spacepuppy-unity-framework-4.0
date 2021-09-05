@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace com.spacepuppy.Pathfinding
 {
@@ -12,4 +9,5 @@ namespace com.spacepuppy.Pathfinding
         Partial = 1,
         Success = 2,
     }
+
 }

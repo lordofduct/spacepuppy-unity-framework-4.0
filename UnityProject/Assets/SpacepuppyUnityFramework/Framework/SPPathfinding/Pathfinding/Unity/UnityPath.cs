@@ -1,7 +1,9 @@
 ﻿using UnityEngine;
 using UnityEngine.AI;
 using System.Collections.Generic;
-using System;
+
+using com.spacepuppy.Utils;
+using com.spacepuppy.Collections;
 
 namespace com.spacepuppy.Pathfinding.Unity
 {
@@ -9,20 +11,7 @@ namespace com.spacepuppy.Pathfinding.Unity
     public abstract class UnityPath : IPath
     {
 
-        #region Fields
-
-        private NavMeshPath _path = new NavMeshPath();
-
-        #endregion
-
-        #region Properties
-
-        public NavMeshPath NavMeshPath
-        {
-            get { return _path; }
-        }
-
-        #endregion
+        public abstract NavMeshPath NavMeshPath { get; }
 
         #region IPath Interface
 
@@ -30,7 +19,7 @@ namespace com.spacepuppy.Pathfinding.Unity
         {
             get
             {
-                return _path.corners;
+                return NavMeshPath?.corners ?? ArrayUtil.Empty<Vector3>();
             }
         }
 
@@ -38,7 +27,7 @@ namespace com.spacepuppy.Pathfinding.Unity
         {
             get
             {
-                switch (_path.status)
+                switch (NavMeshPath?.status ?? NavMeshPathStatus.PathInvalid)
                 {
                     case NavMeshPathStatus.PathInvalid:
                         return PathCalculateStatus.Invalid;
@@ -56,7 +45,9 @@ namespace com.spacepuppy.Pathfinding.Unity
 
         #region Methods
 
-        public abstract bool CalculatePath(int areaMask);
+        public abstract void CalculatePath(int areaMask);
+
+        public abstract void CalculatePath(NavMeshQueryFilter filter);
 
         #endregion
 
@@ -64,6 +55,12 @@ namespace com.spacepuppy.Pathfinding.Unity
 
     public class UnityFromToPath : UnityPath
     {
+
+        #region Fields
+
+        private NavMeshPath _path = new NavMeshPath();
+
+        #endregion
 
         #region CONSTRUCTOR
 
@@ -76,6 +73,8 @@ namespace com.spacepuppy.Pathfinding.Unity
         #endregion
 
         #region Properties
+
+        public override NavMeshPath NavMeshPath { get { return _path; } }
 
         public Vector3 Start
         {
@@ -93,12 +92,17 @@ namespace com.spacepuppy.Pathfinding.Unity
 
         #region Methods
 
-        public override bool CalculatePath(int areaMask)
+        public override void CalculatePath(int areaMask)
         {
-            return NavMesh.CalculatePath(this.Start, this.Target, areaMask, this.NavMeshPath);
+            NavMesh.CalculatePath(this.Start, this.Target, areaMask, _path);
+        }
+
+        public override void CalculatePath(NavMeshQueryFilter filter)
+        {
+            NavMesh.CalculatePath(this.Start, this.Target, filter, _path);
         }
 
         #endregion
-        
+
     }
 }

@@ -26,7 +26,23 @@ namespace com.spacepuppy
 
     }
 
-    public abstract class BridgedStateMachineBehaviour : StateMachineBehaviour
+    /// <summary>
+    /// Unity does this weird thing where even though these events/messages are declared virtually it still calls them reflectively like MonoBehaviour messages.
+    /// 
+    /// By sealing them in their own class like this it creates a stop point for them. It forces one inheriting from it to use the 4 parameter version, and that version will be the 1st one Unity finds reflectively and therefore will use it. 
+    /// 
+    /// This facilitates complex implementations like that found in BridgedStateMachineBehaviour.
+    /// </summary>
+    public abstract class SealedStateMachineBehaviour : StateMachineBehaviour
+    {
+        public sealed override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex) { }
+
+        public sealed override void OnStateUpdate(Animator animator, AnimatorStateInfo stateInfo, int layerIndex) { }
+
+        public sealed override void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex) { }
+    }
+
+    public abstract class BridgedStateMachineBehaviour : SealedStateMachineBehaviour
     {
 
         public enum UpdateTransitionState
@@ -98,12 +114,6 @@ namespace com.spacepuppy
         #endregion
 
         #region Sealed Crap
-
-        public sealed override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex) { }
-
-        public sealed override void OnStateUpdate(Animator animator, AnimatorStateInfo stateInfo, int layerIndex) { }
-
-        public sealed override void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex) { }
 
         public sealed override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex, AnimatorControllerPlayable controller)
         {

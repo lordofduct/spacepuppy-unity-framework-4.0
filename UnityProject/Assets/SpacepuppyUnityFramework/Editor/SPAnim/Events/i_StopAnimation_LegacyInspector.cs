@@ -13,8 +13,8 @@ using com.spacepuppyeditor.Core.Events;
 namespace com.spacepuppyeditor.Anim
 {
 
-    [CustomEditor(typeof(i_StopAnimation), true)]
-    public class i_StopAnimationInspector : SPEditor
+    [CustomEditor(typeof(i_StopAnimation_Legacy), true)]
+    public class i_StopAnimation_LegacyInspector : SPEditor
     {
         
         public const string PROP_TARGETANIMATOR = "_targetAnimator";
@@ -30,23 +30,24 @@ namespace com.spacepuppyeditor.Anim
 
             this.DrawPropertyField(EditorHelper.PROP_SCRIPT);
             this.DrawPropertyField(EditorHelper.PROP_ORDER);
+            this.DrawPropertyField(EditorHelper.PROP_ACTIVATEON);
 
             this.DrawTargetAnimatorProperty();
 
             var propMode = this.serializedObject.FindProperty(PROP_MODE);
             SPEditorGUILayout.PropertyField(propMode);
             
-            switch(propMode.GetEnumValue<i_StopAnimation.StopMode>())
+            switch(propMode.GetEnumValue<i_StopAnimation_Legacy.StopMode>())
             {
-                case i_StopAnimation.StopMode.Id:
+                case i_StopAnimation_Legacy.StopMode.Id:
                     this.DrawPropertyField(PROP_ID);
                     break;
-                case i_StopAnimation.StopMode.Layer:
+                case i_StopAnimation_Legacy.StopMode.Layer:
                     this.DrawPropertyField(PROP_LAYER);
                     break;
             }
 
-            this.DrawDefaultInspectorExcept(EditorHelper.PROP_SCRIPT, EditorHelper.PROP_ORDER, PROP_TARGETANIMATOR, PROP_MODE, PROP_ID, PROP_LAYER);
+            this.DrawDefaultInspectorExcept(EditorHelper.PROP_SCRIPT, EditorHelper.PROP_ORDER, EditorHelper.PROP_ACTIVATEON, PROP_TARGETANIMATOR, PROP_MODE, PROP_ID, PROP_LAYER);
            
             this.serializedObject.ApplyModifiedProperties();
         }
@@ -66,7 +67,7 @@ namespace com.spacepuppyeditor.Anim
 
 
             var obj = targProp.objectReferenceValue;
-            if (obj == null || i_StopAnimation.IsAcceptibleAnimator(obj))
+            if (obj == null || i_StopAnimation_Legacy.IsAcceptibleAnimator(obj))
                 return;
 
             var go = GameObjectUtil.GetGameObjectFromSource(obj);

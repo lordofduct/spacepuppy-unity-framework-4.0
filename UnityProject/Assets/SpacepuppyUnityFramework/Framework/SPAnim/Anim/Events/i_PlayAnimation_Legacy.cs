@@ -12,7 +12,7 @@ using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.Anim.Events
 {
-    public class i_PlayAnimation : AutoTriggerable, IObservableTrigger
+    public class i_PlayAnimation_Legacy : AutoTriggerable, IObservableTrigger
     {
 
         private const string TRG_ONANIMCOMPLETE = "OnAnimComplete";

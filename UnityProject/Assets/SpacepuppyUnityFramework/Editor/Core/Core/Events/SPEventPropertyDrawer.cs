@@ -112,20 +112,7 @@ namespace com.spacepuppyeditor.Events
             if (_alwaysExpanded || property.isExpanded)
             {
                 h = MARGIN * 2f;
-                h += _targetList.GetHeight();
-                h += EditorGUIUtility.singleLineHeight * 2f;
-                if (_foldoutTargetExtra)
-                {
-                    if (_targetList.index >= 0)
-                    {
-                        var element = _targetList.serializedProperty.GetArrayElementAtIndex(_targetList.index);
-                        h += _triggerTargetDrawer.GetPropertyHeight(element, GUIContent.none);
-                    }
-                    else
-                    {
-                        h += EditorGUIUtility.singleLineHeight * 3.0f;
-                    }
-                }
+                h += this.GetTargetsHeight(property, label);
 
                 if (Application.isPlaying)
                 {
@@ -194,6 +181,25 @@ namespace com.spacepuppyeditor.Events
             {
                 _totalWeight += _targetList.serializedProperty.GetArrayElementAtIndex(i).FindPropertyRelative(PROP_WEIGHT).floatValue;
             }
+        }
+
+        protected virtual float GetTargetsHeight(SerializedProperty property, GUIContent label)
+        {
+            var h = _targetList.GetHeight();
+            h += EditorGUIUtility.singleLineHeight * 2f;
+            if (_foldoutTargetExtra)
+            {
+                if (_targetList.index >= 0)
+                {
+                    var element = _targetList.serializedProperty.GetArrayElementAtIndex(_targetList.index);
+                    h += _triggerTargetDrawer.GetPropertyHeight(element, GUIContent.none);
+                }
+                else
+                {
+                    h += EditorGUIUtility.singleLineHeight * 3.0f;
+                }
+            }
+            return h;
         }
 
         protected virtual Rect DrawTargets(Rect position, SerializedProperty property)

@@ -15,12 +15,10 @@ using com.spacepuppyeditor.Core.Events;
 namespace com.spacepuppyeditor.Anim.Events
 {
 
-    [CustomEditor(typeof(i_PlayRandomAnimation), true)]
-    public class i_PlayRandomAnimationInspector : SPEditor
+    [CustomEditor(typeof(i_PlayRandomAnimation_Legacy), true)]
+    public class i_PlayRandomAnimation_LegacyInspector : SPEditor
     {
 
-        public const string PROP_ORDER = "_order";
-        public const string PROP_ACTIVATEON = "_activateOn";
         public const string PROP_TARGETANIMATOR = "_targetAnimator";
         public const string PROP_CLIPS = "_clips";
 
@@ -69,8 +67,8 @@ namespace com.spacepuppyeditor.Anim.Events
             this.serializedObject.Update();
 
             this.DrawPropertyField(EditorHelper.PROP_SCRIPT);
-            this.DrawPropertyField(PROP_ORDER);
-            this.DrawPropertyField(PROP_ACTIVATEON);
+            this.DrawPropertyField(EditorHelper.PROP_ORDER);
+            this.DrawPropertyField(EditorHelper.PROP_ACTIVATEON);
 
             this.DrawTargetAnimatorProperty();
 
@@ -80,7 +78,7 @@ namespace com.spacepuppyeditor.Anim.Events
             var r = EditorGUILayout.GetControlRect(true, h);
             _clipsDrawer.OnGUI(r, clipsProp, clipsLabel);
 
-            this.DrawDefaultInspectorExcept(EditorHelper.PROP_SCRIPT, PROP_ORDER, PROP_ACTIVATEON, PROP_TARGETANIMATOR, PROP_CLIPS);
+            this.DrawDefaultInspectorExcept(EditorHelper.PROP_SCRIPT, EditorHelper.PROP_ORDER, EditorHelper.PROP_ACTIVATEON, PROP_TARGETANIMATOR, PROP_CLIPS);
 
             this.serializedObject.ApplyModifiedProperties();
         }
@@ -99,7 +97,7 @@ namespace com.spacepuppyeditor.Anim.Events
 
 
             var obj = targProp.objectReferenceValue;
-            if (obj == null || i_PlayAnimation.IsAcceptibleAnimator(obj))
+            if (obj == null || i_PlayAnimation_Legacy.IsAcceptibleAnimator(obj))
                 return;
 
             var go = GameObjectUtil.GetGameObjectFromSource(obj);
@@ -159,9 +157,9 @@ namespace com.spacepuppyeditor.Anim.Events
                 if (controller is Animation || controller is SPLegacyAnimController)
                 {
                     var modeProp = element.FindPropertyRelative(PlayAnimInfoPropertyDrawer.PROP_MODE);
-                    switch (modeProp.GetEnumValue<i_PlayAnimation.PlayByMode>())
+                    switch (modeProp.GetEnumValue<i_PlayAnimation_Legacy.PlayByMode>())
                     {
-                        case i_PlayAnimation.PlayByMode.PlayAnim:
+                        case i_PlayAnimation_Legacy.PlayByMode.PlayAnim:
                             {
                                 var clipProp = element.FindPropertyRelative(PlayAnimInfoPropertyDrawer.PROP_CLIP);
                                 var obj = EditorGUI.ObjectField(area, GUIContent.none, clipProp.objectReferenceValue, typeof(UnityEngine.Object), true);
@@ -181,7 +179,7 @@ namespace com.spacepuppyeditor.Anim.Events
                 else if (controller is ISPAnimator)
                 {
                     var propId = element.FindPropertyRelative(PlayAnimInfoPropertyDrawer.PROP_ID);
-                    propId.stringValue = i_PlayAnimationInspector.DrawSPAnimatorFunctionPopup(area, GUIContent.none, controller as ISPAnimator, propId.stringValue);
+                    propId.stringValue = i_PlayAnimation_LegacyInspector.DrawSPAnimatorFunctionPopup(area, GUIContent.none, controller as ISPAnimator, propId.stringValue);
                 }
                 else if (controller is ISPAnimationSource)
                 {

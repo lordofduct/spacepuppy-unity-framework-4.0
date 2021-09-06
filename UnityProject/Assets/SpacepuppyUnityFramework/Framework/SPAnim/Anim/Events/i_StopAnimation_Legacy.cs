@@ -11,7 +11,7 @@ using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.Anim.Events
 {
-    public class i_StopAnimation : Triggerable
+    public class i_StopAnimation_Legacy : AutoTriggerable
     {
 
         public enum StopMode

@@ -1,10 +1,10 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEditor;
 using UnityEditor.Animations;
 using System.Linq;
 
 using com.spacepuppy;
-using com.spacepuppy.Events;
+using com.spacepuppy.Mecanim;
 using com.spacepuppy.Utils;
 using com.spacepuppyeditor;
 
@@ -15,13 +15,15 @@ namespace com.spacepuppyeditor.Events
 {
 
     [CustomPropertyDrawer(typeof(SPAnimatorStateMachineEvent), true)]
-    public class SPAnimatorStateMachineEventPropertyDrawer : SPEventPropertyDrawer
+    public class SPAnimatorStateMachineEventPropertyDrawer : PropertyDrawer
     {
 
         public const string PROP_ANIMTARGETS = "_animatorTargets";
-        private const string PROP_ACTION = "Action";
-        private const string PROP_ID = "Id";
-        private const string PROP_VALUE = "Value";
+        private const string PROP_ACTION = "_action";
+        private const string PROP_ID = "_id";
+        private const string PROP_VALUE = "_value";
+        private const string PROP_OBJREF = "_objectRef";
+
 
         private GUIContent _currentLabel;
         private AnimatorController _controller;
@@ -30,8 +32,6 @@ namespace com.spacepuppyeditor.Events
         private UnityEditorInternal.ReorderableList _targetList;
 
         #region Methods
-
-
 
         private void Init(SerializedProperty property, GUIContent label)
         {
@@ -58,34 +58,35 @@ namespace com.spacepuppyeditor.Events
         {
             this.Init(property, label);
 
-            float h = base.GetPropertyHeight(property, label);
             if (property.isExpanded)
             {
-                h += _targetList?.GetHeight() ?? 0f;
+                return _targetList?.GetHeight() ?? 0f;
             }
-            return h;
+            else
+            {
+                return EditorGUIUtility.singleLineHeight;
+            }
         }
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             this.Init(property, label);
 
+            property.isExpanded = EditorGUI.Foldout(new Rect(position.xMin, position.yMin, position.width, EditorGUIUtility.singleLineHeight), property.isExpanded, GUIContent.none, true);
             if (property.isExpanded)
             {
-                base.OnGUI(position, property, EditorHelper.TempContent(" "));
+                _targetList.DoList(position);
             }
             else
             {
-                if (!this.AlwaysExpanded) property.isExpanded = EditorGUI.Foldout(new Rect(position.xMin, position.yMin, position.width, EditorGUIUtility.singleLineHeight), property.isExpanded, GUIContent.none, true);
-
                 EditorGUI.BeginProperty(position, label, property);
-                ReorderableListHelper.DrawRetractedHeader(position, label, EditorHelper.TempContent("Animator Targets"));
+                ReorderableListHelper.DrawRetractedHeader(position, label);
                 EditorGUI.EndProperty();
             }
             _controller = null;
         }
 
-        protected override Rect DrawTargets(Rect position, SerializedProperty property)
+        private Rect DrawTargets(Rect position, SerializedProperty property)
         {
             var targprop = property.FindPropertyRelative(PROP_ANIMTARGETS);
             if (targprop != null)
@@ -105,8 +106,6 @@ namespace com.spacepuppyeditor.Events
                 _targetList = null;
             }
 
-            position = this.DrawList(position, property);
-            position = this.DrawAdvancedTargetSettings(position, property);
             return position;
         }
 
@@ -118,7 +117,7 @@ namespace com.spacepuppyeditor.Events
 
         private void _targetList_DrawHeader(Rect area)
         {
-            EditorGUI.LabelField(area, _currentLabel, EditorHelper.TempContent("Animator Targets"));
+            EditorGUI.LabelField(area, _currentLabel);
         }
 
         private void _targetList_DrawElement(Rect area, int index, bool isActive, bool isFocused)
@@ -131,6 +130,7 @@ namespace com.spacepuppyeditor.Events
             var actprop = elprop.FindPropertyRelative(PROP_ACTION);
             var idprop = elprop.FindPropertyRelative(PROP_ID);
             var valprop = elprop.FindPropertyRelative(PROP_VALUE);
+            var overprop = elprop.FindPropertyRelative(PROP_OBJREF);
 
             var r0 = new Rect(area.xMin, area.yMin, area.width * 0.35f, area.height);
 
@@ -141,12 +141,17 @@ namespace com.spacepuppyeditor.Events
                 case SPAnimatorStateMachineEvent.AnimatorTriggerAction.SetTrigger:
                 case SPAnimatorStateMachineEvent.AnimatorTriggerAction.ResetTrigger:
                     {
+                        valprop.floatValue = 0f;
+                        overprop.objectReferenceValue = null;
+
                         var r1 = new Rect(r0.xMax + PAD, area.yMin, Mathf.Max(0f, area.width - r0.width - PAD), area.height);
                         IDPropField(r1, idprop, GUIContent.none, AnimatorControllerParameterType.Trigger);
                     }
                     break;
                 case SPAnimatorStateMachineEvent.AnimatorTriggerAction.SetBool:
                     {
+                        overprop.objectReferenceValue = null;
+
                         const float TOGGLE_WIDTH = 14f;
                         var r1 = new Rect(r0.xMax + PAD, area.yMin, Mathf.Max(0f, area.width - r0.width - TOGGLE_WIDTH - PAD - PAD), area.height);
                         var r2 = new Rect(r1.xMax + PAD, area.yMin, Mathf.Max(0f, area.xMax - r1.xMax - PAD), area.height);
@@ -156,6 +161,8 @@ namespace com.spacepuppyeditor.Events
                     break;
                 case SPAnimatorStateMachineEvent.AnimatorTriggerAction.SetInt:
                     {
+                        overprop.objectReferenceValue = null;
+
                         var tw = Mathf.Max(0f, area.width - r0.width - PAD - PAD);
                         var r1 = new Rect(r0.xMax + PAD, area.yMin, tw * 0.66f, area.height);
                         var r2 = new Rect(r1.xMax + PAD, area.yMin, tw * 0.33f, area.height);
@@ -165,11 +172,41 @@ namespace com.spacepuppyeditor.Events
                     break;
                 case SPAnimatorStateMachineEvent.AnimatorTriggerAction.SetFloat:
                     {
+                        overprop.objectReferenceValue = null;
+
                         var tw = Mathf.Max(0f, area.width - r0.width - PAD - PAD);
                         var r1 = new Rect(r0.xMax + PAD, area.yMin, tw * 0.66f, area.height);
                         var r2 = new Rect(r1.xMax + PAD, area.yMin, tw * 0.33f, area.height);
                         IDPropField(r1, idprop, GUIContent.none, AnimatorControllerParameterType.Float);
                         SPEditorGUI.PropertyField(r2, valprop, GUIContent.none);
+                    }
+                    break;
+                case SPAnimatorStateMachineEvent.AnimatorTriggerAction.OverrideAnimatorController:
+                    {
+                        idprop.stringValue = string.Empty;
+                        valprop.floatValue = 0f;
+
+                        var r1 = new Rect(r0.xMax + PAD, area.yMin, Mathf.Max(0f, area.width - r0.width - PAD), area.height);
+                        overprop.objectReferenceValue = EditorGUI.ObjectField(r1, overprop.objectReferenceValue, typeof(AnimatorOverrideController), false);
+                    }
+                    break;
+                case SPAnimatorStateMachineEvent.AnimatorTriggerAction.PurgeAnimatorOverride:
+                    {
+                        idprop.stringValue = string.Empty;
+                        valprop.floatValue = 0f;
+                        overprop.objectReferenceValue = null;
+
+                        var r1 = new Rect(r0.xMax + PAD, area.yMin, Mathf.Max(0f, area.width - r0.width - PAD), area.height);
+                        EditorGUI.LabelField(r1, "Only supported if a properly configured animator bridge is found.");
+                    }
+                    break;
+                case SPAnimatorStateMachineEvent.AnimatorTriggerAction.TriggerAllOnTarget:
+                    {
+                        idprop.stringValue = string.Empty;
+                        valprop.floatValue = 0f;
+
+                        var r1 = new Rect(r0.xMax + PAD, area.yMin, Mathf.Max(0f, area.width - r0.width - PAD), area.height);
+                        overprop.objectReferenceValue = EditorGUI.ObjectField(r1, overprop.objectReferenceValue, typeof(UnityEngine.Object), false);
                     }
                     break;
             }

@@ -1,14 +1,29 @@
 using UnityEngine;
 using UnityEngine.Animations;
 using System.Collections.Generic;
-using System;
+using System.Dynamic;
+using com.spacepuppy.Utils;
 
-namespace com.spacepuppy
+namespace com.spacepuppy.Mecanim
 {
 
+    /// <summary>
+    /// Represents a bridge component between IAnimatorStateMachineBridgeBehaviour and the Animator its attached to.
+    /// 
+    /// Only one bridge should exist on the same entity as the Animator.
+    /// </summary>
     public interface IAnimatorStateMachineBridge : IComponent
     {
 
+        Animator Animator { get; }
+        RuntimeAnimatorController InitialRuntimeAnimatorController { get; }
+
+    }
+
+    public interface IAnimatorStateMachineBridgeBehaviour
+    {
+        Animator Animator { get; }
+        IAnimatorStateMachineBridge Bridge { get; }
     }
 
     public static class BridgedStateMachineBehaviourExtensions
@@ -23,6 +38,78 @@ namespace com.spacepuppy
         {
             BridgedStateMachineBehaviour.Initialize(animator, bridge);
         }
+
+    }
+
+    /// <summary>
+    /// A dummy hook that allows an Animator to behave like a bridge all on its own.
+    /// </summary>
+    internal class DummyAnimatorStateMachineBridge : MonoBehaviour, IAnimatorStateMachineBridge
+    {
+
+        private Animator _animator;
+        private RuntimeAnimatorController _initialController;
+
+        #region IAnimatorStateMachineBridge Interface
+
+        Animator IAnimatorStateMachineBridge.Animator => _animator;
+
+        RuntimeAnimatorController IAnimatorStateMachineBridge.InitialRuntimeAnimatorController => _initialController;
+
+        Component IComponent.component => this;
+
+        #endregion
+
+        #region Static Utils
+
+        public static void TryAttach(Animator animator, IAnimatorStateMachineBridge remoteBridge = null)
+        {
+            if (animator == null) return;
+
+            if(ObjUtil.IsNullOrDestroyed(animator.GetComponent<IAnimatorStateMachineBridge>()))
+            {
+                var bridge = animator.AddComponent<DummyAnimatorStateMachineBridge>();
+                bridge._animator = animator;
+                bridge._initialController = animator.runtimeAnimatorController;
+            }
+        }
+
+        #endregion
+
+    }
+
+    /// <summary>
+    /// A cross entity hook that associates a bridge with its Animator so that something is returned if you call GetComponent(IAnimatorStateMachineBridge) on the Animator even though the real bridge is elsewhere on the entity.
+    /// </summary>
+    internal class CrossEntityAnimatorStateMachineBridge : MonoBehaviour, IAnimatorStateMachineBridge
+    {
+
+        private IAnimatorStateMachineBridge _remoteBridge;
+
+        #region IAnimatorStateMachineBridge Interface
+
+        Animator IAnimatorStateMachineBridge.Animator => _remoteBridge.Animator;
+
+        RuntimeAnimatorController IAnimatorStateMachineBridge.InitialRuntimeAnimatorController => _remoteBridge.InitialRuntimeAnimatorController;
+
+        Component IComponent.component => this;
+
+        #endregion
+
+        #region Static Utils
+
+        public static void TryAttach(Animator animator, IAnimatorStateMachineBridge remoteBridge)
+        {
+            if (animator == null) return;
+
+            if (ObjUtil.IsNullOrDestroyed(animator.GetComponent<IAnimatorStateMachineBridge>()))
+            {
+                var bridge = animator.AddComponent<CrossEntityAnimatorStateMachineBridge>();
+                bridge._remoteBridge = remoteBridge;
+            }
+        }
+
+        #endregion
 
     }
 
@@ -42,7 +129,7 @@ namespace com.spacepuppy
         public sealed override void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex) { }
     }
 
-    public abstract class BridgedStateMachineBehaviour : SealedStateMachineBehaviour
+    public abstract class BridgedStateMachineBehaviour : SealedStateMachineBehaviour, IAnimatorStateMachineBridgeBehaviour
     {
 
         public enum UpdateTransitionState
@@ -71,7 +158,9 @@ namespace com.spacepuppy
         /// <param name="bridge"></param>
         public static void Initialize(Animator animator, IAnimatorStateMachineBridge bridge)
         {
-            if (object.ReferenceEquals(animator, null)) throw new ArgumentNullException(nameof(animator));
+            if (object.ReferenceEquals(animator, null)) throw new System.ArgumentNullException(nameof(animator));
+
+            CrossEntityAnimatorStateMachineBridge.TryAttach(animator, bridge);
 
             var behaviours = animator.GetBehaviours<BridgedStateMachineBehaviour>();
             for (int i = 0; i < behaviours.Length; i++)
@@ -91,13 +180,13 @@ namespace com.spacepuppy
 
         #region Properties
 
-        public Animator Animator { get { return _animator; } }
-
         public UpdateTransitionState TransitionState { get { return _transitionState; } }
 
         #endregion
 
         #region Methods
+
+        protected abstract IAnimatorStateMachineBridge GetBridge();
 
         protected virtual void OnInitialized() { }
 
@@ -192,6 +281,14 @@ namespace com.spacepuppy
 
         #endregion
 
+        #region IAnimatorStateMachineBridgeBehaviour Interface
+
+        public Animator Animator { get { return _animator; } }
+
+        public IAnimatorStateMachineBridge Bridge { get { return this.GetBridge(); } }
+
+        #endregion
+
     }
 
     public abstract class BridgedStateMachineBehaviour<T> : BridgedStateMachineBehaviour where T : class, IAnimatorStateMachineBridge
@@ -209,11 +306,16 @@ namespace com.spacepuppy
 
         #region Properties
 
-        public T Bridge { get { return _bridge; } }
+        public new T Bridge { get { return _bridge; } }
 
         #endregion
 
         #region Methods
+
+        protected sealed override IAnimatorStateMachineBridge GetBridge()
+        {
+            return _bridge;
+        }
 
         protected sealed override void InternalInitialize(Animator animator, IAnimatorStateMachineBridge bridge)
         {

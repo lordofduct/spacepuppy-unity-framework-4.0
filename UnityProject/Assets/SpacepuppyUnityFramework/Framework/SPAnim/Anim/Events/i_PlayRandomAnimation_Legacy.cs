@@ -13,7 +13,7 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Anim.Events
 {
 
-    public class i_PlayRandomAnimation : AutoTriggerable, IObservableTrigger
+    public class i_PlayRandomAnimation_Legacy : AutoTriggerable, IObservableTrigger
     {
 
         private const string TRG_ONANIMCOMPLETE = "OnAnimComplete";
@@ -91,9 +91,9 @@ namespace com.spacepuppy.Anim.Events
             {
                 switch (info.Mode)
                 {
-                    case i_PlayAnimation.PlayByMode.PlayAnim:
+                    case i_PlayAnimation_Legacy.PlayByMode.PlayAnim:
                         return PlayClip(controller as SPLegacyAnimController, info.Clip, info);
-                    case i_PlayAnimation.PlayByMode.PlayAnimByID:
+                    case i_PlayAnimation_Legacy.PlayByMode.PlayAnimByID:
                         var anim = (controller as SPLegacyAnimController).GetAnim(info.Id);
                         if (anim != null)
                         {
@@ -105,7 +105,7 @@ namespace com.spacepuppy.Anim.Events
                             return anim;
                         }
                         return null;
-                    case i_PlayAnimation.PlayByMode.PlayAnimFromResource:
+                    case i_PlayAnimation_Legacy.PlayByMode.PlayAnimFromResource:
                         return this.PlayClip(controller as SPLegacyAnimController, Resources.Load<UnityEngine.Object>(info.Id), info);
                 }
             }
@@ -113,9 +113,9 @@ namespace com.spacepuppy.Anim.Events
             {
                 switch (info.Mode)
                 {
-                    case i_PlayAnimation.PlayByMode.PlayAnim:
+                    case i_PlayAnimation_Legacy.PlayByMode.PlayAnim:
                         return PlayClip(controller as Animation, info.Clip, info);
-                    case i_PlayAnimation.PlayByMode.PlayAnimByID:
+                    case i_PlayAnimation_Legacy.PlayByMode.PlayAnimByID:
                         var comp = controller as Animation;
                         if (comp[info.Id] != null)
                         {
@@ -128,13 +128,13 @@ namespace com.spacepuppy.Anim.Events
                             return anim;
                         }
                         return null;
-                    case i_PlayAnimation.PlayByMode.PlayAnimFromResource:
+                    case i_PlayAnimation_Legacy.PlayByMode.PlayAnimFromResource:
                         return this.PlayClip(controller as Animation, Resources.Load<UnityEngine.Object>(info.Id), info);
                 }
             }
             else if (controller is ISPAnimationSource)
             {
-                if (info.Mode == i_PlayAnimation.PlayByMode.PlayAnimByID)
+                if (info.Mode == i_PlayAnimation_Legacy.PlayByMode.PlayAnimByID)
                 {
                     var anim = (controller as ISPAnimationSource).GetAnim(info.Id);
                     if (anim != null)

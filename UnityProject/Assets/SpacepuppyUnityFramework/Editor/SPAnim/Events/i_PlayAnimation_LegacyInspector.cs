@@ -14,12 +14,10 @@ using com.spacepuppyeditor.Core.Events;
 namespace com.spacepuppyeditor.Anim
 {
 
-    [CustomEditor(typeof(i_PlayAnimation), true)]
-    public class i_PlayAnimationInspector : SPEditor
+    [CustomEditor(typeof(i_PlayAnimation_Legacy), true)]
+    public class i_PlayAnimation_LegacyInspector : SPEditor
     {
 
-        public const string PROP_ORDER = "_order";
-        public const string PROP_ACTIVATEON = "_activateOn";
         public const string PROP_MODE = "_mode";
         public const string PROP_TARGETANIMATOR = "_targetAnimator";
         public const string PROP_ID = "_id";
@@ -46,8 +44,8 @@ namespace com.spacepuppyeditor.Anim
             this.serializedObject.Update();
 
             this.DrawPropertyField(EditorHelper.PROP_SCRIPT);
-            this.DrawPropertyField(PROP_ORDER);
-            this.DrawPropertyField(PROP_ACTIVATEON);
+            this.DrawPropertyField(EditorHelper.PROP_ORDER);
+            this.DrawPropertyField(EditorHelper.PROP_ACTIVATEON);
 
             this.DrawTargetAnimatorProperty();
 
@@ -62,9 +60,9 @@ namespace com.spacepuppyeditor.Anim
                         var propMode = this.serializedObject.FindProperty(PROP_MODE);
                         SPEditorGUILayout.PropertyField(propMode);
 
-                        switch (propMode.GetEnumValue<i_PlayAnimation.PlayByMode>())
+                        switch (propMode.GetEnumValue<i_PlayAnimation_Legacy.PlayByMode>())
                         {
-                            case i_PlayAnimation.PlayByMode.PlayAnim:
+                            case i_PlayAnimation_Legacy.PlayByMode.PlayAnim:
                                 {
                                     this.serializedObject.FindProperty(PROP_ID).stringValue = string.Empty;
 
@@ -76,7 +74,7 @@ namespace com.spacepuppyeditor.Anim
                                         clipProp.objectReferenceValue = ObjUtil.GetAsFromSource<IScriptableAnimationClip>(obj) as UnityEngine.Object;
                                 }
                                 break;
-                            case i_PlayAnimation.PlayByMode.PlayAnimByID:
+                            case i_PlayAnimation_Legacy.PlayByMode.PlayAnimByID:
                                 {
                                     this.serializedObject.FindProperty(PROP_CLIP).objectReferenceValue = null;
 
@@ -84,7 +82,7 @@ namespace com.spacepuppyeditor.Anim
                                     this.DrawAnimIdSelector(controller);
                                 }
                                 break;
-                            case i_PlayAnimation.PlayByMode.PlayAnimFromResource:
+                            case i_PlayAnimation_Legacy.PlayByMode.PlayAnimFromResource:
                                 {
                                     this.serializedObject.FindProperty(PROP_CLIP).objectReferenceValue = null;
 
@@ -107,7 +105,7 @@ namespace com.spacepuppyeditor.Anim
                     break;
                 case AnimatorType.SPAnimSource:
                     {
-                        this.serializedObject.FindProperty(PROP_MODE).SetEnumValue<i_PlayAnimation.PlayByMode>(i_PlayAnimation.PlayByMode.PlayAnimByID);
+                        this.serializedObject.FindProperty(PROP_MODE).SetEnumValue<i_PlayAnimation_Legacy.PlayByMode>(i_PlayAnimation_Legacy.PlayByMode.PlayAnimByID);
                         this.serializedObject.FindProperty(PROP_CLIP).objectReferenceValue = null;
 
                         this.DrawPropertyField(PROP_ID);
@@ -119,7 +117,7 @@ namespace com.spacepuppyeditor.Anim
                     break;
             }
             
-            this.DrawDefaultInspectorExcept(EditorHelper.PROP_SCRIPT, PROP_ORDER, PROP_ACTIVATEON, PROP_MODE, PROP_TARGETANIMATOR, PROP_ID, PROP_CLIP, PROP_SETTINGSMASK, PROP_SETTINGS, PROP_QUEUEMODE, PROP_PLAYMODE, PROP_CROSSFADEDUR);
+            this.DrawDefaultInspectorExcept(EditorHelper.PROP_SCRIPT, EditorHelper.PROP_ORDER, EditorHelper.PROP_ACTIVATEON, PROP_MODE, PROP_TARGETANIMATOR, PROP_ID, PROP_CLIP, PROP_SETTINGSMASK, PROP_SETTINGS, PROP_QUEUEMODE, PROP_PLAYMODE, PROP_CROSSFADEDUR);
 
             this.serializedObject.ApplyModifiedProperties();
         }
@@ -136,7 +134,7 @@ namespace com.spacepuppyeditor.Anim
 
             var targProp = targWrapperProp.FindPropertyRelative(TriggerableTargetObjectPropertyDrawer.PROP_TARGET);
             var obj = targProp.objectReferenceValue;
-            if (obj == null || i_PlayAnimation.IsAcceptibleAnimator(obj))
+            if (obj == null || i_PlayAnimation_Legacy.IsAcceptibleAnimator(obj))
                 return;
 
             var go = GameObjectUtil.GetGameObjectFromSource(obj);

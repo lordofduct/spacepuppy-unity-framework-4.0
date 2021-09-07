@@ -81,7 +81,7 @@ namespace com.spacepuppy.Mecanim
             OnTriggerActivated(animator, arg);
         }
 
-        public virtual void ActivateTrigger(IAnimatorStateMachineBridgeBehaviour smb, object arg)
+        public virtual void ActivateTrigger(IBridgedStateMachineBehaviour smb, object arg)
         {
             foreach (var obj in _animatorTargets)
             {
@@ -137,7 +137,7 @@ namespace com.spacepuppy.Mecanim
                     case AnimatorTriggerAction.PurgeAnimatorOverride:
                         {
                             var bridge = animator.GetComponent<IAnimatorStateMachineBridge>();
-                            if(bridge != null)
+                            if(bridge != null && bridge.InitialRuntimeAnimatorController != null)
                             {
                                 animator.runtimeAnimatorController = bridge.InitialRuntimeAnimatorController;
                             }
@@ -149,7 +149,7 @@ namespace com.spacepuppy.Mecanim
                 }
             }
 
-            public void ActivateTrigger(IAnimatorStateMachineBridgeBehaviour smb, object arg)
+            public void ActivateTrigger(IBridgedStateMachineBehaviour smb, object arg)
             {
                 if (smb == null) throw new System.ArgumentNullException(nameof(smb));
 
@@ -180,7 +180,7 @@ namespace com.spacepuppy.Mecanim
                         }
                         break;
                     case AnimatorTriggerAction.PurgeAnimatorOverride:
-                        if (smb.Bridge != null)
+                        if (smb.Bridge != null && smb.Bridge.InitialRuntimeAnimatorController != null)
                         {
                             animator.runtimeAnimatorController = smb.Bridge.InitialRuntimeAnimatorController;
                         }

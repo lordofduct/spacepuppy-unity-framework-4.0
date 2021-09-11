@@ -52,5 +52,5 @@ UnityProject/Assets/3rdParty/AstarPathfindingProject
 UnityProject/Assets/3rdParty/AstarPathfindingProject.meta
 
 #ignore test stuff
-UnityProject/Tests
-UnityProject/Tests.meta
+UnityProject/Assets/Tests
+UnityProject/Assets/Tests.meta

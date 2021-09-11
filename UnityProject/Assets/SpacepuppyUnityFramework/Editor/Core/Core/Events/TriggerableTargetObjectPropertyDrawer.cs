@@ -10,7 +10,7 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppyeditor.Core.Events
 {
 
-    [CustomPropertyDrawer(typeof(TriggerableTargetObject))]
+    [CustomPropertyDrawer(typeof(TriggerableTargetObject), true)]
     public class TriggerableTargetObjectPropertyDrawer : PropertyDrawer
     {
 

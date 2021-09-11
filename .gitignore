@@ -50,3 +50,7 @@ RawAssets/Screenshots/KickstarterScreenshots.psd
 #ignore Aron Granberge Project so it's not shared in repo
 UnityProject/Assets/3rdParty/AstarPathfindingProject
 UnityProject/Assets/3rdParty/AstarPathfindingProject.meta
+
+#ignore test stuff
+UnityProject/Tests
+UnityProject/Tests.meta

@@ -697,7 +697,7 @@ namespace com.spacepuppy.Events
                 //    (!TypeUtil.IsType(targetType, typeof(UnityEngine.Object)) && !TypeUtil.IsType(targetType, typeof(IComponent)))) throw new TypeArgumentMismatchException(targetType, typeof(UnityEngine.Object), "targetType");
                 if (targetType == null ||
                     (!TypeUtil.IsType(targetType, typeof(UnityEngine.Object)) && !targetType.IsInterface))
-                    throw new TypeArgumentMismatchException(targetType, typeof(UnityEngine.Object), "targetType");
+                    throw new TypeArgumentMismatchException(targetType, typeof(UnityEngine.Object), nameof(targetType));
 
                 this.TargetType = targetType;
             }

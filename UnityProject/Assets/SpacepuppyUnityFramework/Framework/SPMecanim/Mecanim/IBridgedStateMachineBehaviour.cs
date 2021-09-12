@@ -3,6 +3,8 @@ using UnityEngine.Animations;
 using System.Collections.Generic;
 
 using com.spacepuppy.Utils;
+using System.Linq;
+using com.spacepuppy.Mecanim.Behaviours;
 
 namespace com.spacepuppy.Mecanim
 {
@@ -29,7 +31,22 @@ namespace com.spacepuppy.Mecanim
         public static void InitializeBridge<T>(this T bridge) where T : IAnimatorStateMachineBridge
         {
             var behaviours = bridge.Animator.GetBehaviours<StateMachineBehaviour>();
-            foreach(var b in behaviours)
+
+            //initialize substate bridge container if necessary
+            if (behaviours.OfType<a_SubStateBridge>().Any())
+            {
+                try
+                {
+                    bridge.SyncSubStateBridges();
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogException(ex);
+                }
+            }
+
+            //now initialize and bridges
+            foreach (var b in behaviours)
             {
                 if (b is IBridgedStateMachineBehaviour ab)
                 {
@@ -43,6 +60,24 @@ namespace com.spacepuppy.Mecanim
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// If a change was made to the SubStateBridgeContainer child hierarchy, call this to sync any state bridge's.
+        /// </summary>
+        public static void SyncSubStateBridges(this IAnimatorStateMachineBridge bridge)
+        {
+            bridge?.SubStateBridgeContainer?.AddOrGetComponent<AnimatorSubStateBridgeContainer>()?.SyncSubStateBridges();
+        }
+
+        public static IEnumerable<AnimatorSubStateBridge> GetSubStateBridges(this IAnimatorStateMachineBridge bridge)
+        {
+            return bridge?.SubStateBridgeContainer?.GetComponent<AnimatorSubStateBridgeContainer>()?.GetSubStateBridges() ?? Enumerable.Empty<AnimatorSubStateBridge>();
+        }
+
+        public static IEnumerable<AnimatorSubStateBridge> GetActiveSubStateBridges(this IAnimatorStateMachineBridge bridge)
+        {
+            return bridge?.SubStateBridgeContainer?.GetComponent<AnimatorSubStateBridgeContainer>()?.GetActiveSubStateBridges() ?? Enumerable.Empty<AnimatorSubStateBridge>();
         }
 
     }

@@ -8,10 +8,9 @@ using com.spacepuppy.Mecanim;
 using com.spacepuppy.Utils;
 using com.spacepuppyeditor;
 
-using com.spacepuppyeditor.Events;
 using com.spacepuppyeditor.Internal;
 
-namespace com.spacepuppyeditor.Events
+namespace com.spacepuppyeditor.Mecanim
 {
 
     [CustomPropertyDrawer(typeof(SPAnimatorStateMachineEvent), true)]

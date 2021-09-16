@@ -20,6 +20,10 @@ namespace com.spacepuppy.Mecanim
         private string _stateId;
 
         [SerializeField]
+        [Tooltip("Enter/Exit events with trigger even if this is disabled.")]
+        private bool _triggerEventsWhenDisabled;
+
+        [SerializeField]
         private SPEvent _onStateEnter;
 
         [SerializeField]
@@ -60,6 +64,8 @@ namespace com.spacepuppy.Mecanim
 
         public string StateId => _stateId;
 
+        public bool TriggerEventsWhenDisabled => _triggerEventsWhenDisabled;
+
         public SPEvent OnStateEnter {  get { return _onStateEnter; } }
 
         public SPEvent OnStateExit { get { return _onStateExit; } }
@@ -82,6 +88,8 @@ namespace com.spacepuppy.Mecanim
 
         protected internal virtual void SignalStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
         {
+            if (!_triggerEventsWhenDisabled && !this.isActiveAndEnabled) return;
+
             _animator = animator;
             _stateInfo = stateInfo;
             _layerIndex = layerIndex;
@@ -97,6 +105,8 @@ namespace com.spacepuppy.Mecanim
 
         protected internal virtual void SignalStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
         {
+            if (!_triggerEventsWhenDisabled && !this.isActiveAndEnabled) return;
+
             if (_onStateExit.HasReceivers) _onStateExit.ActivateTrigger(this, null);
 
             if (_messageToken.Count > 0)

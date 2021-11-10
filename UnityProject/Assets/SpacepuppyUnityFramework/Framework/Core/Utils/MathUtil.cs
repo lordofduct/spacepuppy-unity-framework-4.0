@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace com.spacepuppy.Utils
 {
@@ -144,27 +145,18 @@ namespace com.spacepuppy.Utils
         }
         
         /// <summary>
+        /// Returns the sign of the value: 1 = positive, -1 = negative, 0 = when 0.
+        /// If 0 <= value <= epsilon then 0 is returned.
         /// This exists because Mathf.Sign returns 1 when the input value is 0. I'm personally used to the System.Math.Sign method that returns 0 on 0.
         /// </summary>
-        /// <param name="value"></param>
+        /// <param name="value">value to get sign of</param>
+        /// <param name="epsilon">if 0 <= value <= epsilon then 0 is returned</param>
+        /// <param name="valueOnZero">a value to return in place of 0, this allows returning positive|1 for 0 like unity's Mathf.Sign does</param>
         /// <returns></returns>
-        public static float Sign(float value)
+        public static float Sign(float value, float epsilon = 0f, float valueOnZero = 0f)
         {
             if (float.IsNaN(value)) return float.NaN;
-            if (value == 0f) return 0f;
-            return (value > 0f) ? 1.0f : -1.0f;
-        }
-
-        /// <summary>
-        /// This is an overload of MathUtil.Sign that allows defining what is returned on 0. This is nice if you are checking if 0 was returned anyways and changing the value.
-        /// </summary>
-        /// <param name="value"></param>
-        /// <param name="valueOnZero"></param>
-        /// <returns></returns>
-        public static float Sign(float value, float valueOnZero)
-        {
-            if (float.IsNaN(value)) return float.NaN;
-            if (value == 0f) return valueOnZero;
+            if (System.Math.Abs(value) <= epsilon) return valueOnZero;
             return (value > 0f) ? 1.0f : -1.0f;
         }
 

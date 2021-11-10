@@ -22,7 +22,8 @@ namespace com.spacepuppy
         Component = 13,
         LayerMask = 14,
         Rect = 15,
-        Numeric = 16
+        Numeric = 16,
+        Ref = 17,
     }
 
     public enum QuitState

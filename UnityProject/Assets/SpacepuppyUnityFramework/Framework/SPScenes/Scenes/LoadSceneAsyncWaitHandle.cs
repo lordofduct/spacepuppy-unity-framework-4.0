@@ -51,7 +51,7 @@ namespace com.spacepuppy.Scenes
             get { return _sceneName; }
         }
 
-        public LoadSceneMode Mode
+        public override LoadSceneMode Mode
         {
             get { return _mode; }
         }

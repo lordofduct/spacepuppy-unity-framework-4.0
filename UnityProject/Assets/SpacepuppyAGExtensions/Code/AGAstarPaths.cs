@@ -9,9 +9,25 @@ using System;
 
 namespace com.spacepuppy.Pathfinding
 {
-    public class AGAstarABPath : ABPath, IPath
+
+    public interface IAGAstarPath : IPath
     {
-        
+
+        void CalculatePath(Seeker seeker);
+
+    }
+
+    public class AGAstarABPath : ABPath, IAGAstarPath
+    {
+
+        #region Fields
+
+        private bool _calculationStarted;
+
+        #endregion
+
+        #region CONSTRUCTOR
+
         public AGAstarABPath()
             : base()
         {
@@ -25,7 +41,17 @@ namespace com.spacepuppy.Pathfinding
             this.UpdateStartEnd(start, end);
         }
 
-        #region IPath Interface
+        public new static AGAstarABPath Construct(Vector3 start, Vector3 end, OnPathDelegate callback = null)
+        {
+            var p = PathPool.GetPath<AGAstarABPath>();
+
+            p.Setup(start, end, callback);
+            return p;
+        }
+
+        #endregion
+
+        #region IAGAstarPath Interface
 
         IList<Vector3> IPath.Waypoints
         {
@@ -42,33 +68,37 @@ namespace com.spacepuppy.Pathfinding
                 switch (this.CompleteState)
                 {
                     case PathCompleteState.NotCalculated:
-                        return PathCalculateStatus.Uncalculated;
+                        return _calculationStarted ? PathCalculateStatus.Calculating : PathCalculateStatus.NotStarted;
                     case PathCompleteState.Error:
                         return PathCalculateStatus.Invalid;
                     case PathCompleteState.Partial:
                         return PathCalculateStatus.Partial;
                     case PathCompleteState.Complete:
-                        return this.IsDone() ? PathCalculateStatus.Success : PathCalculateStatus.Uncalculated;
+                        return this.IsDone() ? PathCalculateStatus.Success : PathCalculateStatus.Calculating;
                     default:
                         return PathCalculateStatus.Invalid;
                 }
             }
         }
 
-        public void UpdateTarget(Vector3 start, Vector3 target)
+        public virtual void CalculatePath(Seeker seeker)
         {
-            this.UpdateStartEnd(start, target);
+            if (seeker == null) throw new System.ArgumentNullException(nameof(seeker));
+
+            _calculationStarted = true;
+            seeker.StartPath(this, AGAstarPath.OnPathCallback);
         }
 
         #endregion
         
     }
 
-    public sealed class AGAstarPath : IPath
+    public sealed class AGAstarPath : IAGAstarPath
     {
         #region Fields
 
         private Path _path;
+        private bool _calculationStarted;
 
         #endregion
 
@@ -104,25 +134,34 @@ namespace com.spacepuppy.Pathfinding
             {
                 switch (_path.CompleteState)
                 {
-                    case PathCompleteState.Error:
                     case PathCompleteState.NotCalculated:
+                        return _calculationStarted ? PathCalculateStatus.Calculating : PathCalculateStatus.NotStarted;
+                    case PathCompleteState.Error:
                         return PathCalculateStatus.Invalid;
                     case PathCompleteState.Partial:
                         return PathCalculateStatus.Partial;
                     case PathCompleteState.Complete:
-                        return _path.IsDone() ? PathCalculateStatus.Success : PathCalculateStatus.Uncalculated;
+                        return _path.IsDone() ? PathCalculateStatus.Success : PathCalculateStatus.Calculating;
                     default:
                         return PathCalculateStatus.Invalid;
                 }
             }
         }
-        
+
         public IList<Vector3> Waypoints
         {
             get
             {
                 return _path.vectorPath;
             }
+        }
+
+        public void CalculatePath(Seeker seeker)
+        {
+            if (seeker == null) throw new System.ArgumentNullException(nameof(seeker));
+
+            _calculationStarted = true;
+            seeker.StartPath(_path, AGAstarPath.OnPathCallback);
         }
 
         #endregion
@@ -136,30 +175,14 @@ namespace com.spacepuppy.Pathfinding
             {
                 if (_onPathCallback == null) _onPathCallback = new OnPathDelegate((Path p) =>
                 {
-                    if (p.CompleteState == PathCompleteState.Complete && 
-                        p is ABPath && 
+                    if (p.CompleteState == PathCompleteState.Complete &&
+                        p is ABPath &&
                         (p.vectorPath.Count == 0 || !VectorUtil.FuzzyEquals(p.vectorPath[p.vectorPath.Count - 1], (p as ABPath).endPoint)))
                     {
                         p.vectorPath.Add((p as ABPath).endPoint);
                     }
                 });
                 return _onPathCallback;
-            }
-        }
-
-        public static Path GetInnerPath(IPath path)
-        {
-            if (path is Path)
-            {
-                return path as Path;
-            }
-            else if (path is AGAstarPath)
-            {
-                return (path as AGAstarPath).InnerPath;
-            }
-            else
-            {
-                return null;
             }
         }
 

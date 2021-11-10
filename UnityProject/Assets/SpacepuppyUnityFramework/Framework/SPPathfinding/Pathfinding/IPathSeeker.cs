@@ -62,6 +62,10 @@ namespace com.spacepuppy.Pathfinding
         /// <param name="target"></param>
         IPath PathTo(Vector3 target);
 
+        /// <summary>
+        /// If the path is not yet calculated (status returns NotStarted) it will be calculated by self. Then sets the current path to this path.
+        /// </summary>
+        /// <param name="path"></param>
         void PathTo(IPath path);
         
 

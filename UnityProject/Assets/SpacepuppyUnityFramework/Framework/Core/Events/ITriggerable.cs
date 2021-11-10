@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace com.spacepuppy.Events
 {
 
-    public interface ITriggerable : IComponent
+    public interface ITriggerable
     {
         int Order { get; }
         /// <summary>

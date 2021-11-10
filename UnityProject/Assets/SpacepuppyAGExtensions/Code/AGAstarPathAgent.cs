@@ -7,7 +7,6 @@ using com.spacepuppy.Motor.Pathfinding;
 using com.spacepuppy.Utils;
 
 using Pathfinding;
-using System;
 
 namespace com.spacepuppy.Pathfinding
 {
@@ -26,7 +25,7 @@ namespace com.spacepuppy.Pathfinding
         private Seeker _seeker;
 
         [System.NonSerialized]
-        private AGAstarABPath _reusableABPath; //a recyclable path object for based Vector3 paths
+        private Path _claimedPath;
 
         #endregion
 
@@ -45,7 +44,7 @@ namespace com.spacepuppy.Pathfinding
         /// <returns></returns>
         public bool ValidPath(IPath path)
         {
-            return (_seeker as IPathSeeker)?.ValidPath(path) ?? AGAstarPath.GetInnerPath(path) != null;
+            return (_seeker as IPathSeeker)?.ValidPath(path) ?? (path is IAGAstarPath || path is Path);
         }
 
         public void CalculatePath(IPath path)
@@ -56,12 +55,17 @@ namespace com.spacepuppy.Pathfinding
             {
                 seeker.CalculatePath(path);
             }
+            else if(path is IAGAstarPath agpath)
+            {
+                agpath.CalculatePath(_seeker);
+            }
+            else if(path is Path p)
+            {
+                _seeker.StartPath(p, AGAstarPath.OnPathCallback);
+            }
             else
             {
-                var p = AGAstarPath.GetInnerPath(path);
-                if (p == null) throw new PathArgumentException();
-
-                _seeker.StartPath(p, AGAstarPath.OnPathCallback);
+                throw new PathArgumentException();
             }
         }
 
@@ -71,12 +75,20 @@ namespace com.spacepuppy.Pathfinding
             var factory = seeker?.PathFactory ?? AGAstarPathFactory.Default;
             if(factory == AGAstarPathFactory.Default)
             {
-                if (_reusableABPath == null) _reusableABPath = new AGAstarABPath();
-                _reusableABPath.UpdateTarget(this.entityRoot.transform.position, target);
+                var p = AGAstarABPath.Construct(this.entityRoot.transform.position, target);
 
-                this.CalculatePath(_reusableABPath);
-                this.SetPath(_reusableABPath);
-                return _reusableABPath;
+                if(_claimedPath != null)
+                {
+                    _claimedPath.Release(this);
+                    _claimedPath = null;
+                }
+
+                this.CalculatePath(p);
+                this.SetPath(p);
+
+                p.Claim(this);
+                _claimedPath = p;
+                return p;
             }
             else
             {
@@ -91,8 +103,18 @@ namespace com.spacepuppy.Pathfinding
         {
             if (path == null) throw new System.ArgumentNullException(nameof(path));
 
-            this.CalculatePath(path);
+            if (path.Status == PathCalculateStatus.NotStarted) this.CalculatePath(path);
             this.SetPath(path);
+        }
+
+        public override void ResetPath()
+        {
+            if (_claimedPath != null)
+            {
+                _claimedPath.Release(this);
+                _claimedPath = null;
+            }
+            base.ResetPath();
         }
 
         #endregion

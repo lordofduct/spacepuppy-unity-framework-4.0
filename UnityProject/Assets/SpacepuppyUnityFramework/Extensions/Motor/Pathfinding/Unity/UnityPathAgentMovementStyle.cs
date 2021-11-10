@@ -60,7 +60,7 @@ namespace com.spacepuppy.Motor.Pathfinding.Unity
         {
             if (!(path is UnityPath)) throw new PathArgumentException();
 
-            this.CalculatePath(path);
+            if (path.Status == PathCalculateStatus.NotStarted) this.CalculatePath(path);
             this.SetPath(path);
         }
 

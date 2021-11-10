@@ -19,6 +19,8 @@ namespace com.spacepuppy.Scenes
         /// </summary>
         public abstract Scene Scene { get; }
 
+        public abstract LoadSceneMode Mode { get; }
+
         /// <summary>
         /// Use this to pass some token between scenes. 
         /// Anything that handles the ISceneLoadedMessageReceiver will receiver a reference to this handle, and therefore this token.
@@ -205,13 +207,16 @@ namespace com.spacepuppy.Scenes
     {
 
         private Scene _scene;
+        private LoadSceneMode _mode;
 
-        public UnmanagedSceneLoadedEventArgs(Scene scene)
+        public UnmanagedSceneLoadedEventArgs(Scene scene, LoadSceneMode mode)
         {
             _scene = scene;
         }
 
         public override Scene Scene { get { return _scene; } }
+
+        public override LoadSceneMode Mode {  get { return _mode; } }
 
         public override float Progress { get { return 1f; } }
 

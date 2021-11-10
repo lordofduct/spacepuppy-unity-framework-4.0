@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using UnityEngine;
 
 namespace com.spacepuppy.Mecanim
 {
@@ -13,6 +9,16 @@ namespace com.spacepuppy.Mecanim
         Entering = 1,
         Active = 2,
         Exiting = 3
+    }
+
+    [System.Flags]
+    public enum AnimatorControllerParameterTypeMask
+    {
+        Any = -1,
+        Float = 1,
+        Int = 2,
+        Bool = 4,
+        Trigger = 8,
     }
 
 }

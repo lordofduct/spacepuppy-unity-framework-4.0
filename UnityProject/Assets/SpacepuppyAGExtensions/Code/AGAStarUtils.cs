@@ -1,9 +1,8 @@
-﻿using System.Collections;
+﻿using UnityEngine;
 using System.Collections.Generic;
-using UnityEngine;
-
 
 using Pathfinding;
+using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.Pathfinding
 {
@@ -79,7 +78,7 @@ namespace com.spacepuppy.Pathfinding
             guo.modifyTag = gus.modifyTag;
             guo.setTag = gus.setTag;
         }
-        
+
     }
 
 }

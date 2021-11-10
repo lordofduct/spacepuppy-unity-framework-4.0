@@ -4,6 +4,7 @@
 // Author: James Nies
 // Licensed under The Code Project Open License (CPOL): http://www.codeproject.com/info/cpol10.aspx
 
+using com.spacepuppy.Utils;
 using System;
 using System.Reflection;
 
@@ -14,6 +15,7 @@ using System.Reflection.Emit;
 
 namespace com.spacepuppy.Dynamic.Accessors
 {
+
     /// <summary>
     /// The PropertyAccessor class provides fast dynamic access
     /// to a property of a specified target class.
@@ -21,7 +23,7 @@ namespace com.spacepuppy.Dynamic.Accessors
     internal class FieldAccessor : MemberAccessor
     {
 
-        readonly FieldInfo _fieldInfo;
+        protected readonly FieldInfo _fieldInfo;
 
         /// <summary>
         /// Creates a new property accessor.
@@ -200,4 +202,5 @@ namespace com.spacepuppy.Dynamic.Accessors
 #endif
 
     }
+
 }

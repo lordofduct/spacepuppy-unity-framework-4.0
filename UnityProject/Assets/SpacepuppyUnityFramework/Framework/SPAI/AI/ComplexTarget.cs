@@ -3,17 +3,19 @@ using System.Collections.Generic;
 using System.Linq;
 
 using com.spacepuppy;
+using com.spacepuppy.Pathfinding;
 using com.spacepuppy.Sensors;
 using com.spacepuppy.Geom;
 using com.spacepuppy.Utils;
+using System;
 
 namespace com.spacepuppy.AI
 {
 
-    public enum ComplexTargetType
+    public enum ComplexTargetType : byte
     {
         Null = 0,
-        Aspect = 1,
+        GameObjectSource = 1,
         Transform = 2,
         Vector2 = 3,
         Vector3 = 4
@@ -22,24 +24,22 @@ namespace com.spacepuppy.AI
     public struct ComplexTarget
     {
 
-        public static IPlanarSurface DefualtSurface;
-
         #region Fields
 
         public readonly ComplexTargetType TargetType;
         private readonly object _target;
+        private readonly object _aux;
         private readonly Vector3 _vector;
-        private readonly IPlanarSurface _surface;
 
         #endregion
 
         #region CONSTRUCTOR
 
-        public ComplexTarget(IAspect aspect)
+        public ComplexTarget(IGameObjectSource aspect, object aux = null)
         {
             if (aspect != null)
             {
-                TargetType = ComplexTargetType.Aspect;
+                TargetType = ComplexTargetType.GameObjectSource;
                 _target = aspect;
             }
             else
@@ -48,10 +48,10 @@ namespace com.spacepuppy.AI
                 _target = null;
             }
             _vector = Vector3.zero;
-            _surface = DefualtSurface;
+            _aux = aux;
         }
 
-        public ComplexTarget(Transform target)
+        public ComplexTarget(Transform target, object aux = null)
         {
             if (target != null)
             {
@@ -64,71 +64,32 @@ namespace com.spacepuppy.AI
                 _target = null;
             }
             _vector = Vector3.zero;
-            _surface = DefualtSurface;
+            _aux = aux;
         }
 
-        public ComplexTarget(Vector2 location)
+        public ComplexTarget(Vector2 location, object aux = null)
         {
             TargetType = ComplexTargetType.Vector2;
             _target = null;
             _vector = (Vector3)location;
-            _surface = DefualtSurface;
+            _aux = aux;
         }
 
-        public ComplexTarget(Vector3 location)
+        public ComplexTarget(Vector3 location, object aux = null)
         {
             TargetType = ComplexTargetType.Vector3;
             _target = null;
             _vector = location;
-            _surface = DefualtSurface;
+            _aux = aux;
         }
 
-        public ComplexTarget(IAspect aspect, IPlanarSurface surface)
+        public ComplexTarget(IPath path)
         {
-            if (aspect != null)
-            {
-                TargetType = ComplexTargetType.Aspect;
-                _target = aspect;
-            }
-            else
-            {
-                TargetType = ComplexTargetType.Null;
-                _target = null;
-            }
-            _vector = Vector3.zero;
-            _surface = surface;
-        }
-
-        public ComplexTarget(Transform target, IPlanarSurface surface)
-        {
-            if (target != null)
-            {
-                TargetType = ComplexTargetType.Transform;
-                _target = target;
-            }
-            else
-            {
-                TargetType = ComplexTargetType.Null;
-                _target = null;
-            }
-            _vector = Vector3.zero;
-            _surface = surface;
-        }
-
-        public ComplexTarget(Vector2 location, IPlanarSurface surface)
-        {
-            TargetType = ComplexTargetType.Vector2;
+            if (path == null) throw new ArgumentNullException(nameof(path));
+            TargetType = ComplexTargetType.Vector3;
             _target = null;
-            _vector = (Vector3)location;
-            _surface = surface;
-        }
-
-        public ComplexTarget(Vector3 location, IPlanarSurface surface)
-        {
-            TargetType = ComplexTargetType.Vector2;
-            _target = null;
-            _vector = location;
-            _surface = surface;
+            _vector = path.Waypoints.LastOrDefault();
+            _aux = path;
         }
 
         #endregion
@@ -143,21 +104,25 @@ namespace com.spacepuppy.AI
                 {
                     case ComplexTargetType.Null:
                         return Vector2.zero;
-                    case ComplexTargetType.Aspect:
-                        var a = _target as IAspect;
-                        if (a.IsNullOrDestroyed()) return Vector2.zero;
-                        else if (_surface == null) return ConvertUtil.ToVector2(a.transform.position);
-                        else return _surface.ProjectPosition2D(a.transform.position);
+                    case ComplexTargetType.GameObjectSource:
+                        {
+                            var a = _target as IGameObjectSource;
+                            if (a.IsNullOrDestroyed()) return Vector2.zero;
+                            else if (this.Surface != null) return this.Surface.ProjectPosition2D(a.transform.position);
+                            else return ConvertUtil.ToVector2(a.transform.position);
+                        }
                     case ComplexTargetType.Transform:
-                        var t = _target as Transform;
-                        if (t.IsNullOrDestroyed()) return Vector2.zero;
-                        else if (_surface == null) return ConvertUtil.ToVector2(t.position);
-                        else return _surface.ProjectPosition2D(t.position);
+                        {
+                            var t = _target as Transform;
+                            if (t.IsNullOrDestroyed()) return Vector2.zero;
+                            else if (this.Surface != null) return this.Surface.ProjectPosition2D(t.position);
+                            else return ConvertUtil.ToVector2(t.position);
+                        }
                     case ComplexTargetType.Vector2:
                         return ConvertUtil.ToVector2(_vector);
                     case ComplexTargetType.Vector3:
-                        if (_surface == null) return ConvertUtil.ToVector2(_vector);
-                        else return _surface.ProjectPosition2D(_vector);
+                        if (_aux is IPlanarSurface surf) return surf.ProjectPosition2D(_vector);
+                        else return ConvertUtil.ToVector2(_vector);
                     default:
                         return Vector2.zero;
                 }
@@ -172,17 +137,21 @@ namespace com.spacepuppy.AI
                 {
                     case ComplexTargetType.Null:
                         return Vector3.zero;
-                    case ComplexTargetType.Aspect:
-                        var a = _target as IAspect;
-                        if (a == null) return Vector3.zero;
-                        else return a.transform.position;
+                    case ComplexTargetType.GameObjectSource:
+                        {
+                            var a = _target as IGameObjectSource;
+                            if (a == null) return Vector3.zero;
+                            else return a.transform.position;
+                        }
                     case ComplexTargetType.Transform:
-                        var t = _target as Transform;
-                        if (t == null) return Vector3.zero;
-                        else return t.position;
+                        {
+                            var t = _target as Transform;
+                            if (t == null) return Vector3.zero;
+                            else return t.position;
+                        }
                     case ComplexTargetType.Vector2:
-                        if (_surface == null) return _vector.SetZ(0f);
-                        else return _surface.ProjectPosition3D(ConvertUtil.ToVector2(_vector));
+                        if (this.Surface != null) return this.Surface.ProjectPosition3D(ConvertUtil.ToVector2(_vector));
+                        else return _vector.SetZ(0f);
                     case ComplexTargetType.Vector3:
                         return _vector;
                     default:
@@ -191,7 +160,7 @@ namespace com.spacepuppy.AI
             }
         }
 
-        public IAspect TargetAspect { get { return _target as IAspect; } }
+        public IGameObjectSource Target { get { return _target as IGameObjectSource; } }
 
         public Transform Transform
         {
@@ -199,8 +168,8 @@ namespace com.spacepuppy.AI
             {
                 switch (TargetType)
                 {
-                    case ComplexTargetType.Aspect:
-                        var a = _target as IAspect;
+                    case ComplexTargetType.GameObjectSource:
+                        var a = _target as IGameObjectSource;
                         if (a == null) return null;
                         else return a.transform;
                     case ComplexTargetType.Transform:
@@ -211,6 +180,12 @@ namespace com.spacepuppy.AI
             }
         }
 
+        public object Aux { get { return _aux; } }
+
+        public IPlanarSurface Surface { get { return _aux as IPlanarSurface; } }
+
+        public IPath Path { get { return _aux as IPath; } }
+
         public bool IsNull
         {
             get
@@ -219,7 +194,7 @@ namespace com.spacepuppy.AI
                 {
                     case ComplexTargetType.Null:
                         return true;
-                    case ComplexTargetType.Aspect:
+                    case ComplexTargetType.GameObjectSource:
                     case ComplexTargetType.Transform:
                         return _target.IsNullOrDestroyed();
                     case ComplexTargetType.Vector2:
@@ -238,31 +213,25 @@ namespace com.spacepuppy.AI
         {
             if (targ == null) return new ComplexTarget();
 
-            if (targ is Component)
-            {
-                if (targ is IAspect)
-                    return new ComplexTarget(targ as IAspect);
-                else if (targ is Transform)
-                    return new ComplexTarget(targ as Transform);
-                else
-                    return new ComplexTarget((targ as Component).transform);
-            }
-            else if (targ is GameObject)
-                return new ComplexTarget((targ as GameObject).transform);
-            else if (targ is Vector2)
+            if (targ is Vector2)
                 return new ComplexTarget((Vector2)targ);
             else if (targ is Vector3)
                 return new ComplexTarget((Vector3)targ);
+            else if (targ is IPath)
+                return new ComplexTarget(targ as IPath);
+            else if (targ is IGameObjectSource)
+                return new ComplexTarget(targ as IGameObjectSource);
+            else if (targ is GameObject)
+                return new ComplexTarget((targ as GameObject).transform);
+            else if (targ is Transform)
+                return new ComplexTarget(targ as Transform);
+            else if (targ is Component)
+                return new ComplexTarget((targ as Component).transform);
             else
                 return new ComplexTarget();
         }
 
         public static ComplexTarget Null { get { return new ComplexTarget(); } }
-
-        //public static implicit operator ComplexTarget(IAspect o)
-        //{
-        //    return new ComplexTarget(o);
-        //}
 
         public static implicit operator ComplexTarget(Transform o)
         {
@@ -288,8 +257,8 @@ namespace com.spacepuppy.AI
         public static implicit operator ComplexTarget(Component c)
         {
             if (c == null) return new ComplexTarget();
-            if (c is IAspect)
-                return new ComplexTarget(c as IAspect);
+            if (c is IGameObjectSource)
+                return new ComplexTarget(c as IGameObjectSource);
             else if (c is Transform)
                 return new ComplexTarget(c as Transform);
             else

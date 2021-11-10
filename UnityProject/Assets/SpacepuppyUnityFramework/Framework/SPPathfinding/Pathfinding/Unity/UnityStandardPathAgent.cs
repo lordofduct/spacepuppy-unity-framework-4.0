@@ -54,7 +54,7 @@ namespace com.spacepuppy.Pathfinding.Unity
         {
             get
             {
-                return _agent.hasPath && _agent.remainingDistance > Mathf.Max(_nearGoalThreshold, _agent.stoppingDistance);
+                return _agent.hasPath && !_agent.isStopped && _agent.remainingDistance > Mathf.Max(_nearGoalThreshold, _agent.stoppingDistance);
             }
         }
 
@@ -110,7 +110,7 @@ namespace com.spacepuppy.Pathfinding.Unity
 
             if (path is UnityPath p)
             {
-                p.CalculatePath(_agent.areaMask);
+                if (p.Status == PathCalculateStatus.NotStarted) p.CalculatePath(_agent.areaMask);
                 _agent.SetPath(p.NavMeshPath);
             }
             else

@@ -63,7 +63,7 @@ namespace com.spacepuppyeditor.Core
                 }
 
                 var asTypedList = this.fieldInfo.GetCustomAttributes(typeof(VariantCollection.AsTypedList), false).FirstOrDefault() as VariantCollection.AsTypedList;
-                if (asTypedList != null && asTypedList.TargetType != null && VariantReference.AcceptableType(asTypedList.TargetType))
+                if (asTypedList != null && asTypedList.TargetType != null && VariantReference.AcceptableSerializableType(asTypedList.TargetType))
                 {
                     _variantDrawer.RestrictVariantType = true;
                     _variantDrawer.TypeRestrictedTo = asTypedList.TargetType;

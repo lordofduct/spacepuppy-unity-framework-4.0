@@ -4,6 +4,7 @@
 // Author: James Nies
 // Licensed under The Code Project Open License (CPOL): http://www.codeproject.com/info/cpol10.aspx
 
+using com.spacepuppy.Utils;
 using System;
 using System.Reflection;
 
@@ -14,6 +15,7 @@ using System.Reflection.Emit;
 
 namespace com.spacepuppy.Dynamic.Accessors
 {
+
     /// <summary>
     /// The PropertyAccessor class provides fast dynamic access
     /// to a property of a specified target class.
@@ -21,7 +23,7 @@ namespace com.spacepuppy.Dynamic.Accessors
     internal class PropertyAccessor : MemberAccessor
     {
 
-        readonly PropertyInfo _propInfo;
+        protected readonly PropertyInfo _propInfo;
 
         /// <summary>
         /// Creates a new property accessor.
@@ -200,4 +202,41 @@ namespace com.spacepuppy.Dynamic.Accessors
 #endif
 
     }
+
+    internal class PropertyAccessor<TargetType, MemberType> : PropertyAccessor, IMemberAccessor<MemberType>
+    {
+
+        private Action<TargetType, MemberType> _setter;
+        private Func<TargetType, MemberType> _getter;
+
+        public PropertyAccessor(PropertyInfo info) : base(info)
+        {
+            if (!TypeUtil.IsType(typeof(TargetType), info.DeclaringType)) throw new ArgumentException("TargetType must match the declaring type of the PropertyInfo", nameof(info));
+            if (!TypeUtil.IsType(typeof(MemberType), info.PropertyType)) throw new ArgumentException("MemberType must match the proeprty type of the PropertyInfo", nameof(info));
+
+            if (info.CanWrite) _setter = (Action<TargetType, MemberType>)Delegate.CreateDelegate(typeof(Action<TargetType, MemberType>), _propInfo.GetSetMethod());
+            if (info.CanRead) _getter = (Func<TargetType, MemberType>)Delegate.CreateDelegate(typeof(Func<TargetType, MemberType>), _propInfo.GetGetMethod());
+        }
+
+        public void Set(object target, MemberType value)
+        {
+            if (target is TargetType targ)
+            {
+                _setter?.Invoke(targ, value);
+            }
+        }
+
+        public new MemberType Get(object target)
+        {
+            if(target is TargetType targ)
+            {
+                return _getter != null ? _getter(targ) : default(MemberType);
+            }
+            else
+            {
+                return default(MemberType);
+            }
+        }
+    }
+
 }

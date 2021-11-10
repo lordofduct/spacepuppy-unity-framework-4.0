@@ -734,6 +734,9 @@ namespace com.spacepuppyeditor.Settings
                     case VariantType.Numeric:
 
                         break;
+                    case VariantType.Ref:
+
+                        break;
                 }
             }
         }

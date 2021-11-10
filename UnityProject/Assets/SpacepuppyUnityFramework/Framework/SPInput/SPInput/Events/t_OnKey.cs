@@ -14,6 +14,7 @@ namespace com.spacepuppy.SPInput.Events
         #region Fields
 
         [SerializeField]
+        [ReorderableArray]
         private List<KeyInfo> _keys;
 
         #endregion

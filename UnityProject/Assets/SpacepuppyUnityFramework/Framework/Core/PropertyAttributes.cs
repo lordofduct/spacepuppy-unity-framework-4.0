@@ -407,6 +407,27 @@ namespace com.spacepuppy
 
     }
 
+    [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
+    public class PropertyNameSelectorAttribute : SPPropertyAttribute
+    {
+
+        public System.Type[] TargetTypes;
+        public bool AllowCustom;
+        public string[] IgnorePropNames;
+        public bool AllowReadOnly;
+
+        /// <summary>
+        /// A callback on the scriptableobject target in the shape of 'bool (MemberInfo m)' to be used as a predicate.
+        /// </summary>
+        public string IgnoreCallback;
+
+        public PropertyNameSelectorAttribute(params System.Type[] targetTypes)
+        {
+            this.TargetTypes = targetTypes ?? ArrayUtil.Empty<System.Type>();
+        }
+
+    }
+
     #endregion
 
     #region ModifierDrawer Attributes

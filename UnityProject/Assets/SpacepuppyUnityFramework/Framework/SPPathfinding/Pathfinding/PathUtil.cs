@@ -2,12 +2,16 @@
 using System.Collections.Generic;
 
 using com.spacepuppy.Utils;
-using System.Runtime.CompilerServices;
 
 namespace com.spacepuppy.Pathfinding
 {
     public static class PathUtil
     {
+
+        public static PathCalculateWaitHandle Wait(this IPath path)
+        {
+            return new PathCalculateWaitHandle(path);
+        }
 
         public static IPath CreatePath(this IPathSeeker seeker, Vector3 target)
         {
@@ -15,10 +19,10 @@ namespace com.spacepuppy.Pathfinding
 
             return seeker.PathFactory.Create(seeker, target);
         }
-        
+
         public static bool IsDone(this IPath path)
         {
-            return path.Status != PathCalculateStatus.Uncalculated;
+            return path.Status == PathCalculateStatus.Invalid || path.Status > PathCalculateStatus.Calculating;
         }
 
         /// <summary>
@@ -47,7 +51,7 @@ namespace com.spacepuppy.Pathfinding
             var dir1 = targ - currentPosition;
             var dir2 = waypoints[currentIndex + 1] - targ;
 
-            if (Vector3.Dot(dir1, dir2) <= 0f)
+            if (Vector3.Dot(dir1, dir2) < MathUtil.EPSILON)
             {
                 currentIndex++;
                 targ = path.Waypoints[currentIndex];
@@ -127,7 +131,7 @@ namespace com.spacepuppy.Pathfinding
             var dir1 = targ - currentPosition;
             var dir2 = waypoints[currentIndex + 1] - targ;
 
-            if (Vector3.Dot(dir1, dir2) <= 0f)
+            if (Vector3.Dot(dir1, dir2) < MathUtil.EPSILON)
             {
                 currentIndex++;
                 targ = path.Waypoints[currentIndex];

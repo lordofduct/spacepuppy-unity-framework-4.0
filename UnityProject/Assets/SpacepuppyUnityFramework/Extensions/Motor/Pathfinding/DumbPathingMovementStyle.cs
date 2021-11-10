@@ -94,7 +94,7 @@ namespace com.spacepuppy.Motor.Pathfinding
             {
                 if (_currentPath == null || _currentPath.Status == PathCalculateStatus.Invalid)
                     return PathingStatus.Invalid;
-                else if (_currentPath.Status == PathCalculateStatus.Uncalculated || _currentIndex < _currentPath.Waypoints.Count)
+                else if (_currentPath.Status <= PathCalculateStatus.Calculating || _currentIndex < _currentPath.Waypoints.Count)
                     return PathingStatus.Pathing;
                 else
                     return PathingStatus.Complete;
@@ -138,12 +138,13 @@ namespace com.spacepuppy.Motor.Pathfinding
         {
             get
             {
-                return this.Status == PathingStatus.Pathing;
+                return !_paused && this.Status == PathingStatus.Pathing;
             }
         }
 
         public virtual void SetPath(IPath path)
         {
+            if(_currentPath != null) this.ResetPath();
             _currentPath = path;
             _currentIndex = -1;
             _paused = _currentPath == null;
@@ -184,7 +185,7 @@ namespace com.spacepuppy.Motor.Pathfinding
                 case PathingStatus.Complete:
                     break;
                 case PathingStatus.Pathing:
-                    if (_currentPath.Status != PathCalculateStatus.Uncalculated)
+                    if(_currentPath.Status > PathCalculateStatus.Calculating)
                     {
                         Vector3 pos = this.Position;
                         var target = _currentPath.GetNextTarget(pos, ref _currentIndex);
@@ -206,7 +207,7 @@ namespace com.spacepuppy.Motor.Pathfinding
 
                         this.Move(mv);
 
-                        if(_faceDirectionOfMotion && !VectorUtil.NearZeroVector(dir))
+                        if (_faceDirectionOfMotion && !VectorUtil.NearZeroVector(dir))
                         {
                             this.entityRoot.transform.rotation = Quaternion.Slerp(this.entityRoot.transform.rotation, Quaternion.LookRotation(dir), _faceDirectionSlerpSpeed);
                         }

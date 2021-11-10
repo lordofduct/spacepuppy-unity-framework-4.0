@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 using com.spacepuppy.Utils;
 using com.spacepuppy.Collections;
+using System;
 
 namespace com.spacepuppy.Pathfinding.Unity
 {
@@ -27,7 +28,10 @@ namespace com.spacepuppy.Pathfinding.Unity
         {
             get
             {
-                switch (NavMeshPath?.status ?? NavMeshPathStatus.PathInvalid)
+                var p = this.NavMeshPath;
+                if (p == null) return PathCalculateStatus.NotStarted;
+
+                switch (p.status)
                 {
                     case NavMeshPathStatus.PathInvalid:
                         return PathCalculateStatus.Invalid;
@@ -58,7 +62,7 @@ namespace com.spacepuppy.Pathfinding.Unity
 
         #region Fields
 
-        private NavMeshPath _path = new NavMeshPath();
+        private NavMeshPath _path;
 
         #endregion
 
@@ -94,11 +98,17 @@ namespace com.spacepuppy.Pathfinding.Unity
 
         public override void CalculatePath(int areaMask)
         {
+            if (_path != null) throw new InvalidOperationException("Path is already calculated.");
+
+            _path = new NavMeshPath();
             NavMesh.CalculatePath(this.Start, this.Target, areaMask, _path);
         }
 
         public override void CalculatePath(NavMeshQueryFilter filter)
         {
+            if (_path != null) throw new InvalidOperationException("Path is already calculated.");
+
+            _path = new NavMeshPath();
             NavMesh.CalculatePath(this.Start, this.Target, filter, _path);
         }
 

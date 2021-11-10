@@ -10,6 +10,7 @@ using com.spacepuppy.Dynamic;
 
 using com.spacepuppyeditor.Windows;
 using com.spacepuppyeditor.Internal;
+using UnityEditor.Analytics;
 
 namespace com.spacepuppyeditor
 {
@@ -680,7 +681,7 @@ namespace com.spacepuppyeditor
                 var r0 = new Rect(position.xMin, position.yMin, position.width - w, EditorGUIUtility.singleLineHeight);
                 var r1 = new Rect(r0.xMax, position.yMin, w, EditorGUIUtility.singleLineHeight);
 
-                value = EditorGUI.TextField(r0, label, value);
+                value = EditorGUI.DelayedTextField(r0, value);
                 index = EditorGUI.Popup(r1, index, guiOptions);
                 if (index >= 0 && index < options.Length)
                 {
@@ -1084,7 +1085,41 @@ namespace com.spacepuppyeditor
 
         #endregion
 
+        #region Property Name Selector
 
+        public static string PropertyNameSelector(Rect position, GUIContent label, string name, System.Type type, bool allowCustom = false, System.Predicate<System.Reflection.MemberInfo> filter = null)
+        {
+            var tmp = ArrayUtil.Temp<System.Type>(type);
+            try
+            {
+                return PropertyNameSelector(position, label, name, tmp, allowCustom, filter);
+            }
+            finally
+            {
+                ArrayUtil.ReleaseTemp(tmp);
+            }
+        }
+
+        public static string PropertyNameSelector(Rect position, GUIContent label, string name, IEnumerable<System.Type> types, bool allowCustom = false, System.Predicate<System.Reflection.MemberInfo> filter = null)
+        {
+            var names = types.SelectMany(tp => DynamicUtil.GetMembersFromType(tp, false, System.Reflection.MemberTypes.Field | System.Reflection.MemberTypes.Property));
+            if (filter != null) names = names.Where((m) => filter(m));
+
+            var propnames = names.Distinct().OrderBy(o => o.Name).Select(o => o.Name).ToArray();
+            int index = propnames.IndexOf(name);
+
+            if (allowCustom)
+            {
+                return OptionPopupWithCustom(position, label, name, propnames);
+            }
+            else
+            {
+                index = EditorGUI.Popup(position, label, index, propnames.Select(o => EditorHelper.TempContent(o)).ToArray());
+                return index >= 0 ? propnames[index] : string.Empty;
+            }
+        }
+
+        #endregion
 
 
 

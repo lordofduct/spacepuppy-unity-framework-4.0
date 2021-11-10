@@ -8,7 +8,7 @@ using com.spacepuppy.Pathfinding.Unity;
 
 namespace com.spacepuppy.Motor.Pathfinding.Unity
 {
-    public class UnityPathAgentMovementStyle : PathingMovementStyle, IPathAgent
+    public class UnityPathAgentMovementStyle : DumbPathingMovementStyle, IPathAgent
     {
 
         #region Fields
@@ -35,12 +35,17 @@ namespace com.spacepuppy.Motor.Pathfinding.Unity
 
         public void CalculatePath(IPath path)
         {
-            if (!(path is UnityPath)) throw new PathArgumentException();
-
-            (path as UnityPath).CalculatePath(_areaMask);
+            if (path is UnityPath p)
+            {
+                p.CalculatePath(_areaMask);
+            }
+            else
+            {
+                throw new PathArgumentException();
+            }
         }
 
-        public virtual void PathTo(Vector3 target)
+        public IPath PathTo(Vector3 target)
         {
             if (_path == null) _path = new UnityFromToPath(Vector3.zero, Vector3.zero);
 
@@ -48,13 +53,14 @@ namespace com.spacepuppy.Motor.Pathfinding.Unity
             _path.Target = target;
             this.CalculatePath(_path);
             this.SetPath(_path);
+            return _path;
         }
 
         public virtual void PathTo(IPath path)
         {
             if (!(path is UnityPath)) throw new PathArgumentException();
 
-            this.CalculatePath(path);
+            if (path.Status == PathCalculateStatus.NotStarted) this.CalculatePath(path);
             this.SetPath(path);
         }
 

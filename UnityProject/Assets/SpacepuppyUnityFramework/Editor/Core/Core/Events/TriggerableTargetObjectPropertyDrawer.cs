@@ -6,13 +6,18 @@ using System.Linq;
 using com.spacepuppy;
 using com.spacepuppy.Events;
 using com.spacepuppy.Utils;
+using UnityEditor.Graphs;
 
 namespace com.spacepuppyeditor.Core.Events
 {
 
-    [CustomPropertyDrawer(typeof(TriggerableTargetObject))]
+    [CustomPropertyDrawer(typeof(TriggerableTargetObject), true)]
     public class TriggerableTargetObjectPropertyDrawer : PropertyDrawer
     {
+
+        protected const float LEN_TARGETSOURCE = 60f;
+        protected const float LEN_FINDCOMMAND = 140f;
+        protected const float LEN_RESOLVEBYCOMMAND = 80f;
 
         public const string PROP_CONFIGURED = "_configured";
         public const string PROP_TARGET = "_target";
@@ -90,7 +95,7 @@ namespace com.spacepuppyeditor.Core.Events
 
         #region Methods
 
-        private void Init(SerializedProperty property)
+        protected virtual void Init(SerializedProperty property)
         {
             if (this.ManuallyConfigured) return;
             if (this.fieldInfo == null) return;
@@ -120,7 +125,7 @@ namespace com.spacepuppyeditor.Core.Events
         {
             this.Init(property);
 
-            if(this.AlwaysExpanded || property.isExpanded)
+            if (this.AlwaysExpanded || property.isExpanded)
             {
                 return EditorGUIUtility.singleLineHeight * 2f;
             }
@@ -134,89 +139,44 @@ namespace com.spacepuppyeditor.Core.Events
         {
             this.Init(property);
 
+
             EditorGUI.BeginProperty(position, label, property);
 
             //################################
             //FIRST LINE
-            var rect = new Rect(position.xMin, position.yMin, position.width, EditorGUIUtility.singleLineHeight);
-
             var configProp = property.FindPropertyRelative(PROP_CONFIGURED);
             var targetProp = property.FindPropertyRelative(PROP_TARGET);
             var findProp = property.FindPropertyRelative(PROP_FIND);
 
-            //var r0 = new Rect(rect.xMin, rect.yMin, EditorGUIUtility.labelWidth, rect.height);
-            //rect = new Rect(r0.xMax, rect.yMin, rect.width - r0.width, rect.height);
-            //property.isExpanded = EditorGUI.Foldout(r0, property.isExpanded, label);
+            var prefixRect = new Rect(position.xMin, position.yMin, Mathf.Max(0f, EditorGUIUtility.labelWidth - LEN_TARGETSOURCE), EditorGUIUtility.singleLineHeight);
+            var rect = new Rect(prefixRect.xMax, position.yMin, position.width - prefixRect.width, EditorGUIUtility.singleLineHeight);
             if (!this.AlwaysExpanded)
-                property.isExpanded = SPEditorGUI.PrefixFoldoutLabel(ref rect, property.isExpanded, label);
-            else
-                rect = EditorGUI.PrefixLabel(rect, label);
-
-            var r0 = new Rect(rect.xMin, rect.yMin, Mathf.Min(rect.width * 0.25f, 60f), rect.height);
-            var e = (configProp.boolValue) ? TargetSource.Config : TargetSource.Arg;
-            EditorGUI.BeginChangeCheck();
-            e = (TargetSource)EditorGUI.EnumPopup(r0, e);
-            if(EditorGUI.EndChangeCheck())
             {
-                UpdateTargetFromSource(targetProp, e);
-                configProp.boolValue = (e != TargetSource.Arg);
-                if (e != TargetSource.Arg) findProp.SetEnumValue(TriggerableTargetObject.FindCommand.Direct);
-            }
-            else if(e == TargetSource.Config && !_defaultSet && targetProp.objectReferenceValue == null)
-            {
-                UpdateTargetFromSource(targetProp, e);
-                _defaultSet = true;
+                property.isExpanded = EditorGUI.Foldout(prefixRect, property.isExpanded, label);
             }
             else
             {
-                _defaultSet = true;
+                EditorGUI.LabelField(prefixRect, label);
             }
 
-            var r1 = new Rect(rect.xMin + r0.width, rect.yMin, rect.width - r0.width, rect.height);
-            if(!configProp.boolValue)
-            {
-                var e0 = findProp.GetEnumValue<TriggerableTargetObject.FindCommand>();
-                switch(e0)
-                {
-                    case TriggerableTargetObject.FindCommand.Direct:
-                        EditorGUI.LabelField(r1, "Target determined by activating trigger.");
-                        break;
-                    case TriggerableTargetObject.FindCommand.FindParent:
-                    case TriggerableTargetObject.FindCommand.FindInChildren:
-                    case TriggerableTargetObject.FindCommand.FindInEntity:
-                        EditorGUI.LabelField(r1, e0.ToString() + " of activating trigger arg.");
-                        break;
-                    case TriggerableTargetObject.FindCommand.FindInScene:
-                    case TriggerableTargetObject.FindCommand.FindEntityInScene:
-                    default:
-                        configProp.boolValue = false;
-                        targetProp.objectReferenceValue = null;
-                        EditorGUI.LabelField(r1, e0.ToString());
-                        break;
-                }
-
-                targetProp.objectReferenceValue = null;
-            }
-            else
-            {
-                _objectDrawer.OnGUI(r1, targetProp, GUIContent.none);
-            }
+            rect = this.DrawTargetSource(rect, property, label);
+            rect = this.DrawTarget(rect, property, label);
 
 
             //################################
             //SECOND LINE
             if (this.AlwaysExpanded || property.isExpanded)
             {
-                var indent = EditorGUIUtility.labelWidth * 0.5f;
+                var indent = Mathf.Max(0f, EditorGUIUtility.labelWidth - LEN_FINDCOMMAND);
                 rect = new Rect(position.xMin + indent, position.yMin + EditorGUIUtility.singleLineHeight, Mathf.Max(0f, position.width - indent), EditorGUIUtility.singleLineHeight);
 
-                var w0 = Mathf.Min(rect.width * 0.3f, 120f);
-                var w1 = Mathf.Min(rect.width * 0.3f, 80f);
+                var w0 = Mathf.Min(EditorGUIUtility.labelWidth, LEN_FINDCOMMAND);
+                var w1 = Mathf.Min((rect.width - w0) * 0.4f, LEN_RESOLVEBYCOMMAND);
                 var w2 = rect.width - w0 - w1;
-                r0 = new Rect(rect.xMin, rect.yMin, w0, rect.height);
-                r1 = new Rect(r0.xMax, rect.yMin, w1, rect.height);
+                var r0 = new Rect(rect.xMin, rect.yMin, w0, rect.height);
+                var r1 = new Rect(r0.xMax, rect.yMin, w1, rect.height);
                 var r2 = new Rect(r1.xMax, rect.yMin, w2, rect.height);
-                
+
                 var resolveProp = property.FindPropertyRelative(PROP_RESOLVEBY);
                 var queryProp = property.FindPropertyRelative(PROP_QUERY);
 
@@ -242,7 +202,7 @@ namespace com.spacepuppyeditor.Core.Events
                 if (EditorGUI.EndChangeCheck())
                     resolveProp.SetEnumValue(e1);
 
-                switch(e1)
+                switch (e1)
                 {
                     case TriggerableTargetObject.ResolveByCommand.Nothing:
                         {
@@ -277,12 +237,80 @@ namespace com.spacepuppyeditor.Core.Events
             EditorGUI.EndProperty();
         }
 
+        protected virtual Rect DrawTargetSource(Rect position, SerializedProperty property, GUIContent label)
+        {
+            var configProp = property.FindPropertyRelative(PROP_CONFIGURED);
+            var targetProp = property.FindPropertyRelative(PROP_TARGET);
+            var findProp = property.FindPropertyRelative(PROP_FIND);
+
+            var r0 = new Rect(position.xMin, position.yMin, LEN_TARGETSOURCE, position.height);
+            var e = (configProp.boolValue) ? TargetSource.Config : TargetSource.Arg;
+            EditorGUI.BeginChangeCheck();
+            e = (TargetSource)EditorGUI.EnumPopup(r0, e);
+            if (EditorGUI.EndChangeCheck())
+            {
+                UpdateTargetFromSource(targetProp, e);
+                configProp.boolValue = (e != TargetSource.Arg);
+                if (e != TargetSource.Arg) findProp.SetEnumValue(TriggerableTargetObject.FindCommand.Direct);
+            }
+            else if (e == TargetSource.Config && !_defaultSet && targetProp.objectReferenceValue == null)
+            {
+                UpdateTargetFromSource(targetProp, e);
+                _defaultSet = true;
+            }
+            else
+            {
+                _defaultSet = true;
+            }
+
+            return new Rect(r0.xMax, position.yMin, position.width - r0.width, position.height);
+        }
+
+        protected virtual Rect DrawTarget(Rect position, SerializedProperty property, GUIContent label)
+        {
+            var configProp = property.FindPropertyRelative(PROP_CONFIGURED);
+            var targetProp = property.FindPropertyRelative(PROP_TARGET);
+            var findProp = property.FindPropertyRelative(PROP_FIND);
+
+            var r1 = new Rect(position.xMin, position.yMin, position.width, EditorGUIUtility.singleLineHeight);
+            if (!configProp.boolValue)
+            {
+                var e0 = findProp.GetEnumValue<TriggerableTargetObject.FindCommand>();
+                switch (e0)
+                {
+                    case TriggerableTargetObject.FindCommand.Direct:
+                        EditorGUI.LabelField(r1, "Target determined by activating trigger.");
+                        break;
+                    case TriggerableTargetObject.FindCommand.FindParent:
+                    case TriggerableTargetObject.FindCommand.FindInChildren:
+                    case TriggerableTargetObject.FindCommand.FindInEntity:
+                        EditorGUI.LabelField(r1, e0.ToString() + " of activating trigger arg.");
+                        break;
+                    case TriggerableTargetObject.FindCommand.FindInScene:
+                    case TriggerableTargetObject.FindCommand.FindEntityInScene:
+                    default:
+                        configProp.boolValue = false;
+                        targetProp.objectReferenceValue = null;
+                        EditorGUI.LabelField(r1, e0.ToString());
+                        break;
+                }
+
+                targetProp.objectReferenceValue = null;
+            }
+            else
+            {
+                _objectDrawer.OnGUI(r1, targetProp, GUIContent.none);
+            }
+
+            return new Rect(r1.xMax, r1.yMin, 0f, r1.height);
+        }
+
         #endregion
 
 
         #region Utils
 
-        private void UpdateTargetFromSource(SerializedProperty property, TargetSource esrc)
+        protected void UpdateTargetFromSource(SerializedProperty property, TargetSource esrc)
         {
             switch(esrc)
             {

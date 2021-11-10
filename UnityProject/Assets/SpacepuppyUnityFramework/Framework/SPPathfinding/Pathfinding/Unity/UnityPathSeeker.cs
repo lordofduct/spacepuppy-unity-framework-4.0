@@ -32,9 +32,14 @@ namespace com.spacepuppy.Pathfinding.Unity
 
         public void CalculatePath(IPath path)
         {
-            if (!(path is UnityPath)) throw new PathArgumentException();
-
-            (path as UnityPath).CalculatePath(_areaMask);
+            if (path is UnityPath p)
+            {
+                p.CalculatePath(_areaMask);
+            }
+            else
+            {
+                throw new PathArgumentException();
+            }
         }
         
         #endregion

@@ -181,7 +181,7 @@ namespace com.spacepuppy.Scenes
 
             if (handle == null)
             {
-                handle = new UnmanagedSceneLoadedEventArgs(scene);
+                handle = new UnmanagedSceneLoadedEventArgs(scene, mode);
             }
 
             d(this, handle);

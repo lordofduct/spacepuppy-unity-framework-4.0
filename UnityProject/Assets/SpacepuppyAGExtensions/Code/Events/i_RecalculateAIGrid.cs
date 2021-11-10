@@ -7,7 +7,7 @@ using com.spacepuppy.Utils;
 
 using Pathfinding;
 
-namespace com.spacepuppy.Scenario
+namespace com.spacepuppy.Events
 {
 
     public class i_RecalculateAIGrid : Triggerable

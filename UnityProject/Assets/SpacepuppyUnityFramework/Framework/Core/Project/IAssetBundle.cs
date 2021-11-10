@@ -248,7 +248,7 @@ namespace com.spacepuppy.Project
         #region INameable Interface
 
         private com.spacepuppy.Utils.NameCache.UnityObjectNameCache _nameCache;
-        public new string name
+        public string name
         {
             get { return _nameCache.Name; }
             set { _nameCache.Name = value; }

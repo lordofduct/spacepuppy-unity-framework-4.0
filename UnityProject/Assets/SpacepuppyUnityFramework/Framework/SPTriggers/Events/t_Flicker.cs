@@ -7,7 +7,7 @@ using com.spacepuppy.Geom;
 using com.spacepuppy.Events;
 using com.spacepuppy.Utils;
 
-namespace com.spacepuppy.Scenario
+namespace com.spacepuppy.Events
 {
 
     public class t_Flicker : SPComponent, IObservableTrigger

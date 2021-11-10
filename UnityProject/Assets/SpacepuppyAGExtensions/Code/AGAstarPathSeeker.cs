@@ -41,9 +41,7 @@ namespace com.spacepuppy.Pathfinding
 
         public IPath CreatePath(Vector3 target)
         {
-            var path = new AGAstarABPath();
-            path.UpdateTarget(this.entityRoot.transform.position, target);
-            return path;
+            return AGAstarABPath.Construct(this.entityRoot.transform.position, target);
         }
 
         /// <summary>
@@ -54,16 +52,24 @@ namespace com.spacepuppy.Pathfinding
         /// <returns></returns>
         public bool ValidPath(IPath path)
         {
-            return path is AGAstarABPath;
+            return path is IAGAstarPath || path is Path;
         }
 
         public void CalculatePath(IPath path)
         {
             if (path == null) throw new System.ArgumentNullException("path");
-
-            var p = AGAstarPath.GetInnerPath(path);
-            if (p == null) throw new PathArgumentException();
-            this.StartPath(p, AGAstarPath.OnPathCallback);
+            if (path is IAGAstarPath agpath)
+            {
+                agpath.CalculatePath(this);
+            }
+            else if (path is Path p)
+            {
+                this.StartPath(p, AGAstarPath.OnPathCallback);
+            }
+            else
+            {
+                throw new PathArgumentException();
+            }
         }
 
         #endregion

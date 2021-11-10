@@ -37,159 +37,176 @@ namespace com.spacepuppy.Dynamic
     public static class DynamicUtil
     {
 
+        private static IDynamicAccessorImp _accessor = StandardDynamicAccessorImp.Default;
+        public static IDynamicAccessorImp Accessor
+        {
+            get { return _accessor; }
+            set { _accessor = value ?? StandardDynamicAccessorImp.Default; }
+        }
+
         #region IDynamic Methods
 
-        public static bool SetValue(this object obj, string sprop, object value)
+        public static bool SetValue(this object obj, string sMemberName, object value)
         {
-            if (obj == null) return false;
-
-            if (obj is IDynamic)
+            if (obj is IDynamic d)
             {
                 try
                 {
-                    return (obj as IDynamic).SetValue(sprop, value, (object[])null);
+                    return d.SetValue(sMemberName, value, (object[])null);
                 }
                 catch
                 {
-
-                }
-            }
-            else
-            {
-                return SetValueDirect(obj, sprop, value, (object[])null);
-            }
-
-            return false;
-        }
-
-        public static bool SetValue(this object obj, string sprop, object value, params object[] index)
-        {
-            if (obj == null) return false;
-
-            if (obj is IDynamic)
-            {
-                try
-                {
-                    return (obj as IDynamic).SetValue(sprop, value, index);
-                }
-                catch
-                {
-
-                }
-            }
-            else
-            {
-                return SetValueDirect(obj, sprop, value, index);
-            }
-
-            return false;
-        }
-
-        public static bool SetValue(this object obj, MemberInfo member, object value)
-        {
-            if (obj == null) return false;
-
-            return SetValueDirect(obj, member, value, (object[])null);
-        }
-
-        public static bool SetValue(this object obj, MemberInfo member, object value, params object[] index)
-        {
-            if (obj == null) return false;
-
-            return SetValueDirect(obj, member, value, index);
-        }
-
-        public static object GetValue(this object obj, string sprop, params object[] args)
-        {
-            if (obj == null) return null;
-
-            if (obj is IDynamic)
-            {
-                try
-                {
-                    return (obj as IDynamic).GetValue(sprop, args);
-                }
-                catch
-                {
-
-                }
-            }
-            else
-            {
-                return GetValueDirect(obj, sprop, args);
-            }
-            return null;
-        }
-
-        public static object GetValue(this object obj, MemberInfo member, params object[] args)
-        {
-            if (obj == null) return null;
-
-            if (obj is IDynamic)
-            {
-                try
-                {
-                    return (obj as IDynamic).GetValue(member.Name, args);
-                }
-                catch
-                {
-
-                }
-            }
-            else
-            {
-                return GetValueDirect(obj, member, args);
-            }
-            return null;
-        }
-
-        public static bool TryGetValue(this object obj, string sMemberName, out object result, params object[] args)
-        {
-            if (obj == null)
-            {
-                result = null;
-                return false;
-            }
-
-            if (obj is IDynamic)
-            {
-                try
-                {
-                    return (obj as IDynamic).TryGetValue(sMemberName, out result, args);
-                }
-                catch
-                {
-                    result = null;
                     return false;
                 }
             }
             else
             {
-                return TryGetValueDirect(obj, sMemberName, out result, args);
+                return _accessor.SetValue(obj, sMemberName, value);
             }
         }
 
-        public static object InvokeMethod(this object obj, string name, params object[] args)
+        public static bool SetValue(this object obj, string sMemberName, object value, params object[] index)
         {
-            if (obj == null) return false;
-
-            if (obj is IDynamic)
+            if (obj is IDynamic d)
             {
                 try
                 {
-                    return (obj as IDynamic).InvokeMethod(name, args);
+                    return d.SetValue(sMemberName, value, index);
                 }
                 catch
                 {
-
+                    return false;
                 }
             }
             else
             {
-                return InvokeMethodDirect(obj, name, args);
+                return _accessor.SetValue(obj, sMemberName, value, index);
             }
+        }
 
-            return null;
+        public static bool SetValue<T>(this object obj, string sMemberName, T value)
+        {
+            if(obj is IDynamic d)
+            {
+                return d.SetValue(sMemberName, value);
+            }
+            else
+            {
+                return _accessor.SetValue<T>(obj, sMemberName, value);
+            }
+        }
+
+        public static bool SetValue(this object obj, MemberInfo member, object value)
+        {
+            return _accessor.SetValue(obj, member, value);
+        }
+
+        public static bool SetValue(this object obj, MemberInfo member, object value, params object[] index)
+        {
+            return _accessor.SetValue(obj, member, value, index);
+        }
+
+        public static bool SetValue<T>(this object obj, MemberInfo member, T value)
+        {
+            return _accessor.SetValue<T>(obj, member, value);
+        }
+
+        public static object GetValue(this object obj, string sMemberName, params object[] args)
+        {
+            if(obj is IDynamic d)
+            {
+                return d.GetValue(sMemberName, args);
+            }
+            else
+            {
+                object result;
+                _accessor.TryGetValue(obj, sMemberName, out result);
+                return result;
+            }
+        }
+
+        public static T GetValue<T>(this object obj, string sMemberName, params object[] args)
+        {
+            if (obj is IDynamic d)
+            {
+                return ConvertUtil.Coerce<T>(d.GetValue(sMemberName, args));
+            }
+            else
+            {
+                T result;
+                _accessor.TryGetValue<T>(obj, sMemberName, out result);
+                return result;
+            }
+        }
+
+        public static object GetValue(this object obj, MemberInfo member, params object[] args)
+        {
+            object result;
+            _accessor.TryGetValue(obj, member, out result);
+            return result;
+        }
+
+        public static T GetValue<T>(this object obj, MemberInfo member, params object[] args)
+        {
+            T result;
+            _accessor.TryGetValue<T>(obj, member, out result);
+            return result;
+        }
+
+        public static bool TryGetValue(this object obj, string sMemberName, out object result, params object[] args)
+        {
+            if(obj is IDynamic d)
+            {
+                return d.TryGetValue(sMemberName, out result, args);
+            }
+            else
+            {
+                return _accessor.TryGetValue(obj, sMemberName, out result, args);
+            }
+        }
+
+        public static bool TryGetValue<T>(this object obj, string sMemberName, out T result, params object[] args)
+        {
+            if (obj is IDynamic d)
+            {
+                object temp;
+                if (d.TryGetValue(sMemberName, out temp, args))
+                {
+                    result = ConvertUtil.Coerce<T>(temp);
+                    return true;
+                }
+                else
+                {
+                    result = default(T);
+                    return false;
+                }
+            }
+            else
+            {
+                return _accessor.TryGetValue<T>(obj, sMemberName, out result, args);
+            }
+        }
+
+        public static bool TryGetValue(this object obj, MemberInfo member, out object result, params object[] args)
+        {
+            return _accessor.TryGetValue(obj, member, out result, args);
+        }
+
+        public static bool TryGetValue<T>(this object obj, MemberInfo member, out T result, params object[] args)
+        {
+            return _accessor.TryGetValue<T>(obj, member, out result, args);
+        }
+
+        public static object InvokeMethod(this object obj, string name, params object[] args)
+        {
+            if(obj is IDynamic d)
+            {
+                return d.InvokeMethod(name, args);
+            }
+            else
+            {
+                return _accessor.InvokeMethod(obj, name, args);
+            }
         }
 
         public static bool HasMember(object obj, string name, bool includeNonPublic)
@@ -715,6 +732,28 @@ namespace com.spacepuppy.Dynamic
             return false;
         }
 
+        public static IEnumerable<MemberInfo> EnumerateAllMembers(System.Type tp, BindingFlags binding)
+        {
+            foreach (var m in tp.GetMembers(binding & ~BindingFlags.NonPublic))
+            {
+                yield return m;
+            }
+
+            if ((binding & BindingFlags.NonPublic) != 0)
+            {
+                binding = binding & ~BindingFlags.Public;
+
+                while (tp != null)
+                {
+                    foreach (var m in tp.GetMembers(binding))
+                    {
+                        yield return m;
+                    }
+                    tp = tp.BaseType;
+                }
+            }
+        }
+
         public static IEnumerable<MemberInfo> GetMembersFromType(System.Type tp, bool includeNonPublic, MemberTypes mask = MemberTypes.Field | MemberTypes.Property | MemberTypes.Method)
         {
             const BindingFlags BINDING = BindingFlags.Public | BindingFlags.Instance;
@@ -726,8 +765,6 @@ namespace com.spacepuppy.Dynamic
                 if ((m.MemberType & mask) != 0)
                 {
                     yield return m;
-
-
                 }
             }
 
@@ -1152,7 +1189,7 @@ namespace com.spacepuppy.Dynamic
                                 bool pass = true;
                                 foreach (var p in parr)
                                 {
-                                    if (!(VariantReference.AcceptableType(p.ParameterType) || p.ParameterType == typeof(object)))
+                                    if (!(VariantReference.AcceptableSerializableType(p.ParameterType) || p.ParameterType == typeof(object)))
                                     {
                                         pass = false;
                                         break;
@@ -1167,7 +1204,7 @@ namespace com.spacepuppy.Dynamic
                             var f = mi as System.Reflection.FieldInfo;
                             if (f.IsSpecialName) continue;
 
-                            if (VariantReference.AcceptableType(f.FieldType)) yield return f;
+                            if (VariantReference.AcceptableSerializableType(f.FieldType)) yield return f;
                         }
                         break;
                     case System.Reflection.MemberTypes.Property:
@@ -1178,7 +1215,7 @@ namespace com.spacepuppy.Dynamic
                             if (!p.CanWrite && bWrite) continue;
                             if (p.GetIndexParameters().Length > 0) continue; //indexed properties are not allowed
 
-                            if (VariantReference.AcceptableType(p.PropertyType)) yield return p;
+                            if (VariantReference.AcceptableSerializableType(p.PropertyType)) yield return p;
                         }
                         break;
                 }
@@ -1220,7 +1257,7 @@ namespace com.spacepuppy.Dynamic
                                 bool pass = true;
                                 foreach (var p in parr)
                                 {
-                                    if (!(VariantReference.AcceptableType(p.ParameterType) || p.ParameterType == typeof(object)))
+                                    if (!(VariantReference.AcceptableSerializableType(p.ParameterType) || p.ParameterType == typeof(object)))
                                     {
                                         pass = false;
                                         break;
@@ -1235,7 +1272,7 @@ namespace com.spacepuppy.Dynamic
                             var f = mi as System.Reflection.FieldInfo;
                             if (f.IsSpecialName) continue;
 
-                            if (VariantReference.AcceptableType(f.FieldType)) yield return f;
+                            if (VariantReference.AcceptableSerializableType(f.FieldType)) yield return f;
                         }
                         break;
                     case System.Reflection.MemberTypes.Property:
@@ -1246,7 +1283,7 @@ namespace com.spacepuppy.Dynamic
                             if (!p.CanWrite && bWrite) continue;
                             if (p.GetIndexParameters().Length > 0) continue; //indexed properties are not allowed
 
-                            if (VariantReference.AcceptableType(p.PropertyType)) yield return p;
+                            if (VariantReference.AcceptableSerializableType(p.PropertyType)) yield return p;
                         }
                         break;
                 }

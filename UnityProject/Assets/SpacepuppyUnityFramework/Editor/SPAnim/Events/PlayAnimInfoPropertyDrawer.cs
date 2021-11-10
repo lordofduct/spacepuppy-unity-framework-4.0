@@ -29,11 +29,11 @@ namespace com.spacepuppyeditor.Anim.Events
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
-            if(property.serializedObject.targetObject is i_PlayRandomAnimation)
+            if(property.serializedObject.targetObject is i_PlayRandomAnimation_Legacy)
             {
                 this.DrawFlat = true;
 
-                var controller = property.serializedObject.FindProperty(i_PlayRandomAnimationInspector.PROP_TARGETANIMATOR).FindPropertyRelative(TriggerableTargetObjectPropertyDrawer.PROP_TARGET).objectReferenceValue;
+                var controller = property.serializedObject.FindProperty(i_PlayRandomAnimation_LegacyInspector.PROP_TARGETANIMATOR).FindPropertyRelative(TriggerableTargetObjectPropertyDrawer.PROP_TARGET).objectReferenceValue;
                 if (controller is Animation || controller is SPLegacyAnimController)
                 {
                     float h = EditorGUIUtility.singleLineHeight * 6f;
@@ -95,7 +95,7 @@ namespace com.spacepuppyeditor.Anim.Events
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-            if (property.serializedObject.targetObject is i_PlayRandomAnimation)
+            if (property.serializedObject.targetObject is i_PlayRandomAnimation_Legacy)
             {
                 this.DrawForPlayRandomAnimation(position, property, label);
             }
@@ -107,7 +107,7 @@ namespace com.spacepuppyeditor.Anim.Events
 
         private void DrawForPlayRandomAnimation(Rect position, SerializedProperty property, GUIContent label)
         {
-            var controller = property.serializedObject.FindProperty(i_PlayRandomAnimationInspector.PROP_TARGETANIMATOR).FindPropertyRelative(TriggerableTargetObjectPropertyDrawer.PROP_TARGET).objectReferenceValue;
+            var controller = property.serializedObject.FindProperty(i_PlayRandomAnimation_LegacyInspector.PROP_TARGETANIMATOR).FindPropertyRelative(TriggerableTargetObjectPropertyDrawer.PROP_TARGET).objectReferenceValue;
             if (controller is Animation || controller is SPLegacyAnimController)
             {
                 this.DrawFlat = true;
@@ -120,7 +120,7 @@ namespace com.spacepuppyeditor.Anim.Events
 
                 SPEditorGUI.PropertyField(r0, property.FindPropertyRelative(PROP_WEIGHT));
                 var propId = property.FindPropertyRelative(PROP_ID);
-                propId.stringValue = i_PlayAnimationInspector.DrawSPAnimatorFunctionPopup(r1, controller as ISPAnimator, propId.stringValue);
+                propId.stringValue = i_PlayAnimation_LegacyInspector.DrawSPAnimatorFunctionPopup(r1, controller as ISPAnimator, propId.stringValue);
 
             }
             else if (controller is ISPAnimationSource)
@@ -173,9 +173,9 @@ namespace com.spacepuppyeditor.Anim.Events
             var propMode = property.FindPropertyRelative(PROP_MODE);
             SPEditorGUI.PropertyField(r1, propMode);
 
-            switch (propMode.GetEnumValue<i_PlayAnimation.PlayByMode>())
+            switch (propMode.GetEnumValue<i_PlayAnimation_Legacy.PlayByMode>())
             {
-                case i_PlayAnimation.PlayByMode.PlayAnim:
+                case i_PlayAnimation_Legacy.PlayByMode.PlayAnim:
                     {
                         property.FindPropertyRelative(PROP_ID).stringValue = string.Empty;
 
@@ -187,14 +187,14 @@ namespace com.spacepuppyeditor.Anim.Events
                             clipProp.objectReferenceValue = ObjUtil.GetAsFromSource<IScriptableAnimationClip>(obj) as UnityEngine.Object;
                     }
                     break;
-                case i_PlayAnimation.PlayByMode.PlayAnimByID:
+                case i_PlayAnimation_Legacy.PlayByMode.PlayAnimByID:
                     {
                         property.FindPropertyRelative(PROP_CLIP).objectReferenceValue = null;
 
                         SPEditorGUI.PropertyField(r2, property.FindPropertyRelative(PROP_ID));
                     }
                     break;
-                case i_PlayAnimation.PlayByMode.PlayAnimFromResource:
+                case i_PlayAnimation_Legacy.PlayByMode.PlayAnimFromResource:
                     {
                         property.FindPropertyRelative(PROP_CLIP).objectReferenceValue = null;
 

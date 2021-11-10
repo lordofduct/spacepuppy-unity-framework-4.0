@@ -3,10 +3,10 @@ using UnityEditor;
 using System.Collections.Generic;
 
 using com.spacepuppy;
-using com.spacepuppy.Scenario;
+using com.spacepuppy.Events;
 using com.spacepuppy.Utils;
 
-namespace com.spacepuppyeditor.Scenario
+namespace com.spacepuppyeditor.Events
 {
 
     [CustomEditor(typeof(i_RecalculateAIGrid))]

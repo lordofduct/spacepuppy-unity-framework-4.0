@@ -2,7 +2,8 @@
     "name": "com.spacepuppy.Pathfinding",
     "rootNamespace": "com.spacepuppy",
     "references": [
-        "GUID:ddd0eb9fc8f414a4d9750a013f135d36"
+        "GUID:ddd0eb9fc8f414a4d9750a013f135d36",
+        "GUID:ad6239a0379b2de43a4d9e723d51db80"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

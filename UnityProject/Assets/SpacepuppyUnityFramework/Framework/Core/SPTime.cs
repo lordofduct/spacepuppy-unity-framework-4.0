@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 
-using com.spacepuppy.Utils;
-
 namespace com.spacepuppy
 {
 
@@ -193,6 +191,7 @@ namespace com.spacepuppy
         private static NormalTimeSupplier _normalTime = new NormalTimeSupplier();
         private static RealTimeSupplier _realTime = new RealTimeSupplier();
         private static SmoothTimeSupplier _smoothTime = new SmoothTimeSupplier();
+        private static ITimeSupplier[] _standardTimeSuppliers;
 
         #endregion
 
@@ -210,6 +209,7 @@ namespace com.spacepuppy
             _registeredTimeSuppliers[_normalTime.Id] = _normalTime;
             _registeredTimeSuppliers[_realTime.Id] = _realTime;
             _registeredTimeSuppliers[_smoothTime.Id] = _smoothTime;
+            _standardTimeSuppliers = new ITimeSupplier[] { _normalTime, _realTime, _smoothTime };
         }
 
         #endregion
@@ -393,7 +393,7 @@ namespace com.spacepuppy
 
         public static ITimeSupplier[] GetAllCustom()
         {
-            return _registeredTimeSuppliers.Values.Except(ArrayUtil.Temp<ITimeSupplier>(_normalTime, _realTime, _smoothTime)).ToArray();
+            return _registeredTimeSuppliers.Values.Except(_standardTimeSuppliers).ToArray();
         }
 
         /// <summary>
@@ -613,7 +613,7 @@ namespace com.spacepuppy
             {
                 float result = this.GetTimeScale();
                 
-                if (MathUtil.FuzzyEqual(result, UnityEngine.Time.timeScale))
+                if (Mathf.Approximately(result, UnityEngine.Time.timeScale))
                 {
                     UnityEngine.Time.timeScale = result;
                 }

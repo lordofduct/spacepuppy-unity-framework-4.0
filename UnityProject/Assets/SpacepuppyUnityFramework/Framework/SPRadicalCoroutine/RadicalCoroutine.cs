@@ -556,7 +556,7 @@ namespace com.spacepuppy
                 var current = _currentIEnumeratorYieldValue;
                 _currentIEnumeratorYieldValue = null;
 
-                if (current is YieldInstruction || current is WWW)
+                if (current is YieldInstruction) // || current is WWW) //OBSOLETE - WWW is obsolete
                 {
                     var wait = ManualWaitForGeneric.Create(this, handle, current);
                     _stack.Push(wait);
@@ -1590,10 +1590,11 @@ namespace com.spacepuppy
                 {
                     return routine._currentIEnumeratorYieldValue.GetType().Name;
                 }
-                else if (routine._currentIEnumeratorYieldValue is WWW)
-                {
-                    return string.Format("WWW[{0}%]", (routine._currentIEnumeratorYieldValue as WWW).progress * 100);
-                }
+                //OBSOLETE - WWW is obsolete
+                //else if (routine._currentIEnumeratorYieldValue is WWW)
+                //{
+                //    return string.Format("WWW[{0}%]", (routine._currentIEnumeratorYieldValue as WWW).progress * 100);
+                //}
                 else
                 {
                     return "WaitOneFrame";

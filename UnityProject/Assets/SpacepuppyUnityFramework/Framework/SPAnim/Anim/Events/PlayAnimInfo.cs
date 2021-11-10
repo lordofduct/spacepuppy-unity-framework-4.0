@@ -13,7 +13,7 @@ namespace com.spacepuppy.Anim.Events
         [SerializeField]
         public float Weight;
         [SerializeField]
-        private i_PlayAnimation.PlayByMode _mode;
+        private i_PlayAnimation_Legacy.PlayByMode _mode;
         [SerializeField]
         private string _id;
         [SerializeField]
@@ -33,7 +33,7 @@ namespace com.spacepuppy.Anim.Events
 
         #region Properties
 
-        public i_PlayAnimation.PlayByMode Mode
+        public i_PlayAnimation_Legacy.PlayByMode Mode
         {
             get { return _mode; }
         }
@@ -54,28 +54,28 @@ namespace com.spacepuppy.Anim.Events
 
         public void Configure(AnimationClip clip)
         {
-            _mode = i_PlayAnimation.PlayByMode.PlayAnim;
+            _mode = i_PlayAnimation_Legacy.PlayByMode.PlayAnim;
             _id = null;
             _clip = clip;
         }
 
         public void Configure(IScriptableAnimationClip clip)
         {
-            _mode = i_PlayAnimation.PlayByMode.PlayAnim;
+            _mode = i_PlayAnimation_Legacy.PlayByMode.PlayAnim;
             _id = null;
             _clip = clip as UnityEngine.Object;
         }
 
         public void Configure(string animId)
         {
-            _mode = i_PlayAnimation.PlayByMode.PlayAnimByID;
+            _mode = i_PlayAnimation_Legacy.PlayByMode.PlayAnimByID;
             _id = animId;
             _clip = null;
         }
 
         public void ConfigureAsResource(string resourceId)
         {
-            _mode = i_PlayAnimation.PlayByMode.PlayAnimFromResource;
+            _mode = i_PlayAnimation_Legacy.PlayByMode.PlayAnimFromResource;
             _id = resourceId;
             _clip = null;
         }

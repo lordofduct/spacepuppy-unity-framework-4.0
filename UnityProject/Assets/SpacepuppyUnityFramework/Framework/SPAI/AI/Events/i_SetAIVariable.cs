@@ -6,7 +6,7 @@ using System.Linq;
 
 using com.spacepuppy.Events;
 
-namespace com.spacepuppy.AI.Scenario
+namespace com.spacepuppy.AI.Events
 {
 
     public class i_SetAIVariable : Triggerable

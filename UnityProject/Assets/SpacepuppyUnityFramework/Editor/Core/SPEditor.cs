@@ -367,4 +367,11 @@ namespace com.spacepuppyeditor
 
     }
 
+    [CustomEditor(typeof(StateMachineBehaviour), true)]
+    [CanEditMultipleObjects()]
+    public class SPStateMachineBehaviourEditor : SPEditor
+    {
+
+    }
+
 }

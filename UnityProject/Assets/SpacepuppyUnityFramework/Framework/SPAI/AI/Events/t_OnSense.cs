@@ -7,7 +7,7 @@ using com.spacepuppy.Events;
 using com.spacepuppy.Sensors;
 using com.spacepuppy.Utils;
 
-namespace com.spacepuppy.AI.Scenario
+namespace com.spacepuppy.AI.Events
 {
 
     [Infobox("Setting 'UseProximityTrigger' false will make this tick constantly, multiple t_OnSense configured this way can be very expensive.", MessageType =InfoBoxMessageType.Warning)]

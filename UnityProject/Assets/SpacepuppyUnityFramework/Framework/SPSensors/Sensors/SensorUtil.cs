@@ -45,9 +45,9 @@ namespace com.spacepuppy.Sensors
             if (aspects == null) return false;
 
             var e = new LightEnumerator<IAspect>(aspects);
-            while(e.MoveNext())
+            while (e.MoveNext())
             {
-                if(e.Current != null && e.Current.IsActive)
+                if (e.Current != null && e.Current.IsActive)
                 {
                     if (sensor.Visible(e.Current)) return true;
                 }
@@ -62,7 +62,7 @@ namespace com.spacepuppy.Sensors
 
             using (var lst = TempCollection.GetList<IAspect>())
             {
-                if(sensor.SenseAll(lst, predicate) > 0)
+                if (sensor.SenseAll(lst, predicate) > 0)
                 {
                     if (sortby != null) lst.Sort(sortby);
                     return lst.ToArray();
@@ -96,7 +96,7 @@ namespace com.spacepuppy.Sensors
         {
             if (sensor == null) throw new System.ArgumentNullException("sensor");
 
-            if(precedence == null)
+            if (precedence == null)
             {
                 return sensor.Sense(predicate);
             }
@@ -104,7 +104,7 @@ namespace com.spacepuppy.Sensors
             {
                 using (var lst = TempCollection.GetList<IAspect>())
                 {
-                    if(sensor.SenseAll(lst, predicate) > 0)
+                    if (sensor.SenseAll(lst, predicate) > 0)
                     {
                         lst.Sort(precedence);
                         return lst[0];
@@ -171,9 +171,9 @@ namespace com.spacepuppy.Sensors
             }
         }
 
-        
 
-        
+
+
 
         private static class PrecedenceDelegateContainer<T> where T : class, IAspect
         {

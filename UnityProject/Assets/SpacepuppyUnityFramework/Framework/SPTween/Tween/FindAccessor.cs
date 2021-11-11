@@ -10,6 +10,19 @@ namespace com.spacepuppy.Tween
     public static class FindAccessor
     {
 
+        public static void RegisterFastAccessorsWithTweenCurveFactory(TweenCurveFactory.TweenMemberAccessorFactory factory)
+        {
+            factory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("position"), FindAccessor.TransformPosition);
+            factory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("localPosition"), FindAccessor.TransformLocalPosition);
+            factory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("localScale"), FindAccessor.TransformLocalScale);
+            factory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("eulerAngles"), FindAccessor.TransformEulerAngles);
+            factory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("localEulerAngles"), FindAccessor.TransformLocalEulerAngles);
+            factory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("rotation"), FindAccessor.TransformRotation);
+            factory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("localRotation"), FindAccessor.TransformLocalRotation);
+            factory.RegisterPerminentlyCachedAccessor(typeof(RectTransform).GetProperty("sizeDelta"), FindAccessor.RectTransformSizeDelta);
+            factory.RegisterPerminentlyCachedAccessor(typeof(UnityEngine.UI.Text).GetProperty("text"), FindAccessor.TextGraphicText);
+        }
+
         #region Transform
 
         private static IMemberAccessor<Vector3> _transformPosition;

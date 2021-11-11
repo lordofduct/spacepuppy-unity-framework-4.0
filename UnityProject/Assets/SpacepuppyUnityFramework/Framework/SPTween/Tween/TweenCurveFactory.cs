@@ -164,14 +164,7 @@ namespace com.spacepuppy.Tween
             if (!donotRegisterDefaultGenerators)
             {
                 //register fast accessors
-                _accessorFactory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("position"), FindAccessor.TransformPosition);
-                _accessorFactory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("localPosition"), FindAccessor.TransformLocalPosition);
-                _accessorFactory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("localScale"), FindAccessor.TransformLocalScale);
-                _accessorFactory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("eulerAngles"), FindAccessor.TransformEulerAngles);
-                _accessorFactory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("localEulerAngles"), FindAccessor.TransformLocalEulerAngles);
-                _accessorFactory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("rotation"), FindAccessor.TransformRotation);
-                _accessorFactory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("localRotation"), FindAccessor.TransformLocalRotation);
-                _accessorFactory.RegisterPerminentlyCachedAccessor(typeof(RectTransform).GetProperty("sizeDelta"), FindAccessor.RectTransformSizeDelta);
+                FindAccessor.RegisterFastAccessorsWithTweenCurveFactory(_accessorFactory);
 
                 //register member type generators
                 RegisterTweenCurveGenerator(typeof(bool), new TweenCurveGenerator(CreateUninitializedBoolMemberCurve, typeof(bool)));

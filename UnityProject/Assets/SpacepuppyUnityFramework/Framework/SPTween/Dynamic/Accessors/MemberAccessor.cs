@@ -99,7 +99,7 @@ namespace com.spacepuppy.Dynamic.Accessors
 
         System.Type IMemberAccessor.GetMemberType() { return this.MemberType; }
 
-#if ENABLE_MONO && NET_4_6
+#if ENABLE_MONO && NET_4_6 && ENABLE_SPTWEEN_EMIT
 
         const string emmitedTypeName = "Member";
         

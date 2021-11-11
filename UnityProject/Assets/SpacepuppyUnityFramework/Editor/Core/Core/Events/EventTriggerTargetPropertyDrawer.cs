@@ -16,7 +16,7 @@ namespace com.spacepuppyeditor.Events
     [CustomPropertyDrawer(typeof(EventTriggerTarget))]
     public class EventTriggerTargetPropertyDrawer : PropertyDrawer
     {
-        
+
         public const string PROP_TRIGGERABLETARG = "_triggerable";
         public const string PROP_TRIGGERABLEARGS = "_triggerableArgs";
         public const string PROP_ACTIVATIONTYPE = "_activationType";
@@ -108,47 +108,46 @@ namespace com.spacepuppyeditor.Events
 
         public static TriggerActivationType DrawTriggerActivationTypeDropdown(Rect area, SerializedProperty property, bool drawLabel)
         {
-            var actProp = property.FindPropertyRelative(EventTriggerTargetPropertyDrawer.PROP_ACTIVATIONTYPE);
+            //var actProp = property.FindPropertyRelative(EventTriggerTargetPropertyDrawer.PROP_ACTIVATIONTYPE);
             //EditorGUI.PropertyField(area, actProp);
-            
+
             var actInfo = GetTriggerActivationInfo(property);
-            int index = System.Array.IndexOf(_triggerActivationTypeDisplayNames, actInfo.ActivationTypeDisplayName);
             EditorGUI.BeginChangeCheck();
 
             if (drawLabel)
-                index = EditorGUI.Popup(area, actInfo.ActivationTypeProperty.displayName, index, _triggerActivationTypeDisplayNames);
+                actInfo.DropdownSelectedIndex = EditorGUI.Popup(area, actInfo.ActivationTypeProperty.displayName, actInfo.DropdownSelectedIndex, actInfo.DropdownDisplayNames as string[]);
             else
-                index = EditorGUI.Popup(area, index, _triggerActivationTypeDisplayNames);
+                actInfo.DropdownSelectedIndex = EditorGUI.Popup(area, actInfo.DropdownSelectedIndex, actInfo.DropdownDisplayNames as string[]);
 
             if (EditorGUI.EndChangeCheck())
             {
-                if (index <= 3)
+                if (actInfo.DropdownSelectedIndex <= 3)
                 {
                     //the main ones
-                    actInfo.ActivationTypeProperty.SetEnumValue<TriggerActivationType>((TriggerActivationType)index);
+                    actInfo.ActivationTypeProperty.SetEnumValue<TriggerActivationType>((TriggerActivationType)actInfo.DropdownSelectedIndex);
                 }
-                else if(index == 4)
+                else if (actInfo.DropdownSelectedIndex == 4)
                 {
                     //enable
                     actInfo.ActivationTypeProperty.SetEnumValue<TriggerActivationType>(TriggerActivationType.EnableTarget);
                     var argProp = property.FindPropertyRelative(EventTriggerTargetPropertyDrawer.PROP_METHODNAME);
                     argProp.stringValue = EnableMode.Enable.ToString();
                 }
-                else if(index == 5)
+                else if (actInfo.DropdownSelectedIndex == 5)
                 {
                     //disable
                     actInfo.ActivationTypeProperty.SetEnumValue<TriggerActivationType>(TriggerActivationType.EnableTarget);
                     var argProp = property.FindPropertyRelative(EventTriggerTargetPropertyDrawer.PROP_METHODNAME);
                     argProp.stringValue = EnableMode.Disable.ToString();
                 }
-                else if (index == 6)
+                else if (actInfo.DropdownSelectedIndex == 6)
                 {
                     //toggle
                     actInfo.ActivationTypeProperty.SetEnumValue<TriggerActivationType>(TriggerActivationType.EnableTarget);
                     var argProp = property.FindPropertyRelative(EventTriggerTargetPropertyDrawer.PROP_METHODNAME);
                     argProp.stringValue = EnableMode.Toggle.ToString();
                 }
-                else if (index == 7)
+                else if (actInfo.DropdownSelectedIndex == 7)
                 {
                     //destroy
                     actInfo.ActivationTypeProperty.SetEnumValue<TriggerActivationType>(TriggerActivationType.DestroyTarget);
@@ -225,7 +224,7 @@ namespace com.spacepuppyeditor.Events
             var targRect = new Rect(area.xMin, area.yMin, area.width, EditorGUIUtility.singleLineHeight);
             var targProp = property.FindPropertyRelative(EventTriggerTargetPropertyDrawer.PROP_TRIGGERABLETARG);
             targRect = EditorGUI.PrefixLabel(targRect, EditorHelper.TempContent("Triggerable Target"));
-            
+
             //validate
             if (!GameObjectUtil.IsGameObjectSource(targProp.objectReferenceValue) && !(targProp.objectReferenceValue is ITriggerable))
                 targProp.objectReferenceValue = null;
@@ -264,9 +263,9 @@ namespace com.spacepuppyeditor.Events
                 }
             }
 
-            
-            //Draw Triggerable Arg
-DrawTriggerableArg:
+
+        //Draw Triggerable Arg
+        DrawTriggerableArg:
             var argRect = new Rect(area.xMin, targRect.yMax, area.width - ARG_BTN_WIDTH, EditorGUIUtility.singleLineHeight);
             var btnRect = new Rect(argRect.xMax, argRect.yMin, ARG_BTN_WIDTH, EditorGUIUtility.singleLineHeight);
             var argArrayProp = property.FindPropertyRelative(EventTriggerTargetPropertyDrawer.PROP_TRIGGERABLEARGS);
@@ -304,7 +303,7 @@ DrawTriggerableArg:
             var targLabel = EditorHelper.TempContent("Triggerable Target");
             //targProp.objectReferenceValue = TransformField(targRect, targLabel, targProp.objectReferenceValue);
             targProp.objectReferenceValue = TransformOrProxyField(targRect, targLabel, targProp.objectReferenceValue);
-            
+
 
             //Draw MessageName
             var msgRect = new Rect(area.xMin, targRect.yMax, area.width, EditorGUIUtility.singleLineHeight);
@@ -375,9 +374,9 @@ DrawTriggerableArg:
             var targRect = new Rect(area.xMin, area.yMin, area.width, EditorGUIUtility.singleLineHeight);
             var targProp = property.FindPropertyRelative(EventTriggerTargetPropertyDrawer.PROP_TRIGGERABLETARG);
             targRect = EditorGUI.PrefixLabel(targRect, EditorHelper.TempContent("Triggerable Target"));
-            
+
             var targGo = GameObjectUtil.GetGameObjectFromSource(targProp.objectReferenceValue);
-            if(targGo != null)
+            if (targGo != null)
             {
                 if (SPEditorGUI.XButton(ref targRect, "Clear Selected Object", true))
                 {
@@ -386,7 +385,7 @@ DrawTriggerableArg:
                 }
 
                 EditorGUI.BeginChangeCheck();
-                var selectedComp = SPEditorGUI.SelectComponentFromSourceField(targRect, GUIContent.none, targGo, targProp.objectReferenceValue as Component);
+                var selectedComp = SPEditorGUI.SelectComponentFromSourceField(targRect, GUIContent.none, targGo, ObjUtil.GetAsFromSource<Component>(targProp.objectReferenceValue));
                 if (EditorGUI.EndChangeCheck())
                 {
                     targProp.objectReferenceValue = selectedComp;
@@ -398,8 +397,8 @@ DrawTriggerableArg:
             }
 
 
-            //Draw Method Name
-DrawMethodName:
+        //Draw Method Name
+        DrawMethodName:
             //var methNameRect = new Rect(area.xMin, targCompPopupRect.yMax, area.width, EditorGUIUtility.singleLineHeight);
             var methNameRect = new Rect(area.xMin, targRect.yMax, area.width, EditorGUIUtility.singleLineHeight);
             System.Reflection.MemberInfo selectedMember = null;
@@ -493,7 +492,29 @@ DrawMethodName:
             var targProp = property.FindPropertyRelative(EventTriggerTargetPropertyDrawer.PROP_TRIGGERABLETARG);
             var targLabel = EditorHelper.TempContent("Triggerable Target");
             //targProp.objectReferenceValue = TransformField(targRect, targLabel, targProp.objectReferenceValue);
-            targProp.objectReferenceValue = TransformOrProxyField(targRect, targLabel, targProp.objectReferenceValue);
+            //targProp.objectReferenceValue = TransformOrProxyField(targRect, targLabel, targProp.objectReferenceValue);
+
+            var targGo = GameObjectUtil.GetGameObjectFromSource(targProp.objectReferenceValue);
+            if (targGo != null)
+            {
+                if (SPEditorGUI.XButton(ref targRect, "Clear Selected Object", true))
+                {
+                    targProp.objectReferenceValue = null;
+                    return;
+                }
+
+                EditorGUI.BeginChangeCheck();
+                var selectedComp = SPEditorGUI.SelectComponentFromSourceField(targRect, targLabel, targGo, ObjUtil.GetAsFromSource<Component>(targProp.objectReferenceValue), (c) => c is Transform || EventTriggerEvaluator.IsEnableableComponent(c));
+                if (EditorGUI.EndChangeCheck())
+                {
+                    targProp.objectReferenceValue = selectedComp;
+                }
+            }
+            else
+            {
+                targProp.objectReferenceValue = TransformOrProxyField(targRect, targLabel, targProp.objectReferenceValue);
+            }
+
 
             /*
             //Draw Triggerable Arg
@@ -520,21 +541,22 @@ DrawMethodName:
 
         #region Utils
 
-        private static string[] _triggerActivationTypeDisplayNames = new string[]
+        private static string[] _defaultTriggerActivationTypeDisplayNames = new string[]
         {
             "Trigger All On Target",
             "Trigger Selected Target",
             "Send Message",
             "Call Method On Selected Target",
-            "Enable Target",
-            "Disable Target",
-            "Toggle Target",
+            "Enable Target (GameObject)",
+            "Disable Target (GameObject)",
+            "Toggle Target (GameObject)",
             "Destroy Target"
         };
         public struct TriggerActivationInfo
         {
             public TriggerActivationType ActivationType;
-            public string ActivationTypeDisplayName;
+            public IEnumerable<string> DropdownDisplayNames;
+            public int DropdownSelectedIndex;
             public SerializedProperty ActivationTypeProperty;
         }
         public static TriggerActivationInfo GetTriggerActivationInfo(SerializedProperty triggerTargetProperty)
@@ -542,13 +564,27 @@ DrawMethodName:
             var result = new TriggerActivationInfo();
             result.ActivationTypeProperty = triggerTargetProperty.FindPropertyRelative(EventTriggerTargetPropertyDrawer.PROP_ACTIVATIONTYPE);
             result.ActivationType = result.ActivationTypeProperty.GetEnumValue<TriggerActivationType>();
-            switch(result.ActivationType)
+            result.DropdownDisplayNames = _defaultTriggerActivationTypeDisplayNames;
+
+            var targ = triggerTargetProperty.FindPropertyRelative(EventTriggerTargetPropertyDrawer.PROP_TRIGGERABLETARG)?.objectReferenceValue;
+            targ = targ.ReduceIfProxy() as UnityEngine.Object;
+            if (targ is Component && !(targ is Transform))
+            {
+                var arr = result.DropdownDisplayNames.ToArray();
+                var nm = targ.GetType().Name;
+                arr[4] = string.Format("Enable Target ({0})", nm);
+                arr[5] = string.Format("Disable Target ({0})", nm);
+                arr[6] = string.Format("Toggle Target ({0})", nm);
+                result.DropdownDisplayNames = arr;
+            }
+
+            switch (result.ActivationType)
             {
                 case TriggerActivationType.TriggerAllOnTarget:
                 case TriggerActivationType.TriggerSelectedTarget:
                 case TriggerActivationType.SendMessage:
                 case TriggerActivationType.CallMethodOnSelectedTarget:
-                    result.ActivationTypeDisplayName = _triggerActivationTypeDisplayNames[(int)result.ActivationType];
+                    result.DropdownSelectedIndex = (int)result.ActivationType;
                     break;
                 case TriggerActivationType.EnableTarget:
                     {
@@ -556,19 +592,19 @@ DrawMethodName:
                         switch (ConvertUtil.ToEnum<EnableMode>(argProp.stringValue))
                         {
                             case EnableMode.Enable:
-                                result.ActivationTypeDisplayName = _triggerActivationTypeDisplayNames[4];
+                                result.DropdownSelectedIndex = 4;
                                 break;
                             case EnableMode.Disable:
-                                result.ActivationTypeDisplayName = _triggerActivationTypeDisplayNames[5];
+                                result.DropdownSelectedIndex = 5;
                                 break;
                             case EnableMode.Toggle:
-                                result.ActivationTypeDisplayName = _triggerActivationTypeDisplayNames[6];
+                                result.DropdownSelectedIndex = 6;
                                 break;
                         }
                     }
                     break;
                 case TriggerActivationType.DestroyTarget:
-                    result.ActivationTypeDisplayName = _triggerActivationTypeDisplayNames[7];
+                    result.DropdownSelectedIndex = 7;
                     break;
             }
             return result;
@@ -588,8 +624,8 @@ DrawMethodName:
 
             var actProp = property.FindPropertyRelative(EventTriggerTargetPropertyDrawer.PROP_ACTIVATIONTYPE);
             var act = actProp.GetEnumValue<TriggerActivationType>();
-            
-            if(!EventTriggerTarget.IsValidTriggerTarget(targProp.objectReferenceValue, act))
+
+            if (!EventTriggerTarget.IsValidTriggerTarget(targProp.objectReferenceValue, act))
             {
                 targProp.objectReferenceValue = null;
                 return false;
@@ -599,7 +635,7 @@ DrawMethodName:
                 return true;
             }
         }
-        
+
         public static UnityEngine.Object TargetObjectField(Rect position, GUIContent label, UnityEngine.Object target)
         {
             EditorGUI.BeginChangeCheck();
@@ -640,13 +676,13 @@ DrawMethodName:
 
         private static UnityEngine.Object TransformOrProxyField(Rect position, GUIContent label, UnityEngine.Object target)
         {
-            if(!GameObjectUtil.IsGameObjectSource(target))
+            if (!GameObjectUtil.IsGameObjectSource(target))
             {
                 GUI.changed = true;
                 target = null;
             }
 
-            if(target == null)
+            if (target == null)
             {
                 var go = EditorGUI.ObjectField(position, label, target, typeof(GameObject), true) as GameObject;
                 return (go != null) ? go.transform : null;
@@ -654,7 +690,7 @@ DrawMethodName:
             else
             {
                 var targGo = GameObjectUtil.GetGameObjectFromSource(target);
-                if(target is IProxy || targGo.HasComponent<IProxy>())
+                if (target is IProxy || targGo.HasComponent<IProxy>())
                 {
                     using (var lst = com.spacepuppy.Collections.TempCollection.GetList<IProxy>())
                     {
@@ -662,7 +698,7 @@ DrawMethodName:
                         GUIContent[] entries = new GUIContent[lst.Count + 1];
                         int index = -1;
                         entries[0] = EditorHelper.TempContent("GameObject");
-                        for(int i = 0; i < lst.Count; i++)
+                        for (int i = 0; i < lst.Count; i++)
                         {
                             entries[i + 1] = EditorHelper.TempContent(string.Format("Proxy -> ({0})", lst[i].GetType().Name));
                             if (index < 0 && object.ReferenceEquals(target, lst[i]))
@@ -685,7 +721,7 @@ DrawMethodName:
                 }
             }
         }
-        
+
         #endregion
 
     }

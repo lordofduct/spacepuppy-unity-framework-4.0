@@ -149,20 +149,40 @@ namespace com.spacepuppy.Events
 
         public void EnableTarget(object target, EnableMode mode)
         {
-            var go = GameObjectUtil.GetGameObjectFromSource(target, true);
-            if (go != null)
+            if (target is IProxy) target = (target as IProxy).GetTarget();
+
+            if (target is Component c && IsEnableableComponent(c))
             {
                 switch (mode)
                 {
-                    case EnableMode.Disable:
-                        go.SetActive(false);
-                        break;
                     case EnableMode.Enable:
-                        go.SetActive(true);
+                        c.SetEnabled(true);
+                        break;
+                    case EnableMode.Disable:
+                        c.SetEnabled(false);
                         break;
                     case EnableMode.Toggle:
-                        go.SetActive(!go.activeSelf);
+                        c.SetEnabled(!c.IsEnabled());
                         break;
+                }
+            }
+            else
+            {
+                var go = GameObjectUtil.GetGameObjectFromSource(target, true);
+                if (go != null)
+                {
+                    switch (mode)
+                    {
+                        case EnableMode.Enable:
+                            go.SetActive(true);
+                            break;
+                        case EnableMode.Disable:
+                            go.SetActive(false);
+                            break;
+                        case EnableMode.Toggle:
+                            go.SetActive(!go.activeSelf);
+                            break;
+                    }
                 }
             }
         }
@@ -234,6 +254,15 @@ namespace com.spacepuppy.Events
             void EnableTarget(object target, EnableMode mode);
             void DestroyTarget(object target);
 
+        }
+
+        #endregion
+
+        #region Utils
+
+        public static bool IsEnableableComponent(object c)
+        {
+            return !(c is Transform) && (c is Behaviour || c is Collider);
         }
 
         #endregion

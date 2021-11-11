@@ -69,7 +69,7 @@ namespace com.spacepuppy.Dynamic.Accessors
             }
         }
 
-#if ENABLE_MONO && NET_4_6
+#if ENABLE_MONO && NET_4_6 && ENABLE_SPTWEEN_EMIT
 
         protected override void _EmitSetter(TypeBuilder myType)
         {

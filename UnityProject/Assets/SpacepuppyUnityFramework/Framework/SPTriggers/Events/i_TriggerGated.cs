@@ -4,6 +4,9 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
+using com.spacepuppy;
+using com.spacepuppy.Utils;
+
 namespace com.spacepuppy.Events
 {
 
@@ -23,8 +26,8 @@ namespace com.spacepuppy.Events
 
         [SerializeField]
         [DisableOnPlay]
-        [OneOrMany()]
-        private List<ProxyMediator> _activateGateSilentlyMediator;
+        [OneOrMany]
+        private ProxyMediator[] _activateGateSilentlyMediator;
 
         [System.NonSerialized]
         private MediatorCollection _mediatorColl;
@@ -39,7 +42,7 @@ namespace com.spacepuppy.Events
         {
             base.Awake();
 
-            if(_activateGateSilentlyMediator != null && _activateGateSilentlyMediator.Count > 0)
+            if (_activateGateSilentlyMediator != null && _activateGateSilentlyMediator.Length > 0)
             {
                 _mediatorColl = new MediatorCollection(this);
             }
@@ -80,6 +83,7 @@ namespace com.spacepuppy.Events
             }
         }
 
+        [ShowNonSerializedProperty("Runtime Activate Gate Silently Mediators", Readonly = true)]
         public ICollection<ProxyMediator> ActivateGateSilentlyMediators
         {
             get
@@ -141,22 +145,19 @@ namespace com.spacepuppy.Events
         {
 
             private i_TriggerGated _owner;
+            private HashSet<ProxyMediator> _mediators;
 
             public MediatorCollection(i_TriggerGated owner)
             {
                 _owner = owner;
-                this.RegisterListeners();
-            }
-
-            public void RegisterListeners()
-            {
-                if (_owner._activateGateSilentlyMediator == null || _owner._activateGateSilentlyMediator.Count == 0) return;
-
-                var e = _owner._activateGateSilentlyMediator.GetEnumerator();
-                while(e.MoveNext())
+                _mediators = new HashSet<ProxyMediator>();
+                if (owner._activateGateSilentlyMediator != null)
                 {
-                    e.Current.OnTriggered -= OnMediatorTriggered;
-                    e.Current.OnTriggered += OnMediatorTriggered;
+                    foreach (var m in owner._activateGateSilentlyMediator)
+                    {
+                        if (m != null) this.Add(m);
+                    }
+                    owner._activateGateSilentlyMediator = null;
                 }
             }
 
@@ -167,43 +168,50 @@ namespace com.spacepuppy.Events
 
             #region ICollection Interface
 
-            public int Count => _owner._activateGateSilentlyMediator?.Count ?? 0;
+            public int Count => _mediators.Count;
 
             bool ICollection<ProxyMediator>.IsReadOnly => false;
 
             public void Add(ProxyMediator item)
             {
-                if (_owner._activateGateSilentlyMediator.Contains(item)) return;
+                if (item == null) return;
+                if (_mediators.Contains(item)) return;
 
-                _owner._activateGateSilentlyMediator.Add(item);
-                item.OnTriggered += OnMediatorTriggered;
+                if(_mediators.Add(item))
+                {
+                    item.OnTriggered += OnMediatorTriggered;
+                }
             }
 
             public void Clear()
             {
-                if (_owner._activateGateSilentlyMediator.Count == 0) return;
+                if (_mediators.Count == 0) return;
 
-                var e = _owner._activateGateSilentlyMediator.GetEnumerator();
+                var e = _mediators.GetEnumerator();
                 while (e.MoveNext())
                 {
-                    e.Current.OnTriggered -= OnMediatorTriggered;
+                    if (e.Current != null) e.Current.OnTriggered -= OnMediatorTriggered;
                 }
-                _owner._activateGateSilentlyMediator.Clear();
+                _mediators.Clear();
             }
 
             public bool Contains(ProxyMediator item)
             {
-                return _owner._activateGateSilentlyMediator.Contains(item);
+                if (object.ReferenceEquals(item, null)) return false;
+
+                return _mediators.Contains(item);
             }
 
             public void CopyTo(ProxyMediator[] array, int arrayIndex)
             {
-                _owner._activateGateSilentlyMediator.CopyTo(array, arrayIndex);
+                _mediators.CopyTo(array, arrayIndex);
             }
 
             public bool Remove(ProxyMediator item)
             {
-                if(_owner._activateGateSilentlyMediator.Remove(item))
+                if (object.ReferenceEquals(item, null)) return false;
+
+                if(_mediators.Remove(item))
                 {
                     item.OnTriggered -= OnMediatorTriggered;
                     return true;
@@ -214,12 +222,12 @@ namespace com.spacepuppy.Events
 
             public IEnumerator<ProxyMediator> GetEnumerator()
             {
-                return _owner._activateGateSilentlyMediator.GetEnumerator();
+                return _mediators.GetEnumerator();
             }
 
             System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
             {
-                return _owner._activateGateSilentlyMediator.GetEnumerator();
+                return _mediators.GetEnumerator();
             }
 
             #endregion

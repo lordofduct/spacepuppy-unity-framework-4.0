@@ -214,6 +214,21 @@ namespace com.spacepuppyeditor
             return ScriptAttributeUtility.SharedNullPropertyHandler.GetHeight(property, label, includeChildren);
         }
 
+        public static float GetDefaultPropertyHeight(object value, System.Type valueType)
+        {
+            SerializedPropertyType propertyType = SerializedPropertyType.Generic;
+            if (valueType != null) propertyType = (valueType.IsInterface) ? SerializedPropertyType.ObjectReference : EditorHelper.GetPropertyType(valueType);
+
+            if(propertyType == SerializedPropertyType.ObjectReference && !TypeUtil.IsType(valueType, typeof(UnityEngine.Object)) && TypeUtil.IsType(valueType, typeof(System.Collections.ICollection)) && value is System.Collections.ICollection coll)
+            {
+                return (1f + Mathf.Min(1, coll.Count)) * EditorGUIUtility.singleLineHeight;
+            }
+            else
+            {
+                return EditorGUIUtility.singleLineHeight;
+            }
+        }
+
         public static bool DefaultPropertyField(Rect position, SerializedProperty property)
         {
             //return com.spacepuppyeditor.Internal.DefaultPropertyHandler.Instance.OnGUI(position, property, GUIContent.none, true);
@@ -237,7 +252,7 @@ namespace com.spacepuppyeditor
             return DefaultPropertyField(position, EditorHelper.TempContent(label), value, valueType);
         }
 
-        public static object DefaultPropertyField(Rect position, GUIContent label, object value, System.Type valueType)
+        public static object DefaultPropertyField(Rect position, GUIContent label, object value, System.Type valueType, bool ignoreCollections = false)
         {
             SerializedPropertyType propertyType = SerializedPropertyType.Generic;
             if (valueType != null) propertyType = (valueType.IsInterface) ? SerializedPropertyType.ObjectReference : EditorHelper.GetPropertyType(valueType);
@@ -319,11 +334,42 @@ namespace com.spacepuppyeditor
                     }
                     break;
                 case SerializedPropertyType.ObjectReference:
-                    EditorGUI.BeginChangeCheck();
-                    object obj = EditorGUI.ObjectField(position, label, value as UnityEngine.Object, valueType, true);
-                    if (EditorGUI.EndChangeCheck())
+                    if(TypeUtil.IsType(valueType, typeof(UnityEngine.Object)))
                     {
-                        return obj;
+                        EditorGUI.BeginChangeCheck();
+                        object obj = EditorGUI.ObjectField(position, label, value as UnityEngine.Object, valueType, true);
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            return obj;
+                        }
+                    }
+                    else if(!ignoreCollections && TypeUtil.IsType(valueType, typeof(System.Collections.ICollection), typeof(ICollection<>)))
+                    {
+                        var coll = value as System.Collections.ICollection;
+                        if(coll == null || coll.Count == 0)
+                        {
+                            EditorGUI.LabelField(position, label, EditorHelper.TempContent("* Empty Collection *"));
+                            return value;
+                        }
+                        else
+                        {
+                            const float INDENT = 5f;
+                            EditorGUI.LabelField(position, label);
+
+                            var mtp = TypeUtil.GetElementTypeOfListType(valueType) ?? typeof(object);
+                            int i = 0;
+                            foreach(var o in coll)
+                            {
+                                i++;
+                                var r = new Rect(position.xMin + INDENT, position.yMin + EditorGUIUtility.singleLineHeight * i, Mathf.Max(0f, position.width - INDENT), EditorGUIUtility.singleLineHeight);
+                                DefaultPropertyField(r, GUIContent.none, o, mtp, true);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        EditorGUI.LabelField(position, label, EditorHelper.TempContent("* Unsupported Value Type *"));
+                        return value;
                     }
                     break;
                 case SerializedPropertyType.LayerMask:

@@ -34,12 +34,12 @@ namespace com.spacepuppyeditor
 
         public static object DefaultPropertyField(string label, object value, System.Type valueType)
         {
-            return SPEditorGUI.DefaultPropertyField(EditorGUILayout.GetControlRect(true), EditorHelper.TempContent(label), value, valueType);
+            return SPEditorGUI.DefaultPropertyField(EditorGUILayout.GetControlRect(true, SPEditorGUI.GetDefaultPropertyHeight(value, valueType)), EditorHelper.TempContent(label), value, valueType);
         }
 
         public static object DefaultPropertyField(GUIContent label, object value, System.Type valueType)
         {
-            return SPEditorGUI.DefaultPropertyField(EditorGUILayout.GetControlRect(true), label, value, valueType);
+            return SPEditorGUI.DefaultPropertyField(EditorGUILayout.GetControlRect(true, SPEditorGUI.GetDefaultPropertyHeight(value, valueType)), label, value, valueType);
         }
 
         #endregion

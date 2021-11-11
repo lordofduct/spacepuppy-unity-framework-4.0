@@ -115,17 +115,35 @@ namespace com.spacepuppyeditor
 
                 foreach (var info in _shownFields)
                 {
-                    var cache = SPGUI.DisableIf(info.Attrib.Readonly);
-
-                    var value = DynamicUtil.GetValue(this.target, info.MemberInfo);
-                    EditorGUI.BeginChangeCheck();
-                    value = SPEditorGUILayout.DefaultPropertyField(info.Label, value, DynamicUtil.GetReturnType(info.MemberInfo));
-                    if (EditorGUI.EndChangeCheck())
+                    switch(DynamicUtil.GetMemberAccessLevel(info.MemberInfo))
                     {
-                        DynamicUtil.SetValue(this.target, info.MemberInfo, value);
-                    }
+                        case DynamicMemberAccess.Read:
+                            {
+                                var cache = SPGUI.Disable();
+                                var value = DynamicUtil.GetValue(this.target, info.MemberInfo);
+                                SPEditorGUILayout.DefaultPropertyField(info.Label, value, DynamicUtil.GetReturnType(info.MemberInfo));
+                                cache.Reset();
+                            }
+                            break;
+                        case DynamicMemberAccess.ReadWrite:
+                            {
+                                var cache = SPGUI.DisableIf(info.Attrib.Readonly);
 
-                    cache.Reset();
+                                var value = DynamicUtil.GetValue(this.target, info.MemberInfo);
+                                EditorGUI.BeginChangeCheck();
+                                value = SPEditorGUILayout.DefaultPropertyField(info.Label, value, DynamicUtil.GetReturnType(info.MemberInfo));
+                                if (EditorGUI.EndChangeCheck() && !info.Attrib.Readonly)
+                                {
+                                    DynamicUtil.SetValue(this.target, info.MemberInfo, value);
+                                }
+
+                                cache.Reset();
+                            }
+                            break;
+                        default:
+                            EditorGUILayout.LabelField(info.Label, EditorHelper.TempContent("* Unreadable Member *"));
+                            break;
+                    }
                 }
             }
         }

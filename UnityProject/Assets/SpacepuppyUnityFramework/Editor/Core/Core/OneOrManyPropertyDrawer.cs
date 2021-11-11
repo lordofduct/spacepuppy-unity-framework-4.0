@@ -62,8 +62,11 @@ namespace com.spacepuppyeditor.Core
 
                 if (_internalDrawer != null)
                     _internalDrawer.OnGUI(propArea, property.GetArrayElementAtIndex(0), label);
+                else if (property.GetArrayElementAtIndex(0).propertyType == SerializedPropertyType.ObjectReference)
+                    SPEditorGUI.ObjectFieldX(propArea, property.GetArrayElementAtIndex(0), label);
                 else
                     SPEditorGUI.DefaultPropertyField(propArea, property.GetArrayElementAtIndex(0), label);
+
                 if (GUI.Button(btnArea, _moreBtnLabel))
                 {
                     property.arraySize = 2;

@@ -40,14 +40,19 @@ namespace com.spacepuppy.Utils
         public static bool IsType(System.Type tp, System.Type assignableType)
         {
             if (tp == null) return false;
+            if (tp == assignableType) return true;
 
+            System.Type ctp;
             if (assignableType.IsGenericTypeDefinition)
             {
                 if(assignableType.IsInterface)
                 {
-                    foreach(var itp in tp.GetInterfaces())
+                    ctp = tp.IsGenericType ? tp.GetGenericTypeDefinition() : tp;
+                    if (ctp == assignableType) return true;
+
+                    foreach (var itp in tp.GetInterfaces())
                     {
-                        var ctp = itp.IsGenericType ? itp.GetGenericTypeDefinition() : itp;
+                        ctp = itp.IsGenericType ? itp.GetGenericTypeDefinition() : itp;
                         if (ctp == assignableType) return true;
                     }
                     return false;
@@ -56,7 +61,7 @@ namespace com.spacepuppy.Utils
                 {
                     while (tp != null && tp != typeof(object))
                     {
-                        var ctp = tp.IsGenericType ? tp.GetGenericTypeDefinition() : tp;
+                        ctp = tp.IsGenericType ? tp.GetGenericTypeDefinition() : tp;
                         if (ctp == assignableType) return true;
                         tp = tp.BaseType;
                     }
@@ -73,7 +78,7 @@ namespace com.spacepuppy.Utils
         {
             foreach (var otp in assignableTypes)
             {
-                if (otp.IsAssignableFrom(tp)) return true;
+                if (TypeUtil.IsType(tp, otp)) return true;
             }
 
             return false;
@@ -326,7 +331,7 @@ namespace com.spacepuppy.Utils
 
             var interfaces = tp.GetInterfaces();
             //if (interfaces.Contains(typeof(System.Collections.IList)) || interfaces.Contains(typeof(IList<>)))
-            if (Array.IndexOf(interfaces, typeof(System.Collections.IList)) >= 0 || Array.IndexOf(interfaces, typeof(IList<>)) >= 0)
+            if (Array.IndexOf(interfaces, typeof(System.Collections.ICollection)) >= 0 || Array.IndexOf(interfaces, typeof(ICollection<>)) >= 0)
             {
                 if (tp.IsGenericType) return tp.GetGenericArguments()[0];
                 else return typeof(object);

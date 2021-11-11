@@ -28,7 +28,7 @@ namespace com.spacepuppy
 
         public void Trigger()
         {
-            if (this.OnTriggered != null) this.OnTriggered(this, System.EventArgs.Empty);
+            this.OnTriggered?.Invoke(this, System.EventArgs.Empty);
         }
 
         #region ITriggerableMechanism Interface

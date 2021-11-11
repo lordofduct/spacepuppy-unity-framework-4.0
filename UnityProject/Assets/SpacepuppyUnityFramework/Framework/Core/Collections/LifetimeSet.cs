@@ -67,10 +67,8 @@ namespace com.spacepuppy.Collections
 
         public bool TryGetTag(T item, out object tag, bool donotTouchEntry = false)
         {
-            if (donotTouchEntry)
-                this.Sync();
-            else
-                this.Touch(item);
+            if (!donotTouchEntry) this.Touch(item);
+            this.Sync();
 
             TimeStampInfo info;
             if (_table.TryGetValue(item, out info))
@@ -88,13 +86,11 @@ namespace com.spacepuppy.Collections
         public void Touch(T item)
         {
             TimeStampInfo info;
-            if(_table.TryGetValue(item, out info))
+            if (_table.TryGetValue(item, out info))
             {
                 info.TimeStamp = DateTime.UtcNow;
                 _table[item] = info;
             }
-
-            this.Sync();
         }
 
         /// <summary>
@@ -114,11 +110,11 @@ namespace com.spacepuppy.Collections
             TimeSpan durationToDeath = TimeSpan.FromTicks(long.MaxValue);
             using (var lst = TempCollection.GetList<T>(_table.Keys))
             {
-                for(int i = 0; i < lst.Count; i++)
+                for (int i = 0; i < lst.Count; i++)
                 {
                     info = _table[lst[i]];
                     var diff = current - info.TimeStamp;
-                    if(diff >= info.LifeTime)
+                    if (diff >= info.LifeTime)
                     {
                         _table.Remove(lst[i]);
                         result = true;
@@ -126,7 +122,7 @@ namespace com.spacepuppy.Collections
                     else
                     {
                         diff = info.LifeTime - diff;
-                        if(diff < durationToDeath)
+                        if (diff < durationToDeath)
                         {
                             _nearestToDie = lst[i];
                             durationToDeath = diff;

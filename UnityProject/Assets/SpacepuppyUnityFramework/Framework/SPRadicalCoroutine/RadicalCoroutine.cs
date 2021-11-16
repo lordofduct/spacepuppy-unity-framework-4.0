@@ -91,7 +91,7 @@ namespace com.spacepuppy
         public event System.EventHandler OnFinished;
         private System.EventHandler _immediatelyResumingSignal;
 
-        private void OnFinish(bool cancelled)
+        private void OnFinish(bool cancelled, System.Exception fatalex = null)
         {
             _stack.Clear();
             _currentIEnumeratorYieldValue = null;
@@ -107,32 +107,36 @@ namespace com.spacepuppy
                 _manager.UnregisterCoroutine(this);
             }
 
-            var ev = System.EventArgs.Empty;
+            System.EventArgs ev = System.EventArgs.Empty;
             try
             {
                 if (cancelled)
                 {
-                    _state = RadicalCoroutineOperatingState.Cancelled;
-                    if (this.OnCancelled != null) this.OnCancelled(this, ev);
+                    if(fatalex != null)
+                    {
+                        _state = RadicalCoroutineOperatingState.FatalError;
+                        ev = new RadicalCoroutineFatalErrorEventArgs(fatalex);
+                        this.OnCancelled?.Invoke(this, ev);
+                    }
+                    else
+                    {
+                        _state = RadicalCoroutineOperatingState.Cancelled;
+                        this.OnCancelled?.Invoke(this, ev);
+                    }
                 }
                 else
                 {
                     _state = RadicalCoroutineOperatingState.Complete;
-                    if (this.OnComplete != null) this.OnComplete(this, ev);
+                    this.OnComplete?.Invoke(this, ev);
                 }
             }
             catch (System.Exception ex) { Debug.LogException(ex); }
 
-            if (_immediatelyResumingSignal != null)
-            {
-                try { _immediatelyResumingSignal(this, ev); }
-                catch (System.Exception ex) { Debug.LogException(ex); }
-            }
-            if (this.OnFinished != null)
-            {
-                try { this.OnFinished(this, System.EventArgs.Empty); }
-                catch (System.Exception ex) { Debug.LogException(ex); }
-            }
+            try { _immediatelyResumingSignal?.Invoke(this, ev); }
+            catch (System.Exception ex) { Debug.LogException(ex); }
+
+            try { this.OnFinished?.Invoke(this, System.EventArgs.Empty); }
+            catch (System.Exception ex) { Debug.LogException(ex); }
 
             _owner = null;
             _token = null;
@@ -346,6 +350,9 @@ namespace com.spacepuppy
         {
             switch (_state)
             {
+                case RadicalCoroutineOperatingState.FatalError:
+                    //do nothing
+                    return;
                 case RadicalCoroutineOperatingState.Cancelling:
                     this.OnFinish(true);
                     return;
@@ -379,6 +386,9 @@ namespace com.spacepuppy
         {
             switch (_state)
             {
+                case RadicalCoroutineOperatingState.FatalError:
+                    //do nothing
+                    return;
                 case RadicalCoroutineOperatingState.Cancelling:
                     this.OnFinish(true);
                     return;
@@ -409,6 +419,9 @@ namespace com.spacepuppy
         {
             switch (_state)
             {
+                case RadicalCoroutineOperatingState.FatalError:
+                    //do nothing
+                    return;
                 case RadicalCoroutineOperatingState.Cancelling:
                     this.OnFinish(true);
                     return;
@@ -693,9 +706,20 @@ namespace com.spacepuppy
             if (_stack.CurrentOperation != null)
             {
                 //operate
+                bool btick;
                 object current;
                 var r = _stack.CurrentOperation;
-                if (!r.Tick(out current))
+                try
+                {
+                    btick = r.Tick(out current);
+                }
+                catch(System.Exception ex)
+                {
+                    this.OnFinish(true, ex);
+                    throw ex;
+                }
+
+                if (!btick)
                 {
                     //the tick may have forced a tick, which could have popped this yieldinstruction already, this usually means it was an IImmediatelyResumingYieldInstruction
                     //deal with accordingly
@@ -945,6 +969,7 @@ namespace com.spacepuppy
 
             switch (_state)
             {
+                case RadicalCoroutineOperatingState.FatalError:
                 case RadicalCoroutineOperatingState.Cancelling:
                 case RadicalCoroutineOperatingState.Paused:
                 case RadicalCoroutineOperatingState.Active:
@@ -1635,6 +1660,16 @@ namespace com.spacepuppy
 
         #endregion
 
+    }
+
+    public class RadicalCoroutineFatalErrorEventArgs : System.EventArgs
+    {
+        public System.Exception Exception { get; private set; }
+
+        public RadicalCoroutineFatalErrorEventArgs(System.Exception ex)
+        {
+            this.Exception = ex;
+        }
     }
 
 }

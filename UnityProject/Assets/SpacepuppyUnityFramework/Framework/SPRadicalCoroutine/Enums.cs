@@ -39,6 +39,7 @@ namespace com.spacepuppy
     /// </summary>
     public enum RadicalCoroutineOperatingState
     {
+        FatalError = -3,
         Cancelled = -2,
         Cancelling = -1,
         Inactive = 0,

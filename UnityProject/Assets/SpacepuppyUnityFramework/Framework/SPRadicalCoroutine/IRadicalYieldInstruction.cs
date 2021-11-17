@@ -14,13 +14,11 @@ namespace com.spacepuppy
         /// </summary>
         bool IsComplete { get; }
 
-        ///// <summary>
-        ///// This method is called every tick of the RadicalCoroutine that is handling it.
-        ///// </summary>
-        ///// <returns>Return if the RadicalCoroutine should continue blocking (IsComplete should be false if this returns true)</returns>
-        //bool ContinueBlocking();
-        //object CurrentYieldObject { get; }
-
+        /// <summary>
+        /// Process the tick of the coroutine, returning true if the instruction should continue blocking, false if it should stop blocking.
+        /// </summary>
+        /// <param name="yieldObject">An object to treat as the yield object between now and the next call to Tick.</param>
+        /// <returns>True to continue blocking, false to stop blocking.</returns>
         bool Tick(out object yieldObject);
 
     }

@@ -16,7 +16,6 @@ namespace com.spacepuppy.Mecanim
     {
 
         Animator Animator { get; }
-        RuntimeAnimatorController InitialRuntimeAnimatorController { get; }
         Transform SubStateBridgeContainer { get; }
 
     }
@@ -33,8 +32,6 @@ namespace com.spacepuppy.Mecanim
         #region IAnimatorStateMachineBridge Interface
 
         Animator IAnimatorStateMachineBridge.Animator => _animator;
-
-        RuntimeAnimatorController IAnimatorStateMachineBridge.InitialRuntimeAnimatorController => _initialController;
 
         Transform IAnimatorStateMachineBridge.SubStateBridgeContainer => this.transform;
 
@@ -71,8 +68,6 @@ namespace com.spacepuppy.Mecanim
         #region IAnimatorStateMachineBridge Interface
 
         Animator IAnimatorStateMachineBridge.Animator => _remoteBridge?.Animator;
-
-        RuntimeAnimatorController IAnimatorStateMachineBridge.InitialRuntimeAnimatorController => _remoteBridge?.InitialRuntimeAnimatorController;
 
         Transform IAnimatorStateMachineBridge.SubStateBridgeContainer => _remoteBridge?.SubStateBridgeContainer;
 

@@ -124,7 +124,7 @@ namespace com.spacepuppy.Events
         {
             if (token == null) token = "*DEFAULT*";
 
-            if (_hijackTokens == null) _hijackTokens = new HashSet<object>();
+            if (_hijackTokens == null) _hijackTokens = new HashSet<object>(EqualityComparer<object>.Default);
             _hijackTokens.Add(token);
         }
 

@@ -30,7 +30,7 @@ namespace com.spacepuppy.Collections
 
         public StateFlagStack()
         {
-            _stack = new HashSet<object>();
+            _stack = new HashSet<object>(EqualityComparer<object>.Default);
         }
 
         public StateFlagStack(IEqualityComparer<object> tokenComparer)

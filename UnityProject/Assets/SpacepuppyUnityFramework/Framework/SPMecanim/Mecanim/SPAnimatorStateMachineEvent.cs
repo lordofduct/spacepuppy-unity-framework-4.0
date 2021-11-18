@@ -131,17 +131,15 @@ namespace com.spacepuppy.Mecanim
                     case AnimatorTriggerAction.OverrideAnimatorController:
                         if (_objectRef is AnimatorOverrideController a)
                         {
-                            animator.runtimeAnimatorController = a;
+                            animator.StackOverride(a, _id);
+                        }
+                        else if(_objectRef is IAnimatorOverrideSource src)
+                        {
+                            animator.StackOverride(src, _id);
                         }
                         break;
                     case AnimatorTriggerAction.PurgeAnimatorOverride:
-                        {
-                            var bridge = animator.GetComponent<IAnimatorStateMachineBridge>();
-                            if(bridge != null && bridge.InitialRuntimeAnimatorController != null)
-                            {
-                                animator.runtimeAnimatorController = bridge.InitialRuntimeAnimatorController;
-                            }
-                        }
+                        animator.RemoveOverride(_id);
                         break;
                     case AnimatorTriggerAction.TriggerAllOnTarget:
                         com.spacepuppy.Events.EventTriggerEvaluator.Current.TriggerAllOnTarget(_objectRef, animator, arg);
@@ -176,14 +174,15 @@ namespace com.spacepuppy.Mecanim
                     case AnimatorTriggerAction.OverrideAnimatorController:
                         if (_objectRef is AnimatorOverrideController a)
                         {
-                            animator.runtimeAnimatorController = a;
+                            animator.StackOverride(a, _id);
+                        }
+                        else if (_objectRef is IAnimatorOverrideSource src)
+                        {
+                            animator.StackOverride(src, _id);
                         }
                         break;
                     case AnimatorTriggerAction.PurgeAnimatorOverride:
-                        if (smb.Bridge != null && smb.Bridge.InitialRuntimeAnimatorController != null)
-                        {
-                            animator.runtimeAnimatorController = smb.Bridge.InitialRuntimeAnimatorController;
-                        }
+                        animator.RemoveOverride(_id);
                         break;
                     case AnimatorTriggerAction.TriggerAllOnTarget:
                         com.spacepuppy.Events.EventTriggerEvaluator.Current.TriggerAllOnTarget(_objectRef, animator, arg);

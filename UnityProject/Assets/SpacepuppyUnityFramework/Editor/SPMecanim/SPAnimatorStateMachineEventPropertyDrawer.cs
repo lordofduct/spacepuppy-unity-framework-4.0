@@ -182,21 +182,31 @@ namespace com.spacepuppyeditor.Mecanim
                     break;
                 case SPAnimatorStateMachineEvent.AnimatorTriggerAction.OverrideAnimatorController:
                     {
-                        idprop.stringValue = string.Empty;
                         valprop.floatValue = 0f;
 
-                        var r1 = new Rect(r0.xMax + PAD, area.yMin, Mathf.Max(0f, area.width - r0.width - PAD), area.height);
-                        overprop.objectReferenceValue = EditorGUI.ObjectField(r1, overprop.objectReferenceValue, typeof(AnimatorOverrideController), false);
+                        var tw = Mathf.Max(0f, area.width - r0.width - PAD - PAD);
+                        var r1 = new Rect(r0.xMax + PAD, area.yMin, Mathf.Min(28f, tw * 0.45f), area.height);
+                        var r2 = new Rect(r1.xMax + PAD, area.yMin, tw * 0.5f - r1.width, area.height);
+                        var r3 = new Rect(r2.xMax + PAD, area.yMin, tw * 0.5f, area.height);
+
+                        EditorGUI.LabelField(r1, "Key:");
+                        idprop.stringValue = EditorGUI.TextField(r2, idprop.stringValue);
+                        overprop.objectReferenceValue = SPEditorGUI.ObjectFieldX(r3, 
+                                                                                 overprop.objectReferenceValue, 
+                                                                                 (o) => ObjUtil.IsType(o, typeof(AnimatorOverrideController), true) || ObjUtil.IsType(o, typeof(IAnimatorOverrideSource), true), 
+                                                                                 false);
                     }
                     break;
                 case SPAnimatorStateMachineEvent.AnimatorTriggerAction.PurgeAnimatorOverride:
                     {
-                        idprop.stringValue = string.Empty;
                         valprop.floatValue = 0f;
                         overprop.objectReferenceValue = null;
 
-                        var r1 = new Rect(r0.xMax + PAD, area.yMin, Mathf.Max(0f, area.width - r0.width - PAD), area.height);
-                        EditorGUI.LabelField(r1, "Only supported if a properly configured animator bridge is found.");
+                        var tw = Mathf.Max(0f, area.width - r0.width - PAD - PAD);
+                        var r1 = new Rect(r0.xMax + PAD, area.yMin, Mathf.Min(28f, tw * 0.95f), area.height);
+                        var r2 = new Rect(r1.xMax + PAD, area.yMin, Mathf.Max(0f, tw - r1.width), area.height);
+                        EditorGUI.LabelField(r1, "Key:");
+                        idprop.stringValue = EditorGUI.TextField(r2, idprop.stringValue);
                     }
                     break;
                 case SPAnimatorStateMachineEvent.AnimatorTriggerAction.TriggerAllOnTarget:

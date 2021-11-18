@@ -472,19 +472,20 @@ namespace com.spacepuppy.Tween
 
             public bool Equals(TokenPairing x, TokenPairing y)
             {
-                //return x.Target == y.Target && x.TokenUid == y.TokenUid;
-                if (object.ReferenceEquals(x.Target, null)) return object.ReferenceEquals(y.Target, null);
-                if (object.ReferenceEquals(y.Target, null)) return false;
-                if (object.ReferenceEquals(x.TokenUid, null)) return object.ReferenceEquals(y.TokenUid, null);
-                if (object.ReferenceEquals(y.TokenUid, null)) return false;
-                return x.Target.Equals(y.Target) && x.TokenUid.Equals(y.TokenUid);
+                //if (object.ReferenceEquals(x.Target, null)) return object.ReferenceEquals(y.Target, null);
+                //if (object.ReferenceEquals(y.Target, null)) return false;
+                //if (object.ReferenceEquals(x.TokenUid, null)) return object.ReferenceEquals(y.TokenUid, null);
+                //if (object.ReferenceEquals(y.TokenUid, null)) return false;
+                //return x.Target.Equals(y.Target) && x.TokenUid.Equals(y.TokenUid);
+                return EqualityComparer<object>.Default.Equals(x.Target, y.Target) && EqualityComparer<object>.Default.Equals(x.TokenUid, y.TokenUid);
             }
 
             public int GetHashCode(TokenPairing obj)
             {
-                int a = (!object.ReferenceEquals(obj.Target, null)) ? obj.Target.GetHashCode() : 0;
-                int b = (!object.ReferenceEquals(obj.TokenUid, null)) ? obj.TokenUid.GetHashCode() : 0;
-                return a ^ b;
+                //int a = (!object.ReferenceEquals(obj.Target, null)) ? obj.Target.GetHashCode() : 0;
+                //int b = (!object.ReferenceEquals(obj.TokenUid, null)) ? obj.TokenUid.GetHashCode() : 0;
+                //return a ^ b;
+                return (obj.Target?.GetHashCode() ?? 0) ^ (obj.Target?.GetHashCode() ?? 0);
             }
         }
 

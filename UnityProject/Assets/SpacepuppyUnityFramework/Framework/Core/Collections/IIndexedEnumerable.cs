@@ -5,11 +5,8 @@ using System.Collections.Generic;
 namespace com.spacepuppy.Collections
 {
 
-    public interface IIndexedEnumerable<T> : IEnumerable<T>
+    public interface IIndexedEnumerable<T> : IEnumerable<T>, IReadOnlyList<T>
     {
-
-        int Count { get; }
-        T this[int index] { get; }
 
         bool Contains(T item);
         void CopyTo(T[] array, int startIndex);
@@ -75,9 +72,9 @@ namespace com.spacepuppy.Collections
 
         bool ICollection<T>.IsReadOnly { get { return true; } }
 
-        int IIndexedEnumerable<T>.Count => throw new NotImplementedException();
+        int IReadOnlyCollection<T>.Count => throw new NotImplementedException();
 
-        T IIndexedEnumerable<T>.this[int index] => throw new NotImplementedException();
+        T IReadOnlyList<T>.this[int index] => throw new NotImplementedException();
 
         void ICollection<T>.Add(T item)
         {

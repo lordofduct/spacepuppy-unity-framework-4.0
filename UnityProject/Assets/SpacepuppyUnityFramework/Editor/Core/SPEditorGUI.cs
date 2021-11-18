@@ -601,6 +601,65 @@ namespace com.spacepuppyeditor
             return obj;
         }
 
+        public static UnityEngine.Object ObjectFieldX(Rect position, UnityEngine.Object obj, System.Predicate<UnityEngine.Object> objFilter, bool allowSceneObjects)
+        {
+            if (SPEditorGUI.XButton(ref position, "Clear Selected Object", true))
+            {
+                obj = null;
+            }
+            EditorGUI.BeginChangeCheck();
+            var otherobj = EditorGUI.ObjectField(position, obj, typeof(UnityEngine.Object), allowSceneObjects);
+            if (EditorGUI.EndChangeCheck() && (otherobj == null || objFilter(otherobj)))
+            {
+                obj = otherobj;
+            }
+            return obj;
+        }
+
+        public static void ObjectFieldX(Rect position, SerializedProperty property, System.Predicate<UnityEngine.Object> objFilter, GUIContent label, bool allowSceneObjects)
+        {
+            if (SPEditorGUI.XButton(ref position, "Clear Selected Object", true))
+            {
+                property.objectReferenceValue = null;
+            }
+            EditorGUI.BeginChangeCheck();
+            var otherobj = EditorGUI.ObjectField(position, label, property.objectReferenceValue, typeof(UnityEngine.Object), allowSceneObjects);
+            if (EditorGUI.EndChangeCheck() && (otherobj == null || objFilter(otherobj)))
+            {
+                property.objectReferenceValue = otherobj;
+            }
+        }
+
+        public static UnityEngine.Object ObjectFieldX(Rect position, GUIContent label, UnityEngine.Object obj, System.Predicate<UnityEngine.Object> objFilter, bool allowSceneObjects)
+        {
+            if (SPEditorGUI.XButton(ref position, "Clear Selected Object", true))
+            {
+                obj = null;
+            }
+            EditorGUI.BeginChangeCheck();
+            var otherobj = EditorGUI.ObjectField(position, label, obj, typeof(UnityEngine.Object), allowSceneObjects);
+            if (EditorGUI.EndChangeCheck() && (otherobj == null || objFilter(otherobj)))
+            {
+                obj = otherobj;
+            }
+            return obj;
+        }
+
+        public static UnityEngine.Object ObjectFieldX(Rect position, string label, UnityEngine.Object obj, System.Predicate<UnityEngine.Object> objFilter, bool allowSceneObjects)
+        {
+            if (SPEditorGUI.XButton(ref position, "Clear Selected Object", true))
+            {
+                obj = null;
+            }
+            EditorGUI.BeginChangeCheck();
+            var otherobj = EditorGUI.ObjectField(position, label, obj, typeof(UnityEngine.Object), allowSceneObjects);
+            if (EditorGUI.EndChangeCheck() && (otherobj == null || objFilter(otherobj)))
+            {
+                obj = otherobj;
+            }
+            return obj;
+        }
+
         #endregion
 
         #region LayerMaskField

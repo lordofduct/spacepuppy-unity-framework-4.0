@@ -104,7 +104,9 @@ namespace com.spacepuppy.Dynamic
                 }
             }
             else
+            {
                 CopyState(obj, token);
+            }
         }
 
         /// <summary>

@@ -148,6 +148,64 @@ namespace com.spacepuppyeditor
 
         #endregion
 
+        #region ObjectField w/ X-btn
+
+        public static void ObjectFieldX(SerializedProperty property, GUIContent label)
+        {
+            var position = EditorGUILayout.GetControlRect(true);
+            SPEditorGUI.ObjectFieldX(position, property, label);
+        }
+
+        public static UnityEngine.Object ObjectFieldX(UnityEngine.Object obj, System.Type objType, bool allowSceneObjects)
+        {
+            var position = EditorGUILayout.GetControlRect(true);
+            return SPEditorGUI.ObjectFieldX(position, obj, objType, allowSceneObjects);
+        }
+
+        public static void ObjectFieldX(SerializedProperty property, System.Type objType, GUIContent label)
+        {
+            var position = EditorGUILayout.GetControlRect(true);
+            SPEditorGUI.ObjectFieldX(position, property, objType, label);
+        }
+
+        public static UnityEngine.Object ObjectFieldX(GUIContent label, UnityEngine.Object obj, System.Type objType, bool allowSceneObjects)
+        {
+            var position = EditorGUILayout.GetControlRect(true);
+            return SPEditorGUI.ObjectFieldX(position, label, obj, objType, allowSceneObjects);
+        }
+
+        public static UnityEngine.Object ObjectFieldX(string label, UnityEngine.Object obj, System.Type objType, bool allowSceneObjects)
+        {
+            var position = EditorGUILayout.GetControlRect(true);
+            return SPEditorGUI.ObjectFieldX(position, label, obj, objType, allowSceneObjects);
+        }
+
+        public static UnityEngine.Object ObjectFieldX(UnityEngine.Object obj, System.Predicate<UnityEngine.Object> objFilter, bool allowSceneObjects)
+        {
+            var position = EditorGUILayout.GetControlRect(false);
+            return SPEditorGUI.ObjectFieldX(position, obj, objFilter, allowSceneObjects);
+        }
+
+        public static void ObjectFieldX(SerializedProperty property, System.Predicate<UnityEngine.Object> objFilter, GUIContent label, bool allowSceneObjects)
+        {
+            var position = EditorGUILayout.GetControlRect(true);
+            SPEditorGUI.ObjectFieldX(position, property, objFilter, label, allowSceneObjects);
+        }
+
+        public static UnityEngine.Object ObjectFieldX(GUIContent label, UnityEngine.Object obj, System.Predicate<UnityEngine.Object> objFilter, bool allowSceneObjects)
+        {
+            var position = EditorGUILayout.GetControlRect(true);
+            return SPEditorGUI.ObjectFieldX(position, label, obj, objFilter, allowSceneObjects);
+        }
+
+        public static UnityEngine.Object ObjectFieldX(string label, UnityEngine.Object obj, System.Predicate<UnityEngine.Object> objFilter, bool allowSceneObjects)
+        {
+            var position = EditorGUILayout.GetControlRect(true);
+            return SPEditorGUI.ObjectFieldX(position, label, obj, objFilter, allowSceneObjects);
+        }
+
+        #endregion
+
         #region LayerMaskField
 
         public static LayerMask LayerMaskField(string label, int selectedMask)

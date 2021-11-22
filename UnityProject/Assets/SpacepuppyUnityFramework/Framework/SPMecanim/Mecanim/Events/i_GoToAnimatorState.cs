@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using com.spacepuppy;
 using com.spacepuppy.Events;
 using com.spacepuppy.Utils;
+using System.Linq;
 
 namespace com.spacepuppy.Mecanim.Events
 {
@@ -25,6 +26,9 @@ namespace com.spacepuppy.Mecanim.Events
         private int _layer = -1;
         [SerializeField]
         private float _normalizedTime = float.NegativeInfinity;
+
+        [SerializeField]
+        private SPEvent _onStateExit;
 
         #endregion
 
@@ -48,7 +52,17 @@ namespace com.spacepuppy.Mecanim.Events
             if (targ == null) return false;
 
             targ.Play(_stateName, _layer, _normalizedTime);
+            if(_onStateExit.HasReceivers)
+            {
+                GameLoop.Hook.StartRadicalCoroutine(this.DoWait(targ, _stateName, _layer));
+            }
             return true;
+        }
+
+        private System.Collections.IEnumerator DoWait(Animator animator, string stateName, int layerIndex)
+        {
+            yield return WaitForAnimState.WaitForStateExit_PostPlay(animator, stateName, layerIndex);
+            _onStateExit.ActivateTrigger(this, null);
         }
 
     }

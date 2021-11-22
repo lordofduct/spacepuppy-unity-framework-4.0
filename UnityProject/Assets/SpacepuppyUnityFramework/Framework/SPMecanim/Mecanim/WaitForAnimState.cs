@@ -1,3 +1,5 @@
+using com.spacepuppy.Mecanim;
+using PlasticGui.WorkspaceWindow;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -5,7 +7,7 @@ using UnityEngine;
 namespace com.spacepuppy
 {
 
-    public sealed class WaitForAnimState : CustomYieldInstruction, IRadicalEnumerator, IPooledYieldInstruction
+    public sealed class WaitForAnimState : IRadicalEnumerator, IPooledYieldInstruction
     {
 
         private enum Mode
@@ -13,14 +15,20 @@ namespace com.spacepuppy
             Exit = 0,
             StartExit = 1,
             Active = 2,
+
+            WaitFirstThenExit = 4,
+            WaitFirstThenStartExit = 5
         }
 
         #region Fields
 
         private Animator _animator;
         private int _layerIndex;
-        private AnimatorStateInfo _state;
-        private Mode _mode;
+        private int _hash;
+        private string _stateName;
+        private KeepWaitingCallback _mode;
+
+        private bool _isComplete;
 
         #endregion
 
@@ -33,39 +41,41 @@ namespace com.spacepuppy
 
         #endregion
 
-        #region CustomYieldInstruction Interface
+        #region Properties
 
-        public override bool keepWaiting
-        {
-            get
-            {
-                if (_animator == null) return false;
+        public Animator Animator => _animator;
 
-                switch (_mode)
-                {
-                    case Mode.Exit:
-                        return _animator.GetCurrentAnimatorStateInfo(_layerIndex).fullPathHash != _state.fullPathHash;
-                    case Mode.StartExit:
-                        return _animator.IsInTransition(_layerIndex) && _animator.GetNextAnimatorStateInfo(_layerIndex).fullPathHash != _state.fullPathHash;
-                    case Mode.Active:
-                        return _animator.GetCurrentAnimatorStateInfo(_layerIndex).fullPathHash == _state.fullPathHash;
-                    default:
-                        return false;
-                }
-
-            }
-        }
+        public int LayerIndex => _layerIndex;
 
         #endregion
 
         #region IRadicalEnumerator Interface
 
-        bool IRadicalYieldInstruction.IsComplete => !this.keepWaiting;
+        bool IRadicalYieldInstruction.IsComplete => _isComplete;
+
+        object IEnumerator.Current => null;
+
 
         bool IRadicalYieldInstruction.Tick(out object yieldObject)
         {
             yieldObject = null;
-            return this.keepWaiting;
+            if (_animator == null) return false;
+
+            _isComplete = (_mode?.Invoke(this) ?? false);
+            return !_isComplete;
+        }
+
+        bool IEnumerator.MoveNext()
+        {
+            if (_animator == null) return false;
+
+            _isComplete = (_mode?.Invoke(this) ?? false);
+            return !_isComplete;
+        }
+
+        void IEnumerator.Reset()
+        {
+            //do nothing
         }
 
         #endregion
@@ -74,35 +84,68 @@ namespace com.spacepuppy
 
         private static com.spacepuppy.Collections.ObjectCachePool<WaitForAnimState> _pool = new com.spacepuppy.Collections.ObjectCachePool<WaitForAnimState>(-1, () => new WaitForAnimState());
 
-        public WaitForAnimState WaitForCurrentStateExit(Animator animator, int layerIndex)
+        public static WaitForAnimState WaitForCurrentStateExit(Animator animator, int layerIndex)
         {
             var state = animator.GetCurrentAnimatorStateInfo(layerIndex);
             var result = _pool.GetInstance();
             result._animator = animator;
             result._layerIndex = layerIndex;
-            result._state = state;
-            result._mode = Mode.Exit;
+            result._hash = state.fullPathHash;
+            result._stateName = null;
+            result._mode = WaitForExitByHash;
             return result;
         }
 
-        public static WaitForAnimState WaitForCurrentStateExitTransitionBegin(Animator animator, int layerIndex)
-        {
-            var state = animator.GetCurrentAnimatorStateInfo(layerIndex);
-            var result = _pool.GetInstance();
-            result._animator = animator;
-            result._layerIndex = layerIndex;
-            result._state = state;
-            result._mode = Mode.StartExit;
-            return result;
-        }
-
-        public static WaitForAnimState WaitUntilEnterState(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
+        public static WaitForAnimState WaitForStateEnter(Animator animator, string stateName, int layerIndex, SPTimePeriod timeout)
         {
             var result = _pool.GetInstance();
             result._animator = animator;
             result._layerIndex = layerIndex;
-            result._state = stateInfo;
-            result._mode = Mode.Active;
+            result._hash = 0;
+            result._stateName = stateName;
+            result._mode = WaitForEnterByName;
+            return result;
+        }
+
+        public static WaitForAnimState WaitForStateExit(Animator animator, string stateName, int layerIndex)
+        {
+            var result = _pool.GetInstance();
+            result._animator = animator;
+            result._layerIndex = layerIndex;
+            result._hash = 0;
+            result._stateName = stateName;
+            result._mode = WaitForExitByName;
+            return result;
+        }
+
+        /// <summary>
+        /// Waits first for the state to enter since it can take a couple frames after calling Play/CrossFade before the state actually activates. Then it waits for the exit.
+        /// 
+        /// Note - if the state is not entered within 4 frames, this exits to avoid getting stuck forever.
+        /// </summary>
+        /// <param name="animator"></param>
+        /// <param name="stateName"></param>
+        /// <param name="layerIndex"></param>
+        /// <returns></returns>
+        public static WaitForAnimState WaitForStateExit_PostPlay(Animator animator, string stateName, int layerIndex)
+        {
+            var result = _pool.GetInstance();
+            result._animator = animator;
+            result._layerIndex = layerIndex;
+            result._hash = 0;
+            result._stateName = stateName;
+            result._mode = WaitForExitByName;
+            return result;
+        }
+
+        public static WaitForAnimState WaitFor(Animator animator, string stateName, int layerIndex, KeepWaitingCallback callback)
+        {
+            var result = _pool.GetInstance();
+            result._animator = animator;
+            result._layerIndex = layerIndex;
+            result._hash = 0;
+            result._stateName = stateName;
+            result._mode = callback;
             return result;
         }
 
@@ -114,10 +157,50 @@ namespace com.spacepuppy
         {
             _animator = null;
             _layerIndex = 0;
-            _state = default(AnimatorStateInfo);
-            _mode = Mode.Exit;
+            _hash = 0;
+            _stateName = null;
+            _mode = null;
+            _isComplete = false;
             _pool.Release(this);
         }
+
+        #endregion
+
+        #region Delegate Pointers
+
+        public delegate bool KeepWaitingCallback(WaitForAnimState state);
+
+        private static KeepWaitingCallback _waitForExitByHash;
+        public static KeepWaitingCallback WaitForExitByHash => _waitForExitByHash ?? (_waitForExitByHash = (s) => s._animator.GetCurrentAnimatorStateInfo(s._layerIndex).fullPathHash != s._hash);
+
+        private static KeepWaitingCallback _waitForExitByName;
+        public static KeepWaitingCallback WaitForExitByName => _waitForExitByName ?? (_waitForExitByName = (s) => !s._animator.GetCurrentAnimatorStateIs(s._stateName, s._layerIndex));
+
+        private static KeepWaitingCallback _waitForEnterByHash;
+        public static KeepWaitingCallback WaitForEnterByHash => _waitForEnterByHash ?? (_waitForEnterByHash = (s) => s._animator.GetCurrentAnimatorStateInfo(s._layerIndex).fullPathHash == s._hash);
+
+        private static KeepWaitingCallback _waitForEnterByName;
+        public static KeepWaitingCallback WaitForEnterByName => _waitForEnterByName ?? (_waitForEnterByName = (s) => s._animator.GetCurrentAnimatorStateIs(s._stateName, s._layerIndex));
+
+        private static KeepWaitingCallback _waitForExitByName_PostPlay;
+        public static KeepWaitingCallback WaitForExitByName_PostPlay => _waitForExitByName_PostPlay ?? (_waitForExitByName_PostPlay = (s) =>
+        {
+            AnimatorStateInfo info;
+            int li = s._layerIndex;
+            if (s._animator.GetCurrentAnimatorStateIs(s._stateName, ref li, out info))
+            {
+                s._stateName = null;
+                s._hash = info.fullPathHash;
+                s._layerIndex = li;
+                s._mode = WaitForExitByName;
+                return false;
+            }
+            else
+            {
+                s._hash++;
+                return s._hash > 4;
+            }
+        });
 
         #endregion
 

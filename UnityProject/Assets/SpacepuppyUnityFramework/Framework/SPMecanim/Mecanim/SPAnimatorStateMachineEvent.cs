@@ -129,14 +129,7 @@ namespace com.spacepuppy.Mecanim
                         animator.SetFloat(_id, _value);
                         break;
                     case AnimatorTriggerAction.OverrideAnimatorController:
-                        if (_objectRef is AnimatorOverrideController a)
-                        {
-                            animator.StackOverride(a, _id);
-                        }
-                        else if(_objectRef is IAnimatorOverrideSource src)
-                        {
-                            animator.StackOverride(src, _id);
-                        }
+                        MecanimExtensions.StackOverrideGeneralized(animator, _objectRef, _id, false);
                         break;
                     case AnimatorTriggerAction.PurgeAnimatorOverride:
                         animator.RemoveOverride(_id);
@@ -172,14 +165,7 @@ namespace com.spacepuppy.Mecanim
                         animator.SetFloat(_id, _value);
                         break;
                     case AnimatorTriggerAction.OverrideAnimatorController:
-                        if (_objectRef is AnimatorOverrideController a)
-                        {
-                            animator.StackOverride(a, _id);
-                        }
-                        else if (_objectRef is IAnimatorOverrideSource src)
-                        {
-                            animator.StackOverride(src, _id);
-                        }
+                        MecanimExtensions.StackOverrideGeneralized(animator, _objectRef, _id, false);
                         break;
                     case AnimatorTriggerAction.PurgeAnimatorOverride:
                         animator.RemoveOverride(_id);

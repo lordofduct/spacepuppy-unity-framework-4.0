@@ -45,7 +45,7 @@ namespace com.spacepuppyeditor.Mecanim
             {
                 layerProp.intValue = -1;
                 if (EditorGUILayout.Toggle(false, GUILayout.Width(20f))) layerProp.intValue = 0;
-                EditorGUILayout.LabelField("Toggle checkbox to target specific layer.");
+                EditorGUILayout.LabelField("Toggle checkbox to target specific layer by index.");
             }
             EditorGUILayout.EndHorizontal();
 

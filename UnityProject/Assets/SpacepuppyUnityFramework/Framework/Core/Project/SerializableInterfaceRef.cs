@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.Project
 {
@@ -63,14 +64,14 @@ namespace com.spacepuppy.Project
 
         #region ISerializationCallbackReceiver Interface
 
-        public void OnAfterDeserialize()
+        void ISerializationCallbackReceiver.OnAfterDeserialize()
         {
             _value = _obj as T;
         }
 
-        public void OnBeforeSerialize()
+        void ISerializationCallbackReceiver.OnBeforeSerialize()
         {
-            _obj = _value as UnityEngine.Object;
+            //do nothing
         }
 
         #endregion

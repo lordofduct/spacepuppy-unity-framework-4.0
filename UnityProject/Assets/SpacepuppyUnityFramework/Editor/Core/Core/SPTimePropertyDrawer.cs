@@ -23,74 +23,82 @@ namespace com.spacepuppyeditor.Core
             var attrib = this.fieldInfo.GetCustomAttributes(typeof(SPTime.Config), false).FirstOrDefault() as SPTime.Config;
             var availNames = (attrib != null) ? attrib.AvailableCustomTimeNames : null;
 
-            SPTimePropertyDrawer.DrawTimeSupplier(position, property, position.width, availNames); 
+            SPTimePropertyDrawer.DrawTimeSupplier_SansPrefixLabel(position, property, position.width, availNames); 
         }
 
 
 
-        public static Rect DrawTimeSupplier(Rect position, SerializedProperty property, float desiredWidth, string[] availableNames)
+        public static Rect DrawTimeSupplier_SansPrefixLabel(Rect position, SerializedProperty property, float desiredWidth, string[] availableNames)
         {
             if (position.width <= 0f) return position;
 
-            var r = new Rect(position.xMin, position.yMin, Mathf.Min(position.width, desiredWidth), position.height);
-
-            var tsTypeProp = property.FindPropertyRelative(PROP_TIMESUPPLIERTYPE);
-            var tsNameProp = property.FindPropertyRelative(PROP_TIMESUPPLIERNAME);
-
-            int index = -1;
-            using (var lst = TempCollection.GetList<string>())
+            try
             {
-                lst.Add("Normal");
-                lst.Add("Real");
-                lst.Add("Smooth");
+                EditorHelper.SuppressIndentLevel();
+                var r = new Rect(position.xMin, position.yMin, Mathf.Min(position.width, desiredWidth), position.height);
 
-                foreach (var nm in CustomTimeLayersData.Layers)
-                {
-                    if (!lst.Contains(nm)) lst.Add(nm);
-                }
+                var tsTypeProp = property.FindPropertyRelative(PROP_TIMESUPPLIERTYPE);
+                var tsNameProp = property.FindPropertyRelative(PROP_TIMESUPPLIERNAME);
 
-                if (availableNames != null)
+                int index = -1;
+                using (var lst = TempCollection.GetList<string>())
                 {
-                    foreach (var nm in availableNames)
+                    lst.Add("Normal");
+                    lst.Add("Real");
+                    lst.Add("Smooth");
+
+                    foreach (var nm in CustomTimeLayersData.Layers)
                     {
                         if (!lst.Contains(nm)) lst.Add(nm);
                     }
-                }
 
-                var e = tsTypeProp.GetEnumValue<DeltaTimeType>();
-                if (e == DeltaTimeType.Custom)
-                {
-                    index = lst.IndexOf(tsNameProp.stringValue);
-                    if (index < 0)
+                    if (availableNames != null)
                     {
-                        tsTypeProp.SetEnumValue(DeltaTimeType.Normal);
-                        tsNameProp.stringValue = null;
-                        index = 0;
+                        foreach (var nm in availableNames)
+                        {
+                            if (!lst.Contains(nm)) lst.Add(nm);
+                        }
                     }
-                }
-                else
-                    index = (int)e;
-                
-                var cache = SPGUI.DisableIfPlaying();
-                EditorGUI.BeginChangeCheck();
-                index = Mathf.Max(EditorGUI.Popup(position, index, lst.ToArray()), 0);
-                if (EditorGUI.EndChangeCheck())
-                {
-                    if (index < 3)
+
+                    var e = tsTypeProp.GetEnumValue<DeltaTimeType>();
+                    if (e == DeltaTimeType.Custom)
                     {
-                        tsTypeProp.SetEnumValue((DeltaTimeType)index);
-                        tsNameProp.stringValue = null;
+                        index = lst.IndexOf(tsNameProp.stringValue);
+                        if (index < 0)
+                        {
+                            tsTypeProp.SetEnumValue(DeltaTimeType.Normal);
+                            tsNameProp.stringValue = null;
+                            index = 0;
+                        }
                     }
                     else
-                    {
-                        tsTypeProp.SetEnumValue(DeltaTimeType.Custom);
-                        tsNameProp.stringValue = lst[index];
-                    }
-                }
-                cache.Reset();
-            }
+                        index = (int)e;
 
-            return new Rect(r.xMax, position.yMin, Mathf.Max(position.width - r.width, 0f), position.height);
+                    var cache = SPGUI.DisableIfPlaying();
+                    EditorGUI.BeginChangeCheck();
+                    index = Mathf.Max(EditorGUI.Popup(position, index, lst.ToArray()), 0);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        if (index < 3)
+                        {
+                            tsTypeProp.SetEnumValue((DeltaTimeType)index);
+                            tsNameProp.stringValue = null;
+                        }
+                        else
+                        {
+                            tsTypeProp.SetEnumValue(DeltaTimeType.Custom);
+                            tsNameProp.stringValue = lst[index];
+                        }
+                    }
+                    cache.Reset();
+                }
+
+                return new Rect(r.xMax, position.yMin, Mathf.Max(position.width - r.width, 0f), position.height);
+            }
+            finally
+            {
+                EditorHelper.ResumeIndentLevel();
+            }
         }
 
 

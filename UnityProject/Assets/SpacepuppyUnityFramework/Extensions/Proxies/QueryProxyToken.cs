@@ -20,6 +20,7 @@ namespace com.spacepuppy
         #region Fields
 
         [SerializeField()]
+        [RespectsIProxy()]
         private UnityEngine.Object _target;
         [SerializeField()]
         private SearchBy _searchBy;

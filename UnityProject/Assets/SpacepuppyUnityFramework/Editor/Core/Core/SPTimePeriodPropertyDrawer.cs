@@ -29,19 +29,28 @@ namespace com.spacepuppyeditor.Core
             var attrib = this.fieldInfo.GetCustomAttributes(typeof(SPTime.Config), false).FirstOrDefault() as SPTime.Config;
             var availNames = (attrib != null) ? attrib.AvailableCustomTimeNames : null;
 
-            if (w > 75f)
+            try
             {
-                position = _timeDrawer.DrawDuration(position, secondsProp, Mathf.Min(w, 150f));
-                position = _timeDrawer.DrawUnits(position, secondsProp, 75f);
-                position = SPTimePropertyDrawer.DrawTimeSupplier(position, property, position.width, availNames); //we mirror the SPTime prop drawer, we can do this because the property names are identical
+                EditorHelper.SuppressIndentLevel();
+
+                if (w > 75f)
+                {
+                    position = _timeDrawer.DrawDuration(position, secondsProp, Mathf.Min(w, 150f));
+                    position = _timeDrawer.DrawUnits(position, secondsProp, 75f);
+                    position = SPTimePropertyDrawer.DrawTimeSupplier_SansPrefixLabel(position, property, position.width, availNames); //we mirror the SPTime prop drawer, we can do this because the property names are identical
+                }
+                else
+                {
+                    position = _timeDrawer.DrawDuration(position, secondsProp, w);
+                    position = _timeDrawer.DrawUnits(position, secondsProp, w);
+
+
+                    position = SPTimePropertyDrawer.DrawTimeSupplier_SansPrefixLabel(position, property, position.width, availNames); //we mirror the SPTime prop drawer, we can do this because the property names are identical
+                }
             }
-            else
+            finally
             {
-                position = _timeDrawer.DrawDuration(position, secondsProp, w);
-                position = _timeDrawer.DrawUnits(position, secondsProp, w);
-
-
-                position = SPTimePropertyDrawer.DrawTimeSupplier(position, property, position.width, availNames); //we mirror the SPTime prop drawer, we can do this because the property names are identical
+                EditorHelper.ResumeIndentLevel();
             }
         }
 

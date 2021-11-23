@@ -4,7 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace com.spacepuppy
+namespace com.spacepuppy.Mecanim
 {
 
     public sealed class WaitForAnimState : IRadicalEnumerator, IPooledYieldInstruction
@@ -92,7 +92,7 @@ namespace com.spacepuppy
             result._layerIndex = layerIndex;
             result._hash = state.fullPathHash;
             result._stateName = null;
-            result._mode = WaitForExitByHash;
+            result._mode = Callback_WaitForExitByHash;
             return result;
         }
 
@@ -103,7 +103,7 @@ namespace com.spacepuppy
             result._layerIndex = layerIndex;
             result._hash = 0;
             result._stateName = stateName;
-            result._mode = WaitForEnterByName;
+            result._mode = Callback_WaitForEnterByName;
             return result;
         }
 
@@ -114,7 +114,7 @@ namespace com.spacepuppy
             result._layerIndex = layerIndex;
             result._hash = 0;
             result._stateName = stateName;
-            result._mode = WaitForExitByName;
+            result._mode = Callback_WaitForExitByName;
             return result;
         }
 
@@ -134,7 +134,7 @@ namespace com.spacepuppy
             result._layerIndex = layerIndex;
             result._hash = 0;
             result._stateName = stateName;
-            result._mode = WaitForExitByName;
+            result._mode = Callback_WaitForExitByName_PostPlay;
             return result;
         }
 
@@ -171,19 +171,19 @@ namespace com.spacepuppy
         public delegate bool KeepWaitingCallback(WaitForAnimState state);
 
         private static KeepWaitingCallback _waitForExitByHash;
-        public static KeepWaitingCallback WaitForExitByHash => _waitForExitByHash ?? (_waitForExitByHash = (s) => s._animator.GetCurrentAnimatorStateInfo(s._layerIndex).fullPathHash != s._hash);
+        public static KeepWaitingCallback Callback_WaitForExitByHash => _waitForExitByHash ?? (_waitForExitByHash = (s) => s._animator.GetCurrentAnimatorStateInfo(s._layerIndex).fullPathHash != s._hash);
 
         private static KeepWaitingCallback _waitForExitByName;
-        public static KeepWaitingCallback WaitForExitByName => _waitForExitByName ?? (_waitForExitByName = (s) => !s._animator.GetCurrentAnimatorStateIs(s._stateName, s._layerIndex));
+        public static KeepWaitingCallback Callback_WaitForExitByName => _waitForExitByName ?? (_waitForExitByName = (s) => !s._animator.GetCurrentAnimatorStateIs(s._stateName, s._layerIndex));
 
         private static KeepWaitingCallback _waitForEnterByHash;
-        public static KeepWaitingCallback WaitForEnterByHash => _waitForEnterByHash ?? (_waitForEnterByHash = (s) => s._animator.GetCurrentAnimatorStateInfo(s._layerIndex).fullPathHash == s._hash);
+        public static KeepWaitingCallback Callback_WaitForEnterByHash => _waitForEnterByHash ?? (_waitForEnterByHash = (s) => s._animator.GetCurrentAnimatorStateInfo(s._layerIndex).fullPathHash == s._hash);
 
         private static KeepWaitingCallback _waitForEnterByName;
-        public static KeepWaitingCallback WaitForEnterByName => _waitForEnterByName ?? (_waitForEnterByName = (s) => s._animator.GetCurrentAnimatorStateIs(s._stateName, s._layerIndex));
+        public static KeepWaitingCallback Callback_WaitForEnterByName => _waitForEnterByName ?? (_waitForEnterByName = (s) => s._animator.GetCurrentAnimatorStateIs(s._stateName, s._layerIndex));
 
         private static KeepWaitingCallback _waitForExitByName_PostPlay;
-        public static KeepWaitingCallback WaitForExitByName_PostPlay => _waitForExitByName_PostPlay ?? (_waitForExitByName_PostPlay = (s) =>
+        public static KeepWaitingCallback Callback_WaitForExitByName_PostPlay => _waitForExitByName_PostPlay ?? (_waitForExitByName_PostPlay = (s) =>
         {
             AnimatorStateInfo info;
             int li = s._layerIndex;
@@ -192,7 +192,13 @@ namespace com.spacepuppy
                 s._stateName = null;
                 s._hash = info.fullPathHash;
                 s._layerIndex = li;
-                s._mode = WaitForExitByName;
+                s._mode = Callback_WaitForExitByHash;
+                return false;
+            }
+            else if(s._animator.GetNextAnimatorStateIs(s._stateName, ref li, out info))
+            {
+                //this happens if we're in a "cross-fade"
+                s._layerIndex = li;
                 return false;
             }
             else

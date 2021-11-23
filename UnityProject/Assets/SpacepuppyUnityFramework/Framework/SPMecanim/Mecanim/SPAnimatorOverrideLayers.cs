@@ -4,9 +4,10 @@ using System.Linq;
 
 using com.spacepuppy.Collections;
 using com.spacepuppy.Utils;
-using com.spacepuppy.Mecanim.Behaviours;
 
-namespace com.spacepuppy
+using IOverrideList = System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<UnityEngine.AnimationClip, UnityEngine.AnimationClip>>;
+
+namespace com.spacepuppy.Mecanim
 {
 
     [RequireComponent(typeof(Animator))]
@@ -173,7 +174,7 @@ namespace com.spacepuppy
         {
             if (_layers != null && _layers.Count > 0)
             {
-                using (var lst = TempCollection.GetList<KeyValuePair<AnimationClip, AnimationClip>>())
+                using (var lst = AnimatorOverrideCollection.GetTemp())
                 {
                     this.GetOverrides(lst);
                     _overrideAnimatorController.ApplyOverrides(lst);
@@ -260,13 +261,25 @@ namespace com.spacepuppy
         {
             if (source == null) return;
 
-            using(var lst = TempCollection.GetList<KeyValuePair<AnimationClip, AnimationClip>>())
+            if(source is IOverrideList lst)
             {
-                if(source.GetOverrides(lst) > 0)
+                this.Stack(lst, token);
+            }
+            else
+            {
+                using (var tlst = AnimatorOverrideCollection.GetTemp())
                 {
-                    this.Stack(lst, token);
+                    if (source.GetOverrides(_animator, tlst) > 0)
+                    {
+                        this.Stack((IOverrideList)tlst, token);
+                    }
                 }
             }
+        }
+
+        public void Stack(AnimatorOverrideCollection coll, object token)
+        {
+            this.Stack((IOverrideList)coll, token);
         }
 
         public void Stack(IList<KeyValuePair<AnimationClip, AnimationClip>> overrides, object token)
@@ -450,7 +463,7 @@ namespace com.spacepuppy
             }
             else
             {
-                using (var tlst = TempCollection.GetList<KeyValuePair<AnimationClip, AnimationClip>>())
+                using (var tlst = AnimatorOverrideCollection.GetTemp())
                 {
                     if (_initialRuntimeAnimatorController != null)
                     {
@@ -476,7 +489,7 @@ namespace com.spacepuppy
             if (!ObjUtil.IsObjectAlive(this)) return 0;
 
             dict.Clear();
-            using (var lst = TempCollection.GetList<KeyValuePair<AnimationClip, AnimationClip>>())
+            using (var lst = AnimatorOverrideCollection.GetTemp())
             {
                 if (_initialRuntimeAnimatorController != null)
                 {
@@ -652,7 +665,7 @@ namespace com.spacepuppy
             _overrideAnimatorController = new AnimatorOverrideController(_baseRuntimeAnimatorController);
             if (_initialRuntimeAnimatorController != null)
             {
-                using (var lst = TempCollection.GetList<KeyValuePair<AnimationClip, AnimationClip>>())
+                using (var lst = AnimatorOverrideCollection.GetTemp())
                 {
                     _initialRuntimeAnimatorController.GetOverrides(lst);
                     _overrideAnimatorController.ApplyOverrides(lst);

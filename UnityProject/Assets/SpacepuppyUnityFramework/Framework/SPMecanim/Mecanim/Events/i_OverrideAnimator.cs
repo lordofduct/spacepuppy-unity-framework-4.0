@@ -9,19 +9,17 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Mecanim.Events
 {
 
-    public class i_OverrideAnimator : AutoTriggerable
+    public sealed class i_OverrideAnimator : AutoTriggerable
     {
 
         #region Fields
 
         [SerializeField]
         [TriggerableTargetObject.Config(typeof(Animator))]
-        private TriggerableTargetObject _target;
+        private TriggerableTargetObject _targetAnimator;
 
         [SerializeField]
-        private UnityEngine.Object _overrides;
-        [SerializeField]
-        private bool _treatUnconfiguredEntriesAsValidEntries;
+        private AnimatorOverrideSourceRef _animatorOverrides;
 
         [SerializeField]
         [Tooltip("The token used to identify the layer to purge.")]
@@ -31,27 +29,9 @@ namespace com.spacepuppy.Mecanim.Events
 
         #region Properties
 
-        public TriggerableTargetObject Target { get { return _target; } }
+        public TriggerableTargetObject TargetAnimator => _targetAnimator;
 
-        public UnityEngine.Object Overrides => _overrides;
-
-        public bool TreatUnconfiguredEntriesAsValidEntries => _treatUnconfiguredEntriesAsValidEntries;
-
-        #endregion
-
-        #region Methods
-
-        public void SetOverrides(AnimatorOverrideController controller, bool treatUnconfiguredEntriesAsValidEntries = false)
-        {
-            _overrides = controller;
-            _treatUnconfiguredEntriesAsValidEntries = treatUnconfiguredEntriesAsValidEntries;
-        }
-
-        public void SetOverrides(IAnimatorOverrideSource source)
-        {
-            _overrides = source as UnityEngine.Object;
-            _treatUnconfiguredEntriesAsValidEntries = false;
-        }
+        public AnimatorOverrideSourceRef AnimatorOverrides => _animatorOverrides;
 
         #endregion
 
@@ -61,10 +41,10 @@ namespace com.spacepuppy.Mecanim.Events
         {
             if (!this.CanTrigger) return false;
 
-            var targ = _target.GetTarget<Animator>(arg);
+            var targ = _targetAnimator.GetTarget<Animator>(arg);
             if (targ == null) return false;
 
-            MecanimExtensions.StackOverrideGeneralized(targ, _overrides, _token, false);
+            targ.StackOverride(_animatorOverrides, _token);
             return true;
         }
 

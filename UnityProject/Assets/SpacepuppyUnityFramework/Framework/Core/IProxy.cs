@@ -30,6 +30,13 @@ namespace com.spacepuppy
 
         object GetTarget();
         object GetTarget(object arg);
+
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
+    public class RespectsIProxyAttribute : System.Attribute
+    {
+
     }
 
 }

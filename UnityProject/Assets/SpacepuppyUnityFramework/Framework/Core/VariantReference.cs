@@ -49,6 +49,7 @@ namespace com.spacepuppy
         private string _string;
 
         [SerializeField()]
+        [RespectsIProxy()]
         private UnityEngine.Object _unityObjectReference;
 
         [System.NonSerialized]

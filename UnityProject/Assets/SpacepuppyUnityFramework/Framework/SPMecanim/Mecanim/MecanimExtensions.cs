@@ -113,9 +113,10 @@ namespace com.spacepuppy.Mecanim
 
         public static bool GetCurrentAnimatorStateIs(this Animator animator, string name, int layerIndex)
         {
-            if(layerIndex < 0)
+            int layerCount = animator.layerCount;
+            if (layerIndex < 0)
             {
-                for(int i = 0; i < layerIndex; i++)
+                for(int i = 0; i < layerCount; i++)
                 {
                     if(animator.GetCurrentAnimatorStateInfo(i).IsName(name))
                     {
@@ -124,7 +125,7 @@ namespace com.spacepuppy.Mecanim
                 }
                 return false;
             }
-            else if(layerIndex < animator.layerCount)
+            else if(layerIndex < layerCount)
             {
                 return animator.GetCurrentAnimatorStateInfo(layerIndex).IsName(name);
             }
@@ -136,9 +137,10 @@ namespace com.spacepuppy.Mecanim
 
         public static bool GetCurrentAnimatorStateIs(this Animator animator, string name, ref int layerIndex, out AnimatorStateInfo info)
         {
+            int layerCount = animator.layerCount;
             if (layerIndex < 0)
             {
-                for (int i = 0; i < layerIndex; i++)
+                for (int i = 0; i < layerCount; i++)
                 {
                     info = animator.GetCurrentAnimatorStateInfo(i);
                     if (info.IsName(name))
@@ -150,7 +152,7 @@ namespace com.spacepuppy.Mecanim
                 info = default(AnimatorStateInfo);
                 return false;
             }
-            else if (layerIndex < animator.layerCount)
+            else if (layerIndex < layerCount)
             {
                 info = animator.GetCurrentAnimatorStateInfo(layerIndex);
                 if (info.IsName(name)) return true;
@@ -167,9 +169,10 @@ namespace com.spacepuppy.Mecanim
 
         public static bool GetNextAnimatorStateIs(this Animator animator, string name, int layerIndex)
         {
+            int layerCount = animator.layerCount;
             if (layerIndex < 0)
             {
-                for (int i = 0; i < layerIndex; i++)
+                for (int i = 0; i < layerCount; i++)
                 {
                     if (animator.GetNextAnimatorStateInfo(i).IsName(name))
                     {
@@ -178,7 +181,7 @@ namespace com.spacepuppy.Mecanim
                 }
                 return false;
             }
-            else if (layerIndex < animator.layerCount)
+            else if (layerIndex < layerCount)
             {
                 return animator.GetNextAnimatorStateInfo(layerIndex).IsName(name);
             }
@@ -190,9 +193,10 @@ namespace com.spacepuppy.Mecanim
 
         public static bool GetNextAnimatorStateIs(this Animator animator, string name, ref int layerIndex, out AnimatorStateInfo info)
         {
+            int layerCount = animator.layerCount;
             if (layerIndex < 0)
             {
-                for (int i = 0; i < layerIndex; i++)
+                for (int i = 0; i < layerCount; i++)
                 {
                     info = animator.GetNextAnimatorStateInfo(i);
                     if (info.IsName(name))
@@ -204,7 +208,7 @@ namespace com.spacepuppy.Mecanim
                 info = default(AnimatorStateInfo);
                 return false;
             }
-            else if (layerIndex < animator.layerCount)
+            else if (layerIndex < layerCount)
             {
                 info = animator.GetNextAnimatorStateInfo(layerIndex);
                 if (info.IsName(name)) return true;
@@ -222,6 +226,12 @@ namespace com.spacepuppy.Mecanim
         #endregion
 
         #region SPAnimatorOverrideLayers Extensions
+
+        public static SPAnimatorOverrideLayers GetOverrideLayerController(this Animator animator)
+        {
+            if (animator == null) return null;
+            return animator.AddOrGetComponent<SPAnimatorOverrideLayers>();
+        }
 
         internal static void StackOverrideGeneralized(Animator animator, object overrides, object token, bool targetUnconfiguredEntriesAsvalidEntriesWhenAnimatorOverrideController = false)
         {
@@ -258,6 +268,11 @@ namespace com.spacepuppy.Mecanim
         }
 
         public static void StackOverride(this Animator animator, IList<KeyValuePair<AnimationClip, AnimationClip>> overrides, object token)
+        {
+            animator.AddOrGetComponent<SPAnimatorOverrideLayers>().Stack(overrides, token);
+        }
+
+        public static void StackOverride(this Animator animator, AnimatorOverrideCollection overrides, object token)
         {
             animator.AddOrGetComponent<SPAnimatorOverrideLayers>().Stack(overrides, token);
         }

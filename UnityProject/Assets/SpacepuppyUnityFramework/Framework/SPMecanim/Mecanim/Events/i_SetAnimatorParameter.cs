@@ -10,29 +10,29 @@ namespace com.spacepuppy.Mecanim.Events
 {
 
     [Infobox("If attempting to use 'PurgeAnimatorOverride' mode, it will only be supported if there is a properly configured animator bridge on the target entity as well.", MessageType = InfoBoxMessageType.Warning)]
-    public class i_SetAnimatorParameter : AutoTriggerable
+    public sealed class i_SetAnimatorParameter : AutoTriggerable
     {
 
         #region Fields
 
         [SerializeField]
         [TriggerableTargetObject.Config(typeof(Animator))]
-        private TriggerableTargetObject _target;
+        private TriggerableTargetObject _targetAnimator;
 
         [SerializeField]
         private SPAnimatorStateMachineEvent _parameters;
 
         #endregion
 
-        public TriggerableTargetObject Target { get { return _target; } }
+        public TriggerableTargetObject TargetAnimator => _targetAnimator;
 
-        public SPAnimatorStateMachineEvent Parameters { get { return _parameters; } }
+        public SPAnimatorStateMachineEvent Parameters => _parameters;
 
         public override bool Trigger(object sender, object arg)
         {
             if (!this.CanTrigger) return false;
 
-            var targ = _target.GetTarget<Animator>(arg);
+            var targ = _targetAnimator.GetTarget<Animator>(arg);
             if (targ == null) return false;
 
             _parameters.ActivateTrigger(targ, null);

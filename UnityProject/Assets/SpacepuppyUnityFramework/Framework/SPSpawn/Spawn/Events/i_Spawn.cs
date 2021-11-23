@@ -21,6 +21,7 @@ namespace com.spacepuppy.Spawn.Events
         private SpawnPool _spawnPool;
         
         [SerializeField]
+        [RespectsIProxy()]
         [TypeRestriction(typeof(Transform), AllowProxy = true, HideTypeDropDown = true)]
         private UnityEngine.Object _spawnedObjectParent;
 

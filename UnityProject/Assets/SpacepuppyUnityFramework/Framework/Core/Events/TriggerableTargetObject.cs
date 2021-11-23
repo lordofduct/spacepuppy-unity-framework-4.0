@@ -35,6 +35,7 @@ namespace com.spacepuppy.Events
         [SerializeField()]
         private bool _configured = true;
         [SerializeField()]
+        [RespectsIProxy()]
         private UnityEngine.Object _target;
         [SerializeField()]
         private FindCommand _find;
@@ -233,8 +234,7 @@ namespace com.spacepuppy.Events
 
         private object ReduceTarget(object triggerArg)
         {
-            var targ = _target;
-            if (targ is IProxy) targ = (targ as IProxy).GetTarget(triggerArg) as UnityEngine.Object;
+            object targ = ObjUtil.ReduceIfProxy(_target, triggerArg);
 
             switch (_find)
             {

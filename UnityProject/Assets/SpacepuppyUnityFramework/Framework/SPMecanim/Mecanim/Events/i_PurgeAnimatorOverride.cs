@@ -9,18 +9,26 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Mecanim.Events
 {
 
-    public class i_PurgeAnimatorOverride : AutoTriggerable
+    public sealed class i_PurgeAnimatorOverride : AutoTriggerable
     {
 
         #region Fields
 
         [SerializeField]
         [TriggerableTargetObject.Config(typeof(Animator))]
-        private TriggerableTargetObject _target;
+        private TriggerableTargetObject _targetAnimator;
 
         [SerializeField]
         [Tooltip("The token used to identify the layer to purge.")]
         private string _token;
+
+        #endregion
+
+        #region Properties
+
+        public TriggerableTargetObject TargetAnimator => _targetAnimator;
+
+        public string Token { get { return _token; } set { _token = value; } }
 
         #endregion
 
@@ -30,7 +38,7 @@ namespace com.spacepuppy.Mecanim.Events
         {
             if (!this.CanTrigger) return false;
 
-            var targ = _target.GetTarget<Animator>(arg);
+            var targ = _targetAnimator.GetTarget<Animator>(arg);
             if (targ == null) return false;
 
             targ.RemoveOverride(_token);

@@ -51,7 +51,7 @@ namespace com.spacepuppy.Collections
 
         #region IDisposable Interface
 
-        public void Dispose()
+        public virtual void Dispose()
         {
             this.Clear();
             if(_pool.Release(this))

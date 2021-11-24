@@ -5,7 +5,7 @@ namespace com.spacepuppy.Mecanim
 {
 
     [CreateAssetMenu(fileName = "AnimatorOverrideSource", menuName = "Spacepuppy/Mecanim/AnimatorOverrideSource")]
-    public sealed class AnimatorOverrideSource : ScriptableObject, IAnimatorOverrideSource
+    public class AnimatorOverrideSource : ScriptableObject, IAnimatorOverrideSource
     {
 
         #region Fields

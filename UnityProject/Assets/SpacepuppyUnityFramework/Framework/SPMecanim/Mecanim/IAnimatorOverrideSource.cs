@@ -92,7 +92,14 @@ namespace com.spacepuppy.Mecanim
         {
             protected override void Dispose()
             {
-                _pool.Release(this);
+                this.Clear();
+                if (_pool.Release(this))
+                {
+                    if(this.Capacity > 64)
+                    {
+                        this.Capacity = 64;
+                    }
+                }
             }
         }
 

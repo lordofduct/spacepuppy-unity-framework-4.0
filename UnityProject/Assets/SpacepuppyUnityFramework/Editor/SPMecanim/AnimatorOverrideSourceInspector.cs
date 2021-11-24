@@ -48,6 +48,8 @@ namespace com.spacepuppyeditor.Mecanim
         {
             this.serializedObject.Update();
 
+            this.DrawPropertyField(EditorHelper.PROP_SCRIPT);
+
             var ctrlProp = this.serializedObject.FindProperty(PROP_CONTROLLER);
             ctrlProp.objectReferenceValue = SPEditorGUILayout.ObjectFieldX(ctrlProp.displayName, ctrlProp.objectReferenceValue, typeof(UnityEditor.Animations.AnimatorController), false);
             //SPEditorGUILayout.PropertyField(ctrlProp);
@@ -103,6 +105,8 @@ namespace com.spacepuppyeditor.Mecanim
 
             _knownKeys = null;
             _usedClips.Clear();
+
+            this.DrawDefaultInspectorExcept(EditorHelper.PROP_SCRIPT, PROP_CONTROLLER, PROP_OVERRIDES);
 
             this.serializedObject.ApplyModifiedProperties();
         }

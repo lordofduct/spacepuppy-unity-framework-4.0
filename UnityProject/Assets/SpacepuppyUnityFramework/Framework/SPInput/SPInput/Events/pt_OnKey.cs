@@ -8,7 +8,8 @@ using com.spacepuppy.Events;
 namespace com.spacepuppy.SPInput.Events
 {
 
-    public class t_OnKey : SPComponent, IObservableTrigger
+    [Infobox("WARNING - This script is intended for prototyping only. It hooks directly into the keyboard rather than a dynamic input system making it impossible to remap. Prefer a more robust input system for release quality functionality.", MessageType = InfoBoxMessageType.Warning)]
+    public class pt_OnKey : SPComponent, IObservableTrigger
     {
 
         #region Fields

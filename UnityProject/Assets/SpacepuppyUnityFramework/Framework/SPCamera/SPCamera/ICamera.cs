@@ -5,7 +5,7 @@ using System.Linq;
 namespace com.spacepuppy.Cameras
 {
 
-    public interface ICamera : IGameObjectSource
+    public interface ICamera : IGameObjectSource, INameable
     {
 
         CameraCategory Category { get; set; }

@@ -253,6 +253,8 @@ namespace com.spacepuppy
             get { return _stack; }
         }
 
+        public object Tag { get; set; }
+
         #endregion
 
         #region Methods
@@ -1000,6 +1002,7 @@ namespace com.spacepuppy
             this.OnCancelled = null;
             this.OnFinished = null;
             _immediatelyResumingSignal = null;
+            this.Tag = null;
 
             //TODO - #100 - allow releasing when we've fully implemented coroutine object caching 
             //_pool.Release(this);

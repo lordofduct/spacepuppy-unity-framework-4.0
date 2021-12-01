@@ -27,7 +27,7 @@ namespace com.spacepuppy.SPInput
 
         #region Messages
 
-        private void FixedUpdate()
+        protected virtual void FixedUpdate()
         {
             var e = _dict.GetEnumerator();
             while (e.MoveNext())
@@ -39,7 +39,7 @@ namespace com.spacepuppy.SPInput
         /// <summary>
         /// Call once per frame
         /// </summary>
-        private void Update()
+        protected virtual void Update()
         {
             var e = _dict.GetEnumerator();
             while (e.MoveNext())

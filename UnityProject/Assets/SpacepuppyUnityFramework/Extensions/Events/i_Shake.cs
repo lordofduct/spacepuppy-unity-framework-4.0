@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 
-using com.spacepuppy;
+using com.spacepuppy.Collections;
 using com.spacepuppy.Geom;
 using com.spacepuppy.Events;
 using com.spacepuppy.Tween;
@@ -11,7 +11,7 @@ namespace com.spacepuppy.Events
 {
 
     [Infobox("Leave target blank to use the currently active camera.")]
-    public class i_ShakeCamera : AutoTriggerable
+    public class i_Shake : AutoTriggerable
     {
 
         #region Fields
@@ -38,13 +38,17 @@ namespace com.spacepuppy.Events
         private List<AxisEffect> _angular;
 
         [SerializeField]
+        [ReorderableArray]
+        private List<AxisEffect> _scale;
+
+        [SerializeField]
         private SPTimePeriod _duration;
 
         #endregion
 
         #region Methods
 
-        private System.Collections.IEnumerator DoShake(Transform targ, Trans cache, Transform relativeTarg)
+        private System.Collections.IEnumerator DoShake(StateToken state, Transform relativeTarg)
         {
             float t = _duration.Seconds;
             while (t > 0f)
@@ -58,11 +62,11 @@ namespace com.spacepuppy.Events
                     {
                         _linear[i].Effect(ref adjust, dt, _duration.Seconds);
                     }
-                    if(relativeTarg != null)
+                    if (relativeTarg != null)
                     {
-                        adjust = QuaternionUtil.FromToRotation(targ.rotation, relativeTarg.rotation) * adjust;
+                        adjust = QuaternionUtil.FromToRotation(state.Targ.rotation, relativeTarg.rotation) * adjust;
                     }
-                    targ.localPosition = cache.Position + adjust;
+                    state.Targ.localPosition = state.Cache.Position + adjust;
                 }
 
                 //angular
@@ -75,39 +79,63 @@ namespace com.spacepuppy.Events
                     }
                     if (relativeTarg != null)
                     {
-                        adjust = QuaternionUtil.FromToRotation(targ.rotation, relativeTarg.rotation) * adjust;
+                        adjust = QuaternionUtil.FromToRotation(state.Targ.rotation, relativeTarg.rotation) * adjust;
                     }
-                    targ.localEulerAngles = cache.Rotation.eulerAngles + adjust;
+                    state.Targ.localEulerAngles = state.Cache.Rotation.eulerAngles + adjust;
+                }
+
+                //scale
+                if (_scale.Count > 0)
+                {
+                    Vector3 adjust = Vector3.zero;
+                    for (int i = 0; i < _scale.Count; i++)
+                    {
+                        _scale[i].Effect(ref adjust, dt, _duration.Seconds);
+                    }
+                    state.Targ.localScale = state.Cache.Scale + adjust;
                 }
 
                 yield return null;
                 t -= _duration.TimeSupplier.Delta;
             }
 
-            cache.SetToLocal(targ);
+            state.Cache.SetToLocal(state.Targ);
+            state.Dispose();
         }
 
         #endregion
 
-        #region TriggerableMechanism Interface
+        #region Triggerable Interface
 
         public override bool Trigger(object sender, object arg)
         {
             if (!this.CanTrigger) return false;
 
-            if (_linear.Count == 0 && _angular.Count == 0) return false;
-            
+            if (_linear.Count == 0 && _angular.Count == 0 && _scale.Count == 0) return false;
+
             var targ = _target.GetTarget<Transform>(arg);
-            if (targ == null)
+            if (targ == null) return false;
+
+            var manager = targ.AddOrGetComponent<RadicalCoroutineManager>();
+            var routine = manager.Find(r => (r.Tag is StateToken st) && st.Targ == targ);
+            StateToken state;
+            if (routine != null)
             {
-                var cam = com.spacepuppy.Cameras.CameraPool.Main;
-                if (cam != null && cam.camera != null)
-                    targ = cam.camera.transform;
-                else
-                    return false;
+                state = routine.Tag as StateToken;
+                if (state?.CurrentPrecedence > _effectPrecedence) return false;
+
+                state.Cache.SetToLocal(targ);
+                routine.Cancel();
+                state.Dispose();
             }
 
-            return targ.AddOrGetComponent<CameraShakeEffectToken>().TryBegin(this, _relativeMotionTarget.GetTarget<Transform>(arg));
+            state = _pool.GetInstance();
+            state.CurrentPrecedence = _effectPrecedence;
+            state.Targ = targ;
+            state.Cache = Trans.GetLocal(targ);
+            routine = manager.StartRadicalCoroutine(this.DoShake(state, _relativeMotionTarget.GetTarget<Transform>(arg)));
+            routine.Tag = state;
+            return true;
         }
 
         #endregion
@@ -118,6 +146,7 @@ namespace com.spacepuppy.Events
         public class AxisEffect
         {
 
+            [EnumFlags]
             public EffectedAxis Axis;
             public ShakeType Shake;
             public EaseStyle IntensityEase;
@@ -143,17 +172,18 @@ namespace com.spacepuppy.Events
 
             public void Effect(ref Vector3 v, float t, float totalTime)
             {
-                if(this.Axis == EffectedAxis.All)
+                var d = this.GetValue(t, totalTime);
+                if ((this.Axis & EffectedAxis.X) != 0)
                 {
-                    var d = this.GetValue(t, totalTime);
                     v.x += d;
-                    v.y += d;
-                    v.z += d;
                 }
-                else
+                if ((this.Axis & EffectedAxis.Y) != 0)
                 {
-                    float d = v.Get((CartesianAxis)this.Axis) + this.GetValue(t, totalTime);
-                    VectorUtil.Set(ref v, (CartesianAxis)this.Axis, d);
+                    v.y += d;
+                }
+                if ((this.Axis & EffectedAxis.Z) != 0)
+                {
+                    v.z += d;
                 }
             }
 
@@ -161,11 +191,12 @@ namespace com.spacepuppy.Events
 
         public enum EffectedAxis
         {
-            X = CartesianAxis.X,
-            Y = CartesianAxis.Y,
-            Z = CartesianAxis.Z,
-            All = 3
+            All = -1,
+            X = 1,
+            Y = 2,
+            Z = 4,
         }
+
 
         public enum ShakeType
         {
@@ -175,32 +206,21 @@ namespace com.spacepuppy.Events
             Noise
         }
 
-
-
-        private class CameraShakeEffectToken : MonoBehaviour
+        private static readonly ObjectCachePool<StateToken> _pool = new ObjectCachePool<StateToken>(-1, () => new StateToken());
+        private class StateToken : System.IDisposable
         {
 
             public float CurrentPrecedence;
+            public Transform Targ;
+            public Trans Cache;
 
-            private RadicalCoroutine _routine;
-            private Trans _cache;
-            
-            public bool TryBegin(i_ShakeCamera config, Transform relativeTarg)
+            public void Dispose()
             {
-                if(_routine != null && !_routine.Finished)
-                {
-                    if (config._effectPrecedence < this.CurrentPrecedence) return false;
-
-                    _routine.Cancel();
-                    _cache.SetToLocal(this.transform);
-                }
-
-                this.CurrentPrecedence = config._effectPrecedence;
-                _cache = Trans.GetLocal(this.transform);
-                _routine = this.StartRadicalCoroutine(config.DoShake(this.transform, _cache, relativeTarg));
-                return true;
+                this.CurrentPrecedence = 0f;
+                this.Targ = null;
+                this.Cache = default(Trans);
             }
-            
+
         }
 
         #endregion

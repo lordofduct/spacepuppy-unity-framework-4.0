@@ -556,4 +556,85 @@ namespace com.spacepuppy.SPInput
 
     }
 
+    public class DelegatedCursorInputSignature : BaseInputSignature, ICursorInputSignature
+    {
+
+        #region Fields
+
+        private AxisDelegate _horizontal;
+        private AxisDelegate _vertical;
+
+        #endregion
+
+        #region CONSTRUCTOR
+
+        public DelegatedCursorInputSignature(string id, AxisDelegate hor, AxisDelegate ver)
+            : base(id)
+        {
+            _horizontal = hor;
+            _vertical = ver;
+        }
+
+        #endregion
+
+        #region Properties
+
+        public AxisDelegate HorizontalDelegate
+        {
+            get { return _horizontal; }
+            set { _horizontal = value; }
+        }
+
+        public AxisDelegate VerticalDelegate
+        {
+            get { return _vertical; }
+            set { _vertical = value; }
+        }
+
+        public bool InvertX
+        {
+            get;
+            set;
+        }
+
+        public bool InvertY
+        {
+            get;
+            set;
+        }
+
+        #endregion
+
+        #region IDualAxleInputSignature Interface
+
+        public Vector2 CurrentState
+        {
+            get
+            {
+                //return _current;
+                Vector2 v = new Vector2(_horizontal != null ? _horizontal() : 0f,
+                                        _vertical != null ? _vertical() : 0f);
+                if (this.InvertX) v.x = -v.x;
+                if (this.InvertY) v.y = -v.y;
+                return v;
+            }
+        }
+
+        #endregion
+
+        #region IInputSignature Interface
+
+        public override void Update()
+        {
+
+        }
+
+        public override void Reset()
+        {
+        }
+
+        #endregion
+
+    }
+
 }

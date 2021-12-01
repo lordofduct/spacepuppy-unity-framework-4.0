@@ -111,11 +111,19 @@ namespace com.spacepuppy
 
         public IEnumerable<RadicalCoroutine> GetAllCoroutines()
         {
+            return _routines;
+        }
+
+        public int GetAllCoroutines(ICollection<RadicalCoroutine> coll)
+        {
             var e = _routines.GetEnumerator();
-            while (e.MoveNext())
+            int cnt = 0;
+            while(e.MoveNext())
             {
-                yield return e.Current;
+                coll.Add(e.Current);
+                cnt++;
             }
+            return cnt;
         }
 
         public IEnumerable<RadicalCoroutine> GetCoroutines(MonoBehaviour behaviour)
@@ -127,6 +135,36 @@ namespace com.spacepuppy
             {
                 if (e.Current.Owner == behaviour) yield return e.Current;
             }
+        }
+
+        public int GetCoroutines(MonoBehaviour behaviour, ICollection<RadicalCoroutine> coll)
+        {
+            if (behaviour == null) return 0;
+            if (coll == null) throw new System.ArgumentNullException(nameof(coll));
+
+            var e = _routines.GetEnumerator();
+            int cnt = 0;
+            while (e.MoveNext())
+            {
+                if (e.Current.Owner == behaviour)
+                {
+                    coll.Add(e.Current);
+                    cnt++;
+                }
+            }
+            return cnt;
+        }
+
+        public RadicalCoroutine Find(System.Func<RadicalCoroutine, bool> predicate)
+        {
+            if (predicate == null) return null;
+
+            var e = _routines.GetEnumerator();
+            while(e.MoveNext())
+            {
+                if (predicate(e.Current)) return e.Current;
+            }
+            return null;
         }
 
         internal void PurgeCoroutines(MonoBehaviour component, bool skipCancellingPhase)
@@ -433,6 +471,7 @@ namespace com.spacepuppy
             }
             component.StopAllCoroutines();
         }
+
     }
 
 }

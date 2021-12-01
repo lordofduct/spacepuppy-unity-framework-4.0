@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Linq;
 using com.spacepuppy.Utils;
 using Type = System.Type;
+using System.Runtime.CompilerServices;
+using System.CodeDom;
 
 namespace com.spacepuppy
 {
@@ -20,7 +22,9 @@ namespace com.spacepuppy
     public interface IService
     {
         event System.EventHandler ServiceUnregistered;
-        void SignalServiceUnregistered();
+
+        void OnServiceRegistered(System.Type serviceTypeRegisteredAs);
+        void OnServiceUnregistered();
     }
 
     /// <summary>
@@ -31,6 +35,27 @@ namespace com.spacepuppy
     /// </summary>
     public static class Services
     {
+
+        public enum AutoRegisterOption
+        {
+            DoNothing = 0,
+            Register = 1,
+            RegisterAndPersist = 2,
+        }
+
+        public enum MultipleServiceResolutionOption
+        {
+            DoNothing = 0,
+            UnregisterSelf = 1,
+            UnregisterOther = 2,
+        }
+
+        public enum UnregisterResolutionOption
+        {
+            DoNothing = 0,
+            DestroySelf = 1,
+            DestroyGameObject = 2,
+        }
 
         #region Fields
 
@@ -60,9 +85,9 @@ namespace com.spacepuppy
         public static T Find<T>() where T : class, IService
         {
             var e = _services.GetEnumerator();
-            while(e.MoveNext())
+            while (e.MoveNext())
             {
-                if(e.Current is T && e.Current.IsAlive())
+                if (e.Current is T && e.Current.IsAlive())
                 {
                     return e.Current as T;
                 }
@@ -74,24 +99,32 @@ namespace com.spacepuppy
         {
             var other = Entry<T>.Instance;
             if (!other.IsNullOrDestroyed() && !object.ReferenceEquals(other, service)) throw new System.InvalidOperationException("You must first unregister a service before registering a new one.");
+
             Entry<T>.Instance = service;
             _services.Add(service);
+            try
+            {
+                service.OnServiceRegistered(typeof(T));
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogException(ex);
+            }
         }
 
-        public static void Unregister<T>(bool destroyIfCan = false, bool donotSignalUnregister = false) where T : class, IService
+        public static void Unregister<T>(bool donotSignalUnregister = false) where T : class, IService
         {
             var inst = Entry<T>.Instance;
-            if(!object.ReferenceEquals(inst, null))
+            if (!object.ReferenceEquals(inst, null))
             {
                 Entry<T>.Instance = null;
-                _services.Add(inst);
+                _services.Remove(inst);
                 if (!inst.IsNullOrDestroyed())
                 {
                     if (!donotSignalUnregister)
-                        inst.SignalServiceUnregistered();
-
-                    if (destroyIfCan && inst is UnityEngine.Object)
-                        ObjUtil.SmartDestroy(inst as UnityEngine.Object);
+                    {
+                        inst.OnServiceUnregistered();
+                    }
                 }
             }
         }
@@ -165,9 +198,18 @@ namespace com.spacepuppy
             var other = field.GetValue(null);
             if (!other.IsNullOrDestroyed() && !object.ReferenceEquals(other, service)) throw new System.InvalidOperationException("You must first unregister a service before registering a new one.");
             field.SetValue(null, service);
+
+            try
+            {
+                service.OnServiceRegistered(tp);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogException(ex);
+            }
         }
 
-        public static void Unregister(System.Type tp, bool destroyIfCan = false, bool donotSignalUnregister = false)
+        public static void Unregister(System.Type tp, bool donotSignalUnregister = false)
         {
             if (tp == null) throw new System.ArgumentNullException("tp");
             if (!tp.IsClass || tp.IsAbstract || !typeof(IService).IsAssignableFrom(tp)) throw new System.ArgumentException("Type must be a concrete class that implements IService.", "tp");
@@ -188,10 +230,9 @@ namespace com.spacepuppy
             }
 
             if (!donotSignalUnregister && inst != null)
-                inst.SignalServiceUnregistered();
-
-            if (destroyIfCan && inst is UnityEngine.Object)
-                ObjUtil.SmartDestroy(inst as UnityEngine.Object);
+            {
+                inst.OnServiceUnregistered();
+            }
         }
 
 
@@ -264,7 +305,7 @@ namespace com.spacepuppy
 
         public static TServiceType Create<TServiceType>(System.Type concreteType, bool persistent = false, string name = null) where TServiceType : class, IService
         {
-            if (concreteType == null) throw new System.ArgumentNullException("concreteType");
+            if (concreteType == null) throw new System.ArgumentNullException(nameof(concreteType));
             if (!typeof(TServiceType).IsAssignableFrom(concreteType)) throw new System.ArgumentException("Type must implement " + typeof(TServiceType).Name);
 
             var inst = Services.Get<TServiceType>();
@@ -306,11 +347,15 @@ namespace com.spacepuppy
             var tp = typeof(TConcrete);
             if (typeof(Component).IsAssignableFrom(tp))
             {
-                return ServiceComponent<TServiceType>.GetOrCreate(tp, persistent, name);
+                var obj = ServiceComponent<TServiceType>.GetOrCreate(tp, persistent, name);
+                Services.Register<TServiceType>(obj);
+                return obj;
             }
             else if (typeof(ScriptableObject).IsAssignableFrom(tp))
             {
-                return ServiceScriptableObject<TServiceType>.GetOrCreate(tp, persistent, name);
+                var obj = ServiceScriptableObject<TServiceType>.GetOrCreate(tp, persistent, name);
+                Services.Register<TServiceType>(obj);
+                return obj;
             }
             else
             {
@@ -335,11 +380,15 @@ namespace com.spacepuppy
             var tp = typeof(T);
             if (typeof(Component).IsAssignableFrom(tp))
             {
-                return ServiceComponent<T>.GetOrCreate(tp, persistent, name);
+                var obj = ServiceComponent<T>.GetOrCreate(tp, persistent, name);
+                Services.Register<T>(obj);
+                return obj;
             }
             else if (typeof(ScriptableObject).IsAssignableFrom(tp))
             {
-                return ServiceScriptableObject<T>.GetOrCreate(tp, persistent, name);
+                var obj = ServiceScriptableObject<T>.GetOrCreate(tp, persistent, name);
+                Services.Register<T>(obj);
+                return obj;
             }
             else
             {
@@ -391,6 +440,178 @@ namespace com.spacepuppy
             }
         }
 
+        public static TConcrete LoadResourceService<TServiceType, TConcrete>(string path, bool persistent = false) where TServiceType : class, IService
+                                                                                                                where TConcrete : UnityEngine.Object, TServiceType
+        {
+            var inst = Services.Get<TServiceType>();
+            if (inst != null) throw new System.InvalidOperationException(string.Format("A service of type '{0}' already exists.", typeof(TServiceType).Name));
+
+            var service = Resources.Load<TConcrete>(path);
+            if (service == null)
+            {
+                throw new System.InvalidOperationException("Supplied concrete service type failed to construct.");
+            }
+            if (service is Component)
+            {
+                service = UnityEngine.Object.Instantiate(service);
+            }
+
+            Services.Register<TServiceType>(service);
+            if (persistent)
+            {
+                var go = GameObjectUtil.GetGameObjectFromSource(service);
+                if (go != null)
+                {
+                    UnityEngine.Object.DontDestroyOnLoad(go);
+                }
+            }
+            return service;
+        }
+
+        public static T LoadResourceService<T>(string path, bool persistent = false) where T : UnityEngine.Object, IService
+        {
+            var inst = Services.Get<T>();
+            if (inst != null) throw new System.InvalidOperationException(string.Format("A service of type '{0}' already exists.", typeof(T).Name));
+
+            var service = Resources.Load<T>(path);
+            if (service == null)
+            {
+                throw new System.InvalidOperationException("Supplied concrete service type failed to construct.");
+            }
+            if (service is Component)
+            {
+                service = UnityEngine.Object.Instantiate(service);
+            }
+
+            Services.Register<T>(service);
+            if (persistent)
+            {
+                var go = GameObjectUtil.GetGameObjectFromSource(service);
+                if (go != null)
+                {
+                    UnityEngine.Object.DontDestroyOnLoad(go);
+                }
+            }
+            return service;
+        }
+
+        public static TServiceType LoadResourceService<TServiceType>(System.Type concreteType, string path, bool persistent = false) where TServiceType : class, IService
+        {
+            if (concreteType == null) throw new System.ArgumentNullException(nameof(concreteType));
+            if (!typeof(TServiceType).IsAssignableFrom(concreteType)) throw new System.ArgumentException("Type must implement " + typeof(TServiceType).Name);
+
+            var inst = Services.Get<TServiceType>();
+            if (inst != null) throw new System.InvalidOperationException(string.Format("A service of type '{0}' already exists.", typeof(TServiceType).Name));
+
+            var resource = Resources.Load(path, concreteType);
+            if (resource == null) throw new System.InvalidOperationException("Supplied concrete service type failed to construct.");
+
+            if (!(resource is TServiceType)) throw new System.ArgumentException("Type must implement " + typeof(TServiceType).Name);
+
+            if (resource is Component)
+            {
+                resource = UnityEngine.Object.Instantiate(resource);
+            }
+
+            var service = resource as TServiceType;
+            Services.Register<TServiceType>(service);
+            if (persistent)
+            {
+                var go = GameObjectUtil.GetGameObjectFromSource(service);
+                if (go != null)
+                {
+                    UnityEngine.Object.DontDestroyOnLoad(go);
+                }
+            }
+            return service;
+        }
+
+        public static TServiceType GetOrLoadResourceService<TServiceType, TConcrete>(string path, bool persistent = false) where TServiceType : class, IService
+                                                                                                                where TConcrete : UnityEngine.Object, TServiceType
+        {
+            var inst = Services.Get<TServiceType>();
+            if (inst != null) return inst;
+
+            var service = Resources.Load<TConcrete>(path);
+            if (service == null)
+            {
+                throw new System.InvalidOperationException("Supplied concrete service type failed to construct.");
+            }
+            if (service is Component)
+            {
+                service = UnityEngine.Object.Instantiate(service);
+            }
+
+            Services.Register<TServiceType>(service);
+            if (persistent)
+            {
+                var go = GameObjectUtil.GetGameObjectFromSource(service);
+                if (go != null)
+                {
+                    UnityEngine.Object.DontDestroyOnLoad(go);
+                }
+            }
+            return service;
+        }
+
+        public static T GetOrLoadResourceService<T>(string path, bool persistent = false) where T : UnityEngine.Object, IService
+        {
+            var inst = Services.Get<T>();
+            if (inst != null) return inst;
+
+            var service = Resources.Load<T>(path);
+            if (service == null)
+            {
+                throw new System.InvalidOperationException("Supplied concrete service type failed to construct.");
+            }
+            if (service is Component)
+            {
+                service = UnityEngine.Object.Instantiate(service);
+            }
+
+            Services.Register<T>(service);
+            if (persistent)
+            {
+                var go = GameObjectUtil.GetGameObjectFromSource(service);
+                if (go != null)
+                {
+                    UnityEngine.Object.DontDestroyOnLoad(go);
+                }
+            }
+            return service;
+        }
+
+        public static TServiceType GetOrLoadResourceService<TServiceType>(System.Type concreteType, string path, bool persistent = false) where TServiceType : class, IService
+        {
+            if (concreteType == null) throw new System.ArgumentNullException(nameof(concreteType));
+            if (!typeof(TServiceType).IsAssignableFrom(concreteType)) throw new System.ArgumentException("Type must implement " + typeof(TServiceType).Name);
+
+            var inst = Services.Get<TServiceType>();
+            if (inst != null) return inst;
+
+            var resource = Resources.Load(path, concreteType);
+            if (resource == null) throw new System.InvalidOperationException("Supplied concrete service type failed to construct.");
+
+            if (!(resource is TServiceType)) throw new System.ArgumentException("Type must implement " + typeof(TServiceType).Name);
+
+            if (resource is Component)
+            {
+                resource = UnityEngine.Object.Instantiate(resource);
+            }
+
+            var service = resource as TServiceType;
+            Services.Register<TServiceType>(service);
+            if (persistent)
+            {
+                var go = GameObjectUtil.GetGameObjectFromSource(service);
+                if (go != null)
+                {
+                    UnityEngine.Object.DontDestroyOnLoad(go);
+                }
+            }
+            return service;
+        }
+
         #endregion
 
         #region Special Types
@@ -419,9 +640,8 @@ namespace com.spacepuppy
         #region Fields
 
         [SerializeField]
-        private bool _autoRegisterService;
-        [SerializeField]
-        private bool _destroyIfMultiple;
+        [DisplayFlat]
+        private ServiceRegistrationOptions _serviceRegistrationOptions;
 
         #endregion
 
@@ -432,10 +652,11 @@ namespace com.spacepuppy
 
         }
 
-        public ServiceComponent(bool autoRegister, bool destroyIfMultiple)
+        public ServiceComponent(Services.AutoRegisterOption autoRegister, Services.MultipleServiceResolutionOption multipleServiceResolution, Services.UnregisterResolutionOption unregisterResolution)
         {
-            _autoRegisterService = autoRegister;
-            _destroyIfMultiple = destroyIfMultiple;
+            _serviceRegistrationOptions.AutoRegisterService = autoRegister;
+            _serviceRegistrationOptions.MultipleServiceResolution = multipleServiceResolution;
+            _serviceRegistrationOptions.UnregisterResolution = unregisterResolution;
         }
 
         protected override void Awake()
@@ -444,9 +665,9 @@ namespace com.spacepuppy
 
             if (!(this is T))
             {
-                if (_destroyIfMultiple)
+                if (_serviceRegistrationOptions.MultipleServiceResolution == Services.MultipleServiceResolutionOption.UnregisterSelf)
                 {
-                    ObjUtil.SmartDestroy(this);
+                    (this as IService).OnServiceUnregistered();
                 }
                 return;
             }
@@ -462,9 +683,13 @@ namespace com.spacepuppy
             var inst = Services.Get<T>();
             if (inst == null)
             {
-                if (_autoRegisterService)
+                if (_serviceRegistrationOptions.AutoRegisterService > Services.AutoRegisterOption.DoNothing)
                 {
                     Services.Register<T>(this as T);
+                    if (_serviceRegistrationOptions.AutoRegisterService == Services.AutoRegisterOption.RegisterAndPersist)
+                    {
+                        DontDestroyOnLoad(this);
+                    }
                 }
 
                 return true;
@@ -475,12 +700,28 @@ namespace com.spacepuppy
             }
             else
             {
-                if (_destroyIfMultiple)
+                switch (_serviceRegistrationOptions.MultipleServiceResolution)
                 {
-                    ObjUtil.SmartDestroy(this);
+                    case Services.MultipleServiceResolutionOption.DoNothing:
+                        return false;
+                    case Services.MultipleServiceResolutionOption.UnregisterSelf:
+                        (this as IService).OnServiceUnregistered();
+                        return false;
+                    case Services.MultipleServiceResolutionOption.UnregisterOther:
+                        Services.Unregister<T>();
+                        if (_serviceRegistrationOptions.AutoRegisterService > Services.AutoRegisterOption.DoNothing)
+                        {
+                            Services.Register<T>(this as T);
+                            if (_serviceRegistrationOptions.AutoRegisterService == Services.AutoRegisterOption.RegisterAndPersist)
+                            {
+                                DontDestroyOnLoad(this);
+                            }
+                        }
+                        return true;
                 }
-                return false;
             }
+
+            return false;
         }
 
         protected virtual void OnValidAwake()
@@ -503,24 +744,30 @@ namespace com.spacepuppy
 
         #region Properties
 
-        public bool AutoRegisterService
+        public Services.AutoRegisterOption AutoRegister
         {
-            get { return _autoRegisterService; }
+            get { return _serviceRegistrationOptions.AutoRegisterService; }
             set
             {
-                _autoRegisterService = value;
-                if (value && this.started) this.ValidateService();
+                _serviceRegistrationOptions.AutoRegisterService = value;
+                if (value > Services.AutoRegisterOption.DoNothing && this.started) this.ValidateService();
             }
         }
 
-        public bool DestroyIfMultiple
+        public Services.MultipleServiceResolutionOption OnCreateOption
         {
-            get { return _destroyIfMultiple; }
+            get { return _serviceRegistrationOptions.MultipleServiceResolution; }
             set
             {
-                _destroyIfMultiple = value;
-                if (value && this.started) this.ValidateService();
+                _serviceRegistrationOptions.MultipleServiceResolution = value;
+                if (_serviceRegistrationOptions.MultipleServiceResolution > Services.MultipleServiceResolutionOption.DoNothing && this.started) this.ValidateService();
             }
+        }
+
+        public Services.UnregisterResolutionOption UnregisterResolution
+        {
+            get { return _serviceRegistrationOptions.UnregisterResolution; }
+            set { _serviceRegistrationOptions.UnregisterResolution = value; }
         }
 
         #endregion
@@ -529,14 +776,33 @@ namespace com.spacepuppy
 
         public event System.EventHandler ServiceUnregistered;
 
-        void IService.SignalServiceUnregistered()
+        void IService.OnServiceRegistered(System.Type serviceTypeRegisteredAs)
         {
-            this.OnServiceUnregistered();
+            this.OnServiceRegistered(serviceTypeRegisteredAs);
+        }
+
+        protected virtual void OnServiceRegistered(System.Type serviceTypeRegisteredAs)
+        {
+
+        }
+
+        void IService.OnServiceUnregistered()
+        {
             this.ServiceUnregistered?.Invoke(this, System.EventArgs.Empty);
+            this.OnServiceUnregistered();
         }
 
         protected virtual void OnServiceUnregistered()
         {
+            switch (_serviceRegistrationOptions.UnregisterResolution)
+            {
+                case Services.UnregisterResolutionOption.DestroySelf:
+                    ObjUtil.SmartDestroy(this);
+                    break;
+                case Services.UnregisterResolutionOption.DestroyGameObject:
+                    ObjUtil.SmartDestroy(this.gameObject);
+                    break;
+            }
         }
 
         #endregion
@@ -548,6 +814,13 @@ namespace com.spacepuppy
             return Services.Get<T>();
         }
 
+        /// <summary>
+        /// Creates a service component of type TConcrete. This only creates. It will only be registered if its configured to do so.
+        /// </summary>
+        /// <typeparam name="TConcrete"></typeparam>
+        /// <param name="persistent"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
         public static TConcrete Create<TConcrete>(bool persistent = false, string name = null) where TConcrete : Component, T
         {
             var inst = Services.Get<T>();
@@ -563,6 +836,13 @@ namespace com.spacepuppy
             return go.AddComponent<TConcrete>();
         }
 
+        /// <summary>
+        /// Creates a service component of type TConcrete. This only creates. It will only be registered if its configured to do so.
+        /// </summary>
+        /// <typeparam name="TConcrete"></typeparam>
+        /// <param name="persistent"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
         public static T Create(System.Type tp, bool persistent = false, string name = null)
         {
             if (tp == null) throw new System.ArgumentNullException("tp");
@@ -581,6 +861,13 @@ namespace com.spacepuppy
             return go.AddComponent(tp) as T;
         }
 
+        /// <summary>
+        /// Gets a service component of type TConcrete, if it doesn't exist it will be created. This only creates. It will only be registered if its configured to do so.
+        /// </summary>
+        /// <typeparam name="TConcrete"></typeparam>
+        /// <param name="persistent"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
         public static T GetOrCreate<TConcrete>(bool persistent = false, string name = null) where TConcrete : Component, T
         {
             var inst = Services.Get<T>();
@@ -596,6 +883,13 @@ namespace com.spacepuppy
             return go.AddComponent<TConcrete>();
         }
 
+        /// <summary>
+        /// Gets a service component of type TConcrete, if it doesn't exist it will be created. This only creates. It will only be registered if its configured to do so.
+        /// </summary>
+        /// <typeparam name="TConcrete"></typeparam>
+        /// <param name="persistent"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
         public static T GetOrCreate(System.Type tp, bool persistent = false, string name = null)
         {
             if (tp == null) throw new System.ArgumentNullException("tp");
@@ -612,6 +906,23 @@ namespace com.spacepuppy
                 GameObject.DontDestroyOnLoad(go);
             }
             return go.AddComponent(tp) as T;
+        }
+
+        #endregion
+
+        #region Special Types
+
+        [System.Serializable]
+        private struct ServiceRegistrationOptions
+        {
+
+            [SerializeField]
+            public Services.AutoRegisterOption AutoRegisterService;
+            [SerializeField]
+            public Services.MultipleServiceResolutionOption MultipleServiceResolution;
+            [SerializeField]
+            public Services.UnregisterResolutionOption UnregisterResolution;
+
         }
 
         #endregion
@@ -631,9 +942,8 @@ namespace com.spacepuppy
         #region Fields
 
         [SerializeField]
-        private bool _autoRegisterService;
-        [SerializeField]
-        private bool _destroyIfMultiple;
+        [DisplayFlat]
+        private ServiceRegistrationOptions _serviceRegistrationOptions;
 
         #endregion
 
@@ -644,25 +954,38 @@ namespace com.spacepuppy
 
         }
 
-        public ServiceScriptableObject(bool autoRegister, bool destroyIfMultiple)
+        public ServiceScriptableObject(bool autoRegister, Services.MultipleServiceResolutionOption multipleServiceResolution, bool destroyOnUnregister)
         {
-            _autoRegisterService = autoRegister;
-            _destroyIfMultiple = destroyIfMultiple;
+            _serviceRegistrationOptions.AutoRegisterService = autoRegister;
+            _serviceRegistrationOptions.MultipleServiceResolution = multipleServiceResolution;
+            _serviceRegistrationOptions.DestroyOnUnregister = destroyOnUnregister;
         }
 
         protected virtual void OnEnable() //NOTE - using OnEnable now since it appears Awake doesn't occur on SOs that are created as an asset and loaded that way.
         {
+#if UNITY_EDITOR
+            if (!Application.isPlaying)
+            {
+                return;
+            }
+#endif
+
             if (!(this is T))
             {
-                this.AutoDestruct();
+                if (_serviceRegistrationOptions.MultipleServiceResolution == Services.MultipleServiceResolutionOption.UnregisterSelf)
+                {
+                    (this as IService).OnServiceUnregistered();
+                }
                 return;
             }
 
             var inst = Services.Get<T>();
             if (inst == null)
             {
-                if (_autoRegisterService)
+                if (_serviceRegistrationOptions.AutoRegisterService)
+                {
                     Services.Register<T>(this as T);
+                }
             }
             else if (object.ReferenceEquals(this, inst))
             {
@@ -670,19 +993,22 @@ namespace com.spacepuppy
             }
             else
             {
-                this.AutoDestruct();
-                return;
+                switch (_serviceRegistrationOptions.MultipleServiceResolution)
+                {
+                    case Services.MultipleServiceResolutionOption.UnregisterSelf:
+                        (this as IService).OnServiceUnregistered();
+                        return;
+                    case Services.MultipleServiceResolutionOption.UnregisterOther:
+                        Services.Unregister<T>();
+                        if (_serviceRegistrationOptions.AutoRegisterService)
+                        {
+                            Services.Register<T>(this as T);
+                        }
+                        break;
+                }
             }
 
             this.OnValidAwake();
-        }
-
-        private void AutoDestruct()
-        {
-            if (_destroyIfMultiple)
-            {
-                ObjUtil.SmartDestroy(this);
-            }
         }
 
         protected virtual void OnValidAwake()
@@ -701,18 +1027,42 @@ namespace com.spacepuppy
 
         #endregion
 
+        #region Properties
+
+        public bool DestroyOnUnregister
+        {
+            get { return _serviceRegistrationOptions.DestroyOnUnregister; }
+            set { _serviceRegistrationOptions.DestroyOnUnregister = value; }
+        }
+
+        #endregion
+
         #region IService Interface
 
         public event System.EventHandler ServiceUnregistered;
 
-        void IService.SignalServiceUnregistered()
+        void IService.OnServiceRegistered(System.Type serviceTypeRegisteredAs)
         {
-            this.OnServiceUnregistered();
+            this.OnServiceRegistered(serviceTypeRegisteredAs);
+        }
+
+        protected virtual void OnServiceRegistered(System.Type serviceTypeRegisteredAs)
+        {
+
+        }
+
+        void IService.OnServiceUnregistered()
+        {
             if (this.ServiceUnregistered != null) this.ServiceUnregistered(this, System.EventArgs.Empty);
+            this.OnServiceUnregistered();
         }
 
         protected virtual void OnServiceUnregistered()
         {
+            if (_serviceRegistrationOptions.DestroyOnUnregister)
+            {
+                ObjUtil.SmartDestroy(this);
+            }
         }
 
         #endregion
@@ -724,6 +1074,13 @@ namespace com.spacepuppy
             return Services.Get<T>();
         }
 
+        /// <summary>
+        /// Creates a service scriptableobject. This only creates. It will only be registered if its configured to do so.
+        /// </summary>
+        /// <typeparam name="TConcrete"></typeparam>
+        /// <param name="persistent"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
         public static TConcrete Create<TConcrete>(bool persistent = false, string name = null) where TConcrete : ScriptableObject, T
         {
             var inst = Services.Get<T>();
@@ -736,6 +1093,13 @@ namespace com.spacepuppy
             return obj;
         }
 
+        /// <summary>
+        /// Creates a service scriptableobject. This only creates. It will only be registered if its configured to do so.
+        /// </summary>
+        /// <typeparam name="TConcrete"></typeparam>
+        /// <param name="persistent"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
         public static T Create(System.Type tp, bool persistent = false, string name = null)
         {
             if (tp == null) throw new System.ArgumentNullException("tp");
@@ -751,6 +1115,13 @@ namespace com.spacepuppy
             return obj as T;
         }
 
+        /// <summary>
+        /// Gets a service scriptableobject of type TConcrete, if it doesn't exist it will be created. This only creates. It will only be registered if its configured to do so.
+        /// </summary>
+        /// <typeparam name="TConcrete"></typeparam>
+        /// <param name="persistent"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
         public static T GetOrCreate<TConcrete>(bool persistent = false, string name = null) where TConcrete : ScriptableObject, T
         {
             var inst = Services.Get<T>();
@@ -763,6 +1134,13 @@ namespace com.spacepuppy
             return obj;
         }
 
+        /// <summary>
+        /// Gets a service scriptableobject of type TConcrete, if it doesn't exist it will be created. This only creates. It will only be registered if its configured to do so.
+        /// </summary>
+        /// <typeparam name="TConcrete"></typeparam>
+        /// <param name="persistent"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
         public static T GetOrCreate(System.Type tp, bool persistent = false, string name = null)
         {
             if (tp == null) throw new System.ArgumentNullException("tp");
@@ -780,6 +1158,22 @@ namespace com.spacepuppy
 
         #endregion
 
+        #region Special Types
+
+        [System.Serializable]
+        private struct ServiceRegistrationOptions
+        {
+
+            [SerializeField]
+            public bool AutoRegisterService;
+            [SerializeField]
+            public Services.MultipleServiceResolutionOption MultipleServiceResolution;
+            [SerializeField]
+            public bool DestroyOnUnregister;
+
+        }
+
+        #endregion
 
     }
 

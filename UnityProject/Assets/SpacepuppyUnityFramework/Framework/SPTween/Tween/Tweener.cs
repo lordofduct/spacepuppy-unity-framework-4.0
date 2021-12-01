@@ -141,6 +141,8 @@ namespace com.spacepuppy.Tween
             }
         }
 
+        public object Tag { get; set; }
+
         #endregion
 
         #region Status Properties

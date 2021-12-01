@@ -6,7 +6,8 @@ using com.spacepuppy.Geom;
 namespace com.spacepuppy.SPInput.Events
 {
 
-    public sealed class t_OnMouseClick : TriggerComponent
+    [Infobox("WARNING - This script is intended for prototyping only. It hooks into the old Unity 'OnMouseDown' and 'OnMouseUpAsButton' events. These are very limited in functionality and should only be used for prototyping. Prefer a more robust input system for release quality functionality.", MessageType = InfoBoxMessageType.Warning)]
+    public sealed class pt_OnMouseClick : TriggerComponent
     {
 
         #region Fields

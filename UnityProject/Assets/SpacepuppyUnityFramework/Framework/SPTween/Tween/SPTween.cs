@@ -259,26 +259,31 @@ namespace com.spacepuppy.Tween
 
         /// <summary>
         /// Enumerate over all active tweeen and call a function with them as an arg. Return true to stop enumerating.
-        /// 
-        /// TODO - come up with a better interface with this.
         /// </summary>
         /// <param name="pred"></param>
-        public static void Find(System.Func<Tweener, bool> pred)
+        public static Tweener Find(System.Func<Tweener, bool> pred)
         {
-            if (pred == null) return;
-            if (GameLoop.ApplicationClosing) return;
-            if (_instance == null) return;
-            if (_instance._runningTweens.Count == 0) return;
+            if (pred == null) return null;
+            if (GameLoop.ApplicationClosing) return null;
+            if (_instance == null) return null;
+            if (_instance._runningTweens.Count == 0) return null;
 
-            _instance.LockTweenSet();
-            var e = _instance._runningTweens.GetEnumerator();
-            while (e.MoveNext())
+            try
             {
-                if (pred(e.Current)) return;
+                _instance.LockTweenSet();
+                var e = _instance._runningTweens.GetEnumerator();
+                while (e.MoveNext())
+                {
+                    if (pred(e.Current)) return e.Current;
+                }
+                return null;
             }
-            _instance.UnlockTweenSet();
+            finally
+            {
+                _instance.UnlockTweenSet();
+            }
         }
-        
+
         #endregion
 
         #region Update Methods

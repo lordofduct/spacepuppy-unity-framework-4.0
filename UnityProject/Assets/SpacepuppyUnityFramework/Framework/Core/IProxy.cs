@@ -23,6 +23,7 @@ namespace com.spacepuppy
     {
         /// <summary>
         /// Returns true if the underlying proxy performs a search/query of the scene.
+        /// Best judgement on if this should be true is if the target returned should be treated as an arbitrary entity of any type.
         /// </summary>
         bool QueriesTarget { get; }
 

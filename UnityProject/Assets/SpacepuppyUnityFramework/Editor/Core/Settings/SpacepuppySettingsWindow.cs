@@ -43,8 +43,6 @@ namespace com.spacepuppyeditor.Settings
 
         private static SpacepuppySettingsWindow _openWindow;
 
-
-        private GameSettings _gameSettings;
         private CustomTimeLayersData _timeLayersData;
 
         private Vector2 _scenesScrollBarPosition;
@@ -58,7 +56,6 @@ namespace com.spacepuppyeditor.Settings
 
             this.titleContent = new GUIContent("SP Settings");
 
-            _gameSettings = AssetDatabase.LoadAssetAtPath(GameSettings.PATH_DEFAULTSETTINGS_FULL, typeof(GameSettings)) as GameSettings;
             _timeLayersData = AssetDatabase.LoadAssetAtPath(CustomTimeLayersData.PATH_DEFAULTSETTINGS_FULL, typeof(CustomTimeLayersData)) as CustomTimeLayersData;
         }
 
@@ -162,31 +159,6 @@ namespace com.spacepuppyeditor.Settings
             GUILayout.BeginVertical("Game Settings", boxStyle);
             EditorGUILayout.Space();
             EditorGUILayout.Space();
-
-            if (_gameSettings == null)
-            {
-                rect = EditorGUILayout.GetControlRect();
-                rect.width = Mathf.Min(rect.width, BTN_WIDTH);
-
-                if (GUI.Button(rect, "Create Default GameSettings Data Resource"))
-                {
-                    var tps = (from t in TypeUtil.GetTypesAssignableFrom(typeof(GameSettings)) where !t.IsAbstract && !t.IsInterface select t).ToArray();
-
-                    var menu = new GenericMenu();
-                    foreach (var tp in tps)
-                    {
-                        menu.AddItem(EditorHelper.TempContent(tp.Name), false, () =>
-                        {
-                            _gameSettings = ScriptableObjectHelper.CreateAsset(tp, GameSettings.PATH_DEFAULTSETTINGS_FULL) as GameSettings;
-                        });
-                    }
-                    menu.ShowAsContext();
-                }
-            }
-            else
-            {
-                EditorGUILayout.ObjectField("Game Settings", _gameSettings, typeof(GameSettings), false);
-            }
 
             EditorGUILayout.Space();
 

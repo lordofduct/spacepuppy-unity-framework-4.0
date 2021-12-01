@@ -65,15 +65,7 @@ namespace com.spacepuppy.Render.Events
 
             if (_killOnDisable)
             {
-                SPTween.Find((t) =>
-                {
-                    if (t is ObjectTweener && (t as ObjectTweener).Target == _transition)
-                    {
-                        t.Kill();
-                        return true;
-                    }
-                    return false;
-                });
+                (SPTween.Find((t) => (t is ObjectTweener ot) && ot.Target == _transition) as ObjectTweener)?.Kill();
             }
         }
 

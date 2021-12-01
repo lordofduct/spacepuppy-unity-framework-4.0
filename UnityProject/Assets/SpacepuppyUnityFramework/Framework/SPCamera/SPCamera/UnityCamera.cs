@@ -2,6 +2,7 @@
 
 using UnityEngine;
 using System.Collections.Generic;
+using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.Cameras
 {
@@ -23,6 +24,11 @@ namespace com.spacepuppy.Cameras
         #endregion
 
         #region CONSTRUCTOR
+
+        public UnityCamera()
+        {
+            _nameCache = new NameCache.UnityObjectNameCache(this);
+        }
 
         protected override void Awake()
         {
@@ -65,6 +71,30 @@ namespace com.spacepuppy.Cameras
         public bool Contains(Camera cam)
         {
             return object.ReferenceEquals(_camera, cam);
+        }
+
+        #endregion
+
+        #region INameable Interface
+
+        private NameCache.UnityObjectNameCache _nameCache;
+        public new string name
+        {
+            get { return _nameCache.Name; }
+            set { _nameCache.Name = value; }
+        }
+        string INameable.Name
+        {
+            get { return _nameCache.Name; }
+            set { _nameCache.Name = value; }
+        }
+        public bool CompareName(string nm)
+        {
+            return _nameCache.CompareName(nm);
+        }
+        void INameable.SetDirty()
+        {
+            _nameCache.SetDirty();
         }
 
         #endregion

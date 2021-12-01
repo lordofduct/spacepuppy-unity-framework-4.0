@@ -65,6 +65,45 @@ namespace com.spacepuppy.Utils
 
         #region Find Methods
 
+        public static T Find<T>(IEnumerable<T> objs, SearchBy search, string query) where T : class
+        {
+            GameObject go;
+            foreach(var obj in objs)
+            {
+                switch(search)
+                {
+                    case SearchBy.Nothing:
+                        return obj;
+                    case SearchBy.Tag:
+                        {
+                            go = GameObjectUtil.GetGameObjectFromSource(obj);
+                            if (go.HasTag(query)) return obj;
+                        }
+                        break;
+                    case SearchBy.Name:
+                        if(obj is INameable nm)
+                        {
+                            if (nm.CompareName(query)) return obj;
+                        }
+                        else
+                        {
+                            go = GameObjectUtil.GetGameObjectFromSource(obj);
+                            if (go.name == query) return obj;
+                        }
+                        break;
+                    case SearchBy.Type:
+                        {
+                            go = GameObjectUtil.GetGameObjectFromSource(obj);
+                            var c = go.GetComponent(query);
+                            if (c != null) return obj;
+                        }
+                        break;
+                }
+            }
+
+            return null;
+        }
+
         public static UnityEngine.Object Find(SearchBy search, string query)
         {
             switch (search)
@@ -763,19 +802,26 @@ namespace com.spacepuppy.Utils
         {
             if (obj.IsNullOrDestroyed()) return;
 
-            if (UnityEngine.Application.isEditor && !UnityEngine.Application.isPlaying)
+            try
             {
-                UnityEngine.Object.DestroyImmediate(obj);
-            }
-            else
-            {
-                if (obj is UnityEngine.GameObject)
-                    (obj as UnityEngine.GameObject).Kill();
-                else if (obj is UnityEngine.Transform)
-                    (obj as UnityEngine.Transform).gameObject.Kill();
+                if (UnityEngine.Application.isEditor && !UnityEngine.Application.isPlaying)
+                {
+                    UnityEngine.Object.DestroyImmediate(obj);
+                }
                 else
+                {
+                    if (obj is UnityEngine.GameObject)
+                        (obj as UnityEngine.GameObject).Kill();
+                    else if (obj is UnityEngine.Transform)
+                        (obj as UnityEngine.Transform).gameObject.Kill();
+                    else
+                        UnityEngine.Object.Destroy(obj);
                     UnityEngine.Object.Destroy(obj);
-                UnityEngine.Object.Destroy(obj);
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogException(ex);
             }
         }
 

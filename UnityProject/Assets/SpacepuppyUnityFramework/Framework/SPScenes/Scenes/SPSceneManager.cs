@@ -18,7 +18,7 @@ namespace com.spacepuppy.Scenes
     {
 
         #region Fields
-        
+
         private SceneUnloadedEventArgs _unloadArgs;
         private ActiveSceneChangedEventArgs _activeChangeArgs;
 
@@ -61,12 +61,12 @@ namespace com.spacepuppy.Scenes
         {
             if (options == null) throw new System.ArgumentNullException(nameof(options));
 
-            if(_activeLoadOptions.Add(options))
+            if (_activeLoadOptions.Add(options))
             {
-                if(_sceneLoadOptionsCompleteCallback == null) _sceneLoadOptionsCompleteCallback = (s, e) =>
+                if (_sceneLoadOptionsCompleteCallback == null) _sceneLoadOptionsCompleteCallback = (s, e) =>
                 {
                     _activeLoadOptions.Remove(e);
-                    this.OnSceneLoaded(e);
+                    this.SignalSceneLoaded(e);
                 };
 
                 this.OnBeforeSceneLoaded(options);
@@ -162,13 +162,17 @@ namespace com.spacepuppy.Scenes
 
         protected virtual void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
+            var d = this.SceneLoaded;
+            if (d == null) return;
+
+            //find the associated load options, if one exists we let it signal the loaded event
             LoadSceneOptions handle = null;
-            if(_activeLoadOptions.Count > 0)
+            if (_activeLoadOptions.Count > 0)
             {
                 var e = _activeLoadOptions.GetEnumerator();
-                while(e.MoveNext())
+                while (e.MoveNext())
                 {
-                    if(e.Current.HandlesScene(scene))
+                    if (e.Current.HandlesScene(scene))
                     {
                         handle = e.Current;
                         break;
@@ -176,17 +180,13 @@ namespace com.spacepuppy.Scenes
                 }
             }
 
-            var d = this.SceneLoaded;
-            if (d == null) return;
+            if (handle == null) return;
 
-            if (handle == null)
-            {
-                handle = new UnmanagedSceneLoadedEventArgs(scene, mode);
-            }
-
+            //signal loading unmanaged scene load
+            handle = new UnmanagedSceneLoadedEventArgs(scene, mode);
             d(this, handle);
         }
-        protected virtual void OnSceneLoaded(LoadSceneOptions options)
+        protected virtual void SignalSceneLoaded(LoadSceneOptions options)
         {
             this.SceneLoaded?.Invoke(this, options);
         }

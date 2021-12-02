@@ -2,6 +2,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using com.spacepuppy.Project;
 
 namespace com.spacepuppy
 {
@@ -36,6 +37,12 @@ namespace com.spacepuppy
 
     [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
     public class RespectsIProxyAttribute : System.Attribute
+    {
+
+    }
+
+    [System.Serializable]
+    public class ProxyRef : SerializableInterfaceRef<IProxy>
     {
 
     }

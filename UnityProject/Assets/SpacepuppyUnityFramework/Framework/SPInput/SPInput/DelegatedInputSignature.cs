@@ -7,6 +7,7 @@ namespace com.spacepuppy.SPInput
 
     public delegate bool ButtonDelegate();
     public delegate float AxisDelegate();
+    public delegate Vector2 DualAxisDelegate();
 
     public class DelegatedButtonInputSignature : BaseInputSignature, IButtonInputSignature
     {
@@ -561,34 +562,32 @@ namespace com.spacepuppy.SPInput
 
         #region Fields
 
-        private AxisDelegate _horizontal;
-        private AxisDelegate _vertical;
+        private DualAxisDelegate _cursor;
 
         #endregion
 
         #region CONSTRUCTOR
 
+        public DelegatedCursorInputSignature(string id, DualAxisDelegate cursor)
+            : base(id)
+        {
+            _cursor = cursor;
+        }
+
         public DelegatedCursorInputSignature(string id, AxisDelegate hor, AxisDelegate ver)
             : base(id)
         {
-            _horizontal = hor;
-            _vertical = ver;
+            _cursor = () => new Vector2(hor?.Invoke() ?? 0f, ver?.Invoke() ?? 0f);
         }
 
         #endregion
 
         #region Properties
 
-        public AxisDelegate HorizontalDelegate
+        public DualAxisDelegate CursorDelegate
         {
-            get { return _horizontal; }
-            set { _horizontal = value; }
-        }
-
-        public AxisDelegate VerticalDelegate
-        {
-            get { return _vertical; }
-            set { _vertical = value; }
+            get { return _cursor; }
+            set { _cursor = value; }
         }
 
         public bool InvertX
@@ -612,8 +611,7 @@ namespace com.spacepuppy.SPInput
             get
             {
                 //return _current;
-                Vector2 v = new Vector2(_horizontal != null ? _horizontal() : 0f,
-                                        _vertical != null ? _vertical() : 0f);
+                Vector2 v = _cursor?.Invoke() ?? Vector2.zero;
                 if (this.InvertX) v.x = -v.x;
                 if (this.InvertY) v.y = -v.y;
                 return v;

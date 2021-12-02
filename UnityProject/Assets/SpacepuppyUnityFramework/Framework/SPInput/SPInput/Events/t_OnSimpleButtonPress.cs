@@ -29,6 +29,18 @@ namespace com.spacepuppy.SPInput.Events
 
         #region Properties
 
+        public string DeviceId
+        {
+            get
+            {
+                return _deviceId;
+            }
+            set
+            {
+                _deviceId = value;
+            }
+        }
+
         public string InputId
         {
             get

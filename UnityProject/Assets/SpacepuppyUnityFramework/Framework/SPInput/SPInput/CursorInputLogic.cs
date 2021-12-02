@@ -11,14 +11,16 @@ namespace com.spacepuppy.SPInput
         string Id { get; }
     }
 
+    [Infobox("Signal Collider - only the collider receives the event\r\nSignal Rigidboy - the attached rigidbody receives the event, if not exist the collider\r\nSignal Entity - only the root gameObject receives the event\r\nBroadcast Entity - The entire entity from root gameObject and all children receive the event")]
     public class CursorInputLogic : SPComponent, ICursorInputLogic
     {
 
         public enum SignalTarget
         {
             SignalCollider = 0,
-            SignalEntity = 1,
-            BroadcastEntity = 2,
+            SignalRigidboy = 1,
+            SignalEntity = 2,
+            BroadcastEntity = 3,
         }
 
         #region Fields
@@ -69,7 +71,6 @@ namespace com.spacepuppy.SPInput
         private QueryTriggerInteraction _queryTriggerOption;
 
         [SerializeField]
-        [Tooltip("Signal Collider - only the collider receives the event\r\nSignal Entity - only the root gameObject receives the event\r\nBroadcast Entity - The entire entity from root gameObject and all children receive the event")]
         private SignalTarget _signalTarget;
 
         [System.NonSerialized]
@@ -231,19 +232,26 @@ namespace com.spacepuppy.SPInput
             switch(_signalTarget)
             {
                 case SignalTarget.SignalCollider:
-                    _current.gameObject.Signal<IHoverHandler>(_hoverEnterFunctor);
+                    _current.gameObject.Signal(_hoverEnterFunctor);
+                    break;
+                case SignalTarget.SignalRigidboy:
+                    {
+                        var rb = _current.attachedRigidbody;
+                        var go = rb != null ? rb.gameObject : _current.gameObject;
+                        go.Signal(_hoverEnterFunctor);
+                    }
                     break;
                 case SignalTarget.SignalEntity:
                     if (_currentEntity != null)
-                        _currentEntity.gameObject.Signal<IHoverHandler>(_hoverEnterFunctor);
+                        _currentEntity.gameObject.Signal(_hoverEnterFunctor);
                     else
-                        _current.FindRoot().Signal<IHoverHandler>(_hoverEnterFunctor);
+                        _current.FindRoot().Signal(_hoverEnterFunctor);
                     break;
                 case SignalTarget.BroadcastEntity:
                     if (_currentEntity != null)
-                        _currentEntity.gameObject.Broadcast<IHoverHandler>(_hoverEnterFunctor);
+                        _currentEntity.gameObject.Broadcast(_hoverEnterFunctor);
                     else
-                        _current.FindRoot().Broadcast<IHoverHandler>(_hoverEnterFunctor);
+                        _current.FindRoot().Broadcast(_hoverEnterFunctor);
                     break;
             }
 
@@ -257,19 +265,26 @@ namespace com.spacepuppy.SPInput
             switch (_signalTarget)
             {
                 case SignalTarget.SignalCollider:
-                    _current.gameObject.Signal<IHoverHandler>(_hoverExitFunctor);
+                    _current.gameObject.Signal(_hoverExitFunctor);
+                    break;
+                case SignalTarget.SignalRigidboy:
+                    {
+                        var rb = _current.attachedRigidbody;
+                        var go = rb != null ? rb.gameObject : _current.gameObject;
+                        go.Signal(_hoverExitFunctor);
+                    }
                     break;
                 case SignalTarget.SignalEntity:
                     if (_currentEntity != null)
-                        _currentEntity.gameObject.Signal<IHoverHandler>(_hoverExitFunctor);
+                        _currentEntity.gameObject.Signal(_hoverExitFunctor);
                     else
-                        _current.FindRoot().Signal<IHoverHandler>(_hoverExitFunctor);
+                        _current.FindRoot().Signal(_hoverExitFunctor);
                     break;
                 case SignalTarget.BroadcastEntity:
                     if (_currentEntity != null)
-                        _currentEntity.gameObject.Broadcast<IHoverHandler>(_hoverExitFunctor);
+                        _currentEntity.gameObject.Broadcast(_hoverExitFunctor);
                     else
-                        _current.FindRoot().Broadcast<IHoverHandler>(_hoverExitFunctor);
+                        _current.FindRoot().Broadcast(_hoverExitFunctor);
                     break;
             }
 
@@ -283,19 +298,26 @@ namespace com.spacepuppy.SPInput
             switch (_signalTarget)
             {
                 case SignalTarget.SignalCollider:
-                    _current.gameObject.Signal<IClickHandler>(_clickFunctor);
+                    _current.gameObject.Signal(_clickFunctor);
+                    break;
+                case SignalTarget.SignalRigidboy:
+                    {
+                        var rb = _current.attachedRigidbody;
+                        var go = rb != null ? rb.gameObject : _current.gameObject;
+                        go.Signal(_clickFunctor);
+                    }
                     break;
                 case SignalTarget.SignalEntity:
                     if (_currentEntity != null)
-                        _currentEntity.gameObject.Signal<IClickHandler>(_clickFunctor);
+                        _currentEntity.gameObject.Signal(_clickFunctor);
                     else
-                        _current.FindRoot().Signal<IClickHandler>(_clickFunctor);
+                        _current.FindRoot().Signal(_clickFunctor);
                     break;
                 case SignalTarget.BroadcastEntity:
                     if (_currentEntity != null)
-                        _currentEntity.gameObject.Broadcast<IClickHandler>(_clickFunctor);
+                        _currentEntity.gameObject.Broadcast(_clickFunctor);
                     else
-                        _current.FindRoot().Broadcast<IClickHandler>(_clickFunctor);
+                        _current.FindRoot().Broadcast(_clickFunctor);
                     break;
             }
 
@@ -309,19 +331,26 @@ namespace com.spacepuppy.SPInput
             switch (_signalTarget)
             {
                 case SignalTarget.SignalCollider:
-                    _current.gameObject.Signal<IDoubleClickHandler>(_doubleClickFunctor);
+                    _current.gameObject.Signal(_doubleClickFunctor);
+                    break;
+                case SignalTarget.SignalRigidboy:
+                    {
+                        var rb = _current.attachedRigidbody;
+                        var go = rb != null ? rb.gameObject : _current.gameObject;
+                        go.Signal(_doubleClickFunctor);
+                    }
                     break;
                 case SignalTarget.SignalEntity:
                     if (_currentEntity != null)
-                        _currentEntity.gameObject.Signal<IDoubleClickHandler>(_doubleClickFunctor);
+                        _currentEntity.gameObject.Signal(_doubleClickFunctor);
                     else
-                        _current.FindRoot().Signal<IDoubleClickHandler>(_doubleClickFunctor);
+                        _current.FindRoot().Signal(_doubleClickFunctor);
                     break;
                 case SignalTarget.BroadcastEntity:
                     if (_currentEntity != null)
-                        _currentEntity.gameObject.Broadcast<IDoubleClickHandler>(_doubleClickFunctor);
+                        _currentEntity.gameObject.Broadcast(_doubleClickFunctor);
                     else
-                        _current.FindRoot().Broadcast<IDoubleClickHandler>(_doubleClickFunctor);
+                        _current.FindRoot().Broadcast(_doubleClickFunctor);
                     break;
             }
 
@@ -335,19 +364,26 @@ namespace com.spacepuppy.SPInput
             switch (_signalTarget)
             {
                 case SignalTarget.SignalCollider:
-                    _current.gameObject.Signal<ICursorHandler>(_cursorDownFunctor);
+                    _current.gameObject.Signal(_cursorDownFunctor);
+                    break;
+                case SignalTarget.SignalRigidboy:
+                    {
+                        var rb = _current.attachedRigidbody;
+                        var go = rb != null ? rb.gameObject : _current.gameObject;
+                        go.Signal(_cursorDownFunctor);
+                    }
                     break;
                 case SignalTarget.SignalEntity:
                     if (_currentEntity != null)
-                        _currentEntity.gameObject.Signal<ICursorHandler>(_cursorDownFunctor);
+                        _currentEntity.gameObject.Signal(_cursorDownFunctor);
                     else
-                        _current.FindRoot().Signal<ICursorHandler>(_cursorDownFunctor);
+                        _current.FindRoot().Signal(_cursorDownFunctor);
                     break;
                 case SignalTarget.BroadcastEntity:
                     if (_currentEntity != null)
-                        _currentEntity.gameObject.Broadcast<ICursorHandler>(_cursorDownFunctor);
+                        _currentEntity.gameObject.Broadcast(_cursorDownFunctor);
                     else
-                        _current.FindRoot().Broadcast<ICursorHandler>(_cursorDownFunctor);
+                        _current.FindRoot().Broadcast(_cursorDownFunctor);
                     break;
             }
 
@@ -361,19 +397,26 @@ namespace com.spacepuppy.SPInput
             switch (_signalTarget)
             {
                 case SignalTarget.SignalCollider:
-                    _current.gameObject.Signal<ICursorHandler>(_cursorUpFunctor);
+                    _current.gameObject.Signal(_cursorUpFunctor);
+                    break;
+                case SignalTarget.SignalRigidboy:
+                    {
+                        var rb = _current.attachedRigidbody;
+                        var go = rb != null ? rb.gameObject : _current.gameObject;
+                        go.Signal(_cursorUpFunctor);
+                    }
                     break;
                 case SignalTarget.SignalEntity:
                     if (_currentEntity != null)
-                        _currentEntity.gameObject.Signal<ICursorHandler>(_cursorUpFunctor);
+                        _currentEntity.gameObject.Signal(_cursorUpFunctor);
                     else
-                        _current.FindRoot().Signal<ICursorHandler>(_cursorUpFunctor);
+                        _current.FindRoot().Signal(_cursorUpFunctor);
                     break;
                 case SignalTarget.BroadcastEntity:
                     if (_currentEntity != null)
-                        _currentEntity.gameObject.Broadcast<ICursorHandler>(_cursorUpFunctor);
+                        _currentEntity.gameObject.Broadcast(_cursorUpFunctor);
                     else
-                        _current.FindRoot().Broadcast<ICursorHandler>(_cursorUpFunctor);
+                        _current.FindRoot().Broadcast(_cursorUpFunctor);
                     break;
             }
 

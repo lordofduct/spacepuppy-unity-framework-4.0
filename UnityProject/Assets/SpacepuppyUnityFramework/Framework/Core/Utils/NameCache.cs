@@ -27,7 +27,7 @@ namespace com.spacepuppy.Utils
 
         public static bool CompareName(this UnityEngine.Object obj, string name, bool respectProxy)
         {
-            if (respectProxy && obj is IProxy) obj = (obj as IProxy).GetTarget() as UnityEngine.Object;
+            if (respectProxy && obj is IProxy) obj = obj.ReduceIfProxy() as UnityEngine.Object;
             if (obj == null) return false;
 
             if (obj is INameable) return (obj as INameable).CompareName(name);
@@ -51,7 +51,7 @@ namespace com.spacepuppy.Utils
 
         public static string GetCachedName(UnityEngine.Object obj, bool respectProxy)
         {
-            if (respectProxy && obj is IProxy) obj = (obj as IProxy).GetTarget() as UnityEngine.Object;
+            if (respectProxy && obj is IProxy) obj = obj.ReduceIfProxy() as UnityEngine.Object;
             if (obj == null) return null;
 
             if (obj is INameable) return (obj as INameable).Name;
@@ -70,7 +70,7 @@ namespace com.spacepuppy.Utils
         /// <param name="respectProxy"></param>
         public static void SetDirty(UnityEngine.Object obj, bool respectProxy = false)
         {
-            if (respectProxy && obj is IProxy) obj = (obj as IProxy).GetTarget() as UnityEngine.Object;
+            if (respectProxy && obj is IProxy) obj = obj.ReduceIfProxy() as UnityEngine.Object;
             if (obj == null) return;
 
             if (obj is INameable)

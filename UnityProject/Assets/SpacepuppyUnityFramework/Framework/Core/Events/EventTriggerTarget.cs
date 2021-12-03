@@ -170,7 +170,7 @@ namespace com.spacepuppy.Events
 
         public object CalculateTarget(object arg)
         {
-            return (_triggerable is IProxy) ? (_triggerable as IProxy).GetTarget(arg) : _triggerable;
+            return (_triggerable is IProxy) ? _triggerable.ReduceIfProxy(arg) : _triggerable;
         }
 
         #endregion
@@ -190,37 +190,37 @@ namespace com.spacepuppy.Events
                 {
                     case TriggerActivationType.TriggerAllOnTarget:
                         {
-                            EventTriggerEvaluator.Current.TriggerAllOnTarget((_triggerable is IProxy) ? (_triggerable as IProxy).GetTarget(incomingArg) : _triggerable,
+                            EventTriggerEvaluator.Current.TriggerAllOnTarget((_triggerable is IProxy) ? _triggerable.ReduceIfProxy(incomingArg) : _triggerable,
                                                                              sender, outgoingArg);
                         }
                         break;
                     case TriggerActivationType.TriggerSelectedTarget:
                         {
-                            EventTriggerEvaluator.Current.TriggerSelectedTarget((_triggerable is IProxy) ? (_triggerable as IProxy).GetTarget(incomingArg) : _triggerable,
+                            EventTriggerEvaluator.Current.TriggerSelectedTarget((_triggerable is IProxy) ? _triggerable.ReduceIfProxy(incomingArg) : _triggerable,
                                                                                 sender, outgoingArg);
                         }
                         break;
                     case TriggerActivationType.SendMessage:
                         {
-                            EventTriggerEvaluator.Current.SendMessageToTarget((_triggerable is IProxy) ? (_triggerable as IProxy).GetTarget(incomingArg) : _triggerable,
+                            EventTriggerEvaluator.Current.SendMessageToTarget((_triggerable is IProxy) ? _triggerable.ReduceIfProxy(incomingArg) : _triggerable,
                                                                               _methodName, outgoingArg);
                         }
                         break;
                     case TriggerActivationType.CallMethodOnSelectedTarget:
                         {
-                            EventTriggerEvaluator.Current.CallMethodOnSelectedTarget((_triggerable is IProxy) ? (_triggerable as IProxy).GetTarget(incomingArg) : _triggerable,
+                            EventTriggerEvaluator.Current.CallMethodOnSelectedTarget((_triggerable is IProxy) ? _triggerable.ReduceIfProxy(incomingArg) : _triggerable,
                                                                                      _methodName, _triggerableArgs);
                         }
                         break;
                     case TriggerActivationType.EnableTarget:
                         {
-                            EventTriggerEvaluator.Current.EnableTarget((_triggerable is IProxy) ? (_triggerable as IProxy).GetTarget(incomingArg) : _triggerable,
+                            EventTriggerEvaluator.Current.EnableTarget((_triggerable is IProxy) ? _triggerable.ReduceIfProxy(incomingArg) : _triggerable,
                                                                        ConvertUtil.ToEnum<EnableMode>(_methodName));
                         }
                         break;
                     case TriggerActivationType.DestroyTarget:
                         {
-                            EventTriggerEvaluator.Current.DestroyTarget((_triggerable is IProxy) ? (_triggerable as IProxy).GetTarget(incomingArg) : _triggerable);
+                            EventTriggerEvaluator.Current.DestroyTarget((_triggerable is IProxy) ? _triggerable.ReduceIfProxy(incomingArg) : _triggerable);
                         }
                         break;
                 }

@@ -26,35 +26,43 @@ namespace com.spacepuppyeditor.Core
             var propMember = property.FindPropertyRelative(PROP_MEMBER);
 
             position = EditorGUI.PrefixLabel(position, label);
+            EditorHelper.SuppressIndentLevel();
 
-            if (propTarget.objectReferenceValue == null)
+            try
             {
-                _objectDrawer.OnGUI(position, propTarget, GUIContent.none);
+                if (propTarget.objectReferenceValue == null)
+                {
+                    _objectDrawer.OnGUI(position, propTarget, GUIContent.none);
+                }
+                else
+                {
+                    var r0 = new Rect(position.xMin, position.yMin, position.width * 0.5f, position.height);
+                    var r1 = new Rect(r0.xMax, position.yMin, position.width - r0.width, position.height);
+
+                    EditorGUI.BeginChangeCheck();
+                    _objectDrawer.OnGUI(r0, propTarget, GUIContent.none);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        this.PurgeIfPlaying(property);
+                        if (propTarget.objectReferenceValue == null) return;
+                    }
+
+                    EditorGUI.BeginChangeCheck();
+                    System.Reflection.MemberInfo info;
+                    propMember.stringValue = SPEditorGUI.ReflectedPropertyField(r1, GUIContent.none,
+                                                                                    propTarget.objectReferenceValue,
+                                                                                    propMember.stringValue,
+                                                                                    com.spacepuppy.Dynamic.DynamicMemberAccess.ReadWrite,
+                                                                                    out info);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        this.PurgeIfPlaying(property);
+                    }
+                }
             }
-            else
+            finally
             {
-                var r0 = new Rect(position.xMin, position.yMin, position.width * 0.5f, position.height);
-                var r1 = new Rect(r0.xMax, position.yMin, position.width - r0.width, position.height);
-
-                EditorGUI.BeginChangeCheck();
-                _objectDrawer.OnGUI(r0, propTarget, GUIContent.none);
-                if (EditorGUI.EndChangeCheck())
-                {
-                    this.PurgeIfPlaying(property);
-                    if (propTarget.objectReferenceValue == null) return;
-                }
-
-                EditorGUI.BeginChangeCheck();
-                System.Reflection.MemberInfo info;
-                propMember.stringValue = SPEditorGUI.ReflectedPropertyField(r1, GUIContent.none,
-                                                                                propTarget.objectReferenceValue,
-                                                                                propMember.stringValue,
-                                                                                com.spacepuppy.Dynamic.DynamicMemberAccess.ReadWrite,
-                                                                                out info);
-                if (EditorGUI.EndChangeCheck())
-                {
-                    this.PurgeIfPlaying(property);
-                }
+                EditorHelper.ResumeIndentLevel();
             }
         }
 

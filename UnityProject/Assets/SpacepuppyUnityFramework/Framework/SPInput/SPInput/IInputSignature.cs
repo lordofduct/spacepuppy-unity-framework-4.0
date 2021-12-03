@@ -41,7 +41,7 @@ namespace com.spacepuppy.SPInput
         /// <summary>
         /// Last time 'Down' was signaled (as realTimeSinceStartup)
         /// </summary>
-        float LastDownTime { get; }
+        double LastDownTime { get; }
 
     }
 

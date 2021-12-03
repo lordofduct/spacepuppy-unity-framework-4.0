@@ -83,17 +83,25 @@ namespace com.spacepuppyeditor.Core
         {
 
             position = EditorGUI.PrefixLabel(position, label);
+            EditorHelper.SuppressIndentLevel();
 
-            var w = position.width / 2f;
-            if (w > 75f)
+            try
             {
-                position = this.DrawDuration(position, property, position.width - 75f);
-                position = this.DrawUnits(position, property, 75f);
+                var w = position.width / 2f;
+                if (w > 75f)
+                {
+                    position = this.DrawDuration(position, property, position.width - 75f);
+                    position = this.DrawUnits(position, property, 75f);
+                }
+                else
+                {
+                    position = this.DrawDuration(position, property, w);
+                    position = this.DrawUnits(position, property, w);
+                }
             }
-            else
+            finally
             {
-                position = this.DrawDuration(position, property, w);
-                position = this.DrawUnits(position, property, w);
+                EditorHelper.ResumeIndentLevel();
             }
         }
 

@@ -60,6 +60,7 @@ namespace com.spacepuppy.Cameras
         public new Camera camera
         {
             get { return _camera; }
+            set { _camera = value; }
         }
         Camera ICamera.camera
         {

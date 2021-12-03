@@ -43,7 +43,7 @@ namespace com.spacepuppyeditor.Events
             if (obj is IProxy)
             {
                 var proxy = obj as IProxy;
-                obj = proxy.GetTarget();
+                obj = proxy.ReduceIfProxy();
 
                 // // SHOULD WE DRAW THE PROXY TOO???
                 //if(GameObjectUtil.IsGameObjectSource(proxy))
@@ -127,7 +127,7 @@ namespace com.spacepuppyeditor.Events
                 }
                 else
                 {
-                    if (target is IProxy) target = (target as IProxy).GetTarget();
+                    if (target is IProxy) target = target.ReduceIfProxy();
                     var go = GameObjectUtil.GetGameObjectFromSource(target);
                     if (go != null)
                     {

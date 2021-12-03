@@ -23,46 +23,55 @@ namespace com.spacepuppyeditor.Core
             EditorGUI.BeginProperty(position, label, property);
 
             position = EditorGUI.PrefixLabel(position, label);
-            float w = Mathf.Min(position.width, 60f);
-            var r2 = new Rect(position.xMax - w, position.yMin, w, position.height);
-            var r1 = new Rect(position.xMin, position.yMin, Mathf.Max(position.width - w, 0f), position.height);
+            EditorHelper.SuppressIndentLevel();
 
-            var lowProp = property.FindPropertyRelative("_low");
-            var highProp = property.FindPropertyRelative("_high");
-            long value = (lowProp.longValue & uint.MaxValue) | (highProp.longValue << 32);
-
-            var attrib = this.fieldInfo.GetCustomAttributes(typeof(ShortUid.ConfigAttribute), false).FirstOrDefault() as ShortUid.ConfigAttribute;
-            bool resetOnZero = attrib == null || !attrib.AllowZero;
-            bool readWrite = attrib == null || !attrib.ReadOnly;
-
-            if (readWrite)
+            try
             {
-                //read-write
-                EditorGUI.BeginChangeCheck();
-                var sval = EditorGUI.TextField(r1, value.ToString("X16"));
-                if (EditorGUI.EndChangeCheck())
+                float w = Mathf.Min(position.width, 60f);
+                var r2 = new Rect(position.xMax - w, position.yMin, w, position.height);
+                var r1 = new Rect(position.xMin, position.yMin, Mathf.Max(position.width - w, 0f), position.height);
+
+                var lowProp = property.FindPropertyRelative("_low");
+                var highProp = property.FindPropertyRelative("_high");
+                long value = (lowProp.longValue & uint.MaxValue) | (highProp.longValue << 32);
+
+                var attrib = this.fieldInfo.GetCustomAttributes(typeof(ShortUid.ConfigAttribute), false).FirstOrDefault() as ShortUid.ConfigAttribute;
+                bool resetOnZero = attrib == null || !attrib.AllowZero;
+                bool readWrite = attrib == null || !attrib.ReadOnly;
+
+                if (readWrite)
                 {
-                    if (long.TryParse(sval, System.Globalization.NumberStyles.HexNumber, null, out value))
+                    //read-write
+                    EditorGUI.BeginChangeCheck();
+                    var sval = EditorGUI.TextField(r1, value.ToString("X16"));
+                    if (EditorGUI.EndChangeCheck())
                     {
-                        lowProp.longValue = (value & uint.MaxValue);
-                        highProp.longValue = (value >> 32);
+                        if (long.TryParse(sval, System.Globalization.NumberStyles.HexNumber, null, out value))
+                        {
+                            lowProp.longValue = (value & uint.MaxValue);
+                            highProp.longValue = (value >> 32);
+                        }
                     }
                 }
-            }
-            else
-            {
-                //read-only
-                EditorGUI.SelectableLabel(r1, value.ToString("X16"), EditorStyles.textField);
-            }
+                else
+                {
+                    //read-only
+                    EditorGUI.SelectableLabel(r1, value.ToString("X16"), EditorStyles.textField);
+                }
 
-            if (GUI.Button(r2, "New Id") || (resetOnZero && value == 0))
-            {
-                value = ShortUid.NewId().Value;
-                lowProp.longValue = (value & uint.MaxValue);
-                highProp.longValue = (value >> 32);
-            }
+                if (GUI.Button(r2, "New Id") || (resetOnZero && value == 0))
+                {
+                    value = ShortUid.NewId().Value;
+                    lowProp.longValue = (value & uint.MaxValue);
+                    highProp.longValue = (value >> 32);
+                }
 
-            EditorGUI.EndProperty();
+                EditorGUI.EndProperty();
+            }
+            finally
+            {
+                EditorHelper.ResumeIndentLevel();
+            }
         }
 
     }
@@ -82,64 +91,73 @@ namespace com.spacepuppyeditor.Core
             EditorGUI.BeginProperty(position, label, property);
 
             position = EditorGUI.PrefixLabel(position, label);
-            float w = Mathf.Min(position.width, 60f);
-            var r2 = new Rect(position.xMax - w, position.yMin, w, position.height);
-            var r1 = new Rect(position.xMin, position.yMin, Mathf.Max(position.width - w, 0f), position.height);
+            EditorHelper.SuppressIndentLevel();
 
-            var lowProp = property.FindPropertyRelative("_low");
-            var highProp = property.FindPropertyRelative("_high");
-            var idProp = property.FindPropertyRelative("_id");
-
-            long lval = (lowProp.longValue & uint.MaxValue) | (highProp.longValue << 32);
-            string sval = idProp.stringValue;
-
-            var attrib = this.fieldInfo.GetCustomAttributes(typeof(TokenId.ConfigAttribute), false).FirstOrDefault() as TokenId.ConfigAttribute;
-            bool resetOnZero = attrib == null || !attrib.AllowZero;
-            bool readWrite = attrib == null || !attrib.ReadOnly;
-
-            if (readWrite)
+            try
             {
-                //read-write
-                EditorGUI.BeginChangeCheck();
-                if (lval == 0)
-                    sval = EditorGUI.TextField(r1, sval);
-                else
-                    sval = EditorGUI.TextField(r1, lval.ToString("X16"));
+                float w = Mathf.Min(position.width, 60f);
+                var r2 = new Rect(position.xMax - w, position.yMin, w, position.height);
+                var r1 = new Rect(position.xMin, position.yMin, Mathf.Max(position.width - w, 0f), position.height);
 
-                if (EditorGUI.EndChangeCheck())
+                var lowProp = property.FindPropertyRelative("_low");
+                var highProp = property.FindPropertyRelative("_high");
+                var idProp = property.FindPropertyRelative("_id");
+
+                long lval = (lowProp.longValue & uint.MaxValue) | (highProp.longValue << 32);
+                string sval = idProp.stringValue;
+
+                var attrib = this.fieldInfo.GetCustomAttributes(typeof(TokenId.ConfigAttribute), false).FirstOrDefault() as TokenId.ConfigAttribute;
+                bool resetOnZero = attrib == null || !attrib.AllowZero;
+                bool readWrite = attrib == null || !attrib.ReadOnly;
+
+                if (readWrite)
                 {
-                    if (long.TryParse(sval, System.Globalization.NumberStyles.HexNumber, null, out lval))
-                    {
-                        lowProp.longValue = (lval & uint.MaxValue);
-                        highProp.longValue = (lval >> 32);
-                        idProp.stringValue = string.Empty;
-                    }
+                    //read-write
+                    EditorGUI.BeginChangeCheck();
+                    if (lval == 0)
+                        sval = EditorGUI.TextField(r1, sval);
                     else
+                        sval = EditorGUI.TextField(r1, lval.ToString("X16"));
+
+                    if (EditorGUI.EndChangeCheck())
                     {
-                        idProp.stringValue = sval;
-                        lowProp.longValue = 0;
-                        highProp.longValue = 0;
+                        if (long.TryParse(sval, System.Globalization.NumberStyles.HexNumber, null, out lval))
+                        {
+                            lowProp.longValue = (lval & uint.MaxValue);
+                            highProp.longValue = (lval >> 32);
+                            idProp.stringValue = string.Empty;
+                        }
+                        else
+                        {
+                            idProp.stringValue = sval;
+                            lowProp.longValue = 0;
+                            highProp.longValue = 0;
+                        }
                     }
                 }
-            }
-            else
-            {
-                //read-only
-                if (lval == 0)
-                    EditorGUI.SelectableLabel(r1, lval.ToString("X16"), EditorStyles.textField);
                 else
-                    EditorGUI.SelectableLabel(r1, sval, EditorStyles.textField);
-            }
+                {
+                    //read-only
+                    if (lval == 0)
+                        EditorGUI.SelectableLabel(r1, lval.ToString("X16"), EditorStyles.textField);
+                    else
+                        EditorGUI.SelectableLabel(r1, sval, EditorStyles.textField);
+                }
 
-            if (GUI.Button(r2, "New Id") || (resetOnZero && lval == 0 && string.IsNullOrEmpty(sval)))
+                if (GUI.Button(r2, "New Id") || (resetOnZero && lval == 0 && string.IsNullOrEmpty(sval)))
+                {
+                    long value = TokenId.NewId().LongValue;
+                    lowProp.longValue = (value & uint.MaxValue);
+                    highProp.longValue = (value >> 32);
+                    idProp.stringValue = string.Empty;
+                }
+
+                EditorGUI.EndProperty();
+            }
+            finally
             {
-                long value = TokenId.NewId().LongValue;
-                lowProp.longValue = (value & uint.MaxValue);
-                highProp.longValue = (value >> 32);
-                idProp.stringValue = string.Empty;
+                EditorHelper.ResumeIndentLevel();
             }
-
-            EditorGUI.EndProperty();
         }
 
 

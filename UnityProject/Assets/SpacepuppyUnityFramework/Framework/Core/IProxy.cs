@@ -32,6 +32,18 @@ namespace com.spacepuppy
 
         object GetTarget();
         object GetTarget(object arg);
+        /// <summary>
+        /// Attempts to get the target similar to using ObjUtil.GetAsFromSource.
+        /// </summary>
+        /// <param name="tp"></param>
+        /// <returns></returns>
+        object GetTargetAs(System.Type tp);
+        /// <summary>
+        /// Attempts to get the target similar to using ObjUtil.GetAsFromSource.
+        /// </summary>
+        /// <param name="tp"></param>
+        /// <returns></returns>
+        object GetTargetAs(System.Type tp, object arg);
 
     }
 

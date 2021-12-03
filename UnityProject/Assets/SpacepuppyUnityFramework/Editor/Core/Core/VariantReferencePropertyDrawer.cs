@@ -91,7 +91,9 @@ namespace com.spacepuppyeditor.Core
             EditorGUI.BeginProperty(position, label, property);
 
             position = EditorGUI.PrefixLabel(position, label);
+            EditorHelper.SuppressIndentLevel();
             this.DrawValueField(position, property);
+            EditorHelper.ResumeIndentLevel();
 
             EditorGUI.EndProperty();
             EditorGUIUtility.labelWidth = labelWidthCache;

@@ -23,7 +23,7 @@ namespace com.spacepuppy.SPInput
 
         private ButtonState _current;
         private ButtonState _currentFixed;
-        private float _lastDown;
+        private double _lastDown;
 
         private float _delay;
         private int _repeatCount;
@@ -137,7 +137,7 @@ namespace com.spacepuppy.SPInput
             }
         }
 
-        public float LastDownTime
+        public double LastDownTime
         {
             get { return _lastDown; }
         }
@@ -152,14 +152,14 @@ namespace com.spacepuppy.SPInput
             _current = InputUtil.GetNextButtonState(_current, _button != null ? _button() : false);
             if (_current == ButtonState.Down)
             {
-                _lastDown = Time.realtimeSinceStartup;
+                _lastDown = Time.unscaledTimeAsDouble;
                 _delay = _firstRepeatDelay;
                 _repeatCount = 0;
             }
             else if (_current == ButtonState.Held && Time.realtimeSinceStartup - _lastDown > _repeatDelay)
             {
                 _current = ButtonState.Down;
-                _lastDown = Time.realtimeSinceStartup;
+                _lastDown = Time.unscaledTimeAsDouble;
                 if (_repeatCount == 0)
                     _delay = _repeatDelay;
                 else
@@ -178,7 +178,7 @@ namespace com.spacepuppy.SPInput
         {
             _current = ButtonState.None;
             _currentFixed = ButtonState.None;
-            _lastDown = 0f;
+            _lastDown = 0d;
         }
 
         #endregion
@@ -201,11 +201,11 @@ namespace com.spacepuppy.SPInput
 
         private ButtonState _current;
         private ButtonState _currentFixed;
-        private float _lastDown;
+        private double _lastDown;
 
         private ButtonState _realState;
         private int _count;
-        private float _lastRealDown;
+        private double _lastRealDown;
 
         #endregion
 
@@ -262,7 +262,7 @@ namespace com.spacepuppy.SPInput
             }
         }
 
-        public float LastDownTime
+        public double LastDownTime
         {
             get { return _lastDown; }
         }
@@ -298,18 +298,18 @@ namespace com.spacepuppy.SPInput
                     case ButtonState.Down:
                         {
                             _count++;
-                            _lastRealDown = Time.realtimeSinceStartup;
+                            _lastRealDown = Time.unscaledTimeAsDouble;
 
                             if (_count == _taps)
                             {
                                 _current = ButtonState.Down;
-                                _lastDown = Time.realtimeSinceStartup;
+                                _lastDown = Time.unscaledTimeAsDouble;
                             }
                         }
                         break;
                     default:
                         _current = ButtonState.None;
-                        if (Time.realtimeSinceStartup - _lastRealDown > _delay)
+                        if (Time.unscaledTimeAsDouble - _lastRealDown > _delay)
                         {
                             _count = 0;
                         }
@@ -346,10 +346,10 @@ namespace com.spacepuppy.SPInput
         {
             _current = ButtonState.None;
             _currentFixed = ButtonState.None;
-            _lastDown = 0f;
+            _lastDown = 0d;
 
             _realState = ButtonState.None;
-            _lastRealDown = 0f;
+            _lastRealDown = 0d;
             _count = 0;
         }
 

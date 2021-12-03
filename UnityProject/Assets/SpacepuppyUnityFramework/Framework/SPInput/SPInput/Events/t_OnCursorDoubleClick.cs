@@ -17,15 +17,25 @@ namespace com.spacepuppy.SPInput.Events
 
         [SerializeField]
         [Tooltip("Populate with the Id of the CursorFilterLogic if you want to filter for only a specific input. Otherwise leave blank to receive all clicks.")]
-        private string _cursorInputerLogicFilter;
+        private string _cursorInputLogicFilter;
+
+        #endregion
+
+        #region Properties
+
+        public string CursorInputLogicFilter
+        {
+            get => _cursorInputLogicFilter;
+            set => _cursorInputLogicFilter = value;
+        }
 
         #endregion
 
         #region IClickHandler Interface
 
-        void CursorInputLogic.IDoubleClickHandler.OnDoubleClick(ICursorInputLogic sender, Collider c)
+        void CursorInputLogic.IDoubleClickHandler.OnDoubleClick(CursorInputLogic sender, Collider c)
         {
-            if (!string.IsNullOrEmpty(_cursorInputerLogicFilter) && sender?.Id != _cursorInputerLogicFilter) return;
+            if (!string.IsNullOrEmpty(_cursorInputLogicFilter) && sender?.Id != _cursorInputLogicFilter) return;
 
             this.ActivateTrigger();
         }

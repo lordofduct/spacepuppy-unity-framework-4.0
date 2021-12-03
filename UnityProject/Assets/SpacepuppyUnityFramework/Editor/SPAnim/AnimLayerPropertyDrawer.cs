@@ -31,33 +31,41 @@ namespace com.spacepuppyeditor.Anim
             }
 
             position = EditorGUI.PrefixLabel(position, label);
+            EditorHelper.SuppressIndentLevel();
 
-            var names = (from info in infos select info.Name).Append("Custom...").ToArray();
-            int i = this.GetCurrentIndex(infos, property.intValue);
-            if (i < 0) i = infos.Length;
-
-            var r1 = new Rect(position.xMin, position.yMin, position.width * 0.7f, position.height);
-            var r2 = new Rect(r1.xMax, r1.yMin, position.width - r1.width, r1.height);
-
-            EditorGUI.BeginChangeCheck();
-            i = EditorGUI.Popup(r1, i, names);
-            if (EditorGUI.EndChangeCheck())
+            try
             {
-                if (i == infos.Length)
+                var names = (from info in infos select info.Name).Append("Custom...").ToArray();
+                int i = this.GetCurrentIndex(infos, property.intValue);
+                if (i < 0) i = infos.Length;
+
+                var r1 = new Rect(position.xMin, position.yMin, position.width * 0.7f, position.height);
+                var r2 = new Rect(r1.xMax, r1.yMin, position.width - r1.width, r1.height);
+
+                EditorGUI.BeginChangeCheck();
+                i = EditorGUI.Popup(r1, i, names);
+                if (EditorGUI.EndChangeCheck())
                 {
-                    property.intValue = (from info in infos select info.Layer).Max() + 1;
+                    if (i == infos.Length)
+                    {
+                        property.intValue = (from info in infos select info.Layer).Max() + 1;
+                    }
+                    else
+                    {
+                        property.intValue = infos[i].Layer;
+                    }
                 }
-                else
+
+                EditorGUI.BeginChangeCheck();
+                int layer = EditorGUI.IntField(r2, property.intValue);
+                if (EditorGUI.EndChangeCheck())
                 {
-                    property.intValue = infos[i].Layer;
+                    property.intValue = layer;
                 }
             }
-
-            EditorGUI.BeginChangeCheck();
-            int layer = EditorGUI.IntField(r2, property.intValue);
-            if (EditorGUI.EndChangeCheck())
+            finally
             {
-                property.intValue = layer;
+                EditorHelper.ResumeIndentLevel();
             }
         }
 

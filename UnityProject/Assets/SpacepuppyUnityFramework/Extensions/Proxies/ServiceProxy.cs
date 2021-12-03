@@ -1,6 +1,8 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 
+using com.spacepuppy.Utils;
+
 namespace com.spacepuppy
 {
 
@@ -25,6 +27,16 @@ namespace com.spacepuppy
         public object GetTarget(object arg)
         {
             return Services.Find(_serviceType.Type);
+        }
+
+        public object GetTargetAs(System.Type tp)
+        {
+            return ObjUtil.GetAsFromSource(tp, Services.Find(_serviceType.Type));
+        }
+
+        public object GetTargetAs(System.Type tp, object arg)
+        {
+            return ObjUtil.GetAsFromSource(tp, Services.Find(_serviceType.Type));
         }
 
         public System.Type GetTargetType()

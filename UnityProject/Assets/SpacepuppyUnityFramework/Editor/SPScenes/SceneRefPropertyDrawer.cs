@@ -27,59 +27,68 @@ namespace com.spacepuppyeditor.Scenes
             EditorGUI.BeginProperty(position, label, property);
             var totalPos = position;
             position = EditorGUI.PrefixLabel(position, label);
+            EditorHelper.SuppressIndentLevel();
 
-            var assetProp = property.FindPropertyRelative(PROP_SCENEASSET);
-            var nameProp = property.FindPropertyRelative(PROP_SCENENAME);
-
-            const float TOGGLE_WIDTH = 30f;
-            Rect rObjField = new Rect(position.xMin, position.yMin, Mathf.Max(position.width - TOGGLE_WIDTH, 0f), EditorGUIUtility.singleLineHeight);
-            if (assetProp.objectReferenceValue is SceneAsset)
+            try
             {
-                EditorGUI.BeginChangeCheck();
-                assetProp.objectReferenceValue = EditorGUI.ObjectField(rObjField, GUIContent.none, assetProp.objectReferenceValue, typeof(SceneAsset), false);
-                var scene = assetProp.objectReferenceValue as SceneAsset;
-                if (EditorGUI.EndChangeCheck() || nameProp.stringValue != scene?.name)
+                var assetProp = property.FindPropertyRelative(PROP_SCENEASSET);
+                var nameProp = property.FindPropertyRelative(PROP_SCENENAME);
+
+                const float TOGGLE_WIDTH = 30f;
+                Rect rObjField = new Rect(position.xMin, position.yMin, Mathf.Max(position.width - TOGGLE_WIDTH, 0f), EditorGUIUtility.singleLineHeight);
+                if (assetProp.objectReferenceValue is SceneAsset)
                 {
-                    nameProp.stringValue = (scene != null) ? scene.name : string.Empty;
+                    EditorGUI.BeginChangeCheck();
+                    assetProp.objectReferenceValue = EditorGUI.ObjectField(rObjField, GUIContent.none, assetProp.objectReferenceValue, typeof(SceneAsset), false);
+                    var scene = assetProp.objectReferenceValue as SceneAsset;
+                    if (EditorGUI.EndChangeCheck() || nameProp.stringValue != scene?.name)
+                    {
+                        nameProp.stringValue = (scene != null) ? scene.name : string.Empty;
+                    }
                 }
-            }
-            else
-            {
-                var rText = new Rect(rObjField.xMin, rObjField.yMin, Mathf.Max(rObjField.width - EditorHelper.OBJFIELD_DOT_WIDTH, 0f), rObjField.height);
-                var rDot = new Rect(rText.xMax, rObjField.yMin, Mathf.Min(rObjField.width - rText.width, EditorHelper.OBJFIELD_DOT_WIDTH), rObjField.height);
-                EditorGUI.BeginChangeCheck();
-                assetProp.objectReferenceValue = EditorGUI.ObjectField(rDot, GUIContent.none, assetProp.objectReferenceValue, typeof(SceneAsset), false);
-                nameProp.stringValue = EditorGUI.TextField(rText, nameProp.stringValue);
-
-
-                var ev = Event.current;
-                switch (ev.type)
+                else
                 {
-                    case EventType.DragUpdated:
-                    case EventType.DragPerform:
-                        if (totalPos.Contains(ev.mousePosition))
-                        {
-                            var scene = DragAndDrop.objectReferences.FirstOrDefault((o) => o is SceneAsset) as SceneAsset;
-                            DragAndDrop.visualMode = scene != null ? DragAndDropVisualMode.Link : DragAndDropVisualMode.Rejected;
+                    var rText = new Rect(rObjField.xMin, rObjField.yMin, Mathf.Max(rObjField.width - EditorHelper.OBJFIELD_DOT_WIDTH, 0f), rObjField.height);
+                    var rDot = new Rect(rText.xMax, rObjField.yMin, Mathf.Min(rObjField.width - rText.width, EditorHelper.OBJFIELD_DOT_WIDTH), rObjField.height);
+                    EditorGUI.BeginChangeCheck();
+                    assetProp.objectReferenceValue = EditorGUI.ObjectField(rDot, GUIContent.none, assetProp.objectReferenceValue, typeof(SceneAsset), false);
+                    nameProp.stringValue = EditorGUI.TextField(rText, nameProp.stringValue);
 
-                            if (scene != null && ev.type == EventType.DragPerform)
+
+                    var ev = Event.current;
+                    switch (ev.type)
+                    {
+                        case EventType.DragUpdated:
+                        case EventType.DragPerform:
+                            if (totalPos.Contains(ev.mousePosition))
                             {
-                                assetProp.objectReferenceValue = scene;
-                                nameProp.stringValue = scene.name;
+                                var scene = DragAndDrop.objectReferences.FirstOrDefault((o) => o is SceneAsset) as SceneAsset;
+                                DragAndDrop.visualMode = scene != null ? DragAndDropVisualMode.Link : DragAndDropVisualMode.Rejected;
+
+                                if (scene != null && ev.type == EventType.DragPerform)
+                                {
+                                    assetProp.objectReferenceValue = scene;
+                                    nameProp.stringValue = scene.name;
+                                }
                             }
-                        }
-                        break;
+                            break;
+                    }
                 }
-            }
 
-            var rBtn = new Rect(rObjField.xMax, position.yMin, Mathf.Min(TOGGLE_WIDTH, position.width - rObjField.width), EditorGUIUtility.singleLineHeight);
-            if (GUI.Button(rBtn, "X"))
+                var rBtn = new Rect(rObjField.xMax, position.yMin, Mathf.Min(TOGGLE_WIDTH, position.width - rObjField.width), EditorGUIUtility.singleLineHeight);
+                if (GUI.Button(rBtn, "X"))
+                {
+                    assetProp.objectReferenceValue = null;
+                    nameProp.stringValue = string.Empty;
+                }
+
+                EditorGUI.EndProperty();
+            }
+            finally
             {
-                assetProp.objectReferenceValue = null;
-                nameProp.stringValue = string.Empty;
+                EditorHelper.ResumeIndentLevel();
             }
 
-            EditorGUI.EndProperty();
         }
 
     }

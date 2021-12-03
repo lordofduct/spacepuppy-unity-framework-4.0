@@ -82,7 +82,7 @@ namespace com.spacepuppy
         {
             if (_searchBy == SearchBy.Nothing)
             {
-                return (_target is IProxy) ? (_target as IProxy).GetTarget() : _target;
+                return (_target is IProxy) ? _target.ReduceIfProxy() : _target;
             }
             else
             {
@@ -94,7 +94,7 @@ namespace com.spacepuppy
         {
             if (_searchBy == SearchBy.Nothing)
             {
-                return new object[] { (_target is IProxy) ? (_target as IProxy).GetTarget() : _target };
+                return new object[] { (_target is IProxy) ? _target.ReduceIfProxy() : _target };
             }
             else
             {
@@ -144,6 +144,16 @@ namespace com.spacepuppy
         object IProxy.GetTarget(object arg)
         {
             return this.GetTarget();
+        }
+
+        public object GetTargetAs(System.Type tp)
+        {
+            return ObjUtil.GetAsFromSource(tp, this.GetTarget());
+        }
+
+        object IProxy.GetTargetAs(System.Type tp, object arg)
+        {
+            return ObjUtil.GetAsFromSource(tp, this.GetTarget());
         }
 
         public System.Type GetTargetType()
@@ -242,6 +252,16 @@ namespace com.spacepuppy
                 if (_componentTypeOnTarget == null) return null;
                 return _target.GetTarget(_componentTypeOnTarget.Type ?? typeof(UnityEngine.Object), arg) as UnityEngine.Object;
             }
+        }
+
+        public object GetTargetAs(System.Type tp)
+        {
+            return ObjUtil.GetAsFromSource(tp, this.GetTarget());
+        }
+
+        public object GetTargetAs(System.Type tp, object arg)
+        {
+            return ObjUtil.GetAsFromSource(tp, this.GetTarget(arg));
         }
 
         public System.Type GetTargetType()

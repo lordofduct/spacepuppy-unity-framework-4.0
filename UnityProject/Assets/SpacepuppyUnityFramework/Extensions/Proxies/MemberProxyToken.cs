@@ -69,7 +69,9 @@ namespace com.spacepuppy
 
             var obj = ObjUtil.ReduceIfProxy(_target);
             if (obj == null)
+            {
                 return default(T);
+            }
             else
             {
                 var result = DynamicUtil.GetValue(_target, _memberName);
@@ -111,6 +113,17 @@ namespace com.spacepuppy
         {
             return this.GetValue();
         }
+
+        object IProxy.GetTargetAs(System.Type tp)
+        {
+            return ObjUtil.GetAsFromSource(tp, this.GetValue());
+        }
+
+        object IProxy.GetTargetAs(System.Type tp, object arg)
+        {
+            return ObjUtil.GetAsFromSource(tp, this.GetValue());
+        }
+
 
         public System.Type GetTargetType()
         {
@@ -213,6 +226,16 @@ namespace com.spacepuppy
         object IProxy.GetTarget(object arg)
         {
             return _target.GetValue();
+        }
+
+        object IProxy.GetTargetAs(System.Type tp)
+        {
+            return ObjUtil.GetAsFromSource(tp, _target.GetValue());
+        }
+
+        object IProxy.GetTargetAs(System.Type tp, object arg)
+        {
+            return ObjUtil.GetAsFromSource(tp, _target.GetValue());
         }
 
         System.Type IProxy.GetTargetType()

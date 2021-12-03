@@ -76,7 +76,7 @@ namespace com.spacepuppy.SPInput
 
         private ButtonState _current;
         private ButtonState _currentFixed;
-        private float _lastDown;
+        private double _lastDown;
 
         #region CONSTRUCTOR
 
@@ -126,7 +126,7 @@ namespace com.spacepuppy.SPInput
             }
         }
 
-        public float LastDownTime
+        public double LastDownTime
         {
             get { return _lastDown; }
         }
@@ -148,7 +148,7 @@ namespace com.spacepuppy.SPInput
             _current = InputUtil.GetNextButtonState(_current, down);
 
             if (_current == ButtonState.Down)
-                _lastDown = Time.realtimeSinceStartup;
+                _lastDown = Time.unscaledTimeAsDouble;
         }
 
         public override void FixedUpdate()
@@ -174,7 +174,7 @@ namespace com.spacepuppy.SPInput
 
             _current = ButtonState.None;
             _currentFixed = ButtonState.None;
-            _lastDown = 0f;
+            _lastDown = 0d;
         }
 
     }

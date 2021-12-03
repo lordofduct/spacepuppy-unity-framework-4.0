@@ -14,6 +14,7 @@ namespace com.spacepuppy.Cameras
         #region Static Interface
 
         private static HashSet<ICamera> _cameras = new HashSet<ICamera>();
+        private static ICamera _main;
 
         #endregion
 
@@ -35,11 +36,37 @@ namespace com.spacepuppy.Cameras
             {
                 var manager = Services.Get<ICameraManager>();
                 if (manager != null)
+                {
+                    _main = null;
                     return manager.Main;
+                }
+
+                if(_main != null)
+                {
+                    if(ObjUtil.IsNullOrDestroyed(_main.camera))
+                    {
+                        _main = null;
+                    }
+                    else
+                    {
+                        return _main;
+                    }
+                }
 
                 var cam = Camera.main;
                 if (cam != null)
-                    return cam.AddOrGetComponent<UnityCamera>();
+                {
+                    _main = cam.GetComponent<ICamera>();
+                    if (_main != null)
+                    {
+                        return _main;
+                    }
+
+                    var ucam = cam.AddComponent<UnityCamera>();
+                    ucam.camera = cam;
+                    _main = ucam;
+                    return _main;
+                }
 
                 return null;
             }
@@ -47,7 +74,14 @@ namespace com.spacepuppy.Cameras
             {
                 var manager = Services.Get<ICameraManager>();
                 if (manager != null)
+                {
                     manager.Main = value;
+                    _main = null;
+                }
+                else
+                {
+                    _main = value;
+                }
             }
         }
 

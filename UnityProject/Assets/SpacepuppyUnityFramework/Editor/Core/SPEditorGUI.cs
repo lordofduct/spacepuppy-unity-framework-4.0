@@ -749,18 +749,26 @@ namespace com.spacepuppyeditor
             if (index == options.Length)
             {
                 position = EditorGUI.PrefixLabel(position, EditorHelper.TempContent(label));
+                EditorHelper.SuppressIndentLevel();
 
-                float w = Mathf.Min(position.width, 20f);
-                var r0 = new Rect(position.xMin, position.yMin, position.width - w, EditorGUIUtility.singleLineHeight);
-                var r1 = new Rect(r0.xMax, position.yMin, w, EditorGUIUtility.singleLineHeight);
-
-                value = EditorGUI.TextField(r0, label, value);
-                index = EditorGUI.Popup(r1, index, guiOptions);
-                if (index >= 0 && index < options.Length)
+                try
                 {
-                    value = options[index];
+                    float w = Mathf.Min(position.width, 20f);
+                    var r0 = new Rect(position.xMin, position.yMin, position.width - w, EditorGUIUtility.singleLineHeight);
+                    var r1 = new Rect(r0.xMax, position.yMin, w, EditorGUIUtility.singleLineHeight);
+
+                    value = EditorGUI.TextField(r0, label, value);
+                    index = EditorGUI.Popup(r1, index, guiOptions);
+                    if (index >= 0 && index < options.Length)
+                    {
+                        value = options[index];
+                    }
+                    return value;
                 }
-                return value;
+                finally
+                {
+                    EditorHelper.ResumeIndentLevel();
+                }
             }
             else
             {
@@ -781,18 +789,28 @@ namespace com.spacepuppyeditor
             if (index == options.Length)
             {
                 position = EditorGUI.PrefixLabel(position, label);
+                EditorHelper.SuppressIndentLevel();
 
-                float w = Mathf.Min(position.width, 20f);
-                var r0 = new Rect(position.xMin, position.yMin, position.width - w, EditorGUIUtility.singleLineHeight);
-                var r1 = new Rect(r0.xMax, position.yMin, w, EditorGUIUtility.singleLineHeight);
-
-                value = EditorGUI.DelayedTextField(r0, value);
-                index = EditorGUI.Popup(r1, index, guiOptions);
-                if (index >= 0 && index < options.Length)
+                try
                 {
-                    value = options[index];
+
+                    float w = Mathf.Min(position.width, 20f);
+                    var r0 = new Rect(position.xMin, position.yMin, position.width - w, EditorGUIUtility.singleLineHeight);
+                    var r1 = new Rect(r0.xMax, position.yMin, w, EditorGUIUtility.singleLineHeight);
+
+                    value = EditorGUI.DelayedTextField(r0, value);
+                    index = EditorGUI.Popup(r1, index, guiOptions);
+                    if (index >= 0 && index < options.Length)
+                    {
+                        value = options[index];
+                    }
+
+                    return value;
                 }
-                return value;
+                finally
+                {
+                    EditorHelper.ResumeIndentLevel();
+                }
             }
             else
             {
@@ -1020,22 +1038,30 @@ namespace com.spacepuppyeditor
         public static Vector3 DelayedVector3Field(Rect position, GUIContent label, Vector3 value)
         {
             position = EditorGUI.PrefixLabel(position, label);
+            EditorHelper.SuppressIndentLevel();
 
-            const float LBL_WIDTH = 13f;
-            float w = position.width / 3f;
+            try
+            {
+                const float LBL_WIDTH = 13f;
+                float w = position.width / 3f;
 
-            EditorGUI.LabelField(new Rect(position.xMin, position.yMin, LBL_WIDTH, EditorGUIUtility.singleLineHeight), "X");
-            value.x = EditorGUI.DelayedFloatField(new Rect(position.xMin + LBL_WIDTH, position.yMin, w - LBL_WIDTH - 1f, EditorGUIUtility.singleLineHeight), value.x);
-            position = new Rect(position.xMin + w, position.yMin, position.width - w, position.height);
+                EditorGUI.LabelField(new Rect(position.xMin, position.yMin, LBL_WIDTH, EditorGUIUtility.singleLineHeight), "X");
+                value.x = EditorGUI.DelayedFloatField(new Rect(position.xMin + LBL_WIDTH, position.yMin, w - LBL_WIDTH - 1f, EditorGUIUtility.singleLineHeight), value.x);
+                position = new Rect(position.xMin + w, position.yMin, position.width - w, position.height);
 
-            EditorGUI.LabelField(new Rect(position.xMin, position.yMin, LBL_WIDTH, EditorGUIUtility.singleLineHeight), "Y");
-            value.y = EditorGUI.DelayedFloatField(new Rect(position.xMin + LBL_WIDTH, position.yMin, w - LBL_WIDTH - 1f, EditorGUIUtility.singleLineHeight), value.y);
-            position = new Rect(position.xMin + w, position.yMin, position.width - w, position.height);
+                EditorGUI.LabelField(new Rect(position.xMin, position.yMin, LBL_WIDTH, EditorGUIUtility.singleLineHeight), "Y");
+                value.y = EditorGUI.DelayedFloatField(new Rect(position.xMin + LBL_WIDTH, position.yMin, w - LBL_WIDTH - 1f, EditorGUIUtility.singleLineHeight), value.y);
+                position = new Rect(position.xMin + w, position.yMin, position.width - w, position.height);
 
-            EditorGUI.LabelField(new Rect(position.xMin, position.yMin, LBL_WIDTH, EditorGUIUtility.singleLineHeight), "Z");
-            value.z = EditorGUI.DelayedFloatField(new Rect(position.xMin + LBL_WIDTH, position.yMin, w - LBL_WIDTH - 1f, EditorGUIUtility.singleLineHeight), value.z);
+                EditorGUI.LabelField(new Rect(position.xMin, position.yMin, LBL_WIDTH, EditorGUIUtility.singleLineHeight), "Z");
+                value.z = EditorGUI.DelayedFloatField(new Rect(position.xMin + LBL_WIDTH, position.yMin, w - LBL_WIDTH - 1f, EditorGUIUtility.singleLineHeight), value.z);
 
-            return value;
+                return value;
+            }
+            finally
+            {
+                EditorHelper.ResumeIndentLevel();
+            }
         }
 
         #endregion
@@ -1147,21 +1173,29 @@ namespace com.spacepuppyeditor
         public static string FolderPathTextfield(Rect position, GUIContent label, string path, string popupTitle)
         {
             position = EditorGUI.PrefixLabel(position, label);
+            EditorHelper.SuppressIndentLevel();
 
-            float w1 = Mathf.Max(position.width - ELLIPSIS_BTN_WIDTH, 0f);
-            float w2 = Mathf.Clamp(ELLIPSIS_BTN_WIDTH, 0f, position.width - w1);
-            var r1 = new Rect(position.xMin, position.yMin, w1, EditorGUIUtility.singleLineHeight);
-            var r2 = new Rect(r1.xMax, position.yMin, w2, EditorGUIUtility.singleLineHeight);
-            path = EditorGUI.TextField(r1, path);
-            if (GUI.Button(r2, "..."))
+            try
             {
-                var result = EditorUtility.OpenFolderPanel(popupTitle, path, string.Empty);
-                if (!string.IsNullOrEmpty(result))
+                float w1 = Mathf.Max(position.width - ELLIPSIS_BTN_WIDTH, 0f);
+                float w2 = Mathf.Clamp(ELLIPSIS_BTN_WIDTH, 0f, position.width - w1);
+                var r1 = new Rect(position.xMin, position.yMin, w1, EditorGUIUtility.singleLineHeight);
+                var r2 = new Rect(r1.xMax, position.yMin, w2, EditorGUIUtility.singleLineHeight);
+                path = EditorGUI.TextField(r1, path);
+                if (GUI.Button(r2, "..."))
                 {
-                    path = result;
+                    var result = EditorUtility.OpenFolderPanel(popupTitle, path, string.Empty);
+                    if (!string.IsNullOrEmpty(result))
+                    {
+                        path = result;
+                    }
                 }
+                return path;
             }
-            return path;
+            finally
+            {
+                EditorHelper.ResumeIndentLevel();
+            }
         }
 
         public static string SaveFilePathTextfield(Rect position, string label, string path, string popupTitle, string extension)
@@ -1424,19 +1458,28 @@ namespace com.spacepuppyeditor
                 else
                 {
                     position = EditorGUI.PrefixLabel(position, label);
-                    var r0 = new Rect(position.xMin, position.yMin, position.width / 2f, position.height);
-                    var r1 = new Rect(r0.xMax, r0.yMin, position.width - r0.width, r0.height);
-                    index = EditorGUI.Popup(r0, index, entries);
-                    if (index < members.Length)
+                    EditorHelper.SuppressIndentLevel();
+
+                    try
                     {
-                        selectedMember = (index >= 0) ? members[index] : null;
-                        return (selectedMember != null) ? selectedMember.Name : null;
+                        var r0 = new Rect(position.xMin, position.yMin, position.width / 2f, position.height);
+                        var r1 = new Rect(r0.xMax, r0.yMin, position.width - r0.width, r0.height);
+                        index = EditorGUI.Popup(r0, index, entries);
+                        if (index < members.Length)
+                        {
+                            selectedMember = (index >= 0) ? members[index] : null;
+                            return (selectedMember != null) ? selectedMember.Name : null;
+                        }
+                        else
+                        {
+                            selectedMemberName = EditorGUI.TextField(r1, selectedMemberName);
+                            selectedMember = new DynamicPropertyInfo(selectedMemberName, targTp, typeof(Variant));
+                            return selectedMemberName;
+                        }
                     }
-                    else
+                    finally
                     {
-                        selectedMemberName = EditorGUI.TextField(r1, selectedMemberName);
-                        selectedMember = new DynamicPropertyInfo(selectedMemberName, targTp, typeof(Variant));
-                        return selectedMemberName;
+                        EditorHelper.ResumeIndentLevel();
                     }
                 }
             }

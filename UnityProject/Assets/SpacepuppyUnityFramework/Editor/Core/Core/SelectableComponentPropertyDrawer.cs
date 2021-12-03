@@ -102,8 +102,9 @@ namespace com.spacepuppyeditor.Core
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             position = EditorGUI.PrefixLabel(position, label);
-
+            EditorHelper.SuppressIndentLevel();
             this.OnGUI(position, property);
+            EditorHelper.ResumeIndentLevel();
         }
 
         public void OnGUI(Rect position, SerializedProperty property)

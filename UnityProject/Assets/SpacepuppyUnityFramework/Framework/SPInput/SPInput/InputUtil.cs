@@ -150,19 +150,7 @@ namespace com.spacepuppy.SPInput
             var sig = device.GetSignature(id) as IButtonInputSignature;
             if (sig == null) return ButtonPress.None;
 
-            switch (sig.CurrentState)
-            {
-                case ButtonState.Released:
-                    return (Time.realtimeSinceStartup - sig.LastDownTime) <= duration ? ButtonPress.Tapped : ButtonPress.Released;
-                case ButtonState.None:
-                    return ButtonPress.None;
-                case ButtonState.Down:
-                    return ButtonPress.Down;
-                case ButtonState.Held:
-                    return (Time.realtimeSinceStartup - sig.LastDownTime) <= duration ? ButtonPress.Holding : ButtonPress.Held;
-                default:
-                    return ButtonPress.None;
-            }
+            return sig.CurrentState.ResolvePressState(sig.LastDownTime, duration);
         }
 
         public static ButtonPress GetButtonPress<T>(this IMappedInputDevice<T> device, T id, float duration) where T : struct, System.IConvertible
@@ -172,16 +160,28 @@ namespace com.spacepuppy.SPInput
             var sig = device.GetSignature(id) as IButtonInputSignature;
             if (sig == null) return ButtonPress.None;
 
-            switch (sig.CurrentState)
+            return sig.CurrentState.ResolvePressState(sig.LastDownTime, duration);
+        }
+
+        /// <summary>
+        /// Returns a ButtonPress state based on the last time the ButtonState was 'Down'.
+        /// </summary>
+        /// <param name="state">The ButtonState to resolve</param>
+        /// <param name="lastDownTime">The last time in Time.unscaledTimeAsDouble that ButtonState was 'Down'</param>
+        /// <param name="duration">The duration that counts as a 'tap/click'</param>
+        /// <returns></returns>
+        public static ButtonPress ResolvePressState(this ButtonState state, double lastDownTime, float duration)
+        {
+            switch(state)
             {
                 case ButtonState.Released:
-                    return (Time.realtimeSinceStartup - sig.LastDownTime) <= duration ? ButtonPress.Tapped : ButtonPress.Released;
+                    return (Time.unscaledTimeAsDouble - lastDownTime) <= duration ? ButtonPress.Tapped : ButtonPress.Released;
                 case ButtonState.None:
                     return ButtonPress.None;
                 case ButtonState.Down:
                     return ButtonPress.Down;
                 case ButtonState.Held:
-                    return (Time.realtimeSinceStartup - sig.LastDownTime) <= duration ? ButtonPress.Holding : ButtonPress.Held;
+                    return (Time.unscaledTimeAsDouble - lastDownTime) <= duration ? ButtonPress.Holding : ButtonPress.Held;
                 default:
                     return ButtonPress.None;
             }
@@ -194,7 +194,7 @@ namespace com.spacepuppy.SPInput
             var sig = device.GetSignature(id) as IButtonInputSignature;
             if (sig == null) return false;
 
-            return (Time.realtimeSinceStartup - sig.LastDownTime) <= duration;
+            return (Time.unscaledTimeAsDouble - sig.LastDownTime) <= duration;
         }
 
         public static bool GetButtonRecentlyDown<T>(this IMappedInputDevice<T> device, T id, float duration) where T : struct, System.IConvertible
@@ -204,7 +204,7 @@ namespace com.spacepuppy.SPInput
             var sig = device.GetSignature(id) as IButtonInputSignature;
             if (sig == null) return false;
 
-            return (Time.realtimeSinceStartup - sig.LastDownTime) <= duration;
+            return (Time.unscaledTimeAsDouble - sig.LastDownTime) <= duration;
         }
 
         public static bool GetInputIsActivated(this IInputSignature sig)

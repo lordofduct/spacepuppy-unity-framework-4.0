@@ -53,6 +53,32 @@ namespace com.spacepuppy
             return this.GetTarget();
         }
 
+        public object GetTargetAs(System.Type tp)
+        {
+            var targ = this.GetTarget() as ICamera;
+            if (TypeUtil.IsType(tp, typeof(Camera)))
+            {
+                return targ?.camera;
+            }
+            else
+            {
+                return ObjUtil.GetAsFromSource(tp, targ);
+            }
+        }
+
+        public object GetTargetAs(System.Type tp, object arg)
+        {
+            var targ = this.GetTarget() as ICamera;
+            if (TypeUtil.IsType(tp, typeof(Camera)))
+            {
+                return targ?.camera;
+            }
+            else
+            {
+                return ObjUtil.GetAsFromSource(tp, targ);
+            }
+        }
+
         public System.Type GetTargetType()
         {
             return typeof(ICamera);
@@ -85,6 +111,16 @@ namespace com.spacepuppy
         public object GetTarget(object arg)
         {
             return _proxy.GetTarget(arg);
+        }
+
+        public object GetTargetAs(System.Type tp)
+        {
+            return _proxy.GetTargetAs(tp);
+        }
+
+        public object GetTargetAs(System.Type tp, object arg)
+        {
+            return _proxy.GetTargetAs(tp, arg);
         }
 
         public System.Type GetTargetType()

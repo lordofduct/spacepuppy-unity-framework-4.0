@@ -419,6 +419,20 @@ namespace com.spacepuppy.Utils
             return obj.SanitizeRef();
         }
 
+        public static object ReduceIfProxyAs(this object obj, System.Type tp)
+        {
+            if (obj is IProxy) return (obj as IProxy).GetTargetAs(tp);
+
+            return obj.SanitizeRef();
+        }
+
+        public static object ReduceIfProxyAs(this object obj, object arg, System.Type tp)
+        {
+            if (obj is IProxy) return (obj as IProxy).GetTargetAs(tp, arg);
+
+            return obj.SanitizeRef();
+        }
+
 
         public static T GetAsFromSource<T>(object obj) where T : class
         {
@@ -448,13 +462,16 @@ namespace com.spacepuppy.Utils
 
         public static bool GetAsFromSource<T>(object obj, out T result, bool respectProxy = false) where T : class
         {
-            obj = obj.SanitizeRef();
             result = null;
-            if (obj == null) return false;
 
             if (respectProxy && obj is IProxy)
             {
-                obj = (obj as IProxy).GetTarget();
+                obj = obj.ReduceIfProxyAs(typeof(T));
+                if (obj == null) return false;
+            }
+            else
+            {
+                obj = obj.SanitizeRef();
                 if (obj == null) return false;
             }
 
@@ -532,13 +549,16 @@ namespace com.spacepuppy.Utils
 
         public static bool GetAsFromSource(System.Type tp, object obj, out object result, bool respectProxy = false)
         {
-            obj = obj.SanitizeRef();
             result = null;
-            if (obj == null) return false;
 
             if (respectProxy && obj is IProxy)
             {
-                obj = (obj as IProxy).GetTarget();
+                obj = obj.ReduceIfProxyAs(tp);
+                if (obj == null) return false;
+            }
+            else
+            {
+                obj = obj.SanitizeRef();
                 if (obj == null) return false;
             }
 
@@ -590,12 +610,14 @@ namespace com.spacepuppy.Utils
 
         public static T GetAsFromSource<T>(object obj, bool respectProxy) where T : class
         {
-            obj = obj.SanitizeRef();
-            if (obj == null) return null;
-
             if (respectProxy && obj is IProxy)
             {
-                obj = (obj as IProxy).GetTarget();
+                obj = obj.ReduceIfProxyAs(typeof(T));
+                if (obj == null) return null;
+            }
+            else
+            {
+                obj = obj.SanitizeRef();
                 if (obj == null) return null;
             }
 
@@ -623,12 +645,14 @@ namespace com.spacepuppy.Utils
 
         public static object GetAsFromSource(System.Type tp, object obj, bool respectProxy)
         {
-            obj = obj.SanitizeRef();
-            if (obj == null) return null;
-
             if (respectProxy && obj is IProxy)
             {
-                obj = (obj as IProxy).GetTarget();
+                obj = obj.ReduceIfProxyAs(tp);
+                if (obj == null) return null;
+            }
+            else
+            {
+                obj = obj.SanitizeRef();
                 if (obj == null) return null;
             }
 

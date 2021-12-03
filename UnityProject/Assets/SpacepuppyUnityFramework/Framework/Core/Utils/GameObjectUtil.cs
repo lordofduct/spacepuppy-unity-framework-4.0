@@ -22,7 +22,7 @@ namespace com.spacepuppy.Utils
         {
             if (respectProxy && obj is IProxy)
             {
-                obj = (obj as IProxy).GetTarget();
+                obj = obj.ReduceIfProxy();
                 if (obj == null) return false;
             }
 
@@ -35,7 +35,7 @@ namespace com.spacepuppy.Utils
 
             if (respectProxy && obj is IProxy)
             {
-                obj = (obj as IProxy).GetTarget();
+                obj = obj.ReduceIfProxyAs(typeof(GameObject));
                 if (obj == null) return null;
             }
 
@@ -55,7 +55,7 @@ namespace com.spacepuppy.Utils
 
             if (respectProxy && obj is IProxy)
             {
-                obj = (obj as IProxy).GetTarget();
+                obj = obj.ReduceIfProxyAs(typeof(Transform));
                 if (obj.IsNullOrDestroyed()) return null;
             }
 
@@ -77,7 +77,7 @@ namespace com.spacepuppy.Utils
 
             if (respectProxy && obj is IProxy)
             {
-                obj = (obj as IProxy).GetTarget();
+                obj = obj.ReduceIfProxyAs(typeof(GameObject));
                 if (obj.IsNullOrDestroyed()) return null;
             }
 

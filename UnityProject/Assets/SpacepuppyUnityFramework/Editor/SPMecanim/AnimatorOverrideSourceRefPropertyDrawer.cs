@@ -29,15 +29,23 @@ namespace com.spacepuppyeditor.Mecanim
             if (objProp.objectReferenceValue is AnimatorOverrideController)
             {
                 position = EditorGUI.PrefixLabel(position, label);
+                EditorHelper.SuppressIndentLevel();
 
-                var nulllbl = EditorHelper.TempContent("Respect Nulls");
-                const float TREATNULLS_PAD = 5f;
-                const float TREATNULLS_WIDTH = 100f;
-                var r0 = new Rect(position.xMin, position.yMin, Mathf.Max(position.width * 0.66f, position.width - TREATNULLS_WIDTH - TREATNULLS_PAD), position.height);
-                var r1 = new Rect(r0.xMax + TREATNULLS_PAD, r0.yMin, Mathf.Max(0, position.width - r0.width - TREATNULLS_PAD), r0.height);
+                try
+                {
+                    var nulllbl = EditorHelper.TempContent("Respect Nulls");
+                    const float TREATNULLS_PAD = 5f;
+                    const float TREATNULLS_WIDTH = 100f;
+                    var r0 = new Rect(position.xMin, position.yMin, Mathf.Max(position.width * 0.66f, position.width - TREATNULLS_WIDTH - TREATNULLS_PAD), position.height);
+                    var r1 = new Rect(r0.xMax + TREATNULLS_PAD, r0.yMin, Mathf.Max(0, position.width - r0.width - TREATNULLS_PAD), r0.height);
 
-                objProp.objectReferenceValue = SPEditorGUI.ObjectFieldX(r0, objProp.objectReferenceValue, ObjFilter, true);
-                treatNullsProp.boolValue = EditorGUI.ToggleLeft(r1, nulllbl, treatNullsProp.boolValue);
+                    objProp.objectReferenceValue = SPEditorGUI.ObjectFieldX(r0, objProp.objectReferenceValue, ObjFilter, true);
+                    treatNullsProp.boolValue = EditorGUI.ToggleLeft(r1, nulllbl, treatNullsProp.boolValue);
+                }
+                finally
+                {
+                    EditorHelper.ResumeIndentLevel();
+                }
             }
             else
             {

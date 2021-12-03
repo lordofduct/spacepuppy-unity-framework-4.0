@@ -127,7 +127,7 @@ namespace com.spacepuppyeditor.Core
             const float WEIGHT_FIELD_WIDTH = 60f;
             const float PERC_FIELD_WIDTH = 45f;
             const float FULLWEIGHT_WIDTH = WEIGHT_FIELD_WIDTH + PERC_FIELD_WIDTH;
-
+            
             Rect valueRect;
             if (area.width > FULLWEIGHT_WIDTH)
             {
@@ -140,6 +140,8 @@ namespace com.spacepuppyeditor.Core
                 float weight = weightProp.floatValue;
 
                 EditorGUI.LabelField(labelRect, label);
+                EditorHelper.SuppressIndentLevel();
+
                 weightProp.floatValue = EditorGUI.FloatField(weightRect, weight);
                 float p = (_totalWeight > 0f) ? (100f * weight / _totalWeight) : ((elementIndex == 0) ? 100f : 0f);
                 EditorGUI.LabelField(percRect, string.Format("{0:0.#}%", p));
@@ -151,9 +153,11 @@ namespace com.spacepuppyeditor.Core
                 var labelRect = new Rect(area.xMin, top, area.width, EditorGUIUtility.singleLineHeight);
 
                 valueRect = EditorGUI.PrefixLabel(labelRect, label);
+                EditorHelper.SuppressIndentLevel();
             }
 
             this.DrawElementValue(valueRect, element, label, elementIndex);
+            EditorHelper.ResumeIndentLevel();
         }
 
         protected virtual void DrawElementValue(Rect area, SerializedProperty element, GUIContent label, int elementIndex)

@@ -65,21 +65,29 @@ namespace com.spacepuppyeditor.Project
             //draw label with odds
             var label = EditorHelper.TempContent("Element " + index.ToString("00"));
             var area = EditorGUI.PrefixLabel(labelRect, label);
+            EditorHelper.SuppressIndentLevel();
 
-            const float WEIGHT_FIELD_WIDTH = 60f;
-            const float PERC_FIELD_WIDTH = 45f;
-            const float FULLWEIGHT_WIDTH = WEIGHT_FIELD_WIDTH + PERC_FIELD_WIDTH;
-            var weightRect = new Rect(area.xMax - FULLWEIGHT_WIDTH, area.yMin, WEIGHT_FIELD_WIDTH, EditorGUIUtility.singleLineHeight);
-            var percRect = new Rect(area.xMax - PERC_FIELD_WIDTH, area.yMin, PERC_FIELD_WIDTH, EditorGUIUtility.singleLineHeight);
-            if (index >= _weightsProp.arraySize) _weightsProp.arraySize = index + 1;
+            try
+            {
+                const float WEIGHT_FIELD_WIDTH = 60f;
+                const float PERC_FIELD_WIDTH = 45f;
+                const float FULLWEIGHT_WIDTH = WEIGHT_FIELD_WIDTH + PERC_FIELD_WIDTH;
+                var weightRect = new Rect(area.xMax - FULLWEIGHT_WIDTH, area.yMin, WEIGHT_FIELD_WIDTH, EditorGUIUtility.singleLineHeight);
+                var percRect = new Rect(area.xMax - PERC_FIELD_WIDTH, area.yMin, PERC_FIELD_WIDTH, EditorGUIUtility.singleLineHeight);
+                if (index >= _weightsProp.arraySize) _weightsProp.arraySize = index + 1;
 
-            var weightsProp = _weightsProp.GetArrayElementAtIndex(index);
-            weightsProp.floatValue = EditorGUI.FloatField(weightRect, weightsProp.floatValue);
-            float p = (_totalOdds > 0f) ? (100f * weightsProp.floatValue / _totalOdds) : ((index == 0) ? 100f : 0f);
-            EditorGUI.LabelField(percRect, string.Format("{0:0.#}%", p));
+                var weightsProp = _weightsProp.GetArrayElementAtIndex(index);
+                weightsProp.floatValue = EditorGUI.FloatField(weightRect, weightsProp.floatValue);
+                float p = (_totalOdds > 0f) ? (100f * weightsProp.floatValue / _totalOdds) : ((index == 0) ? 100f : 0f);
+                EditorGUI.LabelField(percRect, string.Format("{0:0.#}%", p));
 
-            //draw text
-            element.stringValue = EditorGUI.TextArea(textRect, element.stringValue);
+                //draw text
+                element.stringValue = EditorGUI.TextArea(textRect, element.stringValue);
+            }
+            finally
+            {
+                EditorHelper.ResumeIndentLevel();
+            }
         }
 
     }

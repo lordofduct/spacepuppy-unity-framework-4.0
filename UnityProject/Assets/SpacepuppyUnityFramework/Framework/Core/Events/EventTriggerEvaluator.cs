@@ -65,7 +65,7 @@ namespace com.spacepuppy.Events
 
         public void GetAllTriggersOnTarget(object target, List<ITriggerable> outputColl)
         {
-            if (target is IProxy) target = (target as IProxy).GetTarget();
+            if (target is IProxy) target = target.ReduceIfProxy();
             var go = GameObjectUtil.GetGameObjectFromSource(target);
             if (go != null)
             {
@@ -77,7 +77,7 @@ namespace com.spacepuppy.Events
 
         public void TriggerAllOnTarget(object target, object sender, object arg)
         {
-            if (target is IProxy) target = (target as IProxy).GetTarget();
+            if (target is IProxy) target = target.ReduceIfProxy();
             var go = GameObjectUtil.GetGameObjectFromSource(target);
             if (go != null)
             {
@@ -101,7 +101,7 @@ namespace com.spacepuppy.Events
 
         public void TriggerSelectedTarget(object target, object sender, object arg)
         {
-            if (target is IProxy) target = (target as IProxy).GetTarget();
+            if (target is IProxy) target = target.ReduceIfProxy();
             if (target != null && target is ITriggerable)
             {
                 var t = target as ITriggerable;
@@ -120,7 +120,7 @@ namespace com.spacepuppy.Events
 
         public void CallMethodOnSelectedTarget(object target, string methodName, VariantReference[] methodArgs)
         {
-            if (target is IProxy) target = (target as IProxy).GetTarget();
+            if (target is IProxy) target = target.ReduceIfProxy();
             if (methodName != null)
             {
                 //CallMethod does not support using the passed in arg
@@ -149,7 +149,7 @@ namespace com.spacepuppy.Events
 
         public void EnableTarget(object target, EnableMode mode)
         {
-            if (target is IProxy) target = (target as IProxy).GetTarget();
+            if (target is IProxy) target = target.ReduceIfProxy();
 
             if (target is Component c && IsEnableableComponent(c))
             {
@@ -189,7 +189,7 @@ namespace com.spacepuppy.Events
 
         public void DestroyTarget(object target)
         {
-            if (target is IProxy) target = (target as IProxy).GetTarget();
+            if (target is IProxy) target = target.ReduceIfProxy();
             var go = GameObjectUtil.GetGameObjectFromSource(target);
             if (go != null)
             {

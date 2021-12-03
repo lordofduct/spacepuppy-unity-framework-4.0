@@ -290,7 +290,7 @@ namespace com.spacepuppyeditor.Anim
 
         private static void GetAnimationIds(List<string> results, object animator)
         {
-            if (animator is IProxy) animator = (animator as IProxy).GetTarget();
+            if (animator is IProxy) animator = animator.ReduceIfProxy();
             if (animator == null) return;
 
             if (animator is Animation)

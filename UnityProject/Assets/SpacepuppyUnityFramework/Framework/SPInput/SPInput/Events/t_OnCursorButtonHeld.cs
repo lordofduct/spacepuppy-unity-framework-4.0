@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -9,8 +9,8 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.SPInput.Events
 {
 
-    [Infobox("Requires a CursorInputLogic to be configured. This is usually part of the InputManager.")]
-    public class t_OnCursorClick : TriggerComponent, CursorInputLogic.IClickHandler
+    [Infobox("Requires a CursorInputLogic to be configured. This is usually part of the InputManager.\r\n\r\nThis occurs if the cursor button is pressed and not released within the ClickTimeout.")]
+    public class t_OnCursorHeld : TriggerComponent, CursorInputLogic.ICursorButtonHeldHandler
     {
 
         #region Fields
@@ -18,10 +18,6 @@ namespace com.spacepuppy.SPInput.Events
         [SerializeField]
         [Tooltip("Populate with the Id of the CursorFilterLogic if you want to filter for only a specific input. Otherwise leave blank to receive all clicks.")]
         private string _cursorInputLogicFilter;
-
-        [SerializeField]
-        [Tooltip("If CursorInputLogic is configure to dispatch OnClick always, this allows you to ignore it if it was a double click.")]
-        private bool _ignoreDoubleClick;
 
         #endregion
 
@@ -33,19 +29,12 @@ namespace com.spacepuppy.SPInput.Events
             set => _cursorInputLogicFilter = value;
         }
 
-        public bool IgnoreDoubleClick
-        {
-            get => _ignoreDoubleClick;
-            set => _ignoreDoubleClick = value;
-        }
-
         #endregion
 
         #region IClickHandler Interface
 
-        void CursorInputLogic.IClickHandler.OnClick(CursorInputLogic sender, Collider c)
+        void CursorInputLogic.ICursorButtonHeldHandler.OnButtonHeld(CursorInputLogic sender, Collider c)
         {
-            if (_ignoreDoubleClick && (sender?.LastClickWasDoubleClick ?? false)) return;
             if (!string.IsNullOrEmpty(_cursorInputLogicFilter) && sender?.Id != _cursorInputLogicFilter) return;
 
             this.ActivateTrigger();
@@ -54,5 +43,4 @@ namespace com.spacepuppy.SPInput.Events
         #endregion
 
     }
-
 }

@@ -7,3 +7,28 @@
 
 #ignore temp files
 **/.~lock.*
+
+#ignore unnecessary meta files
+/Framework.meta
+/Framework/com.spacepuppy.waypoints.meta
+/Framework/com.spacepeuppy.ai.meta
+/Framework/com.spacepuppy.agastarextensions.meta
+/Framework/com.spacepuppy.anim.meta
+/Framework/com.spacepuppy.audio.meta
+/Framework/com.spacepuppy.camera.meta
+/Framework/com.spacepuppy.core.meta
+/Framework/com.spacepuppy.extensions.meta
+/Framework/com.spacepuppy.geom.meta
+/Framework/com.spacepuppy.input.meta
+/Framework/com.spacepuppy.mecanim.meta
+/Framework/com.spacepuppy.motor.meta
+/Framework/com.spacepuppy.pathfinding.meta
+/Framework/com.spacepuppy.pathfindingmotor.meta
+/Framework/com.spacepuppy.radicalcoroutine.meta
+/Framework/com.spacepuppy.scenes.meta
+/Framework/com.spacepuppy.sensors.meta
+/Framework/com.spacepuppy.serialization.meta
+/Framework/com.spacepuppy.spawn.meta
+/Framework/com.spacepuppy.statemachine.meta
+/Framework/com.spacepuppy.triggers.meta
+/Framework/com.spacepuppy.tween.meta

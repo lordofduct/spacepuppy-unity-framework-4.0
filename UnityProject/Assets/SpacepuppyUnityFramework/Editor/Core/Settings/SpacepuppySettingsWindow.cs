@@ -178,7 +178,16 @@ namespace com.spacepuppyeditor.Settings
 
             GUILayout.EndVertical();
 
+            /*
+             * Defines
+             */
 
+            GUILayout.BeginVertical("Enable Defines", boxStyle);
+            EditorGUILayout.Space();
+
+            EditorGUILayout.LabelField("Spacepuppy Extensions support various packages, but it doesn't know if they're installed since Unity does not supply compiler defines for them. Here you can enable defines that add support in Spacepuppy for them.");
+
+            GUILayout.EndVertical();
 
 
             EditorGUILayout.Space();

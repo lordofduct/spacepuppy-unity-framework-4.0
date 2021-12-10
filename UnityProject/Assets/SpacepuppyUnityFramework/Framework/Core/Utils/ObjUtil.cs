@@ -433,6 +433,18 @@ namespace com.spacepuppy.Utils
             return obj.SanitizeRef();
         }
 
+        public static object FilterAsProxyOrType<T>(object obj, bool assertProxyTargetTypeMatches = false)
+        {
+            if (obj is T) return obj;
+
+            var p = obj as IProxy;
+            if (p == null) return null;
+
+            if (assertProxyTargetTypeMatches && !TypeUtil.IsType(p.GetTargetType(), typeof(T))) return null;
+
+            return p;
+        }
+
 
         public static T GetAsFromSource<T>(object obj) where T : class
         {

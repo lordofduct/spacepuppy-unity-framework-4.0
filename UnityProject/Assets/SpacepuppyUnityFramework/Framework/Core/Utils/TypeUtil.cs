@@ -1,37 +1,81 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 namespace com.spacepuppy.Utils
 {
     public static class TypeUtil
     {
 
-        public static IEnumerable<Type> GetTypes(System.Func<System.Type, bool> predicate = null)
+        #region Static Fields
+
+        private static readonly Assembly ASSEMB_UNITY = typeof(UnityEngine.Object).Assembly;
+        private static readonly Assembly[] PREFERRED_ASSEMBLIES;
+
+        #endregion
+
+        #region Static Constructor
+
+        static TypeUtil()
         {
-            foreach (var assemb in System.AppDomain.CurrentDomain.GetAssemblies())
+            using(var lst = com.spacepuppy.Collections.TempCollection.GetList<Assembly>())
             {
-                foreach (var tp in assemb.GetTypes())
+                lst.Add(typeof(UnityEngine.Object).Assembly);
+
+                foreach(var assemb in AppDomain.CurrentDomain.GetAssemblies())
                 {
-                    if (predicate == null || predicate(tp)) yield return tp;
+                    if(assemb.FullName.StartsWith("com.spacepuppy."))
+                    {
+                        lst.Add(assemb);
+                    }
+                    else if(assemb.FullName == "Assembly-CSharp")
+                    {
+                        lst.Add(assemb);
+                    }
                 }
+
+                PREFERRED_ASSEMBLIES = lst.ToArray();
+            }
+        }
+
+        #endregion
+
+        public static IEnumerable<Type> GetTypes()
+        {
+            foreach (var assemb in PREFERRED_ASSEMBLIES)
+            {
+                foreach (var tp in assemb.DefinedTypes)
+                {
+                    yield return tp;
+                }
+            }
+
+            foreach (var assemb in AppDomain.CurrentDomain.GetAssemblies().Except(PREFERRED_ASSEMBLIES))
+            {
+                foreach (var tp in assemb.DefinedTypes)
+                {
+                    yield return tp;
+                }
+            }
+        }
+
+        public static IEnumerable<Type> GetTypes(System.Func<System.Type, bool> predicate)
+        {
+            foreach(var tp in GetTypes())
+            {
+                if (predicate?.Invoke(tp) ?? true) yield return tp;
             }
         }
 
         public static IEnumerable<Type> GetTypesAssignableFrom(System.Type rootType)
         {
-            foreach (var assemb in System.AppDomain.CurrentDomain.GetAssemblies())
-            {
-                foreach (var tp in assemb.GetTypes())
-                {
-                    if (rootType.IsAssignableFrom(tp)) yield return tp;
-                }
-            }
+            return GetTypes(t => rootType.IsAssignableFrom(t));
         }
 
         public static IEnumerable<Type> GetTypesAssignableFrom(System.Reflection.Assembly assemb, System.Type rootType)
         {
-            foreach (var tp in assemb.GetTypes())
+            foreach (var tp in assemb.DefinedTypes)
             {
                 if (rootType.IsAssignableFrom(tp) && rootType != tp) yield return tp;
             }
@@ -123,33 +167,27 @@ namespace com.spacepuppy.Utils
             StringComparison e = (ignoreCase) ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
             if (useFullName)
             {
-                foreach (var assemb in System.AppDomain.CurrentDomain.GetAssemblies())
+                foreach (var t in GetTypes())
                 {
-                    foreach (var t in assemb.GetTypes())
+                    if (string.Equals(t.FullName, typeName, e))
                     {
-                        if (string.Equals(t.FullName, typeName, e))
-                        {
-                            if (isArray)
-                                return t.MakeArrayType();
-                            else
-                                return t;
-                        }
+                        if (isArray)
+                            return t.MakeArrayType();
+                        else
+                            return t;
                     }
                 }
             }
             else
             {
-                foreach (var assemb in System.AppDomain.CurrentDomain.GetAssemblies())
+                foreach (var t in GetTypes())
                 {
-                    foreach (var t in assemb.GetTypes())
+                    if (string.Equals(t.Name, typeName, e) || string.Equals(t.FullName, typeName, e))
                     {
-                        if (string.Equals(t.Name, typeName, e) || string.Equals(t.FullName, typeName, e))
-                        {
-                            if (isArray)
-                                return t.MakeArrayType();
-                            else
-                                return t;
-                        }
+                        if (isArray)
+                            return t.MakeArrayType();
+                        else
+                            return t;
                     }
                 }
             }
@@ -168,33 +206,27 @@ namespace com.spacepuppy.Utils
             StringComparison e = (ignoreCase) ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
             if(useFullName)
             {
-                foreach (var assemb in System.AppDomain.CurrentDomain.GetAssemblies())
+                foreach (var t in GetTypes())
                 {
-                    foreach (var t in assemb.GetTypes())
+                    if (baseType.IsAssignableFrom(t) && string.Equals(t.FullName, typeName, e))
                     {
-                        if (baseType.IsAssignableFrom(t) && string.Equals(t.FullName, typeName, e))
-                        {
-                            if (isArray)
-                                return t.MakeArrayType();
-                            else
-                                return t;
-                        }
+                        if (isArray)
+                            return t.MakeArrayType();
+                        else
+                            return t;
                     }
                 }
             }
             else
             {
-                foreach (var assemb in System.AppDomain.CurrentDomain.GetAssemblies())
+                foreach (var t in GetTypes())
                 {
-                    foreach (var t in assemb.GetTypes())
+                    if (baseType.IsAssignableFrom(t) && (string.Equals(t.Name, typeName, e) || string.Equals(t.FullName, typeName, e)))
                     {
-                        if (baseType.IsAssignableFrom(t) && (string.Equals(t.Name, typeName, e) || string.Equals(t.FullName, typeName, e)))
-                        {
-                            if (isArray)
-                                return t.MakeArrayType();
-                            else
-                                return t;
-                        }
+                        if (isArray)
+                            return t.MakeArrayType();
+                        else
+                            return t;
                     }
                 }
             }

@@ -5,12 +5,12 @@ using System.Linq;
 using com.spacepuppy;
 using com.spacepuppy.Events;
 using com.spacepuppy.Utils;
+using UnityEngine.EventSystems;
 
 namespace com.spacepuppy.SPInput.Events
 {
 
-    [Infobox("Requires a CursorInputLogic to be configured. This is usually part of the InputManager.")]
-    public class t_OnCursorHover : SPComponent, CursorInputLogic.ICursorEnterHandler, CursorInputLogic.ICursorExitHandler, IObservableTrigger
+    public class t_OnCursorHover : SPComponent, CursorInputLogic.ICursorEnterHandler, CursorInputLogic.ICursorExitHandler, UnityEngine.EventSystems.IPointerEnterHandler, UnityEngine.EventSystems.IPointerExitHandler, IObservableTrigger
     {
 
         #region Fields
@@ -21,17 +21,16 @@ namespace com.spacepuppy.SPInput.Events
         private SPEvent _onExit = new SPEvent("OnExit");
 
         [SerializeField]
-        [Tooltip("Populate with the Id of the CursorFilterLogic if you want to filter for only a specific input. Otherwise leave blank to receive all clicks.")]
-        private string _cursorInputLogicFilter;
+        private PointerFilter _pointerFilter;
 
         #endregion
 
         #region Properties
 
-        public string CursorInputLogicFilter
+        public PointerFilter PointerFilter
         {
-            get => _cursorInputLogicFilter;
-            set => _cursorInputLogicFilter = value;
+            get => _pointerFilter;
+            set => _pointerFilter = value;
         }
 
         public SPEvent OnEnter => _onEnter;
@@ -40,20 +39,34 @@ namespace com.spacepuppy.SPInput.Events
 
         #endregion
 
-        #region IClickHandler Interface
+        #region IPointer Interface
 
-        void CursorInputLogic.ICursorEnterHandler.OnCursorEnter(CursorInputLogic sender, Collider c)
+        void CursorInputLogic.ICursorEnterHandler.OnCursorEnter(CursorInputLogic cursor)
         {
-            if (!string.IsNullOrEmpty(_cursorInputLogicFilter) && sender?.Id != _cursorInputLogicFilter) return;
+            if (_pointerFilter != null && !_pointerFilter.IsValid(cursor)) return;
 
             _onEnter.ActivateTrigger(this, null);
         }
 
-        void CursorInputLogic.ICursorExitHandler.OnCursorExit(CursorInputLogic sender, Collider c)
+        void CursorInputLogic.ICursorExitHandler.OnCursorExit(CursorInputLogic cursor)
         {
-            if (!string.IsNullOrEmpty(_cursorInputLogicFilter) && sender?.Id != _cursorInputLogicFilter) return;
+            if (_pointerFilter != null && !_pointerFilter.IsValid(cursor)) return;
 
             _onExit.ActivateTrigger(this, null);
+        }
+
+        void UnityEngine.EventSystems.IPointerEnterHandler.OnPointerEnter(PointerEventData eventData)
+        {
+            if (_pointerFilter != null && !_pointerFilter.IsValid(eventData)) return;
+
+            _onEnter.ActivateTrigger(this, null);
+        }
+
+        void UnityEngine.EventSystems.IPointerExitHandler.OnPointerExit(PointerEventData eventData)
+        {
+            if (_pointerFilter != null && !_pointerFilter.IsValid(eventData)) return;
+
+            _onEnter.ActivateTrigger(this, null);
         }
 
         #endregion

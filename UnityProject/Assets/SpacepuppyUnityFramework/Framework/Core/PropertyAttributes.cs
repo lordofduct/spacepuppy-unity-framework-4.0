@@ -88,6 +88,17 @@ namespace com.spacepuppy
 
     #region Property Drawer Attributes
 
+    public class SerializeRefPickerAttribute : SPPropertyAttribute
+    {
+        public readonly System.Type RefType;
+        public bool AllowNull;
+
+        public SerializeRefPickerAttribute(System.Type tp)
+        {
+            this.RefType = tp;
+        }
+    }
+
     public class DisplayFlatAttribute : SPPropertyAttribute
     {
 

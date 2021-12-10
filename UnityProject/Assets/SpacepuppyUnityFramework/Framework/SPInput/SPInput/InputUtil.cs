@@ -224,6 +224,20 @@ namespace com.spacepuppy.SPInput
         }
 
 
+        public static CursorRaycastHit TestCursorOver(Camera cursorCamera, Vector2 cursorPos, float maxDistance = float.PositiveInfinity, int layerMask = Physics.AllLayers, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
+        {
+            if (cursorCamera)
+            {
+                var ray = cursorCamera.ScreenPointToRay(cursorPos);
+                RaycastHit hit;
+                if (Physics.Raycast(ray, out hit, maxDistance, layerMask, query))
+                {
+                    return (CursorRaycastHit)hit;
+                }
+            }
+
+            return default(CursorRaycastHit);
+        }
 
         public static bool TestCursorOver(Camera cursorCamera, Vector2 cursorPos, out Collider collider, float maxDistance = float.PositiveInfinity, int layerMask = Physics.AllLayers, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
         {
@@ -267,6 +281,40 @@ namespace com.spacepuppy.SPInput
             else
             {
                 hitTarget = null;
+                return false;
+            }
+        }
+
+        public static CursorRaycastHit TestCursorOver2D(Camera cursorCamera, Vector2 cursorPos, float maxDistance = float.PositiveInfinity, int layerMask = Physics.AllLayers, float minDepth = float.NegativeInfinity)
+        {
+            if(cursorCamera)
+            {
+                var hit = Physics2D.Raycast(cursorCamera.ScreenToWorldPoint(cursorPos), Vector2.zero, maxDistance, layerMask, minDepth);
+                if (hit)
+                {
+                    return (CursorRaycastHit)hit;
+                }
+            }
+            return default(CursorRaycastHit);
+        }
+
+        public static bool TestCursorOver2D(Camera cursorCamera, Vector2 cursorPos, out Collider2D collider, float maxDistance = float.PositiveInfinity, int layerMask = Physics.AllLayers, float minDepth = float.NegativeInfinity)
+        {
+            if(cursorCamera == null)
+            {
+                collider = null;
+                return false;
+            }
+
+            var hit = Physics2D.Raycast(cursorCamera.ScreenToWorldPoint(cursorPos), Vector2.zero, maxDistance, layerMask, minDepth);
+            if(hit)
+            {
+                collider = hit.collider;
+                return true;
+            }
+            else
+            {
+                collider = null;
                 return false;
             }
         }

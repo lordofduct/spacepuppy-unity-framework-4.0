@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 
 using com.spacepuppy.Collections;
+using Codice.CM.Common;
+using com.spacepuppy.Project;
 
 namespace com.spacepuppy.Utils
 {
@@ -512,6 +514,119 @@ namespace com.spacepuppy.Utils
 
         #endregion
 
+        #region Parent Component
+
+        public static bool GetComponentInParent<T>(this GameObject obj, out T comp) where T : class
+        {
+            if (obj == null)
+            {
+                comp = null;
+                return false;
+            }
+            comp = obj.GetComponentInParent<T>();
+            return ObjUtil.IsObjectAlive(comp as UnityEngine.Object);
+        }
+
+        public static bool GetComponentInParent<T>(this Component obj, out T comp) where T : class
+        {
+            if (obj == null)
+            {
+                comp = null;
+                return false;
+            }
+            comp = obj.GetComponentInParent<T>();
+            return ObjUtil.IsObjectAlive(comp as UnityEngine.Object);
+        }
+
+        public static bool GetComponentInParent<T>(this GameObject obj, out T comp, bool includeInactive) where T : class
+        {
+            if (obj == null)
+            {
+                comp = null;
+                return false;
+            }
+            comp = obj.GetComponentInParent<T>(includeInactive);
+            return ObjUtil.IsObjectAlive(comp as UnityEngine.Object);
+        }
+
+        public static bool GetComponentInParent<T>(this Component obj, out T comp, bool includeInactive) where T : class
+        {
+            if (obj == null)
+            {
+                comp = null;
+                return false;
+            }
+            comp = obj.gameObject.GetComponentInParent<T>(includeInactive);
+            return ObjUtil.IsObjectAlive(comp as UnityEngine.Object);
+        }
+
+        public static T GetComponentInParent<T>(this Component obj, bool includeInactive) where T : class
+        {
+            if (obj == null) return null;
+
+            return obj.gameObject.GetComponentInParent<T>(includeInactive);
+        }
+
+        public static T GetComponentInParent<T>(this GameObject obj, bool includeInactive, bool remainInEntity) where T : class
+        {
+            if (obj == null) return null;
+
+            if (remainInEntity)
+            {
+                var root = obj.FindRoot();
+                var p = obj.transform;
+                while (p)
+                {
+                    if (includeInactive || p.gameObject.activeSelf)
+                    {
+                        var c = p.GetComponent<T>();
+                        if (c != null) return c;
+                    }
+
+                    if (p.gameObject == root) return null;
+                    p = p.parent;
+                }
+                return null;
+            }
+            else
+            {
+                return obj.GetComponentInParent<T>(includeInactive);
+            }
+        }
+
+        public static T GetComponentInParent<T>(this Component obj, bool includeInactive, bool remainInEntity) where T : class
+        {
+            if (remainInEntity)
+            {
+                return GetComponentInParent<T>(obj.gameObject, includeInactive, remainInEntity);
+            }
+            else
+            {
+                if (obj == null) return null;
+                return obj.gameObject.GetComponentInParent<T>(includeInactive);
+            }
+        }
+
+        public static bool GetComponentInParent<T>(this GameObject obj, out T comp, bool includeInactive, bool remainInEntity) where T : class
+        {
+            comp = GetComponentInParent<T>(obj, includeInactive, remainInEntity);
+            return ObjUtil.IsObjectAlive(comp as UnityEngine.Object);
+        }
+
+        public static bool GetComponentInParent<T>(this Component obj, out T comp, bool includeInactive, bool remainInEntity) where T : class
+        {
+            if (obj == null)
+            {
+                comp = null;
+                return false;
+            }
+
+            comp = GetComponentInParent<T>(obj, includeInactive, remainInEntity);
+            return ObjUtil.IsObjectAlive(comp as UnityEngine.Object);
+        }
+
+        #endregion
+
         #region RemoveComponent
 
         public static void RemoveComponents<T>(this GameObject obj) where T : class
@@ -600,8 +715,7 @@ namespace com.spacepuppy.Utils
             if (entity != null) return entity.GetComponentInChildren<T>();
             else
             {
-                var root = go.FindRoot();
-                return root.GetComponentInChildren<T>();
+                return go.FindRoot().GetComponentInChildren<T>();
             }
         }
 

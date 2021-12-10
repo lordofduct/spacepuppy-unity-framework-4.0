@@ -9,33 +9,39 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.SPInput.Events
 {
 
-    [Infobox("Requires a CursorInputLogic to be configured. This is usually part of the InputManager.")]
-    public class t_OnCursorDoubleClick : TriggerComponent, CursorInputLogic.IDoubleClickHandler
+    public class t_OnCursorDoubleClick : TriggerComponent, CursorInputLogic.IDoubleClickHandler, UnityEngine.EventSystems.IPointerClickHandler
     {
 
         #region Fields
 
         [SerializeField]
-        [Tooltip("Populate with the Id of the CursorFilterLogic if you want to filter for only a specific input. Otherwise leave blank to receive all clicks.")]
-        private string _cursorInputLogicFilter;
+        private PointerFilter _pointerFilter;
 
         #endregion
 
         #region Properties
 
-        public string CursorInputLogicFilter
+        public PointerFilter PointerFilter
         {
-            get => _cursorInputLogicFilter;
-            set => _cursorInputLogicFilter = value;
+            get => _pointerFilter;
+            set => _pointerFilter = value;
         }
 
         #endregion
 
         #region IClickHandler Interface
 
-        void CursorInputLogic.IDoubleClickHandler.OnDoubleClick(CursorInputLogic sender, Collider c)
+        void CursorInputLogic.IDoubleClickHandler.OnDoubleClick(CursorInputLogic cursor)
         {
-            if (!string.IsNullOrEmpty(_cursorInputLogicFilter) && sender?.Id != _cursorInputLogicFilter) return;
+            if (_pointerFilter != null && !_pointerFilter.IsValid(cursor)) return;
+
+            this.ActivateTrigger();
+        }
+
+        void UnityEngine.EventSystems.IPointerClickHandler.OnPointerClick(UnityEngine.EventSystems.PointerEventData eventData)
+        {
+            if (eventData.clickCount != 2) return;
+            if (_pointerFilter != null && !_pointerFilter.IsValid(eventData)) return;
 
             this.ActivateTrigger();
         }

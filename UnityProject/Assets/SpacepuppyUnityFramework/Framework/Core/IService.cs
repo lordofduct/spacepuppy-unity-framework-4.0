@@ -82,6 +82,12 @@ namespace com.spacepuppy
             return result;
         }
 
+        public static TConcrete Get<TService, TConcrete>() where TService : class, IService
+                                                           where TConcrete : class, TService
+        {
+            return Get<TService>() as TConcrete;
+        }
+
         public static T Find<T>() where T : class, IService
         {
             var e = _services.GetEnumerator();
@@ -95,20 +101,23 @@ namespace com.spacepuppy
             return default(T);
         }
 
-        public static void Register<T>(T service) where T : class, IService
+        public static void Register<T>(T service, bool donotSignalRegister = false) where T : class, IService
         {
             var other = Entry<T>.Instance;
             if (!other.IsNullOrDestroyed() && !object.ReferenceEquals(other, service)) throw new System.InvalidOperationException("You must first unregister a service before registering a new one.");
 
             Entry<T>.Instance = service;
             _services.Add(service);
-            try
+            if (!donotSignalRegister)
             {
-                service.OnServiceRegistered(typeof(T));
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogException(ex);
+                try
+                {
+                    service.OnServiceRegistered(typeof(T));
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogException(ex);
+                }
             }
         }
 

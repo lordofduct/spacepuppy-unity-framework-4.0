@@ -9,15 +9,13 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.SPInput.Events
 {
 
-    [Infobox("Requires a CursorInputLogic to be configured. This is usually part of the InputManager.")]
-    public class t_OnCursorClick : TriggerComponent, CursorInputLogic.IClickHandler
+    public class t_OnCursorClick : TriggerComponent, CursorInputLogic.IClickHandler, UnityEngine.EventSystems.IPointerClickHandler
     {
 
         #region Fields
 
         [SerializeField]
-        [Tooltip("Populate with the Id of the CursorFilterLogic if you want to filter for only a specific input. Otherwise leave blank to receive all clicks.")]
-        private string _cursorInputLogicFilter;
+        private PointerFilter _pointerFilter;
 
         [SerializeField]
         [Tooltip("If CursorInputLogic is configure to dispatch OnClick always, this allows you to ignore it if it was a double click.")]
@@ -27,10 +25,10 @@ namespace com.spacepuppy.SPInput.Events
 
         #region Properties
 
-        public string CursorInputLogicFilter
+        public PointerFilter PointerFilter
         {
-            get => _cursorInputLogicFilter;
-            set => _cursorInputLogicFilter = value;
+            get => _pointerFilter;
+            set => _pointerFilter = value;
         }
 
         public bool IgnoreDoubleClick
@@ -43,10 +41,18 @@ namespace com.spacepuppy.SPInput.Events
 
         #region IClickHandler Interface
 
-        void CursorInputLogic.IClickHandler.OnClick(CursorInputLogic sender, Collider c)
+        void CursorInputLogic.IClickHandler.OnClick(CursorInputLogic cursor)
         {
-            if (_ignoreDoubleClick && (sender?.LastClickWasDoubleClick ?? false)) return;
-            if (!string.IsNullOrEmpty(_cursorInputLogicFilter) && sender?.Id != _cursorInputLogicFilter) return;
+            if (_ignoreDoubleClick && (cursor?.LastClickWasDoubleClick ?? false)) return;
+            if (_pointerFilter != null && !_pointerFilter.IsValid(cursor)) return;
+
+            this.ActivateTrigger();
+        }
+
+        void UnityEngine.EventSystems.IPointerClickHandler.OnPointerClick(UnityEngine.EventSystems.PointerEventData eventData)
+        {
+            if (_ignoreDoubleClick && eventData.clickCount == 2) return;
+            if (_pointerFilter != null && !_pointerFilter.IsValid(eventData)) return;
 
             this.ActivateTrigger();
         }

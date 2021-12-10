@@ -1,30 +1,31 @@
 using UnityEngine;
 using System.Collections.Generic;
 
+using UnityEngine.EventSystems;
 using com.spacepuppy.Utils;
+using com.spacepuppy.Collections;
 
 namespace com.spacepuppy.SPInput
 {
 
     /// <summary>
-    /// This component handles cursor click logic better than OnMouseDown/OnMouseUp/OnMouseXXX events from Unity. 
-    /// By default this class accesses the IInputManager from SPInput to get the cursor location, cursor button, and to perform the raycast. 
-    /// This is housed in the CursorInputLogic.Resolver which can be replaced with a custom implementation. 
-    /// Just implement the ICursorLogicResolver interface and then attach it. This is serializable (by ref) as well. 
-    /// Just inherit from CursorInputLogic and pass in the object to the constructor. 
+    /// This component represents an in world cursor click logic independent of the EventSystem. This acts similarly 
+    /// to the OnMouseDown/OnMouseUp/etc events but with some more robust features. 
+    /// The mode is howed in the CursorInputLogic.Resolver which can be replaced with a custom implementation. 
+    /// Just implement the ICursorLogicResolver within your project and it'll become available as a "mode" in the dropdown.
     /// </summary>
-    [Infobox("Signal Collider - only the collider receives the event\r\nSignal Rigidboy - the attached rigidbody receives the event, if not exist the collider\r\nSignal Entity - only the root gameObject receives the event\r\nBroadcast Entity - The entire entity from root gameObject and all children receive the event")]
+    [Infobox("This is a simple cursor implementation independent of the EventSystem. You only need this if the EventSystem isn't available or if you want to have a cursor indepdent of the EventSystem.")]
     [DefaultExecutionOrder(-31989)]
-    public class CursorInputLogic : SPComponent
+    public sealed class CursorInputLogic : SPComponent
     {
 
-        public enum SignalTargetOptions
-        {
-            SignalCollider = 0,
-            SignalRigidboy = 1,
-            SignalEntity = 2,
-            BroadcastEntity = 3,
-        }
+        #region Multiton Interface
+
+        private static readonly MultitonPool<CursorInputLogic> _pool = new MultitonPool<CursorInputLogic>();
+        public static MultitonPool<CursorInputLogic> Pool => _pool;
+
+        #endregion
+
 
         public event System.EventHandler OnClick;
         public event System.EventHandler OnDoubleClick;
@@ -33,6 +34,8 @@ namespace com.spacepuppy.SPInput
         public event System.EventHandler CursorButtonDown;
         public event System.EventHandler CursorButtonHeld;
         public event System.EventHandler CursorButtonUp;
+        public event System.EventHandler BeginDrag;
+        public event System.EventHandler EndDrag;
 
         #region Fields
 
@@ -41,8 +44,10 @@ namespace com.spacepuppy.SPInput
         private System.Action<ICursorEnterHandler> _cursorEnterFunctor;
         private System.Action<ICursorExitHandler> _cursorExitFunctor;
         private System.Action<ICursorButtonHeldHandler> _cursorHeldFunctor;
-        private System.Action<ICursorActivateHandler> _cursorDownFunctor;
-        private System.Action<ICursorActivateHandler> _cursorUpFunctor;
+        private System.Action<ICursorDownHandler> _cursorDownFunctor;
+        private System.Action<ICursorUpHandler> _cursorUpFunctor;
+        private System.Action<ICursorBeginDragHandler> _beginDragFunctor;
+        private System.Action<ICursorEmdDragHandler> _endDragFunctor;
 
 
         [SerializeField]
@@ -59,11 +64,11 @@ namespace com.spacepuppy.SPInput
         private bool _dispatchClickEventAlways;
 
         [SerializeReference]
-        [DisplayFlat]
-        private ICursorInputResolver _resolver = new CursorInputResolver();
+        [SerializeRefPicker(typeof(ICursorInputResolver))]
+        private ICursorInputResolver _resolver = new EventSystemCursorInputResolver();
 
         [System.NonSerialized]
-        private Collider _current;
+        private GameObject _current;
         [System.NonSerialized]
         private SPEntity _currentEntity;
 
@@ -73,8 +78,6 @@ namespace com.spacepuppy.SPInput
         private double _lastUpTime = double.NegativeInfinity;
         [System.NonSerialized]
         private int _clickCount = 0;
-        [System.NonSerialized]
-        private ButtonState _buttonState = ButtonState.None;
 
         #endregion
 
@@ -82,25 +85,41 @@ namespace com.spacepuppy.SPInput
 
         public CursorInputLogic()
         {
-            _resolver = new CursorInputResolver();
+            _resolver = new EventSystemCursorInputResolver();
         }
 
         public CursorInputLogic(ICursorInputResolver resolver)
         {
-            _resolver = resolver ?? new CursorInputResolver();
+            _resolver = resolver ?? new EventSystemCursorInputResolver();
         }
 
         protected override void Awake()
         {
             base.Awake();
             
-            _clickFunctor = (o) => o.OnClick(this, _current);
-            _doubleClickFunctor = (o) => o.OnDoubleClick(this, _current);
-            _cursorEnterFunctor = (o) => o.OnCursorEnter(this, _current);
-            _cursorExitFunctor = (o) => o.OnCursorExit(this, _current);
-            _cursorHeldFunctor = (o) => o.OnButtonHeld(this, _current);
-            _cursorDownFunctor = (o) => o.OnCursorDown(this, _current);
-            _cursorUpFunctor = (o) => o.OnCursorUp(this, _current);
+            _clickFunctor = (o) => o.OnClick(this);
+            _doubleClickFunctor = (o) => o.OnDoubleClick(this);
+            _cursorEnterFunctor = (o) => o.OnCursorEnter(this);
+            _cursorExitFunctor = (o) => o.OnCursorExit(this);
+            _cursorHeldFunctor = (o) => o.OnButtonHeld(this);
+            _cursorDownFunctor = (o) => o.OnCursorDown(this);
+            _cursorUpFunctor = (o) => o.OnCursorUp(this);
+            _beginDragFunctor = (o) => o.OnBeginDrag(this);
+            _endDragFunctor = (o) => o.OnEndDrag(this);
+        }
+
+        protected override void OnEnable()
+        {
+            base.OnEnable();
+
+            _pool.AddReference(this);
+        }
+
+        protected override void OnDisable()
+        {
+            base.OnDisable();
+
+            _pool.RemoveReference(this);
         }
 
         #endregion
@@ -146,9 +165,9 @@ namespace com.spacepuppy.SPInput
         }
 
         /// <summary>
-        /// Current Collider the cursor is over.
+        /// Current GameObject the cursor is over.
         /// </summary>
-        public Collider CurrentCollider => _current;
+        public GameObject Current => _current;
 
         /// <summary>
         /// The current entity, if any, that the Collider is attached to.
@@ -173,24 +192,49 @@ namespace com.spacepuppy.SPInput
 
         public bool LastClickWasDoubleClick => _clickCount > 0 && (_clickCount % 2) == 0;
 
-        public ButtonState CurrentButtonState => _buttonState;
+        public ButtonState CurrentButtonState { get; private set; }
+
+        public ButtonPress CurrentButtonPress { get; private set; }
+
+        public Vector2 CursorPosition => _resolver?.CursorPosition ?? Vector2.zero;
+
+        public Vector2 LastButtonDownPosition { get; private set; }
+
+        public GameObject LastButtonDownTarget { get; private set; }
+
+        public bool DragInitiated { get; private set; }
 
         #endregion
 
         #region Methods
 
-        protected void Update()
+        public CursorRaycastHit Raycast()
         {
-            Collider coll = _resolver?.QueryCurrentColliderOver();
+            return _resolver?.Raycast() ?? default(CursorRaycastHit);
+        }
 
-            if (coll != _current)
+        /// <summary>
+        /// Creates a ray from the cursor in 3d. (What constitutes the ray depends on the ICursorInputResolver, 2d cursor modes may return unusable results)
+        /// </summary>
+        /// <returns></returns>
+        public Ray GetRay()
+        {
+            return _resolver?.GetRay() ?? default(Ray);
+        }
+
+
+        private void Update()
+        {
+            var go = _resolver?.Raycast().gameObject;
+
+            if (go != _current)
             {
-                var ent = coll != null ? SPEntity.Pool.GetFromSource(coll) : null;
+                var ent = go != null ? SPEntity.Pool.GetFromSource(go) : null;
                 if (ent != _currentEntity || ent == null || _currentEntity == null)
                 {
                     this.DispatchHoverExit();
 
-                    _current = coll;
+                    _current = go;
                     _currentEntity = ent;
                     _clickCount = 0;
 
@@ -199,16 +243,21 @@ namespace com.spacepuppy.SPInput
                 else
                 {
                     //we're over the same entity, just a different collider... update current collider only
-                    _current = coll;
+                    _current = go;
                 }
             }
 
-            _buttonState = _resolver?.GetClickButtonState() ?? ButtonState.None;
-            switch (_buttonState.ResolvePressState(_lastDownTime, _clickTimeout))
+            this.CurrentButtonState = _resolver?.GetClickButtonState() ?? ButtonState.None;
+            switch (this.CurrentButtonPress = this.CurrentButtonState.ResolvePressState(_lastDownTime, _clickTimeout))
             {
                 case ButtonPress.Released:
                     _lastUpTime = Time.unscaledDeltaTime;
                     _clickCount = 0;
+                    if(this.DragInitiated)
+                    {
+                        this.DispatchEndDrag();
+                        this.DragInitiated = false;
+                    }
                     this.DispatchCursorUp();
                     break;
                 case ButtonPress.Tapped:
@@ -227,12 +276,24 @@ namespace com.spacepuppy.SPInput
                         {
                             this.DispatchClick();
                         }
+
+                        if (this.DragInitiated)
+                        {
+                            this.DispatchEndDrag();
+                            this.DragInitiated = false;
+                        }
                     }
                     break;
                 case ButtonPress.None:
                     if(_clickCount > 0 && (Time.unscaledTimeAsDouble - _lastUpTime) > _doubleClickTimeout)
                     {
                         _clickCount = 0;
+                    }
+                    if (this.DragInitiated)
+                    {
+                        //this would only happen if a Resolver returned 'None' instead of 'Released'... this can cause issues so this resolves that
+                        this.DispatchEndDrag();
+                        this.DragInitiated = false;
                     }
                     break;
                 case ButtonPress.Down:
@@ -241,27 +302,42 @@ namespace com.spacepuppy.SPInput
                         _clickCount = 0;
                     }
                     _lastDownTime = Time.unscaledTimeAsDouble;
+                    this.LastButtonDownPosition = _resolver?.CursorPosition ?? Vector2.zero;
+                    this.LastButtonDownTarget = _current;
                     this.DispatchCursorDown();
+                    break;
+                case ButtonPress.Holding:
+                    if(!this.DragInitiated && (_resolver?.TestBeginDrag(this) ?? false))
+                    {
+                        this.DragInitiated = true;
+                        this.DispatchBeginDrag();
+                    }
                     break;
                 case ButtonPress.Held:
                     _clickCount = 0;
-
+                    if (!this.DragInitiated && (_resolver?.TestBeginDrag(this) ?? false))
+                    {
+                        this.DragInitiated = true;
+                        this.DispatchBeginDrag();
+                    }
                     break;
             }
         }
 
         private void DispatchHoverEnter()
         {
-            var target = _resolver?.GetDispatchTarget(_current, _currentEntity);
-            if (target == null) return;
+            var target = _resolver?.GetDispatchTarget(this);
 
-            if (_resolver.UseBroadcast)
+            if (target != null)
             {
-                target.Broadcast(_cursorEnterFunctor);
-            }
-            else
-            {
-                target.Signal(_cursorEnterFunctor);
+                if (_resolver.UseBroadcast)
+                {
+                    target.Broadcast(_cursorEnterFunctor);
+                }
+                else
+                {
+                    target.Signal(_cursorEnterFunctor);
+                }
             }
 
             Messaging.Broadcast(_cursorEnterFunctor);
@@ -270,16 +346,18 @@ namespace com.spacepuppy.SPInput
 
         private void DispatchHoverExit()
         {
-            var target = _resolver?.GetDispatchTarget(_current, _currentEntity);
-            if (target == null) return;
+            var target = _resolver?.GetDispatchTarget(this);
 
-            if (_resolver.UseBroadcast)
+            if (target != null)
             {
-                target.Broadcast(_cursorExitFunctor);
-            }
-            else
-            {
-                target.Signal(_cursorExitFunctor);
+                if (_resolver.UseBroadcast)
+                {
+                    target.Broadcast(_cursorExitFunctor);
+                }
+                else
+                {
+                    target.Signal(_cursorExitFunctor);
+                }
             }
 
             Messaging.Broadcast(_cursorExitFunctor);
@@ -288,16 +366,18 @@ namespace com.spacepuppy.SPInput
 
         private void DispatchClick()
         {
-            var target = _resolver?.GetDispatchTarget(_current, _currentEntity);
-            if (target == null) return;
+            var target = _resolver?.GetDispatchTarget(this);
 
-            if (_resolver.UseBroadcast)
+            if (target != null)
             {
-                target.Broadcast(_clickFunctor);
-            }
-            else
-            {
-                target.Signal(_clickFunctor);
+                if (_resolver.UseBroadcast)
+                {
+                    target.Broadcast(_clickFunctor);
+                }
+                else
+                {
+                    target.Signal(_clickFunctor);
+                }
             }
 
             Messaging.Broadcast(_clickFunctor);
@@ -306,16 +386,18 @@ namespace com.spacepuppy.SPInput
 
         private void DispatchDoubleClick()
         {
-            var target = _resolver?.GetDispatchTarget(_current, _currentEntity);
-            if (target == null) return;
+            var target = _resolver?.GetDispatchTarget(this);
 
-            if (_resolver.UseBroadcast)
+            if (target != null)
             {
-                target.Broadcast(_doubleClickFunctor);
-            }
-            else
-            {
-                target.Signal(_doubleClickFunctor);
+                if (_resolver.UseBroadcast)
+                {
+                    target.Broadcast(_doubleClickFunctor);
+                }
+                else
+                {
+                    target.Signal(_doubleClickFunctor);
+                }
             }
 
             Messaging.Broadcast(_doubleClickFunctor);
@@ -324,16 +406,18 @@ namespace com.spacepuppy.SPInput
 
         private void DispatchCursorDown()
         {
-            var target = _resolver?.GetDispatchTarget(_current, _currentEntity);
-            if (target == null) return;
+            var target = _resolver?.GetDispatchTarget(this);
 
-            if (_resolver.UseBroadcast)
+            if (target != null)
             {
-                target.Broadcast(_cursorDownFunctor);
-            }
-            else
-            {
-                target.Signal(_cursorDownFunctor);
+                if (_resolver.UseBroadcast)
+                {
+                    target.Broadcast(_cursorDownFunctor);
+                }
+                else
+                {
+                    target.Signal(_cursorDownFunctor);
+                }
             }
 
             Messaging.Broadcast(_cursorDownFunctor);
@@ -342,16 +426,18 @@ namespace com.spacepuppy.SPInput
 
         private void DispatchCursorUp()
         {
-            var target = _resolver?.GetDispatchTarget(_current, _currentEntity);
-            if (target == null) return;
+            var target = _resolver?.GetDispatchTarget(this);
 
-            if (_resolver.UseBroadcast)
+            if (target != null)
             {
-                target.Broadcast(_cursorUpFunctor);
-            }
-            else
-            {
-                target.Signal(_cursorUpFunctor);
+                if (_resolver.UseBroadcast)
+                {
+                    target.Broadcast(_cursorUpFunctor);
+                }
+                else
+                {
+                    target.Signal(_cursorUpFunctor);
+                }
             }
 
             Messaging.Broadcast(_cursorUpFunctor);
@@ -360,20 +446,62 @@ namespace com.spacepuppy.SPInput
 
         private void DispatchCursorHeld()
         {
-            var target = _resolver?.GetDispatchTarget(_current, _currentEntity);
-            if (target == null) return;
+            var target = _resolver?.GetDispatchTarget(this);
 
-            if (_resolver.UseBroadcast)
+            if (target != null)
             {
-                target.Broadcast(_cursorHeldFunctor);
-            }
-            else
-            {
-                target.Signal(_cursorHeldFunctor);
+                if (_resolver.UseBroadcast)
+                {
+                    target.Broadcast(_cursorHeldFunctor);
+                }
+                else
+                {
+                    target.Signal(_cursorHeldFunctor);
+                }
             }
 
             Messaging.Broadcast(_cursorHeldFunctor);
             this.CursorButtonHeld?.Invoke(this, System.EventArgs.Empty);
+        }
+
+        private void DispatchBeginDrag()
+        {
+            var target = _resolver?.GetDispatchTarget(this);
+
+            if (target != null)
+            {
+                if (_resolver.UseBroadcast)
+                {
+                    target.Broadcast(_beginDragFunctor);
+                }
+                else
+                {
+                    target.Signal(_beginDragFunctor);
+                }
+            }
+
+            Messaging.Broadcast(_beginDragFunctor);
+            this.BeginDrag?.Invoke(this, System.EventArgs.Empty);
+        }
+
+        private void DispatchEndDrag()
+        {
+            var target = _resolver?.GetDispatchTarget(this);
+
+            if (target != null)
+            {
+                if (_resolver.UseBroadcast)
+                {
+                    target.Broadcast(_endDragFunctor);
+                }
+                else
+                {
+                    target.Signal(_endDragFunctor);
+                }
+            }
+
+            Messaging.Broadcast(_endDragFunctor);
+            this.EndDrag?.Invoke(this, System.EventArgs.Empty);
         }
 
         #endregion
@@ -381,12 +509,19 @@ namespace com.spacepuppy.SPInput
         #region Special Types
 
         /// <summary>
-        /// Up/Down message handler for cursor button.
+        /// Down message handler for cursor button.
         /// </summary>
-        public interface ICursorActivateHandler
+        public interface ICursorDownHandler
         {
-            void OnCursorDown(CursorInputLogic sender, Collider c);
-            void OnCursorUp(CursorInputLogic sender, Collider c);
+            void OnCursorDown(CursorInputLogic cursor);
+        }
+
+        /// <summary>
+        /// Up message handler for cursor button. This occurs regarldess of click timeout. You can check ClickCount > 0 to see if it's a click.
+        /// </summary>
+        public interface ICursorUpHandler
+        {
+            void OnCursorUp(CursorInputLogic cursor);
         }
 
         /// <summary>
@@ -394,7 +529,7 @@ namespace com.spacepuppy.SPInput
         /// </summary>
         public interface ICursorEnterHandler
         {
-            void OnCursorEnter(CursorInputLogic sender, Collider c);
+            void OnCursorEnter(CursorInputLogic cursor);
         }
 
         /// <summary>
@@ -402,7 +537,7 @@ namespace com.spacepuppy.SPInput
         /// </summary>
         public interface ICursorExitHandler
         {
-            void OnCursorExit(CursorInputLogic sender, Collider c);
+            void OnCursorExit(CursorInputLogic cursor);
         }
 
         /// <summary>
@@ -410,7 +545,7 @@ namespace com.spacepuppy.SPInput
         /// </summary>
         public interface ICursorButtonHeldHandler
         {
-            void OnButtonHeld(CursorInputLogic sender, Collider c);
+            void OnButtonHeld(CursorInputLogic cursor);
         }
 
         /// <summary>
@@ -418,7 +553,7 @@ namespace com.spacepuppy.SPInput
         /// </summary>
         public interface IClickHandler
         {
-            void OnClick(CursorInputLogic sender, Collider c);
+            void OnClick(CursorInputLogic cursor);
         }
 
         /// <summary>
@@ -426,26 +561,327 @@ namespace com.spacepuppy.SPInput
         /// </summary>
         public interface IDoubleClickHandler
         {
-            void OnDoubleClick(CursorInputLogic sender, Collider c);
+            void OnDoubleClick(CursorInputLogic cursor);
         }
 
+        /// <summary>
+        /// Message handler for when someone has initiated a drag.
+        /// </summary>
+        public interface ICursorBeginDragHandler
+        {
+            void OnBeginDrag(CursorInputLogic cursor);
+        }
+
+        /// <summary>
+        /// Message handler for when someone has ended a drag.
+        /// </summary>
+        public interface ICursorEmdDragHandler
+        {
+            void OnEndDrag(CursorInputLogic cursor);
+        }
 
         public interface ICursorInputResolver
         {
+            Vector2 CursorPosition { get; }
+            /// <summary>
+            /// Should the target returned by GetDispatchTarget have the message broadcast rather than signaled (see: Messaging.Broadcast vs Messaging.Signal)
+            /// </summary>
             bool UseBroadcast { get; }
+            /// <summary>
+            /// Return true if the cursor is blocked and QueryCurrentGameObjectOver would return null no matter what.
+            /// </summary>
+            bool CursorIsBlocked { get; }
 
-            Collider QueryCurrentColliderOver();
+            Ray GetRay();
+            CursorRaycastHit Raycast();
             ButtonState GetClickButtonState();
-            GameObject GetDispatchTarget(Collider collider, SPEntity entity);
+            GameObject GetDispatchTarget(CursorInputLogic cursor);
+            bool TestBeginDrag(CursorInputLogic cursor);
         }
 
 
+        public enum SignalTargetOptions
+        {
+            SignalCollider = 0, //signals the GameObject the collider is attached only
+            SignalRigidboy = 1, //signals the GameObject the collider is attached only
+            SignalEntity = 2, //signal the entity the collider is attached only
+            BroadcastEntity = 3, //broadcast to all GameObjects inside the entity the collider is attached
+        }
+
         [System.Serializable]
-        public class CursorInputResolver : ICursorInputResolver
+        public class EventSystemCursorInputResolver : ICursorInputResolver
         {
 
             #region Fields
 
+            [Infobox("Taps into the EventSystem and InputModule attached to it to resolve position/press from the mousePosition and MouseButton/Up/Down respectively.")]
+            [SerializeField]
+            [Tooltip("The camera to use, or a proxy to it.")]
+            [RespectsIProxy]
+            [TypeRestriction(typeof(Camera), AllowProxy = true)]
+            private UnityEngine.Object _cameraSource;
+
+            [SerializeField]
+            private int _mouseButtonIndex;
+
+            [SerializeField]
+            [Tooltip("The mask of layers to check for when raycasting. This includes both the layers that should be clickable, and those that can block clickable things.")]
+            private LayerMask _layerMask = -1;
+            [SerializeField]
+            [Tooltip("How to deal with trigger colliders when raycasting.")]
+            private QueryTriggerInteraction _queryTriggerOption;
+
+            [SerializeField]
+            [Tooltip("If the EventSystem reports that its pointer is over something, then this raycaster will consider itself not over anything.")]
+            private bool _eventSystemUIBlocks;
+
+            [SerializeField]
+            private SignalTargetOptions _signalTarget;
+
+            #endregion
+
+            #region Properties
+
+            public UnityEngine.Object CameraSource
+            {
+                get => _cameraSource;
+                set => _cameraSource = ObjUtil.FilterAsProxyOrType<Camera>(value) as UnityEngine.Object;
+            }
+
+            public int MouseButtonIndex
+            {
+                get => _mouseButtonIndex;
+                set => _mouseButtonIndex = value;
+            }
+
+            public LayerMask LayerMask
+            {
+                get => _layerMask;
+                set => _layerMask = value;
+            }
+
+            public QueryTriggerInteraction QueryTriggerOption
+            {
+                get => _queryTriggerOption;
+                set => _queryTriggerOption = value;
+            }
+
+            public bool EventSystemUIBlock
+            {
+                get => _eventSystemUIBlocks;
+                set => _eventSystemUIBlocks = value;
+            }
+
+            public SignalTargetOptions SignalTargetOptions
+            {
+                get => _signalTarget;
+                set => _signalTarget = value;
+            }
+
+            #endregion
+
+            #region Methods
+
+            public Vector2 CursorPosition => EventSystem.current?.currentInputModule?.input?.mousePosition ?? Vector2.zero;
+
+            public virtual bool UseBroadcast => _signalTarget >= SignalTargetOptions.BroadcastEntity;
+
+            public virtual bool CursorIsBlocked => _eventSystemUIBlocks && (EventSystem.current?.IsPointerOverGameObject() ?? false);
+
+            public virtual Ray GetRay()
+            {
+                var cam = ObjUtil.GetAsFromSource<Camera>(_cameraSource, true);
+                if (cam == null) return default(Ray);
+
+                return cam.ScreenPointToRay(EventSystem.current?.currentInputModule?.input?.mousePosition ?? Vector2.zero);
+            }
+
+            public virtual CursorRaycastHit Raycast()
+            {
+                if (this.CursorIsBlocked) return default(CursorRaycastHit);
+
+                var input = EventSystem.current?.currentInputModule?.input;
+                if (input != null)
+                {
+                    var pos = input.mousePosition;
+
+                    var cam = ObjUtil.GetAsFromSource<Camera>(_cameraSource, true);
+                    if (cam == null) return default(CursorRaycastHit);
+
+                    return InputUtil.TestCursorOver(cam, pos, float.PositiveInfinity, _layerMask, _queryTriggerOption);
+                }
+
+                return default(CursorRaycastHit);
+            }
+
+            public virtual ButtonState GetClickButtonState()
+            {
+                var input = EventSystem.current?.currentInputModule?.input;
+                if(input != null)
+                {
+                    if (input.GetMouseButtonDown(_mouseButtonIndex))
+                        return ButtonState.Down;
+                    else if (input.GetMouseButtonUp(_mouseButtonIndex))
+                        return ButtonState.Released;
+                    else if (input.GetMouseButton(_mouseButtonIndex))
+                        return ButtonState.Held;
+                }
+                return ButtonState.None;
+            }
+
+            public virtual GameObject GetDispatchTarget(CursorInputLogic cursor)
+            {
+                return CursorInputLogic.GetDispatchTarget(cursor, _signalTarget);
+            }
+
+            public virtual bool TestBeginDrag(CursorInputLogic cursor)
+            {
+                if (cursor == null) return false;
+
+                int dist = EventSystem.current?.pixelDragThreshold ?? 0;
+                return (cursor.LastButtonDownPosition - this.CursorPosition).sqrMagnitude > (dist * dist);
+            }
+
+            #endregion
+
+        }
+
+        [System.Serializable]
+        public class EventSystem2DCursorInputResolver : ICursorInputResolver
+        {
+
+            #region Fields
+
+            [Infobox("Taps into the EventSystem and InputModule attached to it to resolve position/press from the mousePosition and MouseButton/Up/Down respectively.")]
+            [SerializeField]
+            [Tooltip("The camera to use, or a proxy to it.")]
+            [RespectsIProxy]
+            [TypeRestriction(typeof(Camera), AllowProxy = true)]
+            private UnityEngine.Object _cameraSource;
+
+            [SerializeField]
+            private int _mouseButtonIndex;
+
+            [SerializeField]
+            [Tooltip("The mask of layers to check for when raycasting. This includes both the layers that should be clickable, and those that can block clickable things.")]
+            private LayerMask _layerMask = -1;
+
+            [SerializeField]
+            [Tooltip("If the EventSystem reports that its pointer is over something, then this raycaster will consider itself not over anything.")]
+            private bool _eventSystemUIBlocks;
+
+            [SerializeField]
+            private SignalTargetOptions _signalTarget;
+
+            #endregion
+
+            #region Properties
+
+            public UnityEngine.Object CameraSource
+            {
+                get => _cameraSource;
+                set => _cameraSource = ObjUtil.FilterAsProxyOrType<Camera>(value) as UnityEngine.Object;
+            }
+
+            public int MouseButtonIndex
+            {
+                get => _mouseButtonIndex;
+                set => _mouseButtonIndex = value;
+            }
+
+            public LayerMask LayerMask
+            {
+                get => _layerMask;
+                set => _layerMask = value;
+            }
+
+            public bool EventSystemUIBlock
+            {
+                get => _eventSystemUIBlocks;
+                set => _eventSystemUIBlocks = value;
+            }
+
+            public SignalTargetOptions SignalTargetOptions
+            {
+                get => _signalTarget;
+                set => _signalTarget = value;
+            }
+
+            #endregion
+
+            #region Methods
+
+            public Vector2 CursorPosition => EventSystem.current?.currentInputModule?.input?.mousePosition ?? Vector2.zero;
+
+            public virtual bool UseBroadcast => _signalTarget >= SignalTargetOptions.BroadcastEntity;
+
+            public virtual bool CursorIsBlocked => _eventSystemUIBlocks && (EventSystem.current?.IsPointerOverGameObject() ?? false);
+
+            public virtual Ray GetRay()
+            {
+                var cam = ObjUtil.GetAsFromSource<Camera>(_cameraSource, true);
+                if (cam == null) return default(Ray);
+
+                return cam.ScreenPointToRay(EventSystem.current?.currentInputModule?.input?.mousePosition ?? Vector2.zero);
+            }
+
+            public virtual CursorRaycastHit Raycast()
+            {
+                if (this.CursorIsBlocked) return default(CursorRaycastHit);
+
+                var input = EventSystem.current?.currentInputModule?.input;
+                if (input != null)
+                {
+                    var pos = input.mousePosition;
+
+                    var cam = ObjUtil.GetAsFromSource<Camera>(_cameraSource, true);
+                    if (cam == null) return default(CursorRaycastHit);
+
+                    return InputUtil.TestCursorOver2D(cam, pos, float.PositiveInfinity, _layerMask);
+                }
+
+                return default(CursorRaycastHit);
+            }
+
+            public virtual ButtonState GetClickButtonState()
+            {
+                var input = EventSystem.current?.currentInputModule?.input;
+                if (input != null)
+                {
+                    if (input.GetMouseButtonDown(_mouseButtonIndex))
+                        return ButtonState.Down;
+                    else if (input.GetMouseButtonUp(_mouseButtonIndex))
+                        return ButtonState.Released;
+                    else if (input.GetMouseButton(_mouseButtonIndex))
+                        return ButtonState.Held;
+                }
+                return ButtonState.None;
+            }
+
+            public virtual GameObject GetDispatchTarget(CursorInputLogic cursor)
+            {
+                return CursorInputLogic.GetDispatchTarget(cursor, _signalTarget, true);
+            }
+
+            public virtual bool TestBeginDrag(CursorInputLogic cursor)
+            {
+                if (cursor == null) return false;
+
+                int dist = EventSystem.current?.pixelDragThreshold ?? 0;
+                return (cursor.LastButtonDownPosition - this.CursorPosition).sqrMagnitude > (dist * dist);
+            }
+
+            #endregion
+
+        }
+
+        [System.Serializable]
+        public class InputManagerCursorInputResolver : ICursorInputResolver
+        {
+
+            #region Fields
+
+            [Infobox("Taps into the IInputManager registered as a service to resolve cursor position and press from the respective device and input id's configured.")]
             [SerializeField]
             [Tooltip("The camera to use, or a proxy to it.")]
             [RespectsIProxy]
@@ -467,11 +903,7 @@ namespace com.spacepuppy.SPInput
             private string _clickButtonInputId;
 
             [SerializeField]
-            [Tooltip("The amount of time the player has to release the button to count as a 'click', zero or less means click will never occur.")]
-            private float _clickTimeout = 0.5f;
-            [SerializeField]
-            [Tooltip("The duration after the last click to wait for a valid double click, zero or less means double click will never occur.")]
-            private float _doubleClickTimeout;
+            private float _pixelDragThreshold = 10f;
 
             [SerializeField]
             [Tooltip("The mask of layers to check for when raycasting. This includes both the layers that should be clickable, and those that can block clickable things.")]
@@ -485,29 +917,95 @@ namespace com.spacepuppy.SPInput
 
             #endregion
 
+            #region Properties
+
+            public UnityEngine.Object CameraSource
+            {
+                get => _cameraSource;
+                set => _cameraSource = ObjUtil.FilterAsProxyOrType<Camera>(value) as UnityEngine.Object;
+            }
+
+            public string DeviceID
+            {
+                get => _deviceId;
+                set => _deviceId = value;
+            }
+
+            public string CursorInputID
+            {
+                get => _cursorInputId;
+                set => _cursorInputId = value;
+            }
+
+            public string ClickButtonInputID
+            {
+                get => _clickButtonInputId;
+                set => _clickButtonInputId = value;
+            }
+
+            public float PixelDragThreshold
+            {
+                get => _pixelDragThreshold;
+                set => _pixelDragThreshold = value;
+            }
+
+            public LayerMask LayerMask
+            {
+                get => _layerMask;
+                set => _layerMask = value;
+            }
+
+            public QueryTriggerInteraction QueryTriggerOption
+            {
+                get => _queryTriggerOption;
+                set => _queryTriggerOption = value;
+            }
+
+            public SignalTargetOptions SignalTargetOptions
+            {
+                get => _signalTarget;
+                set => _signalTarget = value;
+            }
+
+            #endregion
+
             #region Methods
 
-            public bool UseBroadcast => _signalTarget >= SignalTargetOptions.BroadcastEntity;
+            public Vector2 CursorPosition => this.GetInputDevice()?.GetCursorState(_cursorInputId) ?? Vector2.zero;
+
+            public virtual bool UseBroadcast => _signalTarget >= SignalTargetOptions.BroadcastEntity;
+
+            public virtual bool CursorIsBlocked => false;
 
             public IInputDevice GetInputDevice()
             {
                 return string.IsNullOrEmpty(_deviceId) ? Services.Get<IInputManager>()?.Main : Services.Get<IInputManager>()?.GetDevice(_deviceId);
             }
 
-            public virtual Collider QueryCurrentColliderOver()
+            public virtual Ray GetRay()
             {
-                var input = this.GetInputDevice();
+                var cam = ObjUtil.GetAsFromSource<Camera>(_cameraSource, true);
+                if (cam == null) return default(Ray);
 
+                return cam.ScreenPointToRay(this.GetInputDevice()?.GetCursorState(_cursorInputId) ?? Vector2.zero);
+            }
+
+            public virtual CursorRaycastHit Raycast()
+            {
+                if (this.CursorIsBlocked) return default(CursorRaycastHit);
+
+                var input = this.GetInputDevice();
                 if (input != null)
                 {
                     var pos = input.GetCursorState(_cursorInputId);
-                    var cam = ObjUtil.GetAsFromSource<Camera>(_cameraSource, true);
-                    if (cam == null) return null;
 
-                    return CursorInputLogic.QueryCurrentColliderOver(cam, pos, _layerMask, _queryTriggerOption);
+                    var cam = ObjUtil.GetAsFromSource<Camera>(_cameraSource, true);
+                    if (cam == null) return default(CursorRaycastHit);
+
+                    return InputUtil.TestCursorOver(cam, pos, float.PositiveInfinity, _layerMask, _queryTriggerOption);
                 }
 
-                return null;
+                return default(CursorRaycastHit);
             }
 
             public virtual ButtonState GetClickButtonState()
@@ -515,47 +1013,199 @@ namespace com.spacepuppy.SPInput
                 return this.GetInputDevice()?.GetButtonState(_clickButtonInputId) ?? ButtonState.None;
             }
 
-            public virtual GameObject GetDispatchTarget(Collider collider, SPEntity entity)
+            public virtual GameObject GetDispatchTarget(CursorInputLogic cursor)
             {
-                if (collider == null) return null;
+                return CursorInputLogic.GetDispatchTarget(cursor, _signalTarget);
+            }
 
-                switch (_signalTarget)
-                {
-                    case SignalTargetOptions.SignalCollider:
-                        return collider.gameObject;
-                    case SignalTargetOptions.SignalRigidboy:
-                        {
-                            var rb = collider.attachedRigidbody;
-                            return rb != null ? rb.gameObject : collider.gameObject;
-                        }
-                    case SignalTargetOptions.SignalEntity:
-                        if (entity != null)
-                            return entity.gameObject;
-                        else
-                            return collider.FindRoot();
-                    case SignalTargetOptions.BroadcastEntity:
-                        if (entity != null)
-                            return entity.gameObject;
-                        else
-                            return collider.FindRoot();
-                    default:
-                        return null;
-                }
+            public virtual bool TestBeginDrag(CursorInputLogic cursor)
+            {
+                if (cursor == null) return false;
+
+                return (cursor.LastButtonDownPosition - this.CursorPosition).sqrMagnitude > (_pixelDragThreshold * _pixelDragThreshold);
             }
 
             #endregion
 
         }
 
-        public static Collider QueryCurrentColliderOver(Camera cam, Vector2 cursorpos, LayerMask mask, QueryTriggerInteraction queryTriggerOption)
+        [System.Serializable]
+        public class InputManager2DCursorInputResolver : ICursorInputResolver
         {
-            var ray = cam.ScreenPointToRay(cursorpos);
-            RaycastHit hit;
-            if (Physics.Raycast(ray, out hit, float.PositiveInfinity, mask, queryTriggerOption))
+
+            #region Fields
+
+            [Infobox("Taps into the IInputManager registered as a service to resolve cursor position and press from the respective device and input id's configured.")]
+            [SerializeField]
+            [Tooltip("The camera to use, or a proxy to it.")]
+            [RespectsIProxy]
+            [TypeRestriction(typeof(Camera), AllowProxy = true)]
+            private UnityEngine.Object _cameraSource;
+
+            [SerializeField]
+            [Tooltip("Leave blank to use main input device.")]
+            private string _deviceId;
+
+            [SerializeField]
+            [InputID]
+            [Tooltip("The input id of the cursor input signature.")]
+            private string _cursorInputId;
+
+            [SerializeField]
+            [InputID]
+            [Tooltip("The input id of the button to use as the click button. If you want multiple buttons to be usable, you should register them all under the same input id when initializing your InputManager.")]
+            private string _clickButtonInputId;
+
+            [SerializeField]
+            private float _pixelDragThreshold = 10f;
+
+            [SerializeField]
+            [Tooltip("The mask of layers to check for when raycasting. This includes both the layers that should be clickable, and those that can block clickable things.")]
+            private LayerMask _layerMask = -1;
+
+            [SerializeField]
+            private SignalTargetOptions _signalTarget;
+
+            #endregion
+
+            #region Properties
+
+            public UnityEngine.Object CameraSource
             {
-                return hit.collider;
+                get => _cameraSource;
+                set => _cameraSource = ObjUtil.FilterAsProxyOrType<Camera>(value) as UnityEngine.Object;
             }
-            return null;
+
+            public string DeviceID
+            {
+                get => _deviceId;
+                set => _deviceId = value;
+            }
+
+            public string CursorInputID
+            {
+                get => _cursorInputId;
+                set => _cursorInputId = value;
+            }
+
+            public string ClickButtonInputID
+            {
+                get => _clickButtonInputId;
+                set => _clickButtonInputId = value;
+            }
+
+            public float PixelDragThreshold
+            {
+                get => _pixelDragThreshold;
+                set => _pixelDragThreshold = value;
+            }
+
+            public LayerMask LayerMask
+            {
+                get => _layerMask;
+                set => _layerMask = value;
+            }
+
+            public SignalTargetOptions SignalTargetOptions
+            {
+                get => _signalTarget;
+                set => _signalTarget = value;
+            }
+
+            #endregion
+
+            #region Methods
+
+            public Vector2 CursorPosition => this.GetInputDevice()?.GetCursorState(_cursorInputId) ?? Vector2.zero;
+
+            public bool UseBroadcast => _signalTarget >= SignalTargetOptions.BroadcastEntity;
+
+            public virtual bool CursorIsBlocked => false;
+
+            public IInputDevice GetInputDevice()
+            {
+                return string.IsNullOrEmpty(_deviceId) ? Services.Get<IInputManager>()?.Main : Services.Get<IInputManager>()?.GetDevice(_deviceId);
+            }
+
+            public virtual Ray GetRay()
+            {
+                var cam = ObjUtil.GetAsFromSource<Camera>(_cameraSource, true);
+                if (cam == null) return default(Ray);
+
+                return cam.ScreenPointToRay(this.GetInputDevice()?.GetCursorState(_cursorInputId) ?? Vector2.zero);
+            }
+
+            public virtual CursorRaycastHit Raycast()
+            {
+                if (this.CursorIsBlocked) return default(CursorRaycastHit);
+
+                var input = this.GetInputDevice();
+                if (input != null)
+                {
+                    var pos = input.GetCursorState(_cursorInputId);
+
+                    var cam = ObjUtil.GetAsFromSource<Camera>(_cameraSource, true);
+                    if (cam == null) return default(CursorRaycastHit);
+
+                    return InputUtil.TestCursorOver2D(cam, pos, float.PositiveInfinity, _layerMask);
+                }
+
+                return default(CursorRaycastHit);
+            }
+
+            public virtual ButtonState GetClickButtonState()
+            {
+                return this.GetInputDevice()?.GetButtonState(_clickButtonInputId) ?? ButtonState.None;
+            }
+
+            public virtual GameObject GetDispatchTarget(CursorInputLogic cursor)
+            {
+                return CursorInputLogic.GetDispatchTarget(cursor, _signalTarget, true);
+            }
+
+            public virtual bool TestBeginDrag(CursorInputLogic cursor)
+            {
+                if (cursor == null) return false;
+
+                return (cursor.LastButtonDownPosition - this.CursorPosition).sqrMagnitude > (_pixelDragThreshold * _pixelDragThreshold);
+            }
+
+            #endregion
+
+        }
+
+        public static GameObject GetDispatchTarget(CursorInputLogic cursor, SignalTargetOptions option, bool treatAs2d = false)
+        {
+            if (cursor.Current == null) return null;
+
+            switch (option)
+            {
+                case SignalTargetOptions.SignalCollider:
+                    return cursor.Current;
+                case SignalTargetOptions.SignalRigidboy:
+                    if (treatAs2d)
+                    {
+                        var c = cursor.Current.GetComponent<Collider2D>();
+                        return c != null && c.attachedRigidbody != null ? c.attachedRigidbody.gameObject : cursor.Current;
+                    }
+                    else
+                    {
+                        var c = cursor.Current.GetComponent<Collider>();
+                        return c != null && c.attachedRigidbody != null ? c.attachedRigidbody.gameObject : cursor.Current;
+                    }
+                case SignalTargetOptions.SignalEntity:
+                    if (cursor.CurrentEntity != null)
+                        return cursor.CurrentEntity.gameObject;
+                    else
+                        return cursor.Current.FindRoot();
+                case SignalTargetOptions.BroadcastEntity:
+                    if (cursor.CurrentEntity != null)
+                        return cursor.CurrentEntity.gameObject;
+                    else
+                        return cursor.Current.FindRoot();
+                default:
+                    return null;
+            }
         }
 
         #endregion

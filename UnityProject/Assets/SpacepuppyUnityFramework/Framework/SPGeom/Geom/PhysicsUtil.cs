@@ -293,78 +293,28 @@ namespace com.spacepuppy.Geom
         {
             if (results == null) throw new System.ArgumentNullException("results");
 
-            //note, HashSets are inherently unique collections... so no need to check if contains during second and third overlaps
-            using (var tmpSet = TempCollection.GetSet<Collider>())
+            if (results is Collider[])
             {
-                if (VectorUtil.FuzzyEquals(point1, point2))
+                return Physics.OverlapCapsuleNonAlloc(point1, point2, radius, results as Collider[], layerMask, query);
+            }
+            else
+            {
+                var nonAllocArr = NonAllocColliderBuffer;
+
+                int cnt = Physics.OverlapCapsuleNonAlloc(point1, point2, radius, nonAllocArr, layerMask, query);
+                if (results is List<Collider>)
                 {
-                    var nonAllocArr = NonAllocColliderBuffer;
-                    int cnt = Physics.OverlapSphereNonAlloc(point1, radius, nonAllocArr, layerMask, query);
-                    for (int i = 0; i < cnt; i++)
-                    {
-                        tmpSet.Add(nonAllocArr[i]);
-                        nonAllocArr[i] = null;
-                    }
-                }
-                else
-                {
-                    var nonAllocCollArr = NonAllocColliderBuffer;
-                    var nonAllocRayArr = NonAllocRaycastBuffer;
-
-                    int cnt;
-                    cnt = Physics.OverlapSphereNonAlloc(point1, radius, nonAllocCollArr, layerMask, query);
-                    for (int i = 0; i < cnt; i++)
-                    {
-                        tmpSet.Add(nonAllocCollArr[i]);
-                        nonAllocCollArr[i] = null;
-                    }
-
-                    cnt = Physics.OverlapSphereNonAlloc(point2, radius, nonAllocCollArr, layerMask, query);
-                    for (int i = 0; i < cnt; i++)
-                    {
-                        tmpSet.Add(nonAllocCollArr[i]);
-                        nonAllocCollArr[i] = null;
-                    }
-
-                    var dir = point2 - point1;
-                    var dist = dir.magnitude;
-                    cnt = Physics.SphereCastNonAlloc(point1, radius, dir.normalized, nonAllocRayArr, dist, layerMask, query);
-                    for (int i = 0; i < cnt; i++)
-                    {
-                        tmpSet.Add(nonAllocRayArr[i].collider);
-                        nonAllocRayArr[i] = default(RaycastHit);
-                    }
+                    var lst = results as List<Collider>;
+                    var num = cnt + lst.Count;
+                    if (lst.Capacity < num) lst.Capacity = num;
                 }
 
-                //done, now fill collection
-                if (results is Collider[])
+                for (int i = 0; i < cnt; i++)
                 {
-                    var arr = results as Collider[];
-                    int cnt = Mathf.Min(arr.Length, tmpSet.Count);
-                    int i = -1;
-                    var e = tmpSet.GetEnumerator();
-                    while (e.MoveNext() && ++i < cnt)
-                    {
-                        arr[i] = e.Current;
-                    }
-                    return cnt;
+                    results.Add(nonAllocArr[i]);
+                    nonAllocArr[i] = null;
                 }
-                else
-                {
-                    if (results is List<Collider>)
-                    {
-                        var lst = results as List<Collider>;
-                        var num = tmpSet.Count + lst.Count;
-                        if (lst.Capacity < num) lst.Capacity = num;
-                    }
-
-                    var e = tmpSet.GetEnumerator();
-                    while (e.MoveNext())
-                    {
-                        results.Add(e.Current);
-                    }
-                    return tmpSet.Count;
-                }
+                return cnt;
             }
         }
 

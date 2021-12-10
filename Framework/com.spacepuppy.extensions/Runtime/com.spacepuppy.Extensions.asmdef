@@ -1,0 +1,23 @@
+{
+    "name": "com.spacepuppy.Extensions",
+    "rootNamespace": "com.spacepuppy",
+    "references": [
+        "GUID:ddd0eb9fc8f414a4d9750a013f135d36",
+        "GUID:ad6239a0379b2de43a4d9e723d51db80",
+        "GUID:a9ea6a139249cb743b3a672481c25eec",
+        "GUID:18b35bcc13357ab4ebabf6cf62f8b6ac",
+        "GUID:59dff7440ea421d4186ee9db152b9419",
+        "GUID:837bfa743534fd448a6862609079aa87",
+        "GUID:6b6e5e70273576149b37a2bac053e1d6",
+        "GUID:6055be8ebefd69e48b49212b09b47b2f"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

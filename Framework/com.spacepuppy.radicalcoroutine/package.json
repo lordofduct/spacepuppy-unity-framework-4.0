@@ -1,0 +1,19 @@
+{
+  "name": "com.spacepuppy.radicalcoroutine",
+  "version": "4.0.0",
+  "displayName": "Spacepuppy Framework Radical Coroutine",
+  "description": "Support for enhanced radical coroutine.",
+  "unity": "2020.3",
+  "unityRelease": "22f1",
+  "documentationUrl": "https://github.com/lordofduct/spacepuppy-unity-framework-4.0",
+  "changelogUrl": "https://github.com/lordofduct/spacepuppy-unity-framework-4.0",
+  "licensesUrl": "https://github.com/lordofduct/spacepuppy-unity-framework-4.0/blob/master/LICENSE",
+  "dependencies": {
+    "com.spacepuppy.core": "4.0.0"
+  },
+  "author": {
+    "name": "Dylan Engelman",
+    "email": "dylan@jupiterlighthouse.com",
+    "url": "https://github.com/lordofduct"
+  }
+}

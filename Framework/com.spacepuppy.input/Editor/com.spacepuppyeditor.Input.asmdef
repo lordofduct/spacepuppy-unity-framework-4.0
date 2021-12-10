@@ -1,0 +1,18 @@
+{
+    "name": "com.spacepuppyeditor.Input",
+    "rootNamespace": "com.spacepuppyeditor",
+    "references": [
+        "com.spacepuppy",
+        "com.spacepuppyeditor",
+        "com.spacepuppy.Input"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

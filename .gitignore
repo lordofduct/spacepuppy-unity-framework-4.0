@@ -5,52 +5,5 @@
 **/*.vssscc
 **/*.csproj.vspscc
 
-#ignore template/build stuff
-/Builds
-
-#ignore unique Unity stuff
-UnityProject/Library
-UnityProject/bin
-UnityProject/obj
-UnityProject/Temp
-UnityProject/*.csproj
-UnityProject/*.csproj.vspscc
-UnityProject/*.sln
-UnityProject/*.sln.DotSettings
-UnityProject/*.vssscc
-UnityProject/*.unityproj
-UnityProject/*.booproj
-UnityProject/UnityProject.userprefs
-UnityProject/sysinfo.txt
-UnityProject/*.suo
-UnityProject/ExportedObj
-UnityProject/UpgradeLog.htm
-UnityProject/Logs
-RawAssets/Max/autoback/AutoBackup03.max
-RawAssets/Max/autoback/AutoBackup02.max
-RawAssets/Max/autoback/AutoBackup01.max
-RawAssets/Max/autoback/
-RawAssets/PSD/Terrain Maps/Terrain Map - Mines.tga
-RawAssets/PSD/Terrain Maps/Terrain Map - Mines.psd
-RawAssets/PSD/MagazineArticles/Episode2 - Magazine Preview.psd
-
-#ignore test stuff in Assets
-UnityProject/Assets/Resources
-UnityProject/Assets/Scenes
-UnityProject/Assets/TestComponents
-
-##ignore ProBuilderPreferences
-**/ProBuilderPreferences.asset
-**/ProBuilderPreferences.asset.meta
-
 #ignore temp files
 **/.~lock.*
-RawAssets/Screenshots/KickstarterScreenshots.psd
-
-#ignore Aron Granberge Project so it's not shared in repo
-UnityProject/Assets/3rdParty/AstarPathfindingProject
-UnityProject/Assets/3rdParty/AstarPathfindingProject.meta
-
-#ignore test stuff
-UnityProject/Assets/Tests
-UnityProject/Assets/Tests.meta

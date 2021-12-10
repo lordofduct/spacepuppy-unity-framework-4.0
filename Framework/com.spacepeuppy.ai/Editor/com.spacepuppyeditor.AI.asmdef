@@ -1,0 +1,19 @@
+{
+    "name": "com.spacepuppyeditor.AI",
+    "rootNamespace": "com.spacepuppyeditor",
+    "references": [
+        "GUID:ddd0eb9fc8f414a4d9750a013f135d36",
+        "GUID:87cd754e50a115d40a8f05c6d8dc95ee",
+        "GUID:d6bee0c6daabbeb4ca3134fdc957f69d",
+        "GUID:6f3be19149224ec488e944fe34ec9ac5"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

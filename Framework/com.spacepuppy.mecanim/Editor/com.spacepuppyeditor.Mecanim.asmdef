@@ -1,0 +1,18 @@
+{
+    "name": "com.spacepuppyeditor.Mecanim",
+    "rootNamespace": "com.spacepuppyeditor",
+    "references": [
+        "GUID:ddd0eb9fc8f414a4d9750a013f135d36",
+        "GUID:87cd754e50a115d40a8f05c6d8dc95ee",
+        "GUID:8a9cacf3e700ecc41a5d2e4f702328f5"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

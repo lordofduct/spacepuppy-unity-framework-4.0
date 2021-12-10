@@ -1,0 +1,18 @@
+{
+    "name": "com.spacepuppyeditor.Triggers",
+    "rootNamespace": "com.spacepuppyeditor",
+    "references": [
+        "GUID:ddd0eb9fc8f414a4d9750a013f135d36",
+        "GUID:87cd754e50a115d40a8f05c6d8dc95ee",
+        "GUID:4dd151f1c8c7a9848b52a75012e7f580"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,0 +1,19 @@
+{
+  "name": "com.spacepuppy.core",
+  "version": "4.0.0",
+  "displayName": "Spacepuppy Framework Core",
+  "description": "Core library for the spacepuppy framework, all spacepuppy libraries depend on this.",
+  "unity": "2020.3",
+  "unityRelease": "22f1",
+  "documentationUrl": "https://github.com/lordofduct/spacepuppy-unity-framework-4.0",
+  "changelogUrl": "https://github.com/lordofduct/spacepuppy-unity-framework-4.0",
+  "licensesUrl": "https://github.com/lordofduct/spacepuppy-unity-framework-4.0/blob/master/LICENSE",
+  "dependencies": {
+    "com.unity.editorcoroutines": "1.0.0"
+  },
+  "author": {
+    "name": "Dylan Engelman",
+    "email": "dylan@jupiterlighthouse.com",
+    "url": "https://github.com/lordofduct"
+  }
+}

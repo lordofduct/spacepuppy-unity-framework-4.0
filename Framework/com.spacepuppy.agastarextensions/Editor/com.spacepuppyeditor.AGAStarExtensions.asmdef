@@ -1,0 +1,21 @@
+{
+    "name": "com.spacepuppyeditor.AGAStarExtensions",
+    "rootNamespace": "com.spacepuppyeditor",
+    "references": [
+        "GUID:ddd0eb9fc8f414a4d9750a013f135d36",
+        "GUID:87cd754e50a115d40a8f05c6d8dc95ee",
+        "GUID:b457870014e0e3a47851e427830e5442",
+        "GUID:865575785c1524f888e47306de0c1246",
+        "GUID:efa45043feb7e4147a305b73b5cea642",
+        "GUID:774e21169c4ac4ec8a01db9cdb98d33b"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

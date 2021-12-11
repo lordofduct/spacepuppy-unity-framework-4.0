@@ -23,11 +23,11 @@ VariantReference - ability reference a value of varying type through the inspect
 A basic AI boilerplate for writing AI in Unity. This has mostly been replaced by our mecanim based AI, see com.spacepuppy.Mecanim
 
 Dependencies:
-com.spacepuppy
-com.spacepuppy.radicalcoroutine
-com.spacepuppy.geom
-com.spacepuppy.pathfinding
-com.spacepuppy.sensors
+com.spacepuppy, 
+com.spacepuppy.radicalcoroutine, 
+com.spacepuppy.geom, 
+com.spacepuppy.pathfinding, 
+com.spacepuppy.sensors, 
 com.spacepuppy.statemachine
 
 ## com.spacepuppy.Anim
@@ -35,7 +35,7 @@ com.spacepuppy.statemachine
 An extension of the legacy animation system in Unity. Mostly unnecessary today as we've moved to Mecanim, exists for historical purposes.
 
 Dependencies:
-com.spacepuppy
+com.spacepuppy, 
 com.spacepuppy.radicalcoroutine
 
 ## com.spacepuppy.Audio
@@ -43,7 +43,7 @@ com.spacepuppy.radicalcoroutine
 Incomplete at this time.
 
 Dependencies:
-com.spacepuppy
+com.spacepuppy, 
 com.spacepuppy.radicalcoroutine
 
 ## com.spacepuppy.Cameras
@@ -65,7 +65,7 @@ com.spacepuppy
 Our custom input system to supplement the built in Unity input system. This predates the new input system from Unity (which we actually haven't used since this is our primary input system).
 
 Dependencies:
-com.spacepuppy
+com.spacepuppy, 
 com.spacepuppy.radicalcoroutine
 
 ## com.spacepuppy.Mecanim
@@ -73,7 +73,7 @@ com.spacepuppy.radicalcoroutine
 Various tools to help working with Mecanim. Things from "override layers" which facilitate adding/removing override animations as layers by id/token. As well as a BehaviourStateMachine to Component bridge for scripting against the statemachine as well as facilitating AI logic.
 
 Dependencies:
-com.spacepuppy
+com.spacepuppy, 
 com.spacepuppy.radicalcoroutine
 
 ## com.spacepuppy.Motor
@@ -81,8 +81,8 @@ com.spacepuppy.radicalcoroutine
 Generalized interface IMotor for moving entities around regardless of if they use Rigidbody or CharacterController. As well as movement style controller.
 
 Dependencies:
-com.spacepuppy
-com.spacepuppy.radicalcoroutine
+com.spacepuppy, 
+com.spacepuppy.radicalcoroutine, 
 com.spacepuppy.Geom
 
 ## com.spacepuppy.Pathfinding
@@ -92,7 +92,7 @@ Implementations of Djikstra/A* as well as IPathSeeker/IPath contract interfaces 
 See SpacepuppyAGExtensions for integrating with AronGranberg A* project. Note you MUST supply your own version of AG A* and some features may require the pro license of AG A*.
 
 Dependencies:
-com.spacepuppy
+com.spacepuppy, 
 com.spacepuppy.radicalcoroutine
 
 ## com.spacepuppy.PathfindingMotor
@@ -100,9 +100,9 @@ com.spacepuppy.radicalcoroutine
 Some classes that bridge com.spacepuppy.Motor and com.spacepuppy.Pathfinding
 
 Dependencies:
-com.spacepuppy
-com.spacepuppy.radicalcoroutine
-com.spacepuppy.Motor
+com.spacepuppy, 
+com.spacepuppy.radicalcoroutine, 
+com.spacepuppy.Motor, 
 com.spacepuppy.Pathfinding
 
 ## com.spacepuppy.RadicalCoroutine
@@ -117,7 +117,7 @@ com.spacepuppy
 A SceneManager for managing scenes in Unity
 
 Dependencies:
-com.spacepuppy
+com.spacepuppy, 
 com.spacepuppy.radicalcoroutine
 
 ## com.spacepuppy.Sensors
@@ -125,8 +125,8 @@ com.spacepuppy.radicalcoroutine
 Can be used in tandem with AI to create vision sensors that facilitate an entities ability to sense other entities around them via "aspects" attached to them as components.
 
 Dependencies:
-com.spacepuppy
-com.spacepuppy.radicalcoroutine
+com.spacepuppy, 
+com.spacepuppy.radicalcoroutine, 
 com.spacepuppy.Triggers
 
 ## com.spacepuppy.Serialization
@@ -141,7 +141,7 @@ com.spacepuppy
 A Spawn manager for pooling spawnable objects.
 
 Dependencies:
-com.spacepuppy
+com.spacepuppy, 
 com.spacepuppy.radicalcoroutine
 
 ## com.spacepuppy.StateMachine
@@ -156,8 +156,8 @@ com.spacepuppy
 Various components that utilize the SPEvent system in com.spacepuppy to allow editor based scripting through what we call the "T&I System". Essentially T's are triggers that trigger/call I's on certain events. For example T_OnEnterTrigger will occur when a trigger collider is entered which can then call a I_PlaySoundEffect which... plays a sound effect.
 
 Dependencies:
-com.spacepuppy
-com.spacepuppy.radicalcoroutine
+com.spacepuppy, 
+com.spacepuppy.radicalcoroutine, 
 com.spacepuppy.tween
 
 ## com.spacepuppy.Tween
@@ -165,7 +165,7 @@ com.spacepuppy.tween
 A tween library.
 
 Dependencies:
-com.spacepuppy
+com.spacepuppy, 
 com.spacepuppy.radicalcoroutine
 
 ## com.spacepuppy.Waypoints
@@ -173,8 +173,8 @@ com.spacepuppy.radicalcoroutine
 A waypoint system with in scene editor.
 
 Dependencies:
-com.spacepuppy
-com.spacepuppy.radicalcoroutine
+com.spacepuppy, 
+com.spacepuppy.radicalcoroutine, 
 com.spacepuppy.Tween
 
 ## com.spacepuppy.Extensions
@@ -182,13 +182,13 @@ com.spacepuppy.Tween
 A random assortment of tools that tap into different parts of Spacepuppy.
 
 Dependencies:
-com.spacepuppy
-com.spacepuppy.radicalcoroutine
-com.spacepuppy.Camera
-com.spacepuppy.Geom
-com.spacepuppy.Motor
-com.spacepuppy.Pathfinding
-com.spacepuppy.Tween
+com.spacepuppy, 
+com.spacepuppy.radicalcoroutine, 
+com.spacepuppy.Camera, 
+com.spacepuppy.Geom, 
+com.spacepuppy.Motor, 
+com.spacepuppy.Pathfinding, 
+com.spacepuppy.Tween, 
 TextMesh Pro
 
 ## com.spacepuppy.AGAstarExtensions
@@ -196,10 +196,10 @@ TextMesh Pro
 A bridge between the Aron Granber A* Project and Spacepuppy Pathfinding/Motor libraries.
 
 Dependencies:
-com.spacepuppy
-com.spacepuppy.radicalcoroutine
-com.spacepuppy.Geom
-com.spacepuppy.Pathfinding
-com.spacepuppy.Motor
-com.spacepuppy.PathfindingMotor
+com.spacepuppy, 
+com.spacepuppy.radicalcoroutine, 
+com.spacepuppy.Geom, 
+com.spacepuppy.Pathfinding, 
+com.spacepuppy.Motor, 
+com.spacepuppy.PathfindingMotor, 
 AstarPathfindingProject

@@ -2,12 +2,7 @@
     "name": "com.spacepuppy.Cameras",
     "rootNamespace": "com.spacepuppy",
     "references": [
-        "GUID:ddd0eb9fc8f414a4d9750a013f135d36",
-        "GUID:ad6239a0379b2de43a4d9e723d51db80",
-        "GUID:59dff7440ea421d4186ee9db152b9419",
-        "GUID:837bfa743534fd448a6862609079aa87",
-        "GUID:5428f87216c72394a98f481c124bd43c",
-        "GUID:efa45043feb7e4147a305b73b5cea642"
+        "GUID:ddd0eb9fc8f414a4d9750a013f135d36"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

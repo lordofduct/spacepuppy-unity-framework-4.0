@@ -12,7 +12,7 @@ namespace com.spacepuppy.UI
         #region Fields
 
         [SerializeReference]
-        [SerializeRefPicker(typeof(ITextDecoratorMode), AllowNull = true)]
+        [SerializeRefPicker(typeof(ITextDecoratorMode), AllowNull = true, AlwaysExpanded = true)]
         private ITextDecoratorMode _mode;
 
         #endregion

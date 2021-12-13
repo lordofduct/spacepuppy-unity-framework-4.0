@@ -92,6 +92,8 @@ namespace com.spacepuppy
     {
         public readonly System.Type RefType;
         public bool AllowNull;
+        public bool AlwaysExpanded;
+        public bool DisplayBox;
 
         public SerializeRefPickerAttribute(System.Type tp)
         {
@@ -102,7 +104,8 @@ namespace com.spacepuppy
     public class DisplayFlatAttribute : SPPropertyAttribute
     {
 
-        public bool CanShrinkAndExpand;
+        public bool AlwaysExpanded = true;
+        public bool DisplayBox;
 
     }
 

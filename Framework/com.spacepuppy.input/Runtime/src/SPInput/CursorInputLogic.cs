@@ -64,7 +64,7 @@ namespace com.spacepuppy.SPInput
         private bool _dispatchClickEventAlways;
 
         [SerializeReference]
-        [SerializeRefPicker(typeof(ICursorInputResolver))]
+        [SerializeRefPicker(typeof(ICursorInputResolver), AlwaysExpanded = false, DisplayBox = true)]
         private ICursorInputResolver _resolver = new EventSystemCursorInputResolver();
 
         [System.NonSerialized]

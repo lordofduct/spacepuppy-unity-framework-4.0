@@ -12,7 +12,7 @@ namespace com.spacepuppy.SPInput
         #region Fields
 
         [SerializeReference]
-        [SerializeRefPicker(typeof(IPointerFilterTest))]
+        [SerializeRefPicker(typeof(IPointerFilterTest), AlwaysExpanded = true)]
         private IPointerFilterTest _mode = new EventSystemPointerMode();
 
         #endregion

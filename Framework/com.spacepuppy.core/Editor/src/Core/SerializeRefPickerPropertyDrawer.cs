@@ -5,6 +5,7 @@ using System.Linq;
 
 using com.spacepuppy;
 using com.spacepuppy.Utils;
+using System.Runtime.CompilerServices;
 
 namespace com.spacepuppyeditor.Core
 {
@@ -13,38 +14,154 @@ namespace com.spacepuppyeditor.Core
     public class SerializeRefPickerPropertyDrawer : PropertyDrawer
     {
 
+        private static float TOP_PAD => 2f + EditorGUIUtility.singleLineHeight;
+        private const float BOTTOM_PAD = 2f;
+        private const float MARGIN = 1f;
+        private const float MARGIN_DBL = MARGIN * 2f;
+        private const float SELECTOR_MARGIN = MARGIN + 8f;
+        private const float SELECTOR_MARGIN_DBL = SELECTOR_MARGIN * 2f;
+
+        private System.Type _refType;
+        private bool _allowNull;
+        private bool _displayBox;
+        private bool _alwaysExpanded;
+
+        #region Properties
+
+        public System.Type RefType
+        {
+            get => (this.attribute as SerializeRefPickerAttribute)?.RefType ?? _refType;
+            set => _refType = value;
+        }
+
+        public bool AllowNull
+        {
+            get => (this.attribute as SerializeRefPickerAttribute)?.AllowNull ?? _allowNull;
+            set => _allowNull = value;
+        }
+
+        public bool DisplayBox
+        {
+            get => (this.attribute as SerializeRefPickerAttribute)?.DisplayBox ?? _displayBox;
+            set => _displayBox = value;
+        }
+
+        public bool AlwaysExpanded
+        {
+            get => (this.attribute as SerializeRefPickerAttribute)?.AlwaysExpanded ?? _alwaysExpanded;
+            set => _alwaysExpanded = value;
+        }
+
+        #endregion
+
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
-            return EditorGUI.GetPropertyHeight(property, label, true);
+            bool cache = property.isExpanded;
+            if (this.AlwaysExpanded) property.isExpanded = true;
+
+            try
+            {
+                if (this.DisplayBox)
+                {
+                    return EditorGUI.GetPropertyHeight(property, label, true) + BOTTOM_PAD + TOP_PAD - EditorGUIUtility.singleLineHeight;
+                }
+                else
+                {
+                    return EditorGUI.GetPropertyHeight(property, label, true);
+                }
+            }
+            finally
+            {
+                property.isExpanded = cache;
+            }
         }
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-            SPEditorGUI.DefaultPropertyField(position, property, label, true);
+            bool cache = property.isExpanded;
+            if (this.AlwaysExpanded) property.isExpanded = true;
 
-            if (Application.isPlaying) return;
-
-            var attrib = this.attribute as SerializeRefPickerAttribute;
-            if (attrib == null) return;
-
-            var r0 = new Rect(position.xMin + EditorGUIUtility.labelWidth, position.yMin, Mathf.Max(0f, position.width - EditorGUIUtility.labelWidth), EditorGUIUtility.singleLineHeight);
-            var info = GetAvailableTypes(attrib.RefType);
-            if (info == null) return;
-
-            var tp = property.GetManagedReferenceType();
-
-            var atypes = attrib.AllowNull ? info.Value.AvailableTypesWithNull : info.Value.AvailableTypes;
-            var anames = attrib.AllowNull ? info.Value.AvailableTypeNamesWithNull : info.Value.AvailableTypeNames;
-
-            int index = atypes.IndexOf(tp);
-            EditorGUI.BeginChangeCheck();
-            index = EditorGUI.Popup(r0, GUIContent.none, index, anames);
-            if (EditorGUI.EndChangeCheck())
+            Rect selectorArea;
+            bool drawSelector;
+            try
             {
-                if (index >= 0)
+                if (this.DisplayBox)
                 {
-                    tp = atypes[index];
-                    property.managedReferenceValue = tp != null ? System.Activator.CreateInstance(tp) : null;
+                    if (!this.AlwaysExpanded) cache = SPEditorGUI.PrefixFoldoutLabel(position, property.isExpanded, GUIContent.none);
+
+                    if (property.isExpanded)
+                    {
+                        //float h = SPEditorGUI.GetDefaultPropertyHeight(property, label, true) + BOTTOM_PAD + TOP_PAD - EditorGUIUtility.singleLineHeight;
+                        //var area = new Rect(position.xMin, position.yMax - h, position.width, h);
+                        var area = position;
+                        var drawArea = new Rect(area.xMin + MARGIN, area.yMin + TOP_PAD + EditorGUIUtility.singleLineHeight, area.width - MARGIN_DBL, area.height - TOP_PAD - EditorGUIUtility.singleLineHeight);
+
+                        GUI.BeginGroup(area, label, GUI.skin.box);
+                        GUI.EndGroup();
+
+                        EditorGUI.indentLevel++;
+                        SPEditorGUI.FlatChildPropertyField(drawArea, property);
+                        EditorGUI.indentLevel--;
+
+                        selectorArea = new Rect(position.xMin + SELECTOR_MARGIN, position.yMin + TOP_PAD, position.width - SELECTOR_MARGIN_DBL, EditorGUIUtility.singleLineHeight);
+                        drawSelector = true;
+                    }
+                    else
+                    {
+                        GUI.BeginGroup(position, label, GUI.skin.box);
+                        GUI.EndGroup();
+
+                        selectorArea = default(Rect);
+                        drawSelector = false;
+                    }
+                }
+                else
+                {
+                    if (this.AlwaysExpanded)
+                    {
+                        property.isExpanded = true;
+                        EditorGUI.PrefixLabel(new Rect(position.xMin, position.yMin, position.width, EditorGUIUtility.singleLineHeight), label);
+                        SPEditorGUI.FlatChildPropertyField(new Rect(position.xMin, position.yMin + EditorGUIUtility.singleLineHeight, position.width, Mathf.Max(position.height - EditorGUIUtility.singleLineHeight, 0f)), property);
+                    }
+                    else
+                    {
+                        SPEditorGUI.DefaultPropertyField(position, property, label, true);
+                    }
+
+                    selectorArea = new Rect(position.xMin + EditorGUIUtility.labelWidth, position.yMin, Mathf.Max(0f, position.width - EditorGUIUtility.labelWidth), EditorGUIUtility.singleLineHeight);
+                    drawSelector = true;
+                }
+            }
+            finally
+            {
+                property.isExpanded = cache;
+            }
+
+
+
+
+            if (!drawSelector || Application.isPlaying) return;
+
+            if (this.RefType != null)
+            {
+                var info = GetAvailableTypes(this.RefType);
+                if (info == null) return;
+
+                var tp = property.GetManagedReferenceType();
+
+                var atypes = this.AllowNull ? info.Value.AvailableTypesWithNull : info.Value.AvailableTypes;
+                var anames = this.AllowNull ? info.Value.AvailableTypeNamesWithNull : info.Value.AvailableTypeNames;
+
+                int index = atypes.IndexOf(tp);
+                EditorGUI.BeginChangeCheck();
+                index = EditorGUI.Popup(selectorArea, GUIContent.none, index, anames);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    if (index >= 0)
+                    {
+                        tp = atypes[index];
+                        property.managedReferenceValue = tp != null ? System.Activator.CreateInstance(tp) : null;
+                    }
                 }
             }
         }

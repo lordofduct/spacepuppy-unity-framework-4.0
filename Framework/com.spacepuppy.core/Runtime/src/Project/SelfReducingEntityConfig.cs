@@ -17,8 +17,8 @@ namespace com.spacepuppy.Project
 
         #region Fields
 
-        [DisplayFlat]
         [SerializeField]
+        [DisplayFlat(DisplayBox = true)]
         protected TConcrete _config;
 
         #endregion

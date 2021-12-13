@@ -18,6 +18,9 @@ Collections - various collection implementations from a BinaryHeap to temporary/
 Dynamic - generaly reflection tools
 VariantReference - ability reference a value of varying type through the inspector/serialization.
 
+Dependencies:
+com.unity.editorcoroutines
+
 ## com.spacepuppy.AI
 
 A basic AI boilerplate for writing AI in Unity. This has mostly been replaced by our mecanim based AI, see com.spacepuppy.Mecanim

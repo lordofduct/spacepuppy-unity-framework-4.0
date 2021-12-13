@@ -12,6 +12,9 @@ namespace com.spacepuppyeditor.Core
     public class InfoboxDecorator : DecoratorDrawer
     {
 
+        private const float MARGIN = 8f;
+        private const float MARGIN_DBL = MARGIN * 2f;
+
         public override float GetHeight()
         {
             return InfoboxDecorator.GetHeight(this.attribute as InfoboxAttribute);
@@ -26,12 +29,12 @@ namespace com.spacepuppyeditor.Core
         public static float GetHeight(InfoboxAttribute attrib)
         {
             GUIStyle style = GUI.skin.GetStyle("HelpBox");
-            return Mathf.Max(40f, style.CalcHeight(new GUIContent(attrib.Message), EditorGUIUtility.currentViewWidth));
+            return Mathf.Max(40f, style.CalcHeight(new GUIContent(attrib.Message), EditorGUIUtility.currentViewWidth - MARGIN_DBL));
         }
 
         public static void OnGUI(Rect position, InfoboxAttribute attrib)
         {
-            EditorGUI.HelpBox(position, attrib.Message, (MessageType)attrib.MessageType);
+            EditorGUI.HelpBox(new Rect(position.xMin + MARGIN, position.yMin, position.width - MARGIN_DBL, position.height), attrib.Message, (MessageType)attrib.MessageType);
         }
 
     }

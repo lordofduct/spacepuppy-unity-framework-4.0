@@ -649,7 +649,7 @@ namespace com.spacepuppy
         #region Fields
 
         [SerializeField]
-        [DisplayFlat]
+        [DisplayFlat(DisplayBox = true)]
         private ServiceRegistrationOptions _serviceRegistrationOptions;
 
         #endregion
@@ -951,7 +951,7 @@ namespace com.spacepuppy
         #region Fields
 
         [SerializeField]
-        [DisplayFlat]
+        [DisplayFlat(DisplayBox = true)]
         private ServiceRegistrationOptions _serviceRegistrationOptions;
 
         #endregion

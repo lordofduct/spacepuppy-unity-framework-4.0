@@ -496,6 +496,7 @@ namespace com.spacepuppy
         IEnumerable<System.Reflection.MemberInfo> IDynamic.GetMembers(bool includeNonPublic)
         {
             var tp = this.GetType();
+#if UNITY_EDITOR
             if (Application.isEditor && !Application.isPlaying)
             {
                 var ptp = typeof(Variant);
@@ -506,13 +507,16 @@ namespace com.spacepuppy
             }
             else
             {
-                var ptp = typeof(Variant);
-                var e = _table.GetEnumerator();
-                while (e.MoveNext())
-                {
-                    yield return new DynamicPropertyInfo(e.Current.Key, tp, ptp);
-                }
+#endif
+            var ptp = typeof(Variant);
+            var e = _table.GetEnumerator();
+            while (e.MoveNext())
+            {
+                yield return new DynamicPropertyInfo(e.Current.Key, tp, ptp);
             }
+#if UNITY_EDITOR
+            }
+#endif
 
             foreach (var p in DynamicUtil.GetMembersFromType(tp, includeNonPublic))
             {
@@ -528,6 +532,7 @@ namespace com.spacepuppy
 
         System.Reflection.MemberInfo IDynamic.GetMember(string sMemberName, bool includeNonPublic)
         {
+#if UNITY_EDITOR
             if (Application.isEditor && !Application.isPlaying)
             {
                 if (_keys.Contains(sMemberName)) return new DynamicPropertyInfo(sMemberName, this.GetType(), typeof(Variant));
@@ -536,13 +541,19 @@ namespace com.spacepuppy
             {
                 return new DynamicPropertyInfo(sMemberName, this.GetType(), typeof(Variant));
             }
+#else
+            if (_table.ContainsKey(sMemberName))
+            {
+                return new DynamicPropertyInfo(sMemberName, this.GetType(), typeof(Variant));
+            }
+#endif
 
             return DynamicUtil.GetMemberFromType(this.GetType(), sMemberName, includeNonPublic);
         }
 
-        #endregion
+#endregion
 
-        #region ISerializationCallbackReceiver Interface
+#region ISerializationCallbackReceiver Interface
 
         void ISerializationCallbackReceiver.OnAfterDeserialize()
         {
@@ -563,9 +574,9 @@ namespace com.spacepuppy
             _values = _table.Values.ToArray();
         }
 
-        #endregion
+#endregion
 
-        #region ISerializable Interface
+#region ISerializable Interface
 
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
@@ -587,9 +598,9 @@ namespace com.spacepuppy
             (this as ISerializationCallbackReceiver).OnAfterDeserialize();
         }
 
-        #endregion
+#endregion
 
-        #region IEnumerable Interface
+#region IEnumerable Interface
 
         public Enumerator GetEnumerator()
         {
@@ -661,9 +672,9 @@ namespace com.spacepuppy
             }
         }
 
-        #endregion
+#endregion
 
-        #region Special Types
+#region Special Types
 
         /// <summary>
         /// Configure the list to include name/type pairs reflected from a target type.
@@ -701,7 +712,7 @@ namespace com.spacepuppy
 
         }
 
-        #endregion
+#endregion
 
     }
 

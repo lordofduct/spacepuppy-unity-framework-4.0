@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 
 using com.spacepuppy.Collections;
-using Codice.CM.Common;
-using com.spacepuppy.Project;
 
 namespace com.spacepuppy.Utils
 {

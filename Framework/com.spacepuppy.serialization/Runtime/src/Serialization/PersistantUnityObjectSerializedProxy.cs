@@ -22,31 +22,31 @@ namespace com.spacepuppy.Serialization
         
 
 
-        public void OnDeserialize(SerializationInfo info, StreamingContext context, IAssetBundle assetBundle)
+        public void OnDeserialize(SerializationInfo info, StreamingContext context, IAssetSet assets)
         {
             _info = info;
             _context = context;
-            _bundle = assetBundle;
+            _assets = assets;
         }
 
         
         private SerializationInfo _info;
         private StreamingContext _context;
-        private IAssetBundle _bundle;
+        private IAssetSet _assets;
 
         void IDeserializationCallback.OnDeserialization(object sender)
         {
-            if (_bundle == null) return;
+            if (_assets == null) return;
 
             var resourceId = _info.GetString("sp*id");
-            var obj = _bundle.LoadAsset(resourceId);
+            var obj = _assets.LoadAsset(resourceId);
             if (obj == null) return;
 
             obj = UnityEngine.Object.Instantiate(obj);
 
             foreach (var pobj in ObjUtil.GetAllFromSource<IPersistantAsset>(obj))
             {
-                pobj.OnDeserialize(_info, _context, _bundle);
+                pobj.OnDeserialize(_info, _context, _assets);
             }
         }
     }

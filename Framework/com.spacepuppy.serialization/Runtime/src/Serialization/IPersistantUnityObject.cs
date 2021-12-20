@@ -25,7 +25,7 @@ namespace com.spacepuppy.Serialization
 
         void OnSerialize(SerializationInfo info, StreamingContext context);
 
-        void OnDeserialize(SerializationInfo info, StreamingContext context, IAssetBundle assetBundle);
+        void OnDeserialize(SerializationInfo info, StreamingContext context, IAssetSet assets);
 
     }
 

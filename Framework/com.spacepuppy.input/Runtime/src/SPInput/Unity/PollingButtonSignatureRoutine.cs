@@ -13,7 +13,7 @@ namespace com.spacepuppy.SPInput.Unity
     /// </summary>
     /// <typeparam name="TButton"></typeparam>
     /// <typeparam name="TAxis"></typeparam>
-    public class PollingButtonSignatureRoutine : IRadicalWaitHandle
+    public class PollingButtonSignatureRoutine : IRadicalWaitHandle, IRadicalEnumerator
     {
 
         public delegate bool PollingCallback(PollingButtonSignatureRoutine targ, out InputToken token);
@@ -348,6 +348,23 @@ namespace com.spacepuppy.SPInput.Unity
                 yieldObject = null;
                 return false;
             }
+        }
+
+        #endregion
+
+        #region IEnumerator Interface
+
+        object System.Collections.IEnumerator.Current => _state == State.Running ? _routine : null;
+
+        bool System.Collections.IEnumerator.MoveNext()
+        {
+            object inst;
+            return (this as IRadicalYieldInstruction).Tick(out inst);
+        }
+
+        void System.Collections.IEnumerator.Reset()
+        {
+            //do nothing
         }
 
         #endregion

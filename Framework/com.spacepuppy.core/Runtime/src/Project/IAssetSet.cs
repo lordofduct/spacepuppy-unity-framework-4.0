@@ -6,11 +6,11 @@ namespace com.spacepuppy.Project
 {
 
     /// <summary>
-    /// An interface that represents a bundle of resources that can be loaded on demand. This facilitates wrappers 
+    /// An interface that represents a collections of resources that can be loaded on demand. This facilitates wrappers 
     /// around the global 'Resources' (see: ResourceAssetBundle), portions of 'Resources' (see: ResourcePackage), 
     /// 'AssetBundle' (see: AssetBundlePackage), as well as groups of bundles (see: AssetBundleGroup).
     /// </summary>
-    public interface IAssetBundle : INameable, System.IDisposable
+    public interface IAssetSet : INameable, System.IDisposable
     {
 
         IEnumerable<string> GetAllAssetNames();
@@ -21,16 +21,16 @@ namespace com.spacepuppy.Project
         UnityEngine.Object LoadAsset(string name, System.Type tp);
         T LoadAsset<T>(string name) where T : class;
 
-        IEnumerable<UnityEngine.Object> LoadAllAssets();
-        IEnumerable<UnityEngine.Object> LoadAllAssets(System.Type tp);
-        IEnumerable<T> LoadAllAssets<T>() where T : class;
+        IEnumerable<UnityEngine.Object> LoadAssets();
+        IEnumerable<UnityEngine.Object> LoadAssets(System.Type tp);
+        IEnumerable<T> LoadAssets<T>() where T : class;
 
         void UnloadAllAssets();
 
     }
 
     [System.Serializable]
-    public class AssetBundleRef : SerializableInterfaceRef<IAssetBundle>
+    public class AssetBundleRef : SerializableInterfaceRef<IAssetSet>
     {
 
     }
@@ -38,7 +38,7 @@ namespace com.spacepuppy.Project
     /// <summary>
     /// A wrapper around the global 'Resources' class so it can be used as an IAssetBundle.
     /// </summary>
-    public sealed class ResourcesAssetBundle : IAssetBundle
+    public sealed class ResourcesAssetBundle : IAssetSet
     {
 
         #region Singleton Interface
@@ -70,7 +70,7 @@ namespace com.spacepuppy.Project
 
         #region Methods
 
-        IEnumerable<string> IAssetBundle.GetAllAssetNames()
+        IEnumerable<string> IAssetSet.GetAllAssetNames()
         {
             return Enumerable.Empty<string>();
         }
@@ -96,17 +96,17 @@ namespace com.spacepuppy.Project
             return Resources.Load(path, typeof(T)) as T;
         }
 
-        public IEnumerable<UnityEngine.Object> LoadAllAssets()
+        public IEnumerable<UnityEngine.Object> LoadAssets()
         {
             return Resources.LoadAll(string.Empty);
         }
 
-        public IEnumerable<UnityEngine.Object> LoadAllAssets(System.Type tp)
+        public IEnumerable<UnityEngine.Object> LoadAssets(System.Type tp)
         {
             return Resources.LoadAll(string.Empty, tp);
         }
 
-        public IEnumerable<T> LoadAllAssets<T>() where T : class
+        public IEnumerable<T> LoadAssets<T>() where T : class
         {
             return Resources.LoadAll(string.Empty, typeof(T)).Cast<T>();
         }
@@ -160,7 +160,7 @@ namespace com.spacepuppy.Project
 
     }
 
-    public sealed class AssetBundleWrapper : IAssetBundle
+    public sealed class AssetBundleWrapper : IAssetSet
     {
 
         #region Fields
@@ -214,17 +214,17 @@ namespace com.spacepuppy.Project
             return _bundle.LoadAsset(name, typeof(T)) as T;
         }
 
-        public IEnumerable<UnityEngine.Object> LoadAllAssets()
+        public IEnumerable<UnityEngine.Object> LoadAssets()
         {
             return _bundle.LoadAllAssets();
         }
 
-        public IEnumerable<UnityEngine.Object> LoadAllAssets(System.Type tp)
+        public IEnumerable<UnityEngine.Object> LoadAssets(System.Type tp)
         {
             return _bundle.LoadAllAssets(tp);
         }
 
-        public IEnumerable<T> LoadAllAssets<T>() where T : class
+        public IEnumerable<T> LoadAssets<T>() where T : class
         {
             return _bundle.LoadAllAssets(typeof(T)).Cast<T>();
         }
@@ -274,7 +274,7 @@ namespace com.spacepuppy.Project
     public static class AssetBundleUtil
     {
 
-        public static IAssetBundle ToWrapper(this AssetBundle bundle)
+        public static IAssetSet ToWrapper(this AssetBundle bundle)
         {
             return new AssetBundleWrapper(bundle);
         }

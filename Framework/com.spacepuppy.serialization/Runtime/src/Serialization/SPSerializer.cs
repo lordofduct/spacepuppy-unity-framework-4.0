@@ -29,7 +29,7 @@ namespace com.spacepuppy.Serialization
 
         #region Properties
 
-        public IAssetBundle AssetBundle
+        public IAssetSet AssetSource
         {
             get;
             set;
@@ -109,7 +109,7 @@ namespace com.spacepuppy.Serialization
         public void Dispose()
         {
             _formattersSurrogateSelector = null;
-            this.AssetBundle = null;
+            this.AssetSource = null;
             _pool.Release(this);
         }
 

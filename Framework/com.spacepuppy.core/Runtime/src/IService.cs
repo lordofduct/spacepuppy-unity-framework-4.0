@@ -101,10 +101,35 @@ namespace com.spacepuppy
             return default(T);
         }
 
+        public static bool TryRegister<T>(T service, bool donotSignalRegister = false) where T : class, IService
+        {
+            var other = Entry<T>.Instance;
+            if (!other.IsNullOrDestroyed()) return false;
+
+            Entry<T>.Instance = service;
+            _services.Add(service);
+            if (!donotSignalRegister)
+            {
+                try
+                {
+                    service.OnServiceRegistered(typeof(T));
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogException(ex);
+                }
+            }
+            return true;
+        }
+
         public static void Register<T>(T service, bool donotSignalRegister = false) where T : class, IService
         {
             var other = Entry<T>.Instance;
-            if (!other.IsNullOrDestroyed() && !object.ReferenceEquals(other, service)) throw new System.InvalidOperationException("You must first unregister a service before registering a new one.");
+            if(!other.IsNullOrDestroyed())
+            {
+                if (object.ReferenceEquals(other, service)) return;
+                throw new System.InvalidOperationException("You must first unregister a service before registering a new one.");
+            }
 
             Entry<T>.Instance = service;
             _services.Add(service);
@@ -466,13 +491,9 @@ namespace com.spacepuppy
             }
 
             Services.Register<TServiceType>(service);
-            if (persistent)
+            if (persistent && service is Component c)
             {
-                var go = GameObjectUtil.GetGameObjectFromSource(service);
-                if (go != null)
-                {
-                    UnityEngine.Object.DontDestroyOnLoad(go);
-                }
+                UnityEngine.Object.DontDestroyOnLoad(c.gameObject);
             }
             return service;
         }
@@ -493,13 +514,9 @@ namespace com.spacepuppy
             }
 
             Services.Register<T>(service);
-            if (persistent)
+            if (persistent && service is Component c)
             {
-                var go = GameObjectUtil.GetGameObjectFromSource(service);
-                if (go != null)
-                {
-                    UnityEngine.Object.DontDestroyOnLoad(go);
-                }
+                UnityEngine.Object.DontDestroyOnLoad(c.gameObject);
             }
             return service;
         }
@@ -524,13 +541,9 @@ namespace com.spacepuppy
 
             var service = resource as TServiceType;
             Services.Register<TServiceType>(service);
-            if (persistent)
+            if (persistent && service is Component c)
             {
-                var go = GameObjectUtil.GetGameObjectFromSource(service);
-                if (go != null)
-                {
-                    UnityEngine.Object.DontDestroyOnLoad(go);
-                }
+                UnityEngine.Object.DontDestroyOnLoad(c.gameObject);
             }
             return service;
         }
@@ -552,13 +565,9 @@ namespace com.spacepuppy
             }
 
             Services.Register<TServiceType>(service);
-            if (persistent)
+            if (persistent && service is Component c)
             {
-                var go = GameObjectUtil.GetGameObjectFromSource(service);
-                if (go != null)
-                {
-                    UnityEngine.Object.DontDestroyOnLoad(go);
-                }
+                UnityEngine.Object.DontDestroyOnLoad(c.gameObject);
             }
             return service;
         }
@@ -579,13 +588,9 @@ namespace com.spacepuppy
             }
 
             Services.Register<T>(service);
-            if (persistent)
+            if (persistent && service is Component c)
             {
-                var go = GameObjectUtil.GetGameObjectFromSource(service);
-                if (go != null)
-                {
-                    UnityEngine.Object.DontDestroyOnLoad(go);
-                }
+                UnityEngine.Object.DontDestroyOnLoad(c.gameObject);
             }
             return service;
         }
@@ -610,13 +615,9 @@ namespace com.spacepuppy
 
             var service = resource as TServiceType;
             Services.Register<TServiceType>(service);
-            if (persistent)
+            if (persistent && service is Component c)
             {
-                var go = GameObjectUtil.GetGameObjectFromSource(service);
-                if (go != null)
-                {
-                    UnityEngine.Object.DontDestroyOnLoad(go);
-                }
+                UnityEngine.Object.DontDestroyOnLoad(c.gameObject);
             }
             return service;
         }
@@ -694,10 +695,12 @@ namespace com.spacepuppy
             {
                 if (_serviceRegistrationOptions.AutoRegisterService > Services.AutoRegisterOption.DoNothing)
                 {
-                    Services.Register<T>(this as T);
-                    if (_serviceRegistrationOptions.AutoRegisterService == Services.AutoRegisterOption.RegisterAndPersist)
+                    if (Services.TryRegister<T>(this as T))
                     {
-                        DontDestroyOnLoad(this);
+                        if (_serviceRegistrationOptions.AutoRegisterService == Services.AutoRegisterOption.RegisterAndPersist)
+                        {
+                            DontDestroyOnLoad(this);
+                        }
                     }
                 }
 
@@ -720,10 +723,12 @@ namespace com.spacepuppy
                         Services.Unregister<T>();
                         if (_serviceRegistrationOptions.AutoRegisterService > Services.AutoRegisterOption.DoNothing)
                         {
-                            Services.Register<T>(this as T);
-                            if (_serviceRegistrationOptions.AutoRegisterService == Services.AutoRegisterOption.RegisterAndPersist)
+                            if (Services.TryRegister<T>(this as T))
                             {
-                                DontDestroyOnLoad(this);
+                                if (_serviceRegistrationOptions.AutoRegisterService == Services.AutoRegisterOption.RegisterAndPersist)
+                                {
+                                    DontDestroyOnLoad(this);
+                                }
                             }
                         }
                         return true;
@@ -993,7 +998,7 @@ namespace com.spacepuppy
             {
                 if (_serviceRegistrationOptions.AutoRegisterService)
                 {
-                    Services.Register<T>(this as T);
+                    Services.TryRegister<T>(this as T);
                 }
             }
             else if (object.ReferenceEquals(this, inst))
@@ -1011,7 +1016,7 @@ namespace com.spacepuppy
                         Services.Unregister<T>();
                         if (_serviceRegistrationOptions.AutoRegisterService)
                         {
-                            Services.Register<T>(this as T);
+                            Services.TryRegister<T>(this as T);
                         }
                         break;
                 }

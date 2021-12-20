@@ -7,7 +7,7 @@ using System;
 namespace com.spacepuppy.Anim.Legacy
 {
 
-    public class SPAnim : ISPAnim, IRadicalWaitHandle, System.ICloneable
+    public class SPAnim : ISPAnim, IRadicalWaitHandle, System.ICloneable, IRadicalEnumerator
     {
 
         #region Fields
@@ -389,6 +389,22 @@ namespace com.spacepuppy.Anim.Legacy
         #endregion
 
 
+        #region IEnumerator Interface
+
+        object System.Collections.IEnumerator.Current => null;
+
+        bool System.Collections.IEnumerator.MoveNext()
+        {
+            return this.IsPlaying;
+        }
+
+        void System.Collections.IEnumerator.Reset()
+        {
+            //do nothing
+        }
+
+        #endregion
+
         #region ICloneable Interface
 
         public SPAnim Clone()
@@ -489,7 +505,7 @@ namespace com.spacepuppy.Anim.Legacy
             }
         }
 
-        private sealed class NullSPAnim : ISPAnim, IRadicalWaitHandle
+        private sealed class NullSPAnim : ISPAnim, IRadicalWaitHandle, IRadicalEnumerator
         {
 
             #region ISPAnim Interface
@@ -622,6 +638,22 @@ namespace com.spacepuppy.Anim.Legacy
                 {
                     return true;
                 }
+            }
+
+            #endregion
+
+            #region IEnumerator Interface
+
+            object System.Collections.IEnumerator.Current => null;
+
+            bool System.Collections.IEnumerator.MoveNext()
+            {
+                return false;
+            }
+
+            void System.Collections.IEnumerator.Reset()
+            {
+                //do nothing
             }
 
             #endregion

@@ -23,7 +23,9 @@ namespace com.spacepuppy.Project
 
         public static bool IsValidTag(string stag)
         {
-            return TagData.Tags.Contains(stag);
+            if (!_loaded) Reload();
+            if (_instance == null) return false;
+            return _instance._taglookup.Contains(stag);
         }
 
         public static TagData Asset
@@ -51,6 +53,8 @@ namespace com.spacepuppy.Project
 
         [System.NonSerialized()]
         private IList<string> _readonlyTags;
+        [System.NonSerialized]
+        private HashSet<string> _taglookup;
 
         #endregion
 
@@ -58,6 +62,7 @@ namespace com.spacepuppy.Project
         void ISerializationCallbackReceiver.OnAfterDeserialize()
         {
             _readonlyTags = new System.Collections.ObjectModel.ReadOnlyCollection<string>(_tags);
+            _taglookup = new HashSet<string>(_tags);
         }
 
         void ISerializationCallbackReceiver.OnBeforeSerialize()

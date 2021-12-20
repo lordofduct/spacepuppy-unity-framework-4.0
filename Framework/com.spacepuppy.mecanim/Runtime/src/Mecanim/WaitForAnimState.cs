@@ -1,7 +1,3 @@
-using com.spacepuppy.Mecanim;
-using PlasticGui.WorkspaceWindow;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace com.spacepuppy.Mecanim
@@ -53,7 +49,7 @@ namespace com.spacepuppy.Mecanim
 
         bool IRadicalYieldInstruction.IsComplete => _isComplete;
 
-        object IEnumerator.Current => null;
+        object System.Collections.IEnumerator.Current => null;
 
 
         bool IRadicalYieldInstruction.Tick(out object yieldObject)
@@ -65,7 +61,7 @@ namespace com.spacepuppy.Mecanim
             return !_isComplete;
         }
 
-        bool IEnumerator.MoveNext()
+        bool System.Collections.IEnumerator.MoveNext()
         {
             if (_animator == null) return false;
 
@@ -73,7 +69,7 @@ namespace com.spacepuppy.Mecanim
             return !_isComplete;
         }
 
-        void IEnumerator.Reset()
+        void System.Collections.IEnumerator.Reset()
         {
             //do nothing
         }

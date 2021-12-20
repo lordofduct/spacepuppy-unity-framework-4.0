@@ -1,6 +1,4 @@
-﻿
-
-namespace com.spacepuppy
+﻿namespace com.spacepuppy
 {
 
     /// <summary>
@@ -28,7 +26,7 @@ namespace com.spacepuppy
     /// commonly used setup. You should only ever implement IRadicalYieldInstruction directly if you can't inherit from this 
     /// in your inheritance chain, or you want none standard behaviour.
     /// </summary>
-    public abstract class RadicalYieldInstruction : IRadicalYieldInstruction
+    public abstract class RadicalYieldInstruction : IRadicalYieldInstruction, System.Collections.IEnumerator
     {
 
         #region Fields
@@ -78,7 +76,27 @@ namespace com.spacepuppy
 
         #endregion
 
+        #region IEnumerator Interface
 
+        object System.Collections.IEnumerator.Current => null;
+
+        bool System.Collections.IEnumerator.MoveNext()
+        {
+            if (_complete)
+            {
+                return false;
+            }
+
+            object inst;
+            return this.Tick(out inst);
+        }
+
+        void System.Collections.IEnumerator.Reset()
+        {
+            //do nothing
+        }
+
+        #endregion
 
         #region Static Interface
 

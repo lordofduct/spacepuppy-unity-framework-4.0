@@ -59,9 +59,9 @@ namespace com.spacepuppy.Events
                 case RecalculateMode.All:
                     {
                         if (_delay > 0f)
-                            this.InvokeGuaranteed(() => AstarPath.active.ScanAsync(), _delay);
+                            this.InvokeGuaranteed(() => AstarPath.active.Scan(), _delay);
                         else
-                            AstarPath.active.ScanAsync();
+                            AstarPath.active.Scan();
                         return true;
                     }
                 case RecalculateMode.Region:

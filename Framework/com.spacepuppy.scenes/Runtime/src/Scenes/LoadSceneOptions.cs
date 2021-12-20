@@ -5,7 +5,7 @@ using System.Collections.Generic;
 namespace com.spacepuppy.Scenes
 {
 
-    public abstract class LoadSceneOptions : System.EventArgs, IProgressingYieldInstruction, IRadicalWaitHandle, ISPDisposable
+    public abstract class LoadSceneOptions : System.EventArgs, IProgressingYieldInstruction, IRadicalWaitHandle, IRadicalEnumerator, ISPDisposable
     {
         public static readonly System.Action<ISceneLoadedGlobalHandler, LoadSceneOptions> OnSceneLoadedFunctor = (o, d) => o.OnSceneLoaded(d);
 
@@ -166,6 +166,23 @@ namespace com.spacepuppy.Scenes
         {
             if (callback == null) return;
             this.Complete += (s,e) => callback(e);
+        }
+
+        #endregion
+
+        #region IEnumerator Interface
+
+        object System.Collections.IEnumerator.Current => null;
+
+        bool System.Collections.IEnumerator.MoveNext()
+        {
+            object inst;
+            return this.Tick(out inst);
+        }
+
+        void System.Collections.IEnumerator.Reset()
+        {
+            //do nothing
         }
 
         #endregion

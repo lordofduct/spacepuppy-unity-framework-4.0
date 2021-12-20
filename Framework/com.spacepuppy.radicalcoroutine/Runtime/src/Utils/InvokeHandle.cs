@@ -9,7 +9,7 @@ namespace com.spacepuppy.Utils
     /// 
     /// This can accept a System.Collections.IEnumerator just like a Coroutine, but it does not respect any yield instructions. All yielded objects wait a single frame.
     /// </summary>
-    public sealed class InvokeHandle : IUpdateable, IRadicalWaitHandle, IDisposable
+    public sealed class InvokeHandle : IUpdateable, IRadicalWaitHandle, IRadicalEnumerator, ISPDisposable
     {
 
         #region Fields
@@ -70,7 +70,25 @@ namespace com.spacepuppy.Utils
 
         #endregion
 
+        #region IEnumerator Interface
+
+        object System.Collections.IEnumerator.Current => null;
+
+        bool System.Collections.IEnumerator.MoveNext()
+        {
+            return _handle != null;
+        }
+
+        void System.Collections.IEnumerator.Reset()
+        {
+            //do nothing
+        }
+
+        #endregion
+
         #region ISPDisposable Interface
+
+        bool ISPDisposable.IsDisposed => _pump == null;
 
         public void Dispose()
         {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 
 using Pathfinding;
 using com.spacepuppy.Utils;
+using com.spacepuppy.Async;
 
 namespace com.spacepuppy.Pathfinding
 {

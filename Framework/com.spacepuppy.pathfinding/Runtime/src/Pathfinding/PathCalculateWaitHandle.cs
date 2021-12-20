@@ -5,7 +5,7 @@ using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.Pathfinding
 {
-    public class PathCalculateWaitHandle : IRadicalWaitHandle, IUpdateable, System.IDisposable
+    public class PathCalculateWaitHandle : IRadicalWaitHandle, IUpdateable, System.IDisposable, IRadicalEnumerator
     {
 
         #region Fields
@@ -93,6 +93,23 @@ namespace com.spacepuppy.Pathfinding
                     this.SignalComplete();
                     return false;
             }
+        }
+
+        #endregion
+
+        #region IEnumerator Interface
+
+        object System.Collections.IEnumerator.Current => null;
+
+        bool System.Collections.IEnumerator.MoveNext()
+        {
+            object inst;
+            return (this as IRadicalYieldInstruction).Tick(out inst);
+        }
+
+        void System.Collections.IEnumerator.Reset()
+        {
+            //do nothing
         }
 
         #endregion

@@ -840,20 +840,20 @@ namespace com.spacepuppy.Utils
 
             try
             {
+#if UNITY_EDITOR
                 if (UnityEngine.Application.isEditor && !UnityEngine.Application.isPlaying)
                 {
                     UnityEngine.Object.DestroyImmediate(obj);
+                    return;
                 }
+#endif
+
+                if (obj is UnityEngine.GameObject)
+                    (obj as UnityEngine.GameObject).Kill();
+                else if (obj is UnityEngine.Transform)
+                    (obj as UnityEngine.Transform).gameObject.Kill();
                 else
-                {
-                    if (obj is UnityEngine.GameObject)
-                        (obj as UnityEngine.GameObject).Kill();
-                    else if (obj is UnityEngine.Transform)
-                        (obj as UnityEngine.Transform).gameObject.Kill();
-                    else
-                        UnityEngine.Object.Destroy(obj);
                     UnityEngine.Object.Destroy(obj);
-                }
             }
             catch (System.Exception ex)
             {

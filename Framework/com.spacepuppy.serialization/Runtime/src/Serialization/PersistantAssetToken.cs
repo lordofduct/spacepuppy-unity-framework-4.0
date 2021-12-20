@@ -21,7 +21,7 @@ namespace com.spacepuppy.Serialization
         [System.NonSerialized()]
         private StreamingContext _context;
         [System.NonSerialized()]
-        private IAssetBundle _bundle;
+        private IAssetSet _assets;
 
         #endregion
 
@@ -59,10 +59,10 @@ namespace com.spacepuppy.Serialization
         /// <returns></returns>
         protected object CreateRoot()
         {
-            if (_bundle == null) return null;
+            if (_assets == null) return null;
 
             var resourceId = _info.GetString("sp*id");
-            var obj = _bundle.LoadAsset(resourceId);
+            var obj = _assets.LoadAsset(resourceId);
             if (obj == null) return null;
 
             obj = UnityEngine.Object.Instantiate(obj);
@@ -72,10 +72,10 @@ namespace com.spacepuppy.Serialization
 
         protected void SetObjectData(object obj)
         {
-            if (_bundle == null) return;
+            if (_assets == null) return;
 
             var pobj = ObjUtil.GetAsFromSource<IPersistantAsset>(obj);
-            if (pobj != null) pobj.OnDeserialize(_info, _context, _bundle);
+            if (pobj != null) pobj.OnDeserialize(_info, _context, _assets);
         }
 
         /// <summary>
@@ -111,11 +111,11 @@ namespace com.spacepuppy.Serialization
             _asset.OnSerialize(info, context);
         }
 
-        public void OnDeserialize(SerializationInfo info, StreamingContext context, IAssetBundle assetBundle)
+        public void OnDeserialize(SerializationInfo info, StreamingContext context, IAssetSet assets)
         {
             _info = info;
             _context = context;
-            _bundle = assetBundle;
+            _assets = assets;
         }
         
         #endregion

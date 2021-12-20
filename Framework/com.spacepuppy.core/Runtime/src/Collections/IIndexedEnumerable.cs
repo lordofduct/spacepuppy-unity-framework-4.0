@@ -14,6 +14,96 @@ namespace com.spacepuppy.Collections
 
     }
 
+    public class ReadOnlyCollection<T> : IReadOnlyCollection<T>, ICollection<T>
+    {
+
+        #region Fields
+
+        private ICollection<T> _coll;
+
+        #endregion
+
+        #region CONSTRUCTOR
+
+        public ReadOnlyCollection(ICollection<T> coll)
+        {
+            if (coll == null) throw new System.ArgumentNullException(nameof(coll));
+            _coll = coll;
+        }
+
+        #endregion
+
+        #region Properties
+
+        public int Count => _coll.Count;
+
+        #endregion
+
+        #region Methods
+
+        public bool Contains(T item)
+        {
+            return _coll.Contains(item);
+        }
+
+        public void CopyTo(T[] array, int arrayIndex)
+        {
+            _coll.CopyTo(array, arrayIndex);
+        }
+
+        public IEnumerator<T> GetEnumerator()
+        {
+            return _coll.GetEnumerator();
+        }
+
+        #endregion
+
+        #region ICollection Interface
+
+        int ICollection<T>.Count => _coll.Count;
+
+        bool ICollection<T>.IsReadOnly => true;
+
+        void ICollection<T>.Add(T item)
+        {
+            throw new NotSupportedException();
+        }
+
+        void ICollection<T>.Clear()
+        {
+            throw new NotSupportedException();
+        }
+
+        bool ICollection<T>.Remove(T item)
+        {
+            throw new NotSupportedException();
+        }
+
+        IEnumerator<T> IEnumerable<T>.GetEnumerator()
+        {
+            return _coll.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return _coll.GetEnumerator();
+        }
+
+        #endregion
+
+        #region Utils
+
+        public static ReadOnlyCollection<T> Validate(ref ReadOnlyCollection<T> pointer, ICollection<T> consumable)
+        {
+            if (pointer == null) pointer = new ReadOnlyCollection<T>(consumable);
+            else if (pointer._coll != consumable) pointer._coll = consumable;
+            return pointer;
+        }
+
+        #endregion
+
+    }
+
     public class ReadOnlyList<T> : IIndexedEnumerable<T>, IList<T>
     {
 
@@ -27,7 +117,7 @@ namespace com.spacepuppy.Collections
 
         public ReadOnlyList(IList<T> lst)
         {
-            if (lst == null) throw new ArgumentNullException("lst");
+            if (lst == null) throw new ArgumentNullException(nameof(lst));
             _lst = lst;
         }
 
@@ -72,9 +162,9 @@ namespace com.spacepuppy.Collections
 
         bool ICollection<T>.IsReadOnly { get { return true; } }
 
-        int IReadOnlyCollection<T>.Count => throw new NotImplementedException();
+        int IReadOnlyCollection<T>.Count => _lst.Count;
 
-        T IReadOnlyList<T>.this[int index] => throw new NotImplementedException();
+        T IReadOnlyList<T>.this[int index] => _lst[index];
 
         void ICollection<T>.Add(T item)
         {

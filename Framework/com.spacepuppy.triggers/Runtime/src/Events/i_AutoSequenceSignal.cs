@@ -22,8 +22,9 @@ namespace com.spacepuppy.Events
 
             if (_handle != null)
             {
-                _handle.SignalComplete();
+                var h = _handle;
                 _handle = null;
+                h.SignalComplete();
             }
 
             return true;

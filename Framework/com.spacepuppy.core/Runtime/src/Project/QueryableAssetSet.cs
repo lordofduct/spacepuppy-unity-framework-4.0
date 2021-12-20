@@ -10,7 +10,7 @@ namespace com.spacepuppy.Project
 {
 
     [CreateAssetMenu(fileName = "AssetSet", menuName = "Spacepuppy/Asset Set")]
-    public class QueryableAssetSet : ScriptableObject, IAssetBundle
+    public class QueryableAssetSet : ScriptableObject, IAssetSet
     {
 
         #region Fields
@@ -20,7 +20,7 @@ namespace com.spacepuppy.Project
 
         [SerializeField]
         [ReorderableArray()]
-        private UnityEngine.Object[] _assets;
+        private UnityEngine.Object[] _assets = ArrayUtil.Empty<UnityEngine.Object>();
 
         [System.NonSerialized]
         private Dictionary<string, UnityEngine.Object> _table;
@@ -68,7 +68,7 @@ namespace com.spacepuppy.Project
             for (int i = 0; i < _assets.Length; i++)
             {
                 _table[_assets[i].name] = _assets[i];
-                if (_supportNestedGroups && _assets[i] is IAssetBundle) _nested = true;
+                if (_supportNestedGroups && _assets[i] is IAssetSet) _nested = true;
             }
             _clean = true;
         }
@@ -79,7 +79,7 @@ namespace com.spacepuppy.Project
 
             if (!shallow && _nested)
             {
-                return _table.Keys.Union(_assets.OfType<IAssetBundle>().SelectMany(o => o.GetAllAssetNames()));
+                return _table.Keys.Union(_assets.OfType<IAssetSet>().SelectMany(o => o.GetAllAssetNames()));
             }
             else
             {
@@ -103,9 +103,9 @@ namespace com.spacepuppy.Project
                     {
                         if (assetset.TryGetAsset(name, out obj)) return true;
                     }
-                    else if (_assets[i] is IAssetBundle bundle)
+                    else if (_assets[i] is IAssetSet nestedassets)
                     {
-                        obj = bundle.LoadAsset(name);
+                        obj = nestedassets.LoadAsset(name);
                         if (!object.ReferenceEquals(obj, null)) return true;
                     }
                 }
@@ -133,9 +133,9 @@ namespace com.spacepuppy.Project
                     {
                         if (assetset.TryGetAsset(name, tp, out obj)) return true;
                     }
-                    else if (_assets[i] is IAssetBundle bundle)
+                    else if (_assets[i] is IAssetSet nestedassets)
                     {
-                        obj = bundle.LoadAsset(name, tp);
+                        obj = nestedassets.LoadAsset(name, tp);
                         if (!object.ReferenceEquals(obj, null)) return true;
                     }
                 }
@@ -164,9 +164,9 @@ namespace com.spacepuppy.Project
                     {
                         if (assetset.TryGetAsset<T>(name, out obj)) return true;
                     }
-                    else if (_assets[i] is IAssetBundle bundle)
+                    else if (_assets[i] is IAssetSet nestedassets)
                     {
-                        obj = bundle.LoadAsset(name, typeof(T)) as T;
+                        obj = nestedassets.LoadAsset(name, typeof(T)) as T;
                         if (!object.ReferenceEquals(obj, null)) return true;
                     }
                 }
@@ -283,7 +283,7 @@ namespace com.spacepuppy.Project
 
         #endregion
 
-        #region IAssetBundle Interface
+        #region IAssetSet Interface
 
         public string Name { get { return this.name; } }
 
@@ -297,7 +297,7 @@ namespace com.spacepuppy.Project
             {
                 for (int i = 0; i < _assets.Length; i++)
                 {
-                    if (_assets[i] is IAssetBundle bundle && bundle.Contains(name))
+                    if (_assets[i] is IAssetSet nestedassets && nestedassets.Contains(name))
                     {
                         return true;
                     }
@@ -307,37 +307,37 @@ namespace com.spacepuppy.Project
             return false;
         }
 
-        IEnumerable<string> IAssetBundle.GetAllAssetNames()
+        IEnumerable<string> IAssetSet.GetAllAssetNames()
         {
             return this.GetAllAssetNames();
         }
 
-        UnityEngine.Object IAssetBundle.LoadAsset(string name)
+        UnityEngine.Object IAssetSet.LoadAsset(string name)
         {
             return this.GetAsset(name);
         }
 
-        UnityEngine.Object IAssetBundle.LoadAsset(string name, System.Type tp)
+        UnityEngine.Object IAssetSet.LoadAsset(string name, System.Type tp)
         {
             return this.GetAsset(name, tp);
         }
 
-        T IAssetBundle.LoadAsset<T>(string name)
+        T IAssetSet.LoadAsset<T>(string name)
         {
             return this.GetAsset<T>(name);
         }
 
-        IEnumerable<UnityEngine.Object> IAssetBundle.LoadAllAssets()
+        IEnumerable<UnityEngine.Object> IAssetSet.LoadAssets()
         {
             return this.GetAllAssets();
         }
 
-        IEnumerable<UnityEngine.Object> IAssetBundle.LoadAllAssets(System.Type tp)
+        IEnumerable<UnityEngine.Object> IAssetSet.LoadAssets(System.Type tp)
         {
             return this.GetAllAssets(tp);
         }
 
-        IEnumerable<T> IAssetBundle.LoadAllAssets<T>()
+        IEnumerable<T> IAssetSet.LoadAssets<T>() where T : class
         {
             return this.GetAllAssets<T>();
         }
@@ -349,7 +349,7 @@ namespace com.spacepuppy.Project
             {
                 if (_assets[i] is GameObject) continue;
 
-                if (_supportNestedGroups && _assets[i] is IAssetBundle bundle)
+                if (_supportNestedGroups && _assets[i] is IAssetSet bundle)
                 {
                     bundle.UnloadAllAssets();
                 }

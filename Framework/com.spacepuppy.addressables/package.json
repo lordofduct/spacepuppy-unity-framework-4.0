@@ -1,0 +1,20 @@
+{
+  "name": "com.spacepuppy.addressables",
+  "version": "4.0.0",
+  "displayName": "Spacepuppy Addressables Extensions",
+  "description": "A bridge between Spacepuppy and Addressables.",
+  "unity": "2020.3",
+  "unityRelease": "22f1",
+  "documentationUrl": "https://github.com/lordofduct/spacepuppy-unity-framework-4.0",
+  "changelogUrl": "https://github.com/lordofduct/spacepuppy-unity-framework-4.0",
+  "licensesUrl": "https://github.com/lordofduct/spacepuppy-unity-framework-4.0/blob/master/LICENSE",
+  "dependencies": {
+    "com.spacepuppy.core": "4.0.0",
+	"com.unity.addressables" : "1.18.19"
+  },
+  "author": {
+    "name": "Dylan Engelman",
+    "email": "dylan@jupiterlighthouse.com",
+    "url": "https://github.com/lordofduct"
+  }
+}

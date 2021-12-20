@@ -14,7 +14,7 @@ namespace com.spacepuppy.Serialization
 
         private ISurrogateSelector _nextSelector;
         
-        private IAssetBundle _assets;
+        private IAssetSet _assets;
 
         private AutoPersistantAssetToken _proxy;
 
@@ -22,7 +22,7 @@ namespace com.spacepuppy.Serialization
         
         #region Properties
 
-        public IAssetBundle AssetBundle
+        public IAssetSet AssetSource
         {
             get { return _assets; }
             set { _assets = value; }

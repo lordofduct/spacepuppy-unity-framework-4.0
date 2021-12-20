@@ -1,6 +1,4 @@
-﻿
-
-namespace com.spacepuppy
+﻿namespace com.spacepuppy
 {
 
     /// <summary>
@@ -25,7 +23,7 @@ namespace com.spacepuppy
     /// <summary>
     /// Base implemenation of IRadicalWaitHandle.
     /// </summary>
-    public class RadicalWaitHandle : IRadicalWaitHandle, IPooledYieldInstruction
+    public class RadicalWaitHandle : IRadicalWaitHandle, IPooledYieldInstruction, IRadicalEnumerator
     {
 
         #region Fields
@@ -52,7 +50,9 @@ namespace com.spacepuppy
 
             _complete = true;
             this.Cancelled = true;
-            if (_callback != null) _callback(this);
+
+            _callback?.Invoke(this);
+            _callback = null;
         }
 
         public void SignalComplete()
@@ -60,7 +60,9 @@ namespace com.spacepuppy
             if (_complete) return;
 
             _complete = true;
-            if (_callback != null) _callback(this);
+
+            _callback?.Invoke(this);
+            _callback = null;
         }
 
         public void Reset()
@@ -124,6 +126,23 @@ namespace com.spacepuppy
 
         #endregion
 
+        #region IEnumerator Interface
+
+        object System.Collections.IEnumerator.Current => null;
+
+        bool System.Collections.IEnumerator.MoveNext()
+        {
+            object inst;
+            return this.Tick(out inst);
+        }
+
+        void System.Collections.IEnumerator.Reset()
+        {
+            //do nothing
+        }
+
+        #endregion
+
         #region Static Interface
 
         private static com.spacepuppy.Collections.ObjectCachePool<RadicalWaitHandle> _pool = new com.spacepuppy.Collections.ObjectCachePool<RadicalWaitHandle>(-1, () => new RadicalWaitHandle());
@@ -139,6 +158,126 @@ namespace com.spacepuppy
         public static RadicalWaitHandle Create()
         {
             return _pool.GetInstance();
+        }
+
+        #endregion
+
+    }
+
+    public class RadicalWaitHandle<T> : IRadicalWaitHandle, IRadicalEnumerator
+    {
+
+        #region Fields
+
+        private bool _complete;
+        private T _result;
+        private System.Action<IRadicalWaitHandle> _callback;
+
+        #endregion
+
+        #region CONSTRUCTOR
+
+        public RadicalWaitHandle()
+        {
+
+        }
+
+        #endregion
+
+        #region Properties
+
+        public T Result => _result;
+
+        #endregion
+
+        #region Methods
+
+        public void SignalCancelled()
+        {
+            if (_complete) return;
+
+            _result = default(T);
+
+            _complete = true;
+            this.Cancelled = true;
+
+            _callback?.Invoke(this);
+            _callback = null;
+        }
+
+        public void SignalComplete(T result)
+        {
+            if (_complete) return;
+
+            _result = result;
+            _complete = true;
+
+            _callback?.Invoke(this);
+            _callback = null;
+        }
+
+        public void Reset()
+        {
+            _result = default(T);
+            _complete = false;
+            this.Cancelled = false;
+            _callback = null;
+        }
+
+        protected virtual bool Tick(out object yieldObject)
+        {
+            yieldObject = null;
+            return !_complete;
+        }
+
+        #endregion
+
+        #region IRadicalWaitHandle Interface
+
+        public bool Cancelled
+        {
+            get;
+            private set;
+        }
+
+        public bool IsComplete
+        {
+            get { return _complete; }
+        }
+
+        public void OnComplete(System.Action<IRadicalWaitHandle> callback)
+        {
+            if (callback == null) throw new System.ArgumentNullException("callback");
+            if (_complete) throw new System.InvalidOperationException("Can not wait for complete on an already completed IRadicalWaitHandle.");
+            _callback += callback;
+        }
+
+        bool IRadicalYieldInstruction.Tick(out object yieldObject)
+        {
+            if (_complete)
+            {
+                yieldObject = null;
+                return false;
+            }
+
+            return this.Tick(out yieldObject);
+        }
+
+        #endregion
+
+        #region IEnumerator Interface
+
+        object System.Collections.IEnumerator.Current => null;
+
+        bool System.Collections.IEnumerator.MoveNext()
+        {
+            object inst;
+            return this.Tick(out inst);
+        }
+
+        void System.Collections.IEnumerator.Reset()
+        {
+            //do nothing
         }
 
         #endregion

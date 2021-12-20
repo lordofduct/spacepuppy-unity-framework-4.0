@@ -45,7 +45,7 @@ namespace com.spacepuppy.Geom
 
         #region Methods
 
-        public void Encapsulate(IGeom geom)
+        public Sphere Encapsulate(IGeom geom)
         {
             /*
             var s = geom.GetBoundingSphere();
@@ -72,6 +72,22 @@ namespace com.spacepuppy.Geom
                 _cent += v * (l + s.Radius - _rad);
             }
 
+            return this;
+        }
+
+        public Sphere Encapsulate(Sphere s)
+        {
+            var v = s.Center - _cent;
+            var l = v.magnitude;
+
+            if (l + s.Radius > _rad)
+            {
+                v.Normalize();
+                _rad = (l + s.Radius + _rad) / 2.0f;
+                _cent += v * (l + s.Radius - _rad);
+            }
+
+            return this;
         }
 
         #endregion

@@ -5,7 +5,7 @@ using System.Linq;
 namespace com.spacepuppy.Tween
 {
 
-    public abstract class Tweener : ISPDisposable, IProgressingYieldInstruction, IRadicalWaitHandle
+    public abstract class Tweener : ISPDisposable, IProgressingYieldInstruction, IRadicalWaitHandle, IRadicalEnumerator
     {
 
         #region Events
@@ -531,6 +531,23 @@ namespace com.spacepuppy.Tween
         }
 
         #endregion
+
+        #region IEnumerator Interface
+
+        object System.Collections.IEnumerator.Current => null;
+
+        bool System.Collections.IEnumerator.MoveNext()
+        {
+            return !this.IsComplete;
+        }
+
+        void System.Collections.IEnumerator.Reset()
+        {
+            //do nothing
+        }
+
+        #endregion
+
 
     }
 

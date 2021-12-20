@@ -73,7 +73,7 @@ namespace com.spacepuppy.Serialization
             }
         }
 
-        void IPersistantUnityObject.OnDeserialize(SerializationInfo info, StreamingContext context, IAssetBundle assetBundle)
+        void IPersistantUnityObject.OnDeserialize(SerializationInfo info, StreamingContext context, IAssetSet assets)
         {
             this.transform.position = (Vector3)info.GetValue("pos", typeof(Vector3));
             this.transform.rotation = (Quaternion)info.GetValue("rot", typeof(Quaternion));
@@ -93,7 +93,7 @@ namespace com.spacepuppy.Serialization
                             IPersistantUnityObject pobj = (from o in lst where o.Uid == data.Uid select o).FirstOrDefault();
                             if (pobj != null)
                             {
-                                pobj.OnDeserialize(data.DeserializeInfo, data.DeserializeContext, assetBundle);
+                                pobj.OnDeserialize(data.DeserializeInfo, data.DeserializeContext, assets);
                             }
                         }
                     }

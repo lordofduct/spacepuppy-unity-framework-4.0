@@ -141,20 +141,21 @@ namespace com.spacepuppy.Spawn
             get { return !_isSpawned; }
         }
 
-        public void Kill()
+        public bool Kill()
         {
-            if (!_pool.Despawn(this))
+            try
             {
-                Object.Destroy(this.gameObject);
-            }
-            else
-            {
+                if (!_pool.Despawn(this))
+                {
+                    return false;
+                }
+
                 //TODO - need a cleaner way of doing this
                 using (var lst = TempCollection.GetList<Rigidbody>())
                 {
                     this.transform.GetComponentsInChildren<Rigidbody>(lst);
                     var e = lst.GetEnumerator();
-                    while(e.MoveNext())
+                    while (e.MoveNext())
                     {
                         e.Current.velocity = Vector3.zero;
                         e.Current.angularVelocity = Vector3.zero;
@@ -170,11 +171,23 @@ namespace com.spacepuppy.Spawn
                         e.Current.angularVelocity = 0f;
                     }
                 }
+
+                return true;
             }
-            if (this.OnKilled != null) this.OnKilled(this, System.EventArgs.Empty);
+            finally
+            {
+                try
+                {
+                    this.OnKilled?.Invoke(this, System.EventArgs.Empty);
+                }
+                catch(System.Exception ex)
+                {
+                    Debug.LogException(ex);
+                }
+            }
         }
 
-            #endregion
+         #endregion
 
     }
 

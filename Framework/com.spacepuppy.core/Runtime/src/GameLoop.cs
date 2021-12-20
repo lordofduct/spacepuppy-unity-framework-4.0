@@ -235,6 +235,7 @@ namespace com.spacepuppy
                 if (_quitState == QuitState.BeforeQuit)
                 {
                     //wasn't cancelled, or force quit
+#if UNITY_EDITOR
                     if (UnityEngine.Application.isEditor)
                     {
                         try
@@ -251,6 +252,9 @@ namespace com.spacepuppy
                     {
                         UnityEngine.Application.Quit();
                     }
+#else
+                    UnityEngine.Application.Quit();
+#endif
 
                 }
             }
@@ -296,9 +300,9 @@ namespace com.spacepuppy
             _internalEarlyUpdate -= d;
         }
 
-        #endregion
+#endregion
 
-        #region Event Handlers
+#region Event Handlers
 
         private void OnApplicationQuit()
         {
@@ -388,7 +392,7 @@ namespace com.spacepuppy
             _currentSequence = UpdateSequence.None;
         }
 
-        #endregion
+#endregion
 
     }
 

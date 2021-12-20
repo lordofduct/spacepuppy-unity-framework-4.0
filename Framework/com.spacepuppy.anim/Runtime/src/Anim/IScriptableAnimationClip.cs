@@ -26,7 +26,7 @@ namespace com.spacepuppy.Anim
     }
 
     
-    public abstract class ScriptableAnimState : ISPAnim
+    public abstract class ScriptableAnimState : ISPAnim, IRadicalEnumerator
     {
 
         #region Fields
@@ -124,6 +124,22 @@ namespace com.spacepuppy.Anim
         bool IRadicalWaitHandle.Cancelled
         {
             get { return false; }
+        }
+
+        #endregion
+
+        #region IEnumerator Interface
+
+        object System.Collections.IEnumerator.Current => null;
+
+        bool System.Collections.IEnumerator.MoveNext()
+        {
+            return this.IsPlaying;
+        }
+
+        void System.Collections.IEnumerator.Reset()
+        {
+            //do nothing
         }
 
         #endregion

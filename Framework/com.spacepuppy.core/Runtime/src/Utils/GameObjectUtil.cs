@@ -215,32 +215,34 @@ namespace com.spacepuppy.Utils
         {
             if (obj.IsNullOrDestroyed()) return;
 
+#if UNITY_EDITOR
             if (Application.isEditor && !Application.isPlaying)
             {
                 UnityEngine.Object.Destroy(obj);
+                return;
             }
-            else
-            {
-                using (var lst = TempCollection.GetList<IKillableEntity>())
-                {
-                    //this returns in the order from top down, we will loop backwards to kill bottom up
-                    obj.GetComponentsInChildren<IKillableEntity>(true, lst);
-                    if (lst.Count > 0)
-                    {
-                        for (int i = lst.Count - 1; i > -1; i--)
-                        {
-                            lst[i].Kill();
-                        }
+#endif
 
-                        if (lst[0].gameObject != obj)
-                        {
-                            UnityEngine.Object.Destroy(obj);
-                        }
+            using (var lst = TempCollection.GetList<IKillableEntity>())
+            {
+                //this returns in the order from top down, we will loop backwards to kill bottom up
+                obj.GetComponentsInChildren<IKillableEntity>(true, lst);
+                if (lst.Count > 0)
+                {
+                    bool success = false;
+                    for (int i = lst.Count - 1; i > -1; i--)
+                    {
+                        if (lst[i].Kill()) success = true;
                     }
-                    else
+
+                    if (!success)
                     {
                         UnityEngine.Object.Destroy(obj);
                     }
+                }
+                else
+                {
+                    UnityEngine.Object.Destroy(obj);
                 }
             }
         }

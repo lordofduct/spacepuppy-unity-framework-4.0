@@ -60,7 +60,7 @@ namespace com.spacepuppy
         private bool _searchableIfInactive;
 
         [SerializeField]
-        private string[] _tags;
+        private List<string> _tags;
 
         #endregion
 
@@ -101,11 +101,11 @@ namespace com.spacepuppy
 
         #region Properties
 
-        public int Count { get { return (_tags != null) ? _tags.Length : 0; } }
+        public int Count { get { return _tags?.Count ?? 0; } }
 
         public string this[int index]
         {
-            get { return (_tags != null && index >= 0 && index < _tags.Length) ? _tags[index] : null; }
+            get { return (_tags != null && index >= 0 && index < _tags.Count) ? _tags[index] : null; }
         }
 
         #endregion
@@ -120,66 +120,61 @@ namespace com.spacepuppy
             }
             else
             {
-                _tags = (from s in tags where IsValidMultiTag(s) select s).ToArray();
+                _tags.Clear();
+                foreach(var s in tags)
+                {
+                    if (IsValidTag(s)) _tags.Add(s);
+                }
             }
         }
 
         public IEnumerable<string> GetTags()
         {
-            if (_tags == null) yield break;
-
-            foreach (var tag in _tags) yield return tag;
+            return _tags ?? Enumerable.Empty<string>();
         }
 
         public bool ContainsTag(string tag)
         {
-            if (_tags == null || _tags.Length == 0) return MultiTag.IsEmptyTag(tag);
-            return System.Array.IndexOf(_tags, tag) >= 0;
+            if (_tags == null || _tags.Count == 0) return MultiTag.IsEmptyTag(tag);
+            return _tags.Contains(tag);
         }
 
         public bool ContainsTag(params string[] tags)
         {
-            if (_tags == null || _tags.Length == 0) return tags.Contains(SPConstants.TAG_UNTAGGED);
+            if (_tags == null || _tags.Count == 0) return tags.Contains(SPConstants.TAG_UNTAGGED);
             return _tags.ContainsAny(tags);
         }
 
         public bool ContainsTag(IEnumerable<string> tags)
         {
-            if (_tags == null || _tags.Length == 0) return tags.Contains(SPConstants.TAG_UNTAGGED);
+            if (_tags == null || _tags.Count == 0) return tags.Contains(SPConstants.TAG_UNTAGGED);
             return _tags.ContainsAny(tags);
         }
 
-        public void AddTag(string tag)
+        public bool AddTag(string tag)
         {
-            if (!IsValidMultiTag(tag)) return;
+            if (!IsValidMultiTag(tag)) return false;
 
             if (_tags == null)
             {
-                _tags = new string[] { tag };
+                _tags = new List<string>();
+                _tags.Add(tag);
             }
             else
             {
                 if (!_tags.Contains(tag))
                 {
-                    System.Array.Resize(ref _tags, _tags.Length + 1);
-                    _tags[_tags.Length - 1] = tag;
+                    _tags.Add(tag);
                 }
             }
+            return true;
         }
 
         public bool RemoveTag(string tag)
         {
             if (_tags == null) return false;
 
-            using (var lst = com.spacepuppy.Collections.TempCollection.GetList<string>(_tags))
-            {
-                if (lst.Remove(tag))
-                {
-                    _tags = lst.ToArray();
-                }
-            }
-
-            return false;
+            return _tags.Remove(tag);
         }
 
         public void ClearTags()
@@ -212,17 +207,17 @@ namespace com.spacepuppy
 
         public static bool IsValidTag(string stag)
         {
-            return TagData.Tags.Contains(stag);
+            return TagData.IsValidTag(stag);
         }
 
         public static bool IsValidActiveTag(string stag)
         {
-            return TagData.Tags.Contains(stag) && stag != SPConstants.TAG_UNTAGGED;
+            return TagData.IsValidTag(stag) && stag != SPConstants.TAG_UNTAGGED;
         }
 
         public static bool IsValidMultiTag(string stag)
         {
-            return TagData.Tags.Contains(stag) && stag != SPConstants.TAG_UNTAGGED && stag != SPConstants.TAG_MULTITAG;
+            return TagData.IsValidTag(stag) && stag != SPConstants.TAG_UNTAGGED && stag != SPConstants.TAG_MULTITAG;
         }
 
         public static bool IsEmptyTag(string stag)
@@ -267,7 +262,7 @@ namespace com.spacepuppy
             public bool MoveNext()
             {
                 if (_multi == null || _multi._tags == null) return false;
-                if (_index >= _multi._tags.Length) return false;
+                if (_index >= _multi._tags.Count) return false;
 
                 _current = _multi._tags[_index];
                 _index++;
@@ -456,16 +451,16 @@ namespace com.spacepuppy
          * AddTag
          */
 
-        public static void AddTag(this GameObject go, string stag)
+        public static bool AddTag(this GameObject go, string stag)
         {
-            if (go == null) throw new System.ArgumentNullException("go");
+            if (go == null) throw new System.ArgumentNullException(nameof(go));
 
             MultiTag multitag;
             if (MultiTag.TryGetMultiTag(go, out multitag))
             {
-                multitag.AddTag(stag);
+                return multitag.AddTag(stag);
             }
-            else
+            else if(TagData.IsValidTag(stag))
             {
                 //if (MultiTag.IsEmptyTag(go.tag))
                 if(go.CompareTag(SPConstants.TAG_UNTAGGED))
@@ -479,14 +474,17 @@ namespace com.spacepuppy
                     multitag.AddTag(oldtag);
                     multitag.AddTag(stag);
                 }
+                return true;
             }
+
+            return false;
         }
 
-        public static void AddTag(this Component c, string stag)
+        public static bool AddTag(this Component c, string stag)
         {
-            if (c == null) throw new System.ArgumentNullException("c");
+            if (c == null) throw new System.ArgumentNullException(nameof(c));
 
-            AddTag(c.gameObject, stag);
+            return AddTag(c.gameObject, stag);
         }
 
         /**

@@ -14,11 +14,11 @@ namespace com.spacepuppy.Events
 
         [SerializeField()]
         [TypeReference.Config(typeof(Component), dropDownStyle = TypeDropDownListingStyle.ComponentMenu)]
-        private TypeReference _componentType;
+        private TypeReference _componentType = new TypeReference();
 
         [SerializeField()]
         [TriggerableTargetObject.Config(typeof(GameObject))]
-        private TriggerableTargetObject _target;
+        private TriggerableTargetObject _target = new TriggerableTargetObject();
 
         [SerializeField()]
         [Tooltip("Add a new component even if one already exists.")]

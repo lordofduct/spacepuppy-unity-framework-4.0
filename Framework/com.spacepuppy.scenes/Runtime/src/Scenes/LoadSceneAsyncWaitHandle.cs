@@ -1,12 +1,17 @@
 ﻿using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
+using System;
+using System.Threading.Tasks;
+using com.spacepuppy.Async;
 
 namespace com.spacepuppy.Scenes
 {
 
     /// <summary>
-    /// Blocks until load is complete. If Behaviour is LoadAndWait, it'll stop blocking, but the scene isn't actually loaded until ActivateScene is called.
+    /// Blocks until load is complete. If Behaviour is LoadAndWait, it'll stop blocking as a yield instruction, 
+    /// but the scene isn't actually loaded until ActivateScene is called. At this point its Status will finally 
+    /// read Complete.
     /// </summary>
     public class LoadSceneWaitHandle : LoadSceneOptions
     {
@@ -19,6 +24,7 @@ namespace com.spacepuppy.Scenes
         private UnityLoadResults _loadResults;
 
         private bool _loaded;
+        private System.Action<IRadicalWaitHandle> _loadedCallback;
 
         #endregion
 
@@ -75,44 +81,60 @@ namespace com.spacepuppy.Scenes
 
         #region Methods
 
-        public override void Begin(ISceneManager manager)
+        protected override async void DoBegin(ISceneManager manager)
         {
-            (manager?.Hook ?? GameLoop.Hook).StartCoroutine(this.DoLoad());
-        }
-
-        private System.Collections.IEnumerator DoLoad()
-        {
-            this.OnBeforeLoad();
-
-            _loadResults = this.LoadScene(_sceneName, _mode, _behaviour);
-            switch(_behaviour)
+            try
             {
-                case LoadSceneBehaviour.Standard:
-                    yield return null;
-                    break;
-                case LoadSceneBehaviour.Async:
-                    yield return _loadResults.Op;
-                    break;
-                case LoadSceneBehaviour.AsyncAndWait:
-                    while(!_loadResults.Op.isDone && _loadResults.Op.progress < 0.9f)
-                    {
-                        yield return null;
-                    }
-                    break;
-            }
+                this.OnBeforeLoad();
+                _loadResults = this.LoadScene(_sceneName, _mode, _behaviour);
 
-            _loaded = true;
-
-            if (_loadResults.Op != null)
-            {
-                while (!_loadResults.Op.isDone)
+                switch (_behaviour)
                 {
-                    yield return null;
+                    case LoadSceneBehaviour.Standard:
+                        await Task.Yield();
+                        break;
+                    case LoadSceneBehaviour.Async:
+                        await _loadResults.GetAwaitable();
+                        break;
+                    case LoadSceneBehaviour.AsyncAndWait:
+                        while (!_loadResults.Op.isDone && _loadResults.Op.progress < 0.9f)
+                        {
+                            await Task.Yield();
+                        }
+                        break;
                 }
-            }
 
-            this.OnComplete();
-            com.spacepuppy.Utils.Messaging.Broadcast(this, OnSceneLoadedFunctor);
+                //signal loaded
+                _loaded = true;
+                var d = _loadedCallback;
+                _loadedCallback = null;
+                try
+                {
+                    d?.Invoke(this);
+                }
+                catch (System.Exception ex)
+                {
+                    //just capture this exception, we don't care that the handle failed
+                    Debug.LogException(ex);
+                }
+
+                //wait for it to signal complete
+                if (_loadResults.Op != null)
+                {
+                    while (!_loadResults.Op.isDone)
+                    {
+                        await Task.Yield();
+                    }
+                }
+
+                this.SignalComplete();
+            }
+            catch (System.Exception ex)
+            {
+                _loadResults = UnityLoadResults.Empty;
+                this.SignalError();
+                throw ex;
+            }
         }
 
         public override bool HandlesScene(Scene scene)
@@ -138,6 +160,15 @@ namespace com.spacepuppy.Scenes
             if (_loadResults.Op != null) _loadResults.Op.allowSceneActivation = true;
         }
 
+        public override LoadSceneOptions Clone()
+        {
+            var result = base.Clone() as LoadSceneWaitHandle;
+            result._loadResults = UnityLoadResults.Empty;
+            result._loaded = false;
+            result._loadedCallback = null;
+            return result;
+        }
+
         #endregion
 
         #region IProgressingAsyncOperation Interface
@@ -146,22 +177,30 @@ namespace com.spacepuppy.Scenes
         {
             get
             {
-                return _loadResults.Op?.progress ?? (_loaded ? 1f : 0f);
+                return _loadResults.Op?.progress ?? (this.Status >= LoadSceneOptionsStatus.Complete ? 1f : 0f);
             }
         }
 
-        public override bool IsComplete
-        {
-            get
-            {
-                return _loaded;
-            }
-        }
+        public override bool IsComplete => _loaded;
 
         protected override bool Tick(out object yieldObject)
         {
             yieldObject = null;
             return !_loaded;
+        }
+
+        protected override void RegisterWaitHandleOnComplete(Action<IRadicalWaitHandle> callback)
+        {
+            if (callback == null) return;
+
+            if(_loaded)
+            {
+                base.RegisterWaitHandleOnComplete(callback);
+            }
+            else
+            {
+                _loadedCallback += callback;
+            }
         }
 
         #endregion

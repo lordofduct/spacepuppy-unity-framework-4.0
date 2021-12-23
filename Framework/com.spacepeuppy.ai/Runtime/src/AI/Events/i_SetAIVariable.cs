@@ -23,7 +23,7 @@ namespace com.spacepuppy.AI.Events
         [AIVariableName()]
         private string _variable;
         [SerializeField()]
-        private VariantReference _value;
+        private VariantReference _value = new VariantReference();
 
         #endregion
 
@@ -31,9 +31,17 @@ namespace com.spacepuppy.AI.Events
 
         public IAIController AIController
         {
-            get { return _aiController as IAIController; }
-            set { _aiController = value as UnityEngine.Object; }
+            get => _aiController as IAIController;
+            set => _aiController = value as UnityEngine.Object;
         }
+
+        public string Variable
+        {
+            get => _variable;
+            set => _variable = value;
+        }
+
+        public VariantReference Value => _value;
 
         #endregion
 

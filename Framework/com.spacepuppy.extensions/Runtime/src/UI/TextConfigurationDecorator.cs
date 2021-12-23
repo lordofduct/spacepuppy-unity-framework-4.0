@@ -34,6 +34,7 @@ namespace com.spacepuppy.UI
                 return;
             }
 
+#if SP_TMPRO
             var tmp = this.GetComponentInChildren<TMPro.TMP_Text>();
             if(tmp)
             {
@@ -44,6 +45,7 @@ namespace com.spacepuppy.UI
                 };
                 return;
             }
+#endif
         }
 
         #endregion
@@ -107,7 +109,7 @@ namespace com.spacepuppy.UI
 
         }
 
-        //COMMENT THIS OUT IF YOU DON'T HAVE TextMeshPro
+#if SP_TMPRO
         [System.Serializable]
         public class TextMeshProMode : ITextDecoratorMode
         {
@@ -128,8 +130,9 @@ namespace com.spacepuppy.UI
             }
 
         }
+#endif
 
-        #endregion
+#endregion
 
     }
 

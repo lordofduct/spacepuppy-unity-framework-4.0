@@ -1,25 +1,47 @@
 ﻿using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
+using com.spacepuppy.Dynamic;
+using com.spacepuppy.Async;
+using log4net.Util;
 
 namespace com.spacepuppy.Scenes
 {
 
-    public abstract class LoadSceneOptions : System.EventArgs, IProgressingYieldInstruction, IRadicalWaitHandle, IRadicalEnumerator, ISPDisposable
+    public enum LoadSceneOptionsStatus
     {
-        public static readonly System.Action<ISceneLoadedGlobalHandler, LoadSceneOptions> OnSceneLoadedFunctor = (o, d) => o.OnSceneLoaded(d);
+        Unused = 0,
+        Running = 1,
+        Complete = 2,
+        Error = 3,
+    }
+
+    /// <summary>
+    /// Base abstract class for all LoadSceneOptions (it's not an interface since it has to be an EventArgs and there is a lot of helper methods to facilitate functionality). 
+    /// 
+    /// When implmenting:
+    /// Implement all the abstract methods, as well as the Clone method. It is important that when cloning your LoadSceneOptions that any state info used during loading are reset. 
+    /// It is best to call base.Clone from your override as it cleans up the inherited state as well. Things to clean up include registered event handlers, status's, wait handles, etc. 
+    /// 
+    /// Then when implementing 'DoBegin' make sure to call SignalComplete when finished, or SignalError on failure, otherwise the wait handle will block forever.
+    /// 
+    /// Other methods remain virtual for more advanced implementations of LoadSceneOptions. 
+    /// </summary>
+    public abstract class LoadSceneOptions : System.EventArgs, IProgressingYieldInstruction, IRadicalWaitHandle, IRadicalEnumerator, ISPDisposable, System.ICloneable
+    {
+
+        private static readonly System.Action<ISceneLoadedGlobalHandler, LoadSceneOptions> OnSceneLoadedFunctor = (o, d) => o.OnSceneLoaded(d);
 
         public event System.EventHandler<LoadSceneOptions> BeforeLoad;
         public event System.EventHandler<LoadSceneOptions> Complete;
 
         #region Properties
 
-        /// <summary>
-        /// The primary scene being loaded by these options. If the options load more than 1 scene, this should be the dominant scene.
-        /// </summary>
-        public abstract Scene Scene { get; }
-
-        public abstract LoadSceneMode Mode { get; }
+        public LoadSceneOptionsStatus Status
+        {
+            get;
+            private set;
+        }
 
         /// <summary>
         /// Use this to pass some token between scenes. 
@@ -36,9 +58,27 @@ namespace com.spacepuppy.Scenes
 
         #region Methods
 
-        public abstract void Begin(ISceneManager manager);
+        /// <summary>
+        /// Begins loading the scene on the main thread. If called on another thread, will block until the next frame on mainthread.
+        /// </summary>
+        /// <param name="manager"></param>
+        public void Begin(ISceneManager manager)
+        {
+            if(GameLoop.InvokeRequired)
+            {
+                GameLoop.UpdateHandle.Invoke(() => this.Begin(manager));
+            }
+            else
+            {
+                if (this.Status != LoadSceneOptionsStatus.Unused)
+                {
+                    throw new System.InvalidOperationException("LoadSceneOptions should be ran only once. Clone if you need a copy.");
+                }
 
-        public abstract bool HandlesScene(Scene scene);
+                this.Status = LoadSceneOptionsStatus.Running;
+                this.DoBegin(manager);
+            }
+        }
 
         protected UnityLoadResults LoadScene(string sceneName, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async)
         {
@@ -125,33 +165,113 @@ namespace com.spacepuppy.Scenes
             this.BeforeLoad?.Invoke(this, this);
         }
 
-        protected virtual void OnComplete()
+        protected void SignalComplete()
         {
-            //we purge these handlers as this should only happen once. This is to obey the way IRadicalWaitHandle.OnComplete works
+            this.Status = LoadSceneOptionsStatus.Complete;
+
             var d = this.Complete;
             this.Complete = null;
-            d?.Invoke(this, this);
+            try
+            {
+                d?.Invoke(this, this);
+            }
+            catch(System.Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+            try
+            {
+                com.spacepuppy.Utils.Messaging.Broadcast(this, OnSceneLoadedFunctor);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+        }
+
+        protected void SignalError()
+        {
+            this.Status = LoadSceneOptionsStatus.Error;
+
+            var d = this.Complete;
+            this.Complete = null;
+            try
+            {
+                d?.Invoke(this, this);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+            try
+            {
+                com.spacepuppy.Utils.Messaging.Broadcast(this, OnSceneLoadedFunctor);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogException(ex);
+            }
         }
 
         #endregion
 
-        #region IProgressingAsyncOperation Interface
+        #region Abstract Interface
+
+        /// <summary>
+        /// The primary scene being loaded by these options. If the options load more than 1 scene, this should be the dominant scene.
+        /// </summary>
+        public abstract Scene Scene { get; }
+
+        /// <summary>
+        /// How the primary scene returned by the 'Scene' property was loaded.
+        /// </summary>
+        public abstract LoadSceneMode Mode { get; }
 
         public abstract float Progress
         {
             get;
         }
 
-        public abstract bool IsComplete
+        protected abstract void DoBegin(ISceneManager manager);
+
+        public abstract bool HandlesScene(Scene scene);
+
+        #endregion
+
+        #region ICloneable Interface
+
+        object System.ICloneable.Clone()
         {
-            get;
+            return this.Clone();
+        }
+
+        public virtual LoadSceneOptions Clone()
+        {
+            var result = this.MemberwiseClone() as LoadSceneOptions;
+            result.Status = LoadSceneOptionsStatus.Unused;
+            result.BeforeLoad = null;
+            result.Complete = null;
+            return result;
+        }
+
+        #endregion
+
+        #region IProgressingAsyncOperation Interface
+
+        public virtual bool IsComplete
+        {
+            get => this.Status >= LoadSceneOptionsStatus.Complete;
         }
 
         bool IRadicalYieldInstruction.Tick(out object yieldObject)
         {
             return this.Tick(out yieldObject);
         }
-        protected abstract bool Tick(out object yieldObject);
+        protected virtual bool Tick(out object yieldObject)
+        {
+            yieldObject = null;
+            return !this.IsComplete;
+        }
 
         #endregion
 
@@ -164,8 +284,13 @@ namespace com.spacepuppy.Scenes
 
         void IRadicalWaitHandle.OnComplete(System.Action<IRadicalWaitHandle> callback)
         {
+            this.RegisterWaitHandleOnComplete(callback);
+        }
+
+        protected virtual void RegisterWaitHandleOnComplete(System.Action<IRadicalWaitHandle> callback)
+        {
             if (callback == null) return;
-            this.Complete += (s,e) => callback(e);
+            this.Complete += (s, e) => callback(e);
         }
 
         #endregion
@@ -214,6 +339,29 @@ namespace com.spacepuppy.Scenes
         {
             public AsyncOperation Op;
             public Scene Scene;
+
+            public float Progress => Op?.progress ?? 0f;
+
+            public bool IsComplete => Op?.isDone ?? false;
+
+            public async System.Threading.Tasks.Task<Scene> GetAwaitable()
+            {
+                await Op.AsAsyncWaitHandle().GetTask();
+                return this.Scene;
+            }
+
+            public object GetYieldInstruction()
+            {
+                return Op;
+            }
+
+            public void OnComplete(System.Action<UnityLoadResults> callback)
+            {
+                var r = this;
+                Op.AsAsyncWaitHandle().OnComplete((h) => callback(r));
+            }
+
+            public static readonly UnityLoadResults Empty = new UnityLoadResults();
         }
 
         #endregion
@@ -226,7 +374,7 @@ namespace com.spacepuppy.Scenes
         private Scene _scene;
         private LoadSceneMode _mode;
 
-        public UnmanagedSceneLoadedEventArgs(Scene scene, LoadSceneMode mode)
+        internal UnmanagedSceneLoadedEventArgs(Scene scene, LoadSceneMode mode)
         {
             _scene = scene;
         }
@@ -239,7 +387,7 @@ namespace com.spacepuppy.Scenes
 
         public override bool IsComplete { get { return true; } }
 
-        public override void Begin(ISceneManager manager)
+        protected override void DoBegin(ISceneManager manager)
         {
             throw new System.NotSupportedException();
         }

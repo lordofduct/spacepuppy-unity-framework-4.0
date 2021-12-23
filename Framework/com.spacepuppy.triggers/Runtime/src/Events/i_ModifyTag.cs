@@ -17,7 +17,7 @@ namespace com.spacepuppy.Events
         #region Fields
 
         [SerializeField]
-        private TriggerableTargetObject _target;
+        private TriggerableTargetObject _target = new TriggerableTargetObject();
 
         [SerializeField]
         [TagSelector(AllowUntagged = true)]

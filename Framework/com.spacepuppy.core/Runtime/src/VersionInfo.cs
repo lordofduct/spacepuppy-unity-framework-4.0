@@ -57,10 +57,15 @@ namespace com.spacepuppy
                 return string.Format("{0}.{1}.{2}.{3}", Major, Minor, Patch, Build);
         }
 
+        public bool Equals(VersionInfo other)
+        {
+            return this.CompareTo(other) != 0;
+        }
+
         public override bool Equals(object other)
         {
             if (other is VersionInfo)
-                return this == (VersionInfo)other;
+                return this.CompareTo((VersionInfo)other) != 0;
             else
                 return false;
         }
@@ -113,24 +118,21 @@ namespace com.spacepuppy
 
         #region Static Accessors
 
-        private static VersionInfo? _unityVersion;
-        public static VersionInfo UnityVersion
+        private static VersionInfo _unityVersion;
+        public static VersionInfo GetUnityVersion()
         {
-            get
+            if(_unityVersion.GetHashCode() == 0)
             {
-                if (_unityVersion == null || !_unityVersion.HasValue)
+                var m = Regex.Match(Application.unityVersion, @"^(\d+)\.(\d+)\.(\d+)");
+                _unityVersion = new VersionInfo()
                 {
-                    var m = Regex.Match(Application.unityVersion, @"^(\d+)\.(\d+)\.(\d+)");
-                    _unityVersion = new VersionInfo()
-                    {
-                        Major = Convert.ToInt32(m.Groups[1].Value),
-                        Minor = Convert.ToInt32(m.Groups[2].Value),
-                        Patch = Convert.ToInt32(m.Groups[3].Value),
-                        Build = 0
-                    };
-                }
-                return _unityVersion.Value;
+                    Major = Convert.ToInt32(m.Groups[1].Value),
+                    Minor = Convert.ToInt32(m.Groups[2].Value),
+                    Patch = Convert.ToInt32(m.Groups[3].Value),
+                    Build = 0
+                };
             }
+            return _unityVersion;
         }
 
         #endregion

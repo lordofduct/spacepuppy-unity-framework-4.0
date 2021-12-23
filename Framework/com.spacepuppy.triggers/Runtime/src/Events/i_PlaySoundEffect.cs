@@ -18,7 +18,7 @@ namespace com.spacepuppy.Events
         [SerializeField()]
         [WeightedValueCollection("Weight", "Clip", ElementLabelFormatString = "Clip {0:00}")]
         [Tooltip("One or Many, if many they will be randomly selected by the weights supplied.")]
-        private AudioClipEntry[] _clips;
+        private AudioClipEntry[] _clips = ArrayUtil.Empty<AudioClipEntry>();
 
         [SerializeField()]
         private AudioInterruptMode _interrupt = AudioInterruptMode.StopIfPlaying;
@@ -27,11 +27,11 @@ namespace com.spacepuppy.Events
         private SPTimePeriod _delay;
 
         [SerializeField]
-        private RandomRef _rng;
+        private RandomRef _rng = new RandomRef();
 
         [Tooltip("Trigger something at the end of the sound effect. This is NOT perfectly accurate and really just starts a timer for the duration of the sound being played.")]
         [SerializeField()]
-        private SPEvent _onAudioComplete;
+        private SPEvent _onAudioComplete = new SPEvent("OnAudioComplete");
 
         [System.NonSerialized()]
         private System.IDisposable _completeRoutine;
@@ -65,6 +65,12 @@ namespace com.spacepuppy.Events
         {
             get { return _delay; }
             set { _delay = value; }
+        }
+
+        public IRandom RNG
+        {
+            get => _rng.Value;
+            set => _rng.Value = value;
         }
 
         public SPEvent OnAudioComplete

@@ -9,7 +9,7 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Spawn
 {
 
-    public sealed class SpawnPointTracker : SPComponent, IMStartOrEnableReceiver
+    public sealed class SpawnPointTracker : SPComponent, IMStartOrEnableReceiver, IObservableTrigger
     {
 
         #region Fields
@@ -17,12 +17,12 @@ namespace com.spacepuppy.Spawn
         [SerializeField]
         [ReorderableArray]
         [TypeRestriction(typeof(ISpawnPoint))]
-        private List<Component> _spawnPoints;
+        private List<Component> _spawnPoints = new List<Component>();
 
         [SerializeField]
-        private SPEvent _onSpawnedObject;
+        private SPEvent _onSpawnedObject = new SPEvent("OnSpawnedObject");
         [SerializeField]
-        private SPEvent _onKilledObject;
+        private SPEvent _onKilledObject = new SPEvent("OnKilledObject");
 
 
         [System.NonSerialized]
@@ -140,6 +140,15 @@ namespace com.spacepuppy.Spawn
                 obj.OnKilled -= this.OnKilledObjectHandler;
                 _onKilledObject.ActivateTrigger(this, obj);
             }
+        }
+
+        #endregion
+
+        #region IObservableTrigger Interface
+
+        BaseSPEvent[] IObservableTrigger.GetEvents()
+        {
+            return new BaseSPEvent[] { _onSpawnedObject, _onKilledObject };
         }
 
         #endregion

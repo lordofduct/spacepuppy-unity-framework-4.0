@@ -358,7 +358,6 @@ namespace com.spacepuppy.Motor
             {
                 _onCollisionMessage?.SetDirty();
                 this.ValidateCollisionHandler();
-                Debug.Log("Bird Up");
             }
         }
 
@@ -367,7 +366,6 @@ namespace com.spacepuppy.Motor
             if (component is IMotorCollisionMessageHandler)
             {
                 _onCollisionMessage?.SetDirty();
-                Debug.Log("Bird Down");
             }
         }
 

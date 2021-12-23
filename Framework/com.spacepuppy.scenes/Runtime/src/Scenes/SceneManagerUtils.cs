@@ -9,6 +9,11 @@ namespace com.spacepuppy.Scenes
 
         #region Static Utils
 
+        public static LoadSceneBehaviour RestrictAsyncAndAwait(this LoadSceneBehaviour value)
+        {
+            return value == LoadSceneBehaviour.AsyncAndWait ? LoadSceneBehaviour.Async : value;
+        }
+
         public static LoadSceneWaitHandle LoadScene(string sceneName, LoadSceneMode mode, LoadSceneBehaviour behaviour, object persistentToken = null)
         {
             var manager = Services.Get<ISceneManager>();

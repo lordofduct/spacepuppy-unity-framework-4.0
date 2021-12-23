@@ -27,7 +27,7 @@ namespace com.spacepuppy.Events
         [SerializeField()]
         private ConditionBlock[] _conditions;
         [SerializeField]
-        private SPEvent _defaultCondition;
+        private SPEvent _defaultCondition = new SPEvent("Default Condition");
 
         [SerializeField]
         private bool _passAlongTriggerArg;
@@ -79,7 +79,7 @@ namespace com.spacepuppy.Events
             [SerializeField]
             private EnumFlagTestModes _enumFlags;
             [SerializeField()]
-            private SPEvent _trigger = new SPEvent();
+            private SPEvent _trigger = new SPEvent("Condition");
 
 
             public int Value

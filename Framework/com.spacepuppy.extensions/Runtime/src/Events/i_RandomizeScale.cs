@@ -14,14 +14,14 @@ namespace com.spacepuppy.Events
 
         [SerializeField]
         [TriggerableTargetObject.Config(typeof(Transform), DefaultFromSelf = true)]
-        private TriggerableTargetObject _target;
+        private TriggerableTargetObject _target = new TriggerableTargetObject();
 
         [SerializeField]
         [ReorderableArray]
-        private List<ScaleImpactInfo> _effects;
+        private List<ScaleImpactInfo> _effects = new List<ScaleImpactInfo>();
 
         [SerializeField]
-        private RandomRef _rng;
+        private RandomRef _rng = new RandomRef();
 
         #endregion
 

@@ -3,6 +3,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using com.spacepuppy.Events;
+using com.spacepuppy.Async;
 
 namespace com.spacepuppy.Scenes.Events
 {
@@ -18,16 +19,17 @@ namespace com.spacepuppy.Scenes.Events
         [SerializeField]
         private LoadSceneMode _mode;
         [SerializeField]
+        [EnumPopupExcluding((int)LoadSceneBehaviour.AsyncAndWait)]
         private LoadSceneBehaviour _behaviour;
 
         [SerializeField]
         [Tooltip("A token used to persist data across scenes.")]
-        VariantReference _persistentToken;
+        VariantReference _persistentToken = new VariantReference();
 
         [Space(10f)]
         [Infobox("If the targets of this complete event get destroyed during the load they will not activate.")]
         [SerializeField]
-        private SPEvent _onComplete;
+        private SPEvent _onComplete = new SPEvent("OnComplete");
 
         #endregion
 
@@ -35,26 +37,25 @@ namespace com.spacepuppy.Scenes.Events
 
         public SceneRef Scene
         {
-            get { return _scene; }
-            set { _scene = value; }
+            get => _scene;
+            set => _scene = value;
         }
 
         public LoadSceneMode Mode
         {
-            get { return _mode; }
-            set { _mode = value; }
+            get => _mode;
+            set => _mode = value;
         }
 
         public LoadSceneBehaviour Behaviour
         {
-            get { return _behaviour; }
-            set { _behaviour = value; }
+            get => _behaviour;
+            set => _behaviour = value.RestrictAsyncAndAwait();
         }
 
-        public object PersistentToken
-        {
-            get { return _persistentToken; }
-        }
+        public VariantReference PersistentToken => _persistentToken;
+
+        public SPEvent OnComplete => _onComplete;
 
         #endregion
 
@@ -78,11 +79,11 @@ namespace com.spacepuppy.Scenes.Events
                 if (index < 0 || index >= SceneManager.sceneCountInBuildSettings)
                     return false;
 
-                handle = SceneManagerUtils.LoadScene(index, _mode, _behaviour, persistentToken);
+                handle = SceneManagerUtils.LoadScene(index, _mode, _behaviour.RestrictAsyncAndAwait(), persistentToken);
             }
             else
             {
-                handle = SceneManagerUtils.LoadScene(nm, _mode, _behaviour, persistentToken);
+                handle = SceneManagerUtils.LoadScene(nm, _mode, _behaviour.RestrictAsyncAndAwait(), persistentToken);
             }
 
             if(_onComplete.HasReceivers && handle != null)

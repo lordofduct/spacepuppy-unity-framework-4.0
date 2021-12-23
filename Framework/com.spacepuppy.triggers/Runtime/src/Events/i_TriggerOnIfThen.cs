@@ -1,13 +1,15 @@
 ﻿#pragma warning disable 0649 // variable declared but not used.
 
 using UnityEngine;
+using System.Collections.Generic;
+using System.Linq;
 
 using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.Events
 {
 
-    public class i_TriggerOnIfThen : AutoTriggerable
+    public class i_TriggerOnIfThen : AutoTriggerable, IObservableTrigger
     {
 
         #region Fields
@@ -15,7 +17,7 @@ namespace com.spacepuppy.Events
         [SerializeField()]
         private ConditionBlock[] _conditions;
         [SerializeField]
-        private SPEvent _elseCondition;
+        private SPEvent _elseCondition = new SPEvent("Else Condition");
 
         [SerializeField()]
         private bool _passAlongTriggerArg;
@@ -106,6 +108,15 @@ namespace com.spacepuppy.Events
                 get { return _trigger; }
             }
 
+        }
+
+        #endregion
+
+        #region IObservableTrigger Interface
+
+        BaseSPEvent[] IObservableTrigger.GetEvents()
+        {
+            return (from c in _conditions select c.Trigger).Append(_elseCondition).ToArray();
         }
 
         #endregion

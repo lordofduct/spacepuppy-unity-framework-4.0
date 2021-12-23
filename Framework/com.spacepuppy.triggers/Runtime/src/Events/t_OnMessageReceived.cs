@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace com.spacepuppy.Events
 {
-    public sealed class t_OnMessageReceived : SPComponent, IMessageMediatorReceiver
+    public sealed class t_OnMessageReceived : SPComponent, IMessageMediatorReceiver, IObservableTrigger
     {
 
         #region Fields
@@ -14,7 +14,7 @@ namespace com.spacepuppy.Events
         private MessageMediator _message;
 
         [SerializeField]
-        private SPEvent _onReceived;
+        private SPEvent _onReceived = new SPEvent("OnReceived");
 
         [System.NonSerialized]
         private MessageMediator.RegistrationToken _registerToken;
@@ -81,6 +81,15 @@ namespace com.spacepuppy.Events
             if (token != _message) return;
 
             _onReceived.ActivateTrigger(token, arg);
+        }
+
+        #endregion
+
+        #region IObserverableTrigger Interface
+
+        BaseSPEvent[] IObservableTrigger.GetEvents()
+        {
+            return new BaseSPEvent[] { _onReceived };
         }
 
         #endregion

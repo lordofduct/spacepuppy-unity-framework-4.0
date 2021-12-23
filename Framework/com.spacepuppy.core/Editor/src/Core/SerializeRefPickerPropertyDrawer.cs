@@ -15,7 +15,7 @@ namespace com.spacepuppyeditor.Core
     {
 
         private static float TOP_PAD => 2f + EditorGUIUtility.singleLineHeight;
-        private const float BOTTOM_PAD = 2f;
+        private const float BOTTOM_PAD = 5f;
         private const float MARGIN = 1f;
         private const float MARGIN_DBL = MARGIN * 2f;
         private const float SELECTOR_MARGIN = MARGIN + 8f;
@@ -61,13 +61,15 @@ namespace com.spacepuppyeditor.Core
 
             try
             {
+                float objheight = !string.IsNullOrEmpty(property.managedReferenceFullTypename) ? EditorGUI.GetPropertyHeight(property, label, true) + 4f : EditorGUIUtility.singleLineHeight * 2f;
+
                 if (this.DisplayBox)
                 {
-                    return EditorGUI.GetPropertyHeight(property, label, true) + BOTTOM_PAD + TOP_PAD - EditorGUIUtility.singleLineHeight;
+                    return objheight + BOTTOM_PAD + TOP_PAD - EditorGUIUtility.singleLineHeight;
                 }
                 else
                 {
-                    return EditorGUI.GetPropertyHeight(property, label, true);
+                    return objheight;
                 }
             }
             finally

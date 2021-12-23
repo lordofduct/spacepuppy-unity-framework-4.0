@@ -16,7 +16,7 @@ namespace com.spacepuppy.Events
         private ObservableTargetData[] _targets;
 
         [SerializeField]
-        private SPEvent _onHijacked;
+        private SPEvent _onHijacked = new SPEvent("OnHijacked");
 
         [SerializeField]
         [Tooltip("If true the target won't be purged of its listeners when hijacked.")]

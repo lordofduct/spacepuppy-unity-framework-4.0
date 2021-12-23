@@ -5,6 +5,7 @@ using UnityEngine.ResourceManagement.AsyncOperations;
 
 using com.spacepuppy.Utils;
 using com.spacepuppy.Async;
+using System.Threading.Tasks;
 
 namespace com.spacepuppy.Addressables
 {
@@ -82,15 +83,36 @@ namespace com.spacepuppy.Addressables
         {
             public static readonly AsyncOperationHandleProvider Default = new AsyncOperationHandleProvider();
 
-            public System.Threading.Tasks.Task GetAwaitable(object token)
+            public float GetProgress(object token)
             {
-                if(token is AsyncOperationHandle h)
+                if (token is AsyncOperationHandle h)
                 {
-                    return h.Task;
+                    return h.IsDone ? 1f : h.PercentComplete;
                 }
                 else
                 {
-                    return System.Threading.Tasks.Task.CompletedTask;
+                    throw new System.InvalidOperationException("An instance of AsyncOperationHandleProvider was associated with a token that was not an AsyncOperationHandle.");
+                }
+            }
+
+            public System.Threading.Tasks.Task GetTask(object token)
+            {
+                if(token is AsyncOperationHandle h)
+                {
+                    if(GameLoop.InvokeRequired)
+                    {
+                        Task result = null;
+                        GameLoop.UpdateHandle.Invoke(() => result = h.IsDone ? System.Threading.Tasks.Task.CompletedTask : h.Task);
+                        return result ?? Task.CompletedTask;
+                    }
+                    else
+                    {
+                        return h.IsDone ? System.Threading.Tasks.Task.CompletedTask : h.Task;
+                    }
+                }
+                else
+                {
+                    throw new System.InvalidOperationException("An instance of AsyncOperationHandleProvider was associated with a token that was not an AsyncOperationHandle.");
                 }
             }
 
@@ -102,7 +124,7 @@ namespace com.spacepuppy.Addressables
                 }
                 else
                 {
-                    return null;
+                    throw new System.InvalidOperationException("An instance of AsyncOperationHandleProvider was associated with a token that was not an AsyncOperationHandle.");
                 }
             }
 
@@ -114,7 +136,7 @@ namespace com.spacepuppy.Addressables
                 }
                 else
                 {
-                    return true;
+                    throw new System.InvalidOperationException("An instance of AsyncOperationHandleProvider was associated with a token that was not an AsyncOperationHandle.");
                 }
             }
 
@@ -122,10 +144,41 @@ namespace com.spacepuppy.Addressables
             {
                 if (token is AsyncOperationHandle h)
                 {
-                    h.Completed += (aoh) =>
+                    if(GameLoop.InvokeRequired)
                     {
-                        callback(aoh.AsAsyncWaitHandle());
-                    };
+                        GameLoop.UpdateHandle.BeginInvoke(() =>
+                        {
+                            if (h.IsDone)
+                            {
+                                callback(h.AsAsyncWaitHandle());
+                            }
+                            else
+                            {
+                                h.Completed += (aoh) =>
+                                {
+                                    callback(aoh.AsAsyncWaitHandle());
+                                };
+                            }
+                        });
+                    }
+                    else
+                    {
+                        if(h.IsDone)
+                        {
+                            callback(h.AsAsyncWaitHandle());
+                        }
+                        else
+                        {
+                            h.Completed += (aoh) =>
+                            {
+                                callback(aoh.AsAsyncWaitHandle());
+                            };
+                        }
+                    }
+                }
+                else
+                {
+                    throw new System.InvalidOperationException("An instance of AsyncOperationHandleProvider was associated with a token that was not an AsyncOperationHandle.");
                 }
             }
 
@@ -137,7 +190,7 @@ namespace com.spacepuppy.Addressables
                 }
                 else
                 {
-                    return null;
+                    throw new System.InvalidOperationException("An instance of AsyncOperationHandleProvider was associated with a token that was not an AsyncOperationHandle.");
                 }
             }
 
@@ -147,27 +200,57 @@ namespace com.spacepuppy.Addressables
         {
             public static readonly AsyncOperationHandleProvider<TObject> Default = new AsyncOperationHandleProvider<TObject>();
 
-            public System.Threading.Tasks.Task<TObject> GetAwaitable(object token)
+            public float GetProgress(object token)
             {
                 if (token is AsyncOperationHandle<TObject> h)
                 {
-                    return h.Task;
+                    return h.IsDone ? 1f : h.PercentComplete;
                 }
                 else
                 {
-                    return System.Threading.Tasks.Task<TObject>.FromResult(default(TObject));
+                    throw new System.InvalidOperationException("An instance of AsyncOperationHandleProvider<TObject> was associated with a token that was not an AsyncOperationHandle<TObject>.");
                 }
             }
 
-            System.Threading.Tasks.Task IAsyncWaitHandleProvider.GetAwaitable(object token)
+            public System.Threading.Tasks.Task<TObject> GetTask(object token)
             {
                 if (token is AsyncOperationHandle<TObject> h)
                 {
-                    return h.Task;
+                    if (GameLoop.InvokeRequired)
+                    {
+                        Task<TObject> result = null;
+                        GameLoop.UpdateHandle.Invoke(() => result = h.IsDone ? Task.FromResult(h.Result) : h.Task);
+                        return result ?? Task.FromResult(h.Result);
+                    }
+                    else
+                    {
+                        return h.IsDone ? Task.FromResult(h.Result) : h.Task;
+                    }
                 }
                 else
                 {
-                    return System.Threading.Tasks.Task.CompletedTask;
+                    throw new System.InvalidOperationException("An instance of AsyncOperationHandleProvider<TObject> was associated with a token that was not an AsyncOperationHandle<TObject>.");
+                }
+            }
+
+            System.Threading.Tasks.Task IAsyncWaitHandleProvider.GetTask(object token)
+            {
+                if (token is AsyncOperationHandle<TObject> h)
+                {
+                    if (GameLoop.InvokeRequired)
+                    {
+                        Task<TObject> result = null;
+                        GameLoop.UpdateHandle.Invoke(() => result = h.IsDone ? Task.FromResult(h.Result) : h.Task);
+                        return result ?? Task.FromResult(h.Result);
+                    }
+                    else
+                    {
+                        return h.IsDone ? Task.FromResult(h.Result) : h.Task;
+                    }
+                }
+                else
+                {
+                    throw new System.InvalidOperationException("An instance of AsyncOperationHandleProvider<TObject> was associated with a token that was not an AsyncOperationHandle<TObject>.");
                 }
             }
 
@@ -179,7 +262,7 @@ namespace com.spacepuppy.Addressables
                 }
                 else
                 {
-                    return null;
+                    throw new System.InvalidOperationException("An instance of AsyncOperationHandleProvider<TObject> was associated with a token that was not an AsyncOperationHandle<TObject>.");
                 }
             }
 
@@ -191,7 +274,7 @@ namespace com.spacepuppy.Addressables
                 }
                 else
                 {
-                    return true;
+                    throw new System.InvalidOperationException("An instance of AsyncOperationHandleProvider<TObject> was associated with a token that was not an AsyncOperationHandle<TObject>.");
                 }
             }
 
@@ -199,10 +282,41 @@ namespace com.spacepuppy.Addressables
             {
                 if (token is AsyncOperationHandle<TObject> h)
                 {
-                    h.Completed += (aoh) =>
+                    if(GameLoop.InvokeRequired)
                     {
-                        callback(aoh.AsAsyncWaitHandle());
-                    };
+                        GameLoop.UpdateHandle.BeginInvoke(() =>
+                        {
+                            if(h.IsDone)
+                            {
+                                callback(h.AsAsyncWaitHandle());
+                            }
+                            else
+                            {
+                                h.Completed += (aoh) =>
+                                {
+                                    callback(aoh.AsAsyncWaitHandle());
+                                };
+                            }
+                        });
+                    }
+                    else
+                    {
+                        if (h.IsDone)
+                        {
+                            callback(h.AsAsyncWaitHandle());
+                        }
+                        else
+                        {
+                            h.Completed += (aoh) =>
+                            {
+                                callback(aoh.AsAsyncWaitHandle());
+                            };
+                        }
+                    }
+                }
+                else
+                {
+                    throw new System.InvalidOperationException("An instance of AsyncOperationHandleProvider<TObject> was associated with a token that was not an AsyncOperationHandle<TObject>.");
                 }
             }
 
@@ -210,10 +324,41 @@ namespace com.spacepuppy.Addressables
             {
                 if (token is AsyncOperationHandle<TObject> h)
                 {
-                    h.Completed += (aoh) =>
+                    if (GameLoop.InvokeRequired)
                     {
-                        callback(aoh.AsAsyncWaitHandle());
-                    };
+                        GameLoop.UpdateHandle.BeginInvoke(() =>
+                        {
+                            if (h.IsDone)
+                            {
+                                callback(h.AsAsyncWaitHandle());
+                            }
+                            else
+                            {
+                                h.Completed += (aoh) =>
+                                {
+                                    callback(aoh.AsAsyncWaitHandle());
+                                };
+                            }
+                        });
+                    }
+                    else
+                    {
+                        if(h.IsDone)
+                        {
+                            callback(h.AsAsyncWaitHandle());
+                        }
+                        else
+                        {
+                            h.Completed += (aoh) =>
+                            {
+                                callback(aoh.AsAsyncWaitHandle());
+                            };
+                        }
+                    }
+                }
+                else
+                {
+                    throw new System.InvalidOperationException("An instance of AsyncOperationHandleProvider<TObject> was associated with a token that was not an AsyncOperationHandle<TObject>.");
                 }
             }
 
@@ -225,7 +370,7 @@ namespace com.spacepuppy.Addressables
                 }
                 else
                 {
-                    return default(TObject);
+                    throw new System.InvalidOperationException("An instance of AsyncOperationHandleProvider<TObject> was associated with a token that was not an AsyncOperationHandle<TObject>.");
                 }
             }
 
@@ -237,7 +382,7 @@ namespace com.spacepuppy.Addressables
                 }
                 else
                 {
-                    return null;
+                    throw new System.InvalidOperationException("An instance of AsyncOperationHandleProvider<TObject> was associated with a token that was not an AsyncOperationHandle<TObject>.");
                 }
             }
         }

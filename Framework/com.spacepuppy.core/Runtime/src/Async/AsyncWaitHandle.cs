@@ -1,12 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace com.spacepuppy.Async
 {
 
+    /// <summary>
+    /// This struct is intended to represent an asynchronous wait token while reducing garbage collection as much as possible. 
+    /// By handing it an IAsyncWaitHandleProvider and a token, it will call the appropriate provider method with the token 
+    /// to return the desired wait handle (yieldinstruction, task, callback).
+    /// 
+    /// This is used to unify disparate APIs that may return different kinds of wait handles. This way we can create contracts 
+    /// that return AsyncWaitHandles regardless of the actual workflow underneath (coroutine, task, etc).
+    /// 
+    /// Every sort of handle out there that can be treated as an AsyncWaitHandle should provide an extension method named 
+    /// 'AsAsyncWaitHandle' that creates an AsyncWaitHandle with the appropriate provider and token.
+    /// </summary>
     public struct AsyncWaitHandle
     {
 
@@ -35,7 +47,18 @@ namespace com.spacepuppy.Async
 
         public bool IsValid => !object.ReferenceEquals(_provider, null);
 
+        /// <summary>
+        /// Is the operation complete. 
+        /// Most handles being wrapped are NOT thread safe, only call this from main thread. 
+        /// If on a thread await the task returned by GetAwaitable rather than checking this or calling 'OnComplete' to register a callback.
+        /// </summary>
         public bool IsComplete => _provider?.IsComplete(_token) ?? false;
+
+        /// <summary>
+        /// The progress of the operation, not all AsyncWaitHandle's have progress and may return 0/1 based on completion. 
+        /// Most handles being wrapped are NOT thread safe, only call this from main thread. 
+        /// </summary>
+        public float Progress => _provider?.GetProgress(_token) ?? 0f;
 
         #endregion
 
@@ -67,21 +90,40 @@ namespace com.spacepuppy.Async
             }
         }
 
+        /// <summary>
+        /// A yield instruction that can be used by a coroutine. 
+        /// Most handles being wrapped are NOT thread safe, only call this from main thread. 
+        /// </summary>
+        /// <returns></returns>
         public object GetYieldInstruction()
         {
             return _provider?.GetYieldInstruction(_token);
         }
 
+        /// <summary>
+        /// Register callback that will fire on completion. Will be fired immediately if the handle is complete. 
+        /// This will be thread safe.
+        /// </summary>
+        /// <param name="callback"></param>
         public void OnComplete(System.Action<AsyncWaitHandle> callback)
         {
             _provider?.OnComplete(_token, callback);
         }
 
-        public System.Threading.Tasks.Task GetAwaitable()
+        /// <summary>
+        /// Get a task that can be awaited until the handle completes. 
+        /// This will be thread safe.
+        /// </summary>
+        /// <returns></returns>
+        public System.Threading.Tasks.Task GetTask()
         {
-            return _provider?.GetAwaitable(_token);
+            return _provider?.GetTask(_token);
         }
 
+        /// <summary>
+        /// Get the result, if any, of the handle after the handle has completed.
+        /// </summary>
+        /// <returns></returns>
         public object GetResult()
         {
             if (_provider != null)
@@ -96,6 +138,15 @@ namespace com.spacepuppy.Async
 
         #endregion
 
+        #region Operators
+
+        public static implicit operator Task(AsyncWaitHandle handle)
+        {
+            return handle.GetTask() ?? Task.CompletedTask;
+        }
+
+        #endregion
+
     }
 
     /// <summary>
@@ -103,12 +154,11 @@ namespace com.spacepuppy.Async
     /// By handing it an IAsyncWaitHandleProvider and a token, it will call the appropriate provider method with the token 
     /// to return the desired wait handle (yieldinstruction, task, callback).
     /// 
-    /// This is used to unify disparate APIs that may return different kinds of wait handles.
+    /// This is used to unify disparate APIs that may return different kinds of wait handles. This way we can create contracts 
+    /// that return AsyncWaitHandles regardless of the actual workflow underneath (coroutine, task, etc).
     /// 
-    /// For example the IAssetSet is intended to bring together various collections from AssetBundle, to Resources, to Addressables 
-    /// to funciton polymorphically. But since all of them return different types for the async calls, this facilitate bringing them 
-    /// all under one provider interface while keeping gc as minimal as possible (things like callbacks and tasks will inherently have 
-    /// gc).
+    /// Every sort of handle out there that can be treated as an AsyncWaitHandle should provide an extension method named 
+    /// 'AsAsyncWaitHandle' that creates an AsyncWaitHandle with the appropriate provider and token.
     /// </summary>
     public struct AsyncWaitHandle<T>
     {
@@ -138,27 +188,57 @@ namespace com.spacepuppy.Async
 
         public bool IsValid => !object.ReferenceEquals(_provider, null);
 
+        /// <summary>
+        /// Is the operation complete. 
+        /// Most handles being wrapped are NOT thread safe, only call this from main thread. 
+        /// If on a thread await the task returned by GetAwaitable rather than checking this or calling 'OnComplete' to register a callback.
+        /// </summary>
         public bool IsComplete => _provider?.IsComplete(_token) ?? false;
+
+        /// <summary>
+        /// The progress of the operation, not all AsyncWaitHandle's have progress and may return 0/1 based on completion. 
+        /// Most handles being wrapped are NOT thread safe, only call this from main thread. 
+        /// </summary>
+        public float Progress => _provider?.GetProgress(_token) ?? 0f;
 
         #endregion
 
         #region Methods
 
+        /// <summary>
+        /// A yield instruction that can be used by a coroutine. 
+        /// Most handles being wrapped are NOT thread safe, only call this from main thread. 
+        /// </summary>
+        /// <returns></returns>
         public object GetYieldInstruction()
         {
             return _provider?.GetYieldInstruction(_token);
         }
 
+        /// <summary>
+        /// Register callback that will fire on completion. Will be fired immediately if the handle is complete. 
+        /// This will be thread safe.
+        /// </summary>
+        /// <param name="callback"></param>
         public void OnComplete(System.Action<AsyncWaitHandle<T>> callback)
         {
             _provider?.OnComplete(_token, callback);
         }
 
-        public System.Threading.Tasks.Task<T> GetAwaitable()
+        /// <summary>
+        /// Get a task that can be awaited until the handle completes. 
+        /// This will be thread safe.
+        /// </summary>
+        /// <returns></returns>
+        public System.Threading.Tasks.Task<T> GetTask()
         {
-            return _provider?.GetAwaitable(_token);
+            return _provider?.GetTask(_token);
         }
 
+        /// <summary>
+        /// Get the result, if any, of the handle after the handle has completed.
+        /// </summary>
+        /// <returns></returns>
         public T GetResult()
         {
             if(_provider != null)
@@ -180,24 +260,92 @@ namespace com.spacepuppy.Async
             return new AsyncWaitHandle(handle._provider, handle._token);
         }
 
+        public static implicit operator Task<T>(AsyncWaitHandle<T> handle)
+        {
+            return handle.GetTask() ?? Task.FromResult<T>(handle.GetResult());
+        }
+
         #endregion
 
     }
 
+    /// <summary>
+    /// Converts the token portion of an AsyncWaitHandle to its appropriate data. 
+    /// </summary>
     public interface IAsyncWaitHandleProvider
     {
+        /// <summary>
+        /// Provides the progress of the underlying handle. 
+        /// This should return 1 if IsComplete returns true. 
+        /// If this underlying handle does not have progress return 0 until complete. 
+        /// This is not required to be thread safe. 
+        /// </summary>
+        /// <param name="token"></param>
+        /// <returns></returns>
+        float GetProgress(object token);
+        /// <summary>
+        /// Provides if the underlying handle is complete. 
+        /// This is not required to be thread safe.
+        /// </summary>
+        /// <param name="token"></param>
+        /// <returns></returns>
         bool IsComplete(object token);
+        /// <summary>
+        /// Provides the underlying handle's yield instruction for a coroutine. 
+        /// This is not required to be thread safe since it's only used in coroutines.
+        /// </summary>
+        /// <param name="token"></param>
+        /// <returns></returns>
         object GetYieldInstruction(object token);
-        Task GetAwaitable(object token);
+        /// <summary>
+        /// Provides a task that can be awaited until the underlying handle is complete. 
+        /// This MUST be thread safe. 
+        /// </summary>
+        /// <param name="token"></param>
+        /// <returns></returns>
+        Task GetTask(object token);
+        /// <summary>
+        /// Provides a hook to attach a callback delegate that will be called when the underlying handle is complete. 
+        /// This MUST be thread safe.
+        /// </summary>
+        /// <param name="token"></param>
+        /// <param name="callback"></param>
         void OnComplete(object token, System.Action<AsyncWaitHandle> callback);
+        /// <summary>
+        /// Provides a reference to the result provided by the underlying handle, if any. Otherwise return the handle itself.
+        /// This MUST be thread safe.
+        /// </summary>
+        /// <param name="token"></param>
+        /// <returns></returns>
         object GetResult(object token);
     }
 
+    /// <summary>
+    /// Converts the token portion of an AsyncWaitHandle to its appropriate data. 
+    /// </summary>
     public interface IAsyncWaitHandleProvider<T> : IAsyncWaitHandleProvider
     {
+        /// <summary>
+        /// Provides a hook to attach a callback delegate that will be called when the underlying handle is complete. 
+        /// This MUST be thread safe.
+        /// </summary>
+        /// <param name="token"></param>
+        /// <param name="callback"></param>
         void OnComplete(object token, System.Action<AsyncWaitHandle<T>> callback);
+        /// <summary>
+        /// Provides a reference to the result provided by the underlying handle, if any. Otherwise return the handle itself.
+        /// This MUST be thread safe.
+        /// </summary>
+        /// <param name="token"></param>
+        /// <returns></returns>
         new T GetResult(object token);
-        new Task<T> GetAwaitable(object token);
+        /// <summary>
+        /// Provides a task that can be awaited until the underlying handle is complete. 
+        /// This MUST be thread safe. 
+        /// </summary>
+        /// <param name="token"></param>
+        /// <returns></returns>
+        new Task<T> GetTask(object token);
     }
 
 }

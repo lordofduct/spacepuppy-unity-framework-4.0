@@ -18,6 +18,7 @@ namespace com.spacepuppyeditor.Events
     public class SPEventPropertyDrawer : PropertyDrawer
     {
 
+        private const float BOTTOM_MARGIN = 4f; //margin at the bottom of the drawer
         private const float MARGIN = 2.0f;
         private const float BTN_ACTIVATE_HEIGHT = 24f;
 
@@ -124,7 +125,7 @@ namespace com.spacepuppyeditor.Events
                 h = EditorGUIUtility.singleLineHeight;
             }
 
-            return h;
+            return h + BOTTOM_MARGIN;
         }
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)

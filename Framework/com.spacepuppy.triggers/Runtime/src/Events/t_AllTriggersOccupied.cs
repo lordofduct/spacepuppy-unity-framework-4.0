@@ -22,10 +22,10 @@ namespace com.spacepuppy.Events
         private UnityEngine.Object[] _observedTargets;
 
         [SerializeField]
-        private SPEvent _onEnter;
+        private SPEvent _onEnter = new SPEvent("OnEnter");
 
         [SerializeField]
-        private SPEvent _onExit;
+        private SPEvent _onExit = new SPEvent("OnExit");
 
         [System.NonSerialized]
         private IOccupiedTrigger[] _targets;

@@ -31,7 +31,9 @@ namespace com.spacepuppy.Cameras
         {
             if (!s)
             {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD 
                 Debug.Log("Missing shader in " + ToString());
+#endif
                 enabled = false;
                 return null;
             }
@@ -42,7 +44,9 @@ namespace com.spacepuppy.Cameras
             if (!s.isSupported)
             {
                 NotSupported();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD 
                 Debug.Log("The shader " + s.ToString() + " on effect " + ToString() + " is not supported on this platform!");
+#endif
                 return null;
             }
             else
@@ -60,7 +64,9 @@ namespace com.spacepuppy.Cameras
         {
             if (!s)
             {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD 
                 Debug.Log("Missing shader in " + ToString());
+#endif
                 return null;
             }
 
@@ -89,7 +95,9 @@ namespace com.spacepuppy.Cameras
 
         public virtual bool CheckResources()
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD 
             Debug.LogWarning("CheckResources () for " + ToString() + " should be overwritten.");
+#endif
             return isSupported;
         }
 
@@ -142,13 +150,15 @@ namespace com.spacepuppy.Cameras
 
         protected void ReportAutoDisable()
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD 
             Debug.LogWarning("The image effect " + ToString() + " has been disabled as it's not supported on the current platform.");
+#endif
         }
 
         // deprecated but needed for old effects to survive upgrading
         bool CheckShader(Shader s)
         {
-#if UNITY_EDITOR
+#if UNITY_EDITOR || DEVELOPMENT_BUILD 
             Debug.Log("The shader " + s.ToString() + " on effect " + ToString() + " is not part of the Unity 3.2+ effects suite anymore. For best performance and quality, please ensure you are using the latest Standard Assets Image Effects (Pro only) package.");
 #endif
             if (!s.isSupported)

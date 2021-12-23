@@ -64,7 +64,7 @@ namespace com.spacepuppy.Async
         {
             if (_threadId == 0) throw new System.InvalidOperationException("InvokePump has been closed.");
             if (Thread.CurrentThread.ManagedThreadId == _threadId) throw new System.InvalidOperationException("Never call WaitOne on an InvokePump from the thread that owns it, this will freeze that thread indefinitely.");
-            if (action == null) throw new System.ArgumentNullException("action");
+            if (action == null) throw new System.ArgumentNullException(nameof(action));
 
             lock (_invokeLock)
             {
@@ -80,13 +80,42 @@ namespace com.spacepuppy.Async
         public void BeginInvoke(Action action)
         {
             if (_threadId == 0) throw new System.InvalidOperationException("InvokePump has been closed.");
-            if (action == null) throw new System.ArgumentNullException("action");
+            if (action == null) throw new System.ArgumentNullException(nameof(action));
 
             lock (_invokeLock)
             {
                 _invoking.Enqueue(action);
             }
         }
+
+        public void InvokeIfRequired(Action action)
+        {
+            if (action == null) throw new System.ArgumentNullException(nameof(action));
+
+            if (this.InvokeRequired)
+            {
+                this.Invoke(action);
+            }
+            else
+            {
+                action();
+            }
+        }
+
+        public void BeginInvokeIfRequired(Action action)
+        {
+            if (action == null) throw new System.ArgumentNullException(nameof(action));
+
+            if (this.InvokeRequired)
+            {
+                this.BeginInvoke(action);
+            }
+            else
+            {
+                action();
+            }
+        }
+
 
         /// <summary>
         /// Can only be called by the thread that owns this InvokePump, this will run all queued actions.

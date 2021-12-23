@@ -16,7 +16,7 @@ namespace com.spacepuppy.Events
         #region Fields
 
         [SerializeField()]
-        private SPEvent _trigger;
+        private SPEvent _trigger = new SPEvent("Trigger");
 
         [SerializeField()]
         private bool _passAlongTriggerArg;

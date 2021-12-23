@@ -14,7 +14,7 @@ namespace com.spacepuppy.Events
 
         [SerializeField]
         [TriggerableTargetObject.Config(typeof(AudioSource))]
-        private TriggerableTargetObject _target;
+        private TriggerableTargetObject _target = new TriggerableTargetObject();
 
         [SerializeField]
         private SPTimePeriod _fadeOutDur;

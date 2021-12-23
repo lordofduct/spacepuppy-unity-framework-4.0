@@ -10,7 +10,7 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Events
 {
 
-    public class i_TriggerRandomElimination : AutoTriggerable
+    public class i_TriggerRandomElimination : AutoTriggerable, IObservableTrigger
     {
 
         public enum TriggerMode
@@ -22,11 +22,11 @@ namespace com.spacepuppy.Events
         #region Fields
 
         [SerializeField]
-        private RandomRef _rng;
+        private RandomRef _rng = new RandomRef();
 
         [SerializeField()]
         [SPEvent.Config(Weighted = true)]
-        private SPEvent _targets;
+        private SPEvent _targets = new SPEvent("Targets");
 
         [SerializeField]
         [Tooltip("Leave 0 or negative to mean trigger all.")]
@@ -40,7 +40,7 @@ namespace com.spacepuppy.Events
         private bool _passAlongTriggerArg;
 
         [SerializeField]
-        private SPEvent _onComplete;
+        private SPEvent _onComplete = new SPEvent("OnComplete");
 
         [System.NonSerialized]
         private HashSet<EventTriggerTarget> _used = new HashSet<EventTriggerTarget>();
@@ -172,6 +172,15 @@ namespace com.spacepuppy.Events
             }
 
             return false;
+        }
+
+        #endregion
+
+        #region IObservableTrigger Interface
+
+        BaseSPEvent[] IObservableTrigger.GetEvents()
+        {
+            return new BaseSPEvent[] { _targets, _onComplete };
         }
 
         #endregion

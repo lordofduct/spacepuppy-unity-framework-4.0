@@ -15,7 +15,7 @@ namespace com.spacepuppy.Tween.Events
     /// This is useful if you've saved a StateToken of a something like a Transform (position, rotation, scale). 
     /// You could just tween To that token to tween back to that saved state. 
     /// </summary>
-    public class i_TweenState : AutoTriggerable
+    public class i_TweenState : AutoTriggerable, IObservableTrigger
     {
 
         public const string PROP_TARGET = nameof(_target);
@@ -30,15 +30,15 @@ namespace com.spacepuppy.Tween.Events
 
         [SerializeField]
         [TriggerableTargetObject.Config(typeof(UnityEngine.Object))]
-        private TriggerableTargetObject _target;
+        private TriggerableTargetObject _target = new TriggerableTargetObject();
 
         [SerializeField]
         [TriggerableTargetObject.Config(typeof(UnityEngine.Object))]
-        private TriggerableTargetObject _source;
+        private TriggerableTargetObject _source = new TriggerableTargetObject();
 
         [SerializeField]
         [TriggerableTargetObject.Config(typeof(UnityEngine.Object))]
-        private TriggerableTargetObject _sourceAlt;
+        private TriggerableTargetObject _sourceAlt = new TriggerableTargetObject();
 
         [SerializeField]
         private TweenHash.AnimMode _mode;
@@ -52,10 +52,10 @@ namespace com.spacepuppy.Tween.Events
         private string _tweenToken;
 
         [SerializeField()]
-        private SPEvent _onComplete;
+        private SPEvent _onComplete = new SPEvent("OnComplete");
 
         [SerializeField()]
-        private SPEvent _onTick;
+        private SPEvent _onTick = new SPEvent("OnTick");
 
         #endregion
 
@@ -155,6 +155,15 @@ namespace com.spacepuppy.Tween.Events
 
             twn.Play(true, _tweenToken);
             return true;
+        }
+
+        #endregion
+
+        #region IObservableTrigger Interface
+
+        BaseSPEvent[] IObservableTrigger.GetEvents()
+        {
+            return new BaseSPEvent[] { _onComplete, _onTick };
         }
 
         #endregion

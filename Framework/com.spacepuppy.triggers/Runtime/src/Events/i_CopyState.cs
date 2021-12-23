@@ -15,11 +15,11 @@ namespace com.spacepuppy.Events
 
         [SerializeField]
         [TriggerableTargetObject.Config(typeof(UnityEngine.Object))]
-        private TriggerableTargetObject _target;
+        private TriggerableTargetObject _target = new TriggerableTargetObject();
 
         [SerializeField]
         [TriggerableTargetObject.Config(typeof(UnityEngine.Object))]
-        private TriggerableTargetObject _source;
+        private TriggerableTargetObject _source = new TriggerableTargetObject();
 
         [SerializeField]
         [Tooltip("If 'Target' is a VariableStore or other dynamic object, it'll force add the member's of 'Source' that don't already exist on 'Target'.")]

@@ -12,14 +12,19 @@ namespace com.spacepuppy.Events
     /// 
     /// </summary>
     [Infobox("Cascades through the target list until it finds the first target that is active/enabled and triggers that.")]
-    public class i_TriggerFirstEnabledTarget : AutoTriggerable
+    public class i_TriggerFirstEnabledTarget : AutoTriggerable, IObservableTrigger
     {
 
+        #region Fields
+
         [SerializeField]
-        private SPEvent _cascade;
+        private SPEvent _cascade = new SPEvent("Cascade");
         [SerializeField]
         private bool _passAlongArg;
 
+        #endregion
+
+        #region Triggerable Interface
 
         public override bool Trigger(object sender, object arg)
         {
@@ -43,6 +48,18 @@ namespace com.spacepuppy.Events
 
             return false;
         }
+
+        #endregion
+
+        #region IObservableTrigger Interface
+
+        BaseSPEvent[] IObservableTrigger.GetEvents()
+        {
+            return new BaseSPEvent[] { _cascade };
+        }
+
+        #endregion
+
     }
 
 }

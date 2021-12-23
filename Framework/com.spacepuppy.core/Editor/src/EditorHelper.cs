@@ -284,7 +284,7 @@ namespace com.spacepuppyeditor
                 }
             }
 
-            if (Object.ReferenceEquals(obj, null)) return;
+            if (object.ReferenceEquals(obj, null)) return;
 
             try
             {
@@ -1117,7 +1117,7 @@ namespace com.spacepuppyeditor
                 {
                     callback = act,
                     duration = dur,
-                    timestamp = EditorApplication.timeSinceStartup
+                    timestamp = System.DateTime.UtcNow
                 });
             }
         }
@@ -1128,11 +1128,12 @@ namespace com.spacepuppyeditor
             {
                 lock(_invokeCallbacks)
                 {
+                    var dt = System.DateTime.UtcNow;
                     if(_invokeCallbacks.Count > 0)
                     {
                         for(int i = 0; i < _invokeCallbacks.Count; i++)
                         {
-                            if((EditorApplication.timeSinceStartup - _invokeCallbacks[i].timestamp) >= _invokeCallbacks[i].duration)
+                            if((dt - _invokeCallbacks[i].timestamp).TotalSeconds >= _invokeCallbacks[i].duration)
                             {
                                 lst.Add(_invokeCallbacks[i]);
                                 _invokeCallbacks.RemoveAt(i);
@@ -1156,7 +1157,7 @@ namespace com.spacepuppyeditor
         {
             public System.Action callback;
             public float duration;
-            public double timestamp;
+            public System.DateTime timestamp;
         }
 
         #endregion

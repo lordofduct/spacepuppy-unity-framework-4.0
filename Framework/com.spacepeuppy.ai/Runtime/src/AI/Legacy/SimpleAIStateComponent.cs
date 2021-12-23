@@ -16,9 +16,9 @@ namespace com.spacepuppy.AI.Legacy
         #region Fields
         
         [SerializeField()]
-        private SPEvent _onEnterState;
+        private SPEvent _onEnterState = new SPEvent("OnEnterState");
         [SerializeField]
-        private SPEvent _onExitState;
+        private SPEvent _onExitState = new SPEvent("OnExitState");
 
         [System.NonSerialized()]
         private bool _isActive;

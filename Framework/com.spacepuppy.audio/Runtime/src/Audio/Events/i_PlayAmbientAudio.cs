@@ -7,7 +7,7 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Audio.Events
 {
 
-    public class i_PlayAmbientAudio : AutoTriggerable
+    public class i_PlayAmbientAudio : AutoTriggerable, IObservableTrigger
     {
 
         #region Fields
@@ -27,7 +27,7 @@ namespace com.spacepuppy.Audio.Events
 
         [Tooltip("Trigger something at the end of the sound effect. This is NOT perfectly accurate and really just starts a timer for the duration of the sound being played.")]
         [SerializeField()]
-        private SPEvent _onAudioComplete;
+        private SPEvent _onAudioComplete = new SPEvent("OnAudioComplete");
 
         [System.NonSerialized()]
         private System.IDisposable _completeRoutine;
@@ -51,11 +51,13 @@ namespace com.spacepuppy.Audio.Events
             set { _interrupt = value; }
         }
 
+        public SPEvent OnAudioComplete => _onAudioComplete;
+
         #endregion
 
         #region Methods
 
-        private void OnAudioComplete()
+        private void OnAudioComplete_Handler()
         {
             _completeRoutine = null;
             _onAudioComplete.ActivateTrigger(this, null);
@@ -119,7 +121,7 @@ namespace com.spacepuppy.Audio.Events
                     {
                         if (src != null)
                         {
-                            _completeRoutine = this.InvokeGuaranteed(this.OnAudioComplete, clip.length, SPTime.Real);
+                            _completeRoutine = this.InvokeGuaranteed(this.OnAudioComplete_Handler, clip.length, SPTime.Real);
                             //src.Play();
                             src.PlayOneShot(clip);
                         }
@@ -127,7 +129,7 @@ namespace com.spacepuppy.Audio.Events
                 }
                 else
                 {
-                    _completeRoutine = this.InvokeGuaranteed(this.OnAudioComplete, clip.length, SPTime.Real);
+                    _completeRoutine = this.InvokeGuaranteed(this.OnAudioComplete_Handler, clip.length, SPTime.Real);
                     //src.Play();
                     src.PlayOneShot(clip);
                 }
@@ -138,6 +140,15 @@ namespace com.spacepuppy.Audio.Events
             {
                 return false;
             }
+        }
+
+        #endregion
+
+        #region IObservableTrigger Interface
+
+        BaseSPEvent[] IObservableTrigger.GetEvents()
+        {
+            return new BaseSPEvent[] { _onAudioComplete };
         }
 
         #endregion

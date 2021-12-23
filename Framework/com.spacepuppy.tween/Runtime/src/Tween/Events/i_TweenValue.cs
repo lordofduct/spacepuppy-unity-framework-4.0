@@ -16,16 +16,16 @@ namespace com.spacepuppy.Tween.Events
 
         [SerializeField()]
         [TriggerableTargetObject.Config(typeof(UnityEngine.Object))]
-        private TriggerableTargetObject _target;
+        private TriggerableTargetObject _target = new TriggerableTargetObject();
 
         [SerializeField()]
         private TweenData[] _data;
 
         [SerializeField()]
-        private SPEvent _onComplete;
+        private SPEvent _onComplete = new SPEvent("OnComplete");
 
         [SerializeField()]
-        private SPEvent _onTick;
+        private SPEvent _onTick = new SPEvent("OnTick");
 
         [SerializeField()]
         [Tooltip("Leave blank for tweens to be unique to this component.")]

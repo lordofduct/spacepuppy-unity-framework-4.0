@@ -21,6 +21,11 @@ namespace com.spacepuppy.Async
             return new AsyncWaitHandle<T>(TaskAsyncWaitHandleProvider<T>.Default, task);
         }
 
+        public static AsyncWaitHandle AsAsyncWaitHandle(this UnityEngine.AsyncOperation op)
+        {
+            return new AsyncWaitHandle(AsyncOperationAsyncWaitHandleProvider.Default, op);
+        }
+
         /// <summary>
         /// Returns a SemaphoreSlim that upon calling 'Dispose' will release all waiting threads and return it to a cache pool for reuse.
         /// This semaphore always starts with a CurrentCount of 0 and is intended for very simple semaphore/wait scenarios.
@@ -45,8 +50,8 @@ namespace com.spacepuppy.Async
 
             protected override void Dispose(bool disposing)
             {
-                this.Release(int.MaxValue);
-                if(!_semaphores.Release(this))
+                this.Release();
+                if (!_semaphores.Release(this))
                 {
                     base.Dispose();
                 }
@@ -57,6 +62,18 @@ namespace com.spacepuppy.Async
         {
 
             public static readonly TaskAsyncWaitHandleProvider<T> Default = new TaskAsyncWaitHandleProvider<T>();
+
+            public float GetProgress(object token)
+            {
+                if (token is Task t)
+                {
+                    return t.Status >= TaskStatus.RanToCompletion ? 1f : 0f;
+                }
+                else
+                {
+                    throw new System.InvalidOperationException("An instance of TaskAsyncWaitHandleProvider was associated with a token that was not a Task.");
+                }
+            }
 
             public bool IsComplete(object token)
             {
@@ -70,12 +87,12 @@ namespace com.spacepuppy.Async
                 }
             }
 
-            public Task<T> GetAwaitable(object token)
+            public Task<T> GetTask(object token)
             {
                 return token as Task<T>;
             }
 
-            Task IAsyncWaitHandleProvider.GetAwaitable(object token)
+            Task IAsyncWaitHandleProvider.GetTask(object token)
             {
                 return token as Task;
             }
@@ -163,6 +180,145 @@ namespace com.spacepuppy.Async
                 while(t.Status < TaskStatus.RanToCompletion)
                 {
                     yield return null;
+                }
+            }
+
+        }
+
+        private class AsyncOperationAsyncWaitHandleProvider : IAsyncWaitHandleProvider
+        {
+
+            public static readonly AsyncOperationAsyncWaitHandleProvider Default = new AsyncOperationAsyncWaitHandleProvider();
+
+            public float GetProgress(object token)
+            {
+                if (token is UnityEngine.AsyncOperation op)
+                {
+                    return op.isDone ? 1f : op.progress;
+                }
+                else
+                {
+                    throw new System.InvalidOperationException("An instance of AsynOperationAsyncWaitHandleProvider was associated with a token that was not an AsyncOperation.");
+                }
+            }
+
+            public Task GetTask(object token)
+            {
+                if (token is UnityEngine.AsyncOperation op)
+                {
+                    if(GameLoop.InvokeRequired)
+                    {
+                        var s = AsyncUtil.GetTempSemaphore();
+                        GameLoop.UpdateHandle.BeginInvoke(() =>
+                        {
+                            if (op.isDone)
+                            {
+                                s.Dispose();
+                            }
+                            else
+                            {
+                                op.completed += (o) =>
+                                {
+                                    s.Dispose();
+                                };
+                            }
+                        });
+                        return s.WaitAsync();
+                    }
+                    else if(op.isDone)
+                    {
+                        return Task.CompletedTask;
+                    }
+                    else
+                    {
+                        var s = AsyncUtil.GetTempSemaphore();
+                        op.completed += (o) =>
+                        {
+                            s.Dispose();
+                        };
+                        return s.WaitAsync();
+                    }
+                }
+                else
+                {
+                    throw new System.InvalidOperationException("An instance of AsynOperationAsyncWaitHandleProvider was associated with a token that was not an AsyncOperation.");
+                }
+            }
+
+            public object GetYieldInstruction(object token)
+            {
+                if (token is UnityEngine.AsyncOperation op)
+                {
+                    return op;
+                }
+                else
+                {
+                    throw new System.InvalidOperationException("An instance of AsynOperationAsyncWaitHandleProvider was associated with a token that was not an AsyncOperation.");
+                }
+            }
+
+            public void OnComplete(object token, Action<AsyncWaitHandle> callback)
+            {
+                if (token is UnityEngine.AsyncOperation op)
+                {
+                    if (callback != null)
+                    {
+                        if (GameLoop.InvokeRequired)
+                        {
+                            GameLoop.UpdateHandle.BeginInvoke(() =>
+                            {
+                                if (op.isDone)
+                                {
+                                    callback(new AsyncWaitHandle(this, op));
+                                }
+                                else
+                                {
+                                    op.completed += (o) => callback(new AsyncWaitHandle(this, o));
+                                }
+                            });
+                        }
+                        else
+                        {
+                            op.completed += (o) => callback(new AsyncWaitHandle(this, o));
+                        }
+                    }
+                }
+                else
+                {
+                    throw new System.InvalidOperationException("An instance of AsynOperationAsyncWaitHandleProvider was associated with a token that was not an AsyncOperation.");
+                }
+            }
+
+            public bool IsComplete(object token)
+            {
+                if (token is UnityEngine.AsyncOperation op)
+                {
+                    if(GameLoop.InvokeRequired)
+                    {
+                        bool result = false;
+                        GameLoop.UpdateHandle.Invoke(() => result = op.isDone);
+                        return result;
+                    }
+                    else
+                    {
+                        return op.isDone;
+                    }
+                }
+                else
+                {
+                    throw new System.InvalidOperationException("An instance of AsynOperationAsyncWaitHandleProvider was associated with a token that was not an AsyncOperation.");
+                }
+            }
+
+            public object GetResult(object token)
+            {
+                if (token is UnityEngine.AsyncOperation op)
+                {
+                    return op;
+                }
+                else
+                {
+                    throw new System.InvalidOperationException("An instance of AsynOperationAsyncWaitHandleProvider was associated with a token that was not an AsyncOperation.");
                 }
             }
 

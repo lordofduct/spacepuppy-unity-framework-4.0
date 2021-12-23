@@ -7,7 +7,7 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Mecanim.Events
 {
 
-    public sealed class i_GoToAnimatorState : AutoTriggerable
+    public sealed class i_GoToAnimatorState : AutoTriggerable, IObservableTrigger
     {
 
         #region Fields
@@ -20,7 +20,7 @@ namespace com.spacepuppy.Mecanim.Events
         private PlayStateConfiguration _config;
 
         [SerializeField]
-        private SPEvent _onStateExit;
+        private SPEvent _onStateExit = new SPEvent("OnStateExit");
 
         #endregion
 
@@ -60,6 +60,15 @@ namespace com.spacepuppy.Mecanim.Events
                 yield return WaitForAnimState.WaitForStateExit(animator, finalState, layerIndex);
             }
             _onStateExit.ActivateTrigger(this, null);
+        }
+
+        #endregion
+
+        #region IObserverableTrigger Interface
+
+        BaseSPEvent[] IObservableTrigger.GetEvents()
+        {
+            return new BaseSPEvent[] { _onStateExit };
         }
 
         #endregion

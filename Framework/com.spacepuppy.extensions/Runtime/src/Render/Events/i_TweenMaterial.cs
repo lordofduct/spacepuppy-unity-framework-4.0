@@ -7,13 +7,13 @@ using com.spacepuppy.Tween;
 
 namespace com.spacepuppy.Render.Events
 {
-    public class i_TweenMaterial : AutoTriggerable
+    public class i_TweenMaterial : AutoTriggerable, IObservableTrigger
     {
 
         #region Fields
         
         [SerializeField()]
-        private VariantReference _autoKillId;
+        private VariantReference _autoKillId = new VariantReference();
 
         [SerializeField()]
         private bool _killOnDisable;
@@ -30,13 +30,13 @@ namespace com.spacepuppy.Render.Events
         private TweenHash.AnimMode _mode;
 
         [SerializeField()]
-        private MaterialTransition _transition;
+        private MaterialTransition _transition = new MaterialTransition();
 
         [SerializeField()]
-        private SPEvent _onComplete;
+        private SPEvent _onComplete = new SPEvent("OnComplete");
 
         [SerializeField()]
-        private SPEvent _onTick;
+        private SPEvent _onTick = new SPEvent("OnTick");
 
         #endregion
 
@@ -130,6 +130,15 @@ namespace com.spacepuppy.Render.Events
             twn.Play(true);
 
             return true;
+        }
+
+        #endregion
+
+        #region IObserverableTrigger Interface
+
+        BaseSPEvent[] IObservableTrigger.GetEvents()
+        {
+            return new BaseSPEvent[] { _onComplete, _onTick };
         }
 
         #endregion

@@ -8,7 +8,7 @@ using System;
 namespace com.spacepuppy.Mecanim.Events
 {
 
-    public sealed class i_PlayAnimation_Mecanim : AutoTriggerable
+    public sealed class i_PlayAnimation_Mecanim : AutoTriggerable, IObservableTrigger
     {
 
         #region Fields
@@ -32,7 +32,7 @@ namespace com.spacepuppy.Mecanim.Events
         private bool _purgeTokenOnExit = true;
 
         [SerializeField]
-        private SPEvent _onStateExit;
+        private SPEvent _onStateExit = new SPEvent("OnStateExit");
 
         #endregion
 
@@ -88,6 +88,15 @@ namespace com.spacepuppy.Mecanim.Events
             if (purge) animator.RemoveOverride(token);
 
             _onStateExit.ActivateTrigger(this, null);
+        }
+
+        #endregion
+
+        #region IObserverableTrigger Interface
+
+        BaseSPEvent[] IObservableTrigger.GetEvents()
+        {
+            return new BaseSPEvent[] { _onStateExit };
         }
 
         #endregion

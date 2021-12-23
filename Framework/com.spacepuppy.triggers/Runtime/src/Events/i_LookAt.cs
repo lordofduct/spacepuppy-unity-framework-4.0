@@ -44,7 +44,7 @@ namespace com.spacepuppy.Events
 
         [SerializeField]
         [Tooltip("Only fires if slerp'd")]
-        private SPEvent _onSlerpComplete;
+        private SPEvent _onSlerpComplete = new SPEvent("OnSlerpComplete");
 
         #endregion
 

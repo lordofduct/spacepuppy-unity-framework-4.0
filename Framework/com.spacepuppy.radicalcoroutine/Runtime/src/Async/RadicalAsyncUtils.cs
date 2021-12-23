@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.Async
 {
@@ -27,26 +28,80 @@ namespace com.spacepuppy.Async
 
             public static readonly RadicalAsyncWaitHandleProvider Default = new RadicalAsyncWaitHandleProvider();
 
-            public System.Threading.Tasks.Task GetAwaitable(object token)
+            public float GetProgress(object token)
             {
-                if (token is IRadicalWaitHandle h)
+                if (token is IProgressingYieldInstruction p)
                 {
-                    var s = AsyncUtil.GetTempSemaphore();
-                    h.OnComplete((r) =>
-                    {
-                        s.Dispose();
-                    });
-                    return s.WaitAsync();
+                    return p.IsComplete ? 1f : p.Progress;
                 }
                 else if (token is IRadicalYieldInstruction inst)
                 {
-                    return System.Threading.Tasks.Task.Run(async () =>
+                    return inst.IsComplete ? 1f : 0f;
+                }
+                else
+                {
+                    //this should never be reached as long as it remains private and is used appropriately like that in RadicalWaitHandleExtensions.AsAsyncWaitHandle
+                    throw new System.InvalidOperationException("An instance of RadicalAsyncWaitHandleProvider was associated with a token that was not an IRadicalYieldInstruction.");
+                }
+            }
+
+            public System.Threading.Tasks.Task GetTask(object token)
+            {
+                bool complete = false;
+
+                if (token is IRadicalWaitHandle h)
+                {
+                    if(GameLoop.InvokeRequired)
                     {
-                        while (!inst.IsComplete)
+                        GameLoop.UpdateHandle.Invoke(() => complete = h.IsComplete);
+                    }
+                    else
+                    {
+                        complete = h.IsComplete;
+                    }
+
+                    if (complete)
+                    {
+                        return Task.CompletedTask;
+                    }
+                    else
+                    {
+                        var s = AsyncUtil.GetTempSemaphore();
+                        h.OnComplete((r) =>
                         {
-                            await System.Threading.Tasks.Task.Yield();
+                            s.Dispose();
+                        });
+                        return s.WaitAsync();
+                    }
+                }
+                else if (token is IRadicalYieldInstruction inst)
+                {
+                    if (GameLoop.InvokeRequired)
+                    {
+                        GameLoop.UpdateHandle.Invoke(() => complete = inst.IsComplete);
+                    }
+                    else
+                    {
+                        complete = inst.IsComplete;
+                    }
+
+                    if (complete)
+                    {
+                        return Task.CompletedTask;
+                    }
+                    else
+                    {
+                        var s = AsyncUtil.GetTempSemaphore();
+                        if (GameLoop.InvokeRequired)
+                        {
+                            GameLoop.UpdateHandle.BeginInvoke(() => GameLoop.Hook.StartRadicalCoroutine(WaitUntilHandleIsDone(inst, (a) => s.Dispose())));
                         }
-                    });
+                        else
+                        {
+                            GameLoop.Hook.StartRadicalCoroutine(WaitUntilHandleIsDone(inst, (a) => s.Dispose()));
+                        }
+                        return s.WaitAsync();
+                    }
                 }
                 else
                 {
@@ -89,20 +144,44 @@ namespace com.spacepuppy.Async
             {
                 if (token is IRadicalWaitHandle h)
                 {
-                    h.OnComplete((r) => callback(new AsyncWaitHandle(this, r)));
+                    if(GameLoop.InvokeRequired)
+                    {
+                        GameLoop.UpdateHandle.BeginInvoke(() =>
+                        {
+                            if (h.IsComplete)
+                            {
+                                callback(h.AsAsyncWaitHandle());
+                            }
+                            else
+                            {
+                                h.OnComplete((r) => callback(new AsyncWaitHandle(this, r)));
+                            }
+                        });
+                    }
+                    else
+                    {
+                        if (h.IsComplete)
+                        {
+                            callback(h.AsAsyncWaitHandle());
+                        }
+                        else
+                        {
+                            h.OnComplete((r) => callback(new AsyncWaitHandle(this, r)));
+                        }
+                    }
                 }
                 else if (token is IRadicalYieldInstruction inst)
                 {
                     if (callback != null)
                     {
-                        System.Threading.Tasks.Task.Run(async () =>
+                        if(GameLoop.InvokeRequired)
                         {
-                            while (!inst.IsComplete)
-                            {
-                                await System.Threading.Tasks.Task.Yield();
-                            }
-                            callback(new AsyncWaitHandle(this, inst));
-                        });
+                            GameLoop.UpdateHandle.BeginInvoke(() => GameLoop.Hook.StartRadicalCoroutine(WaitUntilHandleIsDone(inst, callback)));
+                        }
+                        else
+                        {
+                            GameLoop.Hook.StartRadicalCoroutine(WaitUntilHandleIsDone(inst, callback));
+                        }
                     }
                 }
                 else
@@ -117,12 +196,13 @@ namespace com.spacepuppy.Async
                 return token as IRadicalYieldInstruction;
             }
 
-            private System.Collections.IEnumerator WaitUntilHandleIsDone(IRadicalYieldInstruction h)
+            private System.Collections.IEnumerator WaitUntilHandleIsDone(IRadicalYieldInstruction h, System.Action<AsyncWaitHandle> callback = null)
             {
                 while (!h.IsComplete)
                 {
                     yield return null;
                 }
+                callback?.Invoke(h.AsAsyncWaitHandle());
             }
 
         }
@@ -132,7 +212,12 @@ namespace com.spacepuppy.Async
 
             public static readonly RadicalAsyncWaitHandleProvider<T> Default = new RadicalAsyncWaitHandleProvider<T>();
 
-            public System.Threading.Tasks.Task<T> GetAwaitable(object token)
+            public float GetProgress(object token)
+            {
+                return RadicalAsyncWaitHandleProvider.Default.GetProgress(token);
+            }
+
+            public System.Threading.Tasks.Task<T> GetTask(object token)
             {
                 if (token is RadicalWaitHandle<T> h)
                 {
@@ -152,9 +237,9 @@ namespace com.spacepuppy.Async
                 }
             }
 
-            System.Threading.Tasks.Task IAsyncWaitHandleProvider.GetAwaitable(object token)
+            System.Threading.Tasks.Task IAsyncWaitHandleProvider.GetTask(object token)
             {
-                return RadicalAsyncWaitHandleProvider.Default.GetAwaitable(token);
+                return RadicalAsyncWaitHandleProvider.Default.GetTask(token);
             }
 
             public object GetYieldInstruction(object token)
@@ -176,7 +261,28 @@ namespace com.spacepuppy.Async
             {
                 if (token is RadicalWaitHandle<T> h)
                 {
-                    h.OnComplete((r) => callback(new AsyncWaitHandle<T>(this, r)));
+                    if(GameLoop.InvokeRequired)
+                    {
+                        GameLoop.UpdateHandle.BeginInvoke(() =>
+                        {
+                            if (h.IsComplete)
+                            {
+                                callback(h.AsAsyncWaitHandle());
+                            }
+                            else
+                            {
+                                h.OnComplete((r) => callback(new AsyncWaitHandle<T>(this, r)));
+                            }
+                        });
+                    }
+                    else if(h.IsComplete)
+                    {
+                        callback(h.AsAsyncWaitHandle());
+                    }
+                    else
+                    {
+                        h.OnComplete((r) => callback(new AsyncWaitHandle<T>(this, r)));
+                    }
                 }
                 else
                 {

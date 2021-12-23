@@ -7,17 +7,17 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Events
 {
 
-    public class i_TriggerRandom : AutoTriggerable
+    public class i_TriggerRandom : AutoTriggerable, IObservableTrigger
     {
 
         #region Fields
 
         [SerializeField]
-        private RandomRef _rng;
+        private RandomRef _rng = new RandomRef();
 
         [SerializeField()]
         [SPEvent.Config(Weighted = true)]
-        private SPEvent _targets;
+        private SPEvent _targets = new SPEvent("Targets");
 
         [SerializeField]
         private bool _selectOnlyActiveTargets;
@@ -56,6 +56,8 @@ namespace com.spacepuppy.Events
             set { _rng.Value = value; }
         }
 
+        public SPEvent Targets => _targets;
+
         #endregion
         
         #region ITriggerableMechanism Interface
@@ -83,6 +85,15 @@ namespace com.spacepuppy.Events
             }
 
             return true;
+        }
+
+        #endregion
+
+        #region IObservableTrigger Interface
+
+        BaseSPEvent[] IObservableTrigger.GetEvents()
+        {
+            return new BaseSPEvent[] { _targets };
         }
 
         #endregion

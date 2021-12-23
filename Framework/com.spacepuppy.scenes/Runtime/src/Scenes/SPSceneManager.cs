@@ -61,17 +61,24 @@ namespace com.spacepuppy.Scenes
         {
             if (options == null) throw new System.ArgumentNullException(nameof(options));
 
-            if (_activeLoadOptions.Add(options))
+            if(GameLoop.InvokeRequired)
             {
-                if (_sceneLoadOptionsCompleteCallback == null) _sceneLoadOptionsCompleteCallback = (s, e) =>
+                GameLoop.UpdateHandle.Invoke(() => this.LoadScene(options));
+            }
+            else
+            {
+                if (_activeLoadOptions.Add(options))
                 {
-                    _activeLoadOptions.Remove(e);
-                    this.SignalSceneLoaded(e);
-                };
+                    if (_sceneLoadOptionsCompleteCallback == null) _sceneLoadOptionsCompleteCallback = (s, e) =>
+                    {
+                        _activeLoadOptions.Remove(e);
+                        this.SignalSceneLoaded(e);
+                    };
 
-                this.OnBeforeSceneLoaded(options);
-                options.Complete += _sceneLoadOptionsCompleteCallback;
-                options.Begin(this);
+                    this.OnBeforeSceneLoaded(options);
+                    options.Complete += _sceneLoadOptionsCompleteCallback;
+                    options.Begin(this);
+                }
             }
         }
 

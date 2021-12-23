@@ -23,10 +23,10 @@ namespace com.spacepuppy.Events
         private Interval _delayAfterB = new Interval(1f);
 
         [SerializeField]
-        private SPEvent _triggerA;
+        private SPEvent _triggerA = new SPEvent("TriggerA");
 
         [SerializeField]
-        private SPEvent _triggerB;
+        private SPEvent _triggerB = new SPEvent("TriggerB");
 
 
         [System.NonSerialized]

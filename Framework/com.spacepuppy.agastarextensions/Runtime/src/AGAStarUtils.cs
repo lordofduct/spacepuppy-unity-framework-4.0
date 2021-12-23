@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Pathfinding;
 using com.spacepuppy.Utils;
 using com.spacepuppy.Async;
+using System.Threading.Tasks;
 
 namespace com.spacepuppy.Pathfinding
 {
@@ -11,6 +12,123 @@ namespace com.spacepuppy.Pathfinding
 
     public static class AGAStarUtils
     {
+
+        #region Async Scan
+
+        public static AsyncWaitHandle BeginScanAsync(this AstarPath astar)
+        {
+            var hook = new AsyncScanProgressHook();
+            if(GameLoop.InvokeRequired)
+            {
+                GameLoop.UpdateHandle.Invoke(() =>
+                {
+                    hook.e = astar.ScanAsync().GetEnumerator();
+                    hook.Routine = GameLoop.Hook.StartCoroutine(hook);
+                });
+            }
+            else
+            {
+                hook.e = astar.ScanAsync().GetEnumerator();
+                hook.Routine = GameLoop.Hook.StartCoroutine(hook);
+            }
+            return new AsyncWaitHandle(hook, hook);
+        }
+
+        private class AsyncScanProgressHook : IAsyncWaitHandleProvider, System.Collections.IEnumerator
+        {
+            private static readonly object _lock = new object();
+
+            public IEnumerator<Progress> e;
+            public Coroutine Routine;
+            private bool _complete;
+            private System.Action<AsyncWaitHandle> _callback;
+
+            #region IAsyncWaitHandleProvider Interface
+
+            public Task GetTask(object token)
+            {
+                lock(_lock)
+                {
+                    if(_complete)
+                    {
+                        return Task.CompletedTask;
+                    }
+                    else
+                    {
+                        var s = AsyncUtil.GetTempSemaphore();
+                        _callback += (h) => s.Dispose();
+                        return s.WaitAsync();
+                    }
+                }
+            }
+
+            public float GetProgress(object token)
+            {
+                return e?.Current.progress ?? 0f;
+            }
+
+            public object GetResult(object token)
+            {
+                return null;
+            }
+
+            public object GetYieldInstruction(object token)
+            {
+                return Routine;
+            }
+
+            public bool IsComplete(object token)
+            {
+                return _complete;
+            }
+
+            public void OnComplete(object token, System.Action<AsyncWaitHandle> callback)
+            {
+                if (callback == null) return;
+
+                lock(_lock)
+                {
+                    _callback += callback;
+                }
+            }
+
+            #endregion
+
+            #region IEnumerator Interface
+
+            object System.Collections.IEnumerator.Current => null;
+
+            bool System.Collections.IEnumerator.MoveNext()
+            {
+                lock(_lock)
+                {
+                    if (e?.MoveNext() ?? false)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        _complete = true;
+                        var d = _callback;
+                        _callback = null;
+                        d?.Invoke(new AsyncWaitHandle(this, this));
+                        return false;
+                    }
+                }
+            }
+
+            void System.Collections.IEnumerator.Reset()
+            {
+                //do nothing
+            }
+
+            #endregion
+
+        }
+
+        #endregion
+
+        #region GetGUO
 
         public static GraphUpdateObject GetGUO(this GraphUpdateScene gus)
         {
@@ -79,6 +197,8 @@ namespace com.spacepuppy.Pathfinding
             guo.modifyTag = gus.modifyTag;
             guo.setTag = gus.setTag;
         }
+
+        #endregion
 
     }
 

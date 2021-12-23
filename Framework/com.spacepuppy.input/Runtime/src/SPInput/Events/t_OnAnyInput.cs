@@ -28,7 +28,7 @@ namespace com.spacepuppy.SPInput.Events
         private TrackingOptions _options = TrackingOptions.All;
 
         [SerializeField]
-        private SPEvent _onInput;
+        private SPEvent _onInput = new SPEvent("OnInput");
 
         private Vector3 _lastMouse;
 

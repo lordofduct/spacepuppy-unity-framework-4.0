@@ -28,7 +28,7 @@ namespace com.spacepuppy.Events
         private Action _onTriggeredAction = Action.Restart;
 
         [SerializeField]
-        private SPEvent _onComplete;
+        private SPEvent _onComplete = new SPEvent("OnComplete");
 
         [System.NonSerialized]
         private float _tally;

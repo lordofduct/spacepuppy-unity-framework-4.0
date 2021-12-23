@@ -1,21 +1,21 @@
 ﻿#pragma warning disable 0649 // variable declared but not used.
 using UnityEngine;
 using System.Collections.Generic;
-using System.Linq;
+
 using com.spacepuppy.Collections;
-using System;
+using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.Events
 {
 
-    public class t_StateMachine : SPComponent, IRadicalEnumerable<t_StateMachine.State>
+    public class t_StateMachine : SPComponent, IRadicalEnumerable<t_StateMachine.State>, IObservableTrigger
     {
 
         #region Fields
 
         [SerializeField]
         [ReorderableArray(DrawElementAtBottom = true, ChildPropertyToDrawAsElementLabel = "_name")]
-        private State[] _states;
+        private State[] _states = ArrayUtil.Empty<State>();
 
         [SerializeField]
         private int _initialState;
@@ -26,7 +26,7 @@ namespace com.spacepuppy.Events
 
         [Space(10)]
         [SerializeField]
-        private SPEvent _onStateChanged;
+        private SPEvent _onStateChanged = new SPEvent("OnStateChanged");
 
         [System.NonSerialized]
         private State _currentState;
@@ -174,7 +174,7 @@ namespace com.spacepuppy.Events
             return _states.Length;
         }
 
-        public int Enumerate(Action<State> callback)
+        public int Enumerate(System.Action<State> callback)
         {
             if (callback == null) return 0;
 
@@ -189,6 +189,15 @@ namespace com.spacepuppy.Events
 
         #endregion
 
+        #region IObserverableTrigger Interface
+
+        BaseSPEvent[] IObservableTrigger.GetEvents()
+        {
+            return new BaseSPEvent[] { _onStateChanged };
+        }
+
+        #endregion
+
         #region Special Types
 
         [System.Serializable]
@@ -197,9 +206,9 @@ namespace com.spacepuppy.Events
             [SerializeField]
             private string _name;
             [SerializeField]
-            private SPEvent _onEnterState;
+            private SPEvent _onEnterState = new SPEvent("OnEnterState");
             [SerializeField]
-            private SPEvent _onExitState;
+            private SPEvent _onExitState = new SPEvent("OnExitState");
 
             public string Name
             {

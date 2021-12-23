@@ -8,6 +8,9 @@ namespace com.spacepuppy
 {
     /// <summary>
     /// An entry point into the gameloop.
+    /// 
+    /// This is registered on start of the game automatically. If you'd prefer to manually initialize it (or not initialize it all, not-advised if using SP Framework) 
+    /// just add MANUALLY_REGISTER_SPGAMELOOP as a define symbol in the 'Player Settings' (Edit->Project Settings->Player) then call Init on the main thread.
     /// </summary>
     /// <remarks>
     /// Currently in 4.0 we're diverging from the classic 'GameLoop' of earlier SP versions. We may refactor this later.
@@ -78,8 +81,14 @@ namespace com.spacepuppy
 
         #region CONSTRUCTOR
 
+#if !MANUALLY_REGISTER_SPGAMELOOP
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSplashScreen)]
+#endif
         public static void Init()
         {
+#if UNITY_EDITOR
+            Debug.Log("Registered Spacepuppy GameLoop");
+#endif
             if (!object.ReferenceEquals(_instance, null))
             {
                 if (ObjUtil.IsDestroyed(_instance))
@@ -129,10 +138,15 @@ namespace com.spacepuppy
         {
             get
             {
-                if (_instance == null) GameLoop.Init();
                 return _instance;
             }
         }
+
+        /// <summary>
+        /// Returns true if the caller is on a thread other than the main thread. 
+        /// This will return false if GameLoop is not initialized.
+        /// </summary>
+        public static bool InvokeRequired => _updateInvokeHandle?.InvokeRequired ?? false;
 
         /// <summary>
         /// Returns which event sequence that code is currently operating as. 
@@ -235,7 +249,7 @@ namespace com.spacepuppy
                 if (_quitState == QuitState.BeforeQuit)
                 {
                     //wasn't cancelled, or force quit
-#if UNITY_EDITOR
+#if UNITY_EDITOR 
                     if (UnityEngine.Application.isEditor)
                     {
                         try

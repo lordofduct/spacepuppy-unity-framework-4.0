@@ -531,7 +531,9 @@ namespace com.spacepuppy.Collections
                         Split();
                         if (children == null)
                         {
-                            Debug.Log("Child creation failed for an unknown reason. Early exit.");
+#if UNITY_EDITOR 
+                            Debug.Log("PointOctree Child creation failed for an unknown reason. Early exit.");
+#endif
                             return;
                         }
 

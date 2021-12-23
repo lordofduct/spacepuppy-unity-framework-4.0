@@ -7,7 +7,7 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Events
 {
 
-    public sealed class i_TriggerSequence : AutoTriggerable, IMStartOrEnableReceiver
+    public sealed class i_TriggerSequence : AutoTriggerable, IMStartOrEnableReceiver, IObservableTrigger
     {
 
         public enum WrapMode
@@ -34,7 +34,7 @@ namespace com.spacepuppy.Events
         private SignalMode _signal;
 
         [SerializeField()]
-        private SPEvent _trigger;
+        private SPEvent _trigger = new SPEvent("Trigger");
 
         [SerializeField()]
         private bool _passAlongTriggerArg;
@@ -206,6 +206,15 @@ namespace com.spacepuppy.Events
             }
 
             return true;
+        }
+
+        #endregion
+
+        #region IObservableTrigger Interface
+
+        BaseSPEvent[] IObservableTrigger.GetEvents()
+        {
+            return new BaseSPEvent[] { _trigger };
         }
 
         #endregion

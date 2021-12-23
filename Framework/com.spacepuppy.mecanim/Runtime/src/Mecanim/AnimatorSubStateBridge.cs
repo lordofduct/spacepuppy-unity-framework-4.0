@@ -24,10 +24,10 @@ namespace com.spacepuppy.Mecanim
         private bool _triggerEventsWhenDisabled;
 
         [SerializeField]
-        private SPEvent _onStateEnter;
+        private SPEvent _onStateEnter = new SPEvent("OnStateEnter");
 
         [SerializeField]
-        private SPEvent _onStateExit;
+        private SPEvent _onStateExit = new SPEvent("OnStateExit");
 
         [System.NonSerialized]
         private int _hash;

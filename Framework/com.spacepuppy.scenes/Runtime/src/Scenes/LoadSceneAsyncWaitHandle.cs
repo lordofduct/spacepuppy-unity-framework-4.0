@@ -17,7 +17,7 @@ namespace com.spacepuppy.Scenes
     /// but the scene isn't actually loaded until ActivateScene is called. At this point its Status will finally 
     /// read Complete.
     /// </summary>
-    public class LoadSceneWaitHandle : LoadSceneOptions
+    public sealed class LoadSceneWaitHandle : LoadSceneOptions
     {
 
         #region Fields

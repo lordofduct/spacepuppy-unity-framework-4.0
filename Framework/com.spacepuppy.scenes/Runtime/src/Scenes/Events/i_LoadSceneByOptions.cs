@@ -74,7 +74,7 @@ namespace com.spacepuppy.Scenes.Events
         /// Represents a simple load situation (no asyncawait). This primarily exists to facilitate i_LoadSceneByOptions.
         /// </summary>
         [System.Serializable]
-        public class SimpleLoadSceneOptions : LoadSceneOptions
+        public sealed class SimpleLoadSceneOptions : LoadSceneOptions
         {
 
             #region Fields
@@ -141,8 +141,8 @@ namespace com.spacepuppy.Scenes.Events
             private async UniTaskVoid DoBeginUniTask(ISceneManager manager)
             {
 #else
-        protected override async void DoBegin(ISceneManager manager)
-        {
+            protected override async void DoBegin(ISceneManager manager)
+            {
 #endif
                 try
                 {

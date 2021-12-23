@@ -3,7 +3,8 @@
     "rootNamespace": "com.spacepuppy",
     "references": [
         "GUID:ddd0eb9fc8f414a4d9750a013f135d36",
-        "GUID:ad6239a0379b2de43a4d9e723d51db80"
+        "GUID:ad6239a0379b2de43a4d9e723d51db80",
+        "GUID:f51ebe6a0ceec4240a699833d6309b23"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -12,6 +13,12 @@
     "precompiledReferences": [],
     "autoReferenced": true,
     "defineConstraints": [],
-    "versionDefines": [],
+    "versionDefines": [
+        {
+            "name": "com.cysharp.unitask",
+            "expression": "",
+            "define": "SP_UNITASK"
+        }
+    ],
     "noEngineReferences": false
 }

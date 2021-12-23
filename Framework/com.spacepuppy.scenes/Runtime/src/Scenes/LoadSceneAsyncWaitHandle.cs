@@ -5,6 +5,10 @@ using System;
 using System.Threading.Tasks;
 using com.spacepuppy.Async;
 
+#if SP_UNITASK
+using Cysharp.Threading.Tasks;
+#endif
+
 namespace com.spacepuppy.Scenes
 {
 
@@ -81,20 +85,47 @@ namespace com.spacepuppy.Scenes
 
         #region Methods
 
+#if SP_UNITASK
+        protected override void DoBegin(ISceneManager manager)
+        {
+            _ = this.DoBeginUniTask(manager);
+        }
+
+        private async UniTaskVoid DoBeginUniTask(ISceneManager manager)
+        {
+#else
         protected override async void DoBegin(ISceneManager manager)
         {
+#endif
             try
             {
                 this.OnBeforeLoad();
                 _loadResults = this.LoadScene(_sceneName, _mode, _behaviour);
 
+#if SP_UNITASK
+                switch (_behaviour)
+                {
+                    case LoadSceneBehaviour.Standard:
+                        await UniTask.Yield();
+                        break;
+                    case LoadSceneBehaviour.Async:
+                        await _loadResults.Op;
+                        break;
+                    case LoadSceneBehaviour.AsyncAndWait:
+                        while (!_loadResults.Op.isDone && _loadResults.Op.progress < 0.9f)
+                        {
+                            await UniTask.Yield();
+                        }
+                        break;
+                }
+#else
                 switch (_behaviour)
                 {
                     case LoadSceneBehaviour.Standard:
                         await Task.Yield();
                         break;
                     case LoadSceneBehaviour.Async:
-                        await _loadResults.GetAwaitable();
+                        await _loadResults.GetTask();
                         break;
                     case LoadSceneBehaviour.AsyncAndWait:
                         while (!_loadResults.Op.isDone && _loadResults.Op.progress < 0.9f)
@@ -103,6 +134,7 @@ namespace com.spacepuppy.Scenes
                         }
                         break;
                 }
+#endif
 
                 //signal loaded
                 _loaded = true;
@@ -123,7 +155,11 @@ namespace com.spacepuppy.Scenes
                 {
                     while (!_loadResults.Op.isDone)
                     {
+#if SP_UNITASK
+                        await UniTask.Yield();
+#else
                         await Task.Yield();
+#endif
                     }
                 }
 
@@ -169,9 +205,9 @@ namespace com.spacepuppy.Scenes
             return result;
         }
 
-        #endregion
+#endregion
 
-        #region IProgressingAsyncOperation Interface
+#region IProgressingAsyncOperation Interface
 
         public override float Progress
         {
@@ -203,7 +239,7 @@ namespace com.spacepuppy.Scenes
             }
         }
 
-        #endregion
+#endregion
 
     }
 

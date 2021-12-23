@@ -5,6 +5,10 @@ using com.spacepuppy.Dynamic;
 using com.spacepuppy.Async;
 using log4net.Util;
 
+#if SP_UNITASK
+using Cysharp.Threading.Tasks;
+#endif
+
 namespace com.spacepuppy.Scenes
 {
 
@@ -344,11 +348,19 @@ namespace com.spacepuppy.Scenes
 
             public bool IsComplete => Op?.isDone ?? false;
 
-            public async System.Threading.Tasks.Task<Scene> GetAwaitable()
+            public async System.Threading.Tasks.Task<Scene> GetTask()
             {
                 await Op.AsAsyncWaitHandle().GetTask();
                 return this.Scene;
             }
+            
+#if SP_UNITASK
+            public async UniTask<Scene> GetUniTask()
+            {
+                await Op;
+                return this.Scene;
+            }
+#endif
 
             public object GetYieldInstruction()
             {

@@ -5,6 +5,10 @@ using UnityEngine.SceneManagement;
 using com.spacepuppy.Async;
 using com.spacepuppy.Events;
 
+#if SP_UNITASK
+using Cysharp.Threading.Tasks;
+#endif
+
 namespace com.spacepuppy.Scenes.Events
 {
 
@@ -128,8 +132,18 @@ namespace com.spacepuppy.Scenes.Events
 
             public override float Progress => _loadResults.Progress;
 
-            protected override async void DoBegin(ISceneManager manager)
+#if SP_UNITASK
+            protected override void DoBegin(ISceneManager manager)
             {
+                _ = this.DoBeginUniTask(manager);
+            }
+
+            private async UniTaskVoid DoBeginUniTask(ISceneManager manager)
+            {
+#else
+        protected override async void DoBegin(ISceneManager manager)
+        {
+#endif
                 try
                 {
                     var persistentToken = com.spacepuppy.Utils.ObjUtil.ReduceIfProxy(_persistentToken.Value);
@@ -151,7 +165,11 @@ namespace com.spacepuppy.Scenes.Events
                         _loadResults = this.LoadScene(nm, _mode, _behaviour.RestrictAsyncAndAwait());
                     }
 
-                    await _loadResults.GetAwaitable();
+#if SP_UNITASK
+                    await _loadResults.Op;
+#else
+                    await _loadResults.GetTask();
+#endif
                     this.SignalComplete();
                 }
                 catch (System.Exception ex)
@@ -166,9 +184,9 @@ namespace com.spacepuppy.Scenes.Events
                 return this.Scene == scene;
             }
 
-            #endregion
+#endregion
 
-            #region ICloneable Interface
+#region ICloneable Interface
 
             public override LoadSceneOptions Clone()
             {
@@ -177,11 +195,11 @@ namespace com.spacepuppy.Scenes.Events
                 return result;
             }
 
-            #endregion
+#endregion
 
         }
 
-        #endregion
+#endregion
 
     }
 }

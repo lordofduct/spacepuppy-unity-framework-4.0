@@ -149,6 +149,12 @@ namespace com.spacepuppy
         public static bool InvokeRequired => _updateInvokeHandle?.InvokeRequired ?? false;
 
         /// <summary>
+        /// Returns true if the caller is on the main thread. 
+        /// This will return false if GameLoop is not initialized.
+        /// </summary>
+        public static bool IsMainThread => !(_updateInvokeHandle?.InvokeRequired ?? true);
+
+        /// <summary>
         /// Returns which event sequence that code is currently operating as. 
         /// WARNING - during 'OnMouseXXX' messages this will report that we're in the FixedUpdate sequence. 
         /// This is because there's no end of FixedUpdate available to hook into, so it reports FixedUpdate 

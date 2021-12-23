@@ -3,7 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+
+#if SP_UNITASK
+using Cysharp.Threading.Tasks;
+#endif
 
 namespace com.spacepuppy.Async
 {
@@ -120,6 +125,28 @@ namespace com.spacepuppy.Async
             return _provider?.GetTask(_token);
         }
 
+#if SP_UNITASK
+        /// <summary>
+        /// Get a unitask that can be awaited until the handle completes.
+        /// This will be thread safe.
+        /// </summary>
+        /// <returns></returns>
+        public async UniTask GetUniTask(CancellationToken token = default(CancellationToken))
+        {
+            if (!PlayerLoopHelper.IsMainThread)
+            {
+                await UniTask.SwitchToMainThread();
+                token.ThrowIfCancellationRequested();
+            }
+
+            while(!this.IsComplete)
+            {
+                await UniTask.Yield();
+                token.ThrowIfCancellationRequested();
+            }
+        }
+#endif
+
         /// <summary>
         /// Get the result, if any, of the handle after the handle has completed.
         /// </summary>
@@ -136,16 +163,16 @@ namespace com.spacepuppy.Async
             }
         }
 
-        #endregion
+#endregion
 
-        #region Operators
+#region Operators
 
         public static implicit operator Task(AsyncWaitHandle handle)
         {
             return handle.GetTask() ?? Task.CompletedTask;
         }
 
-        #endregion
+#endregion
 
     }
 
@@ -163,14 +190,14 @@ namespace com.spacepuppy.Async
     public struct AsyncWaitHandle<T>
     {
 
-        #region Fields
+#region Fields
 
         private IAsyncWaitHandleProvider<T> _provider;
         private object _token;
 
-        #endregion
+#endregion
 
-        #region CONSTRUCTOR
+#region CONSTRUCTOR
 
         public AsyncWaitHandle(IAsyncWaitHandleProvider<T> provider, object token)
         {
@@ -178,9 +205,9 @@ namespace com.spacepuppy.Async
             _token = token;
         }
 
-        #endregion
+#endregion
 
-        #region Properties
+#region Properties
 
         public IAsyncWaitHandleProvider<T> Provider => _provider;
 
@@ -201,9 +228,9 @@ namespace com.spacepuppy.Async
         /// </summary>
         public float Progress => _provider?.GetProgress(_token) ?? 0f;
 
-        #endregion
+#endregion
 
-        #region Methods
+#region Methods
 
         /// <summary>
         /// A yield instruction that can be used by a coroutine. 
@@ -235,6 +262,30 @@ namespace com.spacepuppy.Async
             return _provider?.GetTask(_token);
         }
 
+#if SP_UNITASK
+        /// <summary>
+        /// Get a unitask that can be awaited until the handle completes.
+        /// This will be thread safe.
+        /// </summary>
+        /// <returns></returns>
+        public async UniTask<T> GetUniTask(CancellationToken token = default(CancellationToken))
+        {
+            if (!PlayerLoopHelper.IsMainThread)
+            {
+                await UniTask.SwitchToMainThread();
+                token.ThrowIfCancellationRequested();
+            }
+
+            while (!this.IsComplete)
+            {
+                await UniTask.Yield();
+                token.ThrowIfCancellationRequested();
+            }
+
+            return this.GetResult();
+        }
+#endif
+
         /// <summary>
         /// Get the result, if any, of the handle after the handle has completed.
         /// </summary>
@@ -251,9 +302,9 @@ namespace com.spacepuppy.Async
             }
         }
 
-        #endregion
+#endregion
 
-        #region Operators
+#region Operators
 
         public static implicit operator AsyncWaitHandle(AsyncWaitHandle<T> handle)
         {
@@ -265,7 +316,7 @@ namespace com.spacepuppy.Async
             return handle.GetTask() ?? Task.FromResult<T>(handle.GetResult());
         }
 
-        #endregion
+#endregion
 
     }
 

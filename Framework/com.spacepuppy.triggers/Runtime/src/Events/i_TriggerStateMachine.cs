@@ -30,7 +30,7 @@ namespace com.spacepuppy.Events
         private SPEvent _onStateChanged = new SPEvent("OnStateChanged");
 
         [System.NonSerialized]
-        private int _currentState = int.MinValue;
+        private int? _currentState = null;
 
         #endregion
 
@@ -40,7 +40,7 @@ namespace com.spacepuppy.Events
         {
             base.Start();
 
-            if (_currentState == int.MinValue)
+            if (_currentState == null)
             {
                 this.GoToState(_initialState);
             }
@@ -52,17 +52,14 @@ namespace com.spacepuppy.Events
 
 
         [ShowNonSerializedProperty("Current State")]
-        public int CurrentStateIndex
-        {
-            get { return _currentState; }
-        }
+        public int? CurrentStateIndex => _currentState;
 
-        public StateInfo CurrentState
+        public StateInfo? CurrentState
         {
             get
             {
-                if (_currentState < 0 || _currentState >= _states.Count) return default(StateInfo);
-                return _states[_currentState];
+                if (_currentState == null || _currentState < 0 || _currentState >= _states.Count) return null;
+                return _states[_currentState.Value];
             }
         }
 
@@ -74,7 +71,7 @@ namespace com.spacepuppy.Events
 
         #region Methods
 
-        public void GoToState(int index)
+        public virtual void GoToState(int index)
         {
             bool signal = (_currentState != index);
 
@@ -101,11 +98,11 @@ namespace com.spacepuppy.Events
             switch (mode)
             {
                 case WrapMode.Loop:
-                    this.GoToState(MathUtil.Wrap(_currentState + 1, _states.Count));
+                    this.GoToState(MathUtil.Wrap((_currentState ?? -1) + 1, _states.Count));
                     break;
                 case WrapMode.Clamp:
                 default:
-                    this.GoToState(Mathf.Clamp(_currentState + 1, 0, _states.Count - 1));
+                    this.GoToState(Mathf.Clamp((_currentState ?? -1) + 1, 0, _states.Count - 1));
                     break;
             }
         }
@@ -115,11 +112,11 @@ namespace com.spacepuppy.Events
             switch (mode)
             {
                 case WrapMode.Loop:
-                    this.GoToState(MathUtil.Wrap(_currentState - 1, _states.Count));
+                    this.GoToState(MathUtil.Wrap((_currentState ?? 1) - 1, _states.Count));
                     break;
                 case WrapMode.Clamp:
                 default:
-                    this.GoToState(Mathf.Clamp(_currentState - 1, 0, _states.Count - 1));
+                    this.GoToState(Mathf.Clamp((_currentState ?? _states.Count) - 1, 0, _states.Count - 1));
                     break;
             }
         }
@@ -132,7 +129,10 @@ namespace com.spacepuppy.Events
         {
             if (!this.CanTrigger) return false;
 
-            _states.ActivateTriggerAt(_currentState, this, null);
+            if(_currentState != null && _currentState >= 0 && _currentState < _states.Count)
+            {
+                _states.ActivateTriggerAt(_currentState.Value, this, null);
+            }
             return true;
         }
 

@@ -11,6 +11,7 @@ using com.spacepuppy.Dynamic;
 using com.spacepuppyeditor.Windows;
 using com.spacepuppyeditor.Internal;
 using UnityEditor.Analytics;
+using System;
 
 namespace com.spacepuppyeditor
 {
@@ -255,7 +256,40 @@ namespace com.spacepuppyeditor
         public static object DefaultPropertyField(Rect position, GUIContent label, object value, System.Type valueType, bool ignoreCollections = false)
         {
             SerializedPropertyType propertyType = SerializedPropertyType.Generic;
-            if (valueType != null) propertyType = (valueType.IsInterface) ? SerializedPropertyType.ObjectReference : EditorHelper.GetPropertyType(valueType);
+            if (valueType != null)
+            {
+                if (valueType.IsInterface)
+                {
+                    propertyType = SerializedPropertyType.ObjectReference;
+                }
+                else if (TypeUtil.IsNullableType(valueType, out valueType))
+                {
+                    if(ConvertUtil.IsSupportedType(valueType))
+                    {
+                        var str = ConvertUtil.ToString(value);
+                        if (string.IsNullOrEmpty(str)) str = null;
+
+                        EditorGUI.BeginChangeCheck();
+                        str = EditorGUI.DelayedTextField(position, label, str ?? "NULL");
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            return string.IsNullOrEmpty(str) || string.Equals(str, "NULL", StringComparison.OrdinalIgnoreCase) ? null : ConvertUtil.ToPrim(value, valueType);
+                        }
+                        else
+                        {
+                            return value;
+                        }
+                    }
+                    else
+                    {
+                        propertyType = EditorHelper.GetPropertyType(valueType);
+                    }
+                }
+                else
+                {
+                    propertyType = EditorHelper.GetPropertyType(valueType);
+                }
+            }
 
             switch (propertyType)
             {

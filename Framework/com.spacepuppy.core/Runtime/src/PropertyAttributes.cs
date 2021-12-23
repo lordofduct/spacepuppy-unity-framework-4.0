@@ -600,6 +600,7 @@ namespace com.spacepuppy
         public string Label;
         public string Tooltip;
         public bool Readonly;
+        public bool ShowAtEditorTime;
 
         public ShowNonSerializedPropertyAttribute(string label)
         {

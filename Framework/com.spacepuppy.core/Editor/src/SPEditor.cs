@@ -8,6 +8,7 @@ using com.spacepuppy.Dynamic;
 using com.spacepuppy.Utils;
 
 using com.spacepuppyeditor.Internal;
+using UnityEditor.Graphs;
 
 namespace com.spacepuppyeditor
 {
@@ -45,7 +46,7 @@ namespace com.spacepuppyeditor
                     {
                         Attrib = attrib,
                         MemberInfo = f,
-                        Label = new GUIContent(attrib.Label ?? f.Name, attrib.Tooltip)
+                        Label = (attrib.Readonly || DynamicUtil.GetMemberAccessLevel(f) == DynamicMemberAccess.Read) ? new GUIContent((attrib.Label ?? f.Name) + " (readonly)", attrib.Tooltip) : new GUIContent(attrib.Label ?? f.Name, attrib.Tooltip)
                     });
                 }
             }
@@ -109,17 +110,20 @@ namespace com.spacepuppyeditor
                 PropertyHandlerValidationUtility.OnInspectorGUIComplete(this.serializedObject, false);
             }
 
-            if (_shownFields != null && UnityEngine.Application.isPlaying)
+            if (_shownFields != null && _shownFields.Any(o => o.Attrib.ShowAtEditorTime || UnityEngine.Application.isPlaying))
             {
-                GUILayout.Label("Runtime Values", EditorStyles.boldLabel);
+                EditorGUILayout.BeginVertical("box");
+                var style = new GUIStyle(EditorStyles.boldLabel);
+                style.alignment = TextAnchor.MiddleCenter;
+                GUILayout.Label("Runtime Values", style);
 
-                foreach (var info in _shownFields)
+                foreach (var info in _shownFields.Where(o => o.Attrib.ShowAtEditorTime || UnityEngine.Application.isPlaying))
                 {
                     switch(DynamicUtil.GetMemberAccessLevel(info.MemberInfo))
                     {
                         case DynamicMemberAccess.Read:
                             {
-                                var cache = SPGUI.Disable();
+                                var cache = SPGUI.DisableIf(info.Attrib.Readonly);
                                 var value = DynamicUtil.GetValue(this.target, info.MemberInfo);
                                 SPEditorGUILayout.DefaultPropertyField(info.Label, value, DynamicUtil.GetReturnType(info.MemberInfo));
                                 cache.Reset();
@@ -145,6 +149,7 @@ namespace com.spacepuppyeditor
                             break;
                     }
                 }
+                EditorGUILayout.EndVertical();
             }
         }
 
@@ -263,7 +268,7 @@ namespace com.spacepuppyeditor
         public override bool RequiresConstantRepaint()
         {
             return base.RequiresConstantRepaint() ||
-                   (Application.isPlaying && _shownFields != null && _shownFields.Count > 0) ||
+                   (_shownFields != null && _shownFields.Any(o => Application.isPlaying || o.Attrib.ShowAtEditorTime)) ||
                    (_constantlyRepaint != null && (Application.isPlaying || !_constantlyRepaint.RuntimeOnly)) ||
                    (_addons != null && _addons.Length > 0 && _addons.Any((o) => o.RequiresConstantRepaint()));
         }

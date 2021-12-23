@@ -41,6 +41,18 @@ namespace com.spacepuppy.Utils
 
         #endregion
 
+        public static bool IsNullableType(System.Type tp)
+        {
+            var ntp = Nullable.GetUnderlyingType(tp);
+            return ntp != null;
+        }
+
+        public static bool IsNullableType(System.Type tp, out System.Type ntp)
+        {
+            ntp = Nullable.GetUnderlyingType(tp);
+            return ntp != null;
+        }
+
         public static IEnumerable<Type> GetTypes()
         {
             foreach (var assemb in PREFERRED_ASSEMBLIES)

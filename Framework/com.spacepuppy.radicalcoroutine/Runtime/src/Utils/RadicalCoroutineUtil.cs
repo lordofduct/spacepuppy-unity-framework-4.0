@@ -34,7 +34,7 @@ namespace com.spacepuppy.Utils
             if (behaviour == null) throw new System.ArgumentNullException("behaviour");
             if (routine == null) throw new System.ArgumentNullException("routine");
 
-            var co = new RadicalCoroutine(routine);
+            var co = RadicalCoroutine.Create(routine);
             co.Start(behaviour, disableMode);
             return co;
         }
@@ -44,7 +44,7 @@ namespace com.spacepuppy.Utils
             if (behaviour == null) throw new System.ArgumentNullException("behaviour");
             if (routine == null) throw new System.ArgumentNullException("routine");
 
-            var co = new RadicalCoroutine(routine.GetEnumerator());
+            var co = RadicalCoroutine.Create(routine.GetEnumerator());
             co.Start(behaviour, disableMode);
             return co;
         }
@@ -54,7 +54,7 @@ namespace com.spacepuppy.Utils
             if (behaviour == null) throw new System.ArgumentNullException("behaviour");
             if (method == null) throw new System.ArgumentNullException("routine");
 
-            var co = new RadicalCoroutine(method());
+            var co = RadicalCoroutine.Create(method());
             co.Start(behaviour, disableMode);
             return co;
         }
@@ -78,7 +78,7 @@ namespace com.spacepuppy.Utils
                 throw new System.ArgumentException("Delegate must have a return type of IEnumerable or IEnumerator.", "method");
             }
 
-            var co = new RadicalCoroutine(e);
+            var co = RadicalCoroutine.Create(e);
             co.Start(behaviour, disableMode);
             return co;
         }
@@ -91,7 +91,7 @@ namespace com.spacepuppy.Utils
             if (behaviour == null) throw new System.ArgumentNullException("behaviour");
             if (routine == null) throw new System.ArgumentNullException("routine");
 
-            var co = new RadicalCoroutine(routine);
+            var co = RadicalCoroutine.Create(routine);
             co.StartAsync(behaviour, disableMode);
             return co;
         }
@@ -101,7 +101,7 @@ namespace com.spacepuppy.Utils
             if (behaviour == null) throw new System.ArgumentNullException("behaviour");
             if (routine == null) throw new System.ArgumentNullException("routine");
 
-            var co = new RadicalCoroutine(routine.GetEnumerator());
+            var co = RadicalCoroutine.Create(routine.GetEnumerator());
             co.StartAsync(behaviour, disableMode);
             return co;
         }
@@ -111,7 +111,7 @@ namespace com.spacepuppy.Utils
             if (behaviour == null) throw new System.ArgumentNullException("behaviour");
             if (method == null) throw new System.ArgumentNullException("routine");
 
-            var co = new RadicalCoroutine(method());
+            var co = RadicalCoroutine.Create(method());
             co.StartAsync(behaviour, disableMode);
             return co;
         }
@@ -135,7 +135,7 @@ namespace com.spacepuppy.Utils
                 throw new System.ArgumentException("Delegate must have a return type of IEnumerable or IEnumerator.", "method");
             }
 
-            var co = new RadicalCoroutine(e);
+            var co = RadicalCoroutine.Create(e);
             co.StartAsync(behaviour, disableMode);
             return co;
         }
@@ -149,7 +149,7 @@ namespace com.spacepuppy.Utils
             if (behaviour == null) throw new System.ArgumentNullException("behaviour");
             if (routine == null) throw new System.ArgumentNullException("routine");
 
-            var co = new RadicalCoroutine(routine);
+            var co = RadicalCoroutine.Create(routine);
             co.StartAutoKill(behaviour, autoKillToken, disableMode);
             return co;
         }
@@ -159,7 +159,7 @@ namespace com.spacepuppy.Utils
             if (behaviour == null) throw new System.ArgumentNullException("behaviour");
             if (routine == null) throw new System.ArgumentNullException("routine");
 
-            var co = new RadicalCoroutine(routine.GetEnumerator());
+            var co = RadicalCoroutine.Create(routine.GetEnumerator());
             co.StartAutoKill(behaviour, autoKillToken, disableMode);
             return co;
         }
@@ -169,7 +169,7 @@ namespace com.spacepuppy.Utils
             if (behaviour == null) throw new System.ArgumentNullException("behaviour");
             if (method == null) throw new System.ArgumentNullException("routine");
 
-            var co = new RadicalCoroutine(method());
+            var co = RadicalCoroutine.Create(method());
             co.StartAutoKill(behaviour, autoKillToken, disableMode);
             return co;
         }
@@ -182,7 +182,7 @@ namespace com.spacepuppy.Utils
             if (routine == null) throw new System.ArgumentNullException("routine");
             if (validator == null) throw new System.ArgumentNullException("validator");
 
-            var co = new RadicalCoroutine(ValidatedRoutine(routine, validator));
+            var co = RadicalCoroutine.Create(ValidatedRoutine(routine, validator));
             co.Start(behaviour, disableMode);
             return co;
         }

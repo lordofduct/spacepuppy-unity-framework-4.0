@@ -218,9 +218,7 @@ namespace com.spacepuppy
         /// <returns></returns>
         public static WaitForDuration FromWaitForSeconds(WaitForSeconds wait, bool returnObjEvenIfZero = false)
         {
-            //var dur = ConvertUtil.ToSingle(DynamicUtil.GetValue(wait, "m_Seconds"));
-            var field = typeof(WaitForSeconds).GetField("m_Seconds", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            float dur = (float)field.GetValue(wait);
+            float dur = (float)WaitForSeconds_SecondsField.GetValue(wait);
             if (dur <= 0f && !returnObjEvenIfZero)
             {
                 return null;
@@ -232,6 +230,8 @@ namespace com.spacepuppy
                 return w;
             }
         }
+        private static System.Reflection.FieldInfo _waitForSeconds_SecondsField;
+        private static System.Reflection.FieldInfo WaitForSeconds_SecondsField => _waitForSeconds_SecondsField ?? (_waitForSeconds_SecondsField = typeof(WaitForSeconds).GetField("m_Seconds", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic));
 
         /// <summary>
         /// Create a WaitForDuration from a SPTimePeriod as a pooled object.

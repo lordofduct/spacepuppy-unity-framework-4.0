@@ -5,6 +5,7 @@ using System.Collections;
 using System.Linq;
 
 using com.spacepuppy.Utils;
+using System.Runtime.InteropServices.ComTypes;
 
 namespace com.spacepuppy
 {
@@ -65,7 +66,7 @@ namespace com.spacepuppy
     /// TODO - #100 - We should set up a RadicalCoroutine pool to reduce garbage collection
     /// 
     /// </notes>
-    public sealed class RadicalCoroutine : IRadicalEnumerator, IImmediatelyResumingYieldInstruction, IRadicalWaitHandle, IEnumerator, System.IDisposable
+    public sealed class RadicalCoroutine : IRadicalEnumerator, IImmediatelyResumingYieldInstruction, IRadicalWaitHandle, ISPDisposable
     {
 
         #region Events
@@ -162,9 +163,9 @@ namespace com.spacepuppy
 
         #region CONSTRUCTOR
 
-        public RadicalCoroutine(System.Collections.IEnumerable routine)
+        public RadicalCoroutine(System.Collections.IEnumerable routine) : this(routine?.GetEnumerator())
         {
-            if (routine == null) throw new System.ArgumentNullException("routine");
+            if (routine == null) throw new System.ArgumentNullException(nameof(routine));
             _stack = new RadicalOperationStack(this);
 
             var e = routine.GetEnumerator();
@@ -176,19 +177,47 @@ namespace com.spacepuppy
 
         public RadicalCoroutine(System.Collections.IEnumerator routine)
         {
-            if (routine == null) throw new System.ArgumentNullException("routine");
+            if (routine == null) throw new System.ArgumentNullException(nameof(routine));
             _stack = new RadicalOperationStack(this);
 
-            if (routine is IRadicalYieldInstruction)
-                _stack.Push(routine as IRadicalYieldInstruction);
-            else
-                _stack.Push(EnumWrapper.Create(routine));
+            this.Initialize(routine);
         }
 
         private RadicalCoroutine()
         {
             _stack = new RadicalOperationStack(this);
             //was created for recycling
+        }
+
+        private void Initialize(IEnumerator e)
+        {
+            if (e is IRadicalYieldInstruction i)
+            {
+                Initialize(i);
+            }
+            else
+            {
+                _stack.Push(EnumWrapper.Create(e));
+            }
+        }
+
+        private void Initialize(IRadicalYieldInstruction instruction)
+        {
+            if (instruction.IsComplete)
+            {
+                _currentIEnumeratorYieldValue = null;
+                _state = RadicalCoroutineOperatingState.Complete;
+            }
+            else if (instruction is RadicalCoroutine rad)
+            {
+                _stack.Push(EnumWrapper.Create(WaitUntilDone_Routine(rad)));
+            }
+            else
+            {
+                if (instruction is IResettingYieldInstruction) (instruction as IResettingYieldInstruction).Reset();
+                if (instruction is IImmediatelyResumingYieldInstruction) (instruction as IImmediatelyResumingYieldInstruction).Signal += this.OnImmediatelyResumingYieldInstructionSignaled;
+                _stack.Push(instruction);
+            }
         }
 
         #endregion
@@ -487,7 +516,7 @@ namespace com.spacepuppy
             if (behaviour == null) throw new System.ArgumentNullException("behaviour");
             if (routine == null) throw new System.ArgumentNullException("routine");
 
-            var co = new RadicalCoroutine(routine);
+            var co = Create(routine);
             this.OnComplete += (s, e) =>
             {
                 if (co._state == RadicalCoroutineOperatingState.Inactive) co.Start(behaviour, disableMode);
@@ -500,7 +529,7 @@ namespace com.spacepuppy
             if (behaviour == null) throw new System.ArgumentNullException("behaviour");
             if (routine == null) throw new System.ArgumentNullException("routine");
 
-            var co = new RadicalCoroutine(routine);
+            var co = Create(routine);
             this.OnComplete += (s, e) =>
             {
                 if (co._state == RadicalCoroutineOperatingState.Inactive) co.Start(behaviour, disableMode);
@@ -513,7 +542,7 @@ namespace com.spacepuppy
             if (behaviour == null) throw new System.ArgumentNullException("behaviour");
             if (routine == null) throw new System.ArgumentNullException("routine");
 
-            var co = new RadicalCoroutine(routine());
+            var co = Create(routine());
             this.OnComplete += (s, e) =>
             {
                 if (co._state == RadicalCoroutineOperatingState.Inactive) co.Start(behaviour, disableMode);
@@ -558,7 +587,7 @@ namespace com.spacepuppy
             bool result = false;
             try
             {
-                result = (this as IEnumerator).MoveNext();
+                result = this.MoveNext(true);
             }
             catch (System.Exception ex)
             {
@@ -595,7 +624,7 @@ namespace com.spacepuppy
             bool result = false;
             try
             {
-                result = (this as IEnumerator).MoveNext();
+                result = this.MoveNext(true);
             }
             catch (System.Exception ex)
             {
@@ -625,37 +654,7 @@ namespace com.spacepuppy
             }
         }
 
-        #endregion
-
-        #region IYieldInstruction/IEnumerator Interface
-
-        bool IRadicalYieldInstruction.IsComplete { get { return this.Finished; } }
-
-        object IEnumerator.Current
-        {
-            get { return _currentIEnumeratorYieldValue; }
-        }
-
-        bool IRadicalYieldInstruction.Tick(out object yieldObject)
-        {
-            if (this.Finished)
-            {
-                yieldObject = null;
-                return false;
-            }
-            else if ((this as IEnumerator).MoveNext())
-            {
-                yieldObject = _currentIEnumeratorYieldValue;
-                return true;
-            }
-            else
-            {
-                yieldObject = null;
-                return false;
-            }
-        }
-
-        bool IEnumerator.MoveNext()
+        private bool MoveNext(bool manual)
         {
             if (_state == RadicalCoroutineOperatingState.Inactive || _state == RadicalCoroutineOperatingState.Paused) return false;
 
@@ -715,7 +714,7 @@ namespace com.spacepuppy
                 {
                     btick = r.Tick(out current);
                 }
-                catch(System.Exception ex)
+                catch (System.Exception ex)
                 {
                     this.OnFinish(true, ex);
                     throw ex;
@@ -780,7 +779,7 @@ namespace com.spacepuppy
                     var rad = current as RadicalCoroutine;
                     if (!rad.Finished)
                     {
-                        if (rad._token != null)
+                        if (!manual && rad._token != null)
                         {
                             _currentIEnumeratorYieldValue = rad._token;
                         }
@@ -879,6 +878,41 @@ namespace com.spacepuppy
             }
         }
 
+        #endregion
+
+        #region IYieldInstruction/IEnumerator Interface
+
+        bool IRadicalYieldInstruction.IsComplete { get { return this.Finished; } }
+
+        object IEnumerator.Current
+        {
+            get { return _currentIEnumeratorYieldValue; }
+        }
+
+        bool IRadicalYieldInstruction.Tick(out object yieldObject)
+        {
+            if (this.Finished)
+            {
+                yieldObject = null;
+                return false;
+            }
+            else if ((this as IEnumerator).MoveNext())
+            {
+                yieldObject = _currentIEnumeratorYieldValue;
+                return true;
+            }
+            else
+            {
+                yieldObject = null;
+                return false;
+            }
+        }
+
+        bool IEnumerator.MoveNext()
+        {
+            return this.MoveNext(false);
+        }
+
         void IEnumerator.Reset()
         {
             throw new System.NotSupportedException();
@@ -965,7 +999,18 @@ namespace com.spacepuppy
 
         #region IDisposable Interface
 
-        public void Dispose()
+        void System.IDisposable.Dispose()
+        {
+            this.Dispose(true);
+        }
+
+        public bool IsDisposed
+        {
+            get;
+            private set;
+        }
+
+        public void Dispose(bool release)
         {
             if (this.Active) this.Cancel();
 
@@ -1003,9 +1048,9 @@ namespace com.spacepuppy
             this.OnFinished = null;
             _immediatelyResumingSignal = null;
             this.Tag = null;
+            this.IsDisposed = true;
 
-            //TODO - #100 - allow releasing when we've fully implemented coroutine object caching 
-            //_pool.Release(this);
+            if (release) _pool.Release(this);
         }
 
         #endregion
@@ -1044,7 +1089,7 @@ namespace com.spacepuppy
         {
             var e = UpdateTickerIterator(a);
             e.MoveNext(); //we want to get the ticker up to the first yield statement, this way the action doesn't get called until RadicalCoroutine.Start is called.
-            return new RadicalCoroutine(e);
+            return Create(e);
         }
 
         /// <summary>
@@ -1066,7 +1111,7 @@ namespace com.spacepuppy
 
         public static RadicalCoroutine FixedUpdateTicker(System.Action a)
         {
-            return new RadicalCoroutine(FixedUpdateTickerIterator(a));
+            return Create(FixedUpdateTickerIterator(a));
         }
 
         public static System.Collections.IEnumerator FixedUpdateTickerIterator(System.Action a)
@@ -1084,7 +1129,7 @@ namespace com.spacepuppy
 
         public static RadicalCoroutine LateUpdateTicker(System.Action a)
         {
-            return new RadicalCoroutine(LateUpdateTickerIterator(a));
+            return Create(LateUpdateTickerIterator(a));
         }
 
         public static System.Collections.IEnumerator LateUpdateTickerIterator(System.Action a)
@@ -1109,7 +1154,7 @@ namespace com.spacepuppy
         /// <returns></returns>
         public static RadicalCoroutine Ticker(System.Func<object> f)
         {
-            return new RadicalCoroutine(TickerIterator(f));
+            return Create(TickerIterator(f));
         }
 
         /// <summary>
@@ -1198,8 +1243,7 @@ namespace com.spacepuppy
             }
         }
 
-        /*
-        private static com.spacepuppy.Collections.ObjectCachePool<RadicalCoroutine> _pool = new com.spacepuppy.Collections.ObjectCachePool<RadicalCoroutine>(1000,
+        private static com.spacepuppy.Collections.ObjectCachePool<RadicalCoroutine> _pool = new com.spacepuppy.Collections.ObjectCachePool<RadicalCoroutine>(512,
                                                                                                                                                             () =>
                                                                                                                                                             {
                                                                                                                                                                 return new RadicalCoroutine();
@@ -1219,20 +1263,48 @@ namespace com.spacepuppy
                                                                                                                                                                 r.OnCancelled = null;
                                                                                                                                                                 r.OnFinished = null;
                                                                                                                                                                 r._immediatelyResumingSignal = null;
+                                                                                                                                                                r.Tag = null;
+                                                                                                                                                                r.IsDisposed = false;
                                                                                                                                                             },
                                                                                                                                                             true);
 
-        internal RadicalCoroutine CreatePooledRoutine(IEnumerator e)
+        /// <summary>
+        /// Return a disposes and releases a RadicalCoroutine to the cache pool.
+        /// </summary>
+        /// <param name="routine"></param>
+        public static void Release(RadicalCoroutine routine)
         {
-            if (e == null) throw new System.ArgumentNullException("routine");
+            if (routine == null) throw new System.ArgumentNullException(nameof(routine));
+
+            routine.Dispose(true);
+        }
+
+        public static RadicalCoroutine Create(IEnumerable e)
+        {
+            if (e == null) throw new System.ArgumentNullException(nameof(e));
+
             var routine = _pool.GetInstance();
-            if (e is IRadicalYieldInstruction)
-                routine._stack.Push(e as IRadicalYieldInstruction);
-            else
-                routine._stack.Push(EnumWrapper.Create(e));
+            routine.Initialize(e.GetEnumerator());
             return routine;
         }
-        */
+
+        public static RadicalCoroutine Create(IEnumerator e)
+        {
+            if (e == null) throw new System.ArgumentNullException(nameof(e));
+
+            var routine = _pool.GetInstance();
+            routine.Initialize(e);
+            return routine;
+        }
+
+        public static RadicalCoroutine Create(IRadicalYieldInstruction instruction)
+        {
+            if (instruction == null) throw new System.ArgumentNullException(nameof(instruction));
+
+            var routine = _pool.GetInstance();
+            routine.Initialize(instruction);
+            return routine;
+        }
 
         #endregion
 
@@ -1241,12 +1313,19 @@ namespace com.spacepuppy
         private class ManualWaitForGeneric : IPooledYieldInstruction, System.Collections.IEnumerator
         {
 
+            private enum States : byte
+            {
+                Uninitialized = 0,
+                Running = 1,
+                Complete = 2,
+            }
+
             #region Fields
 
             private RadicalCoroutine _owner;
             private MonoBehaviour _handle;
             private object _yieldObject;
-            private object _enumCurrentValue;
+            private States _state;
 
             #endregion
 
@@ -1272,28 +1351,13 @@ namespace com.spacepuppy
 
             public bool IsComplete
             {
-                get { return _yieldObject != null; }
+                get { return _state >= States.Complete; }
             }
 
             public bool Tick(out object yieldObject)
             {
-                if (_enumCurrentValue == null)
-                {
-                    yieldObject = _yieldObject;
-                    return true;
-                }
-                else
-                {
-                    yieldObject = null;
-                    if (_owner.OperationStack.CurrentOperation == this)
-                    {
-                        if (_yieldObject is WaitForEndOfFrame || _yieldObject is WaitForFixedUpdate)
-                        {
-                            _owner.ManualTick(_handle);
-                        }
-                    }
-                    return false;
-                }
+                yieldObject = null;
+                return _state < States.Complete;
             }
 
             #endregion
@@ -1302,17 +1366,35 @@ namespace com.spacepuppy
 
             public object Current
             {
-                get { return _enumCurrentValue; }
+                get { return _yieldObject; }
             }
 
             public bool MoveNext()
             {
-                return this.Tick(out _enumCurrentValue);
+                switch(_state)
+                {
+                    case States.Uninitialized:
+                        _state = States.Running;
+                        return true;
+                    case States.Running:
+                        _state = States.Complete;
+                        if (_owner.OperationStack.CurrentOperation == this)
+                        {
+                            if (_yieldObject is WaitForEndOfFrame || _yieldObject is WaitForFixedUpdate)
+                            {
+                                _owner.ManualTick(_handle);
+                            }
+                        }
+                        return false;
+                    case States.Complete:
+                    default:
+                        return false;
+                }
             }
 
             void System.Collections.IEnumerator.Reset()
             {
-                _enumCurrentValue = null;
+                _state = States.Uninitialized;
             }
 
             #endregion
@@ -1326,6 +1408,7 @@ namespace com.spacepuppy
                 w._owner = owner;
                 w._handle = handle;
                 w._yieldObject = yieldObj;
+                w._state = States.Uninitialized;
                 return w;
             }
 
@@ -1334,7 +1417,8 @@ namespace com.spacepuppy
                 _owner = null;
                 _handle = null;
                 _yieldObject = null;
-                _enumCurrentValue = null;
+                _state = States.Uninitialized;
+                _pool.Release(this);
             }
 
             #endregion
@@ -1385,7 +1469,7 @@ namespace com.spacepuppy
                 else
                 {
                     yieldObject = null;
-                    if (_e is System.IDisposable) (_e as System.IDisposable).Dispose();
+                    if (_e is System.IDisposable d) d.Dispose();
                     _e = null;
                     return false;
                 }
@@ -1419,7 +1503,7 @@ namespace com.spacepuppy
 
             void System.IDisposable.Dispose()
             {
-                if (_e is System.IDisposable) (_e as System.IDisposable).Dispose();
+                if (_e is System.IDisposable d) d.Dispose();
                 _e = null;
                 _pool.Release(this);
             }

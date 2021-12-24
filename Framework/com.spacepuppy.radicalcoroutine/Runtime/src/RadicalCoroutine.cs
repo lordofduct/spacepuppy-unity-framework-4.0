@@ -813,7 +813,7 @@ namespace com.spacepuppy
                 }
                 else if (current is YieldInstruction)
                 {
-                    if (current is WaitForSeconds && (_disableMode & RadicalCoroutineDisableMode.Resumes) != 0)
+                    if (current is WaitForSeconds && (manual || (_disableMode & RadicalCoroutineDisableMode.Resumes) != 0))
                     {
                         _currentIEnumeratorYieldValue = null;
                         _stack.Push(WaitForDuration.FromWaitForSeconds(current as WaitForSeconds));

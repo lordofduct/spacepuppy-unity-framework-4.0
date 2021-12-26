@@ -1346,7 +1346,7 @@ namespace com.spacepuppy
         /// <returns></returns>
         public static bool ReleaseDelayed(ref RadicalCoroutine routine)
         {
-            if (routine = null) return false;
+            if (routine == null) return false;
 
             lock(_toRelease)
             {

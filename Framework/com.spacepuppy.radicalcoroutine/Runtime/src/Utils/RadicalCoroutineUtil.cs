@@ -5,7 +5,7 @@ using System.Collections;
 namespace com.spacepuppy.Utils
 {
 
-    public static class RadicalCoroutineUtil 
+    public static class RadicalCoroutineUtil
     {
 
         private class YieldArgAdapter : CustomYieldInstruction
@@ -81,6 +81,71 @@ namespace com.spacepuppy.Utils
             var co = RadicalCoroutine.Create(e);
             co.Start(behaviour, disableMode);
             return co;
+        }
+
+
+
+
+        /// <summary>
+        /// Creates a RadicalCoroutine that will be cleaned up on complete. This RadicalCoroutine will be immediately returned to the cache pool on finish, only a simple IRadicalYieldInstruction handle is returned for awaiting. 
+        /// Do not store a reference to this instruction as it will be cleaned up after it finishes.
+        /// </summary>
+        /// <param name="behaviour"></param>
+        /// <param name="routine"></param>
+        /// <param name="disableMode"></param>
+        /// <returns></returns>
+        public static IRadicalYieldInstruction StartPooledRadicalCoroutine(this MonoBehaviour behaviour, System.Collections.IEnumerator routine, RadicalCoroutineDisableMode disableMode = RadicalCoroutineDisableMode.Default)
+        {
+            if (behaviour == null) throw new System.ArgumentNullException("behaviour");
+            if (routine == null) throw new System.ArgumentNullException("routine");
+
+            var co = RadicalCoroutine.Create(routine);
+            co.Start(behaviour, disableMode);
+            return RadicalCoroutine.AutoRelease(ref co);
+        }
+
+        public static IRadicalYieldInstruction StartPooledRadicalCoroutine(this MonoBehaviour behaviour, System.Collections.IEnumerable routine, RadicalCoroutineDisableMode disableMode = RadicalCoroutineDisableMode.Default)
+        {
+            if (behaviour == null) throw new System.ArgumentNullException("behaviour");
+            if (routine == null) throw new System.ArgumentNullException("routine");
+
+            var co = RadicalCoroutine.Create(routine.GetEnumerator());
+            co.Start(behaviour, disableMode);
+            return RadicalCoroutine.AutoRelease(ref co);
+        }
+
+        public static IRadicalYieldInstruction StartPooledRadicalCoroutine(this MonoBehaviour behaviour, System.Func<System.Collections.IEnumerator> method, RadicalCoroutineDisableMode disableMode = RadicalCoroutineDisableMode.Default)
+        {
+            if (behaviour == null) throw new System.ArgumentNullException("behaviour");
+            if (method == null) throw new System.ArgumentNullException("routine");
+
+            var co = RadicalCoroutine.Create(method());
+            co.Start(behaviour, disableMode);
+            return RadicalCoroutine.AutoRelease(ref co);
+        }
+
+        public static IRadicalYieldInstruction StartPooledRadicalCoroutine(this MonoBehaviour behaviour, System.Delegate method, object[] args = null, RadicalCoroutineDisableMode disableMode = RadicalCoroutineDisableMode.Default)
+        {
+            if (behaviour == null) throw new System.ArgumentNullException("behaviour");
+            if (method == null) throw new System.ArgumentNullException("method");
+
+            System.Collections.IEnumerator e;
+            if (com.spacepuppy.Utils.TypeUtil.IsType(method.Method.ReturnType, typeof(System.Collections.IEnumerable)))
+            {
+                e = (method.DynamicInvoke(args) as System.Collections.IEnumerable).GetEnumerator();
+            }
+            else if (com.spacepuppy.Utils.TypeUtil.IsType(method.Method.ReturnType, typeof(System.Collections.IEnumerator)))
+            {
+                e = (method.DynamicInvoke(args) as System.Collections.IEnumerator);
+            }
+            else
+            {
+                throw new System.ArgumentException("Delegate must have a return type of IEnumerable or IEnumerator.", "method");
+            }
+
+            var co = RadicalCoroutine.Create(e);
+            co.Start(behaviour, disableMode);
+            return RadicalCoroutine.AutoRelease(ref co);
         }
 
 

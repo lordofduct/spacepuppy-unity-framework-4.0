@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using com.spacepuppy.Dynamic;
 using com.spacepuppy.Tween;
 using com.spacepuppy.Utils;
+using com.spacepuppy.Collections;
 
 namespace com.spacepuppy.Waypoints
 {
@@ -122,7 +123,8 @@ namespace com.spacepuppy.Waypoints
 
         private TranslationOptions _updateTranslation;
         private RotationOptions _updateRotation;
-        private Dictionary<System.Type, IStateModifier[]> _modifierTable;
+
+        private IStateModifier[][] _modifiers;
 
         #endregion
 
@@ -204,77 +206,19 @@ namespace com.spacepuppy.Waypoints
             set { _updateRotation = value; }
         }
 
-        public bool HasModifiers
+        public bool IgnoreModifiers
         {
-            get { return _modifierTable != null && _modifierTable.Count > 0; }
+            get;
+            set;
         }
-        
+
         #endregion
 
         #region Methods
 
-        public void AddNodeModifierType<T>() where T : IStateModifier
-        {
-            if (_modifierTable == null)
-                _modifierTable = new Dictionary<System.Type, IStateModifier[]>();
-
-            var path = _path.Path;
-            int cnt = path.Count;
-            IStateModifier[] arr = new IStateModifier[cnt];
-            for (int i = 0; i < cnt; i++)
-            {
-                var p = GameObjectUtil.GetGameObjectFromSource(path.ControlPoint(i));
-                if (p != null) arr[i] = p.GetComponent<T>() as IStateModifier;
-            }
-
-            _modifierTable[typeof(T)] = arr;
-        }
-
-        public void AddNodeModifierType(System.Type tp)
-        {
-            if (tp == null) throw new System.ArgumentNullException("tp");
-            if (!TypeUtil.IsType(tp, typeof(IStateModifier))) return; // throw new System.ArgumentException("Type must implement IModifier.", "tp");
-
-            if (_modifierTable == null)
-                _modifierTable = new Dictionary<System.Type, IStateModifier[]>();
-
-            var path = _path.Path;
-            int cnt = path.Count;
-            IStateModifier[] arr = new IStateModifier[cnt];
-            for(int i = 0; i < cnt; i++)
-            {
-                var p = GameObjectUtil.GetGameObjectFromSource(path.ControlPoint(i));
-                if(p != null) arr[i] = p.GetComponent(tp) as IStateModifier;
-            }
-
-            _modifierTable[tp] = arr;
-        }
-
-        public bool RemoveNodeModifierType<T>() where T : IStateModifier
-        {
-            return _modifierTable.Remove(typeof(T));
-        }
-
-        public bool RemoveNodeModifierType(System.Type tp)
-        {
-            if (tp == null) throw new System.ArgumentNullException("tp");
-            if (!TypeUtil.IsType(tp, typeof(IStateModifier))) return false; // throw new System.ArgumentException("Type must implement IStateModifier.", "tp");
-            return _modifierTable.Remove(tp);
-        }
-
-        public bool ContainsNodeModifier<T>() where T : IStateModifier
-        {
-            return _modifierTable.ContainsKey(typeof(T));
-        }
-
-        public bool ContainsNodeModifier(System.Type tp)
-        {
-            return _modifierTable.ContainsKey(tp);
-        }
-
         public void SetToTarget(object targ, float t)
         {
-            this.LerpToTarget(targ, t, float.NaN);
+            this.LerpToTarget(targ, t, 1f);
         }
 
         public void LerpToTarget(object targ, float t, float lerpT)
@@ -292,7 +236,7 @@ namespace com.spacepuppy.Waypoints
                     if (_updateRotation == RotationOptions.Heading)
                     {
                         var wp = _path.Path.GetWaypointAt(t);
-                        this.SetPosition(trans, wp.Position, float.NaN);
+                        this.SetPosition(trans, wp.Position);
                         this.SetRotation(trans, Quaternion.LookRotation(wp.Heading), lerpT);
                     }
                     else if (_updateTranslation > TranslationOptions.None)
@@ -302,8 +246,8 @@ namespace com.spacepuppy.Waypoints
                 }
             }
 
-            bool useModifiers = (_modifierTable != null && _modifierTable.Count > 0);
-            if (useModifiers || _updateRotation == RotationOptions.Rotation || _updateRotation == RotationOptions.LocalRotation)
+            if (_modifiers == null) this.SyncModifiers();
+            if (_modifiers.Length > 0 || _updateRotation == RotationOptions.Rotation || _updateRotation == RotationOptions.LocalRotation)
             {
                 var data = _path.Path.GetRelativePositionData(t);
 
@@ -333,80 +277,43 @@ namespace com.spacepuppy.Waypoints
                     }
                 }
 
-                if (useModifiers)
+                if (_modifiers.Length > 0)
                 {
-                    var e = _modifierTable.GetEnumerator();
-                    while (e.MoveNext())
+                    var ma = (i >= 0 && i < _modifiers.Length) ? _modifiers[i] : null;
+                    var mb = (j >= 0 && j < _modifiers.Length) ? _modifiers[j] : null;
+
+                    if(ma != null && mb != null)
                     {
-                        var len = e.Current.Value.Length;
-                        var ma = (i >= 0 && i < len) ? e.Current.Value[i] : null;
-                        var mb = (j >= 0 && j < len) ? e.Current.Value[j] : null;
-
-                        if(float.IsNaN(lerpT))
+                        foreach(var m in ma)
                         {
-                            if (ma != null)
-                            {
-                                if (mb != null)
-                                {
-                                    using (var state = StateToken.GetToken())
-                                    {
-                                        ma.CopyTo(state);
-                                        mb.LerpTo(state, data.TPrime);
-                                        ma.ModifyWith(targ, state);
-                                    }
-                                }
-                                else
-                                {
-                                    ma.Modify(targ);
-                                }
-                            }
-                            else if (mb != null)
-                            {
-                                mb.Modify(targ);
-                            }
+                            m.CopyTo(targ);
                         }
-                        else
+                        foreach (var m in mb)
                         {
-                            using (var curState = StateToken.GetToken())
-                            using (var state = StateToken.GetToken())
-                            {
-                                IStateModifier m = null;
-                                if(ma != null)
-                                {
-                                    m = ma;
-                                    if(mb != null)
-                                    {
-                                        ma.CopyTo(state);
-                                        mb.LerpTo(state, data.TPrime);
-                                    }
-                                    else
-                                    {
-                                        ma.CopyTo(state);
-                                    }
-                                }
-                                else if(mb != null)
-                                {
-                                    m = mb;
-                                    mb.CopyTo(state);
-                                }
-
-                                if(m != null)
-                                {
-                                    state.CopyTo(curState);
-                                    curState.SyncFrom(targ);
-                                    curState.Lerp(state, lerpT);
-                                    m.ModifyWith(state, curState);
-                                }
-                            }
+                            m.LerpTo(targ, data.TPrime);
+                        }
+                    }
+                    else if(ma != null)
+                    {
+                        foreach (var m in ma)
+                        {
+                            m.CopyTo(targ);
+                        }
+                    }
+                    else if(mb != null)
+                    {
+                        foreach (var m in mb)
+                        {
+                            m.CopyTo(targ);
                         }
                     }
                 }
             }
         }
 
-        private void SetPosition(Transform trans, Vector3 pos, float lerpT)
+        private void SetPosition(Transform trans, Vector3 pos, float lerpT = 1f)
         {
-            if(!float.IsNaN(lerpT))
+            if (lerpT != 1f)
             {
                 switch (_updateTranslation)
                 {
@@ -432,9 +339,9 @@ namespace com.spacepuppy.Waypoints
             }
         }
 
-        private void SetRotation(Transform trans, Quaternion rot, float lerpT)
+        private void SetRotation(Transform trans, Quaternion rot, float lerpT = 1f)
         {
-            if (!float.IsNaN(lerpT))
+            if (lerpT != 1f)
             {
                 switch (_updateRotation)
                 {
@@ -464,6 +371,32 @@ namespace com.spacepuppy.Waypoints
             }
         }
 
+        private void SyncModifiers()
+        {
+            var path = _path.Path;
+            int cnt = path.Count;
+
+            _modifiers = null;
+            for(int i = 0; i < cnt; i++)
+            {
+                var p = GameObjectUtil.GetGameObjectFromSource(path.ControlPoint(i));
+                if (p)
+                {
+                    using (var lst = TempCollection.GetList<IStateModifier>())
+                    {
+                        p.GetComponents<IStateModifier>(lst);
+                        if(lst.Count > 0)
+                        {
+                            if (_modifiers == null) _modifiers = new IStateModifier[cnt][];
+                            _modifiers[i] = lst.ToArray();
+                        }
+                    }
+                }
+            }
+
+            if (_modifiers == null) _modifiers = ArrayUtil.Empty<IStateModifier[]>();
+        }
+
         #endregion
 
         #region TweenCurve Interface
@@ -487,7 +420,7 @@ namespace com.spacepuppy.Waypoints
         }
 
         #endregion
-        
+
     }
 
 }

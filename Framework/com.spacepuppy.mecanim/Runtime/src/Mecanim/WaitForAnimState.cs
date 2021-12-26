@@ -24,8 +24,6 @@ namespace com.spacepuppy.Mecanim
         private string _stateName;
         private KeepWaitingCallback _mode;
 
-        private bool _isComplete;
-
         #endregion
 
         #region CONSTRUCTOR
@@ -47,7 +45,7 @@ namespace com.spacepuppy.Mecanim
 
         #region IRadicalEnumerator Interface
 
-        bool IRadicalYieldInstruction.IsComplete => _isComplete;
+        public bool IsComplete => _mode?.Invoke(this) ?? false;
 
         object System.Collections.IEnumerator.Current => null;
 
@@ -57,16 +55,14 @@ namespace com.spacepuppy.Mecanim
             yieldObject = null;
             if (_animator == null) return false;
 
-            _isComplete = (_mode?.Invoke(this) ?? false);
-            return !_isComplete;
+            return !this.IsComplete;
         }
 
         bool System.Collections.IEnumerator.MoveNext()
         {
             if (_animator == null) return false;
 
-            _isComplete = (_mode?.Invoke(this) ?? false);
-            return !_isComplete;
+            return !this.IsComplete;
         }
 
         void System.Collections.IEnumerator.Reset()
@@ -156,7 +152,6 @@ namespace com.spacepuppy.Mecanim
             _hash = 0;
             _stateName = null;
             _mode = null;
-            _isComplete = false;
             _pool.Release(this);
         }
 

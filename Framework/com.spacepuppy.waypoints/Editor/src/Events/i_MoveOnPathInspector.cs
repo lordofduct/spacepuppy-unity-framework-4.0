@@ -14,6 +14,7 @@ namespace com.spacepuppyeditor.Waypoints.Events
     public class i_MoveOnPathInspector : SPEditor
     {
 
+        private const string PROP_ADDALLMODIFIERS = "_addAllPossibleModifierTypes";
         private const string PROP_MODIFIERS = "_updateModifierTypes";
 
         protected override void OnSPInspectorGUI()
@@ -23,13 +24,17 @@ namespace com.spacepuppyeditor.Waypoints.Events
             var iterator = serializedObject.GetIterator();
             for (bool enterChildren = true; iterator.NextVisible(enterChildren); enterChildren = false)
             {
-                if(iterator.name == PROP_MODIFIERS)
+                switch(iterator.name)
                 {
-                    this.DrawModifierTypes(iterator);
-                }
-                else
-                {
-                    SPEditorGUILayout.PropertyField(iterator, true);
+                    case PROP_MODIFIERS:
+                        if(!this.serializedObject.FindProperty(PROP_ADDALLMODIFIERS).boolValue)
+                        {
+                            this.DrawModifierTypes(iterator);
+                        }
+                        break;
+                    default:
+                        SPEditorGUILayout.PropertyField(iterator, true);
+                        break;
                 }
             }
 

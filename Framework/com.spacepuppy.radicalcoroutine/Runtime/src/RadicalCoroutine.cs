@@ -6,6 +6,7 @@ using System.Linq;
 
 using com.spacepuppy.Utils;
 using System.Runtime.InteropServices.ComTypes;
+using System.Collections.Generic;
 
 namespace com.spacepuppy
 {
@@ -113,7 +114,7 @@ namespace com.spacepuppy
             {
                 if (cancelled)
                 {
-                    if(fatalex != null)
+                    if (fatalex != null)
                     {
                         _state = RadicalCoroutineOperatingState.FatalError;
                         ev = new RadicalCoroutineFatalErrorEventArgs(fatalex);
@@ -486,7 +487,7 @@ namespace com.spacepuppy
         internal void ManagerCancel(bool skipCancellingPhase)
         {
             _manager = null;
-            if(skipCancellingPhase && !this.Finished)
+            if (skipCancellingPhase && !this.Finished)
             {
                 _state = RadicalCoroutineOperatingState.Cancelling;
             }
@@ -501,7 +502,7 @@ namespace com.spacepuppy
             _state = RadicalCoroutineOperatingState.Active;
 
             if (_stack.CurrentOperation is IPausibleYieldInstruction) (_stack.CurrentOperation as IPausibleYieldInstruction).OnResume();
-            
+
             _manager = _owner.gameObject.AddComponent<RadicalCoroutineManager>();
             _manager.RegisterCoroutine(this);
             _token = _owner.StartCoroutine(this);
@@ -1040,7 +1041,7 @@ namespace com.spacepuppy
             _disableMode = RadicalCoroutineDisableMode.Default;
             _stack.Clear();
             _currentIEnumeratorYieldValue = null;
-            _state = RadicalCoroutineOperatingState.Inactive;
+            _state = release ? RadicalCoroutineOperatingState.Pooled : RadicalCoroutineOperatingState.Inactive;
             _forcedTick = false;
             this.OnComplete = null;
             this.OnCancelling = null;
@@ -1224,6 +1225,23 @@ namespace com.spacepuppy
 
         #region Static Pool
 
+        private static readonly System.EventHandler _onPooledComplete = (s, e) => {
+            if (s is RadicalCoroutine r)
+            {
+                RadicalCoroutine.ReleaseDelayed(ref r);
+            }
+        };
+
+        private static readonly System.Action _delayedReleaseCallback = () => {
+            lock(_toRelease)
+            {
+                while(_toRelease.Count > 0)
+                {
+                    Release(_toRelease.Pop());
+                }
+            }
+        };
+
         private static UnityEngine.WaitForFixedUpdate _waitForFixedUpdate;
         private static UnityEngine.WaitForEndOfFrame _waitForEndOfFrame;
         public static UnityEngine.WaitForFixedUpdate WaitForFixedUpdate
@@ -1243,7 +1261,8 @@ namespace com.spacepuppy
             }
         }
 
-        private static com.spacepuppy.Collections.ObjectCachePool<RadicalCoroutine> _pool = new com.spacepuppy.Collections.ObjectCachePool<RadicalCoroutine>(512,
+        private const int CACHE_SIZE = 512;
+        private static readonly com.spacepuppy.Collections.ObjectCachePool<RadicalCoroutine> _pool = new com.spacepuppy.Collections.ObjectCachePool<RadicalCoroutine>(CACHE_SIZE,
                                                                                                                                                             () =>
                                                                                                                                                             {
                                                                                                                                                                 return new RadicalCoroutine();
@@ -1267,9 +1286,33 @@ namespace com.spacepuppy
                                                                                                                                                                 r.IsDisposed = false;
                                                                                                                                                             },
                                                                                                                                                             true);
+        private readonly static com.spacepuppy.Collections.FiniteDeque<RadicalCoroutine> _toRelease = new com.spacepuppy.Collections.FiniteDeque<RadicalCoroutine>(CACHE_SIZE);
 
         /// <summary>
-        /// Return a disposes and releases a RadicalCoroutine to the cache pool.
+        /// Registers RadicalCoroutine to be auto-released when it completes. This forces the reference null to avoid conflicts with the pooled RadicalCoroutine. 
+        /// The returned yield instruction can be yielded/awaited, but will be cleaned up immeidately upon completion. Do not store a reference to it.
+        /// </summary>
+        /// <param name="routine"></param>
+        /// <returns>Returns a handle that can be yielded/awaited until completion.</returns>
+        public static IRadicalYieldInstruction AutoRelease(ref RadicalCoroutine routine)
+        {
+            if (routine == null) return null;
+
+            if(!routine.Finished)
+            {
+                IRadicalYieldInstruction h = routine;
+                routine.OnFinished += _onPooledComplete;
+                routine = null;
+                return h;
+            }
+
+            routine = null;
+            return null;
+        }
+
+        /// <summary>
+        /// Disposes and releases a RadicalCoroutine to the cache pool. 
+        /// Throws if routine is null.
         /// </summary>
         /// <param name="routine"></param>
         public static void Release(RadicalCoroutine routine)
@@ -1277,6 +1320,41 @@ namespace com.spacepuppy
             if (routine == null) throw new System.ArgumentNullException(nameof(routine));
 
             routine.Dispose(true);
+        }
+
+        /// <summary>
+        /// Disposes and releases a RadicalCoroutine to the cache pool, setting the ref to null in the process. 
+        /// Returns false if routine is already null.
+        /// </summary>
+        /// <param name="routine"></param>
+        /// <returns></returns>
+        public static bool Release(ref RadicalCoroutine routine)
+        {
+            if (routine == null) return false;
+
+            routine.Dispose(true);
+            routine = null;
+            return true;
+        }
+
+        /// <summary>
+        /// Releases the radicalccoroutine at the beginning of next frame. This is useful if any awaiters are relying on its state and you 
+        /// don't want to accidentally have the token recycled before that awaiter deals with it. The ref is forced null immediately to avoid 
+        /// conflicts.
+        /// </summary>
+        /// <param name="routine"></param>
+        /// <returns></returns>
+        public static bool ReleaseDelayed(ref RadicalCoroutine routine)
+        {
+            if (routine = null) return false;
+
+            lock(_toRelease)
+            {
+                _toRelease.Push(routine);
+                routine = null;
+                if (_toRelease.Count == 1) GameLoop.UpdateHandle.BeginInvoke(_delayedReleaseCallback);
+                return true;
+            }
         }
 
         public static RadicalCoroutine Create(IEnumerable e)

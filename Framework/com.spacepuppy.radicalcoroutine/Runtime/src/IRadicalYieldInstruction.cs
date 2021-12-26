@@ -1,4 +1,7 @@
-﻿namespace com.spacepuppy
+﻿using System.Runtime.InteropServices;
+using System.Runtime.Remoting.Messaging;
+
+namespace com.spacepuppy
 {
 
     /// <summary>
@@ -13,7 +16,9 @@
         bool IsComplete { get; }
 
         /// <summary>
-        /// Process the tick of the coroutine, returning true if the instruction should continue blocking, false if it should stop blocking.
+        /// Called every tick of the coroutine and handing out a potential yield instruction. 
+        /// This should behave just like IsComplete but offering out some yield instruction. 
+        /// The instruction should not rely on this being called as Manual/Task/UniTask won't necessarily 'tick' the instruction. 
         /// </summary>
         /// <param name="yieldObject">An object to treat as the yield object between now and the next call to Tick.</param>
         /// <returns>True to continue blocking, false to stop blocking.</returns>
@@ -29,15 +34,26 @@
     public abstract class RadicalYieldInstruction : IRadicalYieldInstruction, System.Collections.IEnumerator
     {
 
-        #region Fields
-
-        private bool _complete;
-
-        #endregion
-
         #region Properties
 
-        public bool IsComplete { get { return _complete; } }
+        public bool IsComplete
+        {
+            get
+            {
+                object obj;
+                return this.SafeIsComplete || this.TestIfComplete(out obj);
+            }
+        }
+
+        /// <summary>
+        /// Testing IsComplete actually calls the polling method TestIfComplete. 
+        /// This is property returns the state value rather than calling the polling method.
+        /// </summary>
+        protected bool SafeIsComplete
+        {
+            get;
+            private set;
+        }
 
         #endregion
 
@@ -45,18 +61,18 @@
 
         protected virtual void SetSignal()
         {
-            _complete = true;
+            this.SafeIsComplete = true;
         }
 
         protected void ResetSignal()
         {
-            _complete = false;
+            this.SafeIsComplete = false;
         }
 
-        protected virtual bool Tick(out object yieldObject)
+        protected virtual bool TestIfComplete(out object yieldObject)
         {
             yieldObject = null;
-            return !_complete;
+            return !this.SafeIsComplete;
         }
 
         #endregion
@@ -65,13 +81,13 @@
 
         bool IRadicalYieldInstruction.Tick(out object yieldObject)
         {
-            if (_complete)
+            if (this.SafeIsComplete)
             {
                 yieldObject = null;
                 return false;
             }
 
-            return this.Tick(out yieldObject);
+            return this.TestIfComplete(out yieldObject);
         }
 
         #endregion
@@ -82,13 +98,13 @@
 
         bool System.Collections.IEnumerator.MoveNext()
         {
-            if (_complete)
+            if (this.SafeIsComplete)
             {
                 return false;
             }
 
             object inst;
-            return this.Tick(out inst);
+            return !this.TestIfComplete(out inst);
         }
 
         void System.Collections.IEnumerator.Reset()

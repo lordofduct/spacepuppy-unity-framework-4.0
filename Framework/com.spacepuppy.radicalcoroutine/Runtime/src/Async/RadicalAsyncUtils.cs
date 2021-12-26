@@ -5,7 +5,7 @@ using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.Async
 {
-    public static class RadicalAsyncUtils
+    public static class RadicalAsyncUtil
     {
 
         public static AsyncWaitHandle AsAsyncWaitHandle(this IRadicalYieldInstruction inst)
@@ -94,11 +94,11 @@ namespace com.spacepuppy.Async
                         var s = AsyncUtil.GetTempSemaphore();
                         if (GameLoop.InvokeRequired)
                         {
-                            GameLoop.UpdateHandle.BeginInvoke(() => GameLoop.Hook.StartRadicalCoroutine(WaitUntilHandleIsDone(inst, (a) => s.Dispose())));
+                            GameLoop.UpdateHandle.BeginInvoke(() => GameLoop.Hook.StartPooledRadicalCoroutine(WaitUntilHandleIsDone(inst, (a) => s.Dispose())));
                         }
                         else
                         {
-                            GameLoop.Hook.StartRadicalCoroutine(WaitUntilHandleIsDone(inst, (a) => s.Dispose()));
+                            GameLoop.Hook.StartPooledRadicalCoroutine(WaitUntilHandleIsDone(inst, (a) => s.Dispose()));
                         }
                         return s.WaitAsync();
                     }
@@ -176,11 +176,11 @@ namespace com.spacepuppy.Async
                     {
                         if(GameLoop.InvokeRequired)
                         {
-                            GameLoop.UpdateHandle.BeginInvoke(() => GameLoop.Hook.StartRadicalCoroutine(WaitUntilHandleIsDone(inst, callback)));
+                            GameLoop.UpdateHandle.BeginInvoke(() => GameLoop.Hook.StartPooledRadicalCoroutine(WaitUntilHandleIsDone(inst, callback)));
                         }
                         else
                         {
-                            GameLoop.Hook.StartRadicalCoroutine(WaitUntilHandleIsDone(inst, callback));
+                            GameLoop.Hook.StartPooledRadicalCoroutine(WaitUntilHandleIsDone(inst, callback));
                         }
                     }
                 }
@@ -221,7 +221,17 @@ namespace com.spacepuppy.Async
             {
                 if (token is RadicalWaitHandle<T> h)
                 {
-                    if(h.IsComplete)
+                    bool complete = false;
+                    if (GameLoop.InvokeRequired)
+                    {
+                        GameLoop.UpdateHandle.Invoke(() => complete = h.IsComplete);
+                    }
+                    else
+                    {
+                        complete = h.IsComplete;
+                    }
+
+                    if (complete)
                     {
                         return Task.FromResult(h.Result);
                     }
@@ -319,10 +329,30 @@ namespace com.spacepuppy.Async
             private async Task<T> WaitForComplete(RadicalWaitHandle<T> handle)
             {
                 var s = AsyncUtil.GetTempSemaphore();
-                handle.OnComplete((r) =>
+                if(GameLoop.InvokeRequired)
                 {
-                    s.Dispose();
-                });
+                    GameLoop.UpdateHandle.BeginInvoke(() =>
+                    {
+                        if(handle.IsComplete)
+                        {
+                            s.Dispose();
+                        }
+                        else
+                        {
+                            handle.OnComplete((r) =>
+                            {
+                                s.Dispose();
+                            });
+                        }
+                    });
+                }
+                else
+                {
+                    handle.OnComplete((r) =>
+                    {
+                        s.Dispose();
+                    });
+                }
                 await s.WaitAsync();
                 return handle.Result;
             }

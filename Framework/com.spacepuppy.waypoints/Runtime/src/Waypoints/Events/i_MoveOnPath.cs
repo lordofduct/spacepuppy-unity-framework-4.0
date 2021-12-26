@@ -54,15 +54,13 @@ namespace com.spacepuppy.Waypoints.Events
         private AdvancedWaypointPathTweenCurve.RotationOptions _updateRotation;
 
         [SerializeField()]
-        [ReorderableArray()]
-        [TypeReference.Config(typeof(com.spacepuppy.Dynamic.IStateModifier), allowAbstractClasses = false, allowInterfaces = false)]
-        [Tooltip("Modifier types to search nodes for to also update by.")]
-        private TypeReference[] _updateModifierTypes;
-
-        [SerializeField()]
         [UnityEngine.Serialization.FormerlySerializedAs("StopMovementOnDisable")]
         [Tooltip("If this component is disabled, will stop any active tweens it created while this value was true.")]
         private bool _stopMovementOnDisable;
+
+        [SerializeField]
+        [Tooltip("Should we ignore any IStateModifiers attached to the nodes.")]
+        private bool _ignoreModifiers = false;
 
         [SerializeField()]
         private WaypointPathComponent _path;
@@ -160,6 +158,12 @@ namespace com.spacepuppy.Waypoints.Events
             set { _stopMovementOnDisable = value; }
         }
 
+        public bool IgnoreModifiers
+        {
+            get { return _ignoreModifiers; }
+            set { _ignoreModifiers = value; }
+        }
+
         public TriggerableTargetObject Target
         {
             get { return _target; }
@@ -204,16 +208,9 @@ namespace com.spacepuppy.Waypoints.Events
             var curve = new AdvancedWaypointPathTweenCurve(EaseMethods.GetEase(this._ease), _path.Path.GetArcLength() / this._speed, _path)
             {
                 UpdateTranslation = _updateTranslation,
-                UpdateRotation = _updateRotation
+                UpdateRotation = _updateRotation,
+                IgnoreModifiers = _ignoreModifiers,
             };
-            if (_updateModifierTypes != null && _updateModifierTypes.Length > 0)
-            {
-                for (int i = 0; i < _updateModifierTypes.Length; i++)
-                {
-                    var tp = _updateModifierTypes[i].Type;
-                    if (tp != null) curve.AddNodeModifierType(tp);
-                }
-            }
 
             var tween = SPTween.Tween(targ)
                                .UseCurve(curve)

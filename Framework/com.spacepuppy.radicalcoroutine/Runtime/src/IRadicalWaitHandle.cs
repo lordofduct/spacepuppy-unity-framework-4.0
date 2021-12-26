@@ -2,7 +2,9 @@
 {
 
     /// <summary>
-    /// A yield instruction used by RadicalCoroutine that can also have a callback manually attached to it through the 'IRadicalWaitHandle.OnComplete' method.
+    /// A yield instruction used by RadicalCoroutine that can also have a callback manually attached to it through the 'IRadicalWaitHandle.OnComplete' method. 
+    /// Note that this OnComplete being called should not rely on the 'Tick' method to call as Manual/Task/UniTask won't necessarily 'tick' the instruction. 
+    /// So if your waithandle is "polled", you should allow both IsComplete/Tick to behave as the polling method. 
     /// </summary>
     public interface IRadicalWaitHandle : IRadicalYieldInstruction
     {

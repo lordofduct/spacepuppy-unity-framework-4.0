@@ -28,6 +28,27 @@ namespace com.spacepuppy.Pathfinding
 
         #region Methods
 
+        private bool TestIfComplete()
+        {
+            GameLoop.AssertMainThread();
+
+            IPath p = null;
+            if (!(_path?.TryGetTarget(out p) ?? false)) return true;
+
+            switch (p.Status)
+            {
+                case PathCalculateStatus.NotStarted:
+                case PathCalculateStatus.Calculating:
+                    return false;
+                case PathCalculateStatus.Invalid:
+                case PathCalculateStatus.Success:
+                case PathCalculateStatus.Partial:
+                default:
+                    if (_callback != null) this.SignalComplete();
+                    return true;
+            }
+        }
+
         private void SignalComplete()
         {
             GameLoop.UpdatePump.Remove(this);
@@ -77,22 +98,7 @@ namespace com.spacepuppy.Pathfinding
         bool IRadicalYieldInstruction.Tick(out object yieldObject)
         {
             yieldObject = null;
-
-            IPath p = null;
-            if (!(_path?.TryGetTarget(out p) ?? false)) return false;
-
-            switch (p.Status)
-            {
-                case PathCalculateStatus.NotStarted:
-                case PathCalculateStatus.Calculating:
-                    return true;
-                case PathCalculateStatus.Invalid:
-                case PathCalculateStatus.Success:
-                case PathCalculateStatus.Partial:
-                default:
-                    this.SignalComplete();
-                    return false;
-            }
+            return !this.TestIfComplete();
         }
 
         #endregion
@@ -103,8 +109,7 @@ namespace com.spacepuppy.Pathfinding
 
         bool System.Collections.IEnumerator.MoveNext()
         {
-            object inst;
-            return (this as IRadicalYieldInstruction).Tick(out inst);
+            return !this.TestIfComplete();
         }
 
         void System.Collections.IEnumerator.Reset()
@@ -118,11 +123,7 @@ namespace com.spacepuppy.Pathfinding
 
         void IUpdateable.Update()
         {
-            IPath p = null;
-            if (!(_path?.TryGetTarget(out p) ?? false) || p.Status == PathCalculateStatus.Invalid || p.Status > PathCalculateStatus.Calculating)
-            {
-                this.SignalComplete();
-            }
+            this.TestIfComplete();
         }
 
         #endregion

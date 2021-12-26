@@ -76,10 +76,11 @@ namespace com.spacepuppy.Events
             bool signal = (_currentState != index);
 
             _currentState = index;
+            var currentGo = index >= 0 && index < _states.Count ? GameObjectUtil.GetGameObjectFromSource(_states[index].Target) : null;
             for (int i = 0; i < _states.Count; i++)
             {
                 var go = GameObjectUtil.GetGameObjectFromSource(_states[i].Target, true);
-                if (go != null) go.SetActive(i == _currentState);
+                if (go) go.SetActive(i == _currentState || go == currentGo);
             }
 
             if (signal && _onStateChanged.HasReceivers)

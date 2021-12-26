@@ -124,13 +124,19 @@ namespace com.spacepuppy.Async
         {
             get
             {
-                return _state == OperationState.Inactive;
+                object obj;
+                return this.TestIfComplete(out obj);
             }
         }
 
         bool IRadicalYieldInstruction.Tick(out object yieldObject)
         {
-            switch(_state)
+            return !this.TestIfComplete(out yieldObject);
+        }
+
+        private bool TestIfComplete(out object yieldObject)
+        {
+            switch (_state)
             {
                 case OperationState.Inactive:
                     if (_routine != null && SPThreadPool.QueueUserWorkItem(this.AsyncWorkerCallback))

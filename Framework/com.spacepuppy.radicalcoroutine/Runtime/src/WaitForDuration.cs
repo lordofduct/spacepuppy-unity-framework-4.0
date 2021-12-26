@@ -1,31 +1,39 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
+using com.spacepuppy.Collections;
 
 namespace com.spacepuppy
 {
 
     /// <summary>
     /// Represents a duration of time to wait for that can be paused, and can use various kinds of TimeSuppliers. 
-    /// Reset must be called if reused.
     /// 
-    /// NOTE - If you use the WaitForDuration objects that are spawned by the static factory methods, these objects are 
-    /// pooled. The WaitForDuration object should be yielded immediately in a RadicalCoroutine and not reused.
+    /// The timer starts immediately upon creation. To restart the timer call Reset. This also facilitates reusing the token. 
+    /// 
+    /// Note that the static factory methods return pooled versions of the token. 
+    /// These should never be reused as they are disposed immediately upon completion.
     /// </summary>
-    public class WaitForDuration : IRadicalEnumerator, IPausibleYieldInstruction, IProgressingYieldInstruction
+    public class WaitForDuration : IRadicalEnumerator, IPausibleYieldInstruction, IProgressingYieldInstruction, System.IDisposable
     {
-        
-        #region Events
 
-        public event System.EventHandler OnComplete;
-
-        #endregion
+        private enum States : sbyte
+        {
+            Pooled = -2,
+            WaitingRelease = -1,
+            Unknown = 0,
+            Running = 1,
+            Paused = 2,
+            Complete = 3,
+        }
 
         #region Fields
 
         private ITimeSupplier _supplier;
-        private double _t;
-        private double _lastTotal;
         private float _dur;
+        private double _tally;
+        private double _startTime;
+        private States _state;
 
         #endregion
 
@@ -45,104 +53,113 @@ namespace com.spacepuppy
 
         #region Properties
 
+        public ITimeSupplier Time => _supplier ?? SPTime.Normal;
+
         public float Duration { get { return _dur; } }
 
-        public double CurrentTime { get { return _t; } }
+        public double CurrentTime { get { return _tally + this.GetCurrentRunningTime(); } }
 
         #endregion
 
         #region Methods
 
-        public void Reset()
+        public WaitForDuration Reset()
         {
-            _t = 0d;
-            _lastTotal = double.NegativeInfinity;
+            _tally = 0d;
+            _startTime = this.Time.TotalPrecise;
+            _state = States.Running;
+            return this;
         }
 
-        public void Reset(float dur, ITimeSupplier supplier)
+        public WaitForDuration Reset(float dur, ITimeSupplier supplier)
         {
             _supplier = supplier ?? SPTime.Normal;
             _dur = dur;
-            _t = 0d;
-            _lastTotal = double.NegativeInfinity;
+            _tally = 0d;
+            _startTime = this.Time.TotalPrecise;
+            _state = States.Running;
+            return this;
         }
 
         public void Cancel()
         {
-            _t = double.PositiveInfinity;
-            _lastTotal = double.NegativeInfinity;
+            _tally = 0d;
+            _startTime = 0d;
+            _state = States.Unknown;
         }
 
-        private bool Tick()
+        /// <summary>
+        /// Calculates the time since the last 'start' time. This isn't necessarily the total time unless _tally = 0.
+        /// </summary>
+        /// <returns></returns>
+        private double GetCurrentRunningTime()
         {
-            if (this.IsComplete) return false;
-
-            if (double.IsNaN(_lastTotal))
-            {
-                //we're paused
-            }
-            else if (double.IsNegativeInfinity(_lastTotal))
-            {
-                //first time being called
-                _lastTotal = _supplier.TotalPrecise;
-                if (_dur <= 0f && _t <= 0d && this.OnComplete != null)
-                {
-                    _t = 0d;
-                    this.OnComplete(this, System.EventArgs.Empty);
-                    return false;
-                }
-            }
-            else
-            {
-                _t += (_supplier.TotalPrecise - _lastTotal);
-                _lastTotal = _supplier.TotalPrecise;
-                if (this.OnComplete != null && this.IsComplete)
-                {
-                    this.OnComplete(this, System.EventArgs.Empty);
-                    return false;
-                }
-            }
-
-            return !this.IsComplete;
+            return (_state == States.Running) ? (this.Time.TotalPrecise - _startTime) : 0d;
         }
 
-        protected void Dispose()
+        private bool TestIsComplete()
         {
-            this.OnComplete = null;
-            _supplier = null;
-            _t = 0d;
-            _lastTotal = float.NegativeInfinity;
-            _dur = 0f;
+            GameLoop.AssertMainThread();
+
+            switch (_state)
+            {
+                case States.Running:
+                    if(this.CurrentTime >= _dur)
+                    {
+                        _tally = this.CurrentTime;
+                        _state = States.Complete;
+                        _startTime = 0d;
+                        if (this is IPooledYieldInstruction)
+                        {
+                            Release(this);
+                        }
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                case States.Paused:
+                    return false;
+                case States.Complete:
+                default:
+                    return true;
+            }
         }
 
         #endregion
 
         #region IRadicalYieldInstruction Interface
 
-        public bool IsComplete
-        {
-            get { return _t >= _dur; }
-        }
+        public bool IsComplete => this.TestIsComplete();
 
         float IProgressingYieldInstruction.Progress
         {
-            get { return Mathf.Clamp01((float)(_t / _dur)); }
+            get { return Mathf.Clamp01((float)(this.CurrentTime / _dur)); }
         }
 
         bool IRadicalYieldInstruction.Tick(out object yieldObject)
         {
             yieldObject = null;
-            return this.Tick();
+            return !this.TestIsComplete();
         }
 
         void IPausibleYieldInstruction.OnPause()
         {
-            _lastTotal = double.NaN;
+            if(_state == States.Running)
+            {
+                _tally += this.GetCurrentRunningTime();
+                _state = States.Paused;
+            }
         }
 
         void IPausibleYieldInstruction.OnResume()
         {
-            _lastTotal = _supplier.TotalPrecise;
+            if (_state == States.Paused)
+            {
+                _startTime = this.Time.TotalPrecise;
+                _state = States.Running;
+            }
         }
 
         #endregion
@@ -159,17 +176,7 @@ namespace com.spacepuppy
 
         bool IEnumerator.MoveNext()
         {
-            if (this.Tick())
-            {
-                return true;
-            }
-            else
-            {
-                //in case a PooledYieldInstruction was used in a regular Unity Coroutine
-                if (this is IPooledYieldInstruction)
-                    (this as IPooledYieldInstruction).Dispose();
-                return false;
-            }
+            return !this.TestIsComplete();
         }
 
         void IEnumerator.Reset()
@@ -178,16 +185,65 @@ namespace com.spacepuppy
         }
 
         #endregion
-        
+
+        #region IDisposable Interface
+
+        public virtual void Dispose()
+        {
+            _supplier = null;
+            _dur = 0f;
+            _tally = 0d;
+            _startTime = 0d;
+            _state = States.Unknown;
+        }
+
+        #endregion
+
         #region Static Interface
 
-        private static com.spacepuppy.Collections.ObjectCachePool<PooledWaitForDuration> _pool = new com.spacepuppy.Collections.ObjectCachePool<PooledWaitForDuration>(-1, () => new PooledWaitForDuration());
+        private static com.spacepuppy.Collections.ObjectCachePool<PooledWaitForDuration> _pool = new com.spacepuppy.Collections.ObjectCachePool<PooledWaitForDuration>(128, () => new PooledWaitForDuration(), (h) => h._state = States.Pooled, false);
+        private readonly static FiniteDeque<WaitForDuration> _toRelease = new FiniteDeque<WaitForDuration>(128);
+        private void Release(WaitForDuration h)
+        {
+            lock(_toRelease)
+            {
+                h._state = States.WaitingRelease;
+                _toRelease.Push(h);
+                if(_toRelease.Count == 1)
+                {
+                    GameLoop.UpdateHandle.BeginInvoke(_releaseNextFrameCallback);
+                }
+            }
+        }
+        private System.Action _releaseNextFrameCallback = () =>
+        {
+            using (var lst = TempCollection.GetList<WaitForDuration>())
+            {
+                lock (_toRelease)
+                {
+                    while (_toRelease.Count > 0)
+                    {
+                        var p = _toRelease.Pop();
+                        if (p._state == States.WaitingRelease)
+                        {
+                            lst.Add(p);
+                        }
+                    }
+                }
+
+                foreach(var p in lst)
+                {
+                    p.Dispose();
+                }
+            }
+        };
+
         private class PooledWaitForDuration : WaitForDuration, IPooledYieldInstruction
         {
 
-            void System.IDisposable.Dispose()
+            public override void Dispose()
             {
-                this.Dispose();
+                base.Dispose();
                 _pool.Release(this);
             }
 

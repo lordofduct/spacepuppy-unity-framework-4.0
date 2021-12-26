@@ -195,7 +195,7 @@ namespace com.spacepuppy.SPInput.Unity
             {
                 if (_routine.Finished)
                 {
-                    _routine = null;
+                    RadicalCoroutine.Release(ref _routine);
                     _state = State.Unknown;
                 }
                 else
@@ -214,8 +214,7 @@ namespace com.spacepuppy.SPInput.Unity
         {
             if (_routine != null)
             {
-                _routine.Cancel();
-                _routine = null;
+                RadicalCoroutine.Release(ref _routine);
             }
 
             this.InputResult = InputToken.Unknown;
@@ -305,9 +304,9 @@ namespace com.spacepuppy.SPInput.Unity
                 yield return null;
             }
 
-            Complete:
+        Complete:
             _state = State.Complete;
-            _routine = null;
+            RadicalCoroutine.Release(ref _routine);
             this.SignalOnComplete();
         }
 

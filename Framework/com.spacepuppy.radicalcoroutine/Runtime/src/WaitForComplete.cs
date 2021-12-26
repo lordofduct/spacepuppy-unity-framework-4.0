@@ -2,6 +2,7 @@
 using System.Collections;
 
 using com.spacepuppy.Utils;
+using com.spacepuppy.Collections;
 
 namespace com.spacepuppy
 {
@@ -12,130 +13,108 @@ namespace com.spacepuppy
     public class WaitForAllComplete : RadicalYieldInstruction
     {
 
-        private MonoBehaviour _handle;
-        private System.Collections.Generic.List<object> _instructions;
-        private int _waitCount;
+        private Deque<object> _instructions;
+        private RadicalCoroutine _routine;
 
-        public WaitForAllComplete(MonoBehaviour handle, params object[] instructions)
+        public WaitForAllComplete(params object[] instructions)
         {
-            _handle = handle;
-            _instructions = new System.Collections.Generic.List<object>(instructions);
+            _instructions = new Deque<object>(instructions);
         }
 
         public void Add(object instruction)
         {
-            _instructions.Add(instruction);
+            _instructions.Push(instruction);
         }
 
-        protected override bool Tick(out object yieldObject)
+        protected override void SetSignal()
         {
-            if (this.IsComplete)
-            {
-                yieldObject = null;
-                return false;
-            }
+            base.SetSignal();
 
-            object current;
-            for (int i = 0; i < _instructions.Count; i++)
+            if(_routine != null)
             {
-                current = _instructions[i];
-                if (current == null)
-                {
-                    _instructions.RemoveAt(i);
-                    i--;
-                }
-                else if (current is YieldInstruction || current is WWW)
-                {
-                    _instructions.RemoveAt(i);
-                    i--;
-                    _handle.StartCoroutine(this.WaitForStandard(current));
-                }
-                else if (current is RadicalCoroutine)
-                {
-                    if ((current as RadicalCoroutine).CompletedSuccessfully)
-                    {
-                        _instructions.RemoveAt(i);
-                        i--;
-                    }
-                }
-                else if (current is IRadicalYieldInstruction)
-                {
-                    object sub;
-                    if ((current as IRadicalYieldInstruction).Tick(out sub))
-                    {
-                        if (sub != null)
-                        {
-                            _instructions[i] = _handle.StartRadicalCoroutine(this.WaitForRadical(current as IRadicalYieldInstruction));
-                        }
-                    }
-                    else
-                    {
-                        _instructions.RemoveAt(i);
-                        i--;
-                    }
-                }
-                else if (current is IEnumerable)
-                {
-                    var e = (current as IEnumerable).GetEnumerator();
-                    _instructions[i] = e;
-                    if (e.MoveNext())
-                    {
-                        if (e.Current != null) _instructions.Add(e.Current);
-                    }
-                    else
-                    {
-                        _instructions.RemoveAt(i);
-                        i--;
-                    }
-                }
-                else if (current is IEnumerator)
-                {
-                    var e = current as IEnumerator;
-                    if (e.MoveNext())
-                    {
-                        if (e.Current != null) _instructions.Add(e.Current);
-                    }
-                    else
-                    {
-                        _instructions.RemoveAt(i);
-                        i--;
-                    }
-                }
-                else
-                {
-                    _instructions[i] = null;
-                }
+                RadicalCoroutine.Release(ref _routine);
             }
+        }
 
-            if (_instructions.Count == 0 && _waitCount <= 0)
+        protected override bool TestIfComplete(out object yieldObject)
+        {
+            GameLoop.AssertMainThread();
+
+            yieldObject = null;
+            if (_instructions == null || _instructions.Count == 0)
             {
                 this.SetSignal();
-                yieldObject = null;
-                return false;
+                return true;
+            }
+
+            if(_routine != null)
+            {
+                if(_routine.Finished)
+                {
+                    RadicalCoroutine.Release(ref _routine);
+                    this.SetSignal();
+                    return true;
+                }
             }
             else
             {
-                yieldObject = null;
-                return true;
+                object current;
+                for (int i = 0; i < _instructions.Count; i++)
+                {
+                    current = _instructions[i];
+                    if (current == null)
+                    {
+                        _instructions.RemoveAt(i);
+                        i--;
+                    }
+                    else if(current is IRadicalYieldInstruction ryi && ryi.IsComplete)
+                    {
+                        _instructions.RemoveAt(i);
+                        i--;
+                    }
+                }
+
+                if (_instructions.Count == 0)
+                {
+                    this.SetSignal();
+                    return true;
+                }
+
+                _routine = GameLoop.Hook.StartRadicalCoroutine(this.WaitForAll());
+                return false;
             }
+
+            return true;
         }
 
-        private IEnumerator WaitForStandard(object inst)
+        private IEnumerator WaitForAll()
         {
-            _waitCount++;
-            yield return inst;
-            _waitCount--;
-        }
-
-        private IEnumerator WaitForRadical(IRadicalYieldInstruction inst)
-        {
-            object yieldObject;
-            while (inst.Tick(out yieldObject))
+            object current;
+            while (_instructions != null && _instructions.Count > 0 && !this.SafeIsComplete)
             {
-                yield return yieldObject;
-            }
-        }
+                for (int i = 0; i < _instructions.Count; i++)
+                {
+                    current = _instructions[i];
+                    if (current == null)
+                    {
+                        _instructions.RemoveAt(i);
+                        i--;
+                    }
+                    else if (current is IRadicalYieldInstruction ryi && ryi.IsComplete)
+                    {
+                        _instructions.RemoveAt(i);
+                        i--;
+                    }
+                }
 
+                if(_instructions.Count > 0)
+                {
+                    yield return _instructions.Unshift();
+                }
+            }
+
+            if (!this.SafeIsComplete) this.SetSignal();
+        }
     }
 
     /// <summary>
@@ -144,16 +123,16 @@ namespace com.spacepuppy
     public class WaitForAnyComplete : RadicalYieldInstruction
     {
 
-        private MonoBehaviour _handle;
-        private System.Collections.Generic.List<object> _instructions;
-        private System.Collections.Generic.List<object> _waitingRoutines = new System.Collections.Generic.List<object>();
-        private bool _signalNextTime;
+        private Deque<PairInfo> _instructions = new Deque<PairInfo>();
+        private RadicalCoroutine _routine;
         private object _signaledInstruction;
 
-        public WaitForAnyComplete(MonoBehaviour handle, params object[] instructions)
+        public WaitForAnyComplete(params object[] instructions)
         {
-            _handle = handle;
-            _instructions = new System.Collections.Generic.List<object>(instructions);
+            foreach(var obj in instructions)
+            {
+                this.Add(obj);
+            }
         }
 
         /// <summary>
@@ -164,103 +143,108 @@ namespace com.spacepuppy
             get { return _signaledInstruction; }
         }
 
-        protected override void SetSignal()
+        public void Add(object instruction)
         {
-            object obj;
-            for (int i = 0; i < _waitingRoutines.Count; i++)
+            _instructions.Push(new PairInfo()
             {
-                obj = _waitingRoutines[i];
-                if (obj is Coroutine)
-                    _handle.StopCoroutine(obj as Coroutine);
-                else if (obj is RadicalCoroutine)
-                    (obj as RadicalCoroutine).Cancel();
-            }
-            _waitingRoutines.Clear();
-            base.SetSignal();
+                Instruction = instruction,
+                Handler = null
+            });
         }
 
-        protected override bool Tick(out object yieldObject)
+        protected override void SetSignal()
         {
+            base.SetSignal();
+
+            for(int i = 0; i < _instructions.Count; i++)
+            {
+                if(_instructions[i].Handler != null)
+                {
+                    _instructions[i].Handler.Cancel();
+                    RadicalCoroutine.Release(_instructions[i].Handler);
+                }
+            }
+            _instructions.Clear();
+        }
+
+        protected override bool TestIfComplete(out object yieldObject)
+        {
+            GameLoop.AssertMainThread();
+
             yieldObject = null;
-            if (this.IsComplete) return false;
-            if (_signalNextTime)
+            if (_instructions == null || _instructions.Count == 0)
             {
                 this.SetSignal();
-                return false;
+                return true;
             }
 
-            _signaledInstruction = null;
-            object current;
-            for (int i = 0; i < _instructions.Count; i++)
+            if (_routine != null)
             {
-                current = _instructions[i];
-                if (current == null)
+                if (_routine.Finished)
                 {
-                    _signalNextTime = true;
+                    RadicalCoroutine.Release(ref _routine);
+                    this.SetSignal();
+                    return true;
                 }
-                else if (current is YieldInstruction || current is WWW)
+            }
+            else
+            {
+                _signaledInstruction = null;
+
+                PairInfo current;
+                for (int i = 0; i < _instructions.Count; i++)
                 {
-                    _instructions.RemoveAt(i);
-                    i--;
-                    _waitingRoutines.Add(_handle.StartCoroutine(this.WaitForStandard(current)));
-                }
-                else if (current is RadicalCoroutine)
-                {
-                    if ((current as RadicalCoroutine).CompletedSuccessfully)
+                    current = _instructions[i];
+                    if (current.Instruction == null)
                     {
-                        _signaledInstruction = current;
+                        _signaledInstruction = null;
+                        _instructions.RemoveAt(i);
+                        i--;
                         this.SetSignal();
-                        return false;
+                        return true;
                     }
-                }
-                else if (current is IRadicalYieldInstruction)
-                {
-                    object sub;
-                    if ((current as IRadicalYieldInstruction).Tick(out sub))
+                    else if (current.Instruction is IRadicalYieldInstruction ryi && ryi.IsComplete)
                     {
-                        if (sub != null)
-                        {
-                            _instructions.RemoveAt(i);
-                            i--;
-                            _waitingRoutines.Add(_handle.StartRadicalCoroutine(this.WaitForRadical(current)));
-                        }
-                    }
-                    else
-                    {
-                        _signaledInstruction = current;
+                        _signaledInstruction = current.Instruction;
+                        _instructions.RemoveAt(i);
+                        i--;
                         this.SetSignal();
-                        return false;
+                        return true;
+                    }
+                    else if(current.Handler == null)
+                    {
+                        current.Handler = GameLoop.Hook.StartRadicalCoroutine(WaitForInstruction(current.Instruction));
+                        _instructions[i] = current;
                     }
                 }
-                else if (current is IEnumerator || current is IEnumerable)
+
+                if (_instructions.Count == 0)
                 {
-                    _instructions.RemoveAt(i);
-                    i--;
-                    _waitingRoutines.Add(_handle.StartRadicalCoroutine(this.WaitForRadical(current)));
+                    _signaledInstruction = null;
+                    this.SetSignal();
+                    return true;
                 }
-                else
-                {
-                    _signalNextTime = true;
-                }
+
+                return false;
             }
 
             return true;
         }
 
-        private IEnumerator WaitForStandard(object inst)
+        private IEnumerator WaitForInstruction(object inst)
         {
             yield return inst;
-            if (!this.IsComplete)
+            if(!this.SafeIsComplete)
+            {
                 _signaledInstruction = inst;
-            this.SetSignal();
+                this.SetSignal();
+            }
         }
 
-        private IEnumerator WaitForRadical(object inst)
+        private struct PairInfo
         {
-            yield return inst;
-            if (!this.IsComplete)
-                _signaledInstruction = inst;
-            this.SetSignal();
+            public object Instruction;
+            public RadicalCoroutine Handler;
         }
 
     }

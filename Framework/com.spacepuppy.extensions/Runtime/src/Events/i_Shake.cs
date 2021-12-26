@@ -135,6 +135,7 @@ namespace com.spacepuppy.Events
             state.Cache = Trans.GetLocal(targ);
             routine = manager.StartRadicalCoroutine(this.DoShake(state, _relativeMotionTarget.GetTarget<Transform>(arg)));
             routine.Tag = state;
+            RadicalCoroutine.AutoRelease(ref routine);
             return true;
         }
 

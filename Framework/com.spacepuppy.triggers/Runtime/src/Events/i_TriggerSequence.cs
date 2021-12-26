@@ -121,8 +121,7 @@ namespace com.spacepuppy.Events
         {
             if (_routine != null)
             {
-                _routine.Cancel();
-                _routine = null;
+                RadicalCoroutine.Release(ref _routine);
             }
 
             _currentIndex = 0;
@@ -199,7 +198,10 @@ namespace com.spacepuppy.Events
                     break;
                 case SignalMode.Auto:
                     {
-                        if (_routine != null) _routine.Cancel();
+                        if (_routine != null)
+                        {
+                            RadicalCoroutine.Release(ref _routine);
+                        }
                         _routine = this.StartRadicalCoroutine(this.DoAutoSequence(null), RadicalCoroutineDisableMode.Pauses);
                     }
                     break;

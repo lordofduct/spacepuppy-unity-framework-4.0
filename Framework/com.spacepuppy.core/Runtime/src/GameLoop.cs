@@ -242,6 +242,14 @@ namespace com.spacepuppy
 
         #region Methods
 
+        public static void AssertMainThread()
+        {
+            if(_updateInvokeHandle.InvokeRequired)
+            {
+                throw new System.InvalidOperationException("Attempted to access thread dependent code from a thread other than the main thread.");
+            }
+        }
+
         /// <summary>
         /// Preferred method of closing application.
         /// </summary>

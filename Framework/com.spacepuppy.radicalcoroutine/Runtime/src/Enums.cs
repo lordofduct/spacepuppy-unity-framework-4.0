@@ -39,6 +39,7 @@ namespace com.spacepuppy
     /// </summary>
     public enum RadicalCoroutineOperatingState
     {
+        Pooled = int.MinValue,
         FatalError = -3,
         Cancelled = -2,
         Cancelling = -1,

@@ -45,8 +45,7 @@ namespace com.spacepuppy.Events
 
             if (_routine != null)
             {
-                _routine.Cancel();
-                _routine = null;
+                RadicalCoroutine.Release(ref _routine);
             }
         }
 
@@ -91,8 +90,7 @@ namespace com.spacepuppy.Events
         {
             if (_routine != null)
             {
-                _routine.Cancel();
-                _routine = null;
+                RadicalCoroutine.Release(ref _routine);
             }
 
             _routine = this.StartRadicalCoroutine(this.TickerCallback(), RadicalCoroutineDisableMode.CancelOnDisable);

@@ -1,5 +1,7 @@
 ﻿
 
+using System.Runtime.InteropServices;
+
 namespace com.spacepuppy
 {
 
@@ -75,11 +77,14 @@ namespace com.spacepuppy
 
         bool IRadicalYieldInstruction.Tick(out object yieldObject)
         {
-            for (int i = 0; i < _operations.Length; i++)
+            if (!_complete)
             {
-                if (!_operations[i].IsComplete)
+                for (int i = 0; i < _operations.Length; i++)
                 {
-                    return _operations[i].Tick(out yieldObject);
+                    if (!_operations[i].IsComplete)
+                    {
+                        return _operations[i].Tick(out yieldObject);
+                    }
                 }
             }
             yieldObject = null;

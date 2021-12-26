@@ -472,6 +472,11 @@ namespace com.spacepuppy
             component.StopAllCoroutines();
         }
 
+        public static System.Runtime.CompilerServices.TaskAwaiter GetAwaiter(this IRadicalYieldInstruction instruction)
+        {
+            return com.spacepuppy.Async.RadicalAsyncUtil.AsAsyncWaitHandle(instruction).GetTask().GetAwaiter();
+        }
+
     }
 
 }

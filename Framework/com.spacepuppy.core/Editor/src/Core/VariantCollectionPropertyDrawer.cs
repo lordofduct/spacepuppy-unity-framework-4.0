@@ -96,6 +96,8 @@ namespace com.spacepuppyeditor.Core
 
         #region Properties
 
+        public VariantReferencePropertyDrawer VariantDrawer => _variantDrawer;
+
         #endregion
 
         #region Methods

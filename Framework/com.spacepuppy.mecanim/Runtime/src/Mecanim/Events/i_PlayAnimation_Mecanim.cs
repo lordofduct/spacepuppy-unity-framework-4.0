@@ -71,7 +71,7 @@ namespace com.spacepuppy.Mecanim.Events
             _config.Play(targ);
             if (purge || _onStateExit.HasReceivers)
             {
-                GameLoop.Hook.StartRadicalCoroutine(this.DoWait(targ, _config.StateName, _config.Layer, token, purge, _config.FinalState, _config.FinalStateTimeout));
+                GameLoop.Hook.StartPooledRadicalCoroutine(this.DoWait(targ, _config.StateName, _config.Layer, token, purge, _config.FinalState, _config.FinalStateTimeout));
             }
             return true;
         }

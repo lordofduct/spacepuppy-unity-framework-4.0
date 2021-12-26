@@ -227,7 +227,7 @@ namespace com.spacepuppy.SPInput.Unity
             {
                 if (_routine.Finished)
                 {
-                    _routine = null;
+                    RadicalCoroutine.Release(ref _routine);
                     _state = State.Unknown;
                 }
                 else
@@ -246,8 +246,7 @@ namespace com.spacepuppy.SPInput.Unity
         {
             if (_routine != null)
             {
-                _routine.Cancel();
-                _routine = null;
+                RadicalCoroutine.Release(ref _routine);
             }
 
             _state = State.Cancelled;

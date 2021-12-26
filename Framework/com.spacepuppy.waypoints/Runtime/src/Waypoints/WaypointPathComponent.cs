@@ -40,7 +40,7 @@ namespace com.spacepuppy.Waypoints
         [System.NonSerialized()]
         private IConfigurableIndexedWaypointPath _path;
         [System.NonSerialized()]
-        private RadicalCoroutine _autoCleanRoutine;
+        private bool _cleaning;
 
         #endregion
 
@@ -56,7 +56,11 @@ namespace com.spacepuppy.Waypoints
             }
             _path = GetPath(this, false);
 
-            if (_controlPointsAnimate) _autoCleanRoutine = this.StartRadicalCoroutine(this.AutoCleanRoutine(), RadicalCoroutineDisableMode.Pauses);
+            if (_controlPointsAnimate)
+            {
+                _cleaning = true;
+                this.StartPooledRadicalCoroutine(this.AutoCleanRoutine(), RadicalCoroutineDisableMode.Pauses);
+            }
         }
 
         #endregion
@@ -96,9 +100,10 @@ namespace com.spacepuppy.Waypoints
             {
                 if (_controlPointsAnimate == value) return;
                 _controlPointsAnimate = value;
-                if (_controlPointsAnimate && _autoCleanRoutine != null)
+                if (_controlPointsAnimate && !_cleaning)
                 {
-                    _autoCleanRoutine = this.StartRadicalCoroutine(this.AutoCleanRoutine(), RadicalCoroutineDisableMode.Pauses);
+                    _cleaning = true;
+                    this.StartPooledRadicalCoroutine(this.AutoCleanRoutine(), RadicalCoroutineDisableMode.Pauses);
                 }
             }
         }
@@ -155,45 +160,52 @@ namespace com.spacepuppy.Waypoints
 
         private System.Collections.IEnumerator AutoCleanRoutine()
         {
+            _cleaning = true;
             yield return null;
 
             while (_controlPointsAnimate)
             {
-                _path.IsClosed = _closed;
-                if (_controlPoints.Length != _path.Count)
+                try
                 {
-                    //refill path
-                    _path.Clear();
-                    for (int i = 0; i < _controlPoints.Length; i++)
+                    _path.IsClosed = _closed;
+                    if (_controlPoints.Length != _path.Count)
                     {
-                        _path.AddControlPoint(_controlPoints[i]);
+                        //refill path
+                        _path.Clear();
+                        for (int i = 0; i < _controlPoints.Length; i++)
+                        {
+                            _path.AddControlPoint(_controlPoints[i]);
+                        }
+                    }
+                    else
+                    {
+                        bool needsCleaning = false;
+                        for (int i = 0; i < _controlPoints.Length; i++)
+                        {
+                            if (!object.ReferenceEquals(_controlPoints[i], _path.ControlPoint(i)))
+                            {
+                                _path.ReplaceControlPoint(i, _controlPoints[i]);
+                            }
+                            else if (!needsCleaning && !Waypoint.Compare(_path.ControlPoint(i), _controlPoints[i]))
+                            {
+                                needsCleaning = true;
+                            }
+                        }
+
+                        if (needsCleaning)
+                        {
+                            _path.Clean();
+                        }
                     }
                 }
-                else
+                catch(System.Exception ex)
                 {
-                    bool needsCleaning = false;
-                    for (int i = 0; i < _controlPoints.Length; i++)
-                    {
-                        if (!object.ReferenceEquals(_controlPoints[i], _path.ControlPoint(i)))
-                        {
-                            _path.ReplaceControlPoint(i, _controlPoints[i]);
-                        }
-                        else if (!needsCleaning && !Waypoint.Compare(_path.ControlPoint(i), _controlPoints[i]))
-                        {
-                            needsCleaning = true;
-                        }
-                    }
-
-                    if (needsCleaning)
-                    {
-                        _path.Clean();
-                    }
+                    _cleaning = false;
+                    throw ex;
                 }
 
                 yield return null;
             }
-
-            _autoCleanRoutine = null;
         }
 
 

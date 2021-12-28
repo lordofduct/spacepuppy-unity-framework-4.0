@@ -299,6 +299,17 @@ namespace com.spacepuppy
                 return null;
         }
 
+        public static T GetTime<T>(string id) where T : class, ITimeSupplier
+        {
+            if (id == null) return null;
+
+            ITimeSupplier ts;
+            if (_registeredTimeSuppliers.TryGetValue(id, out ts))
+                return ts as T;
+            else
+                return null;
+        }
+
         /// <summary>
         /// Reverse lookup for DeltaTimeType from an object.
         /// </summary>

@@ -319,13 +319,23 @@ namespace com.spacepuppy
     [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
     public class TypeRestrictionAttribute : SPPropertyAttribute
     {
-        public System.Type InheritsFromType;
+        public System.Type[] InheritsFromTypes;
         public bool HideTypeDropDown;
         public bool AllowProxy;
 
+        public TypeRestrictionAttribute()
+        {
+            this.InheritsFromTypes = null;
+        }
+
         public TypeRestrictionAttribute(System.Type inheritsFromType)
         {
-            this.InheritsFromType = inheritsFromType;
+            this.InheritsFromTypes = new System.Type[] { inheritsFromType };
+        }
+
+        public TypeRestrictionAttribute(params System.Type[] inheritsFromTypes)
+        {
+            this.InheritsFromTypes = inheritsFromTypes;
         }
 
     }

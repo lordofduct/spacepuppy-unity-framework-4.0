@@ -883,10 +883,10 @@ namespace com.spacepuppyeditor
         {
             if (field == null) return null;
 
-            var attrib = field.GetCustomAttributes(typeof(TypeRestrictionAttribute), true).FirstOrDefault() as TypeRestrictionAttribute;
-            if (attrib != null && attrib.InheritsFromType != null)
+            var attrib = field.GetCustomAttribute<TypeRestrictionAttribute>();
+            if (attrib?.InheritsFromTypes?.Length > 0)
             {
-                return attrib.InheritsFromType;
+                return attrib.InheritsFromTypes[0];
             }
             else
             {

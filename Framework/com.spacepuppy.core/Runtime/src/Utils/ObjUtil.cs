@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 using com.spacepuppy.Collections;
+using System.Threading;
 
 namespace com.spacepuppy.Utils
 {
@@ -690,6 +691,42 @@ namespace com.spacepuppy.Utils
         }
 
 
+        /// <summary>
+        /// Returns a ref to the object as the first type in the array that it can resolve as.
+        /// </summary>
+        /// <param name="types"></param>
+        /// <param name="obj"></param>
+        /// <param name="respectProxy"></param>
+        /// <returns></returns>
+        public static object GetAsFromSource(System.Type[] types, object obj, bool respectProxy = false)
+        {
+            object result;
+            GetAsFromSource(types, obj, out result, respectProxy);
+            return result;
+        }
+
+        /// <summary>
+        /// Returns a ref to the object as the first type in the array that it can resolve as.
+        /// </summary>
+        /// <param name="types"></param>
+        /// <param name="obj"></param>
+        /// <param name="respectProxy"></param>
+        /// <returns></returns>
+        public static bool GetAsFromSource(System.Type[] types, object obj, out object result, bool respectProxy = false)
+        {
+            if (types != null)
+            {
+                foreach (var tp in types)
+                {
+                    if (GetAsFromSource(tp, obj, out result, respectProxy)) return true;
+                }
+            }
+
+            result = null;
+            return false;
+        }
+
+
         public static T[] GetAllFromSource<T>(object obj, bool includeChildren = false) where T : class
         {
             obj = obj.SanitizeRef();
@@ -747,11 +784,30 @@ namespace com.spacepuppy.Utils
 
         public static object[] GetAllFromSource(System.Type tp, object obj, bool includeChildren = false)
         {
-            obj = obj.SanitizeRef();
-            if (obj == null) return ArrayUtil.Empty<object>();
-
             using (var set = TempCollection.GetSet<object>())
             {
+                GetAllFromSource(set, tp, obj, includeChildren);
+                return set.Count > 0 ? set.ToArray() : ArrayUtil.Empty<object>();
+            }
+        }
+
+        public static int GetAllFromSource(ICollection<object> coll, System.Type tp, object obj, bool includeChildren = false)
+        {
+            obj = obj.SanitizeRef();
+            if (obj == null) return 0;
+
+            bool dispose = false;
+            HashSet<object> set = (coll as HashSet<object>);
+            if (set == null)
+            {
+                set = TempCollection.GetSet<object>();
+                dispose = true;
+            }
+
+            try
+            {
+                int initialCount = set.Count;
+
                 if (tp.IsInstanceOfType(obj)) set.Add(obj);
                 if (obj is IComponent)
                 {
@@ -805,9 +861,50 @@ namespace com.spacepuppy.Utils
                     }
                 }
 
+                if(dispose)
+                {
+                    coll.AddRange(set);
+                    return set.Count;
+                }
+                else
+                {
+                    return set.Count - initialCount;
+                }
+            }
+            finally
+            {
+                if (dispose && set is System.IDisposable d) d.Dispose();
+            }
+        }
+        
+        public static object[] GetAllFromSource(System.Type[] types, object obj, bool includeChildren = false)
+        {
+            using (var set = TempCollection.GetSet<object>())
+            {
+                if (types != null)
+                {
+                    foreach (var tp in types)
+                    {
+                        GetAllFromSource(set, tp, obj, includeChildren);
+                    }
+                }
                 return set.Count > 0 ? set.ToArray() : ArrayUtil.Empty<object>();
             }
         }
+
+        public static int GetAllFromSource(ICollection<object> coll, System.Type[] types, object obj, bool includeChildren = false)
+        {
+            int totalCount = 0;
+            if (types != null)
+            {
+                foreach(var tp in types)
+                {
+                    totalCount += GetAllFromSource(coll, tp, obj, includeChildren);
+                }
+            }
+            return totalCount;
+        }
+
 
         public static bool IsType(object obj, System.Type tp)
         {

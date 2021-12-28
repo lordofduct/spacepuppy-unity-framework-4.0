@@ -87,7 +87,7 @@ namespace com.spacepuppyeditor.Core
 
             if (this.ChoiceSelector == null)
             {
-                this.ChoiceSelector = new DefaultComponentChoiceSelector();
+                this.ChoiceSelector = DefaultComponentChoiceSelector.Default;
             }
         }
 
@@ -238,6 +238,8 @@ namespace com.spacepuppyeditor.Core
 
         private void DrawObjectRefField(Rect position, SerializedProperty property)
         {
+            UnityEngine.Object nextobj; //object returned from ObjectField.
+
             if (ComponentUtil.IsAcceptableComponentType(this.RestrictionType))
             {
                 //var fieldObjType = (!this.SearchChildren && !this.AllowProxy && TypeUtil.IsType(this.RestrictionType, typeof(UnityEngine.Component))) ? this.RestrictionType : typeof(UnityEngine.GameObject);
@@ -249,61 +251,32 @@ namespace com.spacepuppyeditor.Core
                 else
                     fieldObjType = typeof(UnityEngine.GameObject);
 
-                var obj = EditorGUI.ObjectField(position, property.objectReferenceValue, fieldObjType, this.AllowSceneObjects);
-                if(this.ForceOnlySelf)
-                {
-                    var targGo = GameObjectUtil.GetGameObjectFromSource(property.serializedObject.targetObject);
-                    var ngo = GameObjectUtil.GetGameObjectFromSource(obj);
-                    if(targGo == ngo ||
-                       (this.SearchChildren && targGo.IsParentOf(ngo)))
-                    {
-                        property.objectReferenceValue = this.GetTargetFromSource(obj);
-                    }
-                }
-                else
-                {
-                    property.objectReferenceValue = this.GetTargetFromSource(obj);
-                }
+                nextobj = EditorGUI.ObjectField(position, property.objectReferenceValue, fieldObjType, this.AllowSceneObjects);
             }
             else if (this.AllowNonComponents)
             {
                 var fieldObjType = (!this.AllowProxy && TypeUtil.IsType(this.RestrictionType, typeof(UnityEngine.Object))) ? this.RestrictionType : typeof(UnityEngine.Object);
-                var obj = EditorGUI.ObjectField(position, property.objectReferenceValue, fieldObjType, this.AllowSceneObjects);
-                if(this.ForceOnlySelf)
-                {
-                    var targGo = GameObjectUtil.GetGameObjectFromSource(property.serializedObject.targetObject);
-                    var ngo = GameObjectUtil.GetGameObjectFromSource(obj);
-                    if (targGo == ngo ||
-                       (this.SearchChildren && targGo.IsParentOf(ngo)))
-                    {
-                        property.objectReferenceValue = this.GetTargetFromSource(obj);
-                    }
-                }
-                else
-                {
-                    property.objectReferenceValue = this.GetTargetFromSource(obj);
-                }
+                nextobj = EditorGUI.ObjectField(position, property.objectReferenceValue, fieldObjType, this.AllowSceneObjects);
             }
             else
             {
                 var ogo = GameObjectUtil.GetGameObjectFromSource(property.objectReferenceValue);
-                var ngo = EditorGUI.ObjectField(position, ogo, typeof(GameObject), this.AllowSceneObjects) as GameObject;
-                if (ogo != ngo)
+                nextobj = EditorGUI.ObjectField(position, ogo, typeof(GameObject), this.AllowSceneObjects) as GameObject;
+            }
+
+            if (this.ForceOnlySelf)
+            {
+                var targGo = GameObjectUtil.GetGameObjectFromSource(property.serializedObject.targetObject);
+                var ngo = GameObjectUtil.GetGameObjectFromSource(nextobj);
+                if (targGo == ngo ||
+                   (this.SearchChildren && targGo.IsParentOf(ngo)))
                 {
-                    if(this.ForceOnlySelf)
-                    {
-                        var targGo = GameObjectUtil.GetGameObjectFromSource(property.serializedObject.targetObject);
-                        if (targGo == ngo ||
-                            (this.SearchChildren && targGo.IsParentOf(ngo)))
-                        {
-                            property.objectReferenceValue = this.GetTargetFromSource(ngo);
-                        }
-                    }
-                    else
-                    {
-                        property.objectReferenceValue = this.GetTargetFromSource(ngo);
-                    }
+                    property.objectReferenceValue = this.GetTargetFromSource(nextobj);
                 }
+            }
+            else
+            {
+                property.objectReferenceValue = this.GetTargetFromSource(nextobj);
             }
         }
 

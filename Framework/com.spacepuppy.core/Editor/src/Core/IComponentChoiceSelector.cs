@@ -25,6 +25,8 @@ namespace com.spacepuppyeditor.Core
     public class DefaultComponentChoiceSelector : IComponentChoiceSelector
     {
 
+        public static readonly DefaultComponentChoiceSelector Default = new DefaultComponentChoiceSelector();
+
         private SelectableComponentPropertyDrawer _drawer;
         private SerializedProperty _property;
         private System.Type _restrictionType;
@@ -107,8 +109,15 @@ namespace com.spacepuppyeditor.Core
         void IComponentChoiceSelector.GUIComplete(SerializedProperty property, int selectedIndex)
         {
             this.OnGUIComplete(selectedIndex);
+            this.Reset();
+        }
+
+        public virtual void Reset()
+        {
+            _drawer = null;
             _property = null;
             _restrictionType = null;
+            _allowProxy = false;
             _components = null;
         }
 

@@ -39,7 +39,7 @@ namespace com.spacepuppyeditor.Events
 
             for (int i = 0; i < conditionsArrayProp.arraySize; i++)
             {
-                EditorGUILayout.LabelField((i == 0) ? "IF" : "ELSE IF");
+                EditorGUILayout.LabelField((i == 0) ? "IF" : "ELSE IF", EditorStyles.boldLabel);
                 var conditionBlockProp = conditionsArrayProp.GetArrayElementAtIndex(i);
                 var conditionProp = conditionBlockProp.FindPropertyRelative(PROP_CONDITIONBLOCK_CONDITION);
 

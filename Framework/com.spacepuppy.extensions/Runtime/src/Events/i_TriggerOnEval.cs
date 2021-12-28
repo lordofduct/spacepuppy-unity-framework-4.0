@@ -1,20 +1,26 @@
 ﻿#pragma warning disable 0649 // variable declared but not used.
 
 using UnityEngine;
+using System.Linq;
 
 using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.Events
 {
 
-    public class i_TriggerOnEval : AutoTriggerable
+    public class i_TriggerOnEval : AutoTriggerable, IObservableTrigger
     {
 
         #region Fields
 
+        [SerializeField]
+        private VariantReference _input = new VariantReference();
+
         [SerializeField()]
-        [OneOrMany]
+        [ReorderableArray]
         private ConditionBlock[] _conditions;
+        [SerializeField]
+        private SPEvent _elseCondition = new SPEvent("Else Condition");
 
         [SerializeField()]
         private bool _passAlongTriggerArg;
@@ -42,15 +48,18 @@ namespace com.spacepuppy.Events
 
         #region ITriggerableMechanism Interface
 
+        public override bool CanTrigger => base.CanTrigger && _conditions != null && _conditions.Length > 0;
+
         public override bool Trigger(object sender, object arg)
         {
-            if (_conditions == null || _conditions.Length == 0) return false;
+            if (!this.CanTrigger) return false;
 
-            bool result = false;
+            double value = _input.DoubleValue;
+
             if (!this._passAlongTriggerArg) arg = null;
             foreach (var c in _conditions)
             {
-                if (c.Condition.BoolValue)
+                if (c.Compare(value))
                 {
                     if (_delay.Seconds > 0f)
                     {
@@ -63,12 +72,23 @@ namespace com.spacepuppy.Events
                     {
                         c.Trigger.ActivateTrigger(this, arg);
                     }
-
-                    result = true;
+                    return true;
                 }
             }
 
-            return result;
+            //if we reached here, it's else
+            if (_delay.Seconds > 0f)
+            {
+                this.InvokeGuaranteed(() =>
+                {
+                    _elseCondition.ActivateTrigger(this, arg);
+                }, _delay.Seconds, _delay.TimeSupplier);
+            }
+            else
+            {
+                _elseCondition.ActivateTrigger(this, arg);
+            }
+            return true;
         }
 
         #endregion
@@ -80,21 +100,31 @@ namespace com.spacepuppy.Events
         {
 
             [SerializeField()]
-            private VariantReference _condition = new VariantReference();
+            private ComparisonOperator _operator;
+            [SerializeField]
+            private double _value;
             [SerializeField()]
             private SPEvent _trigger = new SPEvent();
-
-
-            public VariantReference Condition
-            {
-                get { return _condition; }
-            }
 
             public SPEvent Trigger
             {
                 get { return _trigger; }
             }
 
+            public bool Compare(double input)
+            {
+                return CompareUtil.Compare(_operator, input, _value);
+            }
+
+        }
+
+        #endregion
+
+        #region IObservableTrigger Interface
+
+        BaseSPEvent[] IObservableTrigger.GetEvents()
+        {
+            return (from c in _conditions select c.Trigger).Append(_elseCondition).ToArray();
         }
 
         #endregion

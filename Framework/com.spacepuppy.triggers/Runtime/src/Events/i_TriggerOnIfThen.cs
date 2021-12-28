@@ -45,9 +45,11 @@ namespace com.spacepuppy.Events
 
         #region ITriggerableMechanism Interface
 
+        public override bool CanTrigger => base.CanTrigger && _conditions != null && _conditions.Length > 0;
+
         public override bool Trigger(object sender, object arg)
         {
-            if (_conditions == null || _conditions.Length == 0) return false;
+            if (!this.CanTrigger) return false;
 
             if (!this._passAlongTriggerArg) arg = null;
             foreach (var c in _conditions)

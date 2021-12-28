@@ -1,12 +1,15 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
+using com.spacepuppy.Utils;
+using System.Runtime.CompilerServices;
+using com.spacepuppy.Project;
 
 namespace com.spacepuppy.UI
 {
 
     [Infobox("This allows easily accessing to configure a UI element's text/graphics easily ambiguous of how it's configured underneath (unity Text vs TextMeshPro vs custom).\r\n\r\nLeave the mode NULL to allow the decorator to automatically configure itself on enable.")]
-    public sealed class TextConfigurationDecorator : MonoBehaviour, TextConfigurationDecorator.ITextDecoratorMode
+    public sealed class TextConfigurationDecorator : MonoBehaviour, TextConfigurationDecorator.ITextDecoratorMode, IProxy
     {
 
         #region Fields
@@ -23,29 +26,8 @@ namespace com.spacepuppy.UI
         {
             if (_mode != null) return;
 
-            var txt = this.GetComponentInChildren<Text>();
-            if(txt)
-            {
-                _mode = new UnityTextMode()
-                {
-                    TextElement = txt,
-                    IconElement = null,
-                };
-                return;
-            }
-
-#if SP_TMPRO
-            var tmp = this.GetComponentInChildren<TMPro.TMP_Text>();
-            if(tmp)
-            {
-                _mode = new TextMeshProMode()
-                {
-                    TextElement = tmp,
-                    IconElement = null,
-                };
-                return;
-            }
-#endif
+            _mode = (GetTempTextDecorator(this) as System.ICloneable)?.Clone() as ITextDecoratorMode;
+            ReleaseTempTextDecorators();
         }
 
         #endregion
@@ -60,7 +42,7 @@ namespace com.spacepuppy.UI
 
         public string text
         {
-            get => _mode?.text;
+            get => _mode?.text ?? string.Empty;
             set
             {
                 if (_mode != null) _mode.text = value;
@@ -78,18 +60,107 @@ namespace com.spacepuppy.UI
 
         #endregion
 
+        #region Methods
+
+        public System.Type GetTargetType() => _mode?.GetTargetType() ?? typeof(object);
+
+        public object GetTarget() => _mode?.GetTarget();
+
+        #endregion
+
+        #region IProxy Interface
+
+        bool IProxy.QueriesTarget => false;
+
+        object IProxy.GetTarget(object arg) => _mode?.GetTarget();
+        object IProxy.GetTargetAs(System.Type tp) => ObjUtil.GetAsFromSource(tp, _mode?.GetTarget());
+        object IProxy.GetTargetAs(System.Type tp, object arg) => ObjUtil.GetAsFromSource(tp, _mode?.GetTarget());
+
+        #endregion
+
+        #region Static Helpers
+
+        /// <summary>
+        /// Attempts to find the text element of a target and set its text value via the same rules as adding this component to a GameObject without configuring its mode.
+        /// </summary>
+        /// <param name="target"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static bool TrySetText(object target, string value)
+        {
+            if(target is ITextDecoratorMode m)
+            {
+                m.text = value;
+                return true;
+            }
+            else
+            {
+                var targ = GetTempTextDecorator(target);
+                if(targ != null)
+                {
+                    targ.text = value;
+                    ReleaseTempTextDecorators();
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+
+
+        private static UnityTextMode _tempUnityTextMode;
+#if SP_TMPRO
+        private static TextMeshProMode _tempTMProTextMode;
+#endif
+        private static ITextDecoratorMode GetTempTextDecorator(object target)
+        {
+            var txt = target is Text ? target as Text : GameObjectUtil.GetGameObjectFromSource(target, true)?.GetComponentInChildren<Text>();
+            if (txt)
+            {
+                if (_tempUnityTextMode == null) _tempUnityTextMode = new UnityTextMode();
+                _tempUnityTextMode.TextElement = txt;
+                _tempUnityTextMode.IconElement = null;
+                return _tempUnityTextMode;
+            }
+
+#if SP_TMPRO
+            var tmp = target is TMPro.TMP_Text ? target as TMPro.TMP_Text : GameObjectUtil.GetGameObjectFromSource(target, true)?.GetComponentInChildren<TMPro.TMP_Text>();
+            if (tmp)
+            {
+                if (_tempTMProTextMode == null) _tempTMProTextMode = new TextMeshProMode();
+                _tempTMProTextMode.TextElement = tmp;
+                _tempTMProTextMode.IconElement = null;
+                return _tempTMProTextMode;
+            }
+#endif
+
+            return null;
+        }
+
+        private static void ReleaseTempTextDecorators()
+        {
+            if (_tempUnityTextMode != null) _tempUnityTextMode.TextElement = null;
+#if SP_TMPRO
+            if (_tempTMProTextMode != null) _tempTMProTextMode.TextElement = null;
+#endif
+        }
+
+        #endregion
+
         #region Special Types
 
         public interface ITextDecoratorMode
         {
-
             string text { get; set; }
             Sprite icon { get; set; }
+
+            System.Type GetTargetType();
+            object GetTarget();
 
         }
 
         [System.Serializable]
-        public class UnityTextMode : ITextDecoratorMode
+        public class UnityTextMode : ITextDecoratorMode, System.ICloneable
         {
 
             public Text TextElement;
@@ -107,11 +178,18 @@ namespace com.spacepuppy.UI
                 set { if (this.IconElement) this.IconElement.sprite = value; }
             }
 
+            public System.Type GetTargetType() => typeof(Text);
+
+            public object GetTarget() => TextElement;
+
+            public UnityTextMode Clone() => this.MemberwiseClone() as UnityTextMode;
+            object System.ICloneable.Clone() => this.Clone();
+
         }
 
 #if SP_TMPRO
         [System.Serializable]
-        public class TextMeshProMode : ITextDecoratorMode
+        public class TextMeshProMode : ITextDecoratorMode, System.ICloneable
         {
 
             public TMPro.TMP_Text TextElement;
@@ -129,10 +207,23 @@ namespace com.spacepuppy.UI
                 set { if (this.IconElement) this.IconElement.sprite = value; }
             }
 
+            public System.Type GetTargetType() => typeof(Text);
+
+            public object GetTarget() => TextElement;
+
+            public TextMeshProMode Clone() => this.MemberwiseClone() as TextMeshProMode;
+            object System.ICloneable.Clone() => this.Clone();
+
         }
 #endif
 
-#endregion
+        [System.Serializable]
+        public class TextDecoratorModeRef : SerializableInterfaceRef<ITextDecoratorMode>
+        {
+
+        }
+
+        #endregion
 
     }
 

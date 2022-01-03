@@ -83,9 +83,9 @@ namespace com.spacepuppy.Addressables
         {
             public static readonly AsyncOperationHandleProvider Default = new AsyncOperationHandleProvider();
 
-            public float GetProgress(object token)
+            public float GetProgress(AsyncWaitHandle handle)
             {
-                if (token is AsyncOperationHandle h)
+                if (handle.Token is AsyncOperationHandle h)
                 {
                     return h.IsDone ? 1f : h.PercentComplete;
                 }
@@ -95,9 +95,9 @@ namespace com.spacepuppy.Addressables
                 }
             }
 
-            public System.Threading.Tasks.Task GetTask(object token)
+            public System.Threading.Tasks.Task GetTask(AsyncWaitHandle handle)
             {
-                if(token is AsyncOperationHandle h)
+                if(handle.Token is AsyncOperationHandle h)
                 {
                     if(GameLoop.InvokeRequired)
                     {
@@ -116,11 +116,11 @@ namespace com.spacepuppy.Addressables
                 }
             }
 
-            public object GetYieldInstruction(object token)
+            public object GetYieldInstruction(AsyncWaitHandle handle)
             {
-                if (token is AsyncOperationHandle)
+                if (handle.Token is AsyncOperationHandle)
                 {
-                    return token;
+                    return handle.Token;
                 }
                 else
                 {
@@ -128,9 +128,9 @@ namespace com.spacepuppy.Addressables
                 }
             }
 
-            public bool IsComplete(object token)
+            public bool IsComplete(AsyncWaitHandle handle)
             {
-                if (token is AsyncOperationHandle h)
+                if (handle.Token is AsyncOperationHandle h)
                 {
                     return h.IsDone;
                 }
@@ -140,9 +140,9 @@ namespace com.spacepuppy.Addressables
                 }
             }
 
-            public void OnComplete(object token, System.Action<AsyncWaitHandle> callback)
+            public void OnComplete(AsyncWaitHandle handle, System.Action<AsyncWaitHandle> callback)
             {
-                if (token is AsyncOperationHandle h)
+                if (handle.Token is AsyncOperationHandle h)
                 {
                     if(GameLoop.InvokeRequired)
                     {
@@ -182,9 +182,9 @@ namespace com.spacepuppy.Addressables
                 }
             }
 
-            public object GetResult(object token)
+            public object GetResult(AsyncWaitHandle handle)
             {
-                if (token is AsyncOperationHandle h)
+                if (handle.Token is AsyncOperationHandle h)
                 {
                     return h.Result;
                 }
@@ -200,9 +200,9 @@ namespace com.spacepuppy.Addressables
         {
             public static readonly AsyncOperationHandleProvider<TObject> Default = new AsyncOperationHandleProvider<TObject>();
 
-            public float GetProgress(object token)
+            public float GetProgress(AsyncWaitHandle handle)
             {
-                if (token is AsyncOperationHandle<TObject> h)
+                if (handle.Token is AsyncOperationHandle<TObject> h)
                 {
                     return h.IsDone ? 1f : h.PercentComplete;
                 }
@@ -212,9 +212,9 @@ namespace com.spacepuppy.Addressables
                 }
             }
 
-            public System.Threading.Tasks.Task<TObject> GetTask(object token)
+            public System.Threading.Tasks.Task<TObject> GetTask(AsyncWaitHandle<TObject> handle)
             {
-                if (token is AsyncOperationHandle<TObject> h)
+                if (handle.Token is AsyncOperationHandle<TObject> h)
                 {
                     if (GameLoop.InvokeRequired)
                     {
@@ -233,9 +233,9 @@ namespace com.spacepuppy.Addressables
                 }
             }
 
-            System.Threading.Tasks.Task IAsyncWaitHandleProvider.GetTask(object token)
+            System.Threading.Tasks.Task IAsyncWaitHandleProvider.GetTask(AsyncWaitHandle handle)
             {
-                if (token is AsyncOperationHandle<TObject> h)
+                if (handle.Token is AsyncOperationHandle<TObject> h)
                 {
                     if (GameLoop.InvokeRequired)
                     {
@@ -254,11 +254,11 @@ namespace com.spacepuppy.Addressables
                 }
             }
 
-            public object GetYieldInstruction(object token)
+            public object GetYieldInstruction(AsyncWaitHandle handle)
             {
-                if (token is AsyncOperationHandle<TObject>)
+                if (handle.Token is AsyncOperationHandle<TObject>)
                 {
-                    return token;
+                    return handle.Token;
                 }
                 else
                 {
@@ -266,9 +266,9 @@ namespace com.spacepuppy.Addressables
                 }
             }
 
-            public bool IsComplete(object token)
+            public bool IsComplete(AsyncWaitHandle handle)
             {
-                if (token is AsyncOperationHandle<TObject> h)
+                if (handle.Token is AsyncOperationHandle<TObject> h)
                 {
                     return h.IsDone;
                 }
@@ -278,9 +278,9 @@ namespace com.spacepuppy.Addressables
                 }
             }
 
-            public void OnComplete(object token, System.Action<AsyncWaitHandle> callback)
+            public void OnComplete(AsyncWaitHandle handle, System.Action<AsyncWaitHandle> callback)
             {
-                if (token is AsyncOperationHandle<TObject> h)
+                if (handle.Token is AsyncOperationHandle<TObject> h)
                 {
                     if(GameLoop.InvokeRequired)
                     {
@@ -320,9 +320,9 @@ namespace com.spacepuppy.Addressables
                 }
             }
 
-            public void OnComplete(object token, System.Action<AsyncWaitHandle<TObject>> callback)
+            public void OnComplete(AsyncWaitHandle<TObject> handle, System.Action<AsyncWaitHandle<TObject>> callback)
             {
-                if (token is AsyncOperationHandle<TObject> h)
+                if (handle.Token is AsyncOperationHandle<TObject> h)
                 {
                     if (GameLoop.InvokeRequired)
                     {
@@ -362,9 +362,9 @@ namespace com.spacepuppy.Addressables
                 }
             }
 
-            public TObject GetResult(object token)
+            public TObject GetResult(AsyncWaitHandle<TObject> handle)
             {
-                if (token is AsyncOperationHandle<TObject> h)
+                if (handle.Token is AsyncOperationHandle<TObject> h)
                 {
                     return h.Result;
                 }
@@ -374,9 +374,9 @@ namespace com.spacepuppy.Addressables
                 }
             }
 
-            object IAsyncWaitHandleProvider.GetResult(object token)
+            object IAsyncWaitHandleProvider.GetResult(AsyncWaitHandle handle)
             {
-                if (token is AsyncOperationHandle<TObject> h)
+                if (handle.Token is AsyncOperationHandle<TObject> h)
                 {
                     return h.Result;
                 }

@@ -1,11 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
 using com.spacepuppy.Collections;
-
+#if SP_UNITASK
+using Cysharp.Threading.Tasks;
+using UnityEngine;
+#endif
 namespace com.spacepuppy.Async
 {
     public static class AsyncUtil
@@ -24,6 +26,11 @@ namespace com.spacepuppy.Async
         public static AsyncWaitHandle AsAsyncWaitHandle(this UnityEngine.AsyncOperation op)
         {
             return new AsyncWaitHandle(AsyncOperationAsyncWaitHandleProvider.Default, op);
+        }
+
+        public static Task AsTask(this UnityEngine.AsyncOperation op)
+        {
+            return new AsyncWaitHandle(AsyncOperationAsyncWaitHandleProvider.Default, op).AsTask();
         }
 
         /// <summary>
@@ -63,9 +70,9 @@ namespace com.spacepuppy.Async
 
             public static readonly TaskAsyncWaitHandleProvider<T> Default = new TaskAsyncWaitHandleProvider<T>();
 
-            public float GetProgress(object token)
+            public float GetProgress(AsyncWaitHandle handle)
             {
-                if (token is Task t)
+                if (handle.Token is Task t)
                 {
                     return t.Status >= TaskStatus.RanToCompletion ? 1f : 0f;
                 }
@@ -75,9 +82,9 @@ namespace com.spacepuppy.Async
                 }
             }
 
-            public bool IsComplete(object token)
+            public bool IsComplete(AsyncWaitHandle handle)
             {
-                if(token is Task t)
+                if (handle.Token is Task t)
                 {
                     return t.Status >= TaskStatus.RanToCompletion;
                 }
@@ -87,19 +94,19 @@ namespace com.spacepuppy.Async
                 }
             }
 
-            public Task<T> GetTask(object token)
+            public Task<T> GetTask(AsyncWaitHandle<T> handle)
             {
-                return token as Task<T>;
+                return handle.Token as Task<T>;
             }
 
-            Task IAsyncWaitHandleProvider.GetTask(object token)
+            Task IAsyncWaitHandleProvider.GetTask(AsyncWaitHandle handle)
             {
-                return token as Task;
+                return handle.Token as Task;
             }
 
-            public object GetYieldInstruction(object token)
+            public object GetYieldInstruction(AsyncWaitHandle handle)
             {
-                if (token is Task t)
+                if (handle.Token is Task t)
                 {
                     return WaitForTaskCoroutine(t);
                 }
@@ -109,11 +116,11 @@ namespace com.spacepuppy.Async
                 }
             }
 
-            public void OnComplete(object token, Action<AsyncWaitHandle<T>> callback)
+            public void OnComplete(AsyncWaitHandle<T> handle, System.Action<AsyncWaitHandle<T>> callback)
             {
                 if (callback == null) return;
 
-                if(token is Task<T> t)
+                if (handle.Token is Task<T> t)
                 {
                     this.WaitForTaskAndFireComplete(t, callback);
                 }
@@ -123,11 +130,11 @@ namespace com.spacepuppy.Async
                 }
             }
 
-            public void OnComplete(object token, Action<AsyncWaitHandle> callback)
+            public void OnComplete(AsyncWaitHandle handle, System.Action<AsyncWaitHandle> callback)
             {
                 if (callback == null) return;
 
-                if (token is Task t)
+                if (handle.Token is Task t)
                 {
                     this.WaitForTaskAndFireComplete(t, callback);
                 }
@@ -137,9 +144,9 @@ namespace com.spacepuppy.Async
                 }
             }
 
-            public T GetResult(object token)
+            public T GetResult(AsyncWaitHandle<T> handle)
             {
-                if (token is Task<T> t)
+                if (handle.Token is Task<T> t)
                 {
                     return t.IsCompleted ? t.Result : default(T);
                 }
@@ -149,9 +156,9 @@ namespace com.spacepuppy.Async
                 }
             }
 
-            object IAsyncWaitHandleProvider.GetResult(object token)
+            object IAsyncWaitHandleProvider.GetResult(AsyncWaitHandle handle)
             {
-                if (token is Task<T> t)
+                if (handle.Token is Task<T> t)
                 {
                     return t.IsCompleted ? t.Result : default(T);
                 }
@@ -163,13 +170,13 @@ namespace com.spacepuppy.Async
 
 
 
-            private async void WaitForTaskAndFireComplete(Task<T> t, Action<AsyncWaitHandle<T>> callback)
+            private async void WaitForTaskAndFireComplete(Task<T> t, System.Action<AsyncWaitHandle<T>> callback)
             {
                 await t;
                 callback(t.AsAsyncWaitHandle<T>());
             }
 
-            private async void WaitForTaskAndFireComplete(Task t, Action<AsyncWaitHandle> callback)
+            private async void WaitForTaskAndFireComplete(Task t, System.Action<AsyncWaitHandle> callback)
             {
                 await t;
                 callback(t.AsAsyncWaitHandle());
@@ -177,7 +184,7 @@ namespace com.spacepuppy.Async
 
             private System.Collections.IEnumerator WaitForTaskCoroutine(Task t)
             {
-                while(t.Status < TaskStatus.RanToCompletion)
+                while (t.Status < TaskStatus.RanToCompletion)
                 {
                     yield return null;
                 }
@@ -190,9 +197,11 @@ namespace com.spacepuppy.Async
 
             public static readonly AsyncOperationAsyncWaitHandleProvider Default = new AsyncOperationAsyncWaitHandleProvider();
 
-            public float GetProgress(object token)
+            public float GetProgress(AsyncWaitHandle handle)
             {
-                if (token is UnityEngine.AsyncOperation op)
+                GameLoop.AssertMainThread();
+
+                if (handle.Token is UnityEngine.AsyncOperation op)
                 {
                     return op.isDone ? 1f : op.progress;
                 }
@@ -202,11 +211,11 @@ namespace com.spacepuppy.Async
                 }
             }
 
-            public Task GetTask(object token)
+            public Task GetTask(AsyncWaitHandle handle)
             {
-                if (token is UnityEngine.AsyncOperation op)
+                if (handle.Token is UnityEngine.AsyncOperation op)
                 {
-                    if(GameLoop.InvokeRequired)
+                    if (GameLoop.InvokeRequired)
                     {
                         var s = AsyncUtil.GetTempSemaphore();
                         GameLoop.UpdateHandle.BeginInvoke(() =>
@@ -225,7 +234,7 @@ namespace com.spacepuppy.Async
                         });
                         return s.WaitAsync();
                     }
-                    else if(op.isDone)
+                    else if (op.isDone)
                     {
                         return Task.CompletedTask;
                     }
@@ -245,9 +254,11 @@ namespace com.spacepuppy.Async
                 }
             }
 
-            public object GetYieldInstruction(object token)
+            public object GetYieldInstruction(AsyncWaitHandle handle)
             {
-                if (token is UnityEngine.AsyncOperation op)
+                GameLoop.AssertMainThread();
+
+                if (handle.Token is UnityEngine.AsyncOperation op)
                 {
                     return op;
                 }
@@ -257,9 +268,9 @@ namespace com.spacepuppy.Async
                 }
             }
 
-            public void OnComplete(object token, Action<AsyncWaitHandle> callback)
+            public void OnComplete(AsyncWaitHandle handle, System.Action<AsyncWaitHandle> callback)
             {
-                if (token is UnityEngine.AsyncOperation op)
+                if (handle.Token is UnityEngine.AsyncOperation op)
                 {
                     if (callback != null)
                     {
@@ -289,11 +300,11 @@ namespace com.spacepuppy.Async
                 }
             }
 
-            public bool IsComplete(object token)
+            public bool IsComplete(AsyncWaitHandle handle)
             {
-                if (token is UnityEngine.AsyncOperation op)
+                if (handle.Token is UnityEngine.AsyncOperation op)
                 {
-                    if(GameLoop.InvokeRequired)
+                    if (GameLoop.InvokeRequired)
                     {
                         bool result = false;
                         GameLoop.UpdateHandle.Invoke(() => result = op.isDone);
@@ -310,9 +321,9 @@ namespace com.spacepuppy.Async
                 }
             }
 
-            public object GetResult(object token)
+            public object GetResult(AsyncWaitHandle handle)
             {
-                if (token is UnityEngine.AsyncOperation op)
+                if (handle.Token is UnityEngine.AsyncOperation op)
                 {
                     return op;
                 }
@@ -325,6 +336,248 @@ namespace com.spacepuppy.Async
         }
 
         #endregion
+
+#if SP_UNITASK
+
+        public static AsyncWaitHandle AsAsyncWaitHandle(this UniTask task)
+        {
+            return UniTaskAsycWaitHandleProvider.Create(task).AsAsyncWaitHandle();
+        }
+
+        public static AsyncWaitHandle<T> AsAsyncWaitHandle<T>(this UniTask<T> task)
+        {
+            return UniTaskAsycWaitHandleProvider<T>.Create(task).AsAsyncWaitHandle();
+        }
+
+        internal interface IUniTaskAsyncWaitHandleProvider : IAsyncWaitHandleProvider
+        {
+            UniTask GetUniTask(AsyncWaitHandle handle);
+        }
+
+        internal interface IUniTaskAsyncWaitHandleProvider<T> : IUniTaskAsyncWaitHandleProvider, IAsyncWaitHandleProvider<T>
+        {
+            UniTask<T> GetUniTask(AsyncWaitHandle<T> handle);
+        }
+
+        internal sealed class UniTaskAsycWaitHandleProvider : CustomYieldInstruction, IUniTaskAsyncWaitHandleProvider
+        {
+
+            public static UniTaskAsycWaitHandleProvider Create(UniTask task) => new UniTaskAsycWaitHandleProvider() { _task = task };
+
+            #region Fields
+
+            private UniTask _task;
+
+            #endregion
+
+            #region CONSTRUCTOR
+
+            private UniTaskAsycWaitHandleProvider() { }
+
+            #endregion
+
+            #region CustomYieldInstruction Interface
+
+            public override bool keepWaiting => !_task.Status.IsCompleted();
+
+            #endregion
+
+            #region AsyncWaitHandleProvider Interface
+
+            public AsyncWaitHandle AsAsyncWaitHandle()
+            {
+                return new AsyncWaitHandle(this, this);
+            }
+
+            public UniTask GetUniTask(AsyncWaitHandle handle)
+            {
+                return _task;
+            }
+
+            public float GetProgress(AsyncWaitHandle handle)
+            {
+                return _task.Status.IsCompleted() ? 1f : 0f;
+            }
+
+            public bool IsComplete(AsyncWaitHandle handle)
+            {
+                return _task.Status.IsCompleted();
+            }
+
+            public object GetYieldInstruction(AsyncWaitHandle handle)
+            {
+                return this;
+            }
+
+            public Task GetTask(AsyncWaitHandle handle)
+            {
+                if(GameLoop.InvokeRequired)
+                {
+                    Task result = Task.CompletedTask;
+                    UniTask task = _task;
+                    GameLoop.UpdateHandle.Invoke(() => result = task.AsTask());
+                    return result;
+                }
+                else
+                {
+                    return _task.AsTask();
+                }
+            }
+
+            public void OnComplete(AsyncWaitHandle handle, System.Action<AsyncWaitHandle> callback)
+            {
+                if (callback == null) return;
+
+                if(GameLoop.InvokeRequired)
+                {
+                    UniTask task = _task;
+                    GameLoop.UpdateHandle.BeginInvoke(() => task.GetAwaiter().OnCompleted(() => callback(this.AsAsyncWaitHandle())));
+                }
+                else
+                {
+                    _task.GetAwaiter().OnCompleted(() => callback(this.AsAsyncWaitHandle()));
+                }
+            }
+
+            public object GetResult(AsyncWaitHandle handle)
+            {
+                return null;
+            }
+
+            #endregion
+
+        }
+
+        internal sealed class UniTaskAsycWaitHandleProvider<T> : CustomYieldInstruction, IUniTaskAsyncWaitHandleProvider<T>
+        {
+
+            public static UniTaskAsycWaitHandleProvider<T> Create(UniTask<T> task) => new UniTaskAsycWaitHandleProvider<T>() { _task = task };
+
+            #region Fields
+
+            private UniTask<T> _task;
+
+            #endregion
+
+            #region CONSTRUCTOR
+
+            private UniTaskAsycWaitHandleProvider() { }
+
+            #endregion
+
+            #region CustomYieldInstruction Interface
+
+            public override bool keepWaiting => !_task.Status.IsCompleted();
+
+            #endregion
+
+            #region AsyncWaitHandleProvider Interface
+
+            public AsyncWaitHandle<T> AsAsyncWaitHandle()
+            {
+                return new AsyncWaitHandle<T>(this, this);
+            }
+
+            UniTask IUniTaskAsyncWaitHandleProvider.GetUniTask(AsyncWaitHandle handle)
+            {
+                return _task;
+            }
+
+            public UniTask<T> GetUniTask(AsyncWaitHandle<T> handle)
+            {
+                return _task;
+            }
+
+            public float GetProgress(AsyncWaitHandle handle)
+            {
+                return _task.Status.IsCompleted() ? 1f : 0f;
+            }
+
+            public bool IsComplete(AsyncWaitHandle handle)
+            {
+                return _task.Status.IsCompleted();
+            }
+
+            public object GetYieldInstruction(AsyncWaitHandle handle)
+            {
+                return this;
+            }
+
+            public Task GetTask(AsyncWaitHandle handle)
+            {
+                return this.GetTask(handle);
+            }
+
+            public Task<T> GetTask(AsyncWaitHandle<T> handle)
+            {
+                if (GameLoop.InvokeRequired)
+                {
+                    Task<T> result = null;
+                    UniTask<T> task = _task;
+                    GameLoop.UpdateHandle.Invoke(() => result = task.AsTask());
+                    return result ?? Task.FromResult(this.GetResult(handle));
+                }
+                else
+                {
+                    return _task.AsTask();
+                }
+            }
+
+            public void OnComplete(AsyncWaitHandle handle, System.Action<AsyncWaitHandle> callback)
+            {
+                if (callback == null) return;
+
+                if (GameLoop.InvokeRequired)
+                {
+                    UniTask<T> task = _task;
+                    GameLoop.UpdateHandle.BeginInvoke(() => task.GetAwaiter().OnCompleted(() => callback(this.AsAsyncWaitHandle())));
+                }
+                else
+                {
+                    _task.GetAwaiter().OnCompleted(() => callback(this.AsAsyncWaitHandle()));
+                }
+            }
+
+            public void OnComplete(AsyncWaitHandle<T> handle, System.Action<AsyncWaitHandle<T>> callback)
+            {
+                if (callback == null) return;
+
+                if (GameLoop.InvokeRequired)
+                {
+                    UniTask<T> task = _task;
+                    GameLoop.UpdateHandle.BeginInvoke(() => task.GetAwaiter().OnCompleted(() => callback(this.AsAsyncWaitHandle())));
+                }
+                else
+                {
+                    _task.GetAwaiter().OnCompleted(() => callback(this.AsAsyncWaitHandle()));
+                }
+            }
+
+            public object GetResult(AsyncWaitHandle handle)
+            {
+                return this.GetResult(this.AsAsyncWaitHandle());
+            }
+
+            public T GetResult(AsyncWaitHandle<T> handle)
+            {
+                if(GameLoop.InvokeRequired)
+                {
+                    T result = default(T);
+                    UniTask<T> task = _task;
+                    GameLoop.UpdateHandle.Invoke(() => result = task.GetAwaiter().GetResult());
+                    return result;
+                }
+                else
+                {
+                    return _task.GetAwaiter().GetResult();
+                }
+            }
+
+            #endregion
+
+        }
+
+#endif
 
     }
 }

@@ -18,6 +18,17 @@ namespace com.spacepuppy.Async
             return new AsyncWaitHandle<T>(RadicalAsyncWaitHandleProvider<T>.Default, handle);
         }
 
+        public static Task AsTask(this IRadicalYieldInstruction inst)
+        {
+            return new AsyncWaitHandle(RadicalAsyncWaitHandleProvider.Default, inst).AsTask();
+        }
+
+        public static Task<T> AsTask<T>(this RadicalWaitHandle<T> inst)
+        {
+            return new AsyncWaitHandle<T>(RadicalAsyncWaitHandleProvider<T>.Default, inst).AsTask();
+        }
+
+
         #region Special Types
 
         /// <summary>
@@ -28,13 +39,13 @@ namespace com.spacepuppy.Async
 
             public static readonly RadicalAsyncWaitHandleProvider Default = new RadicalAsyncWaitHandleProvider();
 
-            public float GetProgress(object token)
+            public float GetProgress(AsyncWaitHandle handle)
             {
-                if (token is IProgressingYieldInstruction p)
+                if (handle.Token is IProgressingYieldInstruction p)
                 {
                     return p.IsComplete ? 1f : p.Progress;
                 }
-                else if (token is IRadicalYieldInstruction inst)
+                else if (handle.Token is IRadicalYieldInstruction inst)
                 {
                     return inst.IsComplete ? 1f : 0f;
                 }
@@ -45,11 +56,11 @@ namespace com.spacepuppy.Async
                 }
             }
 
-            public System.Threading.Tasks.Task GetTask(object token)
+            public System.Threading.Tasks.Task GetTask(AsyncWaitHandle handle)
             {
                 bool complete = false;
 
-                if (token is IRadicalWaitHandle h)
+                if (handle.Token is IRadicalWaitHandle h)
                 {
                     if(GameLoop.InvokeRequired)
                     {
@@ -74,7 +85,7 @@ namespace com.spacepuppy.Async
                         return s.WaitAsync();
                     }
                 }
-                else if (token is IRadicalYieldInstruction inst)
+                else if (handle.Token is IRadicalYieldInstruction inst)
                 {
                     if (GameLoop.InvokeRequired)
                     {
@@ -110,13 +121,13 @@ namespace com.spacepuppy.Async
                 }
             }
 
-            public object GetYieldInstruction(object token)
+            public object GetYieldInstruction(AsyncWaitHandle handle)
             {
-                if (token is System.Collections.IEnumerator e)
+                if (handle.Token is System.Collections.IEnumerator e)
                 {
                     return e;
                 }
-                else if (token is IRadicalYieldInstruction h)
+                else if (handle.Token is IRadicalYieldInstruction h)
                 {
                     return WaitUntilHandleIsDone(h);
                 }
@@ -127,9 +138,9 @@ namespace com.spacepuppy.Async
                 }
             }
 
-            public bool IsComplete(object token)
+            public bool IsComplete(AsyncWaitHandle handle)
             {
-                if (token is IRadicalYieldInstruction h)
+                if (handle.Token is IRadicalYieldInstruction h)
                 {
                     return h.IsComplete;
                 }
@@ -140,9 +151,9 @@ namespace com.spacepuppy.Async
                 }
             }
 
-            public void OnComplete(object token, System.Action<AsyncWaitHandle> callback)
+            public void OnComplete(AsyncWaitHandle handle, System.Action<AsyncWaitHandle> callback)
             {
-                if (token is IRadicalWaitHandle h)
+                if (handle.Token is IRadicalWaitHandle h)
                 {
                     if(GameLoop.InvokeRequired)
                     {
@@ -170,7 +181,7 @@ namespace com.spacepuppy.Async
                         }
                     }
                 }
-                else if (token is IRadicalYieldInstruction inst)
+                else if (handle.Token is IRadicalYieldInstruction inst)
                 {
                     if (callback != null)
                     {
@@ -191,9 +202,9 @@ namespace com.spacepuppy.Async
                 }
             }
 
-            public object GetResult(object token)
+            public object GetResult(AsyncWaitHandle handle)
             {
-                return token as IRadicalYieldInstruction;
+                return handle.Token as IRadicalYieldInstruction;
             }
 
             private System.Collections.IEnumerator WaitUntilHandleIsDone(IRadicalYieldInstruction h, System.Action<AsyncWaitHandle> callback = null)
@@ -212,14 +223,14 @@ namespace com.spacepuppy.Async
 
             public static readonly RadicalAsyncWaitHandleProvider<T> Default = new RadicalAsyncWaitHandleProvider<T>();
 
-            public float GetProgress(object token)
+            public float GetProgress(AsyncWaitHandle handle)
             {
-                return RadicalAsyncWaitHandleProvider.Default.GetProgress(token);
+                return RadicalAsyncWaitHandleProvider.Default.GetProgress(handle);
             }
 
-            public System.Threading.Tasks.Task<T> GetTask(object token)
+            public System.Threading.Tasks.Task<T> GetTask(AsyncWaitHandle<T> handle)
             {
-                if (token is RadicalWaitHandle<T> h)
+                if (handle.Token is RadicalWaitHandle<T> h)
                 {
                     bool complete = false;
                     if (GameLoop.InvokeRequired)
@@ -247,29 +258,29 @@ namespace com.spacepuppy.Async
                 }
             }
 
-            System.Threading.Tasks.Task IAsyncWaitHandleProvider.GetTask(object token)
+            System.Threading.Tasks.Task IAsyncWaitHandleProvider.GetTask(AsyncWaitHandle handle)
             {
-                return RadicalAsyncWaitHandleProvider.Default.GetTask(token);
+                return RadicalAsyncWaitHandleProvider.Default.GetTask(handle);
             }
 
-            public object GetYieldInstruction(object token)
+            public object GetYieldInstruction(AsyncWaitHandle handle)
             {
-                return RadicalAsyncWaitHandleProvider.Default.GetYieldInstruction(token);
+                return RadicalAsyncWaitHandleProvider.Default.GetYieldInstruction(handle);
             }
 
-            public bool IsComplete(object token)
+            public bool IsComplete(AsyncWaitHandle handle)
             {
-                return RadicalAsyncWaitHandleProvider.Default.IsComplete(token);
+                return RadicalAsyncWaitHandleProvider.Default.IsComplete(handle);
             }
 
-            public void OnComplete(object token, System.Action<AsyncWaitHandle> callback)
+            public void OnComplete(AsyncWaitHandle handle, System.Action<AsyncWaitHandle> callback)
             {
-                RadicalAsyncWaitHandleProvider.Default.OnComplete(token, callback);
+                RadicalAsyncWaitHandleProvider.Default.OnComplete(handle, callback);
             }
 
-            public void OnComplete(object token, System.Action<AsyncWaitHandle<T>> callback)
+            public void OnComplete(AsyncWaitHandle<T> handle, System.Action<AsyncWaitHandle<T>> callback)
             {
-                if (token is RadicalWaitHandle<T> h)
+                if (handle.Token is RadicalWaitHandle<T> h)
                 {
                     if(GameLoop.InvokeRequired)
                     {
@@ -301,9 +312,9 @@ namespace com.spacepuppy.Async
                 }
             }
 
-            public T GetResult(object token)
+            public T GetResult(AsyncWaitHandle<T> handle)
             {
-                if(token is RadicalWaitHandle<T> h)
+                if(handle.Token is RadicalWaitHandle<T> h)
                 {
                     return h.Result;
                 }
@@ -313,9 +324,9 @@ namespace com.spacepuppy.Async
                 }
             }
 
-            object IAsyncWaitHandleProvider.GetResult(object token)
+            object IAsyncWaitHandleProvider.GetResult(AsyncWaitHandle handle)
             {
-                if(token is RadicalWaitHandle<T> h)
+                if(handle.Token is RadicalWaitHandle<T> h)
                 {
                     return h.Result;
                 }

@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 #if SP_UNITASK
 using Cysharp.Threading.Tasks;
@@ -27,10 +21,12 @@ namespace com.spacepuppy.Async
     public struct AsyncWaitHandle
     {
 
+        public static readonly AsyncWaitHandle CompletedHandle = default;
+
         #region Fields
 
-        private IAsyncWaitHandleProvider _provider;
-        private object _token;
+        private readonly IAsyncWaitHandleProvider _provider;
+        public readonly object Token;
 
         #endregion
 
@@ -39,7 +35,7 @@ namespace com.spacepuppy.Async
         public AsyncWaitHandle(IAsyncWaitHandleProvider provider, object token)
         {
             _provider = provider;
-            _token = token;
+            Token = token;
         }
 
         #endregion
@@ -48,22 +44,18 @@ namespace com.spacepuppy.Async
 
         public IAsyncWaitHandleProvider Provider => _provider;
 
-        public object Token => _token;
-
-        public bool IsValid => !object.ReferenceEquals(_provider, null);
-
         /// <summary>
         /// Is the operation complete. 
         /// Most handles being wrapped are NOT thread safe, only call this from main thread. 
         /// If on a thread await the task returned by GetAwaitable rather than checking this or calling 'OnComplete' to register a callback.
         /// </summary>
-        public bool IsComplete => _provider?.IsComplete(_token) ?? false;
+        public bool IsComplete => _provider?.IsComplete(this) ?? true;
 
         /// <summary>
         /// The progress of the operation, not all AsyncWaitHandle's have progress and may return 0/1 based on completion. 
         /// Most handles being wrapped are NOT thread safe, only call this from main thread. 
         /// </summary>
-        public float Progress => _provider?.GetProgress(_token) ?? 0f;
+        public float Progress => _provider?.GetProgress(this) ?? 1f;
 
         #endregion
 
@@ -73,7 +65,7 @@ namespace com.spacepuppy.Async
         {
             if(_provider is IAsyncWaitHandleProvider<T> p)
             {
-                return new AsyncWaitHandle<T>(p, _token);
+                return new AsyncWaitHandle<T>(p, Token);
             }
             else
             {
@@ -85,7 +77,7 @@ namespace com.spacepuppy.Async
         {
             if (_provider is IAsyncWaitHandleProvider<T> p)
             {
-                result = new AsyncWaitHandle<T>(p, _token);
+                result = new AsyncWaitHandle<T>(p, Token);
                 return true;
             }
             else
@@ -100,9 +92,9 @@ namespace com.spacepuppy.Async
         /// Most handles being wrapped are NOT thread safe, only call this from main thread. 
         /// </summary>
         /// <returns></returns>
-        public object GetYieldInstruction()
+        public object AsYieldInstruction()
         {
-            return _provider?.GetYieldInstruction(_token);
+            return _provider?.GetYieldInstruction(this);
         }
 
         /// <summary>
@@ -112,7 +104,7 @@ namespace com.spacepuppy.Async
         /// <param name="callback"></param>
         public void OnComplete(System.Action<AsyncWaitHandle> callback)
         {
-            _provider?.OnComplete(_token, callback);
+            _provider?.OnComplete(this, callback);
         }
 
         /// <summary>
@@ -120,9 +112,9 @@ namespace com.spacepuppy.Async
         /// This will be thread safe.
         /// </summary>
         /// <returns></returns>
-        public System.Threading.Tasks.Task GetTask()
+        public System.Threading.Tasks.Task AsTask()
         {
-            return _provider?.GetTask(_token);
+            return _provider?.GetTask(this);
         }
 
 #if SP_UNITASK
@@ -131,18 +123,39 @@ namespace com.spacepuppy.Async
         /// This will be thread safe.
         /// </summary>
         /// <returns></returns>
-        public async UniTask GetUniTask(CancellationToken token = default(CancellationToken))
+        public UniTask AsUniTask()
+        {
+            if (_provider is AsyncUtil.IUniTaskAsyncWaitHandleProvider p)
+            {
+                return p.GetUniTask(this);
+            }
+            else
+            {
+                return GetUniTask();
+            }
+        }
+        private async UniTask GetUniTask()
         {
             if (!PlayerLoopHelper.IsMainThread)
             {
                 await UniTask.SwitchToMainThread();
-                token.ThrowIfCancellationRequested();
             }
 
             while(!this.IsComplete)
             {
                 await UniTask.Yield();
-                token.ThrowIfCancellationRequested();
+            }
+        }
+
+        public UniTask.Awaiter GetAwaiter()
+        {
+            if (_provider is AsyncUtil.IUniTaskAsyncWaitHandleProvider p)
+            {
+                return p.GetUniTask(this).GetAwaiter();
+            }
+            else
+            {
+                return GetUniTask().GetAwaiter();
             }
         }
 #endif
@@ -155,7 +168,7 @@ namespace com.spacepuppy.Async
         {
             if (_provider != null)
             {
-                return _provider.GetResult(_token);
+                return _provider.GetResult(this);
             }
             else
             {
@@ -165,14 +178,14 @@ namespace com.spacepuppy.Async
 
 #endregion
 
-#region Operators
+        #region Operators
 
         public static implicit operator Task(AsyncWaitHandle handle)
         {
-            return handle.GetTask() ?? Task.CompletedTask;
+            return handle.AsTask() ?? Task.CompletedTask;
         }
 
-#endregion
+        #endregion
 
     }
 
@@ -190,56 +203,61 @@ namespace com.spacepuppy.Async
     public struct AsyncWaitHandle<T>
     {
 
-#region Fields
+        #region Fields
 
         private IAsyncWaitHandleProvider<T> _provider;
-        private object _token;
+        public readonly object Token;
+        private T _result;
 
-#endregion
+        #endregion
 
-#region CONSTRUCTOR
+        #region CONSTRUCTOR
+
+        public AsyncWaitHandle(T result)
+        {
+            _provider = null;
+            Token = null;
+            _result = result;
+        }
 
         public AsyncWaitHandle(IAsyncWaitHandleProvider<T> provider, object token)
         {
             _provider = provider;
-            _token = token;
+            Token = token;
+            _result = default;
         }
 
-#endregion
+        #endregion
 
-#region Properties
+        #region Properties
 
         public IAsyncWaitHandleProvider<T> Provider => _provider;
-
-        public object Token => _token;
-
-        public bool IsValid => !object.ReferenceEquals(_provider, null);
 
         /// <summary>
         /// Is the operation complete. 
         /// Most handles being wrapped are NOT thread safe, only call this from main thread. 
         /// If on a thread await the task returned by GetAwaitable rather than checking this or calling 'OnComplete' to register a callback.
         /// </summary>
-        public bool IsComplete => _provider?.IsComplete(_token) ?? false;
+        public bool IsComplete => _provider?.IsComplete(this) ?? true;
 
         /// <summary>
         /// The progress of the operation, not all AsyncWaitHandle's have progress and may return 0/1 based on completion. 
         /// Most handles being wrapped are NOT thread safe, only call this from main thread. 
         /// </summary>
-        public float Progress => _provider?.GetProgress(_token) ?? 0f;
+        public float Progress => _provider?.GetProgress(this) ?? 1f;
 
-#endregion
+        #endregion
 
-#region Methods
+        #region Methods
 
         /// <summary>
         /// A yield instruction that can be used by a coroutine. 
         /// Most handles being wrapped are NOT thread safe, only call this from main thread. 
         /// </summary>
         /// <returns></returns>
-        public object GetYieldInstruction()
+        public object AsYieldInstruction()
         {
-            return _provider?.GetYieldInstruction(_token);
+            return _provider?.GetYieldInstruction(this);
         }
 
         /// <summary>
@@ -249,7 +267,7 @@ namespace com.spacepuppy.Async
         /// <param name="callback"></param>
         public void OnComplete(System.Action<AsyncWaitHandle<T>> callback)
         {
-            _provider?.OnComplete(_token, callback);
+            _provider?.OnComplete(this, callback);
         }
 
         /// <summary>
@@ -257,9 +275,9 @@ namespace com.spacepuppy.Async
         /// This will be thread safe.
         /// </summary>
         /// <returns></returns>
-        public System.Threading.Tasks.Task<T> GetTask()
+        public System.Threading.Tasks.Task<T> AsTask()
         {
-            return _provider?.GetTask(_token);
+            return _provider?.GetTask(this);
         }
 
 #if SP_UNITASK
@@ -268,21 +286,46 @@ namespace com.spacepuppy.Async
         /// This will be thread safe.
         /// </summary>
         /// <returns></returns>
-        public async UniTask<T> GetUniTask(CancellationToken token = default(CancellationToken))
+        public UniTask<T> AsUniTask()
+        {
+            if (_provider is AsyncUtil.IUniTaskAsyncWaitHandleProvider<T> p)
+            {
+                return p.GetUniTask(this);
+            }
+            else
+            {
+                return GetUniTask();
+            }
+        }
+        private async UniTask<T> GetUniTask()
         {
             if (!PlayerLoopHelper.IsMainThread)
             {
                 await UniTask.SwitchToMainThread();
-                token.ThrowIfCancellationRequested();
             }
 
             while (!this.IsComplete)
             {
                 await UniTask.Yield();
-                token.ThrowIfCancellationRequested();
             }
 
             return this.GetResult();
+        }
+
+        public UniTask<T>.Awaiter GetAwaiter()
+        {
+            if (_provider == null)
+            {
+                return new UniTask<T>(_result).GetAwaiter();
+            }
+            else if (_provider is AsyncUtil.IUniTaskAsyncWaitHandleProvider<T> p)
+            {
+                return p.GetUniTask(this).GetAwaiter();
+            }
+            else
+            {
+                return GetUniTask().GetAwaiter();
+            }
         }
 #endif
 
@@ -294,29 +337,38 @@ namespace com.spacepuppy.Async
         {
             if(_provider != null)
             {
-                return _provider.GetResult(_token);
+                return _provider.GetResult(this);
             }
             else
             {
-                return default(T);
+                return _result;
             }
         }
 
-#endregion
+        #endregion
 
-#region Operators
+        #region Operators
 
         public static implicit operator AsyncWaitHandle(AsyncWaitHandle<T> handle)
         {
-            return new AsyncWaitHandle(handle._provider, handle._token);
+            return new AsyncWaitHandle(handle._provider, handle.Token);
         }
 
         public static implicit operator Task<T>(AsyncWaitHandle<T> handle)
         {
-            return handle.GetTask() ?? Task.FromResult<T>(handle.GetResult());
+            return handle.AsTask() ?? Task.FromResult<T>(handle.GetResult());
         }
 
-#endregion
+        #endregion
+
+        #region Static Methods
+
+        public static AsyncWaitHandle<T> Result(T result)
+        {
+            return new AsyncWaitHandle<T>(result);
+        }
+
+        #endregion
 
     }
 
@@ -333,42 +385,42 @@ namespace com.spacepuppy.Async
         /// </summary>
         /// <param name="token"></param>
         /// <returns></returns>
-        float GetProgress(object token);
+        float GetProgress(AsyncWaitHandle handle);
         /// <summary>
         /// Provides if the underlying handle is complete. 
         /// This is not required to be thread safe.
         /// </summary>
         /// <param name="token"></param>
         /// <returns></returns>
-        bool IsComplete(object token);
+        bool IsComplete(AsyncWaitHandle handle);
         /// <summary>
         /// Provides the underlying handle's yield instruction for a coroutine. 
         /// This is not required to be thread safe since it's only used in coroutines.
         /// </summary>
         /// <param name="token"></param>
         /// <returns></returns>
-        object GetYieldInstruction(object token);
+        object GetYieldInstruction(AsyncWaitHandle handle);
         /// <summary>
         /// Provides a task that can be awaited until the underlying handle is complete. 
         /// This MUST be thread safe. 
         /// </summary>
         /// <param name="token"></param>
         /// <returns></returns>
-        Task GetTask(object token);
+        Task GetTask(AsyncWaitHandle handle);
         /// <summary>
         /// Provides a hook to attach a callback delegate that will be called when the underlying handle is complete. 
         /// This MUST be thread safe.
         /// </summary>
         /// <param name="token"></param>
         /// <param name="callback"></param>
-        void OnComplete(object token, System.Action<AsyncWaitHandle> callback);
+        void OnComplete(AsyncWaitHandle handle, System.Action<AsyncWaitHandle> callback);
         /// <summary>
         /// Provides a reference to the result provided by the underlying handle, if any. Otherwise return the handle itself.
         /// This MUST be thread safe.
         /// </summary>
         /// <param name="token"></param>
         /// <returns></returns>
-        object GetResult(object token);
+        object GetResult(AsyncWaitHandle handle);
     }
 
     /// <summary>
@@ -382,21 +434,21 @@ namespace com.spacepuppy.Async
         /// </summary>
         /// <param name="token"></param>
         /// <param name="callback"></param>
-        void OnComplete(object token, System.Action<AsyncWaitHandle<T>> callback);
+        void OnComplete(AsyncWaitHandle<T> handle, System.Action<AsyncWaitHandle<T>> callback);
         /// <summary>
         /// Provides a reference to the result provided by the underlying handle, if any. Otherwise return the handle itself.
         /// This MUST be thread safe.
         /// </summary>
         /// <param name="token"></param>
         /// <returns></returns>
-        new T GetResult(object token);
+        T GetResult(AsyncWaitHandle<T> handle);
         /// <summary>
         /// Provides a task that can be awaited until the underlying handle is complete. 
         /// This MUST be thread safe. 
         /// </summary>
         /// <param name="token"></param>
         /// <returns></returns>
-        new Task<T> GetTask(object token);
+        Task<T> GetTask(AsyncWaitHandle<T> handle);
     }
 
 }

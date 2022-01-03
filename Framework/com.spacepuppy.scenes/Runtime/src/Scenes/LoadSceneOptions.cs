@@ -350,7 +350,7 @@ namespace com.spacepuppy.Scenes
 
             public async System.Threading.Tasks.Task<Scene> GetTask()
             {
-                await Op.AsAsyncWaitHandle().GetTask();
+                await Op.AsAsyncWaitHandle().AsTask();
                 return this.Scene;
             }
             

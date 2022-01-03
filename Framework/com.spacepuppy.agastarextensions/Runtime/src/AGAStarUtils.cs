@@ -45,7 +45,7 @@ namespace com.spacepuppy.Pathfinding
 
             #region IAsyncWaitHandleProvider Interface
 
-            public Task GetTask(object token)
+            public Task GetTask(AsyncWaitHandle handle)
             {
                 lock(_lock)
                 {
@@ -62,27 +62,27 @@ namespace com.spacepuppy.Pathfinding
                 }
             }
 
-            public float GetProgress(object token)
+            public float GetProgress(AsyncWaitHandle handle)
             {
                 return e?.Current.progress ?? 0f;
             }
 
-            public object GetResult(object token)
+            public object GetResult(AsyncWaitHandle handle)
             {
                 return null;
             }
 
-            public object GetYieldInstruction(object token)
+            public object GetYieldInstruction(AsyncWaitHandle handle)
             {
                 return Routine;
             }
 
-            public bool IsComplete(object token)
+            public bool IsComplete(AsyncWaitHandle handle)
             {
                 return _complete;
             }
 
-            public void OnComplete(object token, System.Action<AsyncWaitHandle> callback)
+            public void OnComplete(AsyncWaitHandle handle, System.Action<AsyncWaitHandle> callback)
             {
                 if (callback == null) return;
 

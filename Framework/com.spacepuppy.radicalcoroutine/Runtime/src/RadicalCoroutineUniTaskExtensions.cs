@@ -22,6 +22,12 @@ namespace com.spacepuppy
             return new RadicalUniTask(routine.GetEnumerator());
         }
 
+        /// <summary>
+        /// Operates an IEnumerator coroutine as a RadicalCoroutine on the UniTask engine, granting access to all IRadicalYieldInstructions in the coroutine.  
+        /// In a UniTask you can await SomeRoutine().AsRadicalUniTask() to do this. 
+        /// </summary>
+        /// <param name="routine"></param>
+        /// <returns></returns>
         public static RadicalUniTask AsRadicalUniTask(this IEnumerator routine)
         {
             if (routine == null) throw new System.ArgumentNullException(nameof(routine));

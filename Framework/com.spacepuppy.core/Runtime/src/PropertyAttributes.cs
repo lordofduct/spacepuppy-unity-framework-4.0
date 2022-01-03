@@ -510,6 +510,12 @@ namespace com.spacepuppy
     {
         public readonly string MemberName;
         public bool DisableIfNot;
+        public bool DisableAlways;
+
+        public DisableIfAttribute(bool always)
+        {
+            this.DisableAlways = always;
+        }
 
         public DisableIfAttribute(string memberName)
         {

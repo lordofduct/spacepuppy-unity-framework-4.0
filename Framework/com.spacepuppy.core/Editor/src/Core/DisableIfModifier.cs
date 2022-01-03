@@ -20,8 +20,15 @@ namespace com.spacepuppyeditor.Modifiers
             bool disable = false;
             if (attrib != null && targ != null)
             {
-                disable = ConvertUtil.ToBool(DynamicUtil.GetValue(targ, attrib.MemberName));
-                if (attrib.DisableIfNot) disable = !disable;
+                if(attrib.DisableAlways)
+                {
+                    disable = true;
+                }
+                else
+                {
+                    disable = ConvertUtil.ToBool(DynamicUtil.GetValue(targ, attrib.MemberName));
+                    if (attrib.DisableIfNot) disable = !disable;
+                }
             }
 
             EditorGUI.BeginDisabledGroup(disable);

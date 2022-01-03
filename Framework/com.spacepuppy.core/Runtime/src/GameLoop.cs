@@ -9,11 +9,12 @@ namespace com.spacepuppy
     /// <summary>
     /// An entry point into the gameloop.
     /// 
-    /// This is registered on start of the game automatically. If you'd prefer to manually initialize it (or not initialize it all, not-advised if using SP Framework) 
+    /// This is registered on start of the game automatically. If you'd prefer to manually initialize it (or not initialize it at all, not-advised if using SP Framework) 
     /// just add MANUALLY_REGISTER_SPGAMELOOP as a define symbol in the 'Player Settings' (Edit->Project Settings->Player) then call Init on the main thread.
     /// </summary>
     /// <remarks>
     /// Currently in 4.0 we're diverging from the classic 'GameLoop' of earlier SP versions. We may refactor this later.
+    /// This includes hooking into the new "PlayerLoop" interface Unity released in 2019.3
     /// </remarks>
     [DefaultExecutionOrder(-32000)]
     public class GameLoop : ServiceComponent<GameLoop>, IService

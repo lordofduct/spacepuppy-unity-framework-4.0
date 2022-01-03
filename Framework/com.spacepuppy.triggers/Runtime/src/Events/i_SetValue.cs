@@ -22,7 +22,6 @@ namespace com.spacepuppy.Events
 
         [SerializeField()]
         [SelectableObject()]
-        [DefaultFromSelf(HandleOnce = true)]
         private UnityEngine.Object _target;
         [SerializeField()]
         private string _memberName;

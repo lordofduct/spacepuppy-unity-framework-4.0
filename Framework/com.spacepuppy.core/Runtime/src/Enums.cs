@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.ComponentModel;
+using UnityEngine;
 
 namespace com.spacepuppy
 {
@@ -72,7 +73,9 @@ namespace com.spacepuppy
         GreaterThan = 2,
         NotEqualAlt = 3,
         Equal = 4,
+        [Description("Less Than Or Equal")]
         LessThanEqual = 5,
+        [Description("Greater Than Or Equal")]
         GreatThanEqual = 6,
         Always = 7
     }

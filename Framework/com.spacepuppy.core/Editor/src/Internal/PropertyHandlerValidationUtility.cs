@@ -35,8 +35,8 @@ namespace com.spacepuppyeditor.Internal
         static PropertyHandlerValidationUtility()
         {
             _lastPurge = System.DateTime.Now;
-            SceneView.onSceneGUIDelegate -= OnGUIHandler;
-            SceneView.onSceneGUIDelegate += OnGUIHandler;
+            SceneView.duringSceneGui -= OnGUIHandler;
+            SceneView.duringSceneGui += OnGUIHandler;
         }
 
         #endregion

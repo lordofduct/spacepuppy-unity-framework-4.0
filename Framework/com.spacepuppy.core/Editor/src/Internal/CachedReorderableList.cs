@@ -117,19 +117,19 @@ namespace com.spacepuppyeditor.Internal
 
         #region Methods
 
-        private static FieldInfo _m_SerializedObject;
+        //private static FieldInfo _m_SerializedObject;
         private void ReInit(SerializedObject obj, SerializedProperty prop)
         {
-            try
-            {
-                if (_m_SerializedObject == null)
-                    _m_SerializedObject = typeof(ReorderableList).GetField("m_SerializedObject", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
-                _m_SerializedObject.SetValue(this, obj);
-            }
-            catch
-            {
-                UnityEngine.Debug.LogWarning("This version of Spacepuppy Framework does not support the version of Unity it's being used with (CachedReorderableList).");
-            }
+            //try
+            //{
+            //    if (_m_SerializedObject == null)
+            //        _m_SerializedObject = typeof(ReorderableList).GetField("m_SerializedObject", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+            //    _m_SerializedObject.SetValue(this, obj);
+            //}
+            //catch
+            //{
+            //    UnityEngine.Debug.LogWarning("This version of Spacepuppy Framework does not support the version of Unity it's being used with (CachedReorderableList).");
+            //}
 
             this.serializedProperty = prop;
             this.list = null;
@@ -137,16 +137,16 @@ namespace com.spacepuppyeditor.Internal
 
         private void ReInit(System.Collections.IList memberList, SerializedProperty tokenProperty)
         {
-            try
-            {
-                if (_m_SerializedObject == null)
-                    _m_SerializedObject = typeof(ReorderableList).GetField("m_SerializedObject", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
-                _m_SerializedObject.SetValue(this, null);
-            }
-            catch
-            {
-                UnityEngine.Debug.LogWarning("This version of Spacepuppy Framework does not support the version of Unity it's being used with (CachedReorderableList).");
-            }
+            //try
+            //{
+            //    if (_m_SerializedObject == null)
+            //        _m_SerializedObject = typeof(ReorderableList).GetField("m_SerializedObject", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+            //    _m_SerializedObject.SetValue(this, null);
+            //}
+            //catch
+            //{
+            //    UnityEngine.Debug.LogWarning("This version of Spacepuppy Framework does not support the version of Unity it's being used with (CachedReorderableList).");
+            //}
 
             //this.serializedProperty = null;
             if (this.serializedProperty != null) this.serializedProperty = tokenProperty;
@@ -165,16 +165,27 @@ namespace com.spacepuppyeditor.Internal
                                                           ReorderableList.ChangedCallbackDelegate onChangedCallback = null, ReorderableList.ReorderCallbackDelegate onReorderCallback = null, ReorderableList.CanRemoveCallbackDelegate onCanRemoveCallback = null,
                                                           ReorderableList.AddDropdownCallbackDelegate onAddDropdownCallback = null)
         {
-            if (property == null) throw new System.ArgumentNullException("property");
-            if (!property.isArray) throw new System.ArgumentException("SerializedProperty must be a property for an Array or List", "property");
+            if (property == null) throw new System.ArgumentNullException(nameof(property));
+            if (!property.isArray) throw new System.ArgumentException("SerializedProperty must be a property for an Array or List", nameof(property));
 
             int hash = com.spacepuppyeditor.Internal.PropertyHandlerCache.GetIndexRespectingPropertyHash(property);
             CachedReorderableList lst;
             if (_lstCache.TryGetValue(hash, out lst))
             {
                 lst.ReInit(property.serializedObject, property);
+                try
+                {
+                    lst.GetHeight();
+                }
+                catch
+                {
+                    _lstCache.Remove(hash);
+                    lst = null;
+                    Debug.LogWarning("Spacepuppy failed to retrieve a cached ReorderableList - internal note for looking into in the future.");
+                }
             }
-            else
+
+            if (lst == null)
             {
                 lst = new CachedReorderableList(property.serializedObject, property);
                 _lstCache[hash] = lst;

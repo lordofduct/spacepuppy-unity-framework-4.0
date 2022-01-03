@@ -1325,6 +1325,26 @@ namespace com.spacepuppy.Dynamic
 
                             throw new System.InvalidOperationException("Failed to parse the command: Parameter count mismatch.");
                         }
+                    case "format":
+                        {
+                            reachedEnd = this.EvalStatement(temp, true);
+                            string sfrm = temp.StringValue;
+
+                            using (var lst = TempCollection.GetList<object>())
+                            {
+                                while(!reachedEnd)
+                                {
+                                    reachedEnd = EvalStatement(temp, true);
+                                    lst.Add(temp.Value);
+                                }
+
+                                var arr = ArrayUtil.Temp<object>(lst);
+                                state.StringValue = string.Format(sfrm, arr);
+                                ArrayUtil.ReleaseTemp(arr);
+                            }
+
+                            return;
+                        }
                     default:
                         throw new System.InvalidOperationException("Failed to parse the command: Unknown Function");
                 }

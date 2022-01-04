@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using com.spacepuppy.Utils;
 using System.Runtime.CompilerServices;
 using com.spacepuppy.Project;
+using com.spacepuppy.Dynamic;
 
 namespace com.spacepuppy.UI
 {
@@ -105,6 +106,26 @@ namespace com.spacepuppy.UI
             }
             
             return false;
+        }
+
+        public static string TryGetText(object target)
+        {
+            string result = null;
+            if (target is ITextDecoratorMode m)
+            {
+                result = m.text;
+            }
+            else
+            {
+                var targ = GetTempTextDecorator(target);
+                if (targ != null)
+                {
+                    result = targ.text;
+                    ReleaseTempTextDecorators();
+                }
+            }
+
+            return result;
         }
 
 

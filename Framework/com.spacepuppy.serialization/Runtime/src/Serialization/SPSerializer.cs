@@ -119,7 +119,7 @@ namespace com.spacepuppy.Serialization
         
         public static bool IsSpeciallySerialized(System.Type tp)
         {
-            if (tp == null) throw new System.ArgumentNullException("tp");
+            if (tp == null) throw new System.ArgumentNullException(nameof(tp));
 
             if (typeof(IPersistantUnityObject).IsAssignableFrom(tp)) return true;
 

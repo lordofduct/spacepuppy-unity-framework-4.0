@@ -566,6 +566,7 @@ namespace com.spacepuppyeditor.Events
             result.ActivationType = result.ActivationTypeProperty.GetEnumValue<TriggerActivationType>();
             result.DropdownDisplayNames = _defaultTriggerActivationTypeDisplayNames;
 
+            var methodNameProp = triggerTargetProperty.FindPropertyRelative(EventTriggerTargetPropertyDrawer.PROP_METHODNAME);
             var targ = triggerTargetProperty.FindPropertyRelative(EventTriggerTargetPropertyDrawer.PROP_TRIGGERABLETARG)?.objectReferenceValue;
             targ = targ.ReduceIfProxy() as UnityEngine.Object;
             if (targ is Component && !(targ is Transform))
@@ -575,6 +576,17 @@ namespace com.spacepuppyeditor.Events
                 arr[4] = string.Format("Enable Target ({0})", nm);
                 arr[5] = string.Format("Disable Target ({0})", nm);
                 arr[6] = string.Format("Toggle Target ({0})", nm);
+                if (result.ActivationType == TriggerActivationType.CallMethodOnSelectedTarget && !string.IsNullOrEmpty(methodNameProp?.stringValue))
+                {
+                    arr[3] = string.Format("Call Method ({0}->{1})", nm, methodNameProp.stringValue);
+                }
+                result.DropdownDisplayNames = arr;
+            }
+            else if (result.ActivationType == TriggerActivationType.CallMethodOnSelectedTarget && !string.IsNullOrEmpty(methodNameProp?.stringValue))
+            {
+                var arr = result.DropdownDisplayNames.ToArray();
+                var nm = targ.GetType().Name;
+                arr[3] = string.Format("Call Method ({0}->{1})", nm, methodNameProp.stringValue);
                 result.DropdownDisplayNames = arr;
             }
 
@@ -607,6 +619,7 @@ namespace com.spacepuppyeditor.Events
                     result.DropdownSelectedIndex = 7;
                     break;
             }
+
             return result;
         }
 

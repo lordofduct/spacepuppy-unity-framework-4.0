@@ -578,14 +578,18 @@ namespace com.spacepuppy.Utils
 
 
 
-        public static int IndexOf(this System.Array lst, object obj)
+        public static int IndexOf<T>(this T[] lst, T obj)
         {
             return System.Array.IndexOf(lst, obj);
         }
 
-        public static int IndexOf<T>(this T[] lst, T obj)
+        public static int IndexOf<T>(this IList<T> lst, System.Func<T, bool> predicate)
         {
-            return System.Array.IndexOf(lst, obj);
+            for (int i = 0; i < lst.Count; i++)
+            {
+                if (predicate(lst[i])) return i;
+            }
+            return -1;
         }
 
         public static bool InBounds(this System.Array arr, int index)

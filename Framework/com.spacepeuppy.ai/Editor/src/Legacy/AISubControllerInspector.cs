@@ -50,7 +50,7 @@ namespace com.spacepuppyeditor.AI
                     {
                         var states = ParentComponentStateGroup<IAIState>.GetComponentsOnTarg(targ.gameObject, false);
                         var names = (from s in states select EditorHelper.TempContent(GameObjectUtil.GetGameObjectFromSource(s).name + " (" + s.GetType().Name + ")")).ToArray();
-                        int i = states.IndexOf(stateProp.objectReferenceValue);
+                        int i = System.Array.IndexOf(states, stateProp.objectReferenceValue);
                         i = EditorGUILayout.Popup(EditorHelper.TempContent(stateProp.displayName), i, names);
                         stateProp.objectReferenceValue = (i >= 0) ? states[i] as UnityEngine.Object : null;
                     }

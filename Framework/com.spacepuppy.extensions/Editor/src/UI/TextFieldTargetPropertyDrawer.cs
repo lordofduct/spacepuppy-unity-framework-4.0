@@ -6,7 +6,7 @@ using com.spacepuppy.UI;
 namespace com.spacepuppyeditor.UI
 {
 
-    [CustomPropertyDrawer(typeof(TextFieldTarget))]
+    [CustomPropertyDrawer(typeof(TextFieldTarget), false)]
     public class TextFieldTargetPropertyDrawer : PropertyDrawer
     {
 

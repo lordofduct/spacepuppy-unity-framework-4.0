@@ -26,6 +26,13 @@ namespace com.spacepuppyeditor.Internal
 
         #region CONSTRUCTOR
 
+        public UnityInternalPropertyHandler(object internalPropertyhandler)
+        {
+            var klass = InternalTypeUtil.UnityEditorAssembly.GetType("UnityEditor.PropertyHandler");
+            if (!klass.IsInstanceOfType(internalPropertyhandler)) throw new System.ArgumentException("Must be an instance of the internal UnityEditor.PropertyHandler type.", nameof(internalPropertyhandler));
+            _internalPropertyHandler = new TypeAccessWrapper(klass, internalPropertyhandler, true);
+        }
+
         public UnityInternalPropertyHandler()
         {
             var klass = InternalTypeUtil.UnityEditorAssembly.GetType("UnityEditor.PropertyHandler");
@@ -101,7 +108,9 @@ namespace com.spacepuppyeditor.Internal
                 }
                 float num2;
                 if (this.InternalDrawer != null)
+                {
                     num2 = num1 + this.InternalDrawer.GetPropertyHeight(property.Copy(), label ?? EditorHelper.TempContent(property.displayName, this.tooltip));
+                }
                 else if (!includeChildren)
                 {
                     num2 = num1 + EditorGUIUtility.singleLineHeight;

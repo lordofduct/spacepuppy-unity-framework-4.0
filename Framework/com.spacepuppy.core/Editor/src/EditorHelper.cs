@@ -1147,7 +1147,14 @@ namespace com.spacepuppyeditor
                 {
                     foreach(var o in lst)
                     {
-                        o.callback?.Invoke();
+                        try
+                        {
+                            o.callback?.Invoke();
+                        }
+                        catch(System.Exception ex)
+                        {
+                            Debug.LogException(ex);
+                        }
                     }
                 }
             }

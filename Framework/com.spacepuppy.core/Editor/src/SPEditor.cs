@@ -13,8 +13,8 @@ using UnityEditor.Graphs;
 namespace com.spacepuppyeditor
 {
 
-    //[CustomEditor(typeof(MonoBehaviour), true)]
-    [CustomEditor(typeof(SPComponent), true)]
+    [CustomEditor(typeof(MonoBehaviour), true)]
+    //[CustomEditor(typeof(SPComponent), true)]
     [CanEditMultipleObjects()]
     public class SPEditor : Editor
     {
@@ -65,7 +65,7 @@ namespace com.spacepuppyeditor
 
         public sealed override void OnInspectorGUI()
         {
-            if (!(this.target is SPComponent) && !SpacepuppySettings.UseSPEditorAsDefaultEditor)
+            if (!(this.target is SPComponent) && (!SpacepuppySettings.UseSPEditorAsDefaultEditor || (this.target?.GetType().Assembly.FullName.Contains("UnityEngine.") ?? false)))
             {
                 base.OnInspectorGUI();
                 return;
@@ -288,7 +288,7 @@ namespace com.spacepuppyeditor
         public new bool DrawDefaultInspector()
         {
             //draw properties
-            this.serializedObject.Update();
+            this.serializedObject.UpdateIfRequiredOrScript();
             var result = SPEditor.DrawDefaultInspectorExcept(this.serializedObject);
             this.serializedObject.ApplyModifiedProperties();
 
@@ -326,17 +326,19 @@ namespace com.spacepuppyeditor
 
         public static bool DrawDefaultInspectorExcept(SerializedObject serializedObject, params string[] propsNotToDraw)
         {
-            if (serializedObject == null) throw new System.ArgumentNullException("serializedObject");
+            if (serializedObject == null) throw new System.ArgumentNullException(nameof(serializedObject));
 
             EditorGUI.BeginChangeCheck();
-            var iterator = serializedObject.GetIterator();
+            SerializedProperty iterator = serializedObject.GetIterator();
             for (bool enterChildren = true; iterator.NextVisible(enterChildren); enterChildren = false)
             {
-
                 if (propsNotToDraw == null || !propsNotToDraw.Contains(iterator.name))
                 {
-                    //EditorGUILayout.PropertyField(iterator, true);
-                    SPEditorGUILayout.PropertyField(iterator, true);
+                    using (new EditorGUI.DisabledScope(EditorHelper.PROP_SCRIPT == iterator.propertyPath))
+                    {
+                        //EditorGUILayout.PropertyField(iterator, true);
+                        SPEditorGUILayout.PropertyField(iterator, true);
+                    }
                 }
             }
             return EditorGUI.EndChangeCheck();

@@ -19,6 +19,7 @@ namespace com.spacepuppyeditor.Internal
         #region Fields
 
         private static PropertyHandlerCache _handlerCache = new PropertyHandlerCache();
+        private static PropertyHandlerCache _internalHandlerCache = new PropertyHandlerCache();
 
 
 
@@ -32,6 +33,8 @@ namespace com.spacepuppyeditor.Internal
         private static GetFieldInfoFromPropertyDelegate _imp_getFieldInfoFromProperty;
 
         private static System.Func<SerializedProperty, System.Type> _imp_getScriptTypeFromProperty;
+
+        private static System.Func<SerializedProperty, object> _imp_getHandler;
 
         #endregion
 
@@ -61,7 +64,7 @@ namespace com.spacepuppyeditor.Internal
         
         public static IPropertyHandler GetHandler(SerializedProperty property)
         {
-            if (property == null) throw new System.ArgumentNullException("property");
+            if (property == null) throw new System.ArgumentNullException(nameof(property));
 
             IPropertyHandler result = _handlerCache.GetHandler(property);
             if (result != null)
@@ -71,29 +74,48 @@ namespace com.spacepuppyeditor.Internal
 
             //TEST FOR SPECIAL CASE HANDLER
             var fieldInfo = ScriptAttributeUtility.GetFieldInfoFromProperty(property);
-            if(fieldInfo != null)
-            {
-                var attribs = fieldInfo.GetCustomAttributes(typeof(PropertyAttribute), false) as PropertyAttribute[];
-                var isListType = property.isArray && !(property.propertyType == SerializedPropertyType.String);
-                result = new MultiPropertyAttributePropertyHandler(property, fieldInfo, isListType, attribs);
-                _handlerCache.SetHandler(property, result);
-                return result;
-            }
-            //if(fieldInfo != null && System.Attribute.IsDefined(fieldInfo, typeof(PropertyAttribute)))
+            //if (fieldInfo != null)
             //{
             //    var attribs = fieldInfo.GetCustomAttributes(typeof(PropertyAttribute), false) as PropertyAttribute[];
-            //    if (attribs.Any((a) => a is SPPropertyAttribute))
-            //    {
-            //        result = new MultiPropertyAttributePropertyHandler(fieldInfo, attribs);
-            //        _handlerCache.SetHandler(property, result);
-            //        return result;
-            //    }
+            //    var isListType = property.isArray && !(property.propertyType == SerializedPropertyType.String);
+            //    result = new MultiPropertyAttributePropertyHandler(property, fieldInfo, isListType, attribs);
+            //    _handlerCache.SetHandler(property, result);
+            //    return result;
             //}
+            if (fieldInfo != null && System.Attribute.IsDefined(fieldInfo, typeof(SPPropertyAttribute)))
+            {
+                var attribs = fieldInfo.GetCustomAttributes(typeof(PropertyAttribute), false) as PropertyAttribute[];
+                if (attribs.Any((a) => a is SPPropertyAttribute))
+                {
+                    var isListType = property.isArray && !(property.propertyType == SerializedPropertyType.String);
+                    result = new MultiPropertyAttributePropertyHandler(property, fieldInfo, isListType, attribs);
+                    _handlerCache.SetHandler(property, result);
+                    return result;
+                }
+            }
 
             //USE STANDARD HANDLER if none was found
-            var handler = ScriptAttributeUtility.SharedNullPropertyHandler; //StandardPropertyHandler.Instance;
+            var handler = GetInternalHandler(property);
             _handlerCache.SetHandler(property, handler);
             return handler;
+        }
+
+        public static IPropertyHandler GetInternalHandler(SerializedProperty property)
+        {
+            if (property == null) throw new System.ArgumentNullException(nameof(property));
+
+            IPropertyHandler result = _internalHandlerCache.GetHandler(property);
+            if (result != null)
+            {
+                return result;
+            }
+
+            if (_imp_getHandler == null) _imp_getHandler = _accessWrapper.GetStaticMethod("GetHandler", typeof(System.Func<SerializedProperty, object>)) as System.Func<SerializedProperty, object>;
+            var ihandler = _imp_getHandler(property);
+            var handler = ihandler != null ? new UnityInternalPropertyHandler(ihandler) : ScriptAttributeUtility.SharedNullPropertyHandler;
+            _internalHandlerCache.SetHandler(property, handler);
+            return handler;
+
         }
 
         //#######################

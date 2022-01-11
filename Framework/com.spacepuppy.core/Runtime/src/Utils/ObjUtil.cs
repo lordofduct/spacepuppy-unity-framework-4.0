@@ -718,6 +718,15 @@ namespace com.spacepuppy.Utils
             {
                 foreach (var tp in types)
                 {
+                    if (tp?.IsInstanceOfType(obj) ?? false)
+                    {
+                        result = obj;
+                        return true;
+                    }
+                }
+
+                foreach (var tp in types)
+                {
                     if (GetAsFromSource(tp, obj, out result, respectProxy)) return true;
                 }
             }

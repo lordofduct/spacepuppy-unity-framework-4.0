@@ -46,7 +46,7 @@ namespace com.spacepuppy.Events
             if (!this.CanTrigger) return false;
             
             object targ;
-            if (_restrictedType != null && _restrictedType.Type != null)
+            if (_restrictedType.Type != null)
                 targ = _target.GetTarget(_restrictedType.Type, arg);
             else
                 targ = _target.GetTarget<object>(arg);

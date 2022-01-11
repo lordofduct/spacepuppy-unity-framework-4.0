@@ -166,8 +166,7 @@ namespace com.spacepuppyeditor.Core
 
             if(Application.isPlaying)
             {
-                var tpref = EditorHelper.GetTargetObjectOfProperty(property) as TypeReference;
-                if(tpref != null)
+                if (EditorHelper.GetTargetObjectOfProperty(property) is TypeReference tpref)
                 {
                     tpref.Type = tp;
                 }

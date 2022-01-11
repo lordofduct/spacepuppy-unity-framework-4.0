@@ -204,7 +204,7 @@ namespace com.spacepuppy
         private TriggerableTargetObject _target = new TriggerableTargetObject(TriggerableTargetObject.FindCommand.FindInScene, TriggerableTargetObject.ResolveByCommand.Nothing, string.Empty);
         [SerializeField]
         [TypeReference.Config(typeof(Component), allowAbstractClasses = true, allowInterfaces = true)]
-        private TypeReference _componentTypeOnTarget = new TypeReference();
+        private TypeReference _componentTypeOnTarget;
 
         [Space()]
         [SerializeField]
@@ -243,13 +243,11 @@ namespace com.spacepuppy
             {
                 if (_object != null) return _object;
 
-                if (_componentTypeOnTarget == null) return null;
                 _object = _target.GetTarget(_componentTypeOnTarget.Type ?? typeof(UnityEngine.Object), arg) as UnityEngine.Object;
                 return _object;
             }
             else
             {
-                if (_componentTypeOnTarget == null) return null;
                 return _target.GetTarget(_componentTypeOnTarget.Type ?? typeof(UnityEngine.Object), arg) as UnityEngine.Object;
             }
         }

@@ -23,7 +23,7 @@ namespace com.spacepuppy
     /// was loaded with out the required namespace loaded.
     /// </summary>
     [System.Serializable()]
-    public class TypeReference : System.Runtime.Serialization.ISerializable
+    public struct TypeReference : System.Runtime.Serialization.ISerializable
     {
 
         #region Fields
@@ -38,13 +38,10 @@ namespace com.spacepuppy
 
         #region CONSTRUCTOR
 
-        public TypeReference()
-        {
-        }
-
         public TypeReference(System.Type tp)
         {
-            this.Type = tp;
+            _type = tp;
+            _typeHash = HashType(_type);
         }
 
         #endregion
@@ -78,9 +75,10 @@ namespace com.spacepuppy
 
         #region ISerializable Interface
 
-        protected TypeReference(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+        private TypeReference(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
         {
             _typeHash = info.GetString("hash");
+            _type = null;
         }
 
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
@@ -95,8 +93,7 @@ namespace com.spacepuppy
 
         public static implicit operator System.Type(TypeReference a)
         {
-            if (a != null) return a.Type;
-            else return null;
+            return a.Type;
         }
 
         #endregion

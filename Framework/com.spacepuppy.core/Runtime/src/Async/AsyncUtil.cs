@@ -341,12 +341,28 @@ namespace com.spacepuppy.Async
 
         public static AsyncWaitHandle AsAsyncWaitHandle(this UniTask task)
         {
-            return UniTaskAsycWaitHandleProvider.Create(task).AsAsyncWaitHandle();
+            var awaiter = task.GetAwaiter();
+            if (awaiter.IsCompleted)
+            {
+                return new AsyncWaitHandle();
+            }
+            else
+            {
+                return UniTaskAsycWaitHandleProvider.Create(task).AsAsyncWaitHandle();
+            }
         }
 
         public static AsyncWaitHandle<T> AsAsyncWaitHandle<T>(this UniTask<T> task)
         {
-            return UniTaskAsycWaitHandleProvider<T>.Create(task).AsAsyncWaitHandle();
+            var awaiter = task.GetAwaiter();
+            if (awaiter.IsCompleted)
+            {
+                return new AsyncWaitHandle<T>(awaiter.GetResult());
+            }
+            else
+            {
+                return UniTaskAsycWaitHandleProvider<T>.Create(task).AsAsyncWaitHandle();
+            }
         }
 
         internal interface IUniTaskAsyncWaitHandleProvider : IAsyncWaitHandleProvider

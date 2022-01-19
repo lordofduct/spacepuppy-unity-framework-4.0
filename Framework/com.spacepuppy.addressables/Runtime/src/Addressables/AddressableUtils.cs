@@ -6,6 +6,7 @@ using UnityEngine.ResourceManagement.AsyncOperations;
 using com.spacepuppy.Utils;
 using com.spacepuppy.Async;
 using System.Threading.Tasks;
+using com.spacepuppy.Events;
 
 namespace com.spacepuppy.Addressables
 {
@@ -28,30 +29,117 @@ namespace com.spacepuppy.Addressables
         /// </summary>
         /// <param name="asset"></param>
         /// <returns></returns>
-        public static bool HasTargetGuid(this AssetReference asset)
+        public static bool IsConfigured(this AssetReference asset)
         {
             return !string.IsNullOrEmpty(asset?.AssetGUID);
         }
 
+        private static void RegisterSPManaged(object asset)
+        {
+            var go = GameObjectUtil.GetGameObjectFromSource(asset);
+            if (go != null)
+            {
+                go.AddOrGetComponent<AddressableKillHandle>();
+            }
+
+        }
+
         public static AsyncOperationHandle<TObject> LoadAssetSPManagedAsync<TObject>(this AssetReference reference)
         {
+            if (reference == null) throw new System.ArgumentNullException(nameof(reference));
+
             var handle = reference.LoadAssetAsync<TObject>();
             handle.Completed += (h) =>
             {
-                if(h.Status == AsyncOperationStatus.Succeeded)
+                if (h.Status == AsyncOperationStatus.Succeeded)
                 {
-                    var go = GameObjectUtil.GetGameObjectFromSource(h.Result);
-                    if (go != null)
-                    {
-                        go.AddOrGetComponent<AddressableKillHandle>();
-                    }
+                    RegisterSPManaged(h.Result);
                 }
             };
             return handle;
         }
 
+        public static AsyncWaitHandle<TObject> LoadOrGetAssetAsync<TObject>(this AssetReference reference) where TObject : class
+        {
+            if (reference == null) throw new System.ArgumentNullException(nameof(reference));
+
+            if (reference.Asset || (reference.OperationHandle.IsValid() && reference.OperationHandle.IsDone))
+            {
+                return new AsyncWaitHandle<TObject>(ObjUtil.GetAsFromSource<TObject>(reference.Asset));
+            }
+            else if (reference.OperationHandle.IsValid())
+            {
+                return reference.OperationHandle.Convert<TObject>().AsAsyncWaitHandle();
+            }
+            else
+            {
+                return reference.LoadAssetAsync<TObject>().AsAsyncWaitHandle();
+            }
+        }
+
+        public static AsyncWaitHandle<TObject> LoadOrGetAssetAsync<TObject>(this AssetReferenceT<TObject> reference) where TObject : UnityEngine.Object
+        {
+            return LoadOrGetAssetAsync<TObject>((AssetReference)reference);
+        }
+
+        public static AsyncWaitHandle<TObject> LoadOrGetAssetAsync<TObject>(this AssetReferenceIT<TObject> reference) where TObject : class
+        {
+            return LoadOrGetAssetAsync<TObject>((AssetReference)reference);
+        }
+
+        public static AsyncWaitHandle<TObject> LoadOrGetAssetSPManagedAsync<TObject>(this AssetReference reference) where TObject : class
+        {
+            if (reference == null) throw new System.ArgumentNullException(nameof(reference));
+
+            if (reference.Asset || (reference.OperationHandle.IsValid() && reference.OperationHandle.IsDone))
+            {
+                var obj = ObjUtil.GetAsFromSource<TObject>(reference.Asset);
+                if (obj != null)
+                {
+                    RegisterSPManaged(obj);
+                }
+                return new AsyncWaitHandle<TObject>(obj);
+            }
+            else if (reference.OperationHandle.IsValid())
+            {
+                var handle = reference.OperationHandle.Convert<TObject>();
+                handle.Completed += (h) =>
+                {
+                    if (h.Status == AsyncOperationStatus.Succeeded)
+                    {
+                        RegisterSPManaged(h.Result);
+                    }
+                };
+                return handle.AsAsyncWaitHandle();
+            }
+            else
+            {
+                var handle = reference.LoadAssetAsync<TObject>();
+                handle.Completed += (h) =>
+                {
+                    if (h.Status == AsyncOperationStatus.Succeeded)
+                    {
+                        RegisterSPManaged(h.Result);
+                    }
+                };
+                return handle.AsAsyncWaitHandle();
+            }
+        }
+
+        public static AsyncWaitHandle<TObject> LoadOrGetAssetSPManagedAsync<TObject>(this AssetReferenceT<TObject> reference) where TObject : UnityEngine.Object
+        {
+            return LoadOrGetAssetSPManagedAsync<TObject>((AssetReference)reference);
+        }
+
+        public static AsyncWaitHandle<TObject> LoadOrGetAssetSPManagedAsync<TObject>(this AssetReferenceIT<TObject> reference) where TObject : class
+        {
+            return LoadOrGetAssetSPManagedAsync<TObject>((AssetReference)reference);
+        }
+
         public static AsyncOperationHandle<GameObject> InstantiateSPManagedAsync(this AssetReference reference, Vector3 position, Quaternion rotation, Transform parent = null)
         {
+            if (reference == null) throw new System.ArgumentNullException(nameof(reference));
+
             var handle = reference.InstantiateAsync(position, rotation, parent);
             handle.Completed += (h) =>
             {
@@ -65,6 +153,8 @@ namespace com.spacepuppy.Addressables
 
         public static AsyncOperationHandle<GameObject> InstantiateSPManagedAsync<TObject>(this AssetReference reference, Transform parent = null, bool instantiateInWorldSpace = false)
         {
+            if (reference == null) throw new System.ArgumentNullException(nameof(reference));
+
             var handle = reference.InstantiateAsync(parent, instantiateInWorldSpace);
             handle.Completed += (h) =>
             {
@@ -97,9 +187,9 @@ namespace com.spacepuppy.Addressables
 
             public System.Threading.Tasks.Task GetTask(AsyncWaitHandle handle)
             {
-                if(handle.Token is AsyncOperationHandle h)
+                if (handle.Token is AsyncOperationHandle h)
                 {
-                    if(GameLoop.InvokeRequired)
+                    if (GameLoop.InvokeRequired)
                     {
                         Task result = null;
                         GameLoop.UpdateHandle.Invoke(() => result = h.IsDone ? System.Threading.Tasks.Task.CompletedTask : h.Task);
@@ -144,7 +234,7 @@ namespace com.spacepuppy.Addressables
             {
                 if (handle.Token is AsyncOperationHandle h)
                 {
-                    if(GameLoop.InvokeRequired)
+                    if (GameLoop.InvokeRequired)
                     {
                         GameLoop.UpdateHandle.BeginInvoke(() =>
                         {
@@ -163,7 +253,7 @@ namespace com.spacepuppy.Addressables
                     }
                     else
                     {
-                        if(h.IsDone)
+                        if (h.IsDone)
                         {
                             callback(h.AsAsyncWaitHandle());
                         }
@@ -282,11 +372,11 @@ namespace com.spacepuppy.Addressables
             {
                 if (handle.Token is AsyncOperationHandle<TObject> h)
                 {
-                    if(GameLoop.InvokeRequired)
+                    if (GameLoop.InvokeRequired)
                     {
                         GameLoop.UpdateHandle.BeginInvoke(() =>
                         {
-                            if(h.IsDone)
+                            if (h.IsDone)
                             {
                                 callback(h.AsAsyncWaitHandle());
                             }
@@ -343,7 +433,7 @@ namespace com.spacepuppy.Addressables
                     }
                     else
                     {
-                        if(h.IsDone)
+                        if (h.IsDone)
                         {
                             callback(h.AsAsyncWaitHandle());
                         }

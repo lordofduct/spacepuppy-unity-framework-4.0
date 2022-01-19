@@ -20,12 +20,15 @@ namespace com.spacepuppyeditor.Tween
         private static readonly GUIContent[] _displayNames;
         static EaseStylePropertyDrawer()
         {
+            //sort so that the new 'OutIn' ease methods get grouped with their related entries
+            //basically all OutIn's have the 8th bit flagged, so if that bit is true we multiply 
+            //its lower bits by 3 and add 0.5 so that it ends up at 0.5 > the InOut of the same 
+            //ease type and 0.5 < the next ease type
             _values = System.Enum.GetValues(typeof(EaseStyle)).Cast<EaseStyle>().OrderBy(o =>
             {
                 int i = (int)o;
                 return (i & 0x80) != 0 ? (float)((i & 0x7f) + 1) * 3f + 0.5f : (float)i;
             }).ToArray();
-            //_values = System.Enum.GetValues(typeof(EaseStyle)).Cast<EaseStyle>().OrderBy(o => (int)o & 0x80).ThenBy(o => (int)o & 0x7f).ToArray();
             _displayNames = _values.Select(o => new GUIContent(EnumUtil.GetFriendlyName(o))).ToArray();
         }
         
@@ -44,7 +47,6 @@ namespace com.spacepuppyeditor.Tween
             {
                 property.SetEnumValue(index >= 0 && index < _values.Length ? _values[index] : EaseStyle.Linear);
             }
-            Debug.Log("DRAW");
         }
 
     }

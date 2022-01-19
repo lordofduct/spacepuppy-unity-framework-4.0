@@ -1,9 +1,10 @@
 ﻿using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnitySceneManager = UnityEngine.SceneManagement.SceneManager;
 using System.Collections.Generic;
+using System.Linq;
 using com.spacepuppy.Dynamic;
 using com.spacepuppy.Async;
-using log4net.Util;
 
 #if SP_UNITASK
 using Cysharp.Threading.Tasks;
@@ -36,10 +37,24 @@ namespace com.spacepuppy.Scenes
 
         private static readonly System.Action<ISceneLoadedGlobalHandler, LoadSceneOptions> OnSceneLoadedFunctor = (o, d) => o.OnSceneLoaded(d);
 
-        public event System.EventHandler<LoadSceneOptions> BeforeLoad;
+        public event System.EventHandler<LoadSceneOptions> BeforeLoadBegins;
+        public event System.EventHandler<LoadSceneOptions> BeforeSceneLoadCalled;
         public event System.EventHandler<LoadSceneOptions> Complete;
 
+        #region Fields
+
+        private UnityLoadResult _primaryResult;
+        private List<UnityLoadResult> _additiveResults;
+
+        #endregion
+
         #region Properties
+
+        public ISceneManager SceneManager
+        {
+            get;
+            private set;
+        }
 
         public LoadSceneOptionsStatus Status
         {
@@ -58,6 +73,48 @@ namespace com.spacepuppy.Scenes
             set;
         }
 
+        /// <summary>
+        /// The primary scene being loaded by these options. If the options load more than 1 scene, this should be the dominant scene.
+        /// </summary>
+        public virtual Scene Scene => _primaryResult.Scene;
+
+        /// <summary>
+        /// How the primary scene returned by the 'Scene' property was loaded.
+        /// </summary>
+        public virtual LoadSceneMode Mode => _primaryResult.Mode;
+
+        public virtual float Progress
+        {
+            get
+            {
+                switch(this.Status)
+                {
+                    case LoadSceneOptionsStatus.Unused:
+                        return 0f;
+                    case LoadSceneOptionsStatus.Complete:
+                        return 1f;
+                    default:
+                        {
+                            float p = _primaryResult.Progress;
+                            int cnt = 1;
+                            if (_additiveResults != null)
+                            {
+                                for (int i = 0; i < _additiveResults.Count; i++)
+                                {
+                                    if (_additiveResults[i].Scene.handle == _primaryResult.Scene.handle) continue;
+
+                                    p += _additiveResults[i].Progress;
+                                    cnt++;
+                                }
+                            }
+                            return p / cnt;
+                        }
+                }
+            }
+        }
+
+        protected UnityLoadResult PrimaryLoadResult => _primaryResult;
+
         #endregion
 
         #region Methods
@@ -68,105 +125,89 @@ namespace com.spacepuppy.Scenes
         /// <param name="manager"></param>
         public void Begin(ISceneManager manager)
         {
-            if(GameLoop.InvokeRequired)
+            if (this.Status != LoadSceneOptionsStatus.Unused)
+            {
+                throw new System.InvalidOperationException("LoadSceneOptions should be ran only once. Clone if you need a copy.");
+            }
+
+            if (GameLoop.InvokeRequired)
             {
                 GameLoop.UpdateHandle.Invoke(() => this.Begin(manager));
             }
             else
             {
-                if (this.Status != LoadSceneOptionsStatus.Unused)
-                {
-                    throw new System.InvalidOperationException("LoadSceneOptions should be ran only once. Clone if you need a copy.");
-                }
-
+                this.SceneManager = manager;
                 this.Status = LoadSceneOptionsStatus.Running;
+                this.OnBeforeLoadBegins();
                 this.DoBegin(manager);
             }
         }
 
-        protected UnityLoadResults LoadScene(string sceneName, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async)
+        protected UnityLoadResult LoadScene(string sceneName, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async)
         {
             switch (behaviour)
             {
                 case LoadSceneBehaviour.Standard:
                     {
-                        SceneManager.LoadScene(sceneName, mode);
-                        var scene = SceneManager.GetSceneAt(SceneManager.sceneCount - 1);
-                        return new UnityLoadResults()
-                        {
-                            Op = null,
-                            Scene = scene,
-                        };
+                        this.BeforeSceneLoadCalled?.Invoke(this, this);
+                        UnitySceneManager.LoadScene(sceneName, mode);
+                        var scene = UnitySceneManager.GetSceneAt(UnitySceneManager.sceneCount - 1);
+                        return this.RegisterHandlesScene(null, scene, mode);
                     }
                 case LoadSceneBehaviour.Async:
                     {
-                        var op = SceneManager.LoadSceneAsync(sceneName, mode);
-                        var scene = SceneManager.GetSceneAt(SceneManager.sceneCount - 1);
-                        return new UnityLoadResults()
-                        {
-                            Op = op,
-                            Scene = scene,
-                        };
+                        this.BeforeSceneLoadCalled?.Invoke(this, this);
+                        var op = UnitySceneManager.LoadSceneAsync(sceneName, mode);
+                        var scene = UnitySceneManager.GetSceneAt(UnitySceneManager.sceneCount - 1);
+                        return this.RegisterHandlesScene(op, scene, mode);
                     }
                 case LoadSceneBehaviour.AsyncAndWait:
                     {
-                        var op = SceneManager.LoadSceneAsync(sceneName, mode);
+                        this.BeforeSceneLoadCalled?.Invoke(this, this);
+                        var op = UnitySceneManager.LoadSceneAsync(sceneName, mode);
                         op.allowSceneActivation = false;
-                        var scene = SceneManager.GetSceneAt(SceneManager.sceneCount - 1);
-                        return new UnityLoadResults()
-                        {
-                            Op = op,
-                            Scene = scene,
-                        };
+                        var scene = UnitySceneManager.GetSceneAt(UnitySceneManager.sceneCount - 1);
+                        return this.RegisterHandlesScene(op, scene, mode);
                     }
                 default:
                     throw new System.InvalidOperationException("Unsupported LoadSceneBehaviour.");
             }
         }
 
-        protected UnityLoadResults LoadScene(int index, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async)
+        protected UnityLoadResult LoadScene(int index, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async)
         {
             switch (behaviour)
             {
                 case LoadSceneBehaviour.Standard:
                     {
-                        SceneManager.LoadScene(index, mode);
-                        var scene = SceneManager.GetSceneAt(SceneManager.sceneCount - 1);
-                        return new UnityLoadResults()
-                        {
-                            Op = null,
-                            Scene = scene,
-                        };
+                        this.BeforeSceneLoadCalled?.Invoke(this, this);
+                        UnitySceneManager.LoadScene(index, mode);
+                        var scene = UnitySceneManager.GetSceneAt(UnitySceneManager.sceneCount - 1);
+                        return this.RegisterHandlesScene(null, scene, mode);
                     }
                 case LoadSceneBehaviour.Async:
                     {
-                        var op = SceneManager.LoadSceneAsync(index, mode);
-                        var scene = SceneManager.GetSceneAt(SceneManager.sceneCount - 1);
-                        return new UnityLoadResults()
-                        {
-                            Op = op,
-                            Scene = scene,
-                        };
+                        this.BeforeSceneLoadCalled?.Invoke(this, this);
+                        var op = UnitySceneManager.LoadSceneAsync(index, mode);
+                        var scene = UnitySceneManager.GetSceneAt(UnitySceneManager.sceneCount - 1);
+                        return this.RegisterHandlesScene(op, scene, mode);
                     }
                 case LoadSceneBehaviour.AsyncAndWait:
                     {
-                        var op = SceneManager.LoadSceneAsync(index, mode);
+                        this.BeforeSceneLoadCalled?.Invoke(this, this);
+                        var op = UnitySceneManager.LoadSceneAsync(index, mode);
                         op.allowSceneActivation = false;
-                        var scene = SceneManager.GetSceneAt(SceneManager.sceneCount - 1);
-                        return new UnityLoadResults()
-                        {
-                            Op = op,
-                            Scene = scene,
-                        };
+                        var scene = UnitySceneManager.GetSceneAt(UnitySceneManager.sceneCount - 1);
+                        return this.RegisterHandlesScene(op, scene, mode);
                     }
                 default:
                     throw new System.InvalidOperationException("Unsupported LoadSceneBehaviour.");
             }
         }
 
-        protected virtual void OnBeforeLoad()
+        protected virtual void OnBeforeLoadBegins()
         {
-            this.BeforeLoad?.Invoke(this, this);
+            this.BeforeLoadBegins?.Invoke(this, this);
         }
 
         protected void SignalComplete()
@@ -179,7 +220,7 @@ namespace com.spacepuppy.Scenes
             {
                 d?.Invoke(this, this);
             }
-            catch(System.Exception ex)
+            catch (System.Exception ex)
             {
                 Debug.LogException(ex);
             }
@@ -217,28 +258,87 @@ namespace com.spacepuppy.Scenes
             }
         }
 
+        private UnityLoadResult RegisterHandlesScene(AsyncOperation op, Scene scene, LoadSceneMode mode)
+        {
+            var result = new UnityLoadResult()
+            {
+                Op = op,
+                Scene = scene,
+                Mode = mode
+            };
+            switch (mode)
+            {
+                case LoadSceneMode.Single:
+                    _primaryResult = result;
+                    _additiveResults?.Clear();
+                    break;
+                case LoadSceneMode.Additive:
+                default:
+                    if (_additiveResults == null || _additiveResults.Count == 0)
+                    {
+                        _primaryResult = result;
+                    }
+                    if (_additiveResults == null) _additiveResults = new List<UnityLoadResult>();
+                    _additiveResults.Add(result);
+                    break;
+            }
+            return result;
+        }
+
+
+        public virtual bool HandlesScene(Scene scene)
+        {
+            if (!scene.IsValid()) return false;
+
+            if (_primaryResult.Scene == scene)
+            {
+                return true;
+            }
+            else if (_additiveResults != null)
+            {
+                for (int i = 0; i < _additiveResults.Count; i++)
+                {
+                    if (_additiveResults[i].Scene.handle == scene.handle) return true;
+                }
+            }
+            return false;
+        }
+
+        public virtual IEnumerable<Scene> GetHandledScenes()
+        {
+            if (_primaryResult.Scene.IsValid()) yield return _primaryResult.Scene;
+
+            if (_additiveResults != null)
+            {
+                for (int i = 0; i < _additiveResults.Count; i++)
+                {
+                    if (_additiveResults[i].Scene.handle == _primaryResult.Scene.handle) continue;
+
+                    yield return _additiveResults[i].Scene;
+                }
+            }
+        }
+
+        protected virtual IEnumerable<UnityLoadResult> GetHandledLoadResults()
+        {
+            if (_primaryResult.Scene.IsValid()) yield return _primaryResult;
+
+            if (_additiveResults != null)
+            {
+                for (int i = 0; i < _additiveResults.Count; i++)
+                {
+                    if (_additiveResults[i].Scene.handle == _primaryResult.Scene.handle) continue;
+
+                    yield return _additiveResults[i];
+                }
+            }
+        }
+
         #endregion
 
         #region Abstract Interface
 
-        /// <summary>
-        /// The primary scene being loaded by these options. If the options load more than 1 scene, this should be the dominant scene.
-        /// </summary>
-        public abstract Scene Scene { get; }
-
-        /// <summary>
-        /// How the primary scene returned by the 'Scene' property was loaded.
-        /// </summary>
-        public abstract LoadSceneMode Mode { get; }
-
-        public abstract float Progress
-        {
-            get;
-        }
-
         protected abstract void DoBegin(ISceneManager manager);
-
-        public abstract bool HandlesScene(Scene scene);
 
         #endregion
 
@@ -252,8 +352,12 @@ namespace com.spacepuppy.Scenes
         public virtual LoadSceneOptions Clone()
         {
             var result = this.MemberwiseClone() as LoadSceneOptions;
+            result._primaryResult = default;
+            result._additiveResults = null;
+            result.SceneManager = null;
             result.Status = LoadSceneOptionsStatus.Unused;
-            result.BeforeLoad = null;
+            result.BeforeLoadBegins = null;
+            result.BeforeSceneLoadCalled = null;
             result.Complete = null;
             return result;
         }
@@ -339,10 +443,11 @@ namespace com.spacepuppy.Scenes
 
         #region Special Types
 
-        protected struct UnityLoadResults
+        protected struct UnityLoadResult
         {
             public AsyncOperation Op;
             public Scene Scene;
+            public LoadSceneMode Mode;
 
             public float Progress => Op?.progress ?? 0f;
 
@@ -353,7 +458,7 @@ namespace com.spacepuppy.Scenes
                 await Op.AsAsyncWaitHandle().AsTask();
                 return this.Scene;
             }
-            
+
 #if SP_UNITASK
             public async UniTask<Scene> GetUniTask()
             {
@@ -367,13 +472,13 @@ namespace com.spacepuppy.Scenes
                 return Op;
             }
 
-            public void OnComplete(System.Action<UnityLoadResults> callback)
+            public void OnComplete(System.Action<UnityLoadResult> callback)
             {
                 var r = this;
                 Op.AsAsyncWaitHandle().OnComplete((h) => callback(r));
             }
 
-            public static readonly UnityLoadResults Empty = new UnityLoadResults();
+            public static readonly UnityLoadResult Empty = new UnityLoadResult();
         }
 
         #endregion
@@ -393,7 +498,7 @@ namespace com.spacepuppy.Scenes
 
         public override Scene Scene { get { return _scene; } }
 
-        public override LoadSceneMode Mode {  get { return _mode; } }
+        public override LoadSceneMode Mode { get { return _mode; } }
 
         public override float Progress { get { return 1f; } }
 

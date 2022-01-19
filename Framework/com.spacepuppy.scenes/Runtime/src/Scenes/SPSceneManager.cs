@@ -24,6 +24,7 @@ namespace com.spacepuppy.Scenes
 
         private HashSet<LoadSceneOptions> _activeLoadOptions = new HashSet<LoadSceneOptions>();
         private System.EventHandler<LoadSceneOptions> _sceneLoadOptionsCompleteCallback;
+        private System.EventHandler<LoadSceneOptions> _sceneLoadOptionsBeforeLoadSceneCalledCallback;
 
         #endregion
 
@@ -54,8 +55,8 @@ namespace com.spacepuppy.Scenes
         public event System.EventHandler<SceneUnloadedEventArgs> SceneUnloaded;
         public event System.EventHandler<LoadSceneOptions> SceneLoaded;
         public event System.EventHandler<ActiveSceneChangedEventArgs> ActiveSceneChanged;
-
-        public MonoBehaviour Hook { get { return GameLoop.Hook; } }
+        public event System.EventHandler<LoadSceneOptions> BeganLoad;
+        public event System.EventHandler<LoadSceneOptions> CompletedLoad;
 
         public void LoadScene(LoadSceneOptions options)
         {
@@ -69,14 +70,21 @@ namespace com.spacepuppy.Scenes
             {
                 if (_activeLoadOptions.Add(options))
                 {
+                    if (_sceneLoadOptionsBeforeLoadSceneCalledCallback == null) _sceneLoadOptionsBeforeLoadSceneCalledCallback = (s, e) =>
+                    {
+                        this.OnBeforeSceneLoaded(e);
+                    };
                     if (_sceneLoadOptionsCompleteCallback == null) _sceneLoadOptionsCompleteCallback = (s, e) =>
                     {
                         _activeLoadOptions.Remove(e);
-                        this.SignalSceneLoaded(e);
+                        options.BeforeSceneLoadCalled -= _sceneLoadOptionsBeforeLoadSceneCalledCallback;
+                        options.Complete -= _sceneLoadOptionsCompleteCallback;
+                        this.OnCompletedLoad(e);
                     };
 
-                    this.OnBeforeSceneLoaded(options);
+                    options.BeforeSceneLoadCalled += _sceneLoadOptionsBeforeLoadSceneCalledCallback;
                     options.Complete += _sceneLoadOptionsCompleteCallback;
+                    this.OnBeganLoad(options);
                     options.Begin(this);
                 }
             }
@@ -126,6 +134,11 @@ namespace com.spacepuppy.Scenes
 
         #region EventHandlers
 
+        protected virtual void OnBeganLoad(LoadSceneOptions handle)
+        {
+            this.BeganLoad?.Invoke(this, handle);
+        }
+
         protected virtual void OnBeforeSceneLoaded(LoadSceneOptions handle)
         {
             this.BeforeSceneLoaded?.Invoke(this, handle);
@@ -169,10 +182,10 @@ namespace com.spacepuppy.Scenes
 
         protected virtual void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            var d = this.SceneLoaded;
-            if (d == null) return;
+            var d1 = this.SceneLoaded;
+            var d2 = this.CompletedLoad;
+            if (d1 == null && d2 == null) return;
 
-            //find the associated load options, if one exists we let it signal the loaded event
             LoadSceneOptions handle = null;
             if (_activeLoadOptions.Count > 0)
             {
@@ -187,15 +200,22 @@ namespace com.spacepuppy.Scenes
                 }
             }
 
-            if (handle == null) return;
+            if (handle == null)
+            {
+                //signal loading unmanaged scene load
+                handle = new UnmanagedSceneLoadedEventArgs(scene, mode);
+                d1?.Invoke(this, handle);
+                d2?.Invoke(this, handle);
+            }
+            else
+            {
+                d1?.Invoke(this, handle);
+            }
 
-            //signal loading unmanaged scene load
-            handle = new UnmanagedSceneLoadedEventArgs(scene, mode);
-            d(this, handle);
         }
-        protected virtual void SignalSceneLoaded(LoadSceneOptions options)
+        protected virtual void OnCompletedLoad(LoadSceneOptions options)
         {
-            this.SceneLoaded?.Invoke(this, options);
+            this.CompletedLoad?.Invoke(this, options);
         }
 
         protected virtual void OnActiveSceneChanged(Scene lastScene, Scene nextScene)
@@ -206,7 +226,9 @@ namespace com.spacepuppy.Scenes
             var e = _activeChangeArgs;
             _activeChangeArgs = null;
             if (e == null)
+            {
                 e = new ActiveSceneChangedEventArgs(lastScene, nextScene);
+            }
             else
             {
                 e.LastScene = lastScene;

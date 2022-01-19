@@ -2,6 +2,7 @@
 
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnitySceneManager = UnityEngine.SceneManagement.SceneManager;
 using com.spacepuppy.Async;
 using com.spacepuppy.Events;
 
@@ -92,9 +93,6 @@ namespace com.spacepuppy.Scenes.Events
             [Tooltip("A token used to persist data across scenes.")]
             VariantReference _persistentToken = new VariantReference();
 
-            [System.NonSerialized]
-            private UnityLoadResults _loadResults;
-
             #endregion
 
             #region Properties
@@ -123,14 +121,7 @@ namespace com.spacepuppy.Scenes.Events
 
             #region LoadSceneOptions Interface
 
-            public override Scene Scene
-            {
-                get => _loadResults.Scene;
-            }
-
             public override LoadSceneMode Mode => _mode;
-
-            public override float Progress => _loadResults.Progress;
 
 #if SP_UNITASK
             protected override void DoBegin(ISceneManager manager)
@@ -149,26 +140,27 @@ namespace com.spacepuppy.Scenes.Events
                     var persistentToken = com.spacepuppy.Utils.ObjUtil.ReduceIfProxy(_persistentToken.Value);
 
                     var nm = _scene.SceneName ?? string.Empty;
+                    UnityLoadResult handle;
                     if (nm.StartsWith("#"))
                     {
                         nm = nm.Substring(1);
                         int index;
                         if (!int.TryParse(nm, out index))
                             return;
-                        if (index < 0 || index >= SceneManager.sceneCountInBuildSettings)
+                        if (index < 0 || index >= UnitySceneManager.sceneCountInBuildSettings)
                             return;
 
-                        _loadResults = this.LoadScene(index, _mode, _behaviour.RestrictAsyncAndAwait());
+                        handle = this.LoadScene(index, _mode, _behaviour.RestrictAsyncAndAwait());
                     }
                     else
                     {
-                        _loadResults = this.LoadScene(nm, _mode, _behaviour.RestrictAsyncAndAwait());
+                        handle = this.LoadScene(nm, _mode, _behaviour.RestrictAsyncAndAwait());
                     }
 
 #if SP_UNITASK
-                    await _loadResults.Op;
+                    await handle.Op;
 #else
-                    await _loadResults.GetTask();
+                    await handle.GetTask();
 #endif
                     this.SignalComplete();
                 }
@@ -179,11 +171,6 @@ namespace com.spacepuppy.Scenes.Events
                 }
             }
 
-            public override bool HandlesScene(Scene scene)
-            {
-                return this.Scene == scene;
-            }
-
 #endregion
 
 #region ICloneable Interface
@@ -191,7 +178,7 @@ namespace com.spacepuppy.Scenes.Events
             public override LoadSceneOptions Clone()
             {
                 var result = base.Clone() as SimpleLoadSceneOptions;
-                result._loadResults = UnityLoadResults.Empty;
+                result._persistentToken = _persistentToken.Clone();
                 return result;
             }
 

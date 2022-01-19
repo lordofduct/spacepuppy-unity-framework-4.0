@@ -18,7 +18,7 @@ namespace com.spacepuppy
     /// TODO - add support for serializing Ref types if they are a type that can be supported by UnityEngine.SerializeRefAttribute
     /// </summary>
     [System.Serializable()]
-    public sealed class VariantReference : System.Runtime.Serialization.ISerializable, ISPDisposable
+    public sealed class VariantReference : System.Runtime.Serialization.ISerializable, ISPDisposable, System.ICloneable
     {
 
         public enum RefMode : byte
@@ -71,6 +71,26 @@ namespace com.spacepuppy
         public VariantReference(RefMode mode)
         {
             _mode = mode;
+        }
+
+        public VariantReference(VariantReference copy)
+        {
+            if(copy != null)
+            {
+                _mode = copy._mode;
+                _type = copy._type;
+                _x = copy._x;
+                _y = copy._y;
+                _z = copy._z;
+                _w = copy._w;
+                _string = copy._string;
+                _unityObjectReference = copy._unityObjectReference;
+                _objref = copy._objref;
+            }
+            else
+            {
+                this.Value = null;
+            }
         }
 
         #endregion
@@ -1760,6 +1780,24 @@ namespace com.spacepuppy
                     break;
             }
         }
+
+        #endregion
+
+        #region ICloneable Interface
+
+        #region ICloneable Interface
+
+        object System.ICloneable.Clone()
+        {
+            return new VariantReference(this);
+        }
+
+        public VariantReference Clone()
+        {
+            return new VariantReference(this);
+        }
+
+        #endregion
 
         #endregion
 

@@ -75,6 +75,9 @@ namespace com.spacepuppy.Dynamic
     /// $time
     /// $unscaledtime
     /// $fixedtime
+    /// $dtime
+    /// $dunscaledtime
+    /// $dfixedtime
     /// $deltatime
     /// 
     /// These are global values, they are not case sensitive
@@ -1001,6 +1004,15 @@ namespace com.spacepuppy.Dynamic
                         return;
                     case "fixedtime":
                         state.DoubleValue = UnityEngine.Time.fixedTime;
+                        return;
+                    case "dtime":
+                        state.DoubleValue = UnityEngine.Time.timeAsDouble;
+                        return;
+                    case "dunscaledtime":
+                        state.DoubleValue = UnityEngine.Time.unscaledTimeAsDouble;
+                        return;
+                    case "dfixedtime":
+                        state.DoubleValue = UnityEngine.Time.fixedTimeAsDouble;
                         return;
                     case "deltatime":
                         state.DoubleValue = UnityEngine.Time.deltaTime;

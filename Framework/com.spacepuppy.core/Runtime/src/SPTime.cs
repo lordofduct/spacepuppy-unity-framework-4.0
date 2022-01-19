@@ -538,7 +538,7 @@ namespace com.spacepuppy
 
             public double TotalPrecise
             {
-                get { return (double)UnityEngine.Time.time; }
+                get { return UnityEngine.Time.timeAsDouble; }
             }
 
             public float Delta
@@ -673,7 +673,7 @@ namespace com.spacepuppy
 
             public double TotalPrecise
             {
-                get { return (double)UnityEngine.Time.unscaledTime; }
+                get { return UnityEngine.Time.unscaledTimeAsDouble; }
             }
 
             public float Delta
@@ -703,7 +703,7 @@ namespace com.spacepuppy
 
             public double TotalPrecise
             {
-                get { return (double)UnityEngine.Time.time; }
+                get { return UnityEngine.Time.timeAsDouble; }
             }
 
             public float Delta

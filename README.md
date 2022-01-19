@@ -21,6 +21,9 @@ VariantReference - ability reference a value of varying type through the inspect
 Dependencies:
 com.unity.editorcoroutines
 
+Package Manager git url:
+https://github.com/lordofduct/spacepuppy-unity-framework-4.0.git?path=Framework/com.spacepuppy.core
+
 ## com.spacepuppy.AI
 
 A basic AI boilerplate for writing AI in Unity. This has mostly been replaced by our mecanim based AI, see com.spacepuppy.Mecanim
@@ -114,6 +117,9 @@ Advanced coroutine support. A lot of the features such as custom yield instructi
 
 Dependencies:
 com.spacepuppy
+
+Package Manager git url:
+https://github.com/lordofduct/spacepuppy-unity-framework-4.0.git?path=Framework/com.spacepuppy.radicalcoroutine
 
 ## com.spacepuppy.Scenes
 

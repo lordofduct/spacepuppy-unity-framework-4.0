@@ -10,8 +10,8 @@ namespace com.spacepuppy
     /// </summary>
     public enum TypeDropDownListingStyle
     {
-        Namespace = 0,
-        Flat = 1,
+        Flat = 0,
+        Namespace = 1,
         ComponentMenu = 2
     }
 
@@ -110,7 +110,8 @@ namespace com.spacepuppy
             public bool allowInterfaces = false;
             public System.Type defaultType = null;
             public System.Type[] excludedTypes = null;
-            public TypeDropDownListingStyle dropDownStyle = TypeDropDownListingStyle.Namespace;
+            public TypeDropDownListingStyle dropDownStyle = TypeDropDownListingStyle.Flat;
+            public int MaxVisibleCount = int.MinValue; //int.MinValue means "default", all other negative/zero means all, positive means limited
 
             public ConfigAttribute(System.Type inheritsFromType)
             {

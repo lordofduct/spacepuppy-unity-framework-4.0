@@ -86,7 +86,7 @@ namespace com.spacepuppy.Dynamic
 
         public static bool SetValue<T>(this object obj, string sMemberName, T value)
         {
-            if(obj is IDynamic d)
+            if (obj is IDynamic d)
             {
                 return d.SetValue(sMemberName, value);
             }
@@ -113,7 +113,7 @@ namespace com.spacepuppy.Dynamic
 
         public static object GetValue(this object obj, string sMemberName, params object[] args)
         {
-            if(obj is IDynamic d)
+            if (obj is IDynamic d)
             {
                 return d.GetValue(sMemberName, args);
             }
@@ -155,7 +155,7 @@ namespace com.spacepuppy.Dynamic
 
         public static bool TryGetValue(this object obj, string sMemberName, out object result, params object[] args)
         {
-            if(obj is IDynamic d)
+            if (obj is IDynamic d)
             {
                 return d.TryGetValue(sMemberName, out result, args);
             }
@@ -199,7 +199,7 @@ namespace com.spacepuppy.Dynamic
 
         public static object InvokeMethod(this object obj, string name, params object[] args)
         {
-            if(obj is IDynamic d)
+            if (obj is IDynamic d)
             {
                 return d.InvokeMethod(name, args);
             }
@@ -720,7 +720,16 @@ namespace com.spacepuppy.Dynamic
             var member = tp.GetMember(name, BINDING);
             if (member != null && member.Length > 0) return true;
 
-            if (includeNonPublic)
+
+            if (tp.IsInterface)
+            {
+                foreach (var itp in tp.GetInterfaces())
+                {
+                    member = tp.GetMember(name, BINDING);
+                    if (member != null && member.Length > 0) return true;
+                }
+            }
+            else if (includeNonPublic)
             {
                 while (tp != null)
                 {
@@ -739,7 +748,17 @@ namespace com.spacepuppy.Dynamic
                 yield return m;
             }
 
-            if ((binding & BindingFlags.NonPublic) != 0)
+            if (tp.IsInterface)
+            {
+                foreach (var itp in tp.GetInterfaces())
+                {
+                    foreach (var m in itp.GetMembers(binding & ~BindingFlags.NonPublic))
+                    {
+                        yield return m;
+                    }
+                }
+            }
+            else if ((binding & BindingFlags.NonPublic) != 0)
             {
                 binding = binding & ~BindingFlags.Public;
 
@@ -768,7 +787,21 @@ namespace com.spacepuppy.Dynamic
                 }
             }
 
-            if (includeNonPublic)
+
+            if (tp.IsInterface)
+            {
+                foreach (var itp in tp.GetInterfaces())
+                {
+                    foreach (var m in itp.GetMembers(BINDING))
+                    {
+                        if ((m.MemberType & mask) != 0)
+                        {
+                            yield return m;
+                        }
+                    }
+                }
+            }
+            else if (includeNonPublic)
             {
                 while (tp != null)
                 {
@@ -798,7 +831,21 @@ namespace com.spacepuppy.Dynamic
                 }
             }
 
-            if (includeNonPublic)
+
+            if (tp.IsInterface)
+            {
+                foreach (var itp in tp.GetInterfaces())
+                {
+                    foreach (var m in itp.GetMembers(BINDING))
+                    {
+                        if ((m.MemberType & mask) != 0)
+                        {
+                            yield return m;
+                        }
+                    }
+                }
+            }
+            else if (includeNonPublic)
             {
                 while (tp != null)
                 {
@@ -828,7 +875,20 @@ namespace com.spacepuppy.Dynamic
                 }
             }
 
-            if (includeNonPublic)
+            if (tp.IsInterface)
+            {
+                foreach (var itp in tp.GetInterfaces())
+                {
+                    foreach (var m in itp.GetMembers(BINDING))
+                    {
+                        if ((m.MemberType & mask) != 0)
+                        {
+                            yield return m.Name;
+                        }
+                    }
+                }
+            }
+            else if (includeNonPublic)
             {
                 while (tp != null)
                 {
@@ -868,15 +928,29 @@ namespace com.spacepuppy.Dynamic
                     if ((member.MemberType & mask) != 0) return member;
                 }
 
-                while (includeNonPublic && tp != null)
+                if (tp.IsInterface)
                 {
-                    members = tp.GetMember(sMemberName, PRIV_BINDING);
-                    tp = tp.BaseType;
-                    if (members == null || members.Length == 0) continue;
-
-                    foreach (var member in members)
+                    foreach (var itp in tp.GetInterfaces())
                     {
-                        if ((member.MemberType & mask) != 0) return member;
+                        members = tp.GetMember(sMemberName, BINDING_PUBLIC);
+                        foreach (var member in members)
+                        {
+                            if ((member.MemberType & mask) != 0) return member;
+                        }
+                    }
+                }
+                else if (includeNonPublic)
+                {
+                    while (tp != null)
+                    {
+                        members = tp.GetMember(sMemberName, PRIV_BINDING);
+                        tp = tp.BaseType;
+                        if (members == null || members.Length == 0) continue;
+
+                        foreach (var member in members)
+                        {
+                            if ((member.MemberType & mask) != 0) return member;
+                        }
                     }
                 }
             }
@@ -909,15 +983,29 @@ namespace com.spacepuppy.Dynamic
                     if (IsValidValueMember(member)) return member;
                 }
 
-                while (includeNonPublic && tp != null)
+                if (tp.IsInterface)
                 {
-                    members = tp.GetMember(sprop, PRIV_BINDING);
-                    tp = tp.BaseType;
-                    if (members == null || members.Length == 0) continue;
-
-                    foreach (var member in members)
+                    foreach (var itp in tp.GetInterfaces())
                     {
-                        if (IsValidValueMember(member)) return member;
+                        members = tp.GetMember(sprop, BINDING_PUBLIC);
+                        foreach (var member in members)
+                        {
+                            if (IsValidValueMember(member)) return member;
+                        }
+                    }
+                }
+                else if (includeNonPublic)
+                {
+                    while (tp != null)
+                    {
+                        members = tp.GetMember(sprop, PRIV_BINDING);
+                        tp = tp.BaseType;
+                        if (members == null || members.Length == 0) continue;
+
+                        foreach (var member in members)
+                        {
+                            if (IsValidValueMember(member)) return member;
+                        }
                     }
                 }
             }
@@ -942,7 +1030,6 @@ namespace com.spacepuppy.Dynamic
 
             try
             {
-                System.Type ltp;
                 MemberInfo[] members;
 
                 //first strict test
@@ -952,16 +1039,29 @@ namespace com.spacepuppy.Dynamic
                     if (IsValidValueSetterMember(member, valueType)) return member;
                 }
 
-                ltp = tp;
-                while (includeNonPublic && ltp != null)
+                if (tp.IsInterface)
                 {
-                    members = ltp.GetMember(sprop, PRIV_BINDING);
-                    ltp = ltp.BaseType;
-                    if (members == null || members.Length == 0) continue;
-
-                    foreach (var member in members)
+                    foreach (var itp in tp.GetInterfaces())
                     {
-                        if (IsValidValueSetterMember(member, valueType)) return member;
+                        members = tp.GetMember(sprop, BINDING_PUBLIC);
+                        foreach (var member in members)
+                        {
+                            if (IsValidValueSetterMember(member, valueType)) return member;
+                        }
+                    }
+                }
+                else if (includeNonPublic)
+                {
+                    while (tp != null)
+                    {
+                        members = tp.GetMember(sprop, PRIV_BINDING);
+                        tp = tp.BaseType;
+                        if (members == null || members.Length == 0) continue;
+
+                        foreach (var member in members)
+                        {
+                            if (IsValidValueSetterMember(member, valueType)) return member;
+                        }
                     }
                 }
             }

@@ -133,7 +133,7 @@ namespace com.spacepuppy.Waypoints
         public AdvancedWaypointPathTweenCurve(float dur, WaypointPathComponent path)
             : base()
         {
-            _ease = EaseMethods.LinearEaseNone;
+            _ease = EaseMethods.Linear;
             _dur = dur;
             _delay = 0f;
             _path = path;
@@ -142,7 +142,7 @@ namespace com.spacepuppy.Waypoints
         public AdvancedWaypointPathTweenCurve(Ease ease, float dur, WaypointPathComponent path)
             : base()
         {
-            _ease = ease ?? EaseMethods.LinearEaseNone;
+            _ease = ease ?? EaseMethods.Linear;
             _dur = dur;
             _path = path;
             _delay = 0f;
@@ -151,7 +151,7 @@ namespace com.spacepuppy.Waypoints
         public AdvancedWaypointPathTweenCurve(float dur, float delay, WaypointPathComponent path)
             : base()
         {
-            _ease = EaseMethods.LinearEaseNone;
+            _ease = EaseMethods.Linear;
             _dur = dur;
             _path = path;
             _delay = delay;
@@ -160,7 +160,7 @@ namespace com.spacepuppy.Waypoints
         public AdvancedWaypointPathTweenCurve(Ease ease, float dur, float delay, WaypointPathComponent path)
             : base()
         {
-            _ease = ease ?? EaseMethods.LinearEaseNone;
+            _ease = ease ?? EaseMethods.Linear;
             _dur = dur;
             _path = path;
             _delay = delay;
@@ -185,7 +185,7 @@ namespace com.spacepuppy.Waypoints
         public Ease Ease
         {
             get { return _ease; }
-            set { _ease = value ?? EaseMethods.LinearEaseNone; }
+            set { _ease = value ?? EaseMethods.Linear; }
         }
 
         public WaypointPathComponent Path

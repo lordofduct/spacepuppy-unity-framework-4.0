@@ -56,7 +56,7 @@ namespace com.spacepuppy.Tween
                 else
                     _setter = (t, v) => accessor.Set(t, ConvertUtil.Coerce(v, tp));
             }
-            _ease = ease ?? EaseMethods.LinearEaseNone;
+            _ease = ease ?? EaseMethods.Linear;
             _dur = dur;
         }
 
@@ -78,7 +78,7 @@ namespace com.spacepuppy.Tween
             get { return _ease; }
             set
             {
-                _ease = value ?? EaseMethods.LinearEaseNone;
+                _ease = value ?? EaseMethods.Linear;
             }
         }
 

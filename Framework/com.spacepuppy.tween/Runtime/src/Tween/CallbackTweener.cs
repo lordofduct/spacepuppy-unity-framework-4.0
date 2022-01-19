@@ -28,14 +28,14 @@ namespace com.spacepuppy.Tween
         public CallbackTweener(TweenerUpdateCallback callback, float dur)
         {
             _callback = callback;
-            _ease = EaseMethods.LinearEaseNone;
+            _ease = EaseMethods.Linear;
             _dur = dur;
         }
 
         public CallbackTweener(TweenerUpdateCallback callback, Ease ease, float dur)
         {
             _callback = callback;
-            _ease = ease ?? EaseMethods.LinearEaseNone;
+            _ease = ease ?? EaseMethods.Linear;
             _dur = dur;
         }
 
@@ -50,7 +50,7 @@ namespace com.spacepuppy.Tween
             get { return _ease; }
             set
             {
-                _ease = value ?? EaseMethods.LinearEaseNone;
+                _ease = value ?? EaseMethods.Linear;
             }
         }
 
@@ -201,7 +201,7 @@ namespace com.spacepuppy.Tween
             var tweener = new CallbackTweener(_callback, _dur)
             {
                 Id = _id,
-                Ease = _ease ?? EaseMethods.LinearEaseNone,
+                Ease = _ease ?? EaseMethods.Linear,
                 Delay = _delay,
                 UpdateType = _updateType,
                 TimeSupplier = _timeSupplier ?? SPTime.Normal,
@@ -255,7 +255,7 @@ namespace com.spacepuppy.Tween
             {
                 _id = null;
                 _callback = null;
-                _ease = EaseMethods.LinearEaseNone;
+                _ease = EaseMethods.Linear;
                 _dur = 0f;
                 _delay = 0f;
                 _updateType = UpdateSequence.Update;

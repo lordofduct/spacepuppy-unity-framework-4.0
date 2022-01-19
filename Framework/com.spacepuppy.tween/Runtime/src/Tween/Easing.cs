@@ -16,45 +16,56 @@ namespace com.spacepuppy.Tween
     /// <returns></returns>
     public delegate float Ease(float current, float initialValue, float totalChange, float duration);
 
-    public enum EaseStyle : int
+    public enum EaseStyle : byte
     {
         Linear = 0,
-        LinearEaseIn = 1,
-        LinearEaseOut = 2,
-        LinearEaseInOut = 3,
+        //LinearEaseIn = 1,
+        //LinearEaseOut = 2,
+        //LinearEaseInOut = 3,
         BackEaseIn = 4,
         BackEaseOut = 5,
         BackEaseInOut = 6,
+        BackEaseOutIn = 128 + 1,
         BounceEaseIn = 7,
         BounceEaseOut = 8,
         BounceEaseInOut = 9,
+        BounceEaseOutIn = 128 + 2,
         CircleEaseIn = 10,
         CircleEaseOut = 11,
         CircleEaseInOut = 12,
+        CircleEaseOutIn = 128 + 3,
         CubicEaseIn = 13,
         CubicEaseOut = 14,
         CubicEaseInOut = 15,
+        CubicEaseOutIn = 128 + 4,
         ElasticEaseIn = 16,
         ElasticEaseOut = 17,
         ElasticEaseInOut = 18,
+        ElasticEaseOutIn = 128 + 5,
         ExpoEaseIn = 19,
         ExpoEaseOut = 20,
         ExpoEaseInOut = 21,
+        ExpoEaseOutIn = 128 + 6,
         QuadEaseIn = 22,
         QuadEaseOut = 23,
         QuadEaseInOut = 24,
+        QuadEaseOutIn = 128 + 7,
         QuartEaseIn = 25,
         QuartEaseOut = 26,
         QuartEaseInOut = 27,
+        QuartEaseOutIn = 128 + 8,
         QuintEaseIn = 28,
         QuintEaseOut = 29,
         QuintEaseInOut = 30,
+        QuintEaseOutIn = 128 + 9,
         SineEaseIn = 31,
         SineEaseOut = 32,
         SineEaseInOut = 33,
+        SineEaseOutIn = 128 + 10,
         StrongEaseIn = 34,
         StrongEaseOut = 35,
         StrongEaseInOut = 36,
+        StrongEaseOutIn = 128 + 11
     }
 
     /// <summary>
@@ -81,6 +92,10 @@ namespace com.spacepuppy.Tween
         {
             return BackEaseInOutFull(t, b, c, d);
         }
+        public static float BackEaseOutIn(float t, float b, float c, float d)
+        {
+            return BackEaseOutInFull(t, b, c, d);
+        }
 
         public static float BackEaseInFull(float t, float b, float c, float d, float s = 1.70158f)
         {
@@ -95,6 +110,11 @@ namespace com.spacepuppy.Tween
         {
             if ((t /= d / 2) < 1) return c / 2 * (t * t * (((s *= (1.525f)) + 1) * t - s)) + b;
             return c / 2 * ((t -= 2) * t * (((s *= (1.525f)) + 1) * t + s) + 2) + b;
+        }
+        public static float BackEaseOutInFull(float t, float b, float c, float d, float s = 1.70158f)
+        {
+            if (t < d / 2) return BackEaseOutFull(t * 2, b, c / 2, d);
+            return BackEaseInFull((t * 2) - d, b + c / 2, c / 2, d);
         }
         #endregion
 
@@ -127,6 +147,11 @@ namespace com.spacepuppy.Tween
             if (t < d / 2) return BounceEaseIn(t * 2, 0, c, d) * .5f + b;
             else return BounceEaseOut(t * 2 - d, 0, c, d) * .5f + c * .5f + b;
         }
+        public static float BounceEaseOutIn(float t, float b, float c, float d)
+        {
+            if (t < d / 2) return BounceEaseOut(t * 2, b, c / 2, d);
+            return BounceEaseIn((t * 2) - d, b + c / 2, c / 2, d);
+        }
         #endregion
 
         #region Circle Ease
@@ -142,6 +167,11 @@ namespace com.spacepuppy.Tween
         {
             if ((t /= d / 2) < 1) return -c / 2 * ((float)Math.Sqrt(1 - t * t) - 1) + b;
             return c / 2 * ((float)Math.Sqrt(1 - (t -= 2) * t) + 1) + b;
+        }
+        public static float CircleEaseOutIn(float t, float b, float c, float d)
+        {
+            if (t < d / 2) return CircleEaseOut(t * 2, b, c / 2, d);
+            return CircleEaseIn((t * 2) - d, b + c / 2, c / 2, d);
         }
         #endregion
 
@@ -160,6 +190,11 @@ namespace com.spacepuppy.Tween
             if ((t /= d / 2) < 1) return c / 2 * t * t * t + b;
             return c / 2 * ((t -= 2) * t * t + 2) + b;
         }
+        public static float CubicEaseOutIn(float t, float b, float c, float d)
+        {
+            if (t < d / 2) return CubicEaseOut(t * 2, b, c / 2, d);
+            return CubicEaseIn((t * 2) - d, b + c / 2, c / 2, d);
+        }
 
         #endregion
 
@@ -177,6 +212,11 @@ namespace com.spacepuppy.Tween
         public static float ElasticEaseInOut(float t, float b, float c, float d)
         {
             return ElasticEaseInOutFull(t, b, c, d, 0, 0);
+        }
+
+        public static float ElasticEaseOutIn(float t, float b, float c, float d)
+        {
+            return ElasticEaseOutInFull(t, b, c, d, 0, 0);
         }
 
         public static float ElasticEaseInFull(float t, float b, float c, float d, float a, float p)
@@ -208,7 +248,13 @@ namespace com.spacepuppy.Tween
             if (t < 1) return -.5f * (a * (float)Math.Pow(2, 10 * (t -= 1)) * (float)Math.Sin((t * d - s) * _2PI / p)) + b;
             return a * (float)Math.Pow(2, -10 * (t -= 1)) * (float)Math.Sin((t * d - s) * _2PI / p) * .5f + c + b;
         }
-        
+
+        public static float ElasticEaseOutInFull(float t, float b, float c, float d, float a = 0, float p = 0)
+        {
+            if (t < d / 2) return ElasticEaseOutFull(t * 2, b, c / 2, d, a, p);
+            return ElasticEaseInFull((t * 2) - d, b + c / 2, c / 2, d, a, p);
+        }
+
         #endregion
 
         #region Expo Ease
@@ -227,22 +273,15 @@ namespace com.spacepuppy.Tween
             if ((t /= d / 2) < 1) return c / 2 * (float)Math.Pow(2, 10 * (t - 1)) + b;
             return c / 2 * (-(float)Math.Pow(2, -10 * --t) + 2) + b;
         }
+        public static float ExpoEaseOutIn(float t, float b, float c, float d)
+        {
+            if (t < d / 2) return ExpoEaseOut(t * 2, b, c / 2, d);
+            return ExpoEaseIn((t * 2) - d, b + c / 2, c / 2, d);
+        }
         #endregion
 
         #region Linear Ease
-        public static float LinearEaseNone(float t, float b, float c, float d)
-        {
-            return c * t / d + b;
-        }
-        public static float LinearEaseIn(float t, float b, float c, float d)
-        {
-            return c * t / d + b;
-        }
-        public static float LinearEaseOut(float t, float b, float c, float d)
-        {
-            return c * t / d + b;
-        }
-        public static float LinearEaseInOut(float t, float b, float c, float d)
+        public static float Linear(float t, float b, float c, float d)
         {
             return c * t / d + b;
         }
@@ -262,6 +301,11 @@ namespace com.spacepuppy.Tween
             if ((t /= d / 2) < 1) return c / 2 * t * t + b;
             return -c / 2 * ((--t) * (t - 2) - 1) + b;
         }
+        public static float QuadEaseOutIn(float t, float b, float c, float d)
+        {
+            if (t < d / 2) return QuadEaseOut(t * 2, b, c / 2, d);
+            return QuadEaseIn((t * 2) - d, b + c / 2, c / 2, d);
+        }
         #endregion
 
         #region Quart Ease
@@ -277,6 +321,11 @@ namespace com.spacepuppy.Tween
         {
             if ((t /= d / 2) < 1) return c / 2 * t * t * t * t + b;
             return -c / 2 * ((t -= 2) * t * t * t - 2) + b;
+        }
+        public static float QuartEaseOutIn(float t, float b, float c, float d)
+        {
+            if (t < d / 2) return QuartEaseOut(t * 2, b, c / 2, d);
+            return QuartEaseIn((t * 2) - d, b + c / 2, c / 2, d);
         }
         #endregion
 
@@ -294,6 +343,11 @@ namespace com.spacepuppy.Tween
             if ((t /= d / 2) < 1) return c / 2 * t * t * t * t * t + b;
             return c / 2 * ((t -= 2) * t * t * t * t + 2) + b;
         }
+        public static float QuintEaseOutIn(float t, float b, float c, float d)
+        {
+            if (t < d / 2) return QuintEaseOut(t * 2, b, c / 2, d);
+            return QuintEaseIn((t * 2) - d, b + c / 2, c / 2, d);
+        }
         #endregion
 
         #region Sine Ease
@@ -308,6 +362,11 @@ namespace com.spacepuppy.Tween
         public static float SineEaseInOut(float t, float b, float c, float d)
         {
             return -c / 2 * ((float)Math.Cos(Math.PI * t / d) - 1) + b;
+        }
+        public static float SineEaseOutIn(float t, float b, float c, float d)
+        {
+            if (t < d / 2) return SineEaseOut(t * 2, b, c / 2, d);
+            return SineEaseIn((t * 2) - d, b + c / 2, c / 2, d);
         }
         #endregion
 
@@ -325,8 +384,13 @@ namespace com.spacepuppy.Tween
             if ((t /= d / 2) < 1) return c / 2 * t * t * t * t * t + b;
             return c / 2 * ((t -= 2) * t * t * t * t + 2) + b;
         }
+        public static float StrongEaseOutIn(float t, float b, float c, float d)
+        {
+            if (t < d / 2) return StrongEaseOut(t * 2, b, c / 2, d);
+            return StrongEaseIn((t * 2) - d, b + c / 2, c / 2, d);
+        }
         #endregion
-        
+
     }
 
     /// <summary>
@@ -339,54 +403,65 @@ namespace com.spacepuppy.Tween
         {
             switch (style)
             {
-                case EaseStyle.Linear: return EaseMethods.LinearEaseNone;
-                case EaseStyle.LinearEaseIn: return EaseMethods.LinearEaseIn;
-                case EaseStyle.LinearEaseOut: return EaseMethods.LinearEaseOut;
-                case EaseStyle.LinearEaseInOut: return EaseMethods.LinearEaseInOut;
+                case EaseStyle.Linear: return EaseMethods.Linear;
+                case (EaseStyle)1: return EaseMethods.Linear; //legacy support
+                case (EaseStyle)2: return EaseMethods.Linear; //legacy support
+                case (EaseStyle)3: return EaseMethods.Linear; //legacy support
 
                 case EaseStyle.BackEaseIn: return EaseMethods.BackEaseIn;
                 case EaseStyle.BackEaseOut: return EaseMethods.BackEaseOut;
                 case EaseStyle.BackEaseInOut: return EaseMethods.BackEaseInOut;
+                case EaseStyle.BackEaseOutIn: return EaseMethods.BackEaseOutIn;
 
                 case EaseStyle.BounceEaseIn: return EaseMethods.BounceEaseIn;
                 case EaseStyle.BounceEaseOut: return EaseMethods.BounceEaseOut;
                 case EaseStyle.BounceEaseInOut: return EaseMethods.BounceEaseInOut;
+                case EaseStyle.BounceEaseOutIn: return EaseMethods.BounceEaseOutIn;
 
                 case EaseStyle.CircleEaseIn: return EaseMethods.CircleEaseIn;
                 case EaseStyle.CircleEaseOut: return EaseMethods.CircleEaseOut;
                 case EaseStyle.CircleEaseInOut: return EaseMethods.CircleEaseInOut;
+                case EaseStyle.CircleEaseOutIn: return EaseMethods.CircleEaseOutIn;
 
                 case EaseStyle.CubicEaseIn: return EaseMethods.CubicEaseIn;
                 case EaseStyle.CubicEaseOut: return EaseMethods.CubicEaseOut;
                 case EaseStyle.CubicEaseInOut: return EaseMethods.CubicEaseInOut;
+                case EaseStyle.CubicEaseOutIn: return EaseMethods.CubicEaseOutIn;
 
                 case EaseStyle.ElasticEaseIn: return EaseMethods.ElasticEaseIn;
                 case EaseStyle.ElasticEaseOut: return EaseMethods.ElasticEaseOut;
                 case EaseStyle.ElasticEaseInOut: return EaseMethods.ElasticEaseInOut;
+                case EaseStyle.ElasticEaseOutIn: return EaseMethods.ElasticEaseOutIn;
 
                 case EaseStyle.ExpoEaseIn: return EaseMethods.ExpoEaseIn;
                 case EaseStyle.ExpoEaseOut: return EaseMethods.ExpoEaseOut;
                 case EaseStyle.ExpoEaseInOut: return EaseMethods.ExpoEaseInOut;
+                case EaseStyle.ExpoEaseOutIn: return EaseMethods.ExpoEaseOutIn;
 
                 case EaseStyle.QuadEaseIn: return EaseMethods.QuadEaseIn;
                 case EaseStyle.QuadEaseOut: return EaseMethods.QuadEaseOut;
                 case EaseStyle.QuadEaseInOut: return EaseMethods.QuadEaseInOut;
+                case EaseStyle.QuadEaseOutIn: return EaseMethods.QuadEaseOutIn;
 
                 case EaseStyle.QuartEaseIn: return EaseMethods.QuartEaseIn;
                 case EaseStyle.QuartEaseOut: return EaseMethods.QuartEaseOut;
                 case EaseStyle.QuartEaseInOut: return EaseMethods.QuartEaseInOut;
+                case EaseStyle.QuartEaseOutIn: return EaseMethods.QuartEaseOutIn;
 
                 case EaseStyle.QuintEaseIn: return EaseMethods.QuintEaseIn;
                 case EaseStyle.QuintEaseOut: return EaseMethods.QuintEaseOut;
                 case EaseStyle.QuintEaseInOut: return EaseMethods.QuintEaseInOut;
+                case EaseStyle.QuintEaseOutIn: return EaseMethods.QuintEaseOutIn;
 
                 case EaseStyle.SineEaseIn: return EaseMethods.SineEaseIn;
                 case EaseStyle.SineEaseOut: return EaseMethods.SineEaseOut;
                 case EaseStyle.SineEaseInOut: return EaseMethods.SineEaseInOut;
+                case EaseStyle.SineEaseOutIn: return EaseMethods.SineEaseOutIn;
 
                 case EaseStyle.StrongEaseIn: return EaseMethods.StrongEaseIn;
                 case EaseStyle.StrongEaseOut: return EaseMethods.StrongEaseOut;
                 case EaseStyle.StrongEaseInOut: return EaseMethods.StrongEaseInOut;
+                case EaseStyle.StrongEaseOutIn: return EaseMethods.StrongEaseOutIn;
             }
 
             return null;
@@ -401,11 +476,17 @@ namespace com.spacepuppy.Tween
 
         #region Back Ease
 
-        public static Ease BackEaseIn { get; } = ConcreteEaseMethods.BackEaseIn;
+        private static Ease _backEaseIn;
+        public static Ease BackEaseIn => _backEaseIn ?? (_backEaseIn = ConcreteEaseMethods.BackEaseIn);
 
-        public static Ease BackEaseOut { get; } = ConcreteEaseMethods.BackEaseOut;
+        private static Ease _backEaseOut;
+        public static Ease BackEaseOut => _backEaseOut ?? (_backEaseOut = ConcreteEaseMethods.BackEaseOut);
 
-        public static Ease BackEaseInOut { get; } = ConcreteEaseMethods.BackEaseInOut;
+        private static Ease _backEaseInOut;
+        public static Ease BackEaseInOut => _backEaseInOut ?? (_backEaseInOut = ConcreteEaseMethods.BackEaseInOut);
+
+        private static Ease _backEaseOutIn;
+        public static Ease BackEaseOutIn => _backEaseOutIn ?? (_backEaseOutIn = ConcreteEaseMethods.BackEaseOutIn);
 
         #endregion
 
@@ -441,6 +522,9 @@ namespace com.spacepuppy.Tween
             }
         }
 
+        private static Ease _bounceEaseOutIn;
+        public static Ease BounceEaseOutIn => _bounceEaseOutIn ?? (_bounceEaseOutIn = ConcreteEaseMethods.BounceEaseOutIn);
+
         #endregion
 
         #region Circle Ease
@@ -474,6 +558,9 @@ namespace com.spacepuppy.Tween
                 return _circleEaseInOut;
             }
         }
+
+        private static Ease _circleEaseOutIn;
+        public static Ease CircleEaseOutIn => _circleEaseOutIn ?? (_circleEaseOutIn = ConcreteEaseMethods.CircleEaseOutIn);
 
         #endregion
 
@@ -509,6 +596,9 @@ namespace com.spacepuppy.Tween
             }
         }
 
+        private static Ease _cubicEaseOutIn;
+        public static Ease CubicEaseOutIn => _cubicEaseOutIn ?? (_cubicEaseOutIn = ConcreteEaseMethods.CubicEaseOutIn);
+
         #endregion
 
         #region Elastic Ease
@@ -542,6 +632,9 @@ namespace com.spacepuppy.Tween
                 return _elasticEaseInOut;
             }
         }
+
+        private static Ease _elasticEaseOutIn;
+        public static Ease ElasticEaseOutIn => _elasticEaseOutIn ?? (_elasticEaseOutIn = ConcreteEaseMethods.ElasticEaseOutIn);
 
         #endregion
 
@@ -577,49 +670,15 @@ namespace com.spacepuppy.Tween
             }
         }
 
+        private static Ease _expoEaseOutIn;
+        public static Ease ExpoEaseOutIn => _expoEaseOutIn ?? (_expoEaseOutIn = ConcreteEaseMethods.ExpoEaseOutIn);
+
         #endregion
 
         #region Linear Ease
 
-        private static Ease _linearEaseNone;
-        public static Ease LinearEaseNone
-        {
-            get
-            {
-                if (_linearEaseNone == null) _linearEaseNone = ConcreteEaseMethods.LinearEaseNone;
-                return _linearEaseNone;
-            }
-        }
-
-        private static Ease _linearEaseIn;
-        public static Ease LinearEaseIn
-        {
-            get
-            {
-                if (_linearEaseIn == null) _linearEaseIn = ConcreteEaseMethods.LinearEaseIn;
-                return _linearEaseIn;
-            }
-        }
-
-        private static Ease _linearEaseOut;
-        public static Ease LinearEaseOut
-        {
-            get
-            {
-                if (_linearEaseOut == null) _linearEaseOut = ConcreteEaseMethods.LinearEaseOut;
-                return _linearEaseOut;
-            }
-        }
-
-        private static Ease _linearEaseInOut;
-        public static Ease LinearEaseInOut
-        {
-            get
-            {
-                if (_linearEaseInOut == null) _linearEaseInOut = ConcreteEaseMethods.LinearEaseInOut;
-                return _linearEaseInOut;
-            }
-        }
+        private static Ease _linear;
+        public static Ease Linear => _linear ?? (_linear = ConcreteEaseMethods.Linear);
 
         #endregion
 
@@ -655,6 +714,9 @@ namespace com.spacepuppy.Tween
             }
         }
 
+        private static Ease _quadEaseOutIn;
+        public static Ease QuadEaseOutIn => _quadEaseOutIn ?? (_quadEaseOutIn = ConcreteEaseMethods.QuadEaseOutIn);
+
         #endregion
 
         #region Quart Ease
@@ -688,6 +750,9 @@ namespace com.spacepuppy.Tween
                 return _quartEaseInOut;
             }
         }
+
+        private static Ease _quartEaseOutIn;
+        public static Ease QuartEaseOutIn => _quartEaseOutIn ?? (_quartEaseOutIn = ConcreteEaseMethods.QuartEaseOutIn);
 
         #endregion
 
@@ -723,6 +788,9 @@ namespace com.spacepuppy.Tween
             }
         }
 
+        private static Ease _quintEaseOutIn;
+        public static Ease QuintEaseOutIn => _quintEaseOutIn ?? (_quintEaseOutIn = ConcreteEaseMethods.QuintEaseOutIn);
+
         #endregion
 
         #region Sine Ease
@@ -757,6 +825,9 @@ namespace com.spacepuppy.Tween
             }
         }
 
+        private static Ease _sineEaseOutIn;
+        public static Ease SineEaseOutIn => _sineEaseOutIn ?? (_sineEaseOutIn = ConcreteEaseMethods.SineEaseOutIn);
+
         #endregion
 
         #region Strong Ease
@@ -790,6 +861,9 @@ namespace com.spacepuppy.Tween
                 return _strongEaseInOut;
             }
         }
+
+        private static Ease _stronEaseOutIn;
+        public static Ease StrongEaseOutIn => _stronEaseOutIn ?? (_stronEaseOutIn = ConcreteEaseMethods.StrongEaseOutIn);
 
         #endregion
 

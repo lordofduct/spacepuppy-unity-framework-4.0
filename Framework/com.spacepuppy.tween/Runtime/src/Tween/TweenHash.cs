@@ -29,7 +29,7 @@ namespace com.spacepuppy.Tween
         private object _id;
         private object _targ;
         private List<CurveGeneratorToken> _curves = new List<CurveGeneratorToken>();
-        private Ease _defaultEase = EaseMethods.LinearEaseNone;
+        private Ease _defaultEase = EaseMethods.Linear;
         private float _delay;
         private UpdateSequence _updateType;
         private ITimeSupplier _timeSupplier;
@@ -84,7 +84,7 @@ namespace com.spacepuppy.Tween
 
         public TweenHash Ease(Ease ease)
         {
-            _defaultEase = ease ?? EaseMethods.LinearEaseNone;
+            _defaultEase = ease ?? EaseMethods.Linear;
             return this;
         }
 
@@ -419,7 +419,7 @@ namespace com.spacepuppy.Tween
                 _id = null;
                 _targ = null;
                 _curves.Clear();
-                _defaultEase = EaseMethods.LinearEaseNone;
+                _defaultEase = EaseMethods.Linear;
                 _delay = 0f;
                 _updateType = UpdateSequence.Update;
                 _timeSupplier = null;

@@ -24,7 +24,7 @@ namespace com.spacepuppy.Tween.Curves
 
         public Vector2LerpMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor<Vector2> accessor, float dur, Vector2 start, Vector2 end) : base(accessor)
         {
-            this.Configure(EaseMethods.LinearEaseNone, dur, start, end);
+            this.Configure(EaseMethods.Linear, dur, start, end);
         }
 
         public Vector2LerpMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor<Vector2> accessor, Ease ease, float dur, Vector2 start, Vector2 end) : base(accessor)

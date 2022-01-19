@@ -5,6 +5,7 @@ using System.Linq;
 
 using com.spacepuppy;
 using com.spacepuppy.Utils;
+using com.spacepuppyeditor.Windows;
 
 namespace com.spacepuppyeditor.Core
 {
@@ -16,132 +17,61 @@ namespace com.spacepuppyeditor.Core
 
         public const string PROP_TYPEHASH = "_typeHash";
 
-        #region Manually Configured Properties
+        #region Properties
 
-        private System.Type _inheritsFromType;
-        private bool _allowAbstractTypes;
-        private bool _allowInterfaces;
-        private System.Type _defaultType;
-        private System.Type[] _excludedTypes;
-        private TypeDropDownListingStyle _dropDownStyle = TypeDropDownListingStyle.Namespace;
-        private System.Predicate<System.Type> _searchPredicate;
-        private bool _isManuallyConfigured;
+        private System.Reflection.FieldInfo _currentField;
+        private TypeReference.ConfigAttribute _currentAttrib;
 
-        public System.Type InheritsFromType
-        {
-            get { return _inheritsFromType; }
-            set
-            {
-                _inheritsFromType = value;
-                _isManuallyConfigured = true;
-            }
-        }
+        public System.Type InheritsFromType { get; set; }
 
-        public bool AllowAbstractTypes
-        {
-            get { return _allowAbstractTypes; }
-            set
-            {
-                _allowAbstractTypes = value;
-                _isManuallyConfigured = true;
-            }
-        }
+        public System.Type DefaultType { get; set; }
 
-        public bool AllowInterfaces
-        {
-            get { return _allowInterfaces; }
-            set
-            {
-                _allowInterfaces = value;
-                _isManuallyConfigured = true;
-            }
-        }
+        public TypeDropDownListingStyle DropDownStyle { get; set; } = TypeDropDownListingStyle.Flat;
 
-        public System.Type DefaultType
-        {
-            get { return _defaultType; }
-            set
-            {
-                _defaultType = value;
-                _isManuallyConfigured = true;
-            }
-        }
+        public System.Predicate<System.Type> EnumeratePredicate { get; set; }
 
-        public System.Type[] ExcludedTypes
-        {
-            get { return _excludedTypes; }
-            set
-            {
-                _excludedTypes = value;
-                _isManuallyConfigured = true;
-            }
-        }
+        public System.Func<System.Type, string, bool> SearchFilter { get; set; }
 
-        public TypeDropDownListingStyle DropDownStyle
-        {
-            get { return _dropDownStyle; }
-            set
-            {
-                _dropDownStyle = value;
-                _isManuallyConfigured = true;
-            }
-        }
-
-        public System.Predicate<System.Type> SearchPredicate
-        {
-            get { return _searchPredicate; }
-            set
-            {
-                _searchPredicate = value;
-                _isManuallyConfigured = true;
-            }
-        }
+        public int MaxVisibleCount { get; set; } = TypeDropDownWindowSelector.DEFAULT_MAXCOUNT;
 
         #endregion
 
-        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+        public void ConfigureSimple(System.Type inheritsFromType, bool allowAbstract = false, bool allowInterfaces = false, System.Type[] excludedTypes = null)
         {
-            EditorGUI.BeginProperty(position, label, property);
-            
-            
-            var baseType = typeof(object);
-            bool allowAbstractTypes = false;
-            bool allowInterfaces = false;
-            System.Type defaultType = null;
-            System.Type[] excludedTypes = null;
-            TypeDropDownListingStyle style = TypeDropDownListingStyle.Namespace;
-            System.Predicate<System.Type> searchPredicate = null;
+            this.InheritsFromType = inheritsFromType;
+            this.EnumeratePredicate = TypeDropDownWindowSelector.CreateEnumeratePredicate(inheritsFromType, allowAbstract, allowInterfaces, excludedTypes);
+        }
 
-            if(_isManuallyConfigured)
+        private void Init()
+        {
+            if(this.fieldInfo != null && _currentField != this.fieldInfo)
             {
-                baseType = _inheritsFromType ?? typeof(object);
-                allowAbstractTypes = _allowAbstractTypes;
-                allowInterfaces = _allowInterfaces;
-                defaultType = _defaultType;
-                excludedTypes = _excludedTypes;
-                style = _dropDownStyle;
-                searchPredicate = _searchPredicate;
-            }
-            else if(this.fieldInfo != null)
-            {
-                var attrib = this.fieldInfo.GetCustomAttributes(typeof(TypeReference.ConfigAttribute), true).FirstOrDefault() as TypeReference.ConfigAttribute;
-                if (attrib != null)
+                _currentField = this.fieldInfo;
+                _currentAttrib = this.fieldInfo.GetCustomAttributes(typeof(TypeReference.ConfigAttribute), true).FirstOrDefault() as TypeReference.ConfigAttribute;
+                if (_currentAttrib != null)
                 {
-                    baseType = attrib.inheritsFromType;
-                    allowAbstractTypes = attrib.allowAbstractClasses;
-                    allowInterfaces = attrib.allowInterfaces;
-                    defaultType = attrib.defaultType;
-                    excludedTypes = attrib.excludedTypes;
-                    style = attrib.dropDownStyle;
-                    searchPredicate = null;
+                    this.InheritsFromType = _currentAttrib.inheritsFromType;
+                    this.DefaultType = _currentAttrib.defaultType;
+                    this.DropDownStyle = _currentAttrib.dropDownStyle;
+                    this.EnumeratePredicate = CreateEnumeratePredicate(_currentAttrib);
+                    this.MaxVisibleCount = _currentAttrib.MaxVisibleCount > int.MinValue ? _currentAttrib.MaxVisibleCount : TypeDropDownWindowSelector.DEFAULT_MAXCOUNT;
                 }
             }
-            
+        }
+
+        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+        {
+            this.Init();
+
+            EditorGUI.BeginProperty(position, label, property);
+
             var tp = GetTypeFromTypeReference(property);
             EditorGUI.BeginChangeCheck();
-            tp = SPEditorGUI.TypeDropDown(position, label, baseType, tp, allowAbstractTypes, allowInterfaces, defaultType, excludedTypes, style, searchPredicate);
+            tp = SPEditorGUI.TypeDropDown(position, label, tp, this.EnumeratePredicate, this.InheritsFromType, this.DefaultType, this.DropDownStyle, this.SearchFilter, this.MaxVisibleCount);
             if (EditorGUI.EndChangeCheck())
+            {
                 SetTypeToTypeReference(property, tp);
+            }
 
             EditorGUI.EndProperty();
         }
@@ -172,6 +102,13 @@ namespace com.spacepuppyeditor.Core
                 }
             }
         }
+
+
+        public static System.Predicate<System.Type> CreateEnumeratePredicate(TypeReference.ConfigAttribute attrib)
+        {
+            return TypeDropDownWindowSelector.CreateEnumeratePredicate(attrib.inheritsFromType, attrib.allowAbstractClasses, attrib.allowInterfaces, attrib.excludedTypes);
+        }
+
 
     }
 

@@ -258,13 +258,14 @@ namespace com.spacepuppyeditor
             SerializedPropertyType propertyType = SerializedPropertyType.Generic;
             if (valueType != null)
             {
+                System.Type ntp;
                 if (valueType.IsInterface)
                 {
                     propertyType = SerializedPropertyType.ObjectReference;
                 }
-                else if (TypeUtil.IsNullableType(valueType, out valueType))
+                else if (TypeUtil.IsNullableType(valueType, out ntp))
                 {
-                    if(ConvertUtil.IsSupportedType(valueType))
+                    if (ConvertUtil.IsSupportedType(ntp))
                     {
                         var str = ConvertUtil.ToString(value);
                         if (string.IsNullOrEmpty(str)) str = null;
@@ -273,7 +274,7 @@ namespace com.spacepuppyeditor
                         str = EditorGUI.DelayedTextField(position, label, str ?? "NULL");
                         if (EditorGUI.EndChangeCheck())
                         {
-                            return string.IsNullOrEmpty(str) || string.Equals(str, "NULL", StringComparison.OrdinalIgnoreCase) ? null : ConvertUtil.ToPrim(value, valueType);
+                            return string.IsNullOrEmpty(str) || string.Equals(str, "NULL", StringComparison.OrdinalIgnoreCase) ? null : ConvertUtil.ToPrim(value, ntp);
                         }
                         else
                         {
@@ -377,10 +378,11 @@ namespace com.spacepuppyeditor
                             return obj;
                         }
                     }
-                    else if(!ignoreCollections && TypeUtil.IsType(valueType, typeof(System.Collections.ICollection), typeof(ICollection<>)))
+                    else if (!ignoreCollections && TypeUtil.IsType(valueType, typeof(System.Collections.IEnumerable), typeof(IEnumerable<>)))
                     {
-                        var coll = value as System.Collections.ICollection;
-                        if(coll == null || coll.Count == 0)
+                        var coll = value as System.Collections.IEnumerable;
+                        int cnt = (coll as System.Collections.ICollection)?.Count ?? (coll as System.Collections.IEnumerable).Cast<object>().Count();
+                        if (coll == null || cnt == 0)
                         {
                             EditorGUI.LabelField(position, label, EditorHelper.TempContent("* Empty Collection *"));
                             return value;
@@ -1055,14 +1057,27 @@ namespace com.spacepuppyeditor
 
         #region Type Dropdown
 
-        public static System.Type TypeDropDown(Rect position, GUIContent label, 
-                                               System.Type baseType, System.Type selectedType, 
-                                               bool allowAbstractTypes = false, bool allowInterfaces = false, 
+        public static System.Type TypeDropDown(Rect position, GUIContent label,
+                                               System.Type selectedType,
+                                               System.Type baseType = null,
+                                               bool allowAbstractTypes = false, bool allowInterfaces = false,
                                                System.Type defaultType = null, System.Type[] excludedTypes = null,
-                                               TypeDropDownListingStyle listType = TypeDropDownListingStyle.Namespace,
-                                               System.Predicate<System.Type> searchPredicate = null)
+                                               TypeDropDownListingStyle listType = TypeDropDownListingStyle.Flat,
+                                               System.Func<System.Type, string, bool> searchFilter = null,
+                                               int maxVisibleCount = TypeDropDownWindowSelector.DEFAULT_MAXCOUNT)
         {
-            return TypeSelectionDropDownWindow.Popup(position, label, baseType, selectedType, allowAbstractTypes, allowInterfaces, defaultType, excludedTypes, listType, searchPredicate);
+            return TypeDropDownWindowSelector.Popup(position, label, selectedType, TypeDropDownWindowSelector.CreateEnumeratePredicate(baseType, allowAbstractTypes, allowInterfaces, excludedTypes), baseType, defaultType, listType, searchFilter, maxVisibleCount);
+        }
+
+        public static System.Type TypeDropDown(Rect position, GUIContent label,
+                                               System.Type selectedType,
+                                               System.Predicate<System.Type> enumeratePredicate,
+                                               System.Type baseType = null, System.Type defaultType = null,
+                                               TypeDropDownListingStyle listType = TypeDropDownListingStyle.Flat,
+                                               System.Func<System.Type, string, bool> searchFilter = null,
+                                               int maxVisibleCount = TypeDropDownWindowSelector.DEFAULT_MAXCOUNT)
+        {
+            return TypeDropDownWindowSelector.Popup(position, label, selectedType, enumeratePredicate, baseType, defaultType, listType, searchFilter, maxVisibleCount);
         }
 
         #endregion
@@ -1519,7 +1534,8 @@ namespace com.spacepuppyeditor
             }
             else if (targObj != null)
             {
-                var members = DynamicUtil.GetEasilySerializedMembers(targObj, System.Reflection.MemberTypes.Field | System.Reflection.MemberTypes.Property | System.Reflection.MemberTypes.Method, access).ToArray();
+                var mask = allowSetterMethods ? System.Reflection.MemberTypes.Field | System.Reflection.MemberTypes.Property | System.Reflection.MemberTypes.Method : System.Reflection.MemberTypes.Field | System.Reflection.MemberTypes.Property;
+                var members = DynamicUtil.GetEasilySerializedMembers(targObj, mask, access).ToArray();
                 var entries = new GUIContent[members.Length];
 
                 int index = -1;

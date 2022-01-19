@@ -81,7 +81,6 @@ namespace com.spacepuppyeditor.Core
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-
             position = EditorGUI.PrefixLabel(position, label);
             EditorHelper.SuppressIndentLevel();
 
@@ -115,14 +114,29 @@ namespace com.spacepuppyeditor.Core
             {
                 var units = GetUnits(property, this.attribute as TimeUnitsSelectorAttribute, this.TimeUnitsCalculator);
 
-                double dur = property.GetNumericValue();
-                if (MathUtil.IsReal(dur)) dur = this.TimeUnitsCalculator.SecondsToTimeUnits(units, dur);
-                EditorGUI.BeginChangeCheck();
-                dur = EditorGUI.DoubleField(r, (float)dur);
-                if (EditorGUI.EndChangeCheck())
+                if(property.GetPropertyTypeCode() == System.TypeCode.Single)
                 {
-                    if (MathUtil.IsReal(dur)) dur = this.TimeUnitsCalculator.TimeUnitsToSeconds(units, dur);
-                    property.SetNumericValue(dur);
+                    float dur = property.floatValue;
+                    if (MathUtil.IsReal(dur)) dur = (float)this.TimeUnitsCalculator.SecondsToTimeUnits(units, dur);
+                    EditorGUI.BeginChangeCheck();
+                    dur = EditorGUI.FloatField(r, dur);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        if (MathUtil.IsReal(dur)) dur = (float)this.TimeUnitsCalculator.TimeUnitsToSeconds(units, dur);
+                        property.floatValue = dur;
+                    }
+                }
+                else
+                {
+                    double dur = property.GetNumericValue();
+                    if (MathUtil.IsReal(dur)) dur = this.TimeUnitsCalculator.SecondsToTimeUnits(units, dur);
+                    EditorGUI.BeginChangeCheck();
+                    dur = EditorGUI.DoubleField(r, dur);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        if (MathUtil.IsReal(dur)) dur = this.TimeUnitsCalculator.TimeUnitsToSeconds(units, dur);
+                        property.SetNumericValue(dur);
+                    }
                 }
             }
             else
@@ -247,7 +261,8 @@ namespace com.spacepuppyeditor.Core
                 switch(units)
                 {
                     case "Seconds":
-                        return span.TotalSeconds;
+                        //return span.TotalSeconds;
+                        return seconds;
                     case "Minutes":
                         return span.TotalMinutes;
                     case "Hours":

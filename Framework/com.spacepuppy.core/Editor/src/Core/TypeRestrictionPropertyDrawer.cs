@@ -5,6 +5,7 @@ using System.Linq;
 
 using com.spacepuppy;
 using com.spacepuppy.Utils;
+using com.spacepuppyeditor.Windows;
 
 namespace com.spacepuppyeditor.Core
 {
@@ -14,7 +15,7 @@ namespace com.spacepuppyeditor.Core
     {
 
         #region Fields
-        
+
         private SelectableComponentPropertyDrawer _selectComponentDrawer;
         private static MultiTypeComponentChoiceSelector _multiSelector = new MultiTypeComponentChoiceSelector();
 
@@ -31,7 +32,7 @@ namespace com.spacepuppyeditor.Core
             //if (!TypeUtil.IsType(fieldType, typeof(Component))) return false;
 
             var attrib = this.attribute as TypeRestrictionAttribute;
-            if(attrib?.InheritsFromTypes != null && attrib?.InheritsFromTypes.Length > 0)
+            if (attrib?.InheritsFromTypes != null && attrib?.InheritsFromTypes.Length > 0)
             {
                 foreach (var tp in attrib.InheritsFromTypes)
                 {
@@ -53,7 +54,9 @@ namespace com.spacepuppyeditor.Core
         {
             var attrib = this.attribute as TypeRestrictionAttribute;
             if (attrib.HideTypeDropDown)
+            {
                 return EditorGUIUtility.singleLineHeight;
+            }
             else
             {
                 if (_selectComponentDrawer == null) _selectComponentDrawer = new SelectableComponentPropertyDrawer();
@@ -81,20 +84,33 @@ namespace com.spacepuppyeditor.Core
             bool objIsSimpleComponentSource = (property.objectReferenceValue is Component || property.objectReferenceValue is GameObject);
 
             System.Type[] allInheritableTypes = attrib?.InheritsFromTypes ?? ArrayUtil.Empty<System.Type>();
-            System.Type inheritsFromType = ((allInheritableTypes.Length == 1) ? allInheritableTypes[0] : null) ?? ((fieldIsComponentType) ? typeof(Component) : fieldType);
+            System.Type inheritsFromType = (allInheritableTypes.Length == 1) ? allInheritableTypes[0] : fieldType;
+            bool isNonStandardUnityType = allInheritableTypes.Any(o => o.IsInterface || o.IsGenericType); //is a type that unity's ObjectField doesn't support directly
 
             if (attrib.HideTypeDropDown || !objIsSimpleComponentSource)
             {
                 //draw object field
                 UnityEngine.Object targ;
-                if(fieldIsComponentType)
+                if (allInheritableTypes.Length > 1 || isNonStandardUnityType)
+                {
+                    targ = UnityObjectDropDownWindowSelector.ObjectField(position,
+                        label,
+                        property.objectReferenceValue,
+                        (allInheritableTypes.Length == 1) ? allInheritableTypes[0] : fieldType,
+                        attrib?.AllowSceneObjects ?? true,
+                        (o) =>
+                        {
+                            return o && (TypeUtil.IsType(o.GetType(), allInheritableTypes) || ObjUtil.GetAsFromSource(allInheritableTypes, o) != null);
+                        });
+                }
+                else if (fieldIsComponentType)
                 {
                     var fieldCompType = (TypeUtil.IsType(fieldType, typeof(Component))) ? fieldType : typeof(Component);
-                    targ = SPEditorGUI.ComponentField(position, label, property.objectReferenceValue as Component, inheritsFromType, true, fieldCompType);
+                    targ = SPEditorGUI.ComponentField(position, label, property.objectReferenceValue as Component, inheritsFromType, attrib?.AllowSceneObjects ?? true, fieldCompType);
                 }
                 else
                 {
-                    targ = EditorGUI.ObjectField(position, label, property.objectReferenceValue, fieldType, true);
+                    targ = EditorGUI.ObjectField(position, label, property.objectReferenceValue, fieldType, attrib?.AllowSceneObjects ?? true);
                 }
 
                 if (targ == null)
@@ -105,7 +121,9 @@ namespace com.spacepuppyeditor.Core
                 {
                     var o = (allInheritableTypes.Length > 1 ? ObjUtil.GetAsFromSource(allInheritableTypes, targ) : ObjUtil.GetAsFromSource(inheritsFromType, targ)) as UnityEngine.Object;
                     if (attrib.AllowProxy && o == null)
+                    {
                         o = ObjUtil.GetAsFromSource<IProxy>(targ) as UnityEngine.Object;
+                    }
                     property.objectReferenceValue = o;
                 }
             }
@@ -121,7 +139,7 @@ namespace com.spacepuppyeditor.Core
                 _selectComponentDrawer.AllowProxy = attrib.AllowProxy;
                 _selectComponentDrawer.ShowXButton = true;
                 _selectComponentDrawer.AllowNonComponents = true;
-                if(allInheritableTypes.Length > 1)
+                if (allInheritableTypes.Length > 1)
                 {
                     _multiSelector.AllowedTypes = allInheritableTypes;
                     _selectComponentDrawer.ChoiceSelector = _multiSelector;
@@ -136,10 +154,10 @@ namespace com.spacepuppyeditor.Core
 
             EditorGUI.EndProperty();
         }
-        
+
         #endregion
 
 
     }
-    
+
 }

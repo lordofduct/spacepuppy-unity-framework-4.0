@@ -723,6 +723,31 @@ namespace com.spacepuppyeditor
             }
         }
 
+        public static System.TypeCode GetPropertyTypeCode(this SerializedProperty prop)
+        {
+            switch(prop.propertyType)
+            {
+                case SerializedPropertyType.Integer:
+                    return prop.type == "long" ? System.TypeCode.Int64 : System.TypeCode.Int32;
+                case SerializedPropertyType.Boolean:
+                    return System.TypeCode.Boolean;
+                case SerializedPropertyType.Float:
+                    return prop.type == "double" ? System.TypeCode.Double : System.TypeCode.Single;
+                case SerializedPropertyType.String:
+                    return System.TypeCode.String;
+                case SerializedPropertyType.LayerMask:
+                    return System.TypeCode.Int32;
+                case SerializedPropertyType.Enum:
+                    return System.TypeCode.Int32;
+                case SerializedPropertyType.ArraySize:
+                    return System.TypeCode.Int32;
+                case SerializedPropertyType.Character:
+                    return System.TypeCode.Char;
+                default:
+                    return System.TypeCode.Object;
+            }
+        }
+
         public static double GetNumericValue(this SerializedProperty prop)
         {
             switch(prop.propertyType)

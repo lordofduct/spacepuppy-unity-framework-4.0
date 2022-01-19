@@ -106,6 +106,7 @@ namespace com.spacepuppy
 
         public bool AlwaysExpanded = true;
         public bool DisplayBox;
+        public bool IgnoreIfNoChildren;
 
     }
 
@@ -322,6 +323,7 @@ namespace com.spacepuppy
         public System.Type[] InheritsFromTypes;
         public bool HideTypeDropDown;
         public bool AllowProxy;
+        public bool AllowSceneObjects = true;
 
         public TypeRestrictionAttribute()
         {

@@ -29,8 +29,8 @@ namespace com.spacepuppyeditor.Internal
 
         public MultiPropertyAttributePropertyHandler(SerializedProperty property, System.Reflection.FieldInfo fieldInfo, bool propertyIsArray, PropertyAttribute[] attribs)
         {
-            if (fieldInfo == null) throw new System.ArgumentNullException("fieldInfo");
-            if (attribs == null) throw new System.ArgumentNullException("attribs");
+            if (fieldInfo == null) throw new System.ArgumentNullException(nameof(fieldInfo));
+            if (attribs == null) throw new System.ArgumentNullException(nameof(attribs));
             _fieldInfo = fieldInfo;
             _propertyIsArray = propertyIsArray;
 
@@ -240,6 +240,7 @@ namespace com.spacepuppyeditor.Internal
             {
                 for (int i = 0; i < _modifiers.Count; i++)
                 {
+                    Debug.Log(_fieldInfo.Name + " : " + _modifiers[i].GetType().Name);
                     _modifiers[i].OnBeforeGUI(property, ref cancelDraw);
                 }
             }
@@ -259,42 +260,42 @@ namespace com.spacepuppyeditor.Internal
             return result;
         }
 
-        //public override bool OnGUILayout(SerializedProperty property, GUIContent label, bool includeChildren, GUILayoutOption[] options)
-        //{
-        //    if (label == null)
-        //    {
-        //        label = EditorHelper.TempContent(_customDisplayName ?? property.displayName, _customTooltip ?? property.tooltip);
-        //    }
-        //    else if (string.IsNullOrEmpty(label.tooltip) && !string.IsNullOrEmpty(_customTooltip))
-        //    {
-        //        label = EditorHelper.CloneContent(label);
-        //        label.tooltip = _customTooltip;
-        //    }
+        public override bool OnGUILayout(SerializedProperty property, GUIContent label, bool includeChildren, GUILayoutOption[] options)
+        {
+            if (label == null)
+            {
+                label = EditorHelper.TempContent(_customDisplayName ?? property.displayName, _customTooltip ?? property.tooltip);
+            }
+            else if (string.IsNullOrEmpty(label.tooltip) && !string.IsNullOrEmpty(_customTooltip))
+            {
+                label = EditorHelper.CloneContent(label);
+                label.tooltip = _customTooltip;
+            }
 
-        //    bool cancelDraw = false;
+            bool cancelDraw = false;
 
-        //    if (_modifiers != null)
-        //    {
-        //        for (int i = 0; i < _modifiers.Count; i++)
-        //        {
-        //            _modifiers[i].OnBeforeGUI(property, ref cancelDraw);
-        //        }
-        //    }
+            if (_modifiers != null)
+            {
+                for (int i = 0; i < _modifiers.Count; i++)
+                {
+                    _modifiers[i].OnBeforeGUI(property, ref cancelDraw);
+                }
+            }
 
-        //    bool result = false;
-        //    if (!cancelDraw) result = base.OnGUILayout(property, label, includeChildren, options);
-        //    PropertyHandlerValidationUtility.AddAsHandled(property, this);
+            bool result = false;
+            if (!cancelDraw) result = base.OnGUILayout(property, label, includeChildren, options);
+            PropertyHandlerValidationUtility.AddAsHandled(property, this);
 
-        //    if (_modifiers != null)
-        //    {
-        //        for (int i = 0; i < _modifiers.Count; i++)
-        //        {
-        //            _modifiers[i].OnPostGUI(property);
-        //        }
-        //    }
+            if (_modifiers != null)
+            {
+                for (int i = 0; i < _modifiers.Count; i++)
+                {
+                    _modifiers[i].OnPostGUI(property);
+                }
+            }
 
-        //    return result;
-        //}
+            return result;
+        }
 
         public override void OnValidate(SerializedProperty property)
         {

@@ -82,7 +82,7 @@ namespace com.spacepuppyeditor.Core
             }
         }
 
-        private static System.Guid FromSerializedProperty(SerializedProperty prop)
+        public static System.Guid FromSerializedProperty(SerializedProperty prop)
         {
             return new System.Guid(prop.FindPropertyRelative("a").intValue, (short)prop.FindPropertyRelative("b").intValue, (short)prop.FindPropertyRelative("c").intValue,
                                    (byte)prop.FindPropertyRelative("d").intValue, (byte)prop.FindPropertyRelative("e").intValue, (byte)prop.FindPropertyRelative("f").intValue,
@@ -90,7 +90,7 @@ namespace com.spacepuppyeditor.Core
                                    (byte)prop.FindPropertyRelative("j").intValue, (byte)prop.FindPropertyRelative("k").intValue);
         }
 
-        private static void ToSerializedProperty(SerializedProperty prop, System.Guid guid)
+        public static void ToSerializedProperty(SerializedProperty prop, System.Guid guid)
         {
             var arr = guid.ToByteArray();
             prop.FindPropertyRelative("a").intValue = System.BitConverter.ToInt32(arr, 0);

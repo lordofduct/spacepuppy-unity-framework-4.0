@@ -226,7 +226,7 @@ namespace com.spacepuppyeditor.Core.Events
                         {
                             var tp = TypeUtil.FindType(queryProp.stringValue);
                             if (!TypeUtil.IsType(tp, typeof(UnityEngine.Object))) tp = null;
-                            tp = SPEditorGUI.TypeDropDown(r2, GUIContent.none, typeof(UnityEngine.Object), tp);
+                            tp = SPEditorGUI.TypeDropDown(r2, GUIContent.none, tp, typeof(UnityEngine.Object));
                             queryProp.stringValue = (tp != null) ? tp.FullName : null;
                         }
                         break;

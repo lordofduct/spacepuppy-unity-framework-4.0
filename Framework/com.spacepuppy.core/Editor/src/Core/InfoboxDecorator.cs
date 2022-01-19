@@ -29,7 +29,7 @@ namespace com.spacepuppyeditor.Core
         public static float GetHeight(InfoboxAttribute attrib)
         {
             GUIStyle style = GUI.skin.GetStyle("HelpBox");
-            return Mathf.Max(40f, style.CalcHeight(new GUIContent(attrib.Message), EditorGUIUtility.currentViewWidth - MARGIN_DBL));
+            return Mathf.Max(40f, style.CalcHeight(new GUIContent(attrib.Message), EditorGUIUtility.currentViewWidth - MARGIN_DBL)) + EditorGUIUtility.singleLineHeight;
         }
 
         public static void OnGUI(Rect position, InfoboxAttribute attrib)

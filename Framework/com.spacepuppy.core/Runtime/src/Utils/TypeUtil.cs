@@ -72,7 +72,7 @@ namespace com.spacepuppy.Utils
             }
         }
 
-        public static IEnumerable<Type> GetTypes(System.Func<System.Type, bool> predicate)
+        public static IEnumerable<Type> GetTypes(System.Predicate<System.Type> predicate)
         {
             foreach(var tp in GetTypes())
             {

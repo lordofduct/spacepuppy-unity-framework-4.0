@@ -5,6 +5,7 @@ using System.Linq;
 
 using com.spacepuppy;
 using com.spacepuppy.Utils;
+using com.spacepuppyeditor.Windows;
 
 namespace com.spacepuppyeditor
 {
@@ -329,15 +330,29 @@ namespace com.spacepuppyeditor
 
         #region Type Dropdown
 
-        public static System.Type TypeDropDown(GUIContent label, 
-                                               System.Type baseType, System.Type selectedType, 
-                                               bool allowAbstractTypes = false, bool allowInterfaces = false, 
-                                               System.Type defaultType = null, System.Type[] excludedTypes = null, 
-                                               TypeDropDownListingStyle listType = TypeDropDownListingStyle.Namespace,
-                                               System.Predicate<System.Type> searchPredicate = null)
+        public static System.Type TypeDropDown(GUIContent label,
+                                               System.Type selectedType,
+                                               System.Type baseType = null,
+                                               bool allowAbstractTypes = false, bool allowInterfaces = false,
+                                               System.Type defaultType = null, System.Type[] excludedTypes = null,
+                                               TypeDropDownListingStyle listType = TypeDropDownListingStyle.Flat,
+                                               System.Func<System.Type, string, bool> searchFilter = null,
+                                               int maxVisisbleCount = TypeDropDownWindowSelector.DEFAULT_MAXCOUNT)
         {
             var position = EditorGUILayout.GetControlRect(true);
-            return SPEditorGUI.TypeDropDown(position, label, baseType, selectedType, allowAbstractTypes, allowInterfaces, defaultType, excludedTypes, listType, searchPredicate);
+            return SPEditorGUI.TypeDropDown(position, label, selectedType, baseType, allowAbstractTypes, allowInterfaces, defaultType, excludedTypes, listType, searchFilter, maxVisisbleCount);
+        }
+
+        public static System.Type TypeDropDown(GUIContent label,
+                                               System.Type selectedType,
+                                               System.Predicate<System.Type> enumeratePredicate,
+                                               System.Type baseType = null, System.Type defaultType = null,
+                                               TypeDropDownListingStyle listType = TypeDropDownListingStyle.Flat,
+                                               System.Func<System.Type, string, bool> searchFilter = null,
+                                               int maxVisisbleCount = TypeDropDownWindowSelector.DEFAULT_MAXCOUNT)
+        {
+            var position = EditorGUILayout.GetControlRect(true);
+            return SPEditorGUI.TypeDropDown(position, label, selectedType, enumeratePredicate, baseType, defaultType, listType, searchFilter, maxVisisbleCount);
         }
 
         #endregion

@@ -19,6 +19,7 @@ namespace com.spacepuppyeditor.Core
 
         private bool _displayBox;
         private bool _alwaysExpanded;
+        private bool _ignoreIfNoChildren;
 
         #region Properties
 
@@ -34,10 +35,18 @@ namespace com.spacepuppyeditor.Core
             set => _alwaysExpanded = value;
         }
 
+        public bool IgnoreIfNoChildren
+        {
+            get => (this.attribute as DisplayFlatAttribute)?.IgnoreIfNoChildren ?? _ignoreIfNoChildren;
+            set => _ignoreIfNoChildren = value;
+        }
+
         #endregion
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
+            if (this.IgnoreIfNoChildren && !property.hasChildren) return 0f;
+
             bool cache = property.isExpanded;
             if (this.AlwaysExpanded)
             {
@@ -81,6 +90,8 @@ namespace com.spacepuppyeditor.Core
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            if (this.IgnoreIfNoChildren && !property.hasChildren) return;
+
             bool cache = property.isExpanded;
             if (this.AlwaysExpanded)
             {

@@ -79,6 +79,12 @@ namespace com.spacepuppy.Serialization.Json
             set;
         }
 
+        public System.Predicate<System.Type> AllowedTypeFilterCallback
+        {
+            get;
+            set;
+        }
+
         public void Serialize(Stream serializationStream, object graph)
         {
             if (serializationStream == null) throw new System.ArgumentNullException("serializationStream");
@@ -301,8 +307,9 @@ namespace com.spacepuppy.Serialization.Json
             var tp = Type.GetType(_reader.Value as string);
             if (tp == null) tp = TypeUtil.FindType(_reader.Value as string, true);
             if (tp == null) throw new SerializationException("Failed to deserialize due to malformed json: objects must contain a @type property.");
+            if (this.AllowedTypeFilterCallback != null && !this.AllowedTypeFilterCallback(tp)) throw new SerializationException("Failed to deserialize due to malformed json: json contains an unsupported type.");
 
-            object result;
+            object result = null;
             ISerializationSurrogate surrogate;
             ISurrogateSelector selector;
             if (this.SurrogateSelector != null && (surrogate = this.SurrogateSelector.GetSurrogate(tp, this.Context, out selector)) != null)
@@ -430,7 +437,7 @@ namespace com.spacepuppy.Serialization.Json
                     }
                 }
 
-                Result:
+            Result:
                 result = FormatterServices.GetUninitializedObject(tp);
                 FormatterServices.PopulateObjectMembers(result, members, data);
             }
@@ -514,7 +521,7 @@ namespace com.spacepuppy.Serialization.Json
                 }
             }
 
-            Result:
+        Result:
             return si;
         }
 
@@ -594,7 +601,7 @@ namespace com.spacepuppy.Serialization.Json
                 }
             }
 
-            Result:
+        Result:
             if (keepAsList)
                 return lst;
             else

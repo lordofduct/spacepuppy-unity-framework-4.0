@@ -1,7 +1,4 @@
-﻿using System.Runtime.InteropServices;
-using System.Runtime.Remoting.Messaging;
-
-namespace com.spacepuppy
+﻿namespace com.spacepuppy
 {
 
     /// <summary>

@@ -1,10 +1,5 @@
 using UnityEngine;
-using System.Collections.Generic;
-using System.Linq;
-
-using com.spacepuppy.Dynamic;
 using com.spacepuppy.Events;
-using com.spacepuppy.Utils;
 
 namespace com.spacepuppy
 {
@@ -26,10 +21,32 @@ namespace com.spacepuppy
 
         public System.EventHandler OnTriggered;
 
+        private RadicalWaitHandle _handle;
+
+        #region Methods
+
+        public IRadicalWaitHandle WaitForNextTrigger()
+        {
+            if (_handle == null)
+            {
+                _handle = RadicalWaitHandle.Create();
+            }
+            return _handle;
+        }
+
         public void Trigger()
         {
+            var h = _handle;
+            _handle = null;
+
             this.OnTriggered?.Invoke(this, System.EventArgs.Empty);
+            if (h != null)
+            {
+                h.SignalComplete();
+            }
         }
+
+        #endregion
 
         #region ITriggerableMechanism Interface
 

@@ -240,7 +240,6 @@ namespace com.spacepuppyeditor.Internal
             {
                 for (int i = 0; i < _modifiers.Count; i++)
                 {
-                    Debug.Log(_fieldInfo.Name + " : " + _modifiers[i].GetType().Name);
                     _modifiers[i].OnBeforeGUI(property, ref cancelDraw);
                 }
             }

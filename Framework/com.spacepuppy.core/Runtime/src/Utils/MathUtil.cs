@@ -710,7 +710,7 @@ namespace com.spacepuppy.Utils
         /// <summary>
         /// Wraps a value around some significant range.
         /// 
-        /// Similar to modulo, but works in a unary direction over any range (including negative values).
+        /// Similar to C# modulo, but works like a true module, in a unary direction over any range (including negative values).
         /// 
         /// ex:
         /// Wrap(8,6,2) == 4
@@ -728,11 +728,13 @@ namespace com.spacepuppy.Utils
             if (max == 0)
                 return min;
 
-            return value - max * (int)Math.Floor((double)(value - min) / max);
+            var result = (value - min) % max;
+            return result < 0 ? result + max + min : result + min;
         }
         public static int Wrap(int value, int max)
         {
-            return Wrap(value, max, 0);
+            var result = value % max;
+            return result < 0 ? result + max : result;
         }
 
         public static long Wrap(long value, long max, long min)
@@ -741,11 +743,13 @@ namespace com.spacepuppy.Utils
             if (max == 0)
                 return min;
 
-            return value - max * (long)Math.Floor((double)(value - min) / max);
+            var result = (value - min) % max;
+            return result < 0 ? result + max + min : result + min;
         }
         public static long Wrap(long value, long max)
         {
-            return Wrap(value, max, 0);
+            var result = value % max;
+            return result < 0 ? result + max : result;
         }
 
         public static float Wrap(float value, float max, float min)
@@ -754,71 +758,28 @@ namespace com.spacepuppy.Utils
             if (max == 0)
                 return min;
 
-            return value - max * (float)Math.Floor((value - min) / max);
-
-
-            // //old method using while loop, slow for large numbers
-            //value -= min;
-            //max -= min;
-            //if (max == 0)
-            //    return min;
-
-            //value = value % max;
-            //value += min;
-            //while (value < min)
-            //{
-            //    value += max;
-            //}
-
-            //return value;
-
+            var result = (value - min) % max;
+            return result < 0 ? result + max + min : result + min;
         }
         public static float Wrap(float value, float max)
         {
-            return Wrap(value, max, 0);
-
-
-            // //old method using while loop, slow for large numbers
-            //float min = 0;
-
-            //value -= min;
-            //max -= min;
-            //if (max == 0)
-            //    return min;
-
-            //value = (value % max);
-            //value += min;
-            //while (value < min)
-            //{
-            //    value += max;
-            //}
-
-            //return value;
-
-
+            var result = value % max;
+            return result < 0 ? result + max : result;
         }
 
-        /// <summary>
-        /// Alt of Wrap, obsolete.
-        /// </summary>
-        /// <param name="value">value to wrap</param>
-        /// <param name="max">max in range</param>
-        /// <param name="min">min in range</param>
-        /// <returns>A value wrapped around min to max</returns>
-        /// <remarks></remarks>
-        [System.Obsolete("Use MathUtil.Wrap")]
-        public static float ArithWrap(float value, float max, float min)
+        public static double Wrap(double value, double max, double min)
         {
             max -= min;
             if (max == 0)
                 return min;
 
-            return value - max * (float)Math.Floor((value - min) / max);
+            var result = (value - min) % max;
+            return result < 0 ? result + max + min : result + min;
         }
-        [System.Obsolete("Use MathUtil.Wrap")]
-        public static float ArithWrap(float value, float max)
+        public static double Wrap(double value, double max)
         {
-            return ArithWrap(value, max, 0);
+            var result = value % max;
+            return result < 0 ? result + max : result;
         }
 
         /// <summary>

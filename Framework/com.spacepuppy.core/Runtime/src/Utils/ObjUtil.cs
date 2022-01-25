@@ -982,16 +982,19 @@ namespace com.spacepuppy.Utils
         {
             if (object.ReferenceEquals(obj, null)) return true;
 
-            if (obj is ISPDisposable)
-                return (obj as ISPDisposable).IsDisposed;
-            else if (obj is UnityEngine.Object)
-                return !_isObjectAlive(obj as UnityEngine.Object);
-            else if (obj is UnityEngine.TrackedReference)
-                return (obj as UnityEngine.TrackedReference) == null;
-            else if (obj is IComponent)
-                return !_isObjectAlive((obj as IComponent).component);
-            else if (obj is IGameObjectSource)
-                return !_isObjectAlive((obj as IGameObjectSource).gameObject);
+            switch (obj)
+            {
+                case ISPDisposable spd:
+                    return spd.IsDisposed;
+                case UnityEngine.Object uob:
+                    return !_isObjectAlive(uob);
+                case UnityEngine.TrackedReference trf:
+                    return trf == null;
+                case IComponent c:
+                    return !_isObjectAlive(c.component);
+                case IGameObjectSource g:
+                    return !_isObjectAlive(g.gameObject);
+            }
 
             return false;
         }
@@ -1007,24 +1010,19 @@ namespace com.spacepuppy.Utils
         {
             if (object.ReferenceEquals(obj, null)) return false;
 
-            if (obj is ISPDisposable)
-                return (obj as ISPDisposable).IsDisposed;
-            else if (obj is UnityEngine.Object)
-                return !_isObjectAlive(obj as UnityEngine.Object);
-            else if (obj is UnityEngine.TrackedReference)
-                return (obj as UnityEngine.TrackedReference) == null;
-            else if (obj is IComponent)
-                return !_isObjectAlive((obj as IComponent).component);
-            else if (obj is IGameObjectSource)
-                return !_isObjectAlive((obj as IGameObjectSource).gameObject);
-
-
-            //if (obj is UnityEngine.Object)
-            //    return (obj as UnityEngine.Object) == null;
-            //else if (obj is IComponent)
-            //    return (obj as IComponent).component == null;
-            //else if (obj is IGameObjectSource)
-            //    return (obj as IGameObjectSource).gameObject == null;
+            switch (obj)
+            {
+                case ISPDisposable spd:
+                    return spd.IsDisposed;
+                case UnityEngine.Object uob:
+                    return !_isObjectAlive(uob);
+                case UnityEngine.TrackedReference trf:
+                    return trf == null;
+                case IComponent c:
+                    return !_isObjectAlive(c.component);
+                case IGameObjectSource g:
+                    return !_isObjectAlive(g.gameObject);
+            }
 
             return false;
         }
@@ -1033,22 +1031,19 @@ namespace com.spacepuppy.Utils
         {
             if (object.ReferenceEquals(obj, null)) return false;
 
-            if (obj is ISPDisposable)
-                return !(obj as ISPDisposable).IsDisposed;
-            else if (obj is UnityEngine.Object)
-                return _isObjectAlive(obj as UnityEngine.Object);
-            else if (obj is IComponent)
-                return _isObjectAlive((obj as IComponent).component);
-            else if (obj is IGameObjectSource)
-                return _isObjectAlive((obj as IGameObjectSource).gameObject);
-
-
-            //if (obj is UnityEngine.Object)
-            //    return (obj as UnityEngine.Object) != null;
-            //else if (obj is IComponent)
-            //    return (obj as IComponent).component != null;
-            //else if (obj is IGameObjectSource)
-            //    return (obj as IGameObjectSource).gameObject != null;
+            switch (obj)
+            {
+                case ISPDisposable spd:
+                    return !spd.IsDisposed;
+                case UnityEngine.Object uob:
+                    return _isObjectAlive(uob);
+                case UnityEngine.TrackedReference trf:
+                    return trf != null;
+                case IComponent c:
+                    return _isObjectAlive(c.component);
+                case IGameObjectSource g:
+                    return _isObjectAlive(g.gameObject);
+            }
 
             return true;
         }

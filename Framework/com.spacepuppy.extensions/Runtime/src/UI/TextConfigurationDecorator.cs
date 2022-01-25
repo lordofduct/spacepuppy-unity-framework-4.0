@@ -9,7 +9,7 @@ using com.spacepuppy.Dynamic;
 namespace com.spacepuppy.UI
 {
 
-    [Infobox("This allows easily accessing to configure a UI element's text/graphics easily ambiguous of how it's configured underneath (unity Text vs TextMeshPro vs custom).\r\n\r\nLeave the mode NULL to allow the decorator to automatically configure itself on enable.")]
+    [Infobox("This allows easily accessing to configure a UI element's text/graphics easily ambiguous of how it's configured underneath (unity Text vs TextMeshPro vs custom).\r\n\r\nLeave the mode NULL to allow the decorator to automatically configure itself in text-only mode on enable.")]
     public sealed class TextConfigurationDecorator : MonoBehaviour, TextConfigurationDecorator.ITextDecoratorMode, IProxy
     {
 

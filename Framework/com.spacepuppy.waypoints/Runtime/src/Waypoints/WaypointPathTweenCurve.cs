@@ -216,12 +216,12 @@ namespace com.spacepuppy.Waypoints
 
         #region Methods
 
-        public void SetToTarget(object targ, float t)
+        public void SetToTarget(object targ, float t, bool ignoreModifiers = false)
         {
-            this.LerpToTarget(targ, t, 1f);
+            this.LerpToTarget(targ, t, 1f, ignoreModifiers);
         }
 
-        public void LerpToTarget(object targ, float t, float lerpT)
+        public void LerpToTarget(object targ, float t, float lerpT, bool ignoreModifiers = false)
         {
             if (_dur == 0f)
                 t = 1f;
@@ -277,14 +277,14 @@ namespace com.spacepuppy.Waypoints
                     }
                 }
 
-                if (_modifiers.Length > 0)
+                if (!ignoreModifiers && _modifiers.Length > 0)
                 {
                     var ma = (i >= 0 && i < _modifiers.Length) ? _modifiers[i] : null;
                     var mb = (j >= 0 && j < _modifiers.Length) ? _modifiers[j] : null;
 
-                    if(ma != null && mb != null)
+                    if (ma != null && mb != null)
                     {
-                        foreach(var m in ma)
+                        foreach (var m in ma)
                         {
                             m.CopyTo(targ);
                         }
@@ -293,14 +293,59 @@ namespace com.spacepuppy.Waypoints
                             m.LerpTo(targ, data.TPrime);
                         }
                     }
-                    else if(ma != null)
+                    else if (ma != null)
                     {
                         foreach (var m in ma)
                         {
                             m.CopyTo(targ);
                         }
                     }
-                    else if(mb != null)
+                    else if (mb != null)
+                    {
+                        foreach (var m in mb)
+                        {
+                            m.CopyTo(targ);
+                        }
+                    }
+                }
+            }
+        }
+
+        public void SetToModifiersOnly(object targ, float t)
+        {
+            if (_modifiers == null) this.SyncModifiers();
+            if (_modifiers.Length > 0)
+            {
+                var data = _path.Path.GetRelativePositionData(t);
+
+                var cnt = _path.Path.Count;
+                int i = data.Index;
+                int j = (_path.Path.IsClosed) ? (i + 1) % cnt : i + 1;
+
+                if (_modifiers.Length > 0)
+                {
+                    var ma = (i >= 0 && i < _modifiers.Length) ? _modifiers[i] : null;
+                    var mb = (j >= 0 && j < _modifiers.Length) ? _modifiers[j] : null;
+
+                    if (ma != null && mb != null)
+                    {
+                        foreach (var m in ma)
+                        {
+                            m.CopyTo(targ);
+                        }
+                        foreach (var m in mb)
+                        {
+                            m.LerpTo(targ, data.TPrime);
+                        }
+                    }
+                    else if (ma != null)
+                    {
+                        foreach (var m in ma)
+                        {
+                            m.CopyTo(targ);
+                        }
+                    }
+                    else if (mb != null)
                     {
                         foreach (var m in mb)
                         {

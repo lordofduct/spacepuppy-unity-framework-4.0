@@ -40,7 +40,7 @@ namespace com.spacepuppy.Waypoints
         {
             get
             {
-                return (!object.ReferenceEquals(_owner, null) && _owner.TransformRelativeTo != null) ? this.transform.GetRelativePosition(_owner.TransformRelativeTo) : this.transform.position;
+                return (ObjUtil.IsAlive(_owner.TransformRelativeTo)) ? this.transform.GetRelativePosition(_owner.TransformRelativeTo) : this.transform.position;
             }
             set
             {
@@ -55,7 +55,7 @@ namespace com.spacepuppy.Waypoints
         {
             get
             {
-                return (!object.ReferenceEquals(_owner, null) && _owner.TransformRelativeTo != null) ? this.transform.GetRelativeRotation(_owner.TransformRelativeTo) * Vector3.forward : this.transform.forward;
+                return (ObjUtil.IsAlive(_owner.TransformRelativeTo)) ? this.transform.GetRelativeRotation(_owner.TransformRelativeTo) * Vector3.forward : this.transform.forward;
             }
             set
             {

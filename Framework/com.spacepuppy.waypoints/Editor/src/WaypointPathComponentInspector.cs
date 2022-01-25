@@ -255,14 +255,18 @@ namespace com.spacepuppyeditor.Waypoints
 
             Gizmos.color = Color.red;
             float seglength = Mathf.Max(SEG_LENGTH, path.GetArcLength() / 5000f);
+            int cnt = 0;
             Vector3? lastPnt = null;
             using (var pnts = TempCollection.GetCallbackCollection<Vector3>((p) =>
             {
+                if (c.TransformRelativeTo) p = c.TransformRelativeTo.TransformPoint(p);
+
                 var p0 = lastPnt ?? Vector3.zero;
                 var pt0 = matrix.MultiplyPoint3x4(p0);
                 var pt1 = matrix.MultiplyPoint3x4(p);
                 lastPnt = p;
-                if (lastPnt == null || (!PointVisibleInCam(cam, pt0) && !PointVisibleInCam(cam, pt1))) return;
+                cnt++;
+                if (cnt == 1 || lastPnt == null || (!PointVisibleInCam(cam, pt0) && !PointVisibleInCam(cam, pt1))) return;
 
                 Gizmos.DrawLine(pt0, pt1);
             }))
@@ -273,22 +277,25 @@ namespace com.spacepuppyeditor.Waypoints
             //draw control points
             for (int i = 0; i < path.Count; i++)
             {
-                if (PointVisibleInCam(cam, path.ControlPoint(i).Position))
+                var p = path.ControlPoint(i).Position;
+                if (c.TransformRelativeTo) p = c.TransformRelativeTo.TransformPoint(p);
+
+                if (PointVisibleInCam(cam, p))
                 {
                     if (i == 0)
                     {
                         Gizmos.color = Color.green;
-                        Gizmos.DrawWireCube(matrix.MultiplyPoint3x4(path.ControlPoint(i).Position), Vector3.one * 0.5f);
+                        Gizmos.DrawWireCube(matrix.MultiplyPoint3x4(p), Vector3.one * 0.5f);
                     }
                     else if (i == path.Count - 1)
                     {
                         Gizmos.color = Color.red;
-                        Gizmos.DrawWireCube(matrix.MultiplyPoint3x4(path.ControlPoint(i).Position), Vector3.one * 0.5f);
+                        Gizmos.DrawWireCube(matrix.MultiplyPoint3x4(p), Vector3.one * 0.5f);
                     }
                     else
                     {
                         Gizmos.color = Color.yellow;
-                        Gizmos.DrawWireSphere(matrix.MultiplyPoint3x4(path.ControlPoint(i).Position), 0.25f);
+                        Gizmos.DrawWireSphere(matrix.MultiplyPoint3x4(p), 0.25f);
                     }
                 }
             }

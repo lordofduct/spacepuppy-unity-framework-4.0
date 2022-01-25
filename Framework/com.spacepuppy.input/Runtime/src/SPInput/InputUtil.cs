@@ -10,13 +10,12 @@ namespace com.spacepuppy.SPInput
 
         public const float DEFAULT_AXLEBTNDEADZONE = 0.707f;
 
-
-        public static float CutoffAxis(float value, float deadzone, DeadZoneCutoff cutoff)
+        public static float CutoffAxis(float value, float deadzone, DeadZoneCutoff cutoff, bool clampNormalized = true)
         {
             if (deadzone < 0f) deadzone = 0f;
 
             //no larger than 1
-            if (Mathf.Abs(value) > 1f) return Mathf.Sign(value);
+            if (clampNormalized && Mathf.Abs(value) > 1f) return Mathf.Sign(value);
 
             switch (cutoff)
             {
@@ -30,7 +29,23 @@ namespace com.spacepuppy.SPInput
             }
         }
 
-        public static Vector2 CutoffDualAxis(Vector2 value, float axleDeadzone, DeadZoneCutoff axleCutoff, float radialDeadzone, DeadZoneCutoff radialCutoff)
+        public static Vector2 CutoffDualAxis(Vector2 value, float axleDeadzone, DeadZoneCutoff axleCutoff, bool clampNormalized = true)
+        {
+            if (axleDeadzone < 0f) axleDeadzone = 0f;
+
+            if (axleDeadzone > 0f)
+            {
+                value.x = CutoffAxis(value.x, axleDeadzone, axleCutoff);
+                value.y = CutoffAxis(value.y, axleDeadzone, axleCutoff);
+            }
+
+            //no larger than 1
+            if (clampNormalized && value.sqrMagnitude > 1f) return value.normalized;
+
+            return value;
+        }
+
+        public static Vector2 CutoffDualAxis(Vector2 value, float axleDeadzone, DeadZoneCutoff axleCutoff, float radialDeadzone, DeadZoneCutoff radialCutoff, bool clampNormalized = true)
         {
             if (axleDeadzone < 0f) axleDeadzone = 0f;
             if (radialDeadzone < 0f) radialDeadzone = 0f;
@@ -42,7 +57,7 @@ namespace com.spacepuppy.SPInput
             }
 
             //no larger than 1
-            if (value.sqrMagnitude > 1f) return value.normalized;
+            if (clampNormalized && value.sqrMagnitude > 1f) return value.normalized;
 
             if (radialDeadzone > 0f)
             {
@@ -60,7 +75,6 @@ namespace com.spacepuppy.SPInput
 
             return value;
         }
-
 
         public static ButtonState ConsumeButtonState(ButtonState current)
         {

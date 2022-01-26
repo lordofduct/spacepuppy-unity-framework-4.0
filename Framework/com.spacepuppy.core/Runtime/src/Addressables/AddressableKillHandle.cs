@@ -1,3 +1,4 @@
+#if SP_ADDRESSABLES
 using UnityEngine;
 using System.Collections.Generic;
 
@@ -30,3 +31,4 @@ namespace com.spacepuppy.Addressables
     }
 
 }
+#endif

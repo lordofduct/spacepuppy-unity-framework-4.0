@@ -293,7 +293,7 @@ namespace com.spacepuppy
 
                 if (this.IsQuerying)
                 {
-                    if (!_table.Contains(obj)) this.QueryCompleteAction += () => _table[obj.gameObject] = obj;
+                    if (!_table.Values.Contains(obj)) this.QueryCompleteAction += () => _table[obj.gameObject] = obj;
                 }
                 else
                 {
@@ -309,7 +309,7 @@ namespace com.spacepuppy
 
                 if (this.IsQuerying)
                 {
-                    if (_table.Contains(obj))
+                    if (_table.Values.Contains(obj))
                     {
                         this.QueryCompleteAction += () => _table.Remove(obj.gameObject);
                     }

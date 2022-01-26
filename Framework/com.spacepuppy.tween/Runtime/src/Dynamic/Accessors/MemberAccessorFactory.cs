@@ -68,7 +68,7 @@ namespace com.spacepuppy.Dynamic.Accessors
             const MemberTypes MASK_MEMBERTYPES = MemberTypes.Field | MemberTypes.Property;
             const BindingFlags MASK_BINDINGS = BindingFlags.Public | BindingFlags.Instance;
 
-            if (memberName.Contains('.'))
+            if (memberName.IndexOf('.') >= 0)
             {
                 var arr = memberName.Split('.');
                 using (var chainBuilder = TempCollection.GetQueue<IMemberAccessor>())

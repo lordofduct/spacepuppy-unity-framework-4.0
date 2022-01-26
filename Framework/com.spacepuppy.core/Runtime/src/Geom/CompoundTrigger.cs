@@ -86,7 +86,7 @@ namespace com.spacepuppy.Geom
                     var e = lst.GetEnumerator();
                     while (e.MoveNext())
                     {
-                        if (!_colliders.Contains(e.Current))
+                        if (!_colliders.ContainsKey(e.Current))
                         {
                             var m = e.Current.AddComponent<CompoundTriggerMember>();
                             m.Init(this, e.Current);

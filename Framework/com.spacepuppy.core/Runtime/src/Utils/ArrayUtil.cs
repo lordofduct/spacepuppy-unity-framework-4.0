@@ -191,20 +191,6 @@ namespace com.spacepuppy.Utils
             return lst.Intersect(objs).Count() > 0;
         }
 
-        public static bool Contains(this IEnumerable lst, object obj)
-        {
-            //foreach (var o in lst)
-            //{
-            //    if (Object.Equals(o, obj)) return true;
-            //}
-            var e = new LightEnumerator(lst);
-            while(e.MoveNext())
-            {
-                if (Object.Equals(e.Current, obj)) return true;
-            }
-            return false;
-        }
-
         public static bool Contains<T>(this T[,] arr, T value)
         {
             for(int i = 0; i < arr.GetLength(0); i++)

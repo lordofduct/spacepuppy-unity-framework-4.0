@@ -267,7 +267,7 @@ namespace com.spacepuppy.Cameras
 
             public bool Contains(IPostProcessingEffect item)
             {
-                return _owner._globalEffects.Contains(item);
+                return item is UnityEngine.Object uobj && _owner._globalEffects.Contains(uobj);
             }
 
             public void CopyTo(IPostProcessingEffect[] array, int arrayIndex)

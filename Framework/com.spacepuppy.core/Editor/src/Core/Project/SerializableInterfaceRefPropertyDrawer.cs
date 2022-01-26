@@ -7,6 +7,7 @@ using com.spacepuppy;
 using com.spacepuppy.Dynamic;
 using com.spacepuppy.Project;
 using com.spacepuppy.Utils;
+using com.spacepuppyeditor.Windows;
 
 namespace com.spacepuppyeditor.Core.Project
 {
@@ -63,8 +64,8 @@ namespace com.spacepuppyeditor.Core.Project
             }
             catch (System.Exception) { }
 
-            var val = ObjUtil.GetAsFromSource(valueType, EditorGUI.ObjectField(position, label, objProp.objectReferenceValue, typeof(UnityEngine.Object), true));
-            if (val != null && !valueType.IsInstanceOfType(val))
+            object val = UnityObjectDropDownWindowSelector.ObjectField(position, label, objProp.objectReferenceValue, valueType, true, true);
+            if (val != null && !valueType.IsInstanceOfType(val) && ObjUtil.GetAsFromSource<IProxy>(val) == null)
             {
                 val = null;
             }

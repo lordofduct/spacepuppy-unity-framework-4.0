@@ -98,6 +98,7 @@ namespace com.spacepuppyeditor.Core
                         property.objectReferenceValue,
                         (allInheritableTypes.Length == 1) ? allInheritableTypes[0] : fieldType,
                         attrib?.AllowSceneObjects ?? true,
+                        attrib?.AllowProxy ?? false,
                         (o) =>
                         {
                             return o && (TypeUtil.IsType(o.GetType(), allInheritableTypes) || ObjUtil.GetAsFromSource(allInheritableTypes, o) != null);

@@ -51,7 +51,7 @@ namespace com.spacepuppy.Project
         {
             get
             {
-                return _value;
+                return !object.ReferenceEquals(_value, null) ? _value : ObjUtil.GetAsFromSource<T>(_obj, true);
             }
             set
             {

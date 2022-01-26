@@ -63,7 +63,7 @@ namespace com.spacepuppy.Async
 
         public AsyncWaitHandle<T> Convert<T>()
         {
-            if(_provider is IAsyncWaitHandleProvider<T> p)
+            if (_provider is IAsyncWaitHandleProvider<T> p)
             {
                 return new AsyncWaitHandle<T>(p, Token);
             }
@@ -141,7 +141,7 @@ namespace com.spacepuppy.Async
                 await UniTask.SwitchToMainThread();
             }
 
-            while(!this.IsComplete)
+            while (!this.IsComplete)
             {
                 await UniTask.Yield();
             }
@@ -176,7 +176,7 @@ namespace com.spacepuppy.Async
             }
         }
 
-#endregion
+        #endregion
 
         #region Operators
 
@@ -267,7 +267,14 @@ namespace com.spacepuppy.Async
         /// <param name="callback"></param>
         public void OnComplete(System.Action<AsyncWaitHandle<T>> callback)
         {
-            _provider?.OnComplete(this, callback);
+            if (_provider == null)
+            {
+                callback(this);
+            }
+            else
+            {
+                _provider.OnComplete(this, callback);
+            }
         }
 
         /// <summary>
@@ -277,7 +284,14 @@ namespace com.spacepuppy.Async
         /// <returns></returns>
         public System.Threading.Tasks.Task<T> AsTask()
         {
-            return _provider?.GetTask(this);
+            if (_provider == null)
+            {
+                return System.Threading.Tasks.Task<T>.FromResult(_result);
+            }
+            else
+            {
+                return _provider.GetTask(this);
+            }
         }
 
 #if SP_UNITASK
@@ -335,7 +349,7 @@ namespace com.spacepuppy.Async
         /// <returns></returns>
         public T GetResult()
         {
-            if(_provider != null)
+            if (_provider != null)
             {
                 return _provider.GetResult(this);
             }

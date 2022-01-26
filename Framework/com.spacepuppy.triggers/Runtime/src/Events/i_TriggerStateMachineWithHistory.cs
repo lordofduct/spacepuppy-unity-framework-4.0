@@ -46,7 +46,7 @@ namespace com.spacepuppy.Events
         public System.Collections.Generic.IEnumerable<int> Checkpoints => _checkpoints;
 
         [ShowNonSerializedProperty("Last Active State")]
-        public int? LastActiveState => _history.Count > 1 ? _history.PeekPop() : (int?)null;
+        public int? LastActiveState => _history.Count > 0 ? _history.PeekPop() : (int?)null;
 
         [ShowNonSerializedProperty("Last Checkpoint")]
         public int? LastCheckpoint => _checkpoints.Count > 0 ? _checkpoints.PeekPop() : (int?)null;
@@ -57,7 +57,7 @@ namespace com.spacepuppy.Events
 
         public void GoToPreviouslyActiveState()
         {
-            if (_history.Count > 1)
+            if (_history.Count > 0)
             {
                 base.GoToState(_history.Pop()); //call base to avoid signaling a new history entry in the override below
             }
@@ -93,7 +93,7 @@ namespace com.spacepuppy.Events
 
         public void GoToPreviousCheckpoint()
         {
-            if(_checkpoints.Count > 0)
+            if (_checkpoints.Count > 0)
             {
                 this.GoToState(_checkpoints.Pop());
             }

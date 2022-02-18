@@ -7,6 +7,7 @@ using System.Linq;
 using com.spacepuppy.Utils;
 using System.Runtime.InteropServices.ComTypes;
 using System.Collections.Generic;
+using com.spacepuppy.Async;
 
 namespace com.spacepuppy
 {
@@ -770,104 +771,110 @@ namespace com.spacepuppy
 
 
                 //deal with the current yieldObject
-                if (current == null)
+                if (current is IAsyncWaitHandle handle) current = handle.AsYieldInstruction();
+                switch(current)
                 {
-                    //do nothing
-                }
-                else if (current is RadicalCoroutine)
-                {
-                    // //v3
-                    var rad = current as RadicalCoroutine;
-                    if (!rad.Finished)
-                    {
-                        if (!manual && rad._token != null)
+                    case null:
+                        //do nothing
+                        break;
+                    case RadicalCoroutine rad:
                         {
-                            _currentIEnumeratorYieldValue = rad._token;
+                            if (!rad.Finished)
+                            {
+                                if (!manual && rad._token != null)
+                                {
+                                    _currentIEnumeratorYieldValue = rad._token;
+                                }
+                                else
+                                {
+                                    _stack.Push(EnumWrapper.Create(WaitUntilDone_Routine(rad)));
+                                }
+                            }
+                            else
+                            {
+                                _currentIEnumeratorYieldValue = null;
+                            }
+                        }
+                        break;
+                    case IRadicalYieldInstruction instruction:
+                        {
+                            if (instruction is IResettingYieldInstruction) (instruction as IResettingYieldInstruction).Reset();
+                            if (instruction is IImmediatelyResumingYieldInstruction) (instruction as IImmediatelyResumingYieldInstruction).Signal += this.OnImmediatelyResumingYieldInstructionSignaled;
+
+                            //we push first, incase the instruction checks if the 'currentoperation' is itself on first tick
+                            _stack.Push(instruction);
+                            object yieldObject;
+                            if (instruction.Tick(out yieldObject))
+                            {
+                                _currentIEnumeratorYieldValue = yieldObject;
+                            }
+                            else
+                            {
+                                if (_stack.CurrentOperation == instruction) _stack.Pop();
+                            }
+                        }
+                        break;
+                    case YieldInstruction yi:
+                        {
+                            if (current is WaitForSeconds && (manual || (_disableMode & RadicalCoroutineDisableMode.Resumes) != 0))
+                            {
+                                _currentIEnumeratorYieldValue = null;
+                                _stack.Push(WaitForDuration.FromWaitForSeconds(current as WaitForSeconds));
+                            }
+                            else
+                            {
+                                _currentIEnumeratorYieldValue = current;
+                            }
+                        }
+                        break;
+                    case IEnumerable en:
+                        {
+                            //yes we have to test for IEnumerable before IEnumerator. When a yield method is returned as an IEnumerator, it still needs 'GetEnumerator' called on it.
+                            var e = en.GetEnumerator();
+                            if (e.MoveNext())
+                            {
+                                _currentIEnumeratorYieldValue = e.Current;
+                                _stack.Push(EnumWrapper.Create(e));
+                            }
+                        }
+                        break;
+                    case IEnumerator e:
+                        {
+                            if (e.MoveNext())
+                            {
+                                _currentIEnumeratorYieldValue = e.Current;
+                                _stack.Push(EnumWrapper.Create(e));
+                            }
+                        }
+                        break;
+                    default:
+                        if (current == com.spacepuppy.Async.RadicalTask.JumpToAsync)
+                        {
+                            //auto async flag
+                            var instruction = com.spacepuppy.Async.RadicalTask.Create(this) as IRadicalYieldInstruction;
+
+                            //we push first, incase the instruction checks if the 'currentoperation' is itself on first tick
+                            _stack.Push(instruction);
+                            object yieldObject;
+                            if (instruction.Tick(out yieldObject))
+                            {
+                                _currentIEnumeratorYieldValue = yieldObject;
+                            }
+                            else
+                            {
+                                if (_stack.CurrentOperation == instruction) _stack.Pop();
+                            }
+                        }
+                        else if (current == RadicalCoroutine.PauseSelfInstruction)
+                        {
+                            this.Pause();
+                            _currentIEnumeratorYieldValue = null;
                         }
                         else
                         {
-                            _stack.Push(EnumWrapper.Create(WaitUntilDone_Routine(rad)));
+                            _currentIEnumeratorYieldValue = current;
                         }
-                    }
-                    else
-                    {
-                        _currentIEnumeratorYieldValue = null;
-                    }
-                }
-                else if (current is IRadicalYieldInstruction)
-                {
-                    var instruction = current as IRadicalYieldInstruction;
-                    if (instruction is IResettingYieldInstruction) (instruction as IResettingYieldInstruction).Reset();
-                    if (instruction is IImmediatelyResumingYieldInstruction) (instruction as IImmediatelyResumingYieldInstruction).Signal += this.OnImmediatelyResumingYieldInstructionSignaled;
-
-                    //we push first, incase the instruction checks if the 'currentoperation' is itself on first tick
-                    _stack.Push(instruction);
-                    object yieldObject;
-                    if (instruction.Tick(out yieldObject))
-                    {
-                        _currentIEnumeratorYieldValue = yieldObject;
-                    }
-                    else
-                    {
-                        if (_stack.CurrentOperation == instruction) _stack.Pop();
-                    }
-                }
-                else if (current is YieldInstruction)
-                {
-                    if (current is WaitForSeconds && (manual || (_disableMode & RadicalCoroutineDisableMode.Resumes) != 0))
-                    {
-                        _currentIEnumeratorYieldValue = null;
-                        _stack.Push(WaitForDuration.FromWaitForSeconds(current as WaitForSeconds));
-                    }
-                    else
-                    {
-                        _currentIEnumeratorYieldValue = current;
-                    }
-                }
-                else if (current is IEnumerable)
-                {
-                    //yes we have to test for IEnumerable before IEnumerator. When a yield method is returned as an IEnumerator, it still needs 'GetEnumerator' called on it.
-                    var e = (current as IEnumerable).GetEnumerator();
-                    if (e.MoveNext())
-                    {
-                        _currentIEnumeratorYieldValue = e.Current;
-                        _stack.Push(EnumWrapper.Create(e));
-                    }
-                }
-                else if (current is IEnumerator)
-                {
-                    var e = current as IEnumerator;
-                    if (e.MoveNext())
-                    {
-                        _currentIEnumeratorYieldValue = e.Current;
-                        _stack.Push(EnumWrapper.Create(e));
-                    }
-                }
-                else if (current == com.spacepuppy.Async.RadicalTask.JumpToAsync)
-                {
-                    //auto async flag
-                    var instruction = com.spacepuppy.Async.RadicalTask.Create(this) as IRadicalYieldInstruction;
-
-                    //we push first, incase the instruction checks if the 'currentoperation' is itself on first tick
-                    _stack.Push(instruction);
-                    object yieldObject;
-                    if (instruction.Tick(out yieldObject))
-                    {
-                        _currentIEnumeratorYieldValue = yieldObject;
-                    }
-                    else
-                    {
-                        if (_stack.CurrentOperation == instruction) _stack.Pop();
-                    }
-                }
-                else if (current == RadicalCoroutine.PauseSelfInstruction)
-                {
-                    this.Pause();
-                    _currentIEnumeratorYieldValue = null;
-                }
-                else
-                {
-                    _currentIEnumeratorYieldValue = current;
+                        break;
                 }
 
                 return true;

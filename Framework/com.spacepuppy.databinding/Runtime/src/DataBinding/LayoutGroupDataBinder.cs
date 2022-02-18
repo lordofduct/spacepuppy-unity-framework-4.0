@@ -134,7 +134,7 @@ namespace com.spacepuppy.DataBinding
             {
                 return;
             }
-            else if(_stampSource.IsAsync)
+            else if (_stampSource.IsAsync)
             {
                 _ = this.DoStampLayoutGroup(_container, this.DataProvider, _stampSource);
             }
@@ -145,7 +145,7 @@ namespace com.spacepuppy.DataBinding
                 foreach (var item in this.DataProvider.Cast<object>().Take(_maxVisible))
                 {
                     GameObject inst = _stampSource.InstantiateStamp(_container);
-                    inst.Broadcast((item, index), _stampFunctor, true, true);
+                    DataBindingContext.BroadcastBindMessage(inst, item, index, true, true);
                     index++;
                 }
             }
@@ -154,7 +154,7 @@ namespace com.spacepuppy.DataBinding
 #if SP_UNITASK
         private async UniTaskVoid DoStampLayoutGroup(Transform container, IDataProvider dataProvider, IStampSource source)
 #else
-        private async System.Threading.Tasks.Task DoAddStampers(Transform container, IEnumerable<object> dataProvider, IStampSource source)
+        private async System.Threading.Tasks.Task DoStampLayoutGroup(Transform container, IDataProvider dataProvider, IStampSource source)
 #endif
         {
             int index = 0;
@@ -163,11 +163,10 @@ namespace com.spacepuppy.DataBinding
                 GameObject inst = await source.InstantiateStampAsync(container);
                 if (inst == null) continue;
 
-                inst.Broadcast((item, index), _stampFunctor, true, true);
+                DataBindingContext.BroadcastBindMessage(inst, item, index, true, true);
                 index++;
             }
         }
-        private static readonly System.Action<IDataBindingContext, System.ValueTuple<object, int>> _stampFunctor = (s, t) => s.Bind(t.Item1, t.Item2);
 
         #endregion
 

@@ -20,10 +20,12 @@ namespace com.spacepuppy.DataBinding
         private ActivateEvent _activateOn = ActivateEvent.OnStartOrEnable;
 
         [SerializeField]
-        private DataProviderRef _dataProvider = new DataProviderRef();
+        [TypeRestriction(typeof(IDataProvider), AllowProxy = true)]
+        private UnityEngine.Object _dataProvider;
 
         [SerializeField]
-        private DataBindingContextRef _targetDataBindingContext = new DataBindingContextRef();
+        [TypeRestriction(typeof(IDataBindingContext), AllowProxy = true)]
+        private UnityEngine.Object _targetDataBindingContext;
 
         [SerializeField]
         [Tooltip("All DataBindingContexts and children of the TargetDataBindingContext will have their bind events called.")]
@@ -81,16 +83,16 @@ namespace com.spacepuppy.DataBinding
             set => _activateOn = value;
         }
 
-        public IDataProvider DataProvider
+        public UnityEngine.Object DataProvider
         {
-            get => _dataProvider.Value;
-            set => _dataProvider.Value = value;
+            get => _dataProvider;
+            set => _dataProvider = value;
         }
 
-        public IDataBindingContext DataBindingContext
+        public UnityEngine.Object DataBindingContext
         {
-            get => _targetDataBindingContext.Value;
-            set => _targetDataBindingContext.Value = value;
+            get => _targetDataBindingContext;
+            set => _targetDataBindingContext = value;
         }
 
         #endregion
@@ -99,15 +101,16 @@ namespace com.spacepuppy.DataBinding
 
         public void Stamp()
         {
-            var source = this.DataProvider?.FirstElement;
+            var provider = ObjUtil.GetAsFromSource<IDataProvider>(_dataProvider, true);
+            var source = provider?.FirstElement ?? _dataProvider;
 
-            var context = this.DataBindingContext;
             GameObject go;
-            if (_broadcastBindingMessage && (go = GameObjectUtil.GetGameObjectFromSource(context)))
+            IDataBindingContext context;
+            if (_broadcastBindingMessage && (go = GameObjectUtil.GetGameObjectFromSource(_targetDataBindingContext, true)))
             {
-                go.Broadcast((source, 0), _stampFunctor, true, true);
+                com.spacepuppy.DataBinding.DataBindingContext.BroadcastBindMessage(go, source, 0, true, true);
             }
-            else
+            else if((context = ObjUtil.GetAsFromSource<IDataBindingContext>(_targetDataBindingContext, true)) != null)
             {
                 context.Bind(source, 0);
             }

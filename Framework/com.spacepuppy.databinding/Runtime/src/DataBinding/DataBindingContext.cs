@@ -60,6 +60,12 @@ namespace com.spacepuppy.DataBinding
             this.CurrentSource = source;
             var protocol = _bindingProtocol ?? StandardBindingProtocol.Default;
 
+            object reducedref;
+            if (protocol.PreferredSourceType != null && (reducedref = ObjUtil.GetAsFromSource(protocol.PreferredSourceType, source, _respectProxySources)) != null)
+            {
+                source = reducedref;
+            }
+
             using (var lst = TempCollection.GetList<ContentBinder>())
             {
                 this.GetComponents<ContentBinder>(lst);
@@ -83,9 +89,24 @@ namespace com.spacepuppy.DataBinding
 
         #endregion
 
-    }
+        #region Static Utils
 
-    [System.Serializable]
-    public class DataBindingContextRef : SerializableInterfaceRef<IDataBindingContext> { }
+        public static void SignalBindMessage(GameObject go, object source, int index, bool includeDisabledComponents = false)
+        {
+            go.Signal((source, index), _stampFunctor, includeDisabledComponents);
+        }
+        public static void SignalUpwardsBindMessage(GameObject go, object source, int index, bool includeDisabledComponents = false)
+        {
+            go.SignalUpwards((source, index), _stampFunctor, includeDisabledComponents);
+        }
+        public static void BroadcastBindMessage(GameObject go, object source, int index, bool includeInactiveObject = false, bool includeDisabledComponents = false)
+        {
+            go.Broadcast((source, index), _stampFunctor, includeInactiveObject, includeDisabledComponents);
+        }
+        private static readonly System.Action<IDataBindingContext, System.ValueTuple<object, int>> _stampFunctor = (s, t) => s.Bind(t.Item1, t.Item2);
+
+        #endregion
+
+    }
 
 }

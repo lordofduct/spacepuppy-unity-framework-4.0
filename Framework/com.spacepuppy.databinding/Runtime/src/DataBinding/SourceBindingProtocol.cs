@@ -12,7 +12,23 @@ namespace com.spacepuppy.DataBinding
     public interface ISourceBindingProtocol
     {
 
+        /// <summary>
+        /// DataBindingContext will attempt to coerce the object into this type before calling GetValue.
+        /// </summary>
+        System.Type PreferredSourceType { get; }
+
+        /// <summary>
+        /// Returns a list of the keys that the protocol definitely supports. This is used to facilitate the ditor for the various ContentBinders.
+        /// </summary>
+        /// <returns></returns>
         IEnumerable<string> GetDefinedKeys();
+
+        /// <summary>
+        /// Return a value from a source for a key.
+        /// </summary>
+        /// <param name="source"></param>
+        /// <param name="key"></param>
+        /// <returns></returns>
         object GetValue(object source, string key);
 
     }
@@ -21,6 +37,8 @@ namespace com.spacepuppy.DataBinding
     {
 
         public static readonly StandardBindingProtocol Default = new StandardBindingProtocol();
+
+        public virtual System.Type PreferredSourceType => null;
 
         public virtual IEnumerable<string> GetDefinedKeys()
         {
@@ -67,6 +85,8 @@ namespace com.spacepuppy.DataBinding
 
         #region Methods
 
+        public override System.Type PreferredSourceType => this.SourceType;
+
         public override IEnumerable<string> GetDefinedKeys()
         {
             var sourcetype = _sourceType.Type;
@@ -82,6 +102,11 @@ namespace com.spacepuppy.DataBinding
             return IsAcceptableMemberType(tp);
         }
 
+        public override object GetValue(object source, string key)
+        {
+            return base.GetValue(source, key);
+        }
+
         #endregion
 
         #region Static Utils
@@ -92,9 +117,9 @@ namespace com.spacepuppy.DataBinding
         }
 
 #if SP_ADDRESSABLES
-        private static readonly System.Type[] _acceptableTypes = new System.Type[] { typeof(UnityEngine.AddressableAssets.AssetReference), typeof(System.DateTime), typeof(System.DateTime?), typeof(Sprite) };
+        private static readonly System.Type[] _acceptableTypes = new System.Type[] { typeof(UnityEngine.AddressableAssets.AssetReference), typeof(System.DateTime), typeof(System.DateTime?), typeof(Sprite), typeof(System.IConvertible) };
 #else
-        private static readonly System.Type[] _acceptableTypes = new System.Type[] { typeof(System.DateTime), typeof(System.DateTime?), typeof(Sprite) };
+        private static readonly System.Type[] _acceptableTypes = new System.Type[] { typeof(System.DateTime), typeof(System.DateTime?), typeof(Sprite), typeof(System.IConvertible) };
 #endif
 
         #endregion

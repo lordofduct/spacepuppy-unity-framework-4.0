@@ -21,7 +21,7 @@ namespace com.spacepuppyeditor.DataBinding
             ContentBinder target;
             DataBindingContext context;
             ISourceBindingProtocol protocol;
-            if (this.serializedObject.isEditingMultipleObjects || 
+            if (this.serializedObject.isEditingMultipleObjects ||
                 (target = this.serializedObject.targetObject as ContentBinder) == null ||
                 (context = target.GetComponent<DataBindingContext>()) == null ||
                 (protocol = context.BindingProtocol) == null)
@@ -31,7 +31,7 @@ namespace com.spacepuppyeditor.DataBinding
             }
 
             var keys = protocol.GetDefinedKeys();
-            if(keys == null || !keys.Any())
+            if (keys == null || !keys.Any())
             {
                 this.DrawDefaultInspector();
                 return;
@@ -42,18 +42,10 @@ namespace com.spacepuppyeditor.DataBinding
             this.DrawPropertyField(EditorHelper.PROP_SCRIPT);
 
             var keyprop = this.serializedObject.FindProperty(ContentBinder.PROP_KEY);
-            
-            GUIContent[] names = keys.Select(o => EditorHelper.TempContent(o)).ToArray();
-            int index = names.IndexOf(o => string.Equals(o.text, keyprop.stringValue));
-            EditorGUI.BeginChangeCheck();
-            index = EditorGUILayout.Popup(EditorHelper.TempContent(keyprop.displayName, keyprop.tooltip), index, names);
-            if (EditorGUI.EndChangeCheck())
-            {
-                keyprop.stringValue = index >= 0 ? names[index].text : string.Empty;
-            }
+            keyprop.stringValue = SPEditorGUILayout.OptionPopupWithCustom(EditorHelper.TempContent(keyprop.displayName, keyprop.tooltip), keyprop.stringValue, keys.ToArray());
 
             this.DrawDefaultInspectorExcept(EditorHelper.PROP_SCRIPT, ContentBinder.PROP_KEY);
-            
+
             this.serializedObject.ApplyModifiedProperties();
         }
 

@@ -7,6 +7,24 @@ using Cysharp.Threading.Tasks;
 namespace com.spacepuppy.Async
 {
 
+    public interface IAsyncWaitHandle
+    {
+        bool IsComplete { get; }
+        float Progress { get; }
+
+        object AsYieldInstruction();
+        void OnComplete(System.Action<IAsyncWaitHandle> callback);
+        System.Threading.Tasks.Task AsTask();
+
+#if SP_UNITASK
+        UniTask AsUniTask();
+        UniTask.Awaiter GetAwaiter();
+#else
+        System.Runtime.CompilerServices.TaskAwaiter GetAwaiter();
+#endif
+
+    }
+
     /// <summary>
     /// This struct is intended to represent an asynchronous wait token while reducing garbage collection as much as possible. 
     /// By handing it an IAsyncWaitHandleProvider and a token, it will call the appropriate provider method with the token 
@@ -18,7 +36,7 @@ namespace com.spacepuppy.Async
     /// Every sort of handle out there that can be treated as an AsyncWaitHandle should provide an extension method named 
     /// 'AsAsyncWaitHandle' that creates an AsyncWaitHandle with the appropriate provider and token.
     /// </summary>
-    public struct AsyncWaitHandle
+    public struct AsyncWaitHandle : IAsyncWaitHandle
     {
 
         public static readonly AsyncWaitHandle CompletedHandle = default;
@@ -106,6 +124,7 @@ namespace com.spacepuppy.Async
         {
             _provider?.OnComplete(this, callback);
         }
+        void IAsyncWaitHandle.OnComplete(System.Action<IAsyncWaitHandle> callback) => _provider?.OnComplete(this, (a) => callback(a));
 
         /// <summary>
         /// Get a task that can be awaited until the handle completes. 
@@ -158,6 +177,11 @@ namespace com.spacepuppy.Async
                 return GetUniTask().GetAwaiter();
             }
         }
+#else
+        public System.Runtime.CompilerServices.TaskAwaiter GetAwaiter()
+        {
+            return this.AsTask().GetAwaiter();
+        }
 #endif
 
         /// <summary>
@@ -200,7 +224,7 @@ namespace com.spacepuppy.Async
     /// Every sort of handle out there that can be treated as an AsyncWaitHandle should provide an extension method named 
     /// 'AsAsyncWaitHandle' that creates an AsyncWaitHandle with the appropriate provider and token.
     /// </summary>
-    public struct AsyncWaitHandle<T>
+    public struct AsyncWaitHandle<T> : IAsyncWaitHandle
     {
 
         #region Fields
@@ -276,6 +300,7 @@ namespace com.spacepuppy.Async
                 _provider.OnComplete(this, callback);
             }
         }
+        void IAsyncWaitHandle.OnComplete(System.Action<IAsyncWaitHandle> callback) => _provider?.OnComplete(this, (a) => callback(a));
 
         /// <summary>
         /// Get a task that can be awaited until the handle completes. 
@@ -292,6 +317,10 @@ namespace com.spacepuppy.Async
             {
                 return _provider.GetTask(this);
             }
+        }
+        System.Threading.Tasks.Task IAsyncWaitHandle.AsTask()
+        {
+            return this.AsTask();
         }
 
 #if SP_UNITASK
@@ -325,6 +354,7 @@ namespace com.spacepuppy.Async
 
             return this.GetResult();
         }
+        UniTask IAsyncWaitHandle.AsUniTask() => this.AsUniTask();
 
         public UniTask<T>.Awaiter GetAwaiter()
         {
@@ -341,6 +371,13 @@ namespace com.spacepuppy.Async
                 return GetUniTask().GetAwaiter();
             }
         }
+        UniTask.Awaiter IAsyncWaitHandle.GetAwaiter() => ((UniTask)this.AsUniTask()).GetAwaiter();
+#else
+        public System.Runtime.CompilerServices.TaskAwaiter<T> GetAwaiter()
+        {
+            return this.AsTask().GetAwaiter();
+        }
+        System.Runtime.CompilerServices.TaskAwaiter IAsyncWaitHandle.GetAwaiter() => ((System.Threading.Tasks.Task)this.AsTask()).GetAwaiter();
 #endif
 
         /// <summary>

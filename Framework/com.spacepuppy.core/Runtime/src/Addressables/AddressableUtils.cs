@@ -15,6 +15,22 @@ namespace com.spacepuppy.Addressables
     public static class AddressableUtils
     {
 
+        public static DisposableAsyncOperationHandle<T> AsDisposable<T>(this AsyncOperationHandle<T> handle)
+        {
+            return new DisposableAsyncOperationHandle<T>()
+            {
+                Handle = handle
+            };
+        }
+
+        public static DisposableAsyncOperationHandle AsDisposable(this AsyncOperationHandle handle)
+        {
+            return new DisposableAsyncOperationHandle()
+            {
+                Handle = handle
+            };
+        }
+
         public static AsyncWaitHandle AsAsyncWaitHandle(this AsyncOperationHandle handle)
         {
             return new AsyncWaitHandle(AsyncOperationHandleProvider.Default, handle);

@@ -20,6 +20,7 @@ namespace com.spacepuppy.Mecanim.Events
         private PlayStateConfiguration _config;
 
         [SerializeField]
+        [SPEvent.Config("animator (Animator)")]
         private SPEvent _onStateExit = new SPEvent("OnStateExit");
 
         #endregion
@@ -59,7 +60,7 @@ namespace com.spacepuppy.Mecanim.Events
                 yield return WaitForAnimState.WaitForStateEnter(animator, finalState, layerIndex, timeout);
                 yield return WaitForAnimState.WaitForStateExit(animator, finalState, layerIndex);
             }
-            _onStateExit.ActivateTrigger(this, null);
+            _onStateExit.ActivateTrigger(this, animator);
         }
 
         #endregion

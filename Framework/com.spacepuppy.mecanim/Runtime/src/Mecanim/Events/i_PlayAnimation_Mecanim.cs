@@ -32,6 +32,7 @@ namespace com.spacepuppy.Mecanim.Events
         private bool _purgeTokenOnExit = true;
 
         [SerializeField]
+        [SPEvent.Config("animator (Animator)")]
         private SPEvent _onStateExit = new SPEvent("OnStateExit");
 
         #endregion
@@ -87,7 +88,7 @@ namespace com.spacepuppy.Mecanim.Events
 
             if (purge) animator.RemoveOverride(token);
 
-            _onStateExit.ActivateTrigger(this, null);
+            _onStateExit.ActivateTrigger(this, animator);
         }
 
         #endregion

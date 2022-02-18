@@ -548,10 +548,16 @@ namespace com.spacepuppy.Events
         {
             public bool Weighted;
             public bool AlwaysExpanded;
+            public string ArgDescription;
 
             public ConfigAttribute()
             {
 
+            }
+
+            public ConfigAttribute(string argdesc)
+            {
+                this.ArgDescription = argdesc;
             }
 
         }

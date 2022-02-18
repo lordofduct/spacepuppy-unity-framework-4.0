@@ -13,6 +13,7 @@ namespace com.spacepuppy.Events
         #region Fields
         
         [SerializeField()]
+        [SPEvent.Config("daisy chained arg (object)")]
         private SPEvent _trigger = new SPEvent("Trigger");
 
         [SerializeField()]

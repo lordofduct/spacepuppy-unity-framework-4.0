@@ -10,6 +10,7 @@ using com.spacepuppy.Events;
 using com.spacepuppy.Utils;
 
 using com.spacepuppyeditor.Internal;
+using System.Reflection;
 
 namespace com.spacepuppyeditor.Events
 {
@@ -32,12 +33,12 @@ namespace com.spacepuppyeditor.Events
         private bool _foldoutTargetExtra;
         private EventTriggerTargetPropertyDrawer _triggerTargetDrawer = new EventTriggerTargetPropertyDrawer();
 
-        private bool _drawWeight;
+        private bool __drawWeight;
         private float _totalWeight = 0f;
 
-        private bool _alwaysExpanded;
+        private bool __alwaysExpanded;
 
-        private bool _customInspector;
+        private string __argdesc;
 
         #endregion
 
@@ -49,24 +50,7 @@ namespace com.spacepuppyeditor.Events
 
             _targetList = CachedReorderableList.GetListDrawer(prop.FindPropertyRelative(PROP_TARGETS), _targetList_DrawHeader, _targetList_DrawElement, _targetList_OnAdd);
 
-            if (!_customInspector)
-            {
-                if (this.fieldInfo != null)
-                {
-                    var attribs = this.fieldInfo.GetCustomAttributes(typeof(SPEvent.ConfigAttribute), false) as SPEvent.ConfigAttribute[];
-                    if (attribs != null && attribs.Length > 0)
-                    {
-                        _drawWeight = attribs[0].Weighted;
-                        _alwaysExpanded = attribs[0].AlwaysExpanded;
-                    }
-                }
-                else
-                {
-                    _drawWeight = false;
-                    _alwaysExpanded = false;
-                }
-            }
-            _triggerTargetDrawer.DrawWeight = _drawWeight;
+            _triggerTargetDrawer.DrawWeight = this.DrawWeight;
         }
 
         #endregion
@@ -75,22 +59,26 @@ namespace com.spacepuppyeditor.Events
 
         public bool DrawWeight
         {
-            get { return _drawWeight; }
+            get { return this.fieldInfo.GetCustomAttribute<SPEvent.ConfigAttribute>()?.Weighted ?? __drawWeight; }
             set
             {
-                _drawWeight = value;
-                _customInspector = true;
+                __drawWeight = value;
             }
         }
 
         public bool AlwaysExpanded
         {
-            get { return _alwaysExpanded; }
+            get { return this.fieldInfo.GetCustomAttribute<SPEvent.ConfigAttribute>()?.AlwaysExpanded ?? __alwaysExpanded; }
             set
             {
-                _alwaysExpanded = value;
-                _customInspector = true;
+                __alwaysExpanded = value;
             }
+        }
+
+        public string ArgumentDescription
+        {
+            get { return this.fieldInfo.GetCustomAttribute<SPEvent.ConfigAttribute>()?.ArgDescription ?? __argdesc; }
+            set { __argdesc = value; }
         }
 
         public System.Action<Rect, SerializedProperty, int> OnDrawCustomizedEntryLabel
@@ -110,7 +98,7 @@ namespace com.spacepuppyeditor.Events
 
             this.Init(property, label);
 
-            if (_alwaysExpanded || property.isExpanded)
+            if (this.AlwaysExpanded || property.isExpanded)
             {
                 h = MARGIN * 2f;
                 h += this.GetTargetsHeight(property, label);
@@ -132,17 +120,20 @@ namespace com.spacepuppyeditor.Events
         {
             if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
 
+            label.text += " ( )";
+
             this.Init(property, label);
 
+            bool alwaysExpanded = this.AlwaysExpanded;
             //const float WIDTH_FOLDOUT = 5f;
-            //if(!_alwaysExpanded) property.isExpanded = EditorGUI.Foldout(new Rect(position.xMin, position.yMin, WIDTH_FOLDOUT, EditorGUIUtility.singleLineHeight), property.isExpanded, GUIContent.none);
-            if (!_alwaysExpanded) property.isExpanded = EditorGUI.Foldout(new Rect(position.xMin, position.yMin, position.width, EditorGUIUtility.singleLineHeight), property.isExpanded, GUIContent.none, true);
+            //if(!alwaysExpanded) property.isExpanded = EditorGUI.Foldout(new Rect(position.xMin, position.yMin, WIDTH_FOLDOUT, EditorGUIUtility.singleLineHeight), property.isExpanded, GUIContent.none);
+            if (!alwaysExpanded) property.isExpanded = EditorGUI.Foldout(new Rect(position.xMin, position.yMin, position.width, EditorGUIUtility.singleLineHeight), property.isExpanded, GUIContent.none, true);
 
-            if (_alwaysExpanded || property.isExpanded)
+            if (alwaysExpanded || property.isExpanded)
             {
-                if (_drawWeight) this.CalculateTotalWeight();
+                if (this.DrawWeight) this.CalculateTotalWeight();
 
-                if (!_alwaysExpanded) GUI.Box(position, GUIContent.none);
+                if (!alwaysExpanded) GUI.Box(position, GUIContent.none);
 
                 position = new Rect(position.xMin + MARGIN, position.yMin + MARGIN, position.width - MARGIN * 2f, position.height - MARGIN * 2f);
                 EditorGUI.BeginProperty(position, label, property);
@@ -167,7 +158,7 @@ namespace com.spacepuppyeditor.Events
             {
                 EditorGUI.BeginProperty(position, label, property);
 
-                ReorderableListHelper.DrawRetractedHeader(position, label, EditorHelper.TempContent("Trigger Targets"));
+                ReorderableListHelper.DrawRetractedHeader(position, label, this.GetTempArgDescriptionLabel());
 
                 EditorGUI.EndProperty();
             }
@@ -277,13 +268,21 @@ namespace com.spacepuppyeditor.Events
             return position;
         }
 
+        private GUIContent GetTempArgDescriptionLabel()
+        {
+            var str = this.ArgumentDescription;
+            if (string.IsNullOrEmpty(str)) return GUIContent.none;
+
+            return EditorHelper.TempContent(string.Format("arg: {0}", str));
+        }
+
         #endregion
 
         #region ReorderableList Handlers
 
         private void _targetList_DrawHeader(Rect area)
         {
-            EditorGUI.LabelField(area, _currentLabel, EditorHelper.TempContent("Trigger Targets"));
+            EditorGUI.LabelField(area, _currentLabel, this.GetTempArgDescriptionLabel());
         }
 
         private void _targetList_DrawElement(Rect area, int index, bool isActive, bool isFocused)
@@ -300,7 +299,7 @@ namespace com.spacepuppyeditor.Events
             EditorGUI.BeginProperty(area, GUIContent.none, targProp);
 
             Rect trigRect;
-            if (_drawWeight && area.width > FULLWEIGHT_WIDTH)
+            if (this.DrawWeight && area.width > FULLWEIGHT_WIDTH)
             {
                 var top = area.yMin + MARGIN;
                 var labelRect = new Rect(area.xMin, top, EditorGUIUtility.labelWidth - FULLWEIGHT_WIDTH, EditorGUIUtility.singleLineHeight);

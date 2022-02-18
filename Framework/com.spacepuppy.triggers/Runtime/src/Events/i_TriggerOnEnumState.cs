@@ -22,6 +22,7 @@ namespace com.spacepuppy.Events
         #region Fields
 
         [SerializeField]
+        [SPEvent.Config("daisy chained arg (object)")]
         private VariantReference _target = new VariantReference(VariantReference.RefMode.Property);
 
         [SerializeField()]

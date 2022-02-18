@@ -24,9 +24,11 @@ namespace com.spacepuppy.Mecanim
         private bool _triggerEventsWhenDisabled;
 
         [SerializeField]
+        [SPEvent.Config("animator (Animator)")]
         private SPEvent _onStateEnter = new SPEvent("OnStateEnter");
 
         [SerializeField]
+        [SPEvent.Config("animator (Animator)")]
         private SPEvent _onStateExit = new SPEvent("OnStateExit");
 
         [System.NonSerialized]
@@ -94,7 +96,7 @@ namespace com.spacepuppy.Mecanim
             _stateInfo = stateInfo;
             _layerIndex = layerIndex;
 
-            if (_onStateEnter.HasReceivers) _onStateEnter.ActivateTrigger(this, null);
+            if (_onStateEnter.HasReceivers) _onStateEnter.ActivateTrigger(this, _animator);
 
             if(_messageToken.Count > 0)
             {
@@ -107,7 +109,7 @@ namespace com.spacepuppy.Mecanim
         {
             if (!_triggerEventsWhenDisabled && !this.isActiveAndEnabled) return;
 
-            if (_onStateExit.HasReceivers) _onStateExit.ActivateTrigger(this, null);
+            if (_onStateExit.HasReceivers) _onStateExit.ActivateTrigger(this, _animator);
 
             if (_messageToken.Count > 0)
             {

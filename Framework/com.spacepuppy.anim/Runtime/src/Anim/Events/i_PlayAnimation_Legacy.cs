@@ -50,6 +50,7 @@ namespace com.spacepuppy.Anim.Events
         private float _crossFadeDur = 0f;
 
         [SerializeField()]
+        [SPEvent.Config("daisy chained arg (object)")]
         private SPEvent _onAnimComplete = new SPEvent(TRG_ONANIMCOMPLETE);
         [SerializeField()]
         [Tooltip("If an animation doesn't play, should we signal complete. This is useful if the animation is supposed to be chaining to another i_ that MUST run.")]

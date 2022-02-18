@@ -20,8 +20,10 @@ namespace com.spacepuppy.Spawn
         private List<Component> _spawnPoints = new List<Component>();
 
         [SerializeField]
+        [SPEvent.Config("spawned object (SpawnedObjectController)")]
         private SPEvent _onSpawnedObject = new SPEvent("OnSpawnedObject");
         [SerializeField]
+        [SPEvent.Config("spawned object (SpawnedObjectController)")]
         private SPEvent _onKilledObject = new SPEvent("OnKilledObject");
 
 

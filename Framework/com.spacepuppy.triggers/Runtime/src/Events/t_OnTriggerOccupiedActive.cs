@@ -27,9 +27,11 @@ namespace com.spacepuppy.Events
         private float _activeScanInterval;
 
         [SerializeField]
+        [SPEvent.Config("occupying object (GameObject) - null if active scanning registers an exit")]
         private SPEvent _onTriggerOccupied = new SPEvent("OnTriggerOccupied");
 
         [SerializeField]
+        [SPEvent.Config("occupying object (GameObject) - null if active scanning registers an exit")]
         private SPEvent _onTriggerLastExited = new SPEvent("OnTriggerLastExited");
 
         [System.NonSerialized]

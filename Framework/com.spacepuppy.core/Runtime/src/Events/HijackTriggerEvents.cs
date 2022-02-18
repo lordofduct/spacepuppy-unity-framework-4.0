@@ -16,6 +16,7 @@ namespace com.spacepuppy.Events
         private ObservableTargetData[] _targets;
 
         [SerializeField]
+        [SPEvent.Config("hijacked arg (object)")]
         private SPEvent _onHijacked = new SPEvent("OnHijacked");
 
         [SerializeField]

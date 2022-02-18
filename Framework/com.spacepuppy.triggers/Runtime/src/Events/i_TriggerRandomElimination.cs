@@ -25,7 +25,7 @@ namespace com.spacepuppy.Events
         private RandomRef _rng = new RandomRef();
 
         [SerializeField()]
-        [SPEvent.Config(Weighted = true)]
+        [SPEvent.Config("daisy chained arg (object)", Weighted = true)]
         private SPEvent _targets = new SPEvent("Targets");
 
         [SerializeField]
@@ -40,6 +40,7 @@ namespace com.spacepuppy.Events
         private bool _passAlongTriggerArg;
 
         [SerializeField]
+        [SPEvent.Config("daisy chained arg (object)")]
         private SPEvent _onComplete = new SPEvent("OnComplete");
 
         [System.NonSerialized]
@@ -125,7 +126,7 @@ namespace com.spacepuppy.Events
                 if (_used.Count >= cnt)
                 {
                     _used.Clear();
-                    if (_onComplete?.HasReceivers ?? false) _onComplete.ActivateTrigger(this, null);
+                    if (_onComplete?.HasReceivers ?? false) _onComplete.ActivateTrigger(this, _passAlongTriggerArg ? arg : null);
                 }
 
                 return true;

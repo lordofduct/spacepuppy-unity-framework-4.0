@@ -20,6 +20,7 @@ namespace com.spacepuppy.Events
         [ReorderableArray]
         private ConditionBlock[] _conditions;
         [SerializeField]
+        [SPEvent.Config("daisy chained arg (object)")]
         private SPEvent _elseCondition = new SPEvent("Else Condition");
 
         [SerializeField()]
@@ -104,6 +105,7 @@ namespace com.spacepuppy.Events
             [SerializeField]
             private double _value;
             [SerializeField()]
+            [SPEvent.Config("daisy chained arg (object)")]
             private SPEvent _trigger = new SPEvent();
 
             public SPEvent Trigger

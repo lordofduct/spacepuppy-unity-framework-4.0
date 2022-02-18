@@ -17,9 +17,11 @@ namespace com.spacepuppy.Events
         private EventActivatorMaskRef _mask = new EventActivatorMaskRef();
         
         [SerializeField]
+        [SPEvent.Config("occupying object (GameObject)")]
         private SPEvent _onTriggerOccupied = new SPEvent("OnTriggerOccupied");
 
         [SerializeField]
+        [SPEvent.Config("occupying object (GameObject)")]
         private SPEvent _onTriggerLastExited = new SPEvent("OnTriggerLastExited");
         
         [System.NonSerialized]

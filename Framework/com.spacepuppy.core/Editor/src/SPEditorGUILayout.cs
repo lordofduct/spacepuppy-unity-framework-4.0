@@ -333,14 +333,14 @@ namespace com.spacepuppyeditor
         public static System.Type TypeDropDown(GUIContent label,
                                                System.Type selectedType,
                                                System.Type baseType = null,
-                                               bool allowAbstractTypes = false, bool allowInterfaces = false,
+                                               bool allowAbstractTypes = false, bool allowInterfaces = false, bool allowGeneric = false,
                                                System.Type defaultType = null, System.Type[] excludedTypes = null,
                                                TypeDropDownListingStyle listType = TypeDropDownListingStyle.Flat,
                                                System.Func<System.Type, string, bool> searchFilter = null,
                                                int maxVisisbleCount = TypeDropDownWindowSelector.DEFAULT_MAXCOUNT)
         {
             var position = EditorGUILayout.GetControlRect(true);
-            return SPEditorGUI.TypeDropDown(position, label, selectedType, baseType, allowAbstractTypes, allowInterfaces, defaultType, excludedTypes, listType, searchFilter, maxVisisbleCount);
+            return SPEditorGUI.TypeDropDown(position, label, selectedType, baseType, allowAbstractTypes, allowInterfaces, allowGeneric, defaultType, excludedTypes, listType, searchFilter, maxVisisbleCount);
         }
 
         public static System.Type TypeDropDown(GUIContent label,

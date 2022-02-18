@@ -159,15 +159,32 @@ namespace com.spacepuppyeditor.Windows
             });
         }
 
-        public static System.Predicate<System.Type> CreateEnumeratePredicate(System.Type baseType, bool allowAbstractTypes = false, bool allowInterfaces = false, System.Type[] excludedTypes = null)
+        public static System.Predicate<System.Type> CreateEnumeratePredicate(System.Type baseType, bool allowAbstractTypes = false, bool allowInterfaces = false, bool allowGeneric = false, System.Type[] excludedTypes = null)
         {
             return new System.Predicate<System.Type>(tp =>
             {
                 if (tp == null) return false;
 
-                if (!baseType.IsAssignableFrom(tp)) return false;
-                if (tp.IsInterface && !allowInterfaces) return false;
-                if (tp.IsAbstract && !allowAbstractTypes) return false;
+                if (!TypeUtil.IsType(tp, baseType)) return false;
+                if (!allowInterfaces && tp.IsInterface) return false;
+                if (!allowAbstractTypes && tp.IsAbstract && !tp.IsInterface) return false;
+                if (!allowGeneric && tp.IsGenericType) return false;
+                if (excludedTypes != null && excludedTypes.IndexOf(tp) >= 0) return false;
+
+                return true;
+            });
+        }
+
+        public static System.Predicate<System.Type> CreateEnumeratePredicate(System.Type[] baseTypes, bool allowAbstractTypes = false, bool allowInterfaces = false, bool allowGeneric = false, System.Type[] excludedTypes = null)
+        {
+            return new System.Predicate<System.Type>(tp =>
+            {
+                if (tp == null) return false;
+
+                if (!TypeUtil.IsType(tp, baseTypes)) return false;
+                if (!allowInterfaces && tp.IsInterface) return false;
+                if (!allowAbstractTypes && tp.IsAbstract && !tp.IsInterface) return false;
+                if (!allowGeneric && tp.IsGenericType) return false;
                 if (excludedTypes != null && excludedTypes.IndexOf(tp) >= 0) return false;
 
                 return true;

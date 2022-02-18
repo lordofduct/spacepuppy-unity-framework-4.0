@@ -17,8 +17,7 @@ namespace com.spacepuppyeditor.Core
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-            position = EditorGUI.PrefixLabel(position, label);
-
+            position = SPEditorGUI.SafePrefixLabel(position, label);
             this.DrawTimePeriodSansLabel(position, property);
         }
 

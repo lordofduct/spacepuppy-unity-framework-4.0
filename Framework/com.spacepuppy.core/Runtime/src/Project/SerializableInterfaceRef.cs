@@ -47,6 +47,12 @@ namespace com.spacepuppy.Project
 
         #region Properties
 
+        public UnityEngine.Object RawValue
+        {
+            get => _obj;
+            set => _obj = value;
+        }
+
         public T Value
         {
             get

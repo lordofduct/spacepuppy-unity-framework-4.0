@@ -176,6 +176,23 @@ namespace com.spacepuppyeditor
 
         #region Prefix
 
+        /// <summary>
+        /// There is a strange oddity I'm running into with Unity drawing prefixlabel's at (0,0,1,1) during Layout, no idea what is going on, but this hack fixes it for now.
+        /// </summary>
+        /// <param name="position"></param>
+        /// <param name="label"></param>
+        /// <returns></returns>
+        public static Rect SafePrefixLabel(Rect position, GUIContent label)
+        {
+            switch (Event.current.type)
+            {
+                case EventType.Layout:
+                    return position;
+                default:
+                    return EditorGUI.PrefixLabel(position, label);
+            }
+        }
+
         public static bool PrefixFoldoutLabel(Rect position, bool foldout, GUIContent label)
         {
             //EditorGUI.PrefixLabel(position, label);
@@ -1060,13 +1077,13 @@ namespace com.spacepuppyeditor
         public static System.Type TypeDropDown(Rect position, GUIContent label,
                                                System.Type selectedType,
                                                System.Type baseType = null,
-                                               bool allowAbstractTypes = false, bool allowInterfaces = false,
+                                               bool allowAbstractTypes = false, bool allowInterfaces = false, bool allowGeneric = false,
                                                System.Type defaultType = null, System.Type[] excludedTypes = null,
                                                TypeDropDownListingStyle listType = TypeDropDownListingStyle.Flat,
                                                System.Func<System.Type, string, bool> searchFilter = null,
                                                int maxVisibleCount = TypeDropDownWindowSelector.DEFAULT_MAXCOUNT)
         {
-            return TypeDropDownWindowSelector.Popup(position, label, selectedType, TypeDropDownWindowSelector.CreateEnumeratePredicate(baseType, allowAbstractTypes, allowInterfaces, excludedTypes), baseType, defaultType, listType, searchFilter, maxVisibleCount);
+            return TypeDropDownWindowSelector.Popup(position, label, selectedType, TypeDropDownWindowSelector.CreateEnumeratePredicate(baseType, allowAbstractTypes, allowInterfaces, allowGeneric, excludedTypes), baseType, defaultType, listType, searchFilter, maxVisibleCount);
         }
 
         public static System.Type TypeDropDown(Rect position, GUIContent label,

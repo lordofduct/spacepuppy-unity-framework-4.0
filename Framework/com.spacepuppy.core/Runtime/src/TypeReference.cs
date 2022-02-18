@@ -105,9 +105,10 @@ namespace com.spacepuppy
         public class ConfigAttribute : System.Attribute
         {
 
-            public System.Type inheritsFromType;
+            public System.Type[] inheritsFromTypes;
             public bool allowAbstractClasses = false;
             public bool allowInterfaces = false;
+            public bool allowGeneric = false;
             public System.Type defaultType = null;
             public System.Type[] excludedTypes = null;
             public TypeDropDownListingStyle dropDownStyle = TypeDropDownListingStyle.Flat;
@@ -115,17 +116,16 @@ namespace com.spacepuppy
 
             public ConfigAttribute(System.Type inheritsFromType)
             {
-                this.inheritsFromType = inheritsFromType;
+                this.inheritsFromTypes = new System.Type[] { inheritsFromType };
             }
 
-            public ConfigAttribute(System.Type inheritsFromType, params System.Type[] excludedTypes)
+            public ConfigAttribute(params System.Type[] inheritsFromTypes)
             {
-                this.inheritsFromType = inheritsFromType;
-                this.excludedTypes = excludedTypes;
+                this.inheritsFromTypes = inheritsFromTypes;
             }
 
         }
-        
+
         #endregion
 
         #region Util Methods

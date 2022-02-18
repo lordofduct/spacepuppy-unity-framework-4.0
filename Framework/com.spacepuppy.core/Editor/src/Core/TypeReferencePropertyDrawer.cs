@@ -22,7 +22,7 @@ namespace com.spacepuppyeditor.Core
         private System.Reflection.FieldInfo _currentField;
         private TypeReference.ConfigAttribute _currentAttrib;
 
-        public System.Type InheritsFromType { get; set; }
+        public System.Type[] InheritsFromTypes { get; set; }
 
         public System.Type DefaultType { get; set; }
 
@@ -36,10 +36,10 @@ namespace com.spacepuppyeditor.Core
 
         #endregion
 
-        public void ConfigureSimple(System.Type inheritsFromType, bool allowAbstract = false, bool allowInterfaces = false, System.Type[] excludedTypes = null)
+        public void ConfigureSimple(System.Type inheritsFromType, bool allowAbstract = false, bool allowInterfaces = false, bool allowGeneric = false, System.Type[] excludedTypes = null)
         {
-            this.InheritsFromType = inheritsFromType;
-            this.EnumeratePredicate = TypeDropDownWindowSelector.CreateEnumeratePredicate(inheritsFromType, allowAbstract, allowInterfaces, excludedTypes);
+            this.InheritsFromTypes = new System.Type[] { inheritsFromType ?? typeof(object) };
+            this.EnumeratePredicate = TypeDropDownWindowSelector.CreateEnumeratePredicate(inheritsFromType, allowAbstract, allowInterfaces, allowGeneric, excludedTypes);
         }
 
         private void Init()
@@ -50,7 +50,7 @@ namespace com.spacepuppyeditor.Core
                 _currentAttrib = this.fieldInfo.GetCustomAttributes(typeof(TypeReference.ConfigAttribute), true).FirstOrDefault() as TypeReference.ConfigAttribute;
                 if (_currentAttrib != null)
                 {
-                    this.InheritsFromType = _currentAttrib.inheritsFromType;
+                    this.InheritsFromTypes = _currentAttrib.inheritsFromTypes;
                     this.DefaultType = _currentAttrib.defaultType;
                     this.DropDownStyle = _currentAttrib.dropDownStyle;
                     this.EnumeratePredicate = CreateEnumeratePredicate(_currentAttrib);
@@ -67,7 +67,7 @@ namespace com.spacepuppyeditor.Core
 
             var tp = GetTypeFromTypeReference(property);
             EditorGUI.BeginChangeCheck();
-            tp = SPEditorGUI.TypeDropDown(position, label, tp, this.EnumeratePredicate, this.InheritsFromType, this.DefaultType, this.DropDownStyle, this.SearchFilter, this.MaxVisibleCount);
+            tp = SPEditorGUI.TypeDropDown(position, label, tp, this.EnumeratePredicate, this.InheritsFromTypes?.Length == 1 ? this.InheritsFromTypes[0] : null, this.DefaultType, this.DropDownStyle, this.SearchFilter, this.MaxVisibleCount);
             if (EditorGUI.EndChangeCheck())
             {
                 SetTypeToTypeReference(property, tp);
@@ -106,7 +106,14 @@ namespace com.spacepuppyeditor.Core
 
         public static System.Predicate<System.Type> CreateEnumeratePredicate(TypeReference.ConfigAttribute attrib)
         {
-            return TypeDropDownWindowSelector.CreateEnumeratePredicate(attrib.inheritsFromType, attrib.allowAbstractClasses, attrib.allowInterfaces, attrib.excludedTypes);
+            if(attrib.inheritsFromTypes?.Length > 1)
+            {
+                return TypeDropDownWindowSelector.CreateEnumeratePredicate(attrib.inheritsFromTypes, attrib.allowAbstractClasses, attrib.allowInterfaces, attrib.allowGeneric, attrib.excludedTypes);
+            }
+            else
+            {
+                return TypeDropDownWindowSelector.CreateEnumeratePredicate(attrib.inheritsFromTypes?.FirstOrDefault() ?? typeof(object), attrib.allowAbstractClasses, attrib.allowInterfaces, attrib.allowGeneric, attrib.excludedTypes);
+            }
         }
 
 

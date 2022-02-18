@@ -2,22 +2,16 @@
 using System.Collections.Generic;
 
 using com.spacepuppy;
-using com.spacepuppy.Events;
 using com.spacepuppy.Utils;
+using com.spacepuppy.Events;
 
-namespace com.spacepuppy.DataBinding
+namespace com.spacepuppy.DataBinding.Events
 {
 
-    public class SimpleDataBinder : SPComponent
+    public class i_BindDataContext : AutoTriggerable, ITriggerable
     {
 
         #region Fields
-
-        [SerializeField]
-        private int _order;
-
-        [SerializeField()]
-        private ActivateEvent _activateOn = ActivateEvent.OnStartOrEnable;
 
         [SerializeField]
         [TypeRestriction(typeof(IDataProvider), AllowProxy = true)]
@@ -33,55 +27,7 @@ namespace com.spacepuppy.DataBinding
 
         #endregion
 
-        #region CONSTRUCTOR
-
-        protected override void Awake()
-        {
-            base.Awake();
-
-            if ((_activateOn & ActivateEvent.Awake) != 0)
-            {
-                this.Stamp();
-            }
-        }
-
-        protected override void Start()
-        {
-            base.Start();
-
-            if ((_activateOn & ActivateEvent.OnStart) != 0 || (_activateOn & ActivateEvent.OnEnable) != 0)
-            {
-                this.Stamp();
-            }
-        }
-
-        protected override void OnEnable()
-        {
-            base.OnEnable();
-
-            if (!this.started) return;
-
-            if ((_activateOn & ActivateEvent.OnEnable) != 0)
-            {
-                this.Stamp();
-            }
-        }
-
-        #endregion
-
         #region Properties
-
-        public int Order
-        {
-            get => _order;
-            set => _order = value;
-        }
-
-        public ActivateEvent ActivateOn
-        {
-            get => _activateOn;
-            set => _activateOn = value;
-        }
 
         public UnityEngine.Object DataProvider
         {
@@ -99,10 +45,11 @@ namespace com.spacepuppy.DataBinding
 
         #region Methods
 
-        public void Stamp()
+        public override bool Trigger(object sender, object arg)
         {
-            var provider = ObjUtil.GetAsFromSource<IDataProvider>(_dataProvider, true);
-            var source = provider?.FirstElement ?? _dataProvider;
+            if (!this.CanTrigger) return false;
+
+            var source = com.spacepuppy.DataBinding.DataBindingContext.GetFirstElementOfDataProvider(_dataProvider);
 
             GameObject go;
             IDataBindingContext context;
@@ -110,10 +57,11 @@ namespace com.spacepuppy.DataBinding
             {
                 com.spacepuppy.DataBinding.DataBindingContext.BroadcastBindMessage(go, source, 0, true, true);
             }
-            else if((context = ObjUtil.GetAsFromSource<IDataBindingContext>(_targetDataBindingContext, true)) != null)
+            else if ((context = ObjUtil.GetAsFromSource<IDataBindingContext>(_targetDataBindingContext, true)) != null)
             {
                 context.Bind(source, 0);
             }
+            return true;
         }
         private static readonly System.Action<IDataBindingContext, System.ValueTuple<object, int>> _stampFunctor = (s, t) => s.Bind(t.Item1, t.Item2);
 

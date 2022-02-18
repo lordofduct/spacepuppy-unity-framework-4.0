@@ -13,7 +13,7 @@ using Cysharp.Threading.Tasks;
 namespace com.spacepuppy.DataBinding
 {
 
-    public class LayoutGroupDataBinder : SPComponent
+    public class LayoutGroupDataBindingContext : SPComponent, IDataBindingContext, IDataProvider
     {
 
         #region Fields
@@ -48,7 +48,7 @@ namespace com.spacepuppy.DataBinding
 
             if ((_activateOn & ActivateEvent.Awake) != 0)
             {
-                this.StampLayoutGroup();
+                this.Bind();
             }
         }
 
@@ -58,7 +58,7 @@ namespace com.spacepuppy.DataBinding
 
             if ((_activateOn & ActivateEvent.OnStart) != 0 || (_activateOn & ActivateEvent.OnEnable) != 0)
             {
-                this.StampLayoutGroup();
+                this.Bind();
             }
         }
 
@@ -70,7 +70,7 @@ namespace com.spacepuppy.DataBinding
 
             if ((_activateOn & ActivateEvent.OnEnable) != 0)
             {
-                this.StampLayoutGroup();
+                this.Bind();
             }
         }
 
@@ -116,10 +116,32 @@ namespace com.spacepuppy.DataBinding
 
         #endregion
 
-        #region Methods
+        #region IDataBindingContext Interface
 
-        public void StampLayoutGroup()
+        public object DataSource { get; private set; }
+
+        public void Bind(object source, int index)
         {
+            switch(source)
+            {
+                case System.Collections.IEnumerable e:
+                    this.Bind(e);
+                    break;
+                default:
+                    this.Bind(new object[] { source });
+                    break;
+            }
+        }
+
+        public void Bind()
+        {
+            this.Bind(_dataProvider.Value);
+        }
+
+        public void Bind(System.Collections.IEnumerable dataprovider)
+        {
+            this.DataSource = dataprovider;
+
             if (_container && _container.childCount > 0)
             {
                 foreach (Transform t in _container)
@@ -128,7 +150,7 @@ namespace com.spacepuppy.DataBinding
                 }
             }
 
-            if (this.DataProvider == null) return;
+            if (dataprovider == null) return;
 
             if (_stampSource == null)
             {
@@ -136,13 +158,13 @@ namespace com.spacepuppy.DataBinding
             }
             else if (_stampSource.IsAsync)
             {
-                _ = this.DoStampLayoutGroup(_container, this.DataProvider, _stampSource);
+                _ = this.DoStampLayoutGroup(_container, dataprovider, _stampSource);
             }
             else
             {
                 int index = 0;
 
-                foreach (var item in this.DataProvider.Cast<object>().Take(_maxVisible))
+                foreach (var item in dataprovider.Cast<object>().Take(_maxVisible))
                 {
                     GameObject inst = _stampSource.InstantiateStamp(_container);
                     DataBindingContext.BroadcastBindMessage(inst, item, index, true, true);
@@ -152,9 +174,9 @@ namespace com.spacepuppy.DataBinding
         }
 
 #if SP_UNITASK
-        private async UniTaskVoid DoStampLayoutGroup(Transform container, IDataProvider dataProvider, IStampSource source)
+        private async UniTaskVoid DoStampLayoutGroup(Transform container, System.Collections.IEnumerable dataProvider, IStampSource source)
 #else
-        private async System.Threading.Tasks.Task DoStampLayoutGroup(Transform container, IDataProvider dataProvider, IStampSource source)
+        private async System.Threading.Tasks.Task DoStampLayoutGroup(Transform container, System.Collections.IEnumerable dataProvider, IStampSource source)
 #endif
         {
             int index = 0;
@@ -166,6 +188,17 @@ namespace com.spacepuppy.DataBinding
                 DataBindingContext.BroadcastBindMessage(inst, item, index, true, true);
                 index++;
             }
+        }
+
+        #endregion
+
+        #region IDataProvider Interface
+
+        object IDataProvider.FirstElement => DataBindingContext.GetFirstElementOfDataProvider(this.DataSource);
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return (this.DataSource as System.Collections.IEnumerable)?.GetEnumerator() ?? Enumerable.Empty<object>().GetEnumerator();
         }
 
         #endregion

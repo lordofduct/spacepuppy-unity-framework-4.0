@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 
 using com.spacepuppy;
 using com.spacepuppy.Collections;
@@ -10,9 +11,18 @@ using com.spacepuppy.Project;
 namespace com.spacepuppy.DataBinding
 {
 
-    public interface IDataBindingContext
+    public interface IDataBindingMessageHandler
     {
+
         void Bind(object source, int index);
+
+    }
+
+    public interface IDataBindingContext : IDataBindingMessageHandler
+    {
+
+        object DataSource { get; }
+
     }
 
     public class DataBindingContext : SPComponent, IDataBindingContext, IDataProvider
@@ -49,15 +59,15 @@ namespace com.spacepuppy.DataBinding
 
         public SPEvent OnDataBound => _onDataBound;
 
-        public object CurrentSource { get; private set; }
-
         #endregion
 
         #region IDataBindingContext Interface
 
+        public object DataSource { get; private set; }
+
         public virtual void Bind(object source, int index)
         {
-            this.CurrentSource = source;
+            this.DataSource = source;
             var protocol = _bindingProtocol ?? StandardBindingProtocol.Default;
 
             object reducedref;
@@ -80,16 +90,29 @@ namespace com.spacepuppy.DataBinding
 
         #region IDataProvider Interface
 
-        object IDataProvider.FirstElement => this.CurrentSource;
+        object IDataProvider.FirstElement => this.DataSource;
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
-            yield return this.CurrentSource;
+            yield return this.DataSource;
         }
 
         #endregion
 
         #region Static Utils
+
+        public static object GetFirstElementOfDataProvider(object source)
+        {
+            switch(source)
+            {
+                case IDataProvider dp:
+                    return dp.FirstElement;
+                case System.Collections.IEnumerable e:
+                    return e.Cast<object>().FirstOrDefault();
+                default:
+                    return source;
+            }
+        }
 
         public static void SignalBindMessage(GameObject go, object source, int index, bool includeDisabledComponents = false)
         {
@@ -103,7 +126,7 @@ namespace com.spacepuppy.DataBinding
         {
             go.Broadcast((source, index), _stampFunctor, includeInactiveObject, includeDisabledComponents);
         }
-        private static readonly System.Action<IDataBindingContext, System.ValueTuple<object, int>> _stampFunctor = (s, t) => s.Bind(t.Item1, t.Item2);
+        private static readonly System.Action<IDataBindingMessageHandler, System.ValueTuple<object, int>> _stampFunctor = (s, t) => s.Bind(t.Item1, t.Item2);
 
         #endregion
 

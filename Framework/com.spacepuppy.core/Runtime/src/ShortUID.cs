@@ -5,10 +5,10 @@ namespace com.spacepuppy
 
     /// <summary>
     /// A serializable semi-unique id. It is not universely unique, but will be system unique at the least, and should be team unique confidently.
-    /// The id is based on the exact moment in time it was generated, and the idea that 2 team members both generate them simultaneously is absurd.
+    /// It consists of the current ticks whose upper 4 bytes are xor'd by a large random number.
     /// </summary>
     [System.Serializable]
-    public struct ShortUid
+    public struct ShortUid : IEquatable<ShortUid>
     {
 
         public static ShortUid Zero { get { return new ShortUid(); } }
@@ -34,9 +34,11 @@ namespace com.spacepuppy
             _high = (uint)(value >> 32);
         }
 
+        private static long _seed = System.DateTime.UtcNow.Ticks;
         public static ShortUid NewId()
         {
-            return new ShortUid(System.DateTime.UtcNow.Ticks);
+            _seed = 6364136223846793005L * _seed + 1442695040888963407L; //MMIX Knuth LCG
+            return new ShortUid(System.DateTime.UtcNow.Ticks ^ (_seed << 38));
         }
 
         #endregion
@@ -80,6 +82,11 @@ namespace com.spacepuppy
             return false;
         }
 
+        public bool Equals(ShortUid uid)
+        {
+            return uid._high == _high && uid._low == _low;
+        }
+
         /// <summary>
         /// Returns the HashCode for underlying Guid.
         /// </summary>
@@ -89,18 +96,73 @@ namespace com.spacepuppy
             return (int)(_high ^ _low);
         }
 
+        /// <summary>
+        /// Places the ShortUid as the leading 64-bits of a guid, the rest as zeros.
+        /// </summary>
+        /// <returns></returns>
+        public System.Guid ToGuid()
+        {
+            short mid = (short)(_high & ushort.MaxValue);
+            short high = (short)(_high >> 16);
+            return new System.Guid((int)_low, mid, high, 0, 0, 0, 0, 0, 0, 0, 0);
+        }
+
+        /// <summary>
+        /// Places the ShortUid as the leading 64-bits of a guid, the rest is the suffix.
+        /// </summary>
+        /// <param name="suffix"></param>
+        /// <returns></returns>
+        public System.Guid ToGuid(long suffix)
+        {
+            short mid = (short)(_high & ushort.MaxValue);
+            short high = (short)(_high >> 16);
+            return new System.Guid((int)_low, mid, high,
+                                   (byte)suffix,
+                                   (byte)(suffix >> 8),
+                                   (byte)(suffix >> 16),
+                                   (byte)(suffix >> 24),
+                                   (byte)(suffix >> 32),
+                                   (byte)(suffix >> 40),
+                                   (byte)(suffix >> 48),
+                                   (byte)(suffix >> 56));
+        }
+
+        /// <summary>
+        /// Places the ShortUid as the leading 64-bits of a guid, the rest is the suffix.
+        /// </summary>
+        /// <param name="suffix"></param>
+        /// <returns></returns>
+        public System.Guid ToGuid(byte d, byte e, byte f, byte g, byte h, byte i, byte j, byte k)
+        {
+            short mid = (short)(_high & ushort.MaxValue);
+            short high = (short)(_high >> 16);
+            return new System.Guid((int)_low, mid, high, d, e, f, g, h, i, j, k);
+        }
+
+        /// <summary>
+        /// Places the ShortUid as the leading 64-bits of a guid, the rest is the first 8 characters of the suffix string as ascii codes. 
+        /// </summary>
+        /// <param name="suffix"></param>
+        /// <returns></returns>
+        public System.Guid ToGuid(string suffix)
+        {
+            short mid = (short)(_high & ushort.MaxValue);
+            short high = (short)(_high >> 16);
+            int len = suffix?.Length ?? 0;
+            return new System.Guid((int)_low, mid, high,
+                                   (len > 0) ? (byte)suffix[0] : (byte)0,
+                                   (len > 1) ? (byte)suffix[1] : (byte)0,
+                                   (len > 2) ? (byte)suffix[2] : (byte)0,
+                                   (len > 3) ? (byte)suffix[3] : (byte)0,
+                                   (len > 4) ? (byte)suffix[4] : (byte)0,
+                                   (len > 5) ? (byte)suffix[5] : (byte)0,
+                                   (len > 6) ? (byte)suffix[6] : (byte)0,
+                                   (len > 7) ? (byte)suffix[7] : (byte)0);
+        }
+
         #endregion
 
         #region Conversion
-
-        public static System.Guid ToGuid(ShortUid uid)
-        {
-            long val = uid.Value;
-            int low = (int)(val & uint.MaxValue);
-            short mid = (short)((val >> 32) & ushort.MaxValue);
-            short high = (short)(val >> 48);
-            return new System.Guid(low, mid, high, 0, 0, 0, 0, 0, 0, 0, 0);
-        }
 
         public static ShortUid ToShortUid(System.Guid uid)
         {

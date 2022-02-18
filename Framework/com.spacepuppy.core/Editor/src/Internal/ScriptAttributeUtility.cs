@@ -50,6 +50,20 @@ namespace com.spacepuppyeditor.Internal
 
         #region Methods
 
+        public static void ResetPropertyHandler(SerializedProperty property, bool includeChildren)
+        {
+            if (property == null) return;
+
+            _handlerCache.SetHandler(property, null);
+            if (includeChildren)
+            {
+                foreach (var child in property.GetChildren())
+                {
+                    _handlerCache.SetHandler(child, null);
+                }
+            }
+        }
+
         //#######################
         // GetDrawerTypeForType
 

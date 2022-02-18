@@ -87,7 +87,7 @@ namespace com.spacepuppy.Scenes
         {
             get
             {
-                switch(this.Status)
+                switch (this.Status)
                 {
                     case LoadSceneOptionsStatus.Unused:
                         return 0f;
@@ -274,7 +274,7 @@ namespace com.spacepuppy.Scenes
                     break;
                 case LoadSceneMode.Additive:
                 default:
-                    if (_additiveResults == null || _additiveResults.Count == 0)
+                    if (!_primaryResult.IsValid)
                     {
                         _primaryResult = result;
                     }
@@ -306,7 +306,7 @@ namespace com.spacepuppy.Scenes
 
         public virtual IEnumerable<Scene> GetHandledScenes()
         {
-            if (_primaryResult.Scene.IsValid()) yield return _primaryResult.Scene;
+            if (_primaryResult.IsValid) yield return _primaryResult.Scene;
 
             if (_additiveResults != null)
             {
@@ -321,7 +321,7 @@ namespace com.spacepuppy.Scenes
 
         protected virtual IEnumerable<UnityLoadResult> GetHandledLoadResults()
         {
-            if (_primaryResult.Scene.IsValid()) yield return _primaryResult;
+            if (_primaryResult.IsValid) yield return _primaryResult;
 
             if (_additiveResults != null)
             {
@@ -452,6 +452,8 @@ namespace com.spacepuppy.Scenes
             public float Progress => Op?.progress ?? 0f;
 
             public bool IsComplete => Op?.isDone ?? false;
+
+            public bool IsValid => Scene.IsValid();
 
             public async System.Threading.Tasks.Task<Scene> GetTask()
             {

@@ -32,9 +32,9 @@ namespace com.spacepuppy
         [SerializeField]
         private byte k;
 
-#endregion
+        #endregion
 
-#region CONSTRUCTOR
+        #region CONSTRUCTOR
 
         public SerializableGuid(System.Guid guid)
         {
@@ -67,9 +67,9 @@ namespace com.spacepuppy
             this.k = k;
         }
 
-#endregion
+        #endregion
 
-#region Methods
+        #region Methods
 
         public override string ToString()
         {
@@ -88,11 +88,11 @@ namespace com.spacepuppy
 
         public override bool Equals(object obj)
         {
-            if(obj is SerializableGuid sg)
+            if (obj is SerializableGuid sg)
             {
                 return this.ToGuid() == sg.ToGuid();
             }
-            else if(obj is System.Guid g)
+            else if (obj is System.Guid g)
             {
                 return this.ToGuid() == g;
             }
@@ -107,13 +107,68 @@ namespace com.spacepuppy
             return this.ToGuid().GetHashCode();
         }
 
-#endregion
+        #endregion
 
-#region Static Utils
+        #region Static Utils
 
         public static SerializableGuid NewGuid()
         {
             return new SerializableGuid(System.Guid.NewGuid());
+        }
+
+        public static SerializableGuid Parse(string input)
+        {
+            return new SerializableGuid(System.Guid.Parse(input));
+        }
+
+        public static bool TryParse(string input, out SerializableGuid result)
+        {
+            System.Guid output;
+            if (System.Guid.TryParse(input, out output))
+            {
+                result = new SerializableGuid(output);
+                return true;
+            }
+            else
+            {
+                result = default(SerializableGuid);
+                return false;
+            }
+        }
+
+        public static bool Coerce(object input, out SerializableGuid result)
+        {
+            System.Guid guid;
+            if (CoerceGuid(input, out guid))
+            {
+                result = new SerializableGuid(guid);
+                return true;
+            }
+            else
+            {
+                result = default(SerializableGuid);
+                return false;
+            }
+        }
+
+        public static bool CoerceGuid(object input, out System.Guid result)
+        {
+            switch (input)
+            {
+                case System.Guid guid:
+                    result = guid;
+                    return true;
+                case SerializableGuid sguid:
+                    result = sguid.ToGuid();
+                    return true;
+                case string s:
+                    return System.Guid.TryParse(s, out result);
+                case object o:
+                    return System.Guid.TryParse(o.ToString(), out result);
+                default:
+                    result = default(SerializableGuid);
+                    return false;
+            }
         }
 
         public static implicit operator System.Guid(SerializableGuid guid)
@@ -151,9 +206,9 @@ namespace com.spacepuppy
             return a.ToGuid() != b;
         }
 
-#endregion
+        #endregion
 
-#region Special Types
+        #region Special Types
 
         public class ConfigAttribute : System.Attribute
         {
@@ -171,7 +226,7 @@ namespace com.spacepuppy
             public bool LinkToAsset;
         }
 
-#endregion
+        #endregion
 
     }
 

@@ -59,7 +59,7 @@ namespace com.spacepuppy.Utils
 
         public static bool IsEmpty(this IEnumerable lst)
         {
-            if(lst is IList)
+            if (lst is IList)
             {
                 return (lst as IList).Count == 0;
             }
@@ -118,7 +118,7 @@ namespace com.spacepuppy.Utils
         public static int Depth(this IEnumerable lst, object obj)
         {
             int i = 0;
-            foreach(var o in lst)
+            foreach (var o in lst)
             {
                 if (object.Equals(o, obj)) return i;
                 i++;
@@ -193,9 +193,9 @@ namespace com.spacepuppy.Utils
 
         public static bool Contains<T>(this T[,] arr, T value)
         {
-            for(int i = 0; i < arr.GetLength(0); i++)
+            for (int i = 0; i < arr.GetLength(0); i++)
             {
-                for(int j = 0; j < arr.GetLength(1); j++)
+                for (int j = 0; j < arr.GetLength(1); j++)
                 {
                     if (EqualityComparer<T>.Default.Equals(arr[i, j], value)) return true;
                 }
@@ -211,7 +211,7 @@ namespace com.spacepuppy.Utils
             //    lst.Add(e);
             //}
             var e = new LightEnumerator<T>(elements);
-            while(e.MoveNext())
+            while (e.MoveNext())
             {
                 lst.Add(e.Current);
             }
@@ -294,7 +294,7 @@ namespace com.spacepuppy.Utils
         public static IEnumerable<T> Except<T>(this IEnumerable<T> lst, T element)
         {
             if (lst == null) throw new System.ArgumentNullException("lst");
-            foreach(var e in lst)
+            foreach (var e in lst)
             {
                 if (!object.Equals(e, element)) yield return e;
             }
@@ -310,9 +310,20 @@ namespace com.spacepuppy.Utils
             }
         }
 
-#endregion
+        public delegate bool SelectIfCallback<T, TResult>(T input, out TResult output);
+        public static IEnumerable<TResult> SelectIf<T, TResult>(this IEnumerable<T> e, SelectIfCallback<T, TResult> callback)
+        {
+            if (callback == null) yield break;
+            TResult result;
+            foreach (var o in e)
+            {
+                if (callback(o, out result)) yield return result;
+            }
+        }
 
-#region Random Methods
+        #endregion
+
+        #region Random Methods
 
         public static void Shuffle<T>(T[] arr, IRandom rng = null)
         {
@@ -387,7 +398,7 @@ namespace com.spacepuppy.Utils
         {
             if (coll == null) throw new System.ArgumentNullException("coll");
             if (rng == null) rng = RandomUtil.Standard;
-            
+
             using (var buffer = TempCollection.GetList<T>(coll))
             {
                 int j;
@@ -461,10 +472,10 @@ namespace com.spacepuppy.Utils
                 return arr[i];
             }
         }
-        
-#endregion
 
-#region Array Methods
+        #endregion
+
+        #region Array Methods
 
         public static T[] Empty<T>()
         {
@@ -499,11 +510,11 @@ namespace com.spacepuppy.Utils
         /// <returns></returns>
         public static T[] Temp<T>(IEnumerable<T> coll)
         {
-            if(coll is IList<T> l)
+            if (coll is IList<T> l)
             {
                 return Temp<T>(l);
             }
-            else if(coll is IReadOnlyList<T> rl)
+            else if (coll is IReadOnlyList<T> rl)
             {
                 return Temp<T>(rl);
             }
@@ -596,25 +607,25 @@ namespace com.spacepuppy.Utils
             else
             {
                 int i = 0;
-                foreach(var el in source)
+                foreach (var el in source)
                 {
                     destination.SetValue(el, i + index);
                     i++;
                 }
             }
         }
-        
 
-#endregion
 
-#region HashSet Methods
+        #endregion
+
+        #region HashSet Methods
 
         public static T Pop<T>(this HashSet<T> set)
         {
             if (set == null) throw new System.ArgumentNullException("set");
 
             var e = set.GetEnumerator();
-            if(e.MoveNext())
+            if (e.MoveNext())
             {
                 set.Remove(e.Current);
                 return e.Current;
@@ -623,9 +634,9 @@ namespace com.spacepuppy.Utils
             throw new System.ArgumentException("HashSet must not be empty.");
         }
 
-#endregion
+        #endregion
 
-#region Special Types
+        #region Special Types
 
         private class TempArray<T>
         {
@@ -652,7 +663,7 @@ namespace com.spacepuppy.Utils
 
                 lock (_lock)
                 {
-                    if(_oneArray != null)
+                    if (_oneArray != null)
                     {
                         arr = _oneArray;
                         _oneArray = null;
@@ -742,7 +753,7 @@ namespace com.spacepuppy.Utils
                 if (arr == null) return;
                 System.Array.Clear(arr, 0, arr.Length);
 
-                lock(_lock)
+                lock (_lock)
                 {
                     switch (arr.Length)
                     {
@@ -763,7 +774,7 @@ namespace com.spacepuppy.Utils
             }
         }
 
-#endregion
+        #endregion
 
     }
 

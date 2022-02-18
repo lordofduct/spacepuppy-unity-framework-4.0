@@ -99,8 +99,8 @@ namespace com.spacepuppy.Collections
         public TempCallbackCollection()
             : base()
         {
-            var tp = typeof(T);
-            int sz = (tp.IsValueType && !tp.IsEnum) ? System.Runtime.InteropServices.Marshal.SizeOf(tp) : 4;
+            //var tp = typeof(T);
+            //int sz = System.Math.Max((tp.IsValueType && !tp.IsEnum) ? System.Runtime.InteropServices.Marshal.SizeOf(tp) : 4, 4);
         }
 
         #endregion

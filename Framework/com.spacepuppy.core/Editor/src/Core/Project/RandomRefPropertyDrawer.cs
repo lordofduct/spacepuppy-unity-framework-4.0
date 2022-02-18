@@ -12,10 +12,6 @@ namespace com.spacepuppyeditor.Core.Project
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
-            if (string.IsNullOrEmpty(label.tooltip))
-            {
-                label.tooltip = STR_TOOLTIP;
-            }
             return base.GetPropertyHeight(property, label);
         }
 

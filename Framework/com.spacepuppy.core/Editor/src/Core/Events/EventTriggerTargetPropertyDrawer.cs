@@ -585,7 +585,7 @@ namespace com.spacepuppyeditor.Events
             else if (result.ActivationType == TriggerActivationType.CallMethodOnSelectedTarget && !string.IsNullOrEmpty(methodNameProp?.stringValue))
             {
                 var arr = result.DropdownDisplayNames.ToArray();
-                var nm = targ.GetType().Name;
+                var nm = targ?.GetType().Name ?? "null";
                 arr[3] = string.Format("Call Method ({0}->{1})", nm, methodNameProp.stringValue);
                 result.DropdownDisplayNames = arr;
             }

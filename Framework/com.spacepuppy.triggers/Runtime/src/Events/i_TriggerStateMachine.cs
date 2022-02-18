@@ -29,20 +29,23 @@ namespace com.spacepuppy.Events
         [SerializeField]
         private SPEvent _onStateChanged = new SPEvent("OnStateChanged");
 
-        [System.NonSerialized]
-        private int? _currentState = null;
-
         #endregion
 
         #region CONSTRUCTOR
+
+        protected override void Awake()
+        {
+            _states.StateChanged += (s, e) => _onStateChanged.ActivateTrigger(this, null);
+            base.Awake();
+        }
 
         protected override void Start()
         {
             base.Start();
 
-            if (_currentState == null)
+            if (_states.CurrentState == null)
             {
-                this.GoToState(_initialState);
+                _states.GoToState(_initialState);
             }
         }
 
@@ -52,16 +55,9 @@ namespace com.spacepuppy.Events
 
 
         [ShowNonSerializedProperty("Current State")]
-        public int? CurrentStateIndex => _currentState;
+        public int? CurrentStateIndex => _states.CurrentStateIndex;
 
-        public StateInfo? CurrentState
-        {
-            get
-            {
-                if (_currentState == null || _currentState < 0 || _currentState >= _states.Count) return null;
-                return _states[_currentState.Value];
-            }
-        }
+        public StateInfo? CurrentState => _states.CurrentState;
 
         public StateCollection States => _states;
 
@@ -73,53 +69,22 @@ namespace com.spacepuppy.Events
 
         public virtual void GoToState(int index)
         {
-            bool signal = (_currentState != index);
-
-            _currentState = index;
-            var currentGo = index >= 0 && index < _states.Count ? GameObjectUtil.GetGameObjectFromSource(_states[index].Target) : null;
-            for (int i = 0; i < _states.Count; i++)
-            {
-                var go = GameObjectUtil.GetGameObjectFromSource(_states[i].Target, true);
-                if (go) go.SetActive(i == _currentState || go == currentGo);
-            }
-
-            if (signal && _onStateChanged.HasReceivers)
-            {
-                _onStateChanged.ActivateTrigger(this, null);
-            }
+            _states.GoToState(index);
         }
 
         public void GoToStateById(string id)
         {
-            this.GoToState(_states.FindIndex(id));
+            _states.GoToStateById(id);
         }
 
         public void GoToNextState(WrapMode mode = WrapMode.Loop)
         {
-            switch (mode)
-            {
-                case WrapMode.Loop:
-                    this.GoToState(MathUtil.Wrap((_currentState ?? -1) + 1, _states.Count));
-                    break;
-                case WrapMode.Clamp:
-                default:
-                    this.GoToState(Mathf.Clamp((_currentState ?? -1) + 1, 0, _states.Count - 1));
-                    break;
-            }
+            _states.GoToNextState(mode);
         }
 
         public void GoToPreviousState(WrapMode mode = WrapMode.Loop)
         {
-            switch (mode)
-            {
-                case WrapMode.Loop:
-                    this.GoToState(MathUtil.Wrap((_currentState ?? 1) - 1, _states.Count));
-                    break;
-                case WrapMode.Clamp:
-                default:
-                    this.GoToState(Mathf.Clamp((_currentState ?? _states.Count) - 1, 0, _states.Count - 1));
-                    break;
-            }
+            _states.GoToPreviousState(mode);
         }
 
         #endregion
@@ -130,9 +95,10 @@ namespace com.spacepuppy.Events
         {
             if (!this.CanTrigger) return false;
 
-            if(_currentState != null && _currentState >= 0 && _currentState < _states.Count)
+            var stateindex = _states.CurrentStateIndex;
+            if (stateindex != null && stateindex >= 0 && stateindex < _states.Count)
             {
-                _states.ActivateTriggerAt(_currentState.Value, this, null);
+                _states.ActivateTriggerAt(stateindex.Value, this, null);
             }
             return true;
         }
@@ -154,6 +120,8 @@ namespace com.spacepuppy.Events
         public class StateCollection : IList<StateInfo>
         {
 
+            public event System.EventHandler StateChanged;
+
             #region Fields
 
             [SerializeField]
@@ -163,6 +131,9 @@ namespace com.spacepuppy.Events
             private const int MIN_SIZE_TOSEARCH = 8;
             [System.NonSerialized]
             private Dictionary<string, int> _idToIndex;
+
+            [System.NonSerialized]
+            private int? _currentState = null;
 
             #endregion
 
@@ -175,9 +146,21 @@ namespace com.spacepuppy.Events
             public StateInfo this[int index]
             {
                 get => _states[index];
-                set {
+                set
+                {
                     _states[index] = value;
                     _idToIndex = null;
+                }
+            }
+
+            public int? CurrentStateIndex => _currentState;
+
+            public StateInfo? CurrentState
+            {
+                get
+                {
+                    if (_currentState == null || _currentState < 0 || _currentState >= _states.Count) return null;
+                    return _states[_currentState.Value];
                 }
             }
 
@@ -194,7 +177,7 @@ namespace com.spacepuppy.Events
 
             public StateInfo? Find(string id)
             {
-                if(_states.Count < MIN_SIZE_TOSEARCH)
+                if (_states.Count < MIN_SIZE_TOSEARCH)
                 {
                     for (int i = 0; i < _states.Count; i++)
                     {
@@ -236,11 +219,62 @@ namespace com.spacepuppy.Events
             private void SanitizeLookup()
             {
                 var dict = new Dictionary<string, int>();
-                for(int i = _states.Count - 1; i >= 0; i--)
+                for (int i = _states.Count - 1; i >= 0; i--)
                 {
                     dict[_states[i].Id] = i;
                 }
                 _idToIndex = dict;
+            }
+
+            public virtual void GoToState(int index)
+            {
+                bool signal = (_currentState != index);
+
+                _currentState = index;
+                var currentGo = index >= 0 && index < _states.Count ? GameObjectUtil.GetGameObjectFromSource(_states[index].Target) : null;
+                for (int i = 0; i < _states.Count; i++)
+                {
+                    var go = GameObjectUtil.GetGameObjectFromSource(_states[i].Target, true);
+                    if (go) go.SetActive(i == _currentState || go == currentGo);
+                }
+
+                if (signal)
+                {
+                    this.StateChanged?.Invoke(this, System.EventArgs.Empty);
+                }
+            }
+
+            public void GoToStateById(string id)
+            {
+                this.GoToState(this.FindIndex(id));
+            }
+
+            public void GoToNextState(WrapMode mode = WrapMode.Loop)
+            {
+                switch (mode)
+                {
+                    case WrapMode.Loop:
+                        this.GoToState(MathUtil.Wrap((_currentState ?? -1) + 1, _states.Count));
+                        break;
+                    case WrapMode.Clamp:
+                    default:
+                        this.GoToState(Mathf.Clamp((_currentState ?? -1) + 1, 0, _states.Count - 1));
+                        break;
+                }
+            }
+
+            public void GoToPreviousState(WrapMode mode = WrapMode.Loop)
+            {
+                switch (mode)
+                {
+                    case WrapMode.Loop:
+                        this.GoToState(MathUtil.Wrap((_currentState ?? 1) - 1, _states.Count));
+                        break;
+                    case WrapMode.Clamp:
+                    default:
+                        this.GoToState(Mathf.Clamp((_currentState ?? _states.Count) - 1, 0, _states.Count - 1));
+                        break;
+                }
             }
 
             #endregion
@@ -288,7 +322,7 @@ namespace com.spacepuppy.Events
 
             public bool Remove(StateInfo item)
             {
-                if( _states.Remove(item))
+                if (_states.Remove(item))
                 {
                     _idToIndex = null;
                     return true;

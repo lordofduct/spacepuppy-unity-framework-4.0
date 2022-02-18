@@ -24,7 +24,7 @@ namespace com.spacepuppy.Collections
             : base(new OverridableEqualityComparer<TKey>())
         {
             var tp = typeof(TKey);
-            int sz = (tp.IsValueType && !tp.IsEnum) ? System.Runtime.InteropServices.Marshal.SizeOf(tp) : 4;
+            int sz = Math.Max((tp.IsValueType && !tp.IsEnum) ? System.Runtime.InteropServices.Marshal.SizeOf(tp) : 4, 4);
             _maxCapacityOnRelease = MAX_SIZE_INBYTES / sz;
             //_version = 1;
         }
@@ -33,7 +33,7 @@ namespace com.spacepuppy.Collections
             : base(new OverridableEqualityComparer<TKey>())
         {
             var tp = typeof(TKey);
-            int sz = (tp.IsValueType && !tp.IsEnum) ? System.Runtime.InteropServices.Marshal.SizeOf(tp) : 4;
+            int sz = Math.Max((tp.IsValueType && !tp.IsEnum) ? System.Runtime.InteropServices.Marshal.SizeOf(tp) : 4, 4);
             _maxCapacityOnRelease = MAX_SIZE_INBYTES / sz;
             //_version = 1;
         }

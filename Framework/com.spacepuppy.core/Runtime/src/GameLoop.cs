@@ -94,7 +94,6 @@ namespace com.spacepuppy
             {
                 if (ObjUtil.IsDestroyed(_instance))
                 {
-                    ObjUtil.SmartDestroy(_instance.gameObject);
                     _instance = null;
                 }
                 else

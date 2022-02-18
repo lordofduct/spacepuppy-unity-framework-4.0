@@ -163,6 +163,7 @@ namespace com.spacepuppyeditor.Core
                     {
                         tp = atypes[index];
                         property.managedReferenceValue = tp != null ? System.Activator.CreateInstance(tp) : null;
+                        com.spacepuppyeditor.Internal.ScriptAttributeUtility.ResetPropertyHandler(property, true);
                     }
                 }
             }

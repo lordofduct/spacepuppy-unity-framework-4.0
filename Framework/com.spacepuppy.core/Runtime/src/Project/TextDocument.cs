@@ -8,7 +8,7 @@ using System.Collections;
 namespace com.spacepuppy.Project
 {
 
-    [CreateAssetMenu(fileName = "TextDocument", menuName = "Spacepuppy/TextDocument")]
+    [CreateAssetMenu(fileName = "TextDocument", menuName = "Spacepuppy/Text/TextDocument")]
     public class TextDocument : ScriptableObject, ITextSource
     {
 

@@ -6,7 +6,7 @@ using System.Linq;
 namespace com.spacepuppy.Anim.Legacy
 {
 
-    [CreateAssetMenu(fileName = "SPAnimMask", menuName = "Spacepuppy/SPAnim Mask")]
+    [CreateAssetMenu(fileName = "SPAnimMask", menuName = "Spacepuppy/Legacy Anim/SPAnim Mask")]
     public sealed class SPAnimationMaskAsset : ScriptableObject, ICollection<SPAnimationMaskAsset.MaskEntry>, ISPAnimationMask
     {
 

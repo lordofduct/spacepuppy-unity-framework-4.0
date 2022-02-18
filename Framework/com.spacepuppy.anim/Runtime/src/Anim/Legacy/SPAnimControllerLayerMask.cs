@@ -5,7 +5,7 @@ using System.Linq;
 namespace com.spacepuppy.Anim.Legacy
 {
 
-    [CreateAssetMenu(fileName = "SPAnimControllerLayerMask", menuName = "Spacepuppy/SPAnimControllerLayerMask")]
+    [CreateAssetMenu(fileName = "SPAnimControllerLayerMask", menuName = "Spacepuppy/Legacy Anim/SPAnimControllerLayerMask")]
     public sealed class SPAnimControllerLayerMask : ScriptableObject, IAnimControllerMask
     {
 

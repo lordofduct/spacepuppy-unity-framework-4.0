@@ -47,7 +47,7 @@ namespace com.spacepuppy.SPInput
         private System.Action<ICursorDownHandler> _cursorDownFunctor;
         private System.Action<ICursorUpHandler> _cursorUpFunctor;
         private System.Action<ICursorBeginDragHandler> _beginDragFunctor;
-        private System.Action<ICursorEmdDragHandler> _endDragFunctor;
+        private System.Action<ICursorEndDragHandler> _endDragFunctor;
 
 
         [SerializeField]
@@ -96,7 +96,7 @@ namespace com.spacepuppy.SPInput
         protected override void Awake()
         {
             base.Awake();
-            
+
             _clickFunctor = (o) => o.OnClick(this);
             _doubleClickFunctor = (o) => o.OnDoubleClick(this);
             _cursorEnterFunctor = (o) => o.OnCursorEnter(this);
@@ -208,9 +208,9 @@ namespace com.spacepuppy.SPInput
 
         #region Methods
 
-        public CursorRaycastHit Raycast()
+        public CursorRaycastHit Raycast(bool ignoreCursorIsBlocked = false)
         {
-            return _resolver?.Raycast() ?? default(CursorRaycastHit);
+            return _resolver?.Raycast(ignoreCursorIsBlocked) ?? default(CursorRaycastHit);
         }
 
         /// <summary>
@@ -222,6 +222,27 @@ namespace com.spacepuppy.SPInput
             return _resolver?.GetRay() ?? default(Ray);
         }
 
+        /// <summary>
+        /// Dispatch the ICursorActivateEvent on whatever is under this cursor and return the CursorActivateEventData associated with that hit.
+        /// </summary>
+        /// <param name="token"></param>
+        /// <param name="ignoreCursorIsBlocked"></param>
+        /// <returns></returns>
+        public CursorActivateEventData ActivateCursor(object token, bool ignoreCursorIsBlocked = false)
+        {
+            CursorActivateEventData data = new CursorActivateEventData()
+            {
+                Cursor = this,
+                Token = token,
+                Hit = this.Raycast(ignoreCursorIsBlocked),
+            };
+
+            if (data.Hit.gameObject != null)
+            {
+                data.Hit.gameObject.Broadcast<ICursorActivatedHandler>((o) => o.OnCursorActivated(this, ref data));
+            }
+            return data;
+        }
 
         private void Update()
         {
@@ -253,7 +274,7 @@ namespace com.spacepuppy.SPInput
                 case ButtonPress.Released:
                     _lastUpTime = Time.unscaledDeltaTime;
                     _clickCount = 0;
-                    if(this.DragInitiated)
+                    if (this.DragInitiated)
                     {
                         this.DispatchEndDrag();
                         this.DragInitiated = false;
@@ -285,7 +306,7 @@ namespace com.spacepuppy.SPInput
                     }
                     break;
                 case ButtonPress.None:
-                    if(_clickCount > 0 && (Time.unscaledTimeAsDouble - _lastUpTime) > _doubleClickTimeout)
+                    if (_clickCount > 0 && (Time.unscaledTimeAsDouble - _lastUpTime) > _doubleClickTimeout)
                     {
                         _clickCount = 0;
                     }
@@ -307,7 +328,7 @@ namespace com.spacepuppy.SPInput
                     this.DispatchCursorDown();
                     break;
                 case ButtonPress.Holding:
-                    if(!this.DragInitiated && (_resolver?.TestBeginDrag(this) ?? false))
+                    if (!this.DragInitiated && (_resolver?.TestBeginDrag(this) ?? false))
                     {
                         this.DragInitiated = true;
                         this.DispatchBeginDrag();
@@ -575,9 +596,41 @@ namespace com.spacepuppy.SPInput
         /// <summary>
         /// Message handler for when someone has ended a drag.
         /// </summary>
-        public interface ICursorEmdDragHandler
+        public interface ICursorEndDragHandler
         {
             void OnEndDrag(CursorInputLogic cursor);
+        }
+
+        /// <summary>
+        /// Message handler for when ActivateCursor is called.
+        /// </summary>
+        public interface ICursorActivatedHandler
+        {
+            void OnCursorActivated(object sender, ref CursorActivateEventData data);
+        }
+
+        public struct CursorActivateEventData
+        {
+
+            public CursorInputLogic Cursor;
+            public object Token;
+            public CursorRaycastHit Hit;
+
+            /// <summary>
+            /// The number of times Used was called.
+            /// </summary>
+            public int UseCount { get; private set; }
+
+            /// <summary>
+            /// A ICursorActivatedHandler should call this to signal it consumed the activate event. 
+            /// This will allow activators to know if the target "succeeded" at being used. 
+            /// Some scripts like i_ActivateUnderCursor will signal different success/fail events based on this count.
+            /// </summary>
+            public void Use()
+            {
+                this.UseCount++;
+            }
+
         }
 
         public interface ICursorInputResolver
@@ -588,12 +641,12 @@ namespace com.spacepuppy.SPInput
             /// </summary>
             bool UseBroadcast { get; }
             /// <summary>
-            /// Return true if the cursor is blocked and QueryCurrentGameObjectOver would return null no matter what.
+            /// Return true if the cursor is blocked and Raycast would return null no matter what.
             /// </summary>
             bool CursorIsBlocked { get; }
 
             Ray GetRay();
-            CursorRaycastHit Raycast();
+            CursorRaycastHit Raycast(bool ignoreCursorIsBlocked = false);
             ButtonState GetClickButtonState();
             GameObject GetDispatchTarget(CursorInputLogic cursor);
             bool TestBeginDrag(CursorInputLogic cursor);
@@ -696,9 +749,9 @@ namespace com.spacepuppy.SPInput
                 return cam.ScreenPointToRay(EventSystem.current?.currentInputModule?.input?.mousePosition ?? Vector2.zero);
             }
 
-            public virtual CursorRaycastHit Raycast()
+            public virtual CursorRaycastHit Raycast(bool ignoreCursorIsBlocked = false)
             {
-                if (this.CursorIsBlocked) return default(CursorRaycastHit);
+                if (!ignoreCursorIsBlocked && this.CursorIsBlocked) return default(CursorRaycastHit);
 
                 var input = EventSystem.current?.currentInputModule?.input;
                 if (input != null)
@@ -717,7 +770,7 @@ namespace com.spacepuppy.SPInput
             public virtual ButtonState GetClickButtonState()
             {
                 var input = EventSystem.current?.currentInputModule?.input;
-                if(input != null)
+                if (input != null)
                 {
                     if (input.GetMouseButtonDown(_mouseButtonIndex))
                         return ButtonState.Down;
@@ -825,9 +878,9 @@ namespace com.spacepuppy.SPInput
                 return cam.ScreenPointToRay(EventSystem.current?.currentInputModule?.input?.mousePosition ?? Vector2.zero);
             }
 
-            public virtual CursorRaycastHit Raycast()
+            public virtual CursorRaycastHit Raycast(bool ignoreCursorIsBlocked = false)
             {
-                if (this.CursorIsBlocked) return default(CursorRaycastHit);
+                if (!ignoreCursorIsBlocked && this.CursorIsBlocked) return default(CursorRaycastHit);
 
                 var input = EventSystem.current?.currentInputModule?.input;
                 if (input != null)
@@ -990,9 +1043,9 @@ namespace com.spacepuppy.SPInput
                 return cam.ScreenPointToRay(this.GetInputDevice()?.GetCursorState(_cursorInputId) ?? Vector2.zero);
             }
 
-            public virtual CursorRaycastHit Raycast()
+            public virtual CursorRaycastHit Raycast(bool ignoreCursorIsBlocked = false)
             {
-                if (this.CursorIsBlocked) return default(CursorRaycastHit);
+                if (!ignoreCursorIsBlocked && this.CursorIsBlocked) return default(CursorRaycastHit);
 
                 var input = this.GetInputDevice();
                 if (input != null)
@@ -1135,9 +1188,9 @@ namespace com.spacepuppy.SPInput
                 return cam.ScreenPointToRay(this.GetInputDevice()?.GetCursorState(_cursorInputId) ?? Vector2.zero);
             }
 
-            public virtual CursorRaycastHit Raycast()
+            public virtual CursorRaycastHit Raycast(bool ignoreCursorIsBlocked = false)
             {
-                if (this.CursorIsBlocked) return default(CursorRaycastHit);
+                if (!ignoreCursorIsBlocked && this.CursorIsBlocked) return default(CursorRaycastHit);
 
                 var input = this.GetInputDevice();
                 if (input != null)

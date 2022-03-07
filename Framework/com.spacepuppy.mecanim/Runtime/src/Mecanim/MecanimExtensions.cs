@@ -8,6 +8,57 @@ namespace com.spacepuppy.Mecanim
     public static class MecanimExtensions
     {
 
+        public static int GetOverrides(object source, Animator animator, IList<KeyValuePair<AnimationClip, AnimationClip>> lst, bool treatUnconfiguredEntriesAsValidEntries = false, bool respectProxy = false)
+        {
+            if (source is IProxy p)
+            {
+                var tps = ArrayUtil.Temp(typeof(IAnimatorOverrideSource), typeof(AnimatorOverrideController));
+                source = p.GetTargetAs_ParamsRespecting(tps);
+                ArrayUtil.ReleaseTemp(tps);
+            }
+
+            switch (source)
+            {
+                case IAnimatorOverrideSource aos:
+                    return aos.GetOverrides(animator, lst);
+                case AnimatorOverrideController ctrl:
+                    if (lst is List<KeyValuePair<AnimationClip, AnimationClip>>)
+                    {
+                        ctrl.GetOverrides(lst as List<KeyValuePair<AnimationClip, AnimationClip>>);
+                        if (!treatUnconfiguredEntriesAsValidEntries)
+                        {
+                            for (int i = 0; i < lst.Count; i++)
+                            {
+                                if (lst[i].Value == null)
+                                {
+                                    lst.RemoveAt(i);
+                                    i--;
+                                }
+                            }
+                        }
+                        return lst.Count;
+                    }
+                    else
+                    {
+                        lst.Clear();
+                        using (var tlst = AnimatorOverrideCollection.GetTemp())
+                        {
+                            ctrl.GetOverrides(tlst);
+                            for (int i = 0; i < tlst.Count; i++)
+                            {
+                                if (treatUnconfiguredEntriesAsValidEntries || tlst[i].Value != null)
+                                {
+                                    lst.Add(tlst[i]);
+                                }
+                            }
+                            return lst.Count;
+                        }
+                    }
+            }
+
+            return 0;
+        }
+
         #region AnimatorControllerParameterTypeMask
 
         public static AnimatorControllerParameterTypeMask ToMask(this AnimatorControllerParameterType etp)
@@ -233,27 +284,36 @@ namespace com.spacepuppy.Mecanim
             return animator.AddOrGetComponent<SPAnimatorOverrideLayers>();
         }
 
-        internal static void StackOverrideGeneralized(Animator animator, object overrides, object token, bool targetUnconfiguredEntriesAsvalidEntriesWhenAnimatorOverrideController = false)
+        internal static void StackOverrideGeneralized(Animator animator, object overrides, object token, bool targetUnconfiguredEntriesAsvalidEntriesWhenAnimatorOverrideController = false, bool respectProxy = false)
         {
-            var src = ObjUtil.GetAsFromSource<IAnimatorOverrideSource>(overrides);
-            if (!object.ReferenceEquals(src, null))
+            var tps = ArrayUtil.Temp(typeof(IAnimatorOverrideSource), typeof(AnimatorOverrideController));
+            if (respectProxy && overrides is IProxy p)
             {
-                StackOverride(animator, src, token);
-                return;
+                overrides = p.GetTargetAs_ParamsRespecting(tps);
             }
-
-            var controller = ObjUtil.GetAsFromSource<AnimatorOverrideController>(overrides);
-            if (!object.ReferenceEquals(controller, null))
+            else
             {
-                StackOverride(animator, controller, token, targetUnconfiguredEntriesAsvalidEntriesWhenAnimatorOverrideController);
-                return;
+                overrides = ObjUtil.GetAsFromSource(tps, overrides);
             }
+            ArrayUtil.ReleaseTemp(tps);
 
-            var lst = overrides as IList<KeyValuePair<AnimationClip, AnimationClip>>;
-            if (!object.ReferenceEquals(lst, null))
+            switch(overrides)
             {
-                StackOverride(animator, lst, token);
-                return;
+                case IAnimatorOverrideSource aos:
+                    StackOverride(animator, aos, token);
+                    break;
+                case AnimatorOverrideController ctrl:
+                    StackOverride(animator, ctrl, token, targetUnconfiguredEntriesAsvalidEntriesWhenAnimatorOverrideController);
+                    break;
+                default:
+                    {
+                        var lst = overrides as IList<KeyValuePair<AnimationClip, AnimationClip>>;
+                        if (!object.ReferenceEquals(lst, null))
+                        {
+                            StackOverride(animator, lst, token);
+                        }
+                    }
+                    break;
             }
         }
 

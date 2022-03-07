@@ -168,7 +168,7 @@ namespace com.spacepuppy.Addressables
             return handle;
         }
 
-        public static AsyncOperationHandle<GameObject> InstantiateSPManagedAsync<TObject>(this AssetReference reference, Transform parent = null, bool instantiateInWorldSpace = false)
+        public static AsyncOperationHandle<GameObject> InstantiateSPManagedAsync(this AssetReference reference, Transform parent = null, bool instantiateInWorldSpace = false)
         {
             if (reference == null) throw new System.ArgumentNullException(nameof(reference));
 
@@ -182,6 +182,73 @@ namespace com.spacepuppy.Addressables
             };
             return handle;
         }
+
+        public static AsyncOperationHandle<GameObject> InstantiateSPManagedAsync(object key, Vector3 position, Quaternion rotation, Transform parent = null, bool trackHandle = true)
+        {
+            var handle = UnityEngine.AddressableAssets.Addressables.InstantiateAsync(key, position, rotation, parent, trackHandle);
+            handle.Completed += (h) =>
+            {
+                if (h.Status == AsyncOperationStatus.Succeeded)
+                {
+                    h.Result.AddOrGetComponent<AddressableKillHandle>();
+                }
+            };
+            return handle;
+        }
+
+        public static AsyncOperationHandle<GameObject> InstantiateSPManagedAsync(object key, Transform parent = null, bool instantiateInWorldSpace = false, bool trackHandle = true)
+        {
+            var handle = UnityEngine.AddressableAssets.Addressables.InstantiateAsync(key, parent, instantiateInWorldSpace, trackHandle);
+            handle.Completed += (h) =>
+            {
+                if (h.Status == AsyncOperationStatus.Succeeded)
+                {
+                    h.Result.AddOrGetComponent<AddressableKillHandle>();
+                }
+            };
+            return handle;
+        }
+
+        public static AsyncOperationHandle<GameObject> InstantiateSPManagedAsync(UnityEngine.ResourceManagement.ResourceLocations.IResourceLocation location, Vector3 position, Quaternion rotation, Transform parent = null, bool trackHandle = true)
+        {
+            var handle = UnityEngine.AddressableAssets.Addressables.InstantiateAsync(location, position, rotation, parent, trackHandle);
+            handle.Completed += (h) =>
+            {
+                if (h.Status == AsyncOperationStatus.Succeeded)
+                {
+                    h.Result.AddOrGetComponent<AddressableKillHandle>();
+                }
+            };
+            return handle;
+        }
+
+        public static AsyncOperationHandle<GameObject> InstantiateSPManagedAsync(UnityEngine.ResourceManagement.ResourceLocations.IResourceLocation location, Transform parent = null, bool instantiateInWorldSpace = false, bool trackHandle = true)
+        {
+            var handle = UnityEngine.AddressableAssets.Addressables.InstantiateAsync(location, parent, instantiateInWorldSpace, trackHandle);
+            handle.Completed += (h) =>
+            {
+                if (h.Status == AsyncOperationStatus.Succeeded)
+                {
+                    h.Result.AddOrGetComponent<AddressableKillHandle>();
+                }
+            };
+            return handle;
+        }
+
+        public static AsyncOperationHandle<GameObject> InstantiateSPManagedAsync(UnityEngine.ResourceManagement.ResourceLocations.IResourceLocation location, UnityEngine.ResourceManagement.ResourceProviders.InstantiationParameters instantiateParameters, bool trackHandle = true)
+        {
+            var handle = UnityEngine.AddressableAssets.Addressables.InstantiateAsync(location, instantiateParameters, trackHandle);
+            handle.Completed += (h) =>
+            {
+                if (h.Status == AsyncOperationStatus.Succeeded)
+                {
+                    h.Result.AddOrGetComponent<AddressableKillHandle>();
+                }
+            };
+            return handle;
+        }
+
+
 
 
         #region Special Typers

@@ -10,6 +10,81 @@ namespace com.spacepuppy.Utils
     public static class Messaging
     {
 
+        #region Send By Method
+
+        public enum MessageSendMethod
+        {
+            Broadcast = 0,
+            Signal = 1,
+            SignalUpward = 2,
+        }
+
+        [System.Serializable]
+        public struct MessageSendCommand
+        {
+            public MessageSendMethod SendMethod;
+            public bool IncludeInactiveObjects;
+            public bool IncludeDisabledComponents;
+
+            public MessageSendCommand(MessageSendMethod method, bool includeInactiveObjects = false, bool includeDisabledComponents = false)
+            {
+                this.SendMethod = method;
+                this.IncludeInactiveObjects = includeInactiveObjects;
+                this.IncludeDisabledComponents = includeDisabledComponents;
+            }
+
+            public void Send<T>(GameObject go, System.Action<T> functor) where T : class
+            {
+                switch (this.SendMethod)
+                {
+                    case MessageSendMethod.Broadcast:
+                        Broadcast<T>(go, functor, this.IncludeInactiveObjects, this.IncludeDisabledComponents);
+                        break;
+                    case MessageSendMethod.Signal:
+                        Signal<T>(go, functor, this.IncludeDisabledComponents);
+                        break;
+                    case MessageSendMethod.SignalUpward:
+                        SignalUpwards<T>(go, functor, this.IncludeDisabledComponents);
+                        break;
+                }
+            }
+
+            public void Send<TInterface, TArg>(GameObject go, TArg arg, System.Action<TInterface, TArg> functor) where TInterface : class
+            {
+                switch (this.SendMethod)
+                {
+                    case MessageSendMethod.Broadcast:
+                        Broadcast<TInterface, TArg>(go, arg, functor, this.IncludeInactiveObjects, this.IncludeDisabledComponents);
+                        break;
+                    case MessageSendMethod.Signal:
+                        Signal<TInterface, TArg>(go, arg, functor, this.IncludeDisabledComponents);
+                        break;
+                    case MessageSendMethod.SignalUpward:
+                        SignalUpwards<TInterface, TArg>(go, arg, functor, this.IncludeDisabledComponents);
+                        break;
+                }
+            }
+
+            public void Send(GameObject go, System.Type receiverType, System.Action<Component> functor)
+            {
+                switch (this.SendMethod)
+                {
+                    case MessageSendMethod.Broadcast:
+                        Broadcast(go, receiverType, functor, this.IncludeInactiveObjects, this.IncludeDisabledComponents);
+                        break;
+                    case MessageSendMethod.Signal:
+                        Signal(go, receiverType, functor, this.IncludeDisabledComponents);
+                        break;
+                    case MessageSendMethod.SignalUpward:
+                        SignalUpwards(go, receiverType, functor, this.IncludeDisabledComponents);
+                        break;
+                }
+            }
+
+        }
+
+        #endregion
+
         #region Standard Execute Methods
 
         public static void Signal<T>(this GameObject go, System.Action<T> functor, bool includeDisabledComponents = false) where T : class

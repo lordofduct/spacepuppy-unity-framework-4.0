@@ -20,24 +20,16 @@ namespace com.spacepuppy.Utils
 
         public static bool IsGameObjectSource(object obj, bool respectProxy)
         {
-            if (respectProxy && obj is IProxy)
-            {
-                obj = obj.ReduceIfProxy();
-                if (obj == null) return false;
-            }
+            if (respectProxy) obj = obj.ReduceIfProxyAs(typeof(GameObject));
+            if (obj == null) return false;
 
             return (obj is GameObject || obj is Component || obj is IGameObjectSource);
         }
 
         public static GameObject GetGameObjectFromSource(object obj, bool respectProxy = false)
         {
-            if (obj == null) return null;
-
-            if (respectProxy && obj is IProxy)
-            {
-                obj = obj.ReduceIfProxyAs(typeof(GameObject));
-                if (obj == null) return null;
-            }
+            if (respectProxy) obj = obj.ReduceIfProxyAs(typeof(GameObject));
+            if (obj.IsNullOrDestroyed()) return null;
 
             if (obj is GameObject)
                 return obj as GameObject;
@@ -51,13 +43,8 @@ namespace com.spacepuppy.Utils
 
         public static Transform GetTransformFromSource(object obj, bool respectProxy = false)
         {
-            if (obj == null) return null;
-
-            if (respectProxy && obj is IProxy)
-            {
-                obj = obj.ReduceIfProxyAs(typeof(Transform));
-                if (obj.IsNullOrDestroyed()) return null;
-            }
+            if (respectProxy) obj = obj.ReduceIfProxyAs(typeof(Transform));
+            if (obj.IsNullOrDestroyed()) return null;
 
             if (obj is Transform)
                 return obj as Transform;
@@ -73,13 +60,8 @@ namespace com.spacepuppy.Utils
 
         public static GameObject GetRootFromSource(object obj, bool respectProxy = false)
         {
+            if (respectProxy) obj = obj.ReduceIfProxyAs(typeof(GameObject));
             if (obj.IsNullOrDestroyed()) return null;
-
-            if (respectProxy && obj is IProxy)
-            {
-                obj = obj.ReduceIfProxyAs(typeof(GameObject));
-                if (obj.IsNullOrDestroyed()) return null;
-            }
 
             if (obj is IComponent) obj = (obj as IComponent).component;
 

@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 
 using com.spacepuppy;
 using com.spacepuppy.Utils;
@@ -12,13 +13,65 @@ namespace com.spacepuppy.DataBinding
     {
 
         /// <summary>
-        /// A binders might only care about binding the first element of the list, this is a fast accessor for that element.
+        /// A binding context's might only care about binding the first element of the list, this is a fast accessor for that element.
         /// </summary>
         object FirstElement { get; }
 
     }
 
-    [System.Serializable]
-    public class DataProviderRef : SerializableInterfaceRef<IDataProvider> { }
+    public static class DataProviderUtils
+    {
+
+        public static System.Collections.IEnumerable GetAsDataProvider(object source)
+        {
+            return GetAsDataProviderOrNull(source) ?? new object[] { source };
+        }
+
+        public static System.Collections.IEnumerable GetAsDataProvider(object source, bool respectIfProxy)
+        {
+            if (respectIfProxy && source is IProxy p)
+            {
+                if ((p.Params & ProxyParams.PrioritizeAsTargetFirst) != 0)
+                {
+                    var ddp = GetAsDataProviderOrNull(source);
+                    if (ddp != null) return ddp;
+                }
+
+                source = p.GetTargetInternal(typeof(IDataProvider), null);
+                return GetAsDataProviderOrNull(source) ?? new object[] { source };
+            }
+            else
+            {
+                return GetAsDataProviderOrNull(source) ?? new object[] { source };
+            }
+        }
+
+        public static System.Collections.IEnumerable GetAsDataProviderOrNull(object source)
+        {
+            switch (source)
+            {
+                case IDataProvider dp:
+                    return dp;
+                case System.Collections.IEnumerable e:
+                    return e;
+                default:
+                    return ObjUtil.GetAsFromSource<IDataProvider>(source);
+            }
+        }
+
+
+        public static object GetFirstElementOfDataProvider(object source, bool respectIfProxy = false, bool ignoreReducingGenericEnumerable = false)
+        {
+            var dp = ObjUtil.GetAsFromSource<IDataProvider>(source, respectIfProxy);
+            if (dp != null) return dp.FirstElement;
+
+            if (respectIfProxy) source = source.ReduceIfProxy();
+
+            if (!ignoreReducingGenericEnumerable && source is System.Collections.IEnumerable e) return e.Cast<object>().FirstOrDefault();
+
+            return source;
+        }
+
+    }
 
 }

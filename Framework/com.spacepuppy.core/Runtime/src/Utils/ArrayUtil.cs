@@ -684,7 +684,7 @@ namespace com.spacepuppy.Utils
 
                 lock (_lock)
                 {
-                    if (_oneArray != null)
+                    if (_twoArray != null)
                     {
                         arr = _twoArray;
                         _twoArray = null;
@@ -706,7 +706,7 @@ namespace com.spacepuppy.Utils
 
                 lock (_lock)
                 {
-                    if (_oneArray != null)
+                    if (_threeArray != null)
                     {
                         arr = _threeArray;
                         _threeArray = null;
@@ -729,7 +729,7 @@ namespace com.spacepuppy.Utils
 
                 lock (_lock)
                 {
-                    if (_oneArray != null)
+                    if (_fourArray != null)
                     {
                         arr = _fourArray;
                         _fourArray = null;

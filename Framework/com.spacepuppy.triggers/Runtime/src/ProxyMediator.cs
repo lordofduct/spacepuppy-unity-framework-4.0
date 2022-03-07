@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 using com.spacepuppy.Events;
 using com.spacepuppy.Utils;
 
@@ -21,7 +22,7 @@ namespace com.spacepuppy
     /// Basically think of this as like 'string' where even though 2 strings may not be the same reference object, they are treated as == if the value of the string is the same. String also fails == operator if you cast it to object.
     /// </summary>
     [CreateAssetMenu(fileName = "ProxyMediator", menuName = "Spacepuppy/Proxy/ProxyMediator", order = int.MinValue)]
-    public class ProxyMediator : ScriptableObject, ITriggerable, System.IEquatable<ProxyMediator>
+    public class ProxyMediator : ScriptableObject, ITriggerable, System.IEquatable<ProxyMediator>, IProxy
     {
 
         #region Cross-Domain Lookup
@@ -53,6 +54,46 @@ namespace com.spacepuppy
             }
         }
 
+        public static IEnumerable<ProxyInfo> EnumerateActiveProxyMediators() => _crossDomainLookupTable.Select(o => new ProxyInfo()
+        {
+            Guid = o.Key,
+            Target = o.Value.Target,
+        });
+
+        /// <summary>
+        /// Set's the target of an initialized proxymediator with matching guid. 
+        /// If not matching proxymediator is found, nothing happens.
+        /// </summary>
+        public static bool SetProxyTarget(System.Guid guid, object target)
+        {
+            CrossDomainHook hook;
+            if(_crossDomainLookupTable.TryGetValue(guid, out hook))
+            {
+                hook.Target = target;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Finds a matching initialized proxymediator with matching guid and calls WaitForNextTrigger on it. 
+        /// RadicalWaitHandle.Null is returned if no mediator is located.
+        /// </summary>
+        public static IRadicalWaitHandle WaitForNextTrigger(System.Guid guid)
+        {
+            CrossDomainHook hook;
+            if (_crossDomainLookupTable.TryGetValue(guid, out hook))
+            {
+                if (hook.Handle == null) hook.Handle = RadicalWaitHandle.Create();
+                return hook.Handle;
+            }
+            else
+            {
+                return RadicalWaitHandle.Null;
+            }
+        }
+
         #endregion
 
 
@@ -81,6 +122,11 @@ namespace com.spacepuppy
         [SerializeField]
         [SerializableGuid.Config(LinkToAsset = true, AllowZero = false)]
         private SerializableGuid _guid;
+
+        [SerializeField]
+        private bool _triggerSyncedTargetWhenTriggered = false;
+        [SerializeField]
+        private bool _passAlongTriggerArgWhenTrigger = false;
 
         [System.NonSerialized]
         private bool _initialized;
@@ -122,6 +168,15 @@ namespace com.spacepuppy
 
         #region Methods
 
+        public void SetProxyTarget(object target)
+        {
+            CrossDomainHook hook;
+            if (FindHook(this, out hook))
+            {
+                hook.Target = target;
+            }
+        }
+
         public IRadicalWaitHandle WaitForNextTrigger()
         {
             CrossDomainHook hook;
@@ -136,7 +191,7 @@ namespace com.spacepuppy
             }
         }
 
-        public virtual void Trigger()
+        public virtual void Trigger(object sender, object arg)
         {
             CrossDomainHook hook;
             if (FindHook(this, out hook))
@@ -145,10 +200,15 @@ namespace com.spacepuppy
                 hook.Handle = null;
 
                 hook.OnTriggered?.Invoke(this, System.EventArgs.Empty);
+                if (_triggerSyncedTargetWhenTriggered && hook.Target != null)
+                {
+                    EventTriggerEvaluator.Current.TriggerAllOnTarget(hook.Target, arg, sender, _passAlongTriggerArgWhenTrigger ? arg : null);
+                }
 
                 if (h != null)
                 {
                     h.SignalComplete();
+                    (h as System.IDisposable).Dispose();
                 }
             }
         }
@@ -204,8 +264,34 @@ namespace com.spacepuppy
 
         bool ITriggerable.Trigger(object sender, object arg)
         {
-            this.Trigger();
+            this.Trigger(sender, arg);
             return true;
+        }
+
+        #endregion
+
+        #region IProxy Interface
+
+        ProxyParams IProxy.Params => ProxyParams.HandlesTriggerDirectly;
+
+        public object GetTarget()
+        {
+            CrossDomainHook hook;
+            if (FindHook(this, out hook))
+            {
+                return hook.Target;
+            }
+            return null;
+        }
+
+        object IProxy.GetTargetInternal(System.Type expectedType, object arg)
+        {
+            return this.GetTarget();
+        }
+
+        System.Type IProxy.GetTargetType()
+        {
+            return this.GetTarget()?.GetType() ?? typeof(object);
         }
 
         #endregion
@@ -216,6 +302,7 @@ namespace com.spacepuppy
         {
             public System.EventHandler OnTriggered;
             public RadicalWaitHandle Handle;
+            public object Target;
             public int RefCount;
         }
 
@@ -237,6 +324,20 @@ namespace com.spacepuppy
             public int GetHashCode(ProxyMediator obj)
             {
                 return obj?.Guid.GetHashCode() ?? 0;
+            }
+        }
+
+        public struct ProxyInfo
+        {
+            public System.Guid Guid;
+            public object Target;
+
+            public IRadicalWaitHandle WaitForNextTrigger() => ProxyMediator.WaitForNextTrigger(this.Guid);
+
+            public void SetProxyTarget(object target)
+            {
+                this.Target = target;
+                ProxyMediator.SetProxyTarget(this.Guid, target);
             }
         }
 

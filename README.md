@@ -4,6 +4,8 @@ A modular framework of tools for use with the Unity game engine version 2020.3
 
 This repository primarily exists as a way for me to just share the tools I personally use when making games. This project is constantly in flux and should seldom be considered "stable". Use at your own risk.
 
+NOTE - various editor menu/functionality exist in the editor scripts. Define the compiler directive SPEDITOR_IGNORE to turn them off.
+
 ## com.spacepuppy
 
 Core library, all other libraries in spacepuppy depend on this library. Core functionality includes:

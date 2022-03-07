@@ -1337,11 +1337,6 @@ namespace com.spacepuppyeditor
 
         public static Component SelectComponentFromSourceField(Rect position, GUIContent label, GameObject source, Component selectedComp, System.Predicate<Component> filter = null)
         {
-            if (source == null)
-            {
-
-            }
-
             //var selectedType = (selectedComp != null) ? selectedComp.GetType() : null;
             //System.Type[] availableMechanismTypes;
             //if (filter != null)
@@ -1699,6 +1694,36 @@ namespace com.spacepuppyeditor
             }
 
             return GUI.Button(r, EditorHelper.TempContent(">", tooltip));
+        }
+
+        #endregion
+
+        #region Ref Button
+
+        public static bool RefButton(ref Rect position, UnityEngine.Object obj, bool rightSide = true)
+        {
+            var w = Mathf.Min(SPEditorGUI.X_BTN_WIDTH, position.width);
+            Rect r;
+            if (rightSide)
+            {
+                r = new Rect(position.xMax - w, position.yMin, w, EditorGUIUtility.singleLineHeight);
+                position = new Rect(position.xMin, position.yMin, position.width - w, position.height);
+            }
+            else
+            {
+                r = new Rect(position.xMin, position.yMin, w, EditorGUIUtility.singleLineHeight);
+                position = new Rect(r.xMax, position.yMin, position.width - w, position.height);
+            }
+
+            if (GUI.Button(r, EditorHelper.TempContent("...")))
+            {
+                if (obj) EditorGUIUtility.PingObject(obj);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         #endregion

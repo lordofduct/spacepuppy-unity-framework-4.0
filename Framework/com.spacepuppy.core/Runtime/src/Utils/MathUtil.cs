@@ -41,6 +41,14 @@ namespace com.spacepuppy.Utils
     public static class MathUtil
     {
 
+        public enum WrapMode
+        {
+            Oblivion = 0,
+            Clamp = 1,
+            Loop = 2,
+            PingPong = 3
+        }
+
         #region Public ReadOnly Properties
 
         // Number pi
@@ -143,7 +151,7 @@ namespace com.spacepuppy.Utils
         {
             return !double.IsNaN(f) && !double.IsNegativeInfinity(f) && !double.IsPositiveInfinity(f);
         }
-        
+
         /// <summary>
         /// Returns the sign of the value: 1 = positive, -1 = negative, 0 = when 0.
         /// If 0 <= value <= epsilon then 0 is returned.
@@ -424,7 +432,7 @@ namespace com.spacepuppy.Utils
             if (coll == null) return float.NaN;
 
             float result = 1f;
-            foreach(float value in coll)
+            foreach (float value in coll)
             {
                 result *= value;
             }
@@ -434,7 +442,7 @@ namespace com.spacepuppy.Utils
         #endregion
 
         #region Value warping
-        
+
         /// <summary>
         /// The average of an array of values
         /// </summary>
@@ -780,6 +788,58 @@ namespace com.spacepuppy.Utils
         {
             var result = value % max;
             return result < 0 ? result + max : result;
+        }
+
+        /// <summary>
+        /// Wrap an index by some mode
+        /// </summary>
+        /// <param name="mode"></param>
+        /// <param name="value"></param>
+        /// <param name="max"></param>
+        /// <param name="min"></param>
+        /// <returns></returns>
+        public static int WrapIndex(WrapMode mode, int value, int max)
+        {
+            switch (mode)
+            {
+                case WrapMode.Clamp:
+                    return Mathf.Clamp(value, 0, max - 1);
+                case WrapMode.Loop:
+                    return MathUtil.Wrap(value, max);
+                case WrapMode.PingPong:
+                    return (int)Mathf.PingPong(value, max - 1);
+                default:
+                    return value;
+            }
+        }
+
+        public static float Wrap(WrapMode mode, int value, int max, int min = 0)
+        {
+            switch (mode)
+            {
+                case WrapMode.Clamp:
+                    return Mathf.Clamp(value, min, max);
+                case WrapMode.Loop:
+                    return MathUtil.Wrap(value, max, min);
+                case WrapMode.PingPong:
+                    return (int)Mathf.PingPong(value - min, max - min) + min;
+                default:
+                    return value;
+            }
+        }
+        public static float Wrap(WrapMode mode, float value, float max, float min = 0)
+        {
+            switch (mode)
+            {
+                case WrapMode.Clamp:
+                    return Mathf.Clamp(value, min, max - 1);
+                case WrapMode.Loop:
+                    return MathUtil.Wrap(value, max, min);
+                case WrapMode.PingPong:
+                    return (int)Mathf.PingPong(value - min, max - min - 1) + min;
+                default:
+                    return value;
+            }
         }
 
         /// <summary>
@@ -1470,7 +1530,7 @@ namespace com.spacepuppy.Utils
 
             return arr.ToArray();
         }
-        
+
         public static int[] CommonFactorsOf(int m, int n)
         {
             int i = 0;
@@ -1478,7 +1538,7 @@ namespace com.spacepuppy.Utils
             if (m < 0) m = -m;
             if (n < 0) n = -n;
 
-            if(m > n)
+            if (m > n)
             {
                 i = m;
                 m = n;
@@ -1488,9 +1548,9 @@ namespace com.spacepuppy.Utils
             var set = new HashSet<int>(); //ensures no duplicates
 
             int r = (int)Math.Sqrt(m);
-            for(i = 1; i <= r; i++)
+            for (i = 1; i <= r; i++)
             {
-                if((m % i) == 0 && (n % i) == 0)
+                if ((m % i) == 0 && (n % i) == 0)
                 {
                     set.Add(i);
                     j = m / i;
@@ -1698,7 +1758,7 @@ namespace com.spacepuppy.Utils
             return RisingFactorial(n, k) / Factorial(k);
         }
         #endregion
-        
+
         #region Geometric Calculations
 
         public static float ApproxCircumOfEllipse(float a, float b)

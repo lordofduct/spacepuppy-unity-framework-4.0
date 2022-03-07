@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using com.spacepuppy.Dynamic;
 using com.spacepuppy.Project;
 using com.spacepuppy.Utils;
+using com.spacepuppy.Collections;
 
 namespace com.spacepuppy.Events
 {
@@ -16,15 +17,9 @@ namespace com.spacepuppy.Events
         private static EventTriggerEvaluator _default = new EventTriggerEvaluator();
         private static IEvaluator _evaluator;
 
-        public static EventTriggerEvaluator Default
-        {
-            get { return _default; }
-        }
+        public static EventTriggerEvaluator Default => _default;
 
-        public static IEvaluator Current
-        {
-            get { return _evaluator; }
-        }
+        public static IEvaluator Current => _evaluator;
 
         public static void SetCurrentEvaluator(IEvaluator ev)
         {
@@ -39,6 +34,37 @@ namespace com.spacepuppy.Events
         #endregion
 
         #region Methods
+
+        private void ReduceTriggerTarget(ref object target, object incomingarg, out GameObject go)
+        {
+            go = null;
+            if (target is IProxy p)
+            {
+                var prms = p.Params;
+                if ((prms & ProxyParams.HandlesTriggerDirectly) != 0)
+                {
+                    go = GameObjectUtil.GetGameObjectFromSource(target);
+                }
+                else if ((prms & ProxyParams.PrioritizeAsTargetFirst) != 0)
+                {
+                    go = GameObjectUtil.GetGameObjectFromSource(target);
+                    if (go == null)
+                    {
+                        target = p.GetTarget(incomingarg);
+                        go = GameObjectUtil.GetGameObjectFromSource(target);
+                    }
+                }
+                else
+                {
+                    target = p.GetTarget(incomingarg);
+                    go = GameObjectUtil.GetGameObjectFromSource(target);
+                }
+            }
+            else
+            {
+                go = GameObjectUtil.GetGameObjectFromSource(target);
+            }
+        }
 
         private ITriggerable[] GetCache(GameObject go)
         {
@@ -63,22 +89,26 @@ namespace com.spacepuppy.Events
             }
         }
 
-        public void GetAllTriggersOnTarget(object target, List<ITriggerable> outputColl)
+        public void GetAllTriggersOnTarget(object target, object incomingarg, List<ITriggerable> outputColl)
         {
-            if (target is IProxy) target = target.ReduceIfProxy();
-            var go = GameObjectUtil.GetGameObjectFromSource(target);
+            GameObject go;
+            ReduceTriggerTarget(ref target, incomingarg, out go);
+
             if (go != null)
             {
                 outputColl.AddRange(this.GetCache(go));
             }
             else if (target is ITriggerable)
+            {
                 outputColl.Add(target as ITriggerable);
+            }
         }
 
-        public void TriggerAllOnTarget(object target, object sender, object arg)
+        public void TriggerAllOnTarget(object target, object incomingarg, object sender, object outgoingarg)
         {
-            if (target is IProxy) target = target.ReduceIfProxy();
-            var go = GameObjectUtil.GetGameObjectFromSource(target);
+            GameObject go;
+            ReduceTriggerTarget(ref target, incomingarg, out go);
+
             if (go != null)
             {
                 var arr = this.GetCache(go);
@@ -87,40 +117,81 @@ namespace com.spacepuppy.Events
                 {
                     if (t.CanTrigger)
                     {
-                        t.Trigger(sender, arg);
+                        t.Trigger(sender, outgoingarg);
                     }
                 }
             }
-            else
+            else if(target is ITriggerable t && t.CanTrigger)
             {
-                var targ = target as ITriggerable;
-                if (targ != null && targ.CanTrigger)
-                    targ.Trigger(sender, arg);
+                t.Trigger(sender, outgoingarg);
             }
         }
 
-        public void TriggerSelectedTarget(object target, object sender, object arg)
+        public void TriggerAllOnTargetUncached(object target, object incomingarg, object sender, object outgoingarg)
         {
-            if (target is IProxy) target = target.ReduceIfProxy();
-            if (target != null && target is ITriggerable)
+            GameObject go;
+            ReduceTriggerTarget(ref target, incomingarg, out go);
+
+            if (go != null)
             {
-                var t = target as ITriggerable;
-                if (t.CanTrigger) t.Trigger(sender, arg);
+                using (var lst = TempCollection.GetList<ITriggerable>())
+                {
+                    foreach (var t in lst)
+                    {
+                        if (t.CanTrigger)
+                        {
+                            t.Trigger(sender, outgoingarg);
+                        }
+                    }
+                }
+            }
+            else if (target is ITriggerable t && t.CanTrigger)
+            {
+                t.Trigger(sender, outgoingarg);
             }
         }
 
-        public void SendMessageToTarget(object target, string message, object arg)
+        public void TriggerSelectedTarget(object target, object incomingarg, object sender, object outgoingarg)
         {
+            ITriggerable trig = null;
+            if(target is IProxy p)
+            {
+                var prms = p.Params;
+                if((prms & ProxyParams.HandlesTriggerDirectly) != 0 && target is ITriggerable)
+                {
+                    trig = target as ITriggerable; 
+                }
+                else if((prms & ProxyParams.PrioritizeAsTargetFirst) != 0 && target is ITriggerable)
+                {
+                    trig = target as ITriggerable;
+                }
+                else
+                {
+                    trig = p.GetTarget(incomingarg) as ITriggerable;
+                }
+            }
+
+            if (trig?.CanTrigger ?? false)
+            {
+                trig.Trigger(sender, outgoingarg);
+            }
+        }
+
+        public void SendMessageToTarget(object target, object incomingarg, string message, object outgoingarg)
+        {
+            if (target is IProxy p && (p.Params & ProxyParams.PrioritizeAsTargetFirst) == 0) target = p.GetTarget(incomingarg);
+
             var go = GameObjectUtil.GetGameObjectFromSource(target, true);
             if (go != null && message != null)
             {
-                go.SendMessage(message, arg, SendMessageOptions.DontRequireReceiver);
+                go.SendMessage(message, outgoingarg, SendMessageOptions.DontRequireReceiver);
             }
         }
 
-        public void CallMethodOnSelectedTarget(object target, string methodName, VariantReference[] methodArgs)
+        public void CallMethodOnSelectedTarget(object target, object incomingarg, string methodName, VariantReference[] methodArgs)
         {
-            if (target is IProxy) target = target.ReduceIfProxy();
+            if (target is IProxy p) target = p.GetTarget(incomingarg);
+
             if (methodName != null)
             {
                 //CallMethod does not support using the passed in arg
@@ -147,9 +218,9 @@ namespace com.spacepuppy.Events
             }
         }
 
-        public void EnableTarget(object target, EnableMode mode)
+        public void EnableTarget(object target, object incomingarg, EnableMode mode)
         {
-            if (target is IProxy) target = target.ReduceIfProxy();
+            if (target is IProxy p && (p.Params & ProxyParams.PrioritizeAsTargetFirst) == 0) target = p.GetTarget(incomingarg);
 
             if (target is Component c && IsEnableableComponent(c))
             {
@@ -187,9 +258,10 @@ namespace com.spacepuppy.Events
             }
         }
 
-        public void DestroyTarget(object target)
+        public void DestroyTarget(object target, object incomingarg)
         {
-            if (target is IProxy) target = target.ReduceIfProxy();
+            if (target is IProxy p && (p.Params & ProxyParams.PrioritizeAsTargetFirst) == 0) target = p.GetTarget(incomingarg);
+
             var go = GameObjectUtil.GetGameObjectFromSource(target);
             if (go != null)
             {
@@ -245,14 +317,14 @@ namespace com.spacepuppy.Events
         public interface IEvaluator
         {
 
-            void GetAllTriggersOnTarget(object target, List<ITriggerable> outputColl);
+            void GetAllTriggersOnTarget(object target, object incomingarg, List<ITriggerable> outputColl);
 
-            void TriggerAllOnTarget(object target, object sender, object arg);
-            void TriggerSelectedTarget(object target, object sender, object arg);
-            void SendMessageToTarget(object target, string message, object arg);
-            void CallMethodOnSelectedTarget(object target, string methodName, VariantReference[] methodArgs);
-            void EnableTarget(object target, EnableMode mode);
-            void DestroyTarget(object target);
+            void TriggerAllOnTarget(object target, object incomingarg, object sender, object outgoingarg);
+            void TriggerSelectedTarget(object target, object incomingarg, object sender, object outgoingarg);
+            void SendMessageToTarget(object target, object incomingarg, string message, object outgoingarg);
+            void CallMethodOnSelectedTarget(object target, object incomingarg, string methodName, VariantReference[] methodArgs);
+            void EnableTarget(object target, object incomingarg, EnableMode mode);
+            void DestroyTarget(object target, object incomingarg);
 
         }
 

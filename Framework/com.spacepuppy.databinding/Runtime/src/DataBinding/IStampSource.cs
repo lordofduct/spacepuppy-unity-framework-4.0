@@ -129,7 +129,7 @@ namespace com.spacepuppy.DataBinding
         {
             if (!_stampPrefabReference.IsConfigured()) return new AsyncWaitHandle<GameObject>(null);
 
-            return _stampPrefabReference.InstantiateSPManagedAsync<GameObject>(parent).AsAsyncWaitHandle();
+            return _stampPrefabReference.InstantiateSPManagedAsync(parent).AsAsyncWaitHandle();
         }
 
         #endregion

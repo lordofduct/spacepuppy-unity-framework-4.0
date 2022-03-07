@@ -8,6 +8,8 @@ using com.spacepuppy.Dynamic;
 using com.spacepuppy.Utils;
 
 using com.spacepuppyeditor.Core;
+using com.spacepuppy.Collections;
+using com.spacepuppy.Events;
 
 namespace com.spacepuppyeditor.Core
 {
@@ -31,13 +33,13 @@ namespace com.spacepuppyeditor.Core
 
         public bool RestrictVariantType = false;
 
-
         private VariantType _variantTypeRestrictedTo;
-        private System.Type _typeRestrictedTo = typeof(UnityEngine.Object);
-        private System.Type _forcedObjectType = typeof(UnityEngine.Object);
+        private System.Type _typeRestrictedTo = null;
+
+        private System.Type _forcedObjectType = typeof(object);
 
         private VariantReference.EditorHelper _helper = new VariantReference.EditorHelper(new VariantReference());
-        private SelectableComponentPropertyDrawer _selectComponentDrawer = new SelectableComponentPropertyDrawer();
+        private SelectableObjectPropertyDrawer _selectObjectPropertyDrawer = new SelectableObjectPropertyDrawer();
 
         #endregion
 
@@ -48,30 +50,30 @@ namespace com.spacepuppyeditor.Core
             get { return _variantTypeRestrictedTo; }
         }
 
+        /// <summary>
+        /// The type that dictates what the VariantReference is restricted to. 
+        /// The property 'VariantTypeRestrictedTo' will be udpated to reflect this type's category in VarianteReference.
+        /// </summary>
         public System.Type TypeRestrictedTo
         {
             get { return _typeRestrictedTo; }
             set
             {
-                _typeRestrictedTo = value ?? typeof(UnityEngine.Object);
-                _variantTypeRestrictedTo = VariantReference.GetVariantType(_typeRestrictedTo);
+                _typeRestrictedTo = value ?? typeof(object);
+                _variantTypeRestrictedTo = value != null ? VariantReference.GetVariantType(_typeRestrictedTo) : VariantType.Null;
             }
         }
 
         /// <summary>
-        /// Unity Object type restriction, if the restricted type is a UnityEngine.Object.
+        /// The type of objects that the Object/Component selector field is restricted to. 
+        /// This limits what is allowed to be dragged onto, or display in the popup.
         /// </summary>
         public System.Type ForcedObjectType
         {
             get { return _forcedObjectType; }
             set
             {
-                if (ComponentUtil.IsAcceptableComponentType(value))
-                    _forcedObjectType = value;
-                else if (TypeUtil.IsType(value, typeof(UnityEngine.Object)))
-                    _forcedObjectType = value;
-                else
-                    _forcedObjectType = typeof(UnityEngine.Object);
+                _forcedObjectType = value ?? typeof(object);
             }
         }
 
@@ -97,6 +99,8 @@ namespace com.spacepuppyeditor.Core
 
             EditorGUI.EndProperty();
             EditorGUIUtility.labelWidth = labelWidthCache;
+
+            this.HandleDragDrop(position, property);
         }
 
         public void DrawValueField(Rect position, SerializedProperty property)
@@ -167,7 +171,7 @@ namespace com.spacepuppyeditor.Core
             }
             cache.Reset();
 
-            if (_typeRestrictedTo.IsEnum)
+            if (_typeRestrictedTo?.IsEnum ?? false)
             {
                 variant.IntValue = ConvertUtil.ToInt(EditorGUI.EnumPopup(r1, ConvertUtil.ToEnumOfType(_typeRestrictedTo, variant.IntValue)));
             }
@@ -184,7 +188,7 @@ namespace com.spacepuppyeditor.Core
                         variant.StringValue = EditorGUI.TextField(r1, variant.StringValue);
                         break;
                     case VariantType.Boolean:
-                        variant.BoolValue = EditorGUI.Toggle(r1, variant.BoolValue);
+                        variant.BoolValue = EditorGUI.Toggle(new Rect(r1.xMin + 10f, r1.yMin, r1.width - 10f, r1.height), variant.BoolValue);
                         break;
                     case VariantType.Integer:
                         variant.IntValue = EditorGUI.IntField(r1, variant.IntValue);
@@ -215,68 +219,18 @@ namespace com.spacepuppyeditor.Core
                         variant.DateValue = ConvertUtil.ToDate(EditorGUI.TextField(r1, variant.DateValue.ToString()));
                         break;
                     case VariantType.GameObject:
-                        variant.GameObjectValue = EditorGUI.ObjectField(r1, variant.GameObjectValue, typeof(GameObject), true) as GameObject;
-                        break;
                     case VariantType.Component:
-                        {
-                            _selectComponentDrawer.AllowNonComponents = false;
-                            _selectComponentDrawer.RestrictionType = ComponentUtil.IsAcceptableComponentType(_forcedObjectType) ? _forcedObjectType : typeof(Component);
-                            _selectComponentDrawer.ShowXButton = true;
-                            var targProp = property.FindPropertyRelative(PROP_OBJREF);
-                            EditorGUI.BeginChangeCheck();
-                            _selectComponentDrawer.OnGUI(r1, targProp);
-                            if (EditorGUI.EndChangeCheck())
-                            {
-                                variant.ComponentValue = targProp.objectReferenceValue as Component;
-                            }
-                        }
-                        break;
                     case VariantType.Object:
                         {
-                            var obj = variant.ObjectValue;
-                            if (ComponentUtil.IsAcceptableComponentType(_forcedObjectType))
+                            _selectObjectPropertyDrawer.AllowProxy = true;
+                            _selectObjectPropertyDrawer.AllowSceneObjects = true;
+                            _selectObjectPropertyDrawer.InheritsFromType = _forcedObjectType;
+                            var targProp = property.FindPropertyRelative(PROP_OBJREF);
+                            EditorGUI.BeginChangeCheck();
+                            _selectObjectPropertyDrawer.OnGUI(r1, targProp, GUIContent.none);
+                            if (EditorGUI.EndChangeCheck())
                             {
-                                if (obj is GameObject || obj is Component)
-                                {
-                                    _selectComponentDrawer.AllowNonComponents = false;
-                                    _selectComponentDrawer.RestrictionType = _forcedObjectType;
-                                    _selectComponentDrawer.ShowXButton = true;
-                                    var targProp = property.FindPropertyRelative(PROP_OBJREF);
-                                    EditorGUI.BeginChangeCheck();
-                                    _selectComponentDrawer.OnGUI(r1, targProp);
-                                    if (EditorGUI.EndChangeCheck())
-                                    {
-                                        variant.ObjectValue = targProp.objectReferenceValue as Component;
-                                    }
-                                }
-                                else
-                                {
-                                    EditorGUI.BeginChangeCheck();
-                                    obj = EditorGUI.ObjectField(r1, obj, typeof(UnityEngine.Object), true);
-                                    if (EditorGUI.EndChangeCheck())
-                                    {
-                                        if (obj == null)
-                                        {
-                                            variant.ObjectValue = null;
-                                        }
-                                        else if (_forcedObjectType.IsInstanceOfType(obj))
-                                        {
-                                            variant.ObjectValue = obj;
-                                        }
-                                        else
-                                        {
-                                            var go = GameObjectUtil.GetGameObjectFromSource(obj);
-                                            if (go != null)
-                                                variant.ObjectValue = go.GetComponent(_forcedObjectType);
-                                            else
-                                                variant.ObjectValue = null;
-                                        }
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                variant.ObjectValue = EditorGUI.ObjectField(r1, obj, _forcedObjectType, true);
+                                variant.ObjectValue = targProp.objectReferenceValue;
                             }
                         }
                         break;
@@ -318,46 +272,191 @@ namespace com.spacepuppyeditor.Core
 
         private void DrawValueFieldInPropertyMode(Rect position, SerializedProperty property, VariantReference.EditorHelper helper)
         {
-            _selectComponentDrawer.AllowNonComponents = true;
-            _selectComponentDrawer.RestrictionType = null;
-            _selectComponentDrawer.ShowXButton = false;
+            _selectObjectPropertyDrawer.AllowProxy = true;
+            _selectObjectPropertyDrawer.AllowSceneObjects = true;
+            _selectObjectPropertyDrawer.InheritsFromType = null;
             var targProp = property.FindPropertyRelative(PROP_OBJREF);
             var memberProp = property.FindPropertyRelative(PROP_STRING);
             var vtypeProp = property.FindPropertyRelative(PROP_TYPE);
 
             if (targProp.objectReferenceValue == null)
             {
-                _selectComponentDrawer.OnGUI(position, targProp);
+                _selectObjectPropertyDrawer.OnGUI(position, targProp, GUIContent.none);
             }
             else
             {
-                var r1 = new Rect(position.xMin, position.yMin, position.width * 0.4f, position.height);
-                var r2 = new Rect(r1.xMax, position.yMin, position.width - r1.width, position.height);
-                _selectComponentDrawer.OnGUI(r1, targProp);
+                const System.Reflection.MemberTypes MASK = System.Reflection.MemberTypes.Field | System.Reflection.MemberTypes.Property;
+                const DynamicMemberAccess ACCESS = DynamicMemberAccess.Read;
 
-                System.Reflection.MemberInfo selectedMember;
-                EditorGUI.BeginChangeCheck();
-                memberProp.stringValue = SPEditorGUI.ReflectedPropertyField(r2, targProp.objectReferenceValue, memberProp.stringValue, com.spacepuppy.Dynamic.DynamicMemberAccess.Read, out selectedMember);
-                if (EditorGUI.EndChangeCheck())
-                    vtypeProp.SetEnumValue<VariantType>(selectedMember != null ? VariantReference.GetVariantType(DynamicUtil.GetReturnType(selectedMember)) : VariantType.Null);
+                if (SPEditorGUI.XButton(ref position, "Clear Selected Object", true))
+                {
+                    targProp.objectReferenceValue = null;
+                    memberProp.stringValue = string.Empty;
+                    vtypeProp.SetEnumValue(VariantType.Null);
+                    return;
+                }
+                SPEditorGUI.RefButton(ref position, targProp.objectReferenceValue, true);
+
+                var targObj = targProp.objectReferenceValue;
+                var memberName = memberProp.stringValue;
+
+                var go = GameObjectUtil.GetGameObjectFromSource(targObj);
+                if (go != null)
+                {
+                    using (var lst = TempCollection.GetList<Component>())
+                    {
+                        go.GetComponents(lst);
+                        var members = (from o in lst.Cast<object>().Prepend(go)
+                                       from m in (o is IProxy ? DynamicUtil.GetEasilySerializedMembersFromType((o as IProxy).GetTargetType(), MASK, ACCESS) : DynamicUtil.GetEasilySerializedMembers(o, MASK, ACCESS))
+                                       select (o, m)).ToArray();
+                        var entries = members.Select(t =>
+                        {
+                            if (t.o is IProxy)
+                            {
+                                return EditorHelper.TempContent(string.Format("{0} ({1})/{2} ({3})", go.name, t.o.GetType().Name, t.m.Name, DynamicUtil.GetReturnType(t.m).Name));
+                            }
+                            else if ((DynamicUtil.GetMemberAccessLevel(t.m) & DynamicMemberAccess.Write) != 0)
+                            {
+                                return EditorHelper.TempContent(string.Format("{0} ({1})/{2} ({3}) -> {4}", go.name, t.o.GetType().Name, t.m.Name, DynamicUtil.GetReturnType(t.m).Name, EditorHelper.GetValueWithMemberSafe(t.m, t.o, true)));
+                            }
+                            else
+                            {
+                                return EditorHelper.TempContent(string.Format("{0} ({1})/{2} (readonly - {3}) -> {4}", go.name, t.o.GetType().Name, t.m.Name, DynamicUtil.GetReturnType(t.m).Name, EditorHelper.GetValueWithMemberSafe(t.m, t.o, true)));
+                            }
+                        }).Prepend(EditorHelper.TempContent(string.Format("{0} ({1}) --no selection--", go.name, targObj.GetType().Name))).ToArray();
+                        int index = members.IndexOf(t => object.ReferenceEquals(t.o, targObj) && t.m.Name == memberName) + 1;
+
+                        EditorGUI.BeginChangeCheck();
+                        index = EditorGUI.Popup(position, index, entries);
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            if (index > 0)
+                            {
+                                index--;
+                                targProp.objectReferenceValue = members[index].o as UnityEngine.Object;
+                                memberProp.stringValue = members[index].m.Name;
+                                vtypeProp.SetEnumValue(VariantReference.GetVariantType(DynamicUtil.GetReturnType(members[index].m)));
+                            }
+                            else if (index == 0)
+                            {
+                                targProp.objectReferenceValue = targObj ?? go;
+                                memberProp.stringValue = string.Empty;
+                                vtypeProp.SetEnumValue(VariantType.Null);
+                            }
+                            else
+                            {
+                                targProp.objectReferenceValue = null;
+                                memberProp.stringValue = string.Empty;
+                                vtypeProp.SetEnumValue(VariantType.Null);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    var members = targObj is IProxy ? DynamicUtil.GetEasilySerializedMembersFromType((targObj as IProxy).GetTargetType(), MASK, ACCESS).ToArray() : DynamicUtil.GetEasilySerializedMembers(targObj, MASK, ACCESS).ToArray();
+                    var entries = members.Select(m =>
+                    {
+                        if (targObj is IProxy)
+                        {
+                            return EditorHelper.TempContent(string.Format("{0} ({1}).{2} ({3})", go.name, targObj.GetType().Name, m.Name, DynamicUtil.GetReturnType(m).Name));
+                        }
+                        else if ((DynamicUtil.GetMemberAccessLevel(m) & DynamicMemberAccess.Write) != 0)
+                        {
+                            return EditorHelper.TempContent(string.Format("{0} ({1}).{2} ({3}) -> {4}", go.name, targObj.GetType().Name, m.Name, DynamicUtil.GetReturnType(m).Name, EditorHelper.GetValueWithMemberSafe(m, targObj, true)));
+                        }
+                        else
+                        {
+                            return EditorHelper.TempContent(string.Format("{0} ({1}).{2} (readonly - {3}) -> {4}", go.name, targObj.GetType().Name, m.Name, DynamicUtil.GetReturnType(m).Name, EditorHelper.GetValueWithMemberSafe(m, targObj, true)));
+                        }
+                    }).Prepend(EditorHelper.TempContent(string.Format("{0} ({1}) --no selection--", go.name, targObj.GetType().Name))).ToArray();
+
+                    int index = members.IndexOf(m => m.Name == memberName) + 1;
+
+                    EditorGUI.BeginChangeCheck();
+                    index = EditorGUI.Popup(position, index, entries);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        if (index > 0)
+                        {
+                            index--;
+                            targProp.objectReferenceValue = targObj;
+                            memberProp.stringValue = members[index].Name;
+                            vtypeProp.SetEnumValue(VariantReference.GetVariantType(DynamicUtil.GetReturnType(members[index])));
+                        }
+                        else if (index == 0)
+                        {
+                            targProp.objectReferenceValue = targObj;
+                            memberProp.stringValue = string.Empty;
+                            vtypeProp.SetEnumValue(VariantType.Null);
+                        }
+                        else
+                        {
+                            targProp.objectReferenceValue = null;
+                            memberProp.stringValue = string.Empty;
+                            vtypeProp.SetEnumValue(VariantType.Null);
+                        }
+                    }
+                }
             }
         }
 
         private void DrawValueFieldInEvalMode(Rect position, SerializedProperty property, VariantReference.EditorHelper helper)
         {
-            _selectComponentDrawer.AllowNonComponents = true;
-            _selectComponentDrawer.RestrictionType = null;
-            _selectComponentDrawer.ShowXButton = false;
+            _selectObjectPropertyDrawer.AllowProxy = true;
+            _selectObjectPropertyDrawer.AllowSceneObjects = true;
+            _selectObjectPropertyDrawer.InheritsFromType = null;
             var targProp = property.FindPropertyRelative(PROP_OBJREF);
             var evalProp = property.FindPropertyRelative(PROP_STRING);
             var vtypeProp = property.FindPropertyRelative(PROP_TYPE);
 
             var r1 = new Rect(position.xMin, position.yMin, position.width * 0.4f, position.height);
             var r2 = new Rect(r1.xMax, position.yMin, position.width - r1.width, position.height);
-            _selectComponentDrawer.OnGUI(r1, targProp);
+            _selectObjectPropertyDrawer.OnGUI(r1, targProp, GUIContent.none);
             evalProp.stringValue = EditorGUI.TextField(r2, evalProp.stringValue);
             vtypeProp.SetEnumValue<VariantType>(VariantType.Null);
         }
+
+        private void HandleDragDrop(Rect position, SerializedProperty property)
+        {
+            if (_helper._mode == VariantReference.RefMode.Eval) return;
+
+            var ev = Event.current;
+            switch (ev.type)
+            {
+                case EventType.DragUpdated:
+                case EventType.DragPerform:
+                    if (position.Contains(ev.mousePosition))
+                    {
+                        var draggedobj = DragAndDrop.objectReferences.FirstOrDefault((o) => o is IProxy || ObjUtil.GetAsFromSource(_forcedObjectType, o) != null);
+                        DragAndDrop.visualMode = draggedobj != null ? DragAndDropVisualMode.Link : DragAndDropVisualMode.Rejected;
+
+                        if (draggedobj != null && ev.type == EventType.DragPerform)
+                        {
+                            var targProp = property.FindPropertyRelative(PROP_OBJREF);
+                            if (targProp.objectReferenceValue == draggedobj) return;
+
+                            var memberProp = property.FindPropertyRelative(PROP_STRING);
+                            var vtypeProp = property.FindPropertyRelative(PROP_TYPE);
+                            switch (_helper._mode)
+                            {
+                                case VariantReference.RefMode.Value:
+                                    targProp.objectReferenceValue = draggedobj;
+                                    memberProp.stringValue = string.Empty;
+                                    vtypeProp.SetEnumValue(VariantReference.GetVariantType(draggedobj.GetType()));
+                                    break;
+                                case VariantReference.RefMode.Property:
+                                    targProp.objectReferenceValue = draggedobj;
+                                    memberProp.stringValue = string.Empty;
+                                    vtypeProp.SetEnumValue(VariantType.Null);
+                                    break;
+                            }
+                        }
+                    }
+                    break;
+            }
+        }
+
 
         #endregion
 

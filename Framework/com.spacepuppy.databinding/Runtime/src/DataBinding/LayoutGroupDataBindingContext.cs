@@ -18,14 +18,16 @@ namespace com.spacepuppy.DataBinding
 
         #region Fields
 
-        [SerializeField]
-        private int _order;
-
         [SerializeField()]
-        private ActivateEvent _activateOn = ActivateEvent.OnStartOrEnable;
+        private ActivateEvent _activateOn = ActivateEvent.None;
 
         [SerializeField]
-        private DataProviderRef _dataProvider = new DataProviderRef();
+        [SelectableObject(AllowProxy = true)]
+        [Tooltip("A datasource to be binded to during the 'ActivateOn' event or if calling 'BindConfiguredDataSource'.")]
+        private UnityEngine.Object _dataSource;
+
+        [SerializeField]
+        private bool _respectProxySources = false;
 
         [SerializeField]
         private int _maxVisible = 100;
@@ -33,6 +35,14 @@ namespace com.spacepuppy.DataBinding
         [SerializeField]
         [DefaultFromSelf]
         private Transform _container;
+
+        [SerializeField]
+        private Messaging.MessageSendCommand _bindMessageSettings = new Messaging.MessageSendCommand()
+        {
+            SendMethod = Messaging.MessageSendMethod.Broadcast,
+            IncludeDisabledComponents = true,
+            IncludeInactiveObjects = true,
+        };
 
         [SerializeReference]
         [SerializeRefPicker(typeof(IStampSource), AllowNull = false, AlwaysExpanded = true, DisplayBox = true)]
@@ -48,7 +58,7 @@ namespace com.spacepuppy.DataBinding
 
             if ((_activateOn & ActivateEvent.Awake) != 0)
             {
-                this.Bind();
+                this.BindConfiguredDataSource();
             }
         }
 
@@ -58,7 +68,7 @@ namespace com.spacepuppy.DataBinding
 
             if ((_activateOn & ActivateEvent.OnStart) != 0 || (_activateOn & ActivateEvent.OnEnable) != 0)
             {
-                this.Bind();
+                this.BindConfiguredDataSource();
             }
         }
 
@@ -70,7 +80,7 @@ namespace com.spacepuppy.DataBinding
 
             if ((_activateOn & ActivateEvent.OnEnable) != 0)
             {
-                this.Bind();
+                this.BindConfiguredDataSource();
             }
         }
 
@@ -78,22 +88,22 @@ namespace com.spacepuppy.DataBinding
 
         #region Properties
 
-        public int Order
-        {
-            get => _order;
-            set => _order = value;
-        }
-
         public ActivateEvent ActivateOn
         {
             get => _activateOn;
             set => _activateOn = value;
         }
 
-        public IDataProvider DataProvider
+        public UnityEngine.Object ConfiguredDataSource
         {
-            get => _dataProvider.Value;
-            set => _dataProvider.Value = value;
+            get => _dataSource;
+            set => _dataSource = value;
+        }
+
+        public bool RespectProxySources
+        {
+            get => _respectProxySources;
+            set => _respectProxySources = value;
         }
 
         public int MaxVisible
@@ -106,6 +116,12 @@ namespace com.spacepuppy.DataBinding
         {
             get => _container;
             set => _container = value;
+        }
+
+        public Messaging.MessageSendCommand BindMessageSettings
+        {
+            get => _bindMessageSettings;
+            set => _bindMessageSettings = value;
         }
 
         public IStampSource StampSource
@@ -122,24 +138,17 @@ namespace com.spacepuppy.DataBinding
 
         public void Bind(object source, int index)
         {
-            switch(source)
-            {
-                case System.Collections.IEnumerable e:
-                    this.Bind(e);
-                    break;
-                default:
-                    this.Bind(new object[] { source });
-                    break;
-            }
+            this.Bind(source);
         }
 
-        public void Bind()
+        public void BindConfiguredDataSource()
         {
-            this.Bind(_dataProvider.Value);
+            this.Bind(_dataSource);
         }
 
-        public void Bind(System.Collections.IEnumerable dataprovider)
+        public void Bind(object source)
         {
+            var dataprovider = DataProviderUtils.GetAsDataProvider(source, _respectProxySources);
             this.DataSource = dataprovider;
 
             if (_container && _container.childCount > 0)
@@ -167,7 +176,7 @@ namespace com.spacepuppy.DataBinding
                 foreach (var item in dataprovider.Cast<object>().Take(_maxVisible))
                 {
                     GameObject inst = _stampSource.InstantiateStamp(_container);
-                    DataBindingContext.BroadcastBindMessage(inst, item, index, true, true);
+                    DataBindingContext.SendBindMessage(_bindMessageSettings, inst, item, index);
                     index++;
                 }
             }
@@ -185,7 +194,7 @@ namespace com.spacepuppy.DataBinding
                 GameObject inst = await source.InstantiateStampAsync(container);
                 if (inst == null) continue;
 
-                DataBindingContext.BroadcastBindMessage(inst, item, index, true, true);
+                DataBindingContext.SendBindMessage(_bindMessageSettings, inst, item, index);
                 index++;
             }
         }
@@ -194,11 +203,11 @@ namespace com.spacepuppy.DataBinding
 
         #region IDataProvider Interface
 
-        object IDataProvider.FirstElement => DataBindingContext.GetFirstElementOfDataProvider(this.DataSource);
+        object IDataProvider.FirstElement => DataProviderUtils.GetFirstElementOfDataProvider(this.DataSource);
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
-            return (this.DataSource as System.Collections.IEnumerable)?.GetEnumerator() ?? Enumerable.Empty<object>().GetEnumerator();
+            return DataProviderUtils.GetAsDataProvider(this.DataSource)?.GetEnumerator() ?? Enumerable.Empty<object>().GetEnumerator();
         }
 
         #endregion

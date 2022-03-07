@@ -135,46 +135,26 @@ namespace com.spacepuppyeditor.Core
 
         public static Component[] GetComponentsFromSerializedProperty(SerializedProperty property, System.Type restrictionType, bool forceSelfOnly, bool searchChildren, bool allowProxy)
         {
-            if (!ComponentUtil.IsAcceptableComponentType(restrictionType))
-                return ArrayUtil.Empty<Component>();
-
             var go = GetGameObjectFromSource(property, forceSelfOnly);
             if (go == null) return ArrayUtil.Empty<Component>();
 
-            if(allowProxy)
+            if (allowProxy || !ComponentUtil.IsAcceptableComponentType(restrictionType))
             {
-                if (searchChildren)
-                    return (from c in go.GetComponentsInChildren<Component>() where ObjUtil.IsType(c, restrictionType, allowProxy) select c).ToArray();
-                else
-                    return (from c in go.GetComponents<Component>() where ObjUtil.IsType(c, restrictionType, allowProxy) select c).ToArray();
+                var e = searchChildren ? go.GetComponentsInChildren<Component>() : go.GetComponents<Component>();
+                return e.Where(c => ObjUtil.IsType(c, restrictionType, allowProxy)).ToArray();
             }
             else
             {
-                if (searchChildren)
-                    return go.GetComponentsInChildren(restrictionType);
-                else
-                    return go.GetComponents(restrictionType);
+                return searchChildren ? go.GetComponentsInChildren(restrictionType) : go.GetComponents(restrictionType);
             }
         }
-        
+
         private static Dictionary<System.Type, int> _uniqueCount = new Dictionary<System.Type, int>();
         public static IEnumerable<string> GetUniqueComponentNames(Component[] components)
         {
             _uniqueCount.Clear();
             for (int i = 0; i < components.Length; i++)
             {
-                //var tp = components[i].GetType();
-                //if (_uniqueCount.ContainsKey(tp))
-                //{
-                //    _uniqueCount[tp]++;
-                //    yield return tp.Name + " " + _uniqueCount[tp].ToString();
-                //}
-                //else
-                //{
-                //    _uniqueCount.Add(tp, 1);
-                //    yield return tp.Name;
-                //}
-
                 var tp = components[i].GetType();
                 if (_uniqueCount.ContainsKey(tp))
                 {

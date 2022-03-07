@@ -19,6 +19,7 @@ namespace com.spacepuppyeditor.Core.Commands
 
         #region Methods
 
+#if !SPEDITOR_IGNORE
         [MenuItem("GameObject/Transform/Copy Transform Local", priority = 0)]
         static void CopyTransformLocal()
         {
@@ -134,7 +135,7 @@ namespace com.spacepuppyeditor.Core.Commands
 
 
         [MenuItem("GameObject/Transform/Move To Scene Camera")]
-        public static void MoveToSceneCamera()
+        static void MoveToSceneCamera()
         {
             var go = Selection.activeGameObject;
             if (go == null) return;
@@ -147,7 +148,7 @@ namespace com.spacepuppyeditor.Core.Commands
             go.transform.rotation = t.rotation;
         }
         [MenuItem("GameObject/Transform/Move To Scene Camera", validate = true)]
-        public static bool MoveToSceneCamera_Validate(MenuCommand cmnd)
+        static bool MoveToSceneCamera_Validate(MenuCommand cmnd)
         {
             var go = Selection.activeGameObject;
             if (go == null) return false;
@@ -156,7 +157,7 @@ namespace com.spacepuppyeditor.Core.Commands
         }
 
         [MenuItem("CONTEXT/Transform/Move To Scene Camera")]
-        public static void MoveToSceneCamera_Transform(MenuCommand cmnd)
+        static void MoveToSceneCamera_Transform(MenuCommand cmnd)
         {
             var go = com.spacepuppy.Utils.GameObjectUtil.GetGameObjectFromSource(cmnd.context);
             if (go == null) return;
@@ -169,14 +170,14 @@ namespace com.spacepuppyeditor.Core.Commands
             go.transform.rotation = t.rotation;
         }
         [MenuItem("CONTEXT/Transform/Move To Scene Camera", validate = true)]
-        public static bool MoveToSceneCamera_Transform_Validate(MenuCommand cmnd)
+        static bool MoveToSceneCamera_Transform_Validate(MenuCommand cmnd)
         {
             var go = com.spacepuppy.Utils.GameObjectUtil.GetGameObjectFromSource(cmnd.context);
             if (go == null) return false;
 
             return true;
         }
-
+#endif
 
         #endregion
 

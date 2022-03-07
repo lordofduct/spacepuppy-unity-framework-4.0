@@ -7,7 +7,8 @@ namespace com.spacepuppy.Collections
     public class TempDictionary<TKey, TValue> : Dictionary<TKey, TValue>, ITempCollection<KeyValuePair<TKey, TValue>>
     {
 
-        private const int MAX_SIZE_INBYTES = 1024;
+        //private const int MAX_SIZE_INBYTES = 1024;
+        private const int MAX_SIZE = 256;
 
         #region Fields
 
@@ -23,18 +24,20 @@ namespace com.spacepuppy.Collections
         public TempDictionary()
             : base(new OverridableEqualityComparer<TKey>())
         {
-            var tp = typeof(TKey);
-            int sz = Math.Max((tp.IsValueType && !tp.IsEnum) ? System.Runtime.InteropServices.Marshal.SizeOf(tp) : 4, 4);
-            _maxCapacityOnRelease = MAX_SIZE_INBYTES / sz;
+            //var tp = typeof(TKey);
+            //int sz = Math.Max((tp.IsValueType && !tp.IsEnum) ? System.Runtime.InteropServices.Marshal.SizeOf(tp) : 4, 4);
+            //_maxCapacityOnRelease = MAX_SIZE_INBYTES / sz;
+            _maxCapacityOnRelease = MAX_SIZE;
             //_version = 1;
         }
 
         public TempDictionary(IDictionary<TKey, TValue> dict)
             : base(new OverridableEqualityComparer<TKey>())
         {
-            var tp = typeof(TKey);
-            int sz = Math.Max((tp.IsValueType && !tp.IsEnum) ? System.Runtime.InteropServices.Marshal.SizeOf(tp) : 4, 4);
-            _maxCapacityOnRelease = MAX_SIZE_INBYTES / sz;
+            //var tp = typeof(TKey);
+            //int sz = Math.Max((tp.IsValueType && !tp.IsEnum) ? System.Runtime.InteropServices.Marshal.SizeOf(tp) : 4, 4);
+            //_maxCapacityOnRelease = MAX_SIZE_INBYTES / sz;
+            _maxCapacityOnRelease = MAX_SIZE;
             //_version = 1;
         }
 

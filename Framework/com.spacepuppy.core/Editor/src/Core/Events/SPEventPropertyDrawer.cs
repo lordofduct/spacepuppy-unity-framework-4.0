@@ -59,7 +59,7 @@ namespace com.spacepuppyeditor.Events
 
         public bool DrawWeight
         {
-            get { return this.fieldInfo.GetCustomAttribute<SPEvent.ConfigAttribute>()?.Weighted ?? __drawWeight; }
+            get { return this.fieldInfo?.GetCustomAttribute<SPEvent.ConfigAttribute>()?.Weighted ?? __drawWeight; }
             set
             {
                 __drawWeight = value;
@@ -68,7 +68,7 @@ namespace com.spacepuppyeditor.Events
 
         public bool AlwaysExpanded
         {
-            get { return this.fieldInfo.GetCustomAttribute<SPEvent.ConfigAttribute>()?.AlwaysExpanded ?? __alwaysExpanded; }
+            get { return this.fieldInfo?.GetCustomAttribute<SPEvent.ConfigAttribute>()?.AlwaysExpanded ?? __alwaysExpanded; }
             set
             {
                 __alwaysExpanded = value;
@@ -77,7 +77,7 @@ namespace com.spacepuppyeditor.Events
 
         public string ArgumentDescription
         {
-            get { return this.fieldInfo.GetCustomAttribute<SPEvent.ConfigAttribute>()?.ArgDescription ?? __argdesc; }
+            get { return this.fieldInfo?.GetCustomAttribute<SPEvent.ConfigAttribute>()?.ArgDescription ?? __argdesc; }
             set { __argdesc = value; }
         }
 
@@ -332,14 +332,15 @@ namespace com.spacepuppyeditor.Events
             }
 
             //Draw Triggerable - this is the simple case to make a clean designer set up for newbs
-            EditorGUI.BeginChangeCheck();
-            var targObj = EventTriggerTargetPropertyDrawer.TargetObjectField(trigRect, GUIContent.none, targProp.objectReferenceValue);
-            if (EditorGUI.EndChangeCheck())
-            {
-                var actInfo = EventTriggerTargetPropertyDrawer.GetTriggerActivationInfo(element);
-                targProp.objectReferenceValue = EventTriggerTarget.IsValidTriggerTarget(targObj, actInfo.ActivationType) ? targObj : null;
-            }
-            EditorGUI.EndProperty();
+            //EditorGUI.BeginChangeCheck();
+            //var targObj = EventTriggerTargetPropertyDrawer.TargetObjectField(trigRect, GUIContent.none, targProp.objectReferenceValue);
+            //if (EditorGUI.EndChangeCheck())
+            //{
+            //    var actInfo = EventTriggerTargetPropertyDrawer.GetTriggerActivationInfo(element);
+            //    targProp.objectReferenceValue = EventTriggerTarget.IsValidTriggerTarget(targObj, actInfo.ActivationType) ? targObj : null;
+            //}
+            //EditorGUI.EndProperty();
+            EventTriggerTargetPropertyDrawer.DrawCombinedObjectField(trigRect, element);
 
             ReorderableListHelper.DrawDraggableElementDeleteContextMenu(_targetList, area, index, isActive, isFocused);
         }

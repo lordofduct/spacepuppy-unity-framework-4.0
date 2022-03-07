@@ -129,13 +129,13 @@ namespace com.spacepuppy.Mecanim
                         animator.SetFloat(_id, _value);
                         break;
                     case AnimatorTriggerAction.OverrideAnimatorController:
-                        MecanimExtensions.StackOverrideGeneralized(animator, _objectRef, _id, false);
+                        MecanimExtensions.StackOverrideGeneralized(animator, _objectRef, _id, false, true);
                         break;
                     case AnimatorTriggerAction.PurgeAnimatorOverride:
                         animator.RemoveOverride(_id);
                         break;
                     case AnimatorTriggerAction.TriggerAllOnTarget:
-                        com.spacepuppy.Events.EventTriggerEvaluator.Current.TriggerAllOnTarget(_objectRef, animator, arg);
+                        com.spacepuppy.Events.EventTriggerEvaluator.Current.TriggerAllOnTarget(_objectRef, arg, animator, arg);
                         break;
                 }
             }
@@ -165,13 +165,13 @@ namespace com.spacepuppy.Mecanim
                         animator.SetFloat(_id, _value);
                         break;
                     case AnimatorTriggerAction.OverrideAnimatorController:
-                        MecanimExtensions.StackOverrideGeneralized(animator, _objectRef, _id, false);
+                        MecanimExtensions.StackOverrideGeneralized(animator, _objectRef, _id, false, true);
                         break;
                     case AnimatorTriggerAction.PurgeAnimatorOverride:
                         animator.RemoveOverride(_id);
                         break;
                     case AnimatorTriggerAction.TriggerAllOnTarget:
-                        com.spacepuppy.Events.EventTriggerEvaluator.Current.TriggerAllOnTarget(_objectRef, animator, arg);
+                        com.spacepuppy.Events.EventTriggerEvaluator.Current.TriggerAllOnTarget(_objectRef, arg, animator, arg);
                         break;
                 }
             }

@@ -7,7 +7,8 @@ namespace com.spacepuppy.Collections
     public class TempList<T> : List<T>, ITempCollection<T>
     {
 
-        private const int MAX_SIZE_INBYTES = 1024;
+        //private const int MAX_SIZE_INBYTES = 1024;
+        private const int MAX_SIZE = 256;
 
         #region Fields
 
@@ -23,27 +24,30 @@ namespace com.spacepuppy.Collections
         public TempList()
             : base()
         {
-            var tp = typeof(T);
-            int sz = Math.Max((tp.IsValueType && !tp.IsEnum) ? System.Runtime.InteropServices.Marshal.SizeOf(tp) : 4, 4);
-            _maxCapacityOnRelease = MAX_SIZE_INBYTES / sz;
+            //var tp = typeof(T);
+            //int sz = Math.Max((tp.IsValueType && !tp.IsEnum) ? System.Runtime.InteropServices.Marshal.SizeOf(tp) : 4, 4);
+            //_maxCapacityOnRelease = MAX_SIZE_INBYTES / sz;
+            _maxCapacityOnRelease = MAX_SIZE;
             _version = 1;
         }
 
         public TempList(IEnumerable<T> e)
             : base(e)
         {
-            var tp = typeof(T);
-            int sz = Math.Max((tp.IsValueType && !tp.IsEnum) ? System.Runtime.InteropServices.Marshal.SizeOf(tp) : 4, 4);
-            _maxCapacityOnRelease = MAX_SIZE_INBYTES / sz;
+            //var tp = typeof(T);
+            //int sz = Math.Max((tp.IsValueType && !tp.IsEnum) ? System.Runtime.InteropServices.Marshal.SizeOf(tp) : 4, 4);
+            //_maxCapacityOnRelease = MAX_SIZE_INBYTES / sz;
+            _maxCapacityOnRelease = MAX_SIZE;
             _version = 1;
         }
 
         public TempList(int count)
             : base(count)
         {
-            var tp = typeof(T);
-            int sz = Math.Max((tp.IsValueType && !tp.IsEnum) ? System.Runtime.InteropServices.Marshal.SizeOf(tp) : 4, 4);
-            _maxCapacityOnRelease = MAX_SIZE_INBYTES / sz;
+            //var tp = typeof(T);
+            //int sz = Math.Max((tp.IsValueType && !tp.IsEnum) ? System.Runtime.InteropServices.Marshal.SizeOf(tp) : 4, 4);
+            //_maxCapacityOnRelease = MAX_SIZE_INBYTES / sz;
+            _maxCapacityOnRelease = MAX_SIZE;
             _version = 1;
         }
 

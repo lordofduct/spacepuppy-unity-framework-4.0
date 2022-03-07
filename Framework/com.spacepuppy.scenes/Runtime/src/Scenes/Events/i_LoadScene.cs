@@ -66,7 +66,7 @@ namespace com.spacepuppy.Scenes.Events
             if (!this.CanTrigger) return false;
             if (string.IsNullOrEmpty(_scene.SceneName)) return false;
 
-            var persistentToken = com.spacepuppy.Utils.ObjUtil.ReduceIfProxy(_persistentToken.Value);
+            var persistentToken = IProxyExtensions.ReduceIfProxy(_persistentToken.Value);
 
             IRadicalWaitHandle handle;
             var nm = _scene.SceneName ?? string.Empty;

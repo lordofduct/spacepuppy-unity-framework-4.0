@@ -3,9 +3,19 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 using com.spacepuppy.Project;
+using ObjUtil = com.spacepuppy.Utils.ObjUtil;
+using TypeUtil = com.spacepuppy.Utils.TypeUtil;
 
 namespace com.spacepuppy
 {
+
+    public enum ProxyParams
+    {
+        None = 0,
+        QueriesTarget = 1, //the proxy performs a runtime search/query that can't be done at editor time
+        HandlesTriggerDirectly = 2, //if the proxy is triggered it should not be reduced to its target
+        PrioritizeAsTargetFirst = 3, //if reducing as some target type, attempt to reduce the proxy itself before reaching for its target. This is primarily used for proxy's that are themselves Components rather than the more commong ScriptableObject
+    }
 
     /// <summary>
     /// Interface to define an object that allows pass through of another object.
@@ -17,33 +27,148 @@ namespace com.spacepuppy
     /// This is useful at editor time when you may need to reference something in a scene that doesn't yet exist at editor time (an uninstantiated prefab for instance). 
     /// An IProxy may let you reference said object by name, tag, layer, type, etc.
     /// 
+    /// If an IProxy also implement ITriggerable, triggers will not reduce the proxy, and instead allow the IProxy to do the appropriate heavy lifting.
+    /// 
     /// For examples see:
     /// ProxyTarget
     /// </summary>
     public interface IProxy
     {
-        /// <summary>
-        /// Returns true if the underlying proxy performs a search/query of the scene.
-        /// Best judgement on if this should be true is if the target returned should be treated as an arbitrary entity of any type.
-        /// </summary>
-        bool QueriesTarget { get; }
 
+        /// <summary>
+        /// Various flags that modify the way certain contexts will treat an IProxy.
+        /// </summary>
+        ProxyParams Params { get; }
+
+        /// <summary>
+        /// Returns the type the result will be returned as when calling GetTargetInternal.
+        /// </summary>
+        /// <returns></returns>
         System.Type GetTargetType();
 
-        object GetTarget();
-        object GetTarget(object arg);
         /// <summary>
-        /// Attempts to get the target similar to using ObjUtil.GetAsFromSource.
+        /// Returns the target. The expected type is only a suggestion to be used to coerce the type if necessary. 
+        /// It will still return an object even if it does no match the expectedType.
+        /// 
+        /// This method should generally only be called internally by IProxyExnteions, use the GetTarget/GetTargetAs to interact with the IProxy.
         /// </summary>
-        /// <param name="tp"></param>
+        /// <param name="expectedType">A type to coerce to if the IProxy deems to do so, the result does not necessarily match the expectedType</param>
+        /// <param name="arg">An optional argument that may be used by the proxy to lookup/query the target. It's use is specific to the IProxy implementation.</param>
         /// <returns></returns>
-        object GetTargetAs(System.Type tp);
+        object GetTargetInternal(System.Type expectedType, object arg);
+
+    }
+
+    public static class IProxyExtensions
+    {
+
+        public static bool QueriesTarget(this IProxy proxy)
+        {
+            return (proxy.Params & ProxyParams.QueriesTarget) != 0;
+        }
+
+        public static object GetTarget(this IProxy proxy)
+        {
+            return proxy.GetTargetInternal(typeof(object), null);
+        }
+
+        public static object GetTarget(this IProxy proxy, object arg)
+        {
+            return proxy.GetTargetInternal(typeof(object), arg);
+        }
+
+        public static object GetTargetAs(this IProxy proxy, System.Type tp, object arg = null)
+        {
+            return com.spacepuppy.Utils.ObjUtil.GetAsFromSource(tp, proxy.GetTargetInternal(tp, arg));
+        }
+
+        public static object GetTarget_ParamsRespecting(this IProxy proxy, object arg = null)
+        {
+            if ((proxy.Params & ProxyParams.PrioritizeAsTargetFirst) != 0)
+            {
+                return proxy;
+            }
+            return proxy.GetTargetInternal(typeof(object), arg);
+        }
+
+        public static object GetTargetAs_ParamsRespecting(this IProxy proxy, System.Type tp, object arg = null)
+        {
+            if ((proxy.Params & ProxyParams.PrioritizeAsTargetFirst) != 0)
+            {
+                var result = com.spacepuppy.Utils.ObjUtil.GetAsFromSource(tp, proxy);
+                if (result != null) return result;
+            }
+            return com.spacepuppy.Utils.ObjUtil.GetAsFromSource(tp, proxy.GetTargetInternal(tp, arg));
+        }
+
+        public static object GetTargetAs_ParamsRespecting(this IProxy proxy, System.Type[] types, object arg = null)
+        {
+            switch (types.Length)
+            {
+                case 0:
+                    return GetTargetAs_ParamsRespecting(proxy, typeof(object), arg);
+                case 1:
+                    return GetTargetAs_ParamsRespecting(proxy, types[0] ?? typeof(object), arg);
+                default:
+                    {
+                        if ((proxy.Params & ProxyParams.PrioritizeAsTargetFirst) != 0)
+                        {
+                            var result = com.spacepuppy.Utils.ObjUtil.GetAsFromSource(types, proxy);
+                            if (result != null) return result;
+                        }
+
+                        return com.spacepuppy.Utils.ObjUtil.GetAsFromSource(types, proxy.GetTargetInternal(types[0] ?? typeof(object), arg));
+                    }
+            }
+        }
+
+        public static object ReduceIfProxy(this object obj)
+        {
+            if (obj is IProxy p) return p.GetTarget_ParamsRespecting();
+
+            return ObjUtil.SanitizeRef(obj);
+        }
+
+        public static object ReduceIfProxy(this object obj, object arg)
+        {
+            if (obj is IProxy p) return p.GetTarget_ParamsRespecting(arg);
+
+            return ObjUtil.SanitizeRef(obj);
+        }
+
+        public static object ReduceIfProxyAs(this object obj, System.Type tp)
+        {
+            if (obj is IProxy p) return p.GetTargetAs_ParamsRespecting(tp);
+
+            return ObjUtil.SanitizeRef(obj);
+        }
+
+        public static object ReduceIfProxyAs(this object obj, object arg, System.Type tp)
+        {
+            if (obj is IProxy p) return p.GetTargetAs_ParamsRespecting(tp, arg);
+
+            return ObjUtil.SanitizeRef(obj);
+        }
+
         /// <summary>
-        /// Attempts to get the target similar to using ObjUtil.GetAsFromSource.
+        /// Returns the object as the type T or as IProxy, prioritizing type T. 
+        /// Used when setting fields to ensure that the incoming object is either T or IProxy for T.
         /// </summary>
-        /// <param name="tp"></param>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="obj"></param>
+        /// <param name="assertProxyTargetTypeMatches"></param>
         /// <returns></returns>
-        object GetTargetAs(System.Type tp, object arg);
+        public static object FilterAsProxyOrType<T>(object obj, bool assertProxyTargetTypeMatches = false)
+        {
+            if (obj is T) return obj;
+
+            var p = obj as IProxy;
+            if (p == null) return null;
+
+            if (assertProxyTargetTypeMatches && !TypeUtil.IsType(p.GetTargetType(), typeof(T))) return null;
+
+            return p;
+        }
 
     }
 

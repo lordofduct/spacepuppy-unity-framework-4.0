@@ -14,29 +14,11 @@ namespace com.spacepuppy
         [TypeReference.Config(typeof(IService), allowAbstractClasses = true, allowInterfaces = true)]
         private TypeReference _serviceType;
 
-        bool IProxy.QueriesTarget
-        {
-            get { return false; }
-        }
+        ProxyParams IProxy.Params => ProxyParams.None;
 
-        public object GetTarget()
+        public object GetTargetInternal(System.Type expectedType, object arg)
         {
             return Services.Find(_serviceType.Type);
-        }
-
-        public object GetTarget(object arg)
-        {
-            return Services.Find(_serviceType.Type);
-        }
-
-        public object GetTargetAs(System.Type tp)
-        {
-            return ObjUtil.GetAsFromSource(tp, Services.Find(_serviceType.Type));
-        }
-
-        public object GetTargetAs(System.Type tp, object arg)
-        {
-            return ObjUtil.GetAsFromSource(tp, Services.Find(_serviceType.Type));
         }
 
         public System.Type GetTargetType()

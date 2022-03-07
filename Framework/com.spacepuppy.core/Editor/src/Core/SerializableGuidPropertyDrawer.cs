@@ -1,14 +1,10 @@
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
-using System.Linq;
+using System.Reflection;
 
 using com.spacepuppy;
 using com.spacepuppy.Utils;
-using System.Diagnostics.Eventing.Reader;
-using com.spacepuppy.Collections;
-using System.Reflection;
-using System.Linq.Expressions;
 
 namespace com.spacepuppyeditor.Core
 {
@@ -24,7 +20,7 @@ namespace com.spacepuppyeditor.Core
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-            if(property.serializedObject.isEditingMultipleObjects)
+            if (property.serializedObject.isEditingMultipleObjects)
             {
                 EditorGUI.LabelField(position, label, EditorHelper.TempContent("Not Supported in Multi-Edit Mode"));
                 return;
@@ -37,7 +33,7 @@ namespace com.spacepuppyeditor.Core
 
             try
             {
-                var attrib = this.fieldInfo.GetCustomAttributes(typeof(SerializableGuid.ConfigAttribute), false).FirstOrDefault() as SerializableGuid.ConfigAttribute;
+                var attrib = this.fieldInfo.GetCustomAttribute<SerializableGuid.ConfigAttribute>();
                 bool resetOnZero = attrib == null || !attrib.AllowZero;
                 bool linkToAsset = attrib != null && attrib.LinkToAsset;
 
@@ -50,7 +46,7 @@ namespace com.spacepuppyeditor.Core
                     System.Guid assetguid;
                     if (AssetDatabase.TryGetGUIDAndLocalFileIdentifier(property.serializedObject.targetObject, out gid, out lid) && System.Guid.TryParse(gid, out assetguid))
                     {
-                        if(assetguid != guid)
+                        if (assetguid != guid)
                         {
                             guid = assetguid;
                             ToSerializedProperty(property, guid);
@@ -94,15 +90,15 @@ namespace com.spacepuppyeditor.Core
         {
             var arr = guid.ToByteArray();
             prop.FindPropertyRelative("a").intValue = System.BitConverter.ToInt32(arr, 0);
-            prop.FindPropertyRelative("b").intValue = System.BitConverter.ToInt16(arr, 4); 
+            prop.FindPropertyRelative("b").intValue = System.BitConverter.ToInt16(arr, 4);
             prop.FindPropertyRelative("c").intValue = System.BitConverter.ToInt16(arr, 6);
             prop.FindPropertyRelative("d").intValue = arr[8];
-            prop.FindPropertyRelative("e").intValue = arr[9]; 
+            prop.FindPropertyRelative("e").intValue = arr[9];
             prop.FindPropertyRelative("f").intValue = arr[10];
-            prop.FindPropertyRelative("g").intValue = arr[11]; 
-            prop.FindPropertyRelative("h").intValue = arr[12]; 
+            prop.FindPropertyRelative("g").intValue = arr[11];
+            prop.FindPropertyRelative("h").intValue = arr[12];
             prop.FindPropertyRelative("i").intValue = arr[13];
-            prop.FindPropertyRelative("j").intValue = arr[14]; 
+            prop.FindPropertyRelative("j").intValue = arr[14];
             prop.FindPropertyRelative("k").intValue = arr[15];
         }
 
@@ -124,13 +120,13 @@ namespace com.spacepuppyeditor.Core
                         if (field.FieldType != guidtp) continue;
 
                         var attrib = field.GetCustomAttribute<SerializableGuid.ConfigAttribute>();
-                        if(attrib != null && attrib.LinkToAsset)
+                        if (attrib != null && attrib.LinkToAsset)
                         {
-                            if(TypeUtil.IsType(field.DeclaringType, sotp))
+                            if (TypeUtil.IsType(field.DeclaringType, sotp))
                             {
                                 _knownSOFields.Add(field);
                             }
-                            else if(TypeUtil.IsType(field.DeclaringType, ctp))
+                            else if (TypeUtil.IsType(field.DeclaringType, ctp))
                             {
                                 _knownGOFields.Add(field);
                             }
@@ -167,10 +163,10 @@ namespace com.spacepuppyeditor.Core
                 if (go == null) return;
 
                 bool edited = false;
-                foreach(var field in _knownGOFields)
+                foreach (var field in _knownGOFields)
                 {
                     var c = go.GetComponent(field.DeclaringType);
-                    if(c != null)
+                    if (c != null)
                     {
                         try
                         {
@@ -188,14 +184,14 @@ namespace com.spacepuppyeditor.Core
                                 }
                             }
                         }
-                        catch(System.Exception ex)
+                        catch (System.Exception ex)
                         {
                             Debug.LogException(ex);
                         }
                     }
                 }
 
-                if(edited)
+                if (edited)
                 {
                     PrefabUtility.SavePrefabAsset(go);
                 }
@@ -212,7 +208,7 @@ namespace com.spacepuppyeditor.Core
                         if (object.ReferenceEquals(so, null)) so = AssetDatabase.LoadAssetAtPath<ScriptableObject>(path);
 
                         try
-                        { 
+                        {
                             var guid = (SerializableGuid)field.GetValue(so);
 
                             string gid;

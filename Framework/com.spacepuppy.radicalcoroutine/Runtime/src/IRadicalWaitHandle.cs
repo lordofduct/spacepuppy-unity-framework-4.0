@@ -120,7 +120,7 @@
         void System.IDisposable.Dispose()
         {
             this.Reset();
-            if (this.GetType() == typeof(RadicalWaitHandle))
+            if (this.GetType() == typeof(RadicalWaitHandle)) //we only release if the handle is directly a RadicalWaitHandle rather than one inherited from RadicalWaitHandle
             {
                 _pool.Release(this);
             }

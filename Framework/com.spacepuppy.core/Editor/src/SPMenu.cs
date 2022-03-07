@@ -96,7 +96,19 @@ namespace com.spacepuppyeditor
                 }
             }
         }
-        
+
+#if !SPEDITOR_IGNORE
+        [MenuItem("Assets/Copy Asset Guid", priority = 19)]
+#endif
+        public static void CopyAssetGuid()
+        {
+            var arr = Selection.assetGUIDs;
+            if (arr.Length > 0)
+            {
+                GUIUtility.systemCopyBuffer = string.Join("\r\n", arr);
+            }
+        }
+
         #endregion
 
     }

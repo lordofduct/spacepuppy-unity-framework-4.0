@@ -31,52 +31,27 @@ namespace com.spacepuppy
 
         #region IProxy Interface
 
-        public bool QueriesTarget => false;
+        public ProxyParams Params => ProxyParams.QueriesTarget;
 
-        public object GetTarget()
+        public object GetTargetInternal(System.Type expectedType, object arg)
         {
-            switch(this.Target)
+            ICamera result = null;
+            switch (this.Target)
             {
                 case TargetCamera.Main:
-                    return CameraPool.Main;
+                    result = CameraPool.Main;
+                    break;
                 case TargetCamera.ByName:
                 case TargetCamera.ByTag:
                 case TargetCamera.WithType:
-                    return ObjUtil.Find(CameraPool.All, (SearchBy)this.Target, this.QueryString);
+                    result = ObjUtil.Find(CameraPool.All, (SearchBy)this.Target, this.QueryString);
+                    break;
                 default:
-                    return CameraPool.Main;
+                    result = CameraPool.Main;
+                    break;
             }
-        }
 
-        public object GetTarget(object arg)
-        {
-            return this.GetTarget();
-        }
-
-        public object GetTargetAs(System.Type tp)
-        {
-            var targ = this.GetTarget() as ICamera;
-            if (TypeUtil.IsType(tp, typeof(Camera)))
-            {
-                return targ?.camera;
-            }
-            else
-            {
-                return ObjUtil.GetAsFromSource(tp, targ);
-            }
-        }
-
-        public object GetTargetAs(System.Type tp, object arg)
-        {
-            var targ = this.GetTarget() as ICamera;
-            if (TypeUtil.IsType(tp, typeof(Camera)))
-            {
-                return targ?.camera;
-            }
-            else
-            {
-                return ObjUtil.GetAsFromSource(tp, targ);
-            }
+            return result != null && TypeUtil.IsType(expectedType, typeof(Camera)) ? result.camera : (object)result;
         }
 
         public System.Type GetTargetType()
@@ -101,26 +76,11 @@ namespace com.spacepuppy
 
         #region IProxy Interface
 
-        public bool QueriesTarget => _proxy.QueriesTarget;
+        public ProxyParams Params => _proxy.Params;
 
-        public object GetTarget()
+        public object GetTargetInternal(System.Type expectedType, object arg)
         {
-            return _proxy.GetTarget();
-        }
-
-        public object GetTarget(object arg)
-        {
-            return _proxy.GetTarget(arg);
-        }
-
-        public object GetTargetAs(System.Type tp)
-        {
-            return _proxy.GetTargetAs(tp);
-        }
-
-        public object GetTargetAs(System.Type tp, object arg)
-        {
-            return _proxy.GetTargetAs(tp, arg);
+            return _proxy.GetTargetInternal(expectedType, arg);
         }
 
         public System.Type GetTargetType()

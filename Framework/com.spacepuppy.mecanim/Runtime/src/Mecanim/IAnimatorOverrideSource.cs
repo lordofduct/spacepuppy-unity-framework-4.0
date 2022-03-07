@@ -108,7 +108,7 @@ namespace com.spacepuppy.Mecanim
     }
 
     [System.Serializable]
-    public class AnimatorOverrideSourceRef : IAnimatorOverrideSource, ISerializationCallbackReceiver
+    public class AnimatorOverrideSourceRef : IAnimatorOverrideSource
     {
 
         #region Fields
@@ -119,7 +119,7 @@ namespace com.spacepuppy.Mecanim
         private bool _treatUnconfiguredEntriesAsValidEntries;
 
         [System.NonSerialized]
-        private IAnimatorOverrideSource _value;
+        private object _runtimeRef;
 
         #endregion
 
@@ -127,17 +127,17 @@ namespace com.spacepuppy.Mecanim
 
         public object Value
         {
-            get { return (object)_value ?? _obj; }
+            get { return _runtimeRef ?? _obj; }
             set
             {
-                if(value is IAnimatorOverrideSource || value is AnimatorOverrideController)
+                if(value is IAnimatorOverrideSource || value is AnimatorOverrideController || value is IProxy)
                 {
-                    _value = value as IAnimatorOverrideSource;
+                    _runtimeRef = value;
                     _obj = value as UnityEngine.Object;
                 }
                 else
                 {
-                    _value = null;
+                    _runtimeRef = null;
                     _obj = null;
                 }
             }
@@ -150,13 +150,13 @@ namespace com.spacepuppy.Mecanim
         public void SetOverrides(AnimatorOverrideController controller, bool treatUnconfiguredEntriesAsValidEntries = false)
         {
             _obj = controller;
-            _value = null;
+            _runtimeRef = controller;
             _treatUnconfiguredEntriesAsValidEntries = treatUnconfiguredEntriesAsValidEntries;
         }
 
         public void SetOverrides(IAnimatorOverrideSource source)
         {
-            _value = source;
+            _runtimeRef = source;
             _obj = source as UnityEngine.Object;
             _treatUnconfiguredEntriesAsValidEntries = false;
         }
@@ -167,61 +167,7 @@ namespace com.spacepuppy.Mecanim
 
         int IAnimatorOverrideSource.GetOverrides(Animator animator, IList<KeyValuePair<AnimationClip, AnimationClip>> lst)
         {
-            if(_value != null)
-            {
-                return _value.GetOverrides(animator, lst);
-            }
-            else if(_obj is AnimatorOverrideController ctrl)
-            {
-                if(lst is List<KeyValuePair<AnimationClip, AnimationClip>>)
-                {
-                    ctrl.GetOverrides(lst as List<KeyValuePair<AnimationClip, AnimationClip>>);
-                    if(!_treatUnconfiguredEntriesAsValidEntries)
-                    {
-                        for(int i = 0; i < lst.Count; i++)
-                        {
-                            if(lst[i].Value == null)
-                            {
-                                lst.RemoveAt(i);
-                                i--;
-                            }
-                        }
-                    }
-                    return lst.Count;
-                }
-                else
-                {
-                    lst.Clear();
-                    using (var tlst = AnimatorOverrideCollection.GetTemp())
-                    {
-                        ctrl.GetOverrides(tlst);
-                        for(int i = 0; i < tlst.Count; i++)
-                        {
-                            if(_treatUnconfiguredEntriesAsValidEntries || tlst[i].Value != null)
-                            {
-                                lst.Add(tlst[i]);
-                            }
-                        }
-                        return lst.Count;
-                    }
-                }
-            }
-
-            return 0;
-        }
-
-        #endregion
-
-        #region ISerializationCallbackReceiver Interface
-
-        void ISerializationCallbackReceiver.OnAfterDeserialize()
-        {
-            _value = _obj as IAnimatorOverrideSource;
-        }
-
-        void ISerializationCallbackReceiver.OnBeforeSerialize()
-        {
-            //do nothing
+            return MecanimExtensions.GetOverrides(this.Value, animator, lst, _treatUnconfiguredEntriesAsValidEntries, true);
         }
 
         #endregion

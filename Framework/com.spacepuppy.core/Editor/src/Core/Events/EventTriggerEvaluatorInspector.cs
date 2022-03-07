@@ -28,7 +28,7 @@ namespace com.spacepuppyeditor.Events
 
         static EventTriggerEvaluatorInspector()
         {
-            EventTriggerEvaluator.SetCurrentEvaluator(new SpecialEventTriggerEvaluator());
+            EventTriggerEvaluator.SetCurrentEvaluator(SpecialEventTriggerEvaluator.Default);
             _lastT = System.DateTime.Now.Ticks;
             EditorApplication.update += Update;
             EditorApplication.hierarchyWindowItemOnGUI += OnHierarchyItemGUI;
@@ -38,23 +38,14 @@ namespace com.spacepuppyeditor.Events
 
         #region Methods
 
-        private static void SignalTriggered(object obj)
+        private static void SignalTriggered(object obj, object incomingarg, bool wastriggercall)
         {
-            if (obj is IProxy)
+            if(obj is IProxy p)
             {
-                var proxy = obj as IProxy;
-                obj = proxy.ReduceIfProxy();
-
-                // // SHOULD WE DRAW THE PROXY TOO???
-                //if(GameObjectUtil.IsGameObjectSource(proxy))
-                //{
-                //    var go = GameObjectUtil.GetGameObjectFromSource(proxy);
-                //    if(go != null)
-                //    {
-                //        int id = go.GetInstanceID();
-                //        _triggered[id] = COOLDOWN_TRIGGERED;
-                //    }
-                //}
+                if(!wastriggercall || !(obj is ITriggerable))
+                {
+                    obj = p.GetTarget(incomingarg);
+                }
             }
 
             if (GameObjectUtil.IsGameObjectSource(obj))
@@ -119,15 +110,18 @@ namespace com.spacepuppyeditor.Events
         private class SpecialEventTriggerEvaluator : EventTriggerEvaluator.IEvaluator
         {
 
-            public void GetAllTriggersOnTarget(object target, List<ITriggerable> outputColl)
+            public static readonly SpecialEventTriggerEvaluator Default = new SpecialEventTriggerEvaluator();
+
+            static EventTriggerEvaluator.IEvaluator ResolvedCurrent => EventTriggerEvaluator.Current is SpecialEventTriggerEvaluator ? EventTriggerEvaluator.Default : EventTriggerEvaluator.Current;
+
+            public void GetAllTriggersOnTarget(object target, object incomingarg, List<ITriggerable> outputColl)
             {
                 if (Application.isPlaying)
                 {
-                    EventTriggerEvaluator.Default.GetAllTriggersOnTarget(target, outputColl);
+                    ResolvedCurrent.GetAllTriggersOnTarget(target, incomingarg, outputColl);
                 }
                 else
                 {
-                    if (target is IProxy) target = target.ReduceIfProxy();
                     var go = GameObjectUtil.GetGameObjectFromSource(target);
                     if (go != null)
                     {
@@ -135,64 +129,53 @@ namespace com.spacepuppyeditor.Events
                         outputColl.Sort(TriggerableOrderComparer.Default);
                     }
                     else if (target is ITriggerable)
-                        outputColl.Add(target as ITriggerable);
-                }
-            }
-
-            void EventTriggerEvaluator.IEvaluator.TriggerAllOnTarget(object target, object sender, object arg)
-            {
-                if (Application.isPlaying)
-                {
-                    SignalTriggered(target);
-                    EventTriggerEvaluator.Default.TriggerAllOnTarget(target, sender, arg);
-                    return;
-                }
-
-                using (var lst = com.spacepuppy.Collections.TempCollection.GetList<ITriggerable>())
-                {
-                    this.GetAllTriggersOnTarget(target, lst);
-
-                    var e = lst.GetEnumerator();
-                    while (e.MoveNext())
                     {
-                        var t = e.Current;
-                        if (t.CanTrigger)
-                        {
-                            SignalTriggered(t);
-                            t.Trigger(sender, arg);
-                        }
+                        outputColl.Add(target as ITriggerable);
                     }
                 }
             }
 
-            void EventTriggerEvaluator.IEvaluator.TriggerSelectedTarget(object target, object sender, object arg)
+            void EventTriggerEvaluator.IEvaluator.TriggerAllOnTarget(object target, object incomingarg, object sender, object arg)
             {
-                SignalTriggered(target);
-                EventTriggerEvaluator.Default.TriggerSelectedTarget(target, sender, arg);
+                SignalTriggered(target, incomingarg, true);
+                if (Application.isPlaying)
+                {
+                    ResolvedCurrent.TriggerAllOnTarget(target, incomingarg, sender, arg);
+                }
+                else
+                {
+                    EventTriggerEvaluator.Default.TriggerAllOnTargetUncached(target, incomingarg, sender, arg);
+                }
             }
 
-            void EventTriggerEvaluator.IEvaluator.CallMethodOnSelectedTarget(object target, string methodName, VariantReference[] methodArgs)
+            void EventTriggerEvaluator.IEvaluator.TriggerSelectedTarget(object target, object incomingarg, object sender, object arg)
             {
-                SignalTriggered(target);
-                EventTriggerEvaluator.Default.CallMethodOnSelectedTarget(target, methodName, methodArgs);
+                SignalTriggered(target, incomingarg, true);
+                ResolvedCurrent.TriggerSelectedTarget(target, incomingarg, sender, arg);
             }
 
-            void EventTriggerEvaluator.IEvaluator.SendMessageToTarget(object target, string message, object arg)
+            void EventTriggerEvaluator.IEvaluator.CallMethodOnSelectedTarget(object target, object incomingarg, string methodName, VariantReference[] methodArgs)
             {
-                SignalTriggered(target);
-                EventTriggerEvaluator.Default.SendMessageToTarget(target, message, arg);
+                SignalTriggered(target, incomingarg, false);
+                ResolvedCurrent.CallMethodOnSelectedTarget(target, incomingarg, methodName, methodArgs);
             }
 
-            void EventTriggerEvaluator.IEvaluator.EnableTarget(object target, EnableMode mode)
+            void EventTriggerEvaluator.IEvaluator.SendMessageToTarget(object target, object incomingarg, string message, object arg)
             {
-                SignalTriggered(target);
-                EventTriggerEvaluator.Default.EnableTarget(target, mode);
+                SignalTriggered(target, incomingarg, false);
+                ResolvedCurrent.SendMessageToTarget(target, incomingarg, message, arg);
             }
 
-            void EventTriggerEvaluator.IEvaluator.DestroyTarget(object target)
+            void EventTriggerEvaluator.IEvaluator.EnableTarget(object target, object incomingarg, EnableMode mode)
             {
-                SignalTriggered(target);
-                EventTriggerEvaluator.Default.DestroyTarget(target);
+                SignalTriggered(target, incomingarg, false);
+                ResolvedCurrent.EnableTarget(target, incomingarg, mode);
+            }
+
+            void EventTriggerEvaluator.IEvaluator.DestroyTarget(object target, object incomingarg)
+            {
+                SignalTriggered(target, incomingarg, false);
+                ResolvedCurrent.DestroyTarget(target, incomingarg);
             }
 
         }

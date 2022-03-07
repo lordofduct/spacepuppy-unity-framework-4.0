@@ -44,20 +44,23 @@ namespace com.spacepuppy.Anim
             if (obj == null) return AnimatorType.Unknown;
             if (obj is System.Type) return GetAnimatorType(obj as System.Type);
 
-            if (obj is Animation)
-                return AnimatorType.Animation;
-            else if (obj is Animator)
-                return AnimatorType.Animator;
-            else if (obj is com.spacepuppy.Anim.Legacy.SPLegacyAnimController)
-                return AnimatorType.SPLegacyAnimController;
-            else if (obj is ISPAnimator)
-                return AnimatorType.SPAnimator;
-            else if (obj is ISPAnimationSource)
-                return AnimatorType.SPAnimSource;
-            else if (obj is IProxy)
-                return GetAnimatorType((obj as IProxy).GetTargetType());
-            else
-                return AnimatorType.Unknown;
+            switch(obj)
+            {
+                case Animation a:
+                    return AnimatorType.Animation;
+                case Animator a:
+                    return AnimatorType.Animator;
+                case com.spacepuppy.Anim.Legacy.SPLegacyAnimController a:
+                    return AnimatorType.SPLegacyAnimController;
+                case ISPAnimator a:
+                    return AnimatorType.SPAnimator;
+                case ISPAnimationSource a:
+                    return AnimatorType.SPAnimSource;
+                case IProxy p:
+                    return GetAnimatorType(p.GetType());
+                default:
+                    return AnimatorType.Unknown;
+            }
         }
 
         #endregion

@@ -14,31 +14,49 @@ namespace com.spacepuppy.DataBinding.Events
         #region Fields
 
         [SerializeField]
-        [TypeRestriction(typeof(IDataProvider), AllowProxy = true)]
-        private UnityEngine.Object _dataProvider;
+        [UnityEngine.Serialization.FormerlySerializedAs("_dataProvider")]
+        [SelectableObject(AllowProxy = true)]
+        private UnityEngine.Object _dataSource;
 
         [SerializeField]
         [TypeRestriction(typeof(IDataBindingContext), AllowProxy = true)]
         private UnityEngine.Object _targetDataBindingContext;
 
         [SerializeField]
-        [Tooltip("All DataBindingContexts and children of the TargetDataBindingContext will have their bind events called.")]
-        private bool _broadcastBindingMessage = true;
+        private bool _reduceDataSourceAsProxyBeforeBinding = true;
+
+        [SerializeField]
+        [Tooltip("If the DataSource is a collection, the entire collection will be sent, rather than the first element. Use this if the target is something like a LayoutGroupDataBindingContext which expects an entire collection.")]
+        private bool _bindDataSourceAsDataProvider = false;
+
+        [SerializeField]
+        private Messaging.MessageSendCommand _bindMessageSettings = new Messaging.MessageSendCommand()
+        {
+            SendMethod = Messaging.MessageSendMethod.Broadcast,
+            IncludeDisabledComponents = true,
+            IncludeInactiveObjects = true,
+        };
 
         #endregion
 
         #region Properties
 
-        public UnityEngine.Object DataProvider
+        public UnityEngine.Object DataSource
         {
-            get => _dataProvider;
-            set => _dataProvider = value;
+            get => _dataSource;
+            set => _dataSource = value;
         }
 
         public UnityEngine.Object DataBindingContext
         {
             get => _targetDataBindingContext;
             set => _targetDataBindingContext = value;
+        }
+
+        public Messaging.MessageSendCommand BindMessageSettings
+        {
+            get => _bindMessageSettings;
+            set => _bindMessageSettings = value;
         }
 
         #endregion
@@ -49,13 +67,15 @@ namespace com.spacepuppy.DataBinding.Events
         {
             if (!this.CanTrigger) return false;
 
-            var source = com.spacepuppy.DataBinding.DataBindingContext.GetFirstElementOfDataProvider(_dataProvider);
+            object source = _dataSource;
+            if (_bindDataSourceAsDataProvider) source = DataProviderUtils.GetAsDataProvider(source, _reduceDataSourceAsProxyBeforeBinding);
+            else source = DataProviderUtils.GetFirstElementOfDataProvider(source, _reduceDataSourceAsProxyBeforeBinding);
 
             GameObject go;
             IDataBindingContext context;
-            if (_broadcastBindingMessage && (go = GameObjectUtil.GetGameObjectFromSource(_targetDataBindingContext, true)))
+            if (_bindMessageSettings.SendMethod != Messaging.MessageSendMethod.Signal && (go = GameObjectUtil.GetGameObjectFromSource(_targetDataBindingContext, true)))
             {
-                com.spacepuppy.DataBinding.DataBindingContext.BroadcastBindMessage(go, source, 0, true, true);
+                com.spacepuppy.DataBinding.DataBindingContext.SendBindMessage(_bindMessageSettings, go, source, 0);
             }
             else if ((context = ObjUtil.GetAsFromSource<IDataBindingContext>(_targetDataBindingContext, true)) != null)
             {
@@ -63,7 +83,6 @@ namespace com.spacepuppy.DataBinding.Events
             }
             return true;
         }
-        private static readonly System.Action<IDataBindingContext, System.ValueTuple<object, int>> _stampFunctor = (s, t) => s.Bind(t.Item1, t.Item2);
 
         #endregion
 

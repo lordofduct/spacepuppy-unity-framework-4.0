@@ -12,7 +12,7 @@ using com.spacepuppy.DataBinding;
 namespace com.spacepuppyeditor.DataBinding
 {
 
-    [CustomEditor(typeof(ContentBinder), true)]
+    //[CustomEditor(typeof(ContentBinder), true)]
     public class ContentBinderInspector : SPEditor
     {
 
@@ -50,4 +50,47 @@ namespace com.spacepuppyeditor.DataBinding
         }
 
     }
+
+    [CustomPropertyDrawer(typeof(ContentBinderKeyAttribute))]
+    public class ContentBinderKeyPropertyDrawer : PropertyDrawer
+    {
+
+        public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+        {
+            return EditorGUIUtility.singleLineHeight;
+        }
+
+        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+        {
+            if(property.propertyType != SerializedPropertyType.String)
+            {
+                EditorGUI.LabelField(position, "ContentBinderKey attributed field is not of type 'string'.");
+                return;
+            }
+
+            var sob = property.serializedObject;
+            Component target;
+            DataBindingContext context;
+            ISourceBindingProtocol protocol;
+            if (sob.isEditingMultipleObjects ||
+                (target = sob.targetObject as Component) == null ||
+                (context = target.GetComponent<DataBindingContext>()) == null ||
+                (protocol = context.BindingProtocol) == null)
+            {
+                property.stringValue = EditorGUI.TextField(position, label, property.stringValue);
+                return;
+            }
+
+            var keys = protocol.GetDefinedKeys();
+            if (keys == null || !keys.Any())
+            {
+                property.stringValue = EditorGUI.TextField(position, label, property.stringValue);
+                return;
+            }
+
+            property.stringValue = SPEditorGUI.OptionPopupWithCustom(position, label, property.stringValue, keys.ToArray());
+        }
+
+    }
+
 }

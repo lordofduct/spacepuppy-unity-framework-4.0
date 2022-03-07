@@ -172,7 +172,7 @@ namespace com.spacepuppy.Events
             {
                 if (index < 0 || index >= _states.Count) return;
 
-                EventTriggerEvaluator.Current.TriggerAllOnTarget(_states[index].Target, sender, arg);
+                EventTriggerEvaluator.Current.TriggerAllOnTarget(_states[index].Target, arg, sender, arg);
             }
 
             public StateInfo? Find(string id)

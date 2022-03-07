@@ -30,7 +30,7 @@ namespace com.spacepuppyeditor.Core
         /// Otherwise it just remains a simple object field.
         /// </summary>
         public bool AllowNonComponents;
-        
+
         private System.Type _restrictionType;
 
         public System.Type RestrictionType
@@ -44,19 +44,13 @@ namespace com.spacepuppyeditor.Core
                     return this.AllowNonComponents ? typeof(UnityEngine.Object) : typeof(Component);
                 }
                 else
+                {
                     return _restrictionType;
+                }
             }
             set
             {
                 _restrictionType = value;
-            }
-        }
-
-        public System.Type ComponentRestrictionType
-        {
-            get
-            {
-                return (ComponentUtil.IsAcceptableComponentType(this.RestrictionType)) ? this.RestrictionType : typeof(Component);
             }
         }
 
@@ -138,22 +132,22 @@ namespace com.spacepuppyeditor.Core
             if (property.objectReferenceValue == null)
             {
                 //SPEditorGUI.DefaultPropertyField(position, property, label);
-                if(!this.ForceOnlySelf)
+                if (!this.ForceOnlySelf)
                     this.DrawObjectRefField(position, property);
                 else
                 {
                     EditorGUI.LabelField(position, "Malformed serializable field.");
                 }
             }
-            else if(this.AllowNonComponents)
+            else if (this.AllowNonComponents)
             {
-                if(targGo == null)
+                if (targGo == null)
                 {
                     this.DrawObjectRefField(position, property);
                 }
                 else
                 {
-                    this.ChoiceSelector.BeforeGUI(this, property, this.ComponentRestrictionType, this.AllowProxy);
+                    this.ChoiceSelector.BeforeGUI(this, property, this.RestrictionType, this.AllowProxy);
                     var components = this.ChoiceSelector.GetComponents();
 
                     var fullsize = position;
@@ -175,7 +169,7 @@ namespace com.spacepuppyeditor.Core
 
                         int oi = (property.objectReferenceValue is GameObject) ? names.Length - 1 : this.ChoiceSelector.GetPopupIndexOfComponent(property.objectReferenceValue as Component);
                         int ni = EditorGUI.Popup(position, oi, names);
-                        
+
                         if (oi != ni)
                         {
                             if (ni == names.Length - 1)
@@ -195,11 +189,11 @@ namespace com.spacepuppyeditor.Core
             }
             else
             {
-                this.ChoiceSelector.BeforeGUI(this, property, this.ComponentRestrictionType, this.AllowProxy);
+                this.ChoiceSelector.BeforeGUI(this, property, this.RestrictionType, this.AllowProxy);
                 var components = this.ChoiceSelector.GetComponents();
 
                 var fullsize = position;
-                if (components.Length == 0 || 
+                if (components.Length == 0 ||
                     (this.ShowXButton && SPEditorGUI.XButton(ref position, "Clear Selected Object", this.XButtonOnRightSide)))
                 {
                     property.objectReferenceValue = null;
@@ -228,7 +222,7 @@ namespace com.spacepuppyeditor.Core
             Rect r = new Rect(position.xMax - w, position.yMin, w, EditorGUIUtility.singleLineHeight);
             position = new Rect(position.xMin, position.yMin, position.width - w, position.height);
 
-            if(GUI.Button(r, EditorHelper.TempContent("...")))
+            if (GUI.Button(r, EditorHelper.TempContent("...")))
             {
                 EditorGUIUtility.PingObject(property.objectReferenceValue);
             }
@@ -289,10 +283,10 @@ namespace com.spacepuppyeditor.Core
             var go = GameObjectUtil.GetGameObjectFromSource(obj);
             var o = ObjUtil.GetAsFromSource(this.RestrictionType, obj) as UnityEngine.Object;
 
-            if(this.SearchChildren && o == null && go != null)
+            if (this.SearchChildren && o == null && go != null)
                 o = go.GetComponentInChildren(this.RestrictionType);
 
-            if(this.AllowProxy && o == null && go != null)
+            if (this.AllowProxy && o == null && go != null)
             {
                 if (this.SearchChildren)
                     o = go.GetComponentInChildren<IProxy>() as Component;

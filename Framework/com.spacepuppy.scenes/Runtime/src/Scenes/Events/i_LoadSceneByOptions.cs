@@ -137,7 +137,7 @@ namespace com.spacepuppy.Scenes.Events
 #endif
                 try
                 {
-                    var persistentToken = com.spacepuppy.Utils.ObjUtil.ReduceIfProxy(_persistentToken.Value);
+                    var persistentToken = IProxyExtensions.ReduceIfProxy(_persistentToken.Value);
 
                     var nm = _scene.SceneName ?? string.Empty;
                     UnityLoadResult handle;

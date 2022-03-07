@@ -131,29 +131,11 @@ namespace com.spacepuppy
 
         #region IProxy Interface
 
-        bool IProxy.QueriesTarget
-        {
-            get { return _searchBy > SearchBy.Nothing; }
-        }
+        ProxyParams IProxy.Params => _searchBy > SearchBy.Nothing ? ProxyParams.QueriesTarget : ProxyParams.None;
 
-        object IProxy.GetTarget()
+        object IProxy.GetTargetInternal(System.Type expectedType, object arg)
         {
             return this.GetTarget();
-        }
-
-        object IProxy.GetTarget(object arg)
-        {
-            return this.GetTarget();
-        }
-
-        public object GetTargetAs(System.Type tp)
-        {
-            return ObjUtil.GetAsFromSource(tp, this.GetTarget());
-        }
-
-        object IProxy.GetTargetAs(System.Type tp, object arg)
-        {
-            return ObjUtil.GetAsFromSource(tp, this.GetTarget());
         }
 
         public System.Type GetTargetType()
@@ -217,27 +199,9 @@ namespace com.spacepuppy
 
         #region IProxy Interface
 
-        bool IProxy.QueriesTarget
-        {
-            get { return _target.ImplicityReducesEntireEntity; }
-        }
+        ProxyParams IProxy.Params => _target.ImplicityReducesEntireEntity ? ProxyParams.QueriesTarget : ProxyParams.None;
 
-        public object GetTarget()
-        {
-            if (_cache)
-            {
-                if (_object != null) return _object;
-
-                _object = _target.GetTarget(_componentTypeOnTarget.Type ?? typeof(UnityEngine.Object), null) as UnityEngine.Object;
-                return _object;
-            }
-            else
-            {
-                return _target.GetTarget(_componentTypeOnTarget.Type ?? typeof(UnityEngine.Object), null) as UnityEngine.Object;
-            }
-        }
-
-        public object GetTarget(object arg)
+        object IProxy.GetTargetInternal(System.Type expectedType, object arg)
         {
             if (_cache)
             {
@@ -250,16 +214,6 @@ namespace com.spacepuppy
             {
                 return _target.GetTarget(_componentTypeOnTarget.Type ?? typeof(UnityEngine.Object), arg) as UnityEngine.Object;
             }
-        }
-
-        public object GetTargetAs(System.Type tp)
-        {
-            return ObjUtil.GetAsFromSource(tp, this.GetTarget());
-        }
-
-        public object GetTargetAs(System.Type tp, object arg)
-        {
-            return ObjUtil.GetAsFromSource(tp, this.GetTarget(arg));
         }
 
         public System.Type GetTargetType()

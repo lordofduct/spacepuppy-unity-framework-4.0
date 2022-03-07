@@ -10,14 +10,6 @@ namespace com.spacepuppy.Events
     public sealed class i_TriggerSequence : AutoTriggerable, IMStartOrEnableReceiver, IObservableTrigger
     {
 
-        public enum WrapMode
-        {
-            Oblivion = 0,
-            Clamp = 1,
-            Loop = 2,
-            PingPong = 3
-        }
-
         public enum SignalMode
         {
             Manual,
@@ -28,7 +20,7 @@ namespace com.spacepuppy.Events
         #region Fields
 
         [SerializeField()]
-        private WrapMode _wrapMode;
+        private MathUtil.WrapMode _wrapMode;
 
         [SerializeField]
         private SignalMode _signal;
@@ -61,7 +53,7 @@ namespace com.spacepuppy.Events
 
         #region Properties
 
-        public WrapMode Wrap
+        public MathUtil.WrapMode Wrap
         {
             get { return _wrapMode; }
             set { _wrapMode = value; }
@@ -95,7 +87,7 @@ namespace com.spacepuppy.Events
 
         public int CurrentIndexNormalized
         {
-            get => CalculateWrap(_wrapMode, _currentIndex, _trigger.TargetCount);
+            get => MathUtil.WrapIndex(_wrapMode, _currentIndex, _trigger.TargetCount);
         }
 
         #endregion
@@ -121,7 +113,7 @@ namespace com.spacepuppy.Events
         {
             int i = this.CurrentIndexNormalized;
             if (i < 0 || i >= _trigger.Targets.Count) return;
-            
+
             if (_signal == SignalMode.Auto)
             {
                 IAutoSequenceSignal signal;
@@ -146,7 +138,7 @@ namespace com.spacepuppy.Events
             {
                 int i = this.CurrentIndexNormalized;
                 if (i < 0 || i >= _trigger.Targets.Count) yield break;
-                
+
                 var go = GameObjectUtil.GetGameObjectFromSource(_trigger.Targets[i].Target, true);
                 if (go != null && go.GetComponentInChildren<IAutoSequenceSignal>(out signal))
                 {
@@ -205,23 +197,6 @@ namespace com.spacepuppy.Events
         }
 
         #endregion
-
-        public static int CalculateWrap(WrapMode mode, int index, int count)
-        {
-            switch (mode)
-            {
-                case WrapMode.Oblivion:
-                    return index;
-                case WrapMode.Clamp:
-                    return Mathf.Clamp(index, 0, count - 1);
-                case WrapMode.Loop:
-                    return MathUtil.Wrap(index, count);
-                case WrapMode.PingPong:
-                    return (int)Mathf.PingPong(index, count - 1);
-                default:
-                    return index;
-            }
-        }
 
     }
 

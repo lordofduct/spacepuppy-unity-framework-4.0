@@ -7,8 +7,16 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.DataBinding
 {
 
+    public interface IContentBinder
+    {
+        string Key { get; }
+        void Bind(object source, object value);
+    }
+
+    public class ContentBinderKeyAttribute : PropertyAttribute { }
+
     [RequireComponent(typeof(DataBindingContext))]
-    public abstract class ContentBinder : SPComponent
+    public abstract class ContentBinder : SPComponent, IContentBinder
     {
 
 #if UNITY_EDITOR
@@ -21,6 +29,7 @@ namespace com.spacepuppy.DataBinding
         #region Fields
 
         [SerializeField]
+        [ContentBinderKey]
         private string _key;
 
         [System.NonSerialized]
@@ -58,7 +67,7 @@ namespace com.spacepuppy.DataBinding
 
         #region Methods
 
-        public abstract void SetValue(object value);
+        public abstract void Bind(object source, object value);
 
         #endregion
 

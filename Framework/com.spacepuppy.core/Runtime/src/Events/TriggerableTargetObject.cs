@@ -102,7 +102,7 @@ namespace com.spacepuppy.Events
         /// </summary>
         public bool ImplicityReducesEntireEntity
         {
-            get { return !_configured || _find >= FindCommand.FindInScene || (_target is IProxy && (_target as IProxy).QueriesTarget); }
+            get { return !_configured || _find >= FindCommand.FindInScene || (_target is IProxy p && p.QueriesTarget()); }
         }
 
         public UnityEngine.Object Target
@@ -234,7 +234,7 @@ namespace com.spacepuppy.Events
 
         private object ReduceTarget(object triggerArg)
         {
-            object targ = ObjUtil.ReduceIfProxy(_target, triggerArg);
+            object targ = IProxyExtensions.ReduceIfProxy(_target, triggerArg);
 
             switch (_find)
             {

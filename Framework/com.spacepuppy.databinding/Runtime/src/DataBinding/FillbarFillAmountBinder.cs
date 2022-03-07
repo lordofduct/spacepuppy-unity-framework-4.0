@@ -20,7 +20,7 @@ namespace com.spacepuppy.DataBinding
 
         #region Methods
 
-        public override void SetValue(object value)
+        public override void Bind(object source, object value)
         {
             if (_fillbar) _fillbar.fillAmount = Mathf.Clamp01(ConvertUtil.ToSingle(value));
         }

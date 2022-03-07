@@ -55,7 +55,7 @@ namespace com.spacepuppy
         {
             if (_target == null) return null;
 
-            var obj = ObjUtil.ReduceIfProxy(_target);
+            var obj = IProxyExtensions.ReduceIfProxy(_target);
             if (obj == null)
                 return null;
             else
@@ -66,7 +66,7 @@ namespace com.spacepuppy
         {
             if (_target == null) return default(T);
 
-            var obj = ObjUtil.ReduceIfProxy(_target);
+            var obj = IProxyExtensions.ReduceIfProxy(_target);
             if (obj == null)
             {
                 return default(T);
@@ -87,7 +87,7 @@ namespace com.spacepuppy
         {
             if (_target == null) return false;
 
-            var obj = ObjUtil.ReduceIfProxy(_target);
+            var obj = IProxyExtensions.ReduceIfProxy(_target);
             if (obj == null)
                 return false;
             else
@@ -98,31 +98,12 @@ namespace com.spacepuppy
 
         #region IProxy Interface
 
-        bool IProxy.QueriesTarget
-        {
-            get { return false; }
-        }
+        ProxyParams IProxy.Params => ProxyParams.None;
 
-        object IProxy.GetTarget()
+        object IProxy.GetTargetInternal(System.Type expectedType, object arg)
         {
             return this.GetValue();
         }
-
-        object IProxy.GetTarget(object arg)
-        {
-            return this.GetValue();
-        }
-
-        object IProxy.GetTargetAs(System.Type tp)
-        {
-            return ObjUtil.GetAsFromSource(tp, this.GetValue());
-        }
-
-        object IProxy.GetTargetAs(System.Type tp, object arg)
-        {
-            return ObjUtil.GetAsFromSource(tp, this.GetValue());
-        }
-
 
         public System.Type GetTargetType()
         {
@@ -135,7 +116,7 @@ namespace com.spacepuppy
             }
             else
             {
-                return DynamicUtil.GetReturnType(DynamicUtil.GetMember(ObjUtil.ReduceIfProxy(_target), _memberName, false)) ?? typeof(object);
+                return DynamicUtil.GetReturnType(DynamicUtil.GetMember(IProxyExtensions.ReduceIfProxy(_target), _memberName, false)) ?? typeof(object);
             }
         }
 
@@ -212,29 +193,11 @@ namespace com.spacepuppy
 
         #region IProxy Interface
 
-        bool IProxy.QueriesTarget
-        {
-            get { return false; }
-        }
+        ProxyParams IProxy.Params => ProxyParams.None;
 
-        object IProxy.GetTarget()
+        object IProxy.GetTargetInternal(System.Type expectedType, object arg)
         {
             return _target.GetValue();
-        }
-
-        object IProxy.GetTarget(object arg)
-        {
-            return _target.GetValue();
-        }
-
-        object IProxy.GetTargetAs(System.Type tp)
-        {
-            return ObjUtil.GetAsFromSource(tp, _target.GetValue());
-        }
-
-        object IProxy.GetTargetAs(System.Type tp, object arg)
-        {
-            return ObjUtil.GetAsFromSource(tp, _target.GetValue());
         }
 
         System.Type IProxy.GetTargetType()

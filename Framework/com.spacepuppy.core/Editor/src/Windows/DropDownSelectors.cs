@@ -534,31 +534,40 @@ namespace com.spacepuppyeditor.Windows
 
         private static UnityEngine.Object HandleDragAndDrop(bool isDragging, bool isDropping, UnityEngine.Object asset, System.Type objType, bool allowSceneObjects, bool allowProxy)
         {
+            if (!isDragging && !isDropping) return asset;
+
             var types = allowProxy ? ArrayUtil.Temp<System.Type>(objType, typeof(IProxy)) : ArrayUtil.Temp<System.Type>(objType);
-            bool validDrag;
-            if (allowSceneObjects)
+            try
             {
-                validDrag = DragAndDrop.objectReferences.Any(o => ObjUtil.GetAsFromSource(types, o) != null);
-            }
-            else
-            {
-                validDrag = DragAndDrop.objectReferences.Any(o => ObjUtil.GetAsFromSource(types, o) != null && !string.IsNullOrEmpty(AssetDatabase.GetAssetPath(o)));
-            }
-
-            if (isDragging)
-            {
-                DragAndDrop.visualMode = !validDrag ? DragAndDropVisualMode.Rejected : DragAndDropVisualMode.Copy;
-            }
-
-            if (validDrag && isDropping)
-            {
-                var entry = DragAndDrop.objectReferences.Select(o => ObjUtil.GetAsFromSource(types, o) as UnityEngine.Object).FirstOrDefault(o => o != null);
-                if (entry != null && !object.ReferenceEquals(asset, entry))
+                bool validDrag;
+                if (allowSceneObjects)
                 {
-                    asset = entry;
+                    validDrag = DragAndDrop.objectReferences.Any(o => ObjUtil.GetAsFromSource(types, o) != null);
                 }
+                else
+                {
+                    validDrag = DragAndDrop.objectReferences.Any(o => ObjUtil.GetAsFromSource(types, o) != null && !string.IsNullOrEmpty(AssetDatabase.GetAssetPath(o)));
+                }
+
+                if (isDragging)
+                {
+                    DragAndDrop.visualMode = !validDrag ? DragAndDropVisualMode.Rejected : DragAndDropVisualMode.Copy;
+                }
+
+                if (validDrag && isDropping)
+                {
+                    var entry = DragAndDrop.objectReferences.Select(o => ObjUtil.GetAsFromSource(types, o) as UnityEngine.Object).FirstOrDefault(o => o != null);
+                    if (entry != null && !object.ReferenceEquals(asset, entry))
+                    {
+                        asset = entry;
+                    }
+                }
+                return asset;
             }
-            return asset;
+            finally
+            {
+                ArrayUtil.ReleaseTemp(types);
+            }
         }
 
         #endregion

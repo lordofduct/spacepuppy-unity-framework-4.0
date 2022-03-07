@@ -117,9 +117,9 @@ namespace com.spacepuppy.DataBinding
         }
 
 #if SP_ADDRESSABLES
-        private static readonly System.Type[] _acceptableTypes = new System.Type[] { typeof(UnityEngine.AddressableAssets.AssetReference), typeof(System.DateTime), typeof(System.DateTime?), typeof(Sprite), typeof(System.IConvertible) };
+        private static readonly System.Type[] _acceptableTypes = new System.Type[] { typeof(UnityEngine.AddressableAssets.AssetReference), typeof(System.DateTime), typeof(System.DateTime?), typeof(System.TimeSpan), typeof(System.TimeSpan?), typeof(Sprite), typeof(System.IConvertible) };
 #else
-        private static readonly System.Type[] _acceptableTypes = new System.Type[] { typeof(System.DateTime), typeof(System.DateTime?), typeof(Sprite), typeof(System.IConvertible) };
+        private static readonly System.Type[] _acceptableTypes = new System.Type[] { typeof(System.DateTime), typeof(System.DateTime?), typeof(System.TimeSpan), typeof(System.TimeSpan?), typeof(Sprite), typeof(System.IConvertible) };
 #endif
 
         #endregion

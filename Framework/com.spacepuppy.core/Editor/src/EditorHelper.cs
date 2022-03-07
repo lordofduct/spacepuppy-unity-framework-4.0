@@ -59,7 +59,7 @@ namespace com.spacepuppyeditor
             //SceneView.onSceneGUIDelegate += OnSceneGUI;
         }
 
-        #region Methods
+        #region Asserts
 
         public static bool AssertMultiObjectEditingNotSupportedHeight(SerializedProperty property, GUIContent label, out float height)
         {
@@ -1023,7 +1023,7 @@ namespace com.spacepuppyeditor
         public static object GetValueWithMemberSafe(MemberInfo info, object targObj, bool ignoreMethod)
         {
             if (info == null) return null;
-            targObj = ObjUtil.ReduceIfProxy(targObj);
+            targObj = IProxyExtensions.ReduceIfProxy(targObj);
             if (targObj == null) return null;
 
             var tp = info.DeclaringType;

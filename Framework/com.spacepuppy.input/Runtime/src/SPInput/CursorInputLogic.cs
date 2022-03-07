@@ -119,6 +119,23 @@ namespace com.spacepuppy.SPInput
         {
             base.OnDisable();
 
+            if (_current)
+            {
+                this.DispatchHoverExit();
+                _current = null;
+                _currentEntity = null;
+            }
+
+            _clickCount = 0;
+            if (this.DragInitiated)
+            {
+                this.DispatchEndDrag();
+                this.DragInitiated = false;
+            }
+
+            this.CurrentButtonState = ButtonState.None;
+            this.CurrentButtonPress = ButtonPress.None;
+
             _pool.RemoveReference(this);
         }
 
@@ -220,28 +237,6 @@ namespace com.spacepuppy.SPInput
         public Ray GetRay()
         {
             return _resolver?.GetRay() ?? default(Ray);
-        }
-
-        /// <summary>
-        /// Dispatch the ICursorActivateEvent on whatever is under this cursor and return the CursorActivateEventData associated with that hit.
-        /// </summary>
-        /// <param name="token"></param>
-        /// <param name="ignoreCursorIsBlocked"></param>
-        /// <returns></returns>
-        public CursorActivateEventData ActivateCursor(object token, bool ignoreCursorIsBlocked = false)
-        {
-            CursorActivateEventData data = new CursorActivateEventData()
-            {
-                Cursor = this,
-                Token = token,
-                Hit = this.Raycast(ignoreCursorIsBlocked),
-            };
-
-            if (data.Hit.gameObject != null)
-            {
-                data.Hit.gameObject.Broadcast<ICursorActivatedHandler>((o) => o.OnCursorActivated(this, ref data));
-            }
-            return data;
         }
 
         private void Update()
@@ -601,14 +596,6 @@ namespace com.spacepuppy.SPInput
             void OnEndDrag(CursorInputLogic cursor);
         }
 
-        /// <summary>
-        /// Message handler for when ActivateCursor is called.
-        /// </summary>
-        public interface ICursorActivatedHandler
-        {
-            void OnCursorActivated(object sender, ref CursorActivateEventData data);
-        }
-
         public struct CursorActivateEventData
         {
 
@@ -656,9 +643,12 @@ namespace com.spacepuppy.SPInput
         public enum SignalTargetOptions
         {
             SignalCollider = 0, //signals the GameObject the collider is attached only
-            SignalRigidboy = 1, //signals the GameObject the collider is attached only
+            SignalRigidbody = 1, //signals the GameObject the rigidbody is attached only
             SignalEntity = 2, //signal the entity the collider is attached only
-            BroadcastEntity = 3, //broadcast to all GameObjects inside the entity the collider is attached
+            //3 - unknown state, we're using the 4 bit to flag broadcast
+            BroadcastCollider = 4, //broadcast to all GameObjects inside the collider attached
+            BroadcastRigidbody = 5, //broadcast to all GameObjects inside the rigidbody
+            BroadcastEntity = 6, //broadcast to all GameObjects inside the entity the collider is attached
         }
 
         [System.Serializable]
@@ -698,7 +688,7 @@ namespace com.spacepuppy.SPInput
             public UnityEngine.Object CameraSource
             {
                 get => _cameraSource;
-                set => _cameraSource = ObjUtil.FilterAsProxyOrType<Camera>(value) as UnityEngine.Object;
+                set => _cameraSource = IProxyExtensions.FilterAsProxyOrType<Camera>(value) as UnityEngine.Object;
             }
 
             public int MouseButtonIndex
@@ -737,7 +727,7 @@ namespace com.spacepuppy.SPInput
 
             public Vector2 CursorPosition => EventSystem.current?.currentInputModule?.input?.mousePosition ?? Vector2.zero;
 
-            public virtual bool UseBroadcast => _signalTarget >= SignalTargetOptions.BroadcastEntity;
+            public virtual bool UseBroadcast => _signalTarget >= SignalTargetOptions.BroadcastCollider;
 
             public virtual bool CursorIsBlocked => _eventSystemUIBlocks && (EventSystem.current?.IsPointerOverGameObject() ?? false);
 
@@ -833,7 +823,7 @@ namespace com.spacepuppy.SPInput
             public UnityEngine.Object CameraSource
             {
                 get => _cameraSource;
-                set => _cameraSource = ObjUtil.FilterAsProxyOrType<Camera>(value) as UnityEngine.Object;
+                set => _cameraSource = IProxyExtensions.FilterAsProxyOrType<Camera>(value) as UnityEngine.Object;
             }
 
             public int MouseButtonIndex
@@ -866,7 +856,7 @@ namespace com.spacepuppy.SPInput
 
             public Vector2 CursorPosition => EventSystem.current?.currentInputModule?.input?.mousePosition ?? Vector2.zero;
 
-            public virtual bool UseBroadcast => _signalTarget >= SignalTargetOptions.BroadcastEntity;
+            public virtual bool UseBroadcast => _signalTarget >= SignalTargetOptions.BroadcastCollider;
 
             public virtual bool CursorIsBlocked => _eventSystemUIBlocks && (EventSystem.current?.IsPointerOverGameObject() ?? false);
 
@@ -975,7 +965,7 @@ namespace com.spacepuppy.SPInput
             public UnityEngine.Object CameraSource
             {
                 get => _cameraSource;
-                set => _cameraSource = ObjUtil.FilterAsProxyOrType<Camera>(value) as UnityEngine.Object;
+                set => _cameraSource = IProxyExtensions.FilterAsProxyOrType<Camera>(value) as UnityEngine.Object;
             }
 
             public string DeviceID
@@ -1026,7 +1016,7 @@ namespace com.spacepuppy.SPInput
 
             public Vector2 CursorPosition => this.GetInputDevice()?.GetCursorState(_cursorInputId) ?? Vector2.zero;
 
-            public virtual bool UseBroadcast => _signalTarget >= SignalTargetOptions.BroadcastEntity;
+            public virtual bool UseBroadcast => _signalTarget >= SignalTargetOptions.BroadcastCollider;
 
             public virtual bool CursorIsBlocked => false;
 
@@ -1126,7 +1116,7 @@ namespace com.spacepuppy.SPInput
             public UnityEngine.Object CameraSource
             {
                 get => _cameraSource;
-                set => _cameraSource = ObjUtil.FilterAsProxyOrType<Camera>(value) as UnityEngine.Object;
+                set => _cameraSource = IProxyExtensions.FilterAsProxyOrType<Camera>(value) as UnityEngine.Object;
             }
 
             public string DeviceID
@@ -1171,7 +1161,7 @@ namespace com.spacepuppy.SPInput
 
             public Vector2 CursorPosition => this.GetInputDevice()?.GetCursorState(_cursorInputId) ?? Vector2.zero;
 
-            public bool UseBroadcast => _signalTarget >= SignalTargetOptions.BroadcastEntity;
+            public virtual bool UseBroadcast => _signalTarget >= SignalTargetOptions.BroadcastCollider;
 
             public virtual bool CursorIsBlocked => false;
 
@@ -1234,8 +1224,10 @@ namespace com.spacepuppy.SPInput
             switch (option)
             {
                 case SignalTargetOptions.SignalCollider:
+                case SignalTargetOptions.BroadcastCollider:
                     return cursor.Current;
-                case SignalTargetOptions.SignalRigidboy:
+                case SignalTargetOptions.SignalRigidbody:
+                case SignalTargetOptions.BroadcastRigidbody:
                     if (treatAs2d)
                     {
                         var c = cursor.Current.GetComponent<Collider2D>();
@@ -1247,10 +1239,6 @@ namespace com.spacepuppy.SPInput
                         return c != null && c.attachedRigidbody != null ? c.attachedRigidbody.gameObject : cursor.Current;
                     }
                 case SignalTargetOptions.SignalEntity:
-                    if (cursor.CurrentEntity != null)
-                        return cursor.CurrentEntity.gameObject;
-                    else
-                        return cursor.Current.FindRoot();
                 case SignalTargetOptions.BroadcastEntity:
                     if (cursor.CurrentEntity != null)
                         return cursor.CurrentEntity.gameObject;

@@ -19,6 +19,7 @@ namespace com.spacepuppyeditor.Events
     public class SPEventPropertyDrawer : PropertyDrawer
     {
 
+        private const float ARG_MARGIN = 2f;
         private const float BOTTOM_MARGIN = 4f; //margin at the bottom of the drawer
         private const float MARGIN = 2.0f;
         private const float BTN_ACTIVATE_HEIGHT = 24f;
@@ -30,7 +31,6 @@ namespace com.spacepuppyeditor.Events
 
         private GUIContent _currentLabel;
         private CachedReorderableList _targetList;
-        private bool _foldoutTargetExtra;
         private EventTriggerTargetPropertyDrawer _triggerTargetDrawer = new EventTriggerTargetPropertyDrawer();
 
         private bool __drawWeight;
@@ -178,18 +178,11 @@ namespace com.spacepuppyeditor.Events
         protected virtual float GetTargetsHeight(SerializedProperty property, GUIContent label)
         {
             var h = _targetList.GetHeight();
-            h += EditorGUIUtility.singleLineHeight * 2f;
-            if (_foldoutTargetExtra)
+            if (_targetList.index >= 0)
             {
-                if (_targetList.index >= 0)
-                {
-                    var element = _targetList.serializedProperty.GetArrayElementAtIndex(_targetList.index);
-                    h += _triggerTargetDrawer.GetPropertyHeight(element, GUIContent.none);
-                }
-                else
-                {
-                    h += EditorGUIUtility.singleLineHeight * 3.0f;
-                }
+                h += ARG_MARGIN;
+                var element = _targetList.serializedProperty.GetArrayElementAtIndex(_targetList.index);
+                h += _triggerTargetDrawer.GetPropertyHeight(element, GUIContent.none);
             }
             return h;
         }
@@ -240,29 +233,16 @@ namespace com.spacepuppyeditor.Events
 
         protected Rect DrawAdvancedTargetSettings(Rect position, SerializedProperty property)
         {
-            const float FOLDOUT_MRG = 12f;
-            var foldoutRect = new Rect(position.xMin + FOLDOUT_MRG, position.yMin, position.width - FOLDOUT_MRG, EditorGUIUtility.singleLineHeight); //for some reason the foldout needs to be pushed in an extra amount for the arrow...
-            position = new Rect(position.xMin, foldoutRect.yMax, position.width, position.yMax - foldoutRect.yMax);
-            _foldoutTargetExtra = EditorGUI.Foldout(foldoutRect, _foldoutTargetExtra, "Advanced Target Settings");
+            position = new Rect(position.xMin, position.yMin + ARG_MARGIN, position.width, position.height - ARG_MARGIN);
 
-            if (_foldoutTargetExtra)
+            if (_targetList.index >= 0)
             {
-                if (_targetList.index >= 0)
-                {
-                    var element = _targetList.serializedProperty.GetArrayElementAtIndex(_targetList.index);
-                    const float INDENT_MRG = 14f;
-                    var settingsRect = new Rect(position.xMin + INDENT_MRG, position.yMin, position.width - INDENT_MRG, _triggerTargetDrawer.GetPropertyHeight(element, GUIContent.none));
-                    _triggerTargetDrawer.OnGUI(settingsRect, element, GUIContent.none);
+                var element = _targetList.serializedProperty.GetArrayElementAtIndex(_targetList.index);
+                const float INDENT_MRG = 14f;
+                var settingsRect = new Rect(position.xMin + INDENT_MRG, position.yMin, position.width - INDENT_MRG, _triggerTargetDrawer.GetPropertyHeight(element, GUIContent.none));
+                _triggerTargetDrawer.OnGUI(settingsRect, element, GUIContent.none);
 
-                    position = new Rect(position.xMin, settingsRect.yMax, position.width, position.yMax - settingsRect.yMax);
-                }
-                else
-                {
-                    var helpRect = new Rect(position.xMin, position.yMin, position.width, EditorGUIUtility.singleLineHeight * 3.0f);
-                    EditorGUI.HelpBox(helpRect, "Select a target to edit.", MessageType.Info);
-
-                    position = new Rect(position.xMin, helpRect.yMax, position.width, position.yMax - helpRect.yMax);
-                }
+                position = new Rect(position.xMin, settingsRect.yMax, position.width, position.yMax - settingsRect.yMax);
             }
 
             return position;

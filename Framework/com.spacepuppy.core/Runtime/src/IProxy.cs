@@ -67,6 +67,11 @@ namespace com.spacepuppy
             return (proxy.Params & ProxyParams.QueriesTarget) != 0;
         }
 
+        public static bool PrioritizesSelfAsTarget(this IProxy proxy)
+        {
+            return (proxy.Params & ProxyParams.PrioritizeAsTargetFirst) != 0;
+        }
+
         public static object GetTarget(this IProxy proxy)
         {
             return proxy.GetTargetInternal(typeof(object), null);
@@ -79,7 +84,12 @@ namespace com.spacepuppy
 
         public static object GetTargetAs(this IProxy proxy, System.Type tp, object arg = null)
         {
-            return com.spacepuppy.Utils.ObjUtil.GetAsFromSource(tp, proxy.GetTargetInternal(tp, arg));
+            return ObjUtil.GetAsFromSource(tp, proxy.GetTargetInternal(tp, arg));
+        }
+
+        public static T GetTargetAs<T>(this IProxy proxy, object arg = null) where T : class
+        {
+            return ObjUtil.GetAsFromSource<T>(proxy.GetTargetInternal(typeof(T), arg));
         }
 
         public static object GetTarget_ParamsRespecting(this IProxy proxy, object arg = null)
@@ -95,10 +105,10 @@ namespace com.spacepuppy
         {
             if ((proxy.Params & ProxyParams.PrioritizeAsTargetFirst) != 0)
             {
-                var result = com.spacepuppy.Utils.ObjUtil.GetAsFromSource(tp, proxy);
+                var result = ObjUtil.GetAsFromSource(tp, proxy);
                 if (result != null) return result;
             }
-            return com.spacepuppy.Utils.ObjUtil.GetAsFromSource(tp, proxy.GetTargetInternal(tp, arg));
+            return ObjUtil.GetAsFromSource(tp, proxy.GetTargetInternal(tp, arg));
         }
 
         public static object GetTargetAs_ParamsRespecting(this IProxy proxy, System.Type[] types, object arg = null)
@@ -113,13 +123,24 @@ namespace com.spacepuppy
                     {
                         if ((proxy.Params & ProxyParams.PrioritizeAsTargetFirst) != 0)
                         {
-                            var result = com.spacepuppy.Utils.ObjUtil.GetAsFromSource(types, proxy);
+                            var result = ObjUtil.GetAsFromSource(types, proxy);
                             if (result != null) return result;
                         }
 
-                        return com.spacepuppy.Utils.ObjUtil.GetAsFromSource(types, proxy.GetTargetInternal(types[0] ?? typeof(object), arg));
+                        return ObjUtil.GetAsFromSource(types, proxy.GetTargetInternal(types[0] ?? typeof(object), arg));
                     }
             }
+        }
+
+        public static T GetTargetAs_ParamsRespecting<T>(this IProxy proxy, object arg) where T : class
+        {
+            if ((proxy.Params & ProxyParams.PrioritizeAsTargetFirst) != 0)
+            {
+                var result = ObjUtil.GetAsFromSource<T>(proxy);
+                if (result != null) return result;
+            }
+
+            return ObjUtil.GetAsFromSource<T>(proxy.GetTargetInternal(typeof(T), arg));
         }
 
         public static object ReduceIfProxy(this object obj)
@@ -168,6 +189,26 @@ namespace com.spacepuppy
             if (assertProxyTargetTypeMatches && !TypeUtil.IsType(p.GetTargetType(), typeof(T))) return null;
 
             return p;
+        }
+
+        /// <summary>
+        /// Returns true if object is an IProxy.
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public static bool IsProxy(this object obj)
+        {
+            return obj is IProxy;
+        }
+
+        /// <summary>
+        /// Returns true if object is an IProxy and its Params does not PrioritizeAsTargetFirst.
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public static bool IsProxy_ParamsRespecting(this object obj)
+        {
+            return obj is IProxy p && (p.Params & ProxyParams.PrioritizeAsTargetFirst) == 0;
         }
 
     }

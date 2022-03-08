@@ -878,7 +878,7 @@ namespace com.spacepuppy.Utils
 
             if (respectProxy && obj is IProxy p)
             {
-                if ((p.Params & ProxyParams.PrioritizeAsTargetFirst) != 0 && ObjUtil.IsType(obj, tp)) return true;
+                if (p.PrioritizesSelfAsTarget() && ObjUtil.IsType(obj, tp)) return true;
                 if (TypeUtil.IsType(p.GetTargetType(), tp)) return true;
 #if UNITY_EDITOR
                 if (Application.isPlaying || (p.Params & ProxyParams.QueriesTarget) == 0) return ObjUtil.IsType(p.GetTarget(), tp);

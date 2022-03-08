@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using com.spacepuppy.Collections;
 using com.spacepuppy.Geom;
 using com.spacepuppy.Utils;
+using System.Linq;
 
 namespace com.spacepuppy.Events
 {
@@ -20,6 +21,9 @@ namespace com.spacepuppy.Events
         private EventActivatorMaskRef _mask = new EventActivatorMaskRef();
 
         [SerializeField]
+        private bool _reduceOccupantsToEntityRoot = false;
+
+        [SerializeField]
         [Tooltip("If true, when an object is intersected we'll habitually retest the object in case its state changes for any reason.")]
         private bool _activelyScanning = true;
         [SerializeField]
@@ -27,11 +31,15 @@ namespace com.spacepuppy.Events
         private float _activeScanInterval;
 
         [SerializeField]
-        [SPEvent.Config("occupying object (GameObject) - null if active scanning registers an exit")]
+        [SPEvent.Config("first occupying object (GameObject)")]
         private SPEvent _onTriggerOccupied = new SPEvent("OnTriggerOccupied");
 
         [SerializeField]
-        [SPEvent.Config("occupying object (GameObject) - null if active scanning registers an exit")]
+        [SPEvent.Config("random occupying object (GameObject) - only use if your mask filters to 1 potential target")]
+        private SPEvent _onUpdate = new SPEvent("OnUpdate");
+
+        [SerializeField]
+        [SPEvent.Config("last occupying object (GameObject)")]
         private SPEvent _onTriggerLastExited = new SPEvent("OnTriggerLastExited");
 
         [System.NonSerialized]
@@ -70,6 +78,12 @@ namespace com.spacepuppy.Events
         {
             get { return _mask.Value; }
             set { _mask.Value = value; }
+        }
+
+        public bool ReduceOccupantsToEntityRoot
+        {
+            get => _reduceOccupantsToEntityRoot;
+            set => _reduceOccupantsToEntityRoot = value;
         }
 
         public bool ActivelyScanning
@@ -123,7 +137,7 @@ namespace com.spacepuppy.Events
             if (_activeObjects.Count == 0)
             {
                 _activeObjects.Add(obj);
-                _onTriggerOccupied.ActivateTrigger(this, obj);
+                _onTriggerOccupied.ActivateTrigger(this, _reduceOccupantsToEntityRoot ? obj.FindRoot() : obj);
             }
             else
             {
@@ -142,7 +156,7 @@ namespace com.spacepuppy.Events
             //remove active objects
             if (_activeObjects.Remove(obj) && _activeObjects.Count == 0)
             {
-                _onTriggerLastExited.ActivateTrigger(this, obj);
+                _onTriggerLastExited.ActivateTrigger(this, _reduceOccupantsToEntityRoot ? obj.FindRoot() : obj);
             }
         }
 
@@ -247,21 +261,31 @@ namespace com.spacepuppy.Events
                         _intersectingObjects.Remove(e.Current);
                     }
                 }
-            }
 
-            //wrap up by firing of appropriate events
-            if (_activeObjects.Count == 0 && _intersectingObjects.Count == 0)
-            {
-                this.StopUpdate();
-            }
+                //wrap up by firing of appropriate events
+                if (_activeObjects.Count == 0 && _intersectingObjects.Count == 0)
+                {
+                    this.StopUpdate();
+                }
 
-            if (containsActiveObjects)
-            {
-                if (_activeObjects.Count == 0) _onTriggerLastExited.ActivateTrigger(this, null);
-            }
-            else
-            {
-                if (_activeObjects.Count > 0) _onTriggerOccupied.ActivateTrigger(this, null);
+                if (containsActiveObjects)
+                {
+                    if (_activeObjects.Count == 0)
+                    {
+                        var obj = toRemove.FirstOrDefault();
+                        _onTriggerLastExited.ActivateTrigger(this, _reduceOccupantsToEntityRoot ? obj.FindRoot() : obj);
+                    }
+                    else if (_onUpdate.HasReceivers)
+                    {
+                        var obj = _activeObjects.FirstOrDefault();
+                        _onUpdate.ActivateTrigger(this, _reduceOccupantsToEntityRoot ? obj.FindRoot() : obj);
+                    }
+                }
+                else if (_activeObjects.Count > 0)
+                {
+                    var obj = _activeObjects.FirstOrDefault();
+                    _onTriggerOccupied.ActivateTrigger(this, _reduceOccupantsToEntityRoot ? obj.FindRoot() : obj);
+                }
             }
         }
 

@@ -622,7 +622,7 @@ namespace com.spacepuppy.Utils
 
         public static T Pop<T>(this HashSet<T> set)
         {
-            if (set == null) throw new System.ArgumentNullException("set");
+            if (set == null) throw new System.ArgumentNullException(nameof(set));
 
             var e = set.GetEnumerator();
             if (e.MoveNext())
@@ -632,6 +632,32 @@ namespace com.spacepuppy.Utils
             }
 
             throw new System.ArgumentException("HashSet must not be empty.");
+        }
+
+        public static T First<T>(this HashSet<T> set)
+        {
+            if (set == null) throw new System.ArgumentNullException(nameof(set));
+
+            var e = set.GetEnumerator();
+            if (e.MoveNext())
+            {
+                return e.Current;
+            }
+
+            throw new System.ArgumentException("HashSet must not be empty.");
+        }
+
+        public static T FirstOrDefault<T>(this HashSet<T> set)
+        {
+            if (set == null) throw new System.ArgumentNullException(nameof(set));
+
+            var e = set.GetEnumerator();
+            if (e.MoveNext())
+            {
+                return e.Current;
+            }
+
+            return default(T);
         }
 
         #endregion

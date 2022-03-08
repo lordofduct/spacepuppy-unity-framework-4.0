@@ -307,11 +307,11 @@ namespace com.spacepuppyeditor.Core
                     {
                         go.GetComponents(lst);
                         var members = (from o in lst.Cast<object>().Prepend(go)
-                                       from m in (o is IProxy ? DynamicUtil.GetEasilySerializedMembersFromType((o as IProxy).GetTargetType(), MASK, ACCESS) : DynamicUtil.GetEasilySerializedMembers(o, MASK, ACCESS))
+                                       from m in (o.IsProxy_ParamsRespecting() ? DynamicUtil.GetEasilySerializedMembersFromType((o as IProxy).GetTargetType(), MASK, ACCESS) : DynamicUtil.GetEasilySerializedMembers(o, MASK, ACCESS))
                                        select (o, m)).ToArray();
                         var entries = members.Select(t =>
                         {
-                            if (t.o is IProxy)
+                            if (t.o.IsProxy_ParamsRespecting())
                             {
                                 return EditorHelper.TempContent(string.Format("{0} ({1})/{2} ({3})", go.name, t.o.GetType().Name, t.m.Name, DynamicUtil.GetReturnType(t.m).Name));
                             }
@@ -354,22 +354,22 @@ namespace com.spacepuppyeditor.Core
                 }
                 else
                 {
-                    var members = targObj is IProxy ? DynamicUtil.GetEasilySerializedMembersFromType((targObj as IProxy).GetTargetType(), MASK, ACCESS).ToArray() : DynamicUtil.GetEasilySerializedMembers(targObj, MASK, ACCESS).ToArray();
+                    var members = targObj.IsProxy_ParamsRespecting() ? DynamicUtil.GetEasilySerializedMembersFromType((targObj as IProxy).GetTargetType(), MASK, ACCESS).ToArray() : DynamicUtil.GetEasilySerializedMembers(targObj, MASK, ACCESS).ToArray();
                     var entries = members.Select(m =>
                     {
-                        if (targObj is IProxy)
+                        if (targObj.IsProxy_ParamsRespecting())
                         {
-                            return EditorHelper.TempContent(string.Format("{0} ({1}).{2} ({3})", go.name, targObj.GetType().Name, m.Name, DynamicUtil.GetReturnType(m).Name));
+                            return EditorHelper.TempContent(string.Format("{0} ({1}).{2} ({3})", targObj.name, targObj.GetType().Name, m.Name, DynamicUtil.GetReturnType(m).Name));
                         }
                         else if ((DynamicUtil.GetMemberAccessLevel(m) & DynamicMemberAccess.Write) != 0)
                         {
-                            return EditorHelper.TempContent(string.Format("{0} ({1}).{2} ({3}) -> {4}", go.name, targObj.GetType().Name, m.Name, DynamicUtil.GetReturnType(m).Name, EditorHelper.GetValueWithMemberSafe(m, targObj, true)));
+                            return EditorHelper.TempContent(string.Format("{0} ({1}).{2} ({3}) -> {4}", targObj.name, targObj.GetType().Name, m.Name, DynamicUtil.GetReturnType(m).Name, EditorHelper.GetValueWithMemberSafe(m, targObj, true)));
                         }
                         else
                         {
-                            return EditorHelper.TempContent(string.Format("{0} ({1}).{2} (readonly - {3}) -> {4}", go.name, targObj.GetType().Name, m.Name, DynamicUtil.GetReturnType(m).Name, EditorHelper.GetValueWithMemberSafe(m, targObj, true)));
+                            return EditorHelper.TempContent(string.Format("{0} ({1}).{2} (readonly - {3}) -> {4}", targObj.name, targObj.GetType().Name, m.Name, DynamicUtil.GetReturnType(m).Name, EditorHelper.GetValueWithMemberSafe(m, targObj, true)));
                         }
-                    }).Prepend(EditorHelper.TempContent(string.Format("{0} ({1}) --no selection--", go.name, targObj.GetType().Name))).ToArray();
+                    }).Prepend(EditorHelper.TempContent(string.Format("{0} ({1}) --no selection--", targObj.name, targObj.GetType().Name))).ToArray();
 
                     int index = members.IndexOf(m => m.Name == memberName) + 1;
 

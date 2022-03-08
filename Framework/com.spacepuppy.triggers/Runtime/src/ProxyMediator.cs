@@ -164,6 +164,8 @@ namespace com.spacepuppy
 
         public System.Guid Guid => _guid.ToGuid();
 
+        public bool HasTarget => this.GetTarget() != null;
+
         #endregion
 
         #region Methods

@@ -15,6 +15,9 @@ namespace com.spacepuppy.Events
 
         [SerializeField]
         private EventActivatorMaskRef _mask = new EventActivatorMaskRef();
+
+        [SerializeField]
+        private bool _reduceOccupantsToEntityRoot = false;
         
         [SerializeField]
         [SPEvent.Config("occupying object (GameObject)")]
@@ -28,7 +31,7 @@ namespace com.spacepuppy.Events
         private HashSet<GameObject> _activeObjects = new HashSet<GameObject>();
 
         #endregion
-        
+
         #region Properties
 
         public SPEvent OnTriggerOccupied
@@ -47,6 +50,12 @@ namespace com.spacepuppy.Events
             set { _mask.Value = value; }
         }
 
+        public bool ReduceOccupantsToEntityRoot
+        {
+            get => _reduceOccupantsToEntityRoot;
+            set => _reduceOccupantsToEntityRoot = value;
+        }
+
         public bool IsOccupied
         {
             get { return _activeObjects.Count > 0; }
@@ -63,7 +72,7 @@ namespace com.spacepuppy.Events
             if (_activeObjects.Count == 0)
             {
                 _activeObjects.Add(obj);
-                _onTriggerOccupied.ActivateTrigger(this, obj);
+                _onTriggerOccupied.ActivateTrigger(this, _reduceOccupantsToEntityRoot ? obj.FindRoot() : obj);
             }
             else
             {
@@ -73,12 +82,9 @@ namespace com.spacepuppy.Events
 
         private void RemoveObject(GameObject obj)
         {
-            if (_activeObjects.Count == 0) return;
-            
-            _activeObjects.Remove(obj);
-            if (_activeObjects.Count == 0)
+            if (_activeObjects.Remove(obj) && _activeObjects.Count == 0)
             {
-                _onTriggerLastExited.ActivateTrigger(this, obj);
+                _onTriggerLastExited.ActivateTrigger(this, _reduceOccupantsToEntityRoot ? obj.FindRoot() : obj);
             }
         }
 

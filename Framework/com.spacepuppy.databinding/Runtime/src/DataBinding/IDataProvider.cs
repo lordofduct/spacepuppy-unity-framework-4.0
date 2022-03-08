@@ -31,7 +31,7 @@ namespace com.spacepuppy.DataBinding
         {
             if (respectIfProxy && source is IProxy p)
             {
-                if ((p.Params & ProxyParams.PrioritizeAsTargetFirst) != 0)
+                if (p.PrioritizesSelfAsTarget())
                 {
                     var ddp = GetAsDataProviderOrNull(source);
                     if (ddp != null) return ddp;

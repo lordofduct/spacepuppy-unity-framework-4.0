@@ -9,12 +9,13 @@ using TypeUtil = com.spacepuppy.Utils.TypeUtil;
 namespace com.spacepuppy
 {
 
+    [System.Flags]
     public enum ProxyParams
     {
         None = 0,
         QueriesTarget = 1, //the proxy performs a runtime search/query that can't be done at editor time
         HandlesTriggerDirectly = 2, //if the proxy is triggered it should not be reduced to its target
-        PrioritizeAsTargetFirst = 3, //if reducing as some target type, attempt to reduce the proxy itself before reaching for its target. This is primarily used for proxy's that are themselves Components rather than the more commong ScriptableObject
+        PrioritizeAsTargetFirst = 4, //if reducing as some target type, attempt to reduce the proxy itself before reaching for its target. This is primarily used for proxy's that are themselves Components rather than the more commong ScriptableObject
     }
 
     /// <summary>

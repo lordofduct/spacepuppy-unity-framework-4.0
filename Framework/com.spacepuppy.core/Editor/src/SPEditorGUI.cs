@@ -1680,7 +1680,12 @@ namespace com.spacepuppyeditor
 
         public static bool PlayButton(ref Rect position, string tooltip = null, bool rightSide = true)
         {
-            var w = Mathf.Min(X_BTN_WIDTH, position.width);
+            return CharButton(ref position, ">", tooltip, rightSide);
+        }
+
+        public static bool CharButton(ref Rect position, string schar, string tooltip = null, bool rightSide = true, float btnwidth = X_BTN_WIDTH)
+        {
+            var w = Mathf.Min(btnwidth, position.width);
             Rect r;
             if (rightSide)
             {
@@ -1693,7 +1698,7 @@ namespace com.spacepuppyeditor
                 position = new Rect(r.xMax, position.yMin, position.width - w, position.height);
             }
 
-            return GUI.Button(r, EditorHelper.TempContent(">", tooltip));
+            return GUI.Button(r, EditorHelper.TempContent(schar, tooltip));
         }
 
         #endregion

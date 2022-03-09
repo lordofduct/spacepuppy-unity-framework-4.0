@@ -25,7 +25,7 @@ namespace com.spacepuppy.DataBinding
 
     }
 
-    public class DataBindingContext : SPComponent, IDataBindingContext, IDataProvider, IProxy
+    public class DataBindingContext : SPComponent, IDataBindingContext, IDataProvider
     {
 
         #region Fields
@@ -162,22 +162,6 @@ namespace com.spacepuppy.DataBinding
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
             yield return this.DataSource;
-        }
-
-        #endregion
-
-        #region IProxy Interface
-
-        ProxyParams IProxy.Params => ProxyParams.PrioritizeAsTargetFirst;
-
-        System.Type IProxy.GetTargetType()
-        {
-            return _bindingProtocol?.PreferredSourceType ?? typeof(object);
-        }
-
-        object IProxy.GetTargetInternal(System.Type expectedType, object arg)
-        {
-            return this.DataSource;
         }
 
         #endregion

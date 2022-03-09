@@ -404,12 +404,12 @@ namespace com.spacepuppyeditor.Events
             {
                 var arr = result.DropdownDisplayNames.ToArray();
                 var nm = targ.GetType().Name;
-                arr[4] = string.Format("Enable Target ({0})", nm);
-                arr[5] = string.Format("Disable Target ({0})", nm);
-                arr[6] = string.Format("Toggle Target ({0})", nm);
+                arr[4] = string.Format("Enable Target [{0}]", nm);
+                arr[5] = string.Format("Disable Target [{0}]", nm);
+                arr[6] = string.Format("Toggle Target [{0}]", nm);
                 if (result.ActivationType == TriggerActivationType.CallMethodOnSelectedTarget && !string.IsNullOrEmpty(methodNameProp?.stringValue))
                 {
-                    arr[3] = string.Format("Call Method ({0}->{1})", nm, methodNameProp.stringValue);
+                    arr[3] = string.Format("Call Method [{0}->{1}]", nm, methodNameProp.stringValue);
                 }
                 result.DropdownDisplayNames = arr;
             }
@@ -417,7 +417,7 @@ namespace com.spacepuppyeditor.Events
             {
                 var arr = result.DropdownDisplayNames.ToArray();
                 var nm = targ?.GetType().Name ?? "null";
-                arr[3] = string.Format("Call Method ({0}->{1})", nm, methodNameProp.stringValue);
+                arr[3] = string.Format("Call Method [{0}->{1}]", nm, methodNameProp.stringValue);
                 result.DropdownDisplayNames = arr;
             }
 
@@ -525,19 +525,35 @@ namespace com.spacepuppyeditor.Events
                                 GUI.changed = true;
                                 return;
                             }
+                            SPEditorGUI.RefButton(ref position, target, true);
 
                             using (var lst = TempCollection.GetList<ITriggerable>())
                             {
                                 ObjUtil.GetAllFromSource<ITriggerable>(lst, (object)target);
-                                var availableMechanismTypeNames = lst.Select((o) => EditorHelper.TempContent(o.GetType().Name)).ToArray();
-
-                                var index = lst.IndexOf(target as ITriggerable);
-                                EditorGUI.BeginChangeCheck();
-                                index = EditorGUI.Popup(position, GUIContent.none, index, availableMechanismTypeNames);
-                                if (EditorGUI.EndChangeCheck())
+                                if(lst.Count == 0)
                                 {
-                                    target = (index >= 0) ? lst[index] as UnityEngine.Object : null;
-                                    targProp.objectReferenceValue = target;
+                                    target = null;
+                                    targProp.objectReferenceValue = null;
+                                    GUI.changed = true;
+                                    return;
+                                }
+                                var availableMechanismTypeNames = lst.Select((o) => EditorHelper.TempContent(o.GetType().Name))
+                                                                     .Prepend(EditorHelper.TempContent(string.Format("{0} --no selection--", target.name)))
+                                                                     .ToArray();
+
+                                var index = lst.IndexOf(target as ITriggerable) + 1;
+                                index = EditorGUI.Popup(position, GUIContent.none, index, availableMechanismTypeNames);
+                                switch (index)
+                                {
+                                    case -1:
+                                        targProp.objectReferenceValue = null;
+                                        break;
+                                    case 0:
+                                        targProp.objectReferenceValue = target;
+                                        break;
+                                    default:
+                                        targProp.objectReferenceValue = lst[index - 1] as UnityEngine.Object;
+                                        break;
                                 }
                             }
                         }
@@ -567,6 +583,7 @@ namespace com.spacepuppyeditor.Events
                                 GUI.changed = true;
                                 return;
                             }
+                            SPEditorGUI.RefButton(ref position, target, true);
 
                             var targGo = GameObjectUtil.GetGameObjectFromSource(target);
                             using (var elements = TempCollection.GetList<ValueTuple<UnityEngine.Object, int, System.Reflection.MemberInfo>>())
@@ -589,27 +606,29 @@ namespace com.spacepuppyeditor.Events
                                     elements.AddRange(GetCallableMethodsOnTarget(target, true).Select(m => new ValueTuple<UnityEngine.Object, int, System.Reflection.MemberInfo>(target, 0, m)));
                                 }
 
-                                var elementLabels = elements.Select(t => EditorHelper.TempContent(string.Format("{0} ({1}) / {2}", t.Item1.GetType().Name, t.Item2, t.Item3.Name))).ToArray();
+                                var elementLabels = elements.Select(t => EditorHelper.TempContent(string.Format("{0} [{1}] / {2}", t.Item1.GetType().Name, t.Item2, t.Item3.Name)))
+                                                            .Prepend(EditorHelper.TempContent(string.Format("{0} --no selection--", target.name)))
+                                                            .ToArray();
 
                                 var methodNameProp = property.FindPropertyRelative(PROP_METHODNAME);
                                 var methodName = methodNameProp.stringValue;
 
-                                EditorGUI.BeginChangeCheck();
-                                int index = elements.IndexOf(t => object.ReferenceEquals(t.Item1, target) && t.Item3.Name == methodName);
+                                int index = elements.IndexOf(t => object.ReferenceEquals(t.Item1, target) && t.Item3.Name == methodName) + 1;
                                 index = EditorGUI.Popup(position, index, elementLabels);
-                                if(EditorGUI.EndChangeCheck())
+                                switch (index)
                                 {
-                                    switch(index)
-                                    {
-                                        case -1:
-                                            targProp.objectReferenceValue = null;
-                                            methodNameProp.stringValue = string.Empty;
-                                            break;
-                                        default:
-                                            targProp.objectReferenceValue = elements[index].Item1;
-                                            methodNameProp.stringValue = elements[index].Item3.Name;
-                                            break;
-                                    }
+                                    case -1:
+                                        targProp.objectReferenceValue = null;
+                                        methodNameProp.stringValue = string.Empty;
+                                        break;
+                                    case 0:
+                                        targProp.objectReferenceValue = targGo ? targGo.transform : target;
+                                        methodNameProp.stringValue = string.Empty;
+                                        break;
+                                    default:
+                                        targProp.objectReferenceValue = elements[index - 1].Item1;
+                                        methodNameProp.stringValue = elements[index - 1].Item3.Name;
+                                        break;
                                 }
                             }
 
@@ -632,28 +651,25 @@ namespace com.spacepuppyeditor.Events
                                 GUI.changed = true;
                                 return;
                             }
+                            SPEditorGUI.RefButton(ref position, target, true);
 
                             if (target is Transform) target = targGo;
                             var elements = targGo.GetComponents<Component>().Where(o => EventTriggerEvaluator.IsEnableableComponent(o)).Cast<UnityEngine.Object>().Prepend(targGo).ToArray();
-                            var elementLabels = elements.Select((o, i) => EditorHelper.TempContent(string.Format("{0} ({1})", o.GetType().Name, i))).ToArray();
+                            var elementLabels = elements.Select((o, i) => EditorHelper.TempContent(string.Format("{0} [{1}]", o.GetType().Name, i))).ToArray();
                             int index = System.Array.IndexOf(elements, target);
 
-                            EditorGUI.BeginChangeCheck();
                             index = EditorGUI.Popup(position, index, elementLabels);
-                            if (EditorGUI.EndChangeCheck())
+                            switch (index)
                             {
-                                switch(index)
-                                {
-                                    case -1:
-                                        targProp.objectReferenceValue = null;
-                                        break;
-                                    case 0:
-                                        targProp.objectReferenceValue = targGo.transform;
-                                        break;
-                                    default:
-                                        targProp.objectReferenceValue = elements[index];
-                                        break;
-                                }
+                                case -1:
+                                    targProp.objectReferenceValue = null;
+                                    break;
+                                case 0:
+                                    targProp.objectReferenceValue = targGo.transform;
+                                    break;
+                                default:
+                                    targProp.objectReferenceValue = elements[index];
+                                    break;
                             }
                         }
                         else
@@ -731,7 +747,7 @@ namespace com.spacepuppyeditor.Events
                         entries[0] = EditorHelper.TempContent("GameObject");
                         for (int i = 0; i < lst.Count; i++)
                         {
-                            entries[i + 1] = EditorHelper.TempContent(string.Format("Proxy -> ({0})", lst[i].GetType().Name));
+                            entries[i + 1] = EditorHelper.TempContent(string.Format("Proxy -> [{0}]", lst[i].GetType().Name));
                             if (index < 0 && object.ReferenceEquals(target, lst[i]))
                                 index = i + 1;
                         }

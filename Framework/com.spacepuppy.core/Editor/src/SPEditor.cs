@@ -9,6 +9,7 @@ using com.spacepuppy.Utils;
 
 using com.spacepuppyeditor.Internal;
 using UnityEditor.Graphs;
+using System.Reflection;
 
 namespace com.spacepuppyeditor
 {
@@ -151,6 +152,8 @@ namespace com.spacepuppyeditor
                 }
                 EditorGUILayout.EndVertical();
             }
+
+            this.OnAfterSPInspectorGUI();
         }
 
         protected virtual void OnBeforeSPInspectorGUI()
@@ -160,7 +163,41 @@ namespace com.spacepuppyeditor
 
         protected virtual void OnSPInspectorGUI()
         {
+            if(this.serializedObject.isEditingMultipleObjects)
+            {
+                var tp = this.GetType();
+                if(tp != typeof(SPEditor) && tp.GetCustomAttribute<CanEditMultipleObjects>(false) == null)
+                {
+                    this.DrawPropertyField(EditorHelper.PROP_SCRIPT);
+                    EditorGUILayout.LabelField("Multi-object editing not supported.");
+                    return;
+                }
+
+                if(tp == typeof(SPEditor))
+                {
+                    //var dtp = ScriptAttributeUtility.GetDrawerTypeForType(this.serializedObject.targetObject.GetType());
+                    //Debug.Log(dtp?.Name ?? "NULL");
+
+                    var editor = CreateEditor(this.serializedObject.targetObject);
+                    if(editor != null)
+                    {
+                        tp = editor.GetType();
+                        if (tp != typeof(SPEditor) && tp.GetCustomAttribute<CanEditMultipleObjects>(false) == null)
+                        {
+                            this.DrawPropertyField(EditorHelper.PROP_SCRIPT);
+                            EditorGUILayout.LabelField("Multi-object editing not supported.");
+                            return;
+                        }
+                    }
+                }
+            }
+
             this.DrawDefaultInspector();
+        }
+
+        protected virtual void OnAfterSPInspectorGUI()
+        {
+
         }
 
         protected virtual void OnValidate()

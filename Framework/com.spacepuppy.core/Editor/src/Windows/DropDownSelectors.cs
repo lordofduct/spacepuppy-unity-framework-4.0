@@ -5,8 +5,8 @@ using System.Linq;
 
 using com.spacepuppy;
 using com.spacepuppy.Utils;
-using System.Runtime.CompilerServices;
-using Codice.CM.Client.Differences.Graphic;
+using System.Reflection;
+using com.spacepuppy.Dynamic;
 
 namespace com.spacepuppyeditor.Windows
 {
@@ -357,222 +357,228 @@ namespace com.spacepuppyeditor.Windows
 
         private static T DoObjectField<T>(Rect position, GUIContent label, T asset, System.Type objType, bool allowSceneObjects, bool allowProxy, System.Action<T> dropdownselectedcallback, System.Predicate<T> filter = null, int maxVisibleCount = DEFAULT_MAXCOUNT) where T : class
         {
-            int controlId = GUIUtility.GetControlID(label, FocusType.Passive, position);
-            asset = GenericSearchDropDownWindow.GetSelectedValueForControl(controlId, asset) as T;
-
-            bool isDragging = Event.current.type == EventType.DragUpdated && position.Contains(Event.current.mousePosition);
-            bool isDropping = Event.current.type == EventType.DragPerform && position.Contains(Event.current.mousePosition);
-
-            float pickerWidth = 20f;
-            Rect pickerRect = position;
-            pickerRect.width = pickerWidth;
-            pickerRect.x = position.xMax - pickerWidth;
-
-            bool isPickerPressed = Event.current.type == EventType.MouseDown && Event.current.button == 0 && pickerRect.Contains(Event.current.mousePosition);
-            bool isEnterKeyPressed = Event.current.type == EventType.KeyDown && Event.current.isKey && (Event.current.keyCode == KeyCode.KeypadEnter || Event.current.keyCode == KeyCode.Return);
-            if (isPickerPressed || isDragging || isDropping || isEnterKeyPressed)
+            var helper = new GenericSearchDropDownObjectFieldHelper<T>()
             {
-                // To override ObjectField's default behavior
-                Event.current.Use();
-            }
-
-            if (asset != null)
-            {
-                var oasset = asset as UnityEngine.Object;
-                GameObject go;
-
-                float iconHeight = EditorGUIUtility.singleLineHeight - EditorGUIUtility.standardVerticalSpacing * 3;
-                Vector2 iconSize = EditorGUIUtility.GetIconSize();
-                EditorGUIUtility.SetIconSize(new Vector2(iconHeight, iconHeight));
-                Texture2D assetIcon = null;
-                if (AssetDatabase.Contains(oasset))
+                ObjectType = objType,
+                AllowSceneObjects = allowSceneObjects,
+                AllowProxy = allowProxy,
+                ShowDropDownCallback = (controlId, p, a) =>
                 {
-                    assetIcon = AssetDatabase.GetCachedIcon(AssetDatabase.GetAssetPath(oasset)) as Texture2D;
-                }
-                else if (go = GameObjectUtil.GetGameObjectFromSource(oasset))
-                {
-                    assetIcon = PrefabUtility.GetIconForGameObject(go);
-                }
-
-                position = EditorGUI.PrefixLabel(position, controlId, label);
-                UnityEngine.GUI.Box(position, new GUIContent(oasset?.name, assetIcon), EditorStyles.objectField);
-
-                EditorGUIUtility.SetIconSize(iconSize);
-
-                bool isFieldPressed = Event.current.type == EventType.MouseDown && Event.current.button == 0 && position.Contains(Event.current.mousePosition);
-                if (isFieldPressed)
-                {
-                    if (Event.current.clickCount == 1)
-                        EditorGUIUtility.PingObject(oasset);
-                    if (Event.current.clickCount == 2)
+                    System.Func<IEnumerable<UnityEngine.Object>> retrieveobjscallback = () =>
                     {
-                        AssetDatabase.OpenAsset(oasset);
-                        GUIUtility.ExitGUI();
-                    }
-                }
-            }
-            else
-            {
-                position = EditorGUI.PrefixLabel(position, controlId, label);
-                UnityEngine.GUI.Box(position, new GUIContent(string.Format("None ({0})", objType?.Name ?? "Object")), EditorStyles.objectField);
-            }
+                        var types = allowProxy ? new System.Type[] { objType, typeof(IProxy) } : null;
+                        IEnumerable<UnityEngine.Object> sceneresults = null;
+                        if (allowSceneObjects)
+                        {
+                            if (allowProxy)
+                            {
+                                sceneresults = GenericSearchDropDownWindow.GetSceneObjects<UnityEngine.Object>()
+                                                                     .Where(o => ObjUtil.GetAsFromSource(types, o) != null);
+                            }
+                            else
+                            {
+                                sceneresults = GenericSearchDropDownWindow.GetSceneObjects<T>().Cast<UnityEngine.Object>();
+                                if (objType != typeof(T)) sceneresults = sceneresults.Where(o => ObjUtil.GetAsFromSource(objType, o) != null);
+                            }
+                        }
 
-#if UNITY_2019_1_OR_NEWER
-            DrawCaret(pickerRect);
-#endif
-
-            if (isPickerPressed && !GenericSearchDropDownWindow.WindowActive)
-            {
-                System.Func<IEnumerable<UnityEngine.Object>> retrieveobjscallback;
-                //if (allowSceneObjects)
-                //{
-                //    retrieveobjscallback = () =>
-                //    {
-                //        var results = GenericSearchDropDownWindow.GetSceneObjects<T>();
-                //        if (objType != typeof(T)) results = results.Where(o => ObjUtil.GetAsFromSource(objType, o) != null);
-                //        results = results.Union(AssetDatabase.FindAssets("a:assets")
-                //                       .Select(s => ObjUtil.GetAsFromSource(objType, AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(s), typeof(UnityEngine.Object))) as T)
-                //                       .Where(o => o != null));
-                //        if (filter != null) results = results.Where(o => filter(o));
-                //        return results.Cast<UnityEngine.Object>();
-                //    };
-                //}
-                //else
-                //{
-                //    retrieveobjscallback = () =>
-                //    {
-                //        IEnumerable<T> results = AssetDatabase.FindAssets("a:assets")
-                //                                  .Select(s => ObjUtil.GetAsFromSource(objType, AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(s), typeof(UnityEngine.Object))) as T)
-                //                                  .Where(o => o != null);
-                //        if (filter != null) results = results.Where(o => filter(o));
-                //        return results.Cast<UnityEngine.Object>();
-                //    };
-                //}
-
-                retrieveobjscallback = () =>
-                {
-                    var types = allowProxy ? new System.Type[] { objType, typeof(IProxy) } : null;
-                    IEnumerable<UnityEngine.Object> sceneresults = null;
-                    if (allowSceneObjects)
-                    {
+                        IEnumerable<UnityEngine.Object> results;
                         if (allowProxy)
                         {
-                            sceneresults = GenericSearchDropDownWindow.GetSceneObjects<UnityEngine.Object>()
-                                                                 .Where(o => ObjUtil.GetAsFromSource(types, o) != null);
+
+                            results = AssetDatabase.FindAssets("a:assets")
+                                                   .Select(s => ObjUtil.GetAsFromSource(types, AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(s), typeof(UnityEngine.Object))) as UnityEngine.Object)
+                                                   .Where(o => o != null);
                         }
                         else
                         {
-                            sceneresults = GenericSearchDropDownWindow.GetSceneObjects<T>().Cast<UnityEngine.Object>();
-                            if (objType != typeof(T)) sceneresults = sceneresults.Where(o => ObjUtil.GetAsFromSource(objType, o) != null);
+                            results = AssetDatabase.FindAssets("a:assets")
+                                                   .Select(s => ObjUtil.GetAsFromSource(objType, AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(s), typeof(UnityEngine.Object))) as UnityEngine.Object)
+                                                   .Where(o => o != null);
                         }
-                    }
 
-                    IEnumerable<UnityEngine.Object> results;
-                    if (allowProxy)
-                    {
+                        if (sceneresults != null)
+                        {
+                            results = sceneresults.Union(results);
+                        }
 
-                        results = AssetDatabase.FindAssets("a:assets")
-                                               .Select(s => ObjUtil.GetAsFromSource(types, AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(s), typeof(UnityEngine.Object))) as UnityEngine.Object)
-                                               .Where(o => o != null);
-                    }
-                    else
-                    {
-                        results = AssetDatabase.FindAssets("a:assets")
-                                               .Select(s => ObjUtil.GetAsFromSource(objType, AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(s), typeof(UnityEngine.Object))) as UnityEngine.Object)
-                                               .Where(o => o != null);
-                    }
-
-                    if (sceneresults != null)
-                    {
-                        results = sceneresults.Union(results);
-                    }
-
-                    return results;
-                };
+                        return results;
+                    };
 
 
-                GenericSearchDropDownWindow.ShowAndCallbackOnSelect(controlId, position, asset,
-                                                                    (dropdownselectedcallback != null) ? (o) => dropdownselectedcallback(o as T) : (System.Action<object>)null,
-                                                                    new UnityObjectDropDownWindowSelector()
-                                                                    {
-                                                                        _retrieveObjectsCallback = retrieveobjscallback,
-                                                                        MaxCount = maxVisibleCount,
-                                                                    });
-            }
-
-            var newobj = HandleDragAndDrop(isDragging, isDropping, asset as UnityEngine.Object, objType, allowSceneObjects, allowProxy) as T;
-            if (newobj != asset)
-            {
-                asset = newobj;
-                GUI.changed = true;
-            }
-            return asset;
-        }
-
-        private static Texture2D m_CaretTexture;
-        private static void DrawCaret(Rect pickerRect)
-        {
-#if UNITY_2019_1_OR_NEWER
-            if (m_CaretTexture == null)
-            {
-                string caretIconPath = EditorGUIUtility.isProSkin
-                    ? @"Packages\com.unity.addressables\Editor\Icons\PickerDropArrow-Pro.png"
-                    : @"Packages\com.unity.addressables\Editor\Icons\PickerDropArrow-Personal.png";
-
-                if (System.IO.File.Exists(caretIconPath))
-                {
-                    m_CaretTexture = (Texture2D)AssetDatabase.LoadAssetAtPath(caretIconPath, typeof(Texture2D));
-                }
-            }
-
-            if (m_CaretTexture != null)
-            {
-                UnityEngine.GUI.DrawTexture(pickerRect, m_CaretTexture, ScaleMode.ScaleToFit);
-            }
-#endif
-        }
-
-        private static UnityEngine.Object HandleDragAndDrop(bool isDragging, bool isDropping, UnityEngine.Object asset, System.Type objType, bool allowSceneObjects, bool allowProxy)
-        {
-            if (!isDragging && !isDropping) return asset;
-
-            var types = allowProxy ? ArrayUtil.Temp<System.Type>(objType, typeof(IProxy)) : ArrayUtil.Temp<System.Type>(objType);
-            try
-            {
-                bool validDrag;
-                if (allowSceneObjects)
-                {
-                    validDrag = DragAndDrop.objectReferences.Any(o => ObjUtil.GetAsFromSource(types, o) != null);
-                }
-                else
-                {
-                    validDrag = DragAndDrop.objectReferences.Any(o => ObjUtil.GetAsFromSource(types, o) != null && !string.IsNullOrEmpty(AssetDatabase.GetAssetPath(o)));
-                }
-
-                if (isDragging)
-                {
-                    DragAndDrop.visualMode = !validDrag ? DragAndDropVisualMode.Rejected : DragAndDropVisualMode.Copy;
-                }
-
-                if (validDrag && isDropping)
-                {
-                    var entry = DragAndDrop.objectReferences.Select(o => ObjUtil.GetAsFromSource(types, o) as UnityEngine.Object).FirstOrDefault(o => o != null);
-                    if (entry != null && !object.ReferenceEquals(asset, entry))
-                    {
-                        asset = entry;
-                    }
-                }
-                return asset;
-            }
-            finally
-            {
-                ArrayUtil.ReleaseTemp(types);
-            }
+                    GenericSearchDropDownWindow.ShowAndCallbackOnSelect(controlId, p, a,
+                                                                        (dropdownselectedcallback != null) ? (o) => dropdownselectedcallback(o as T) : (System.Action<object>)null,
+                                                                        new UnityObjectDropDownWindowSelector()
+                                                                        {
+                                                                            _retrieveObjectsCallback = retrieveobjscallback,
+                                                                            MaxCount = maxVisibleCount,
+                                                                        });
+                },
+            };
+            return helper.DrawObjectField(position, label, asset);
         }
 
         #endregion
 
-        #region Special Types
+    }
+
+    public class ComponentDropDownWindowSelector<T> : GenericSearchDropDownObjectFieldHelper<T>, ISearchDropDownSelector where T : class
+    {
+
+        public static readonly ObjectBoxLabelFormatterDelegate DefaultComponentBoxLabelFormatter = (a, tp) =>
+        {
+            switch (a)
+            {
+                case GameObject go:
+                    return go.name;
+                case Component c:
+                    return string.Format("{0} : {1}", c.name, c.GetType().Name);
+                case IProxy p:
+                    return p is UnityEngine.Object uo ? string.Format("{0} (IProxy)", uo.name) : string.Format("{0} (IProxy)", p.GetType().Name);
+                default:
+                    return GenericSearchDropDownObjectFieldHelper<UnityEngine.Object>.DefaultObjectBoxLabelFormatter(null, tp);
+            }
+        };
+
+        #region CONSTRUCTOR
+
+        public ComponentDropDownWindowSelector()
+        {
+            this.ObjectBoxLabelFormatter = DefaultComponentBoxLabelFormatter;
+            this.ShowDropDownCallback = (controlId, p, a) =>
+            {
+                GenericSearchDropDownWindow.ShowAndCallbackOnSelect(controlId, p, a, null, this);
+            };
+        }
+
+        #endregion
+
+        #region Properties/Fields
+
+        private T _target;
+        private GameObject _targetGameObject;
+
+        public bool IncludeGameObject { get; set; }
+
+        public System.Func<Component, bool> ComponentFilterPredicate { get; set; }
+
+        public override ObjectBoxLabelFormatterDelegate ObjectBoxLabelFormatter
+        {
+            get => base.ObjectBoxLabelFormatter;
+            set => base.ObjectBoxLabelFormatter = value ?? DefaultComponentBoxLabelFormatter;
+        }
+
+        #endregion
+
+        #region Methods
+
+        public override T DrawObjectField(Rect position, GUIContent label, T asset)
+        {
+            _target = asset;
+            _targetGameObject = GameObjectUtil.GetGameObjectFromSource(_target);
+            _target = base.DrawObjectField(position, label, _target);
+            _targetGameObject = GameObjectUtil.GetGameObjectFromSource(_target);
+
+            if(_targetGameObject == null && _target != null)
+            {
+                if(!this.AllowProxy || !(_target is IProxy))
+                {
+                    _target = null;
+                }
+            }
+            return _target;
+        }
+
+        #endregion
+
+        #region ISelector Interface
+
+        public int MaxCount { get; set; } = 100;
+
+        public virtual new bool Equals(object x, object y)
+        {
+            return (x as UnityEngine.Object) == (y as UnityEngine.Object);
+        }
+
+        public int GetHashCode(object obj)
+        {
+            return (obj as UnityEngine.Object)?.GetHashCode() ?? 0;
+        }
+
+        public IEnumerable<SearchDropDownElement> GetElements(GenericSearchDropDownWindow window)
+        {
+            yield return new SearchDropDownElement()
+            {
+                Content = EditorHelper.TempContent("Nothing..."),
+                Element = null,
+            };
+
+            if (_targetGameObject == null)
+            {
+                if(this.AllowProxy && _target is IProxy && _target is UnityEngine.Object uo)
+                {
+                    yield return new SearchDropDownElement()
+                    {
+                        Content = EditorHelper.TempContent(string.Format("{0} (IProxy)", uo.name)),
+                        Element = _target,
+                    };
+                    yield break;
+                }
+                else
+                {
+                    yield break;
+                }
+            }
+
+            string sname = _targetGameObject.name;
+            if(this.IncludeGameObject)
+            {
+                yield return new SearchDropDownElement()
+                {
+                    Content = EditorHelper.TempContent(sname),
+                    Element = _targetGameObject
+                };
+            }
+
+            if (string.IsNullOrEmpty(window.CurrentSearch))
+            {
+                int i = 0;
+                foreach (var c in _targetGameObject.GetComponents(typeof(Component)))
+                {
+                    if (this.ComponentFilterPredicate != null && !this.ComponentFilterPredicate(c)) continue;
+
+                    i++;
+                    yield return new SearchDropDownElement()
+                    {
+                        Content = EditorHelper.TempContent(string.Format("{0} : {1} [{2}]", sname, c.GetType().Name, i)),
+                        Element = c
+                    };
+                }
+            }
+            else
+            {
+                int i = 0;
+                foreach (var c in _targetGameObject.GetComponents(typeof(Component)))
+                {
+                    if (this.ComponentFilterPredicate != null && !this.ComponentFilterPredicate(c)) continue;
+
+                    i++;
+
+                    if (c.GetType().Name.IndexOf(window.CurrentSearch, 0, System.StringComparison.OrdinalIgnoreCase) < 0) continue;
+
+                    yield return new SearchDropDownElement()
+                    {
+                        Content = EditorHelper.TempContent(string.Format("{0} : {1} [{2}]", sname, c.GetType().Name, i)),
+                        Element = c
+                    };
+                }
+            }
+        }
+
+        public GUIContent GetLabel(object element)
+        {
+            return null;
+        }
 
         #endregion
 

@@ -21,6 +21,7 @@ namespace com.spacepuppyeditor.Windows
     {
         public GUIContent Content;
         public object Element;
+        public object Aux;
     }
 
 
@@ -527,6 +528,185 @@ namespace com.spacepuppyeditor.Windows
             else
             {
                 return _sceneObjects.OfType<T>();
+            }
+        }
+
+        #endregion
+
+    }
+
+    public class GenericSearchDropDownObjectFieldHelper<T> where T : class
+    {
+        public delegate void ShowDropDownCallbackDelegate(int controlId, Rect position, T asset);
+        public delegate string ObjectBoxLabelFormatterDelegate(UnityEngine.Object oasset, System.Type objType);
+
+        public static readonly ObjectBoxLabelFormatterDelegate DefaultObjectBoxLabelFormatter = (a, tp) => a != null ? a.name : string.Format("None ({0})", tp?.Name ?? typeof(T).Name);
+
+        #region Properties
+
+        /// <summary>
+        /// A sub-type of T to further restrict by. This may be necessary because you want to allow dragging on of many types that are then filtered down (like IProxy). 
+        /// Generally it can be left blank or as its default of typeof(T).
+        /// </summary>
+        public virtual System.Type ObjectType { get; set; } = typeof(T);
+
+        public virtual ShowDropDownCallbackDelegate ShowDropDownCallback { get; set; }
+
+        public virtual bool AllowSceneObjects { get; set; }
+
+        public virtual bool AllowProxy { get; set; }
+
+        private ObjectBoxLabelFormatterDelegate _objectBoxLabelFormatter;
+        public virtual ObjectBoxLabelFormatterDelegate ObjectBoxLabelFormatter
+        {
+            get => _objectBoxLabelFormatter ?? DefaultObjectBoxLabelFormatter;
+            set => _objectBoxLabelFormatter = value ?? DefaultObjectBoxLabelFormatter;
+        }
+
+        #endregion
+
+        #region Methods
+
+        public virtual T DrawObjectField(Rect position, GUIContent label, T asset)
+        {
+            var objType = this.ObjectType ?? typeof(T);
+            var labelFormatter = this.ObjectBoxLabelFormatter ?? DefaultObjectBoxLabelFormatter;
+            int controlId = GUIUtility.GetControlID(label, FocusType.Passive, position);
+            asset = GenericSearchDropDownWindow.GetSelectedValueForControl(controlId, asset) as T;
+
+            bool isDragging = Event.current.type == EventType.DragUpdated && position.Contains(Event.current.mousePosition);
+            bool isDropping = Event.current.type == EventType.DragPerform && position.Contains(Event.current.mousePosition);
+
+            float pickerWidth = 20f;
+            Rect pickerRect = position;
+            pickerRect.width = pickerWidth;
+            pickerRect.x = position.xMax - pickerWidth;
+
+            bool isPickerPressed = Event.current.type == EventType.MouseDown && Event.current.button == 0 && pickerRect.Contains(Event.current.mousePosition);
+            bool isEnterKeyPressed = Event.current.type == EventType.KeyDown && Event.current.isKey && (Event.current.keyCode == KeyCode.KeypadEnter || Event.current.keyCode == KeyCode.Return);
+            if (isPickerPressed || isDragging || isDropping || isEnterKeyPressed)
+            {
+                // To override ObjectField's default behavior
+                Event.current.Use();
+            }
+
+            if (asset != null)
+            {
+                var oasset = asset as UnityEngine.Object;
+                GameObject go;
+
+                float iconHeight = EditorGUIUtility.singleLineHeight - EditorGUIUtility.standardVerticalSpacing * 3;
+                Vector2 iconSize = EditorGUIUtility.GetIconSize();
+                EditorGUIUtility.SetIconSize(new Vector2(iconHeight, iconHeight));
+                Texture2D assetIcon = null;
+                if (AssetDatabase.Contains(oasset))
+                {
+                    assetIcon = AssetDatabase.GetCachedIcon(AssetDatabase.GetAssetPath(oasset)) as Texture2D;
+                }
+                else if (go = GameObjectUtil.GetGameObjectFromSource(oasset))
+                {
+                    assetIcon = PrefabUtility.GetIconForGameObject(go);
+                }
+
+                position = EditorGUI.PrefixLabel(position, controlId, label);
+                UnityEngine.GUI.Box(position, new GUIContent(labelFormatter(oasset, objType), assetIcon), EditorStyles.objectField);
+
+                EditorGUIUtility.SetIconSize(iconSize);
+
+                bool isFieldPressed = Event.current.type == EventType.MouseDown && Event.current.button == 0 && position.Contains(Event.current.mousePosition);
+                if (isFieldPressed)
+                {
+                    if (Event.current.clickCount == 1)
+                        EditorGUIUtility.PingObject(oasset);
+                    if (Event.current.clickCount == 2)
+                    {
+                        AssetDatabase.OpenAsset(oasset);
+                        GUIUtility.ExitGUI();
+                    }
+                }
+            }
+            else
+            {
+                position = EditorGUI.PrefixLabel(position, controlId, label);
+                UnityEngine.GUI.Box(position, new GUIContent(labelFormatter(null, objType)), EditorStyles.objectField);
+            }
+
+#if UNITY_2019_1_OR_NEWER
+            DrawCaret(pickerRect);
+#endif
+
+            if (isPickerPressed && !GenericSearchDropDownWindow.WindowActive)
+            {
+                ShowDropDownCallback?.Invoke(controlId, position, asset);
+            }
+
+            var newobj = HandleDragAndDrop(isDragging, isDropping, asset as UnityEngine.Object, objType, this.AllowSceneObjects, this.AllowProxy) as T;
+            if (newobj != asset)
+            {
+                asset = newobj;
+                GUI.changed = true;
+            }
+            return asset;
+        }
+
+        private static Texture2D m_CaretTexture;
+        private static void DrawCaret(Rect pickerRect)
+        {
+#if UNITY_2019_1_OR_NEWER
+            if (m_CaretTexture == null)
+            {
+                string caretIconPath = EditorGUIUtility.isProSkin
+                    ? @"Packages\com.unity.addressables\Editor\Icons\PickerDropArrow-Pro.png"
+                    : @"Packages\com.unity.addressables\Editor\Icons\PickerDropArrow-Personal.png";
+
+                if (System.IO.File.Exists(caretIconPath))
+                {
+                    m_CaretTexture = (Texture2D)AssetDatabase.LoadAssetAtPath(caretIconPath, typeof(Texture2D));
+                }
+            }
+
+            if (m_CaretTexture != null)
+            {
+                UnityEngine.GUI.DrawTexture(pickerRect, m_CaretTexture, ScaleMode.ScaleToFit);
+            }
+#endif
+        }
+
+        private static UnityEngine.Object HandleDragAndDrop(bool isDragging, bool isDropping, UnityEngine.Object asset, System.Type objType, bool allowSceneObjects, bool allowProxy)
+        {
+            if (!isDragging && !isDropping) return asset;
+
+            var types = allowProxy ? ArrayUtil.Temp<System.Type>(objType, typeof(IProxy)) : ArrayUtil.Temp<System.Type>(objType);
+            try
+            {
+                bool validDrag;
+                if (allowSceneObjects)
+                {
+                    validDrag = DragAndDrop.objectReferences.Any(o => ObjUtil.GetAsFromSource(types, o) != null);
+                }
+                else
+                {
+                    validDrag = DragAndDrop.objectReferences.Any(o => ObjUtil.GetAsFromSource(types, o) != null && !string.IsNullOrEmpty(AssetDatabase.GetAssetPath(o)));
+                }
+
+                if (isDragging)
+                {
+                    DragAndDrop.visualMode = !validDrag ? DragAndDropVisualMode.Rejected : DragAndDropVisualMode.Copy;
+                }
+
+                if (validDrag && isDropping)
+                {
+                    var entry = DragAndDrop.objectReferences.Select(o => ObjUtil.GetAsFromSource(types, o) as UnityEngine.Object).FirstOrDefault(o => o != null);
+                    if (entry != null && !object.ReferenceEquals(asset, entry))
+                    {
+                        asset = entry;
+                    }
+                }
+                return asset;
+            }
+            finally
+            {
+                ArrayUtil.ReleaseTemp(types);
             }
         }
 

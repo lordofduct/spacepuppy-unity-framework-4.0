@@ -184,6 +184,11 @@ namespace com.spacepuppyeditor.Events
                 var element = _targetList.serializedProperty.GetArrayElementAtIndex(_targetList.index);
                 h += _triggerTargetDrawer.GetPropertyHeight(element, GUIContent.none);
             }
+            else
+            {
+                h += ARG_MARGIN;
+                h += EditorGUIUtility.singleLineHeight;
+            }
             return h;
         }
 
@@ -243,6 +248,15 @@ namespace com.spacepuppyeditor.Events
                 _triggerTargetDrawer.OnGUI(settingsRect, element, GUIContent.none);
 
                 position = new Rect(position.xMin, settingsRect.yMax, position.width, position.yMax - settingsRect.yMax);
+            }
+            else
+            {
+                EditorGUI.indentLevel++;
+                var cache = SPGUI.Disable();
+                EditorGUI.LabelField(position, GUIContent.none, new GUIContent("*Select Element*"));
+                cache.Reset();
+                position = new Rect(position.xMin, position.yMin + EditorGUIUtility.singleLineHeight, position.width, position.yMax - (position.yMin + EditorGUIUtility.singleLineHeight));
+                EditorGUI.indentLevel--;
             }
 
             return position;

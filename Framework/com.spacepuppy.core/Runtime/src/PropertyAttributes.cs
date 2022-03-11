@@ -182,6 +182,12 @@ namespace com.spacepuppy
 
     }
 
+    [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
+    public class NegativeIsInfinityAttribute : SPPropertyAttribute
+    {
+
+    }
+
     /// <summary>
     /// Restrict a value to be no greater than max.
     /// </summary>

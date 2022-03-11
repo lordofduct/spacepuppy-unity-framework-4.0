@@ -35,6 +35,11 @@ namespace com.spacepuppy.Tween
             _tween = twn;
         }
 
+        protected virtual void DeInit()
+        {
+            _tween = null;
+        }
+
         #endregion
 
         #region Properties
@@ -44,8 +49,6 @@ namespace com.spacepuppy.Tween
         #endregion
 
         #region Methods
-
-
 
         #endregion
 

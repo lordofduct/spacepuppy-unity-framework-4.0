@@ -366,14 +366,15 @@ namespace com.spacepuppy.Tween
             return new CallbackTweenerHash(callback, dur);
         }
 
-        public static Tweener PlayCurve(object targ, TweenCurve curve)
+        public static Tweener PlayCurve(object targ, TweenCurve curve, object autoKillToken = null)
         {
             var tween = new ObjectTweener(targ, curve);
+            tween.AutoKillToken = autoKillToken;
             tween.Play();
             return tween;
         }
 
-        public static Tweener PlayCurve(object targ, string propName, AnimationCurve curve, int option = 0)
+        public static Tweener PlayCurve(object targ, string propName, AnimationCurve curve, int option = 0, object autoKillToken = null)
         {
             if (curve == null) throw new System.ArgumentNullException(nameof(curve));
             float dur = (curve.keys.Length > 0) ? curve.keys.Last().time : 0f;
@@ -381,73 +382,83 @@ namespace com.spacepuppy.Tween
                                                                           CurveFactory.GetAccessor(targ, propName),
                                                                           EaseMethods.FromAnimationCurve(curve),
                                                                           dur, null, null, option));
+            tween.AutoKillToken = autoKillToken;
             tween.Play();
             return tween;
         }
 
-        public static Tweener PlayCurve(object targ, string propName, AnimationCurve curve, float dur, int option = 0)
+        public static Tweener PlayCurve(object targ, string propName, AnimationCurve curve, float dur, int option = 0, object autoKillToken = null)
         {
             if (curve == null) throw new System.ArgumentNullException(nameof(curve));
             var tween = new ObjectTweener(targ, CurveFactory.CreateFromTo(targ,
                                                                           CurveFactory.GetAccessor(targ, propName),
                                                                           EaseMethods.FromAnimationCurve(curve),
                                                                           dur, null, null, option));
+            tween.AutoKillToken = autoKillToken;
             tween.Play();
             return tween;
         }
 
-        public static Tweener PlayTo(object targ, string propName, object end, float dur, int option = 0)
+        public static Tweener PlayTo(object targ, string propName, object end, float dur, int option = 0, object autoKillToken = null)
         {
             var tween = new ObjectTweener(targ, CurveFactory.CreateTo(targ, CurveFactory.GetAccessor(targ, propName), EaseMethods.Linear, dur, end, option));
+            tween.AutoKillToken = autoKillToken;
             tween.Play();
             return tween;
         }
 
-        public static Tweener PlayTo(object targ, string propName, Ease ease, object end, float dur, int option = 0)
+        public static Tweener PlayTo(object targ, string propName, Ease ease, object end, float dur, int option = 0, object autoKillToken = null)
         {
             var tween = new ObjectTweener(targ, CurveFactory.CreateTo(targ, CurveFactory.GetAccessor(targ, propName), ease, dur, end, option));
+            tween.AutoKillToken = autoKillToken;
             tween.Play();
             return tween;
         }
 
-        public static Tweener PlayFrom(object targ, string propName, object start, float dur, int option = 0)
+        public static Tweener PlayFrom(object targ, string propName, object start, float dur, int option = 0, object autoKillToken = null)
         {
             var tween = new ObjectTweener(targ, CurveFactory.CreateFrom(targ, CurveFactory.GetAccessor(targ, propName), EaseMethods.Linear, dur, start, option));
+            tween.AutoKillToken = autoKillToken;
             tween.Play();
             return tween;
         }
 
-        public static Tweener PlayFrom(object targ, string propName, Ease ease, object start, float dur, int option = 0)
+        public static Tweener PlayFrom(object targ, string propName, Ease ease, object start, float dur, int option = 0, object autoKillToken = null)
         {
             var tween = new ObjectTweener(targ, CurveFactory.CreateFrom(targ, CurveFactory.GetAccessor(targ, propName), ease, dur, start, option));
+            tween.AutoKillToken = autoKillToken;
             tween.Play();
             return tween;
         }
 
-        public static Tweener PlayBy(object targ, string propName, object amt, float dur, int option = 0)
+        public static Tweener PlayBy(object targ, string propName, object amt, float dur, int option = 0, object autoKillToken = null)
         {
             var tween = new ObjectTweener(targ, CurveFactory.CreateBy(targ, CurveFactory.GetAccessor(targ, propName), EaseMethods.Linear, dur, amt, option));
+            tween.AutoKillToken = autoKillToken;
             tween.Play();
             return tween;
         }
 
-        public static Tweener PlayBy(object targ, string propName, Ease ease, object amt, float dur, int option = 0)
+        public static Tweener PlayBy(object targ, string propName, Ease ease, object amt, float dur, int option = 0, object autoKillToken = null)
         {
             var tween = new ObjectTweener(targ, CurveFactory.CreateBy(targ, CurveFactory.GetAccessor(targ, propName), ease, dur, amt, option));
+            tween.AutoKillToken = autoKillToken;
             tween.Play();
             return tween;
         }
 
-        public static Tweener PlayFromTo(object targ, string propName, object start, object end, float dur, int option = 0)
+        public static Tweener PlayFromTo(object targ, string propName, object start, object end, float dur, int option = 0, object autoKillToken = null)
         {
             var tween = new ObjectTweener(targ, CurveFactory.CreateFromTo(targ, CurveFactory.GetAccessor(targ, propName), EaseMethods.Linear, dur, start, end, option));
+            tween.AutoKillToken = autoKillToken;
             tween.Play();
             return tween;
         }
 
-        public static Tweener PlayFromTo(object targ, string propName, Ease ease, object start, object end, float dur, int option = 0)
+        public static Tweener PlayFromTo(object targ, string propName, Ease ease, object start, object end, float dur, int option = 0, object autoKillToken = null)
         {
             var tween = new ObjectTweener(targ, CurveFactory.CreateFromTo(targ, CurveFactory.GetAccessor(targ, propName), ease, dur, start, end, option));
+            tween.AutoKillToken = autoKillToken;
             tween.Play();
             return tween;
         }

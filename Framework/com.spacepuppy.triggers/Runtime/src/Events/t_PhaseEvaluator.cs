@@ -37,12 +37,7 @@ namespace com.spacepuppy.Events
 
         #region Methods
 
-        public void ResetCurrentValue()
-        {
-            _currentValue = Mathf.Clamp(0f, _min, _max);
-        }
-
-        public void ResetCurrentValue(float value)
+        public void ResetCurrentValue(float value = 0f)
         {
             _currentValue = Mathf.Clamp(value, _min, _max);
         }

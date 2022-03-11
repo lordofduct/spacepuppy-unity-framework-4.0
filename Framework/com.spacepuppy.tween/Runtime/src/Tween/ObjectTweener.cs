@@ -46,6 +46,8 @@ namespace com.spacepuppy.Tween
 
         public object Target { get { return _target; } }
 
+        public TweenCurve Curve { get { return _curve; } }
+
         #endregion
 
         #region Tweener Interface

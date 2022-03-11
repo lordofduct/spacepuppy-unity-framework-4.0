@@ -42,66 +42,7 @@ namespace com.spacepuppy.Events
         private List<AxisEffect> _scale;
 
         [SerializeField]
-        private SPTimePeriod _duration;
-
-        #endregion
-
-        #region Methods
-
-        private System.Collections.IEnumerator DoShake(StateToken state, Transform relativeTarg)
-        {
-            float t = _duration.Seconds;
-            while (t > 0f)
-            {
-                float dt = _duration.Seconds - t;
-                //linear
-                if (_linear.Count > 0)
-                {
-                    Vector3 adjust = Vector3.zero;
-                    for (int i = 0; i < _linear.Count; i++)
-                    {
-                        _linear[i].Effect(ref adjust, dt, _duration.Seconds);
-                    }
-                    if (relativeTarg != null)
-                    {
-                        adjust = QuaternionUtil.FromToRotation(state.Targ.rotation, relativeTarg.rotation) * adjust;
-                    }
-                    state.Targ.localPosition = state.Cache.Position + adjust;
-                }
-
-                //angular
-                if (_angular.Count > 0)
-                {
-                    Vector3 adjust = Vector3.zero;
-                    for (int i = 0; i < _angular.Count; i++)
-                    {
-                        _angular[i].Effect(ref adjust, dt, _duration.Seconds);
-                    }
-                    if (relativeTarg != null)
-                    {
-                        adjust = QuaternionUtil.FromToRotation(state.Targ.rotation, relativeTarg.rotation) * adjust;
-                    }
-                    state.Targ.localEulerAngles = state.Cache.Rotation.eulerAngles + adjust;
-                }
-
-                //scale
-                if (_scale.Count > 0)
-                {
-                    Vector3 adjust = Vector3.zero;
-                    for (int i = 0; i < _scale.Count; i++)
-                    {
-                        _scale[i].Effect(ref adjust, dt, _duration.Seconds);
-                    }
-                    state.Targ.localScale = state.Cache.Scale + adjust;
-                }
-
-                yield return null;
-                t -= _duration.TimeSupplier.Delta;
-            }
-
-            state.Cache.SetToLocal(state.Targ);
-            state.Dispose();
-        }
+        private SPTimePeriod _duration = 0.33f;
 
         #endregion
 
@@ -111,31 +52,27 @@ namespace com.spacepuppy.Events
         {
             if (!this.CanTrigger) return false;
 
-            if (_linear.Count == 0 && _angular.Count == 0 && _scale.Count == 0) return false;
+            if ((_linear?.Count ?? 0) == 0 && (_angular?.Count ?? 0) == 0 && (_scale?.Count ?? 0) == 0) return false;
 
             var targ = _target.GetTarget<Transform>(arg);
             if (targ == null) return false;
+            
+            SPTween.KillAll(targ, "*SHAKE IT*");
 
-            var manager = targ.AddOrGetComponent<RadicalCoroutineManager>();
-            var routine = manager.Find(r => (r.Tag is StateToken st) && st.Targ == targ);
-            StateToken state;
-            if (routine != null)
-            {
-                state = routine.Tag as StateToken;
-                if (state?.CurrentPrecedence > _effectPrecedence) return false;
-
-                state.Cache.SetToLocal(targ);
-                routine.Cancel();
-                state.Dispose();
-            }
-
-            state = _pool.GetInstance();
+            var state = _pool.GetInstance();
+            state.Owner = this;
             state.CurrentPrecedence = _effectPrecedence;
             state.Targ = targ;
+            state.RelativeTarg = _relativeMotionTarget.GetTarget<Transform>(arg);
             state.Cache = Trans.GetLocal(targ);
-            routine = manager.StartRadicalCoroutine(this.DoShake(state, _relativeMotionTarget.GetTarget<Transform>(arg)));
-            routine.Tag = state;
-            RadicalCoroutine.AutoRelease(ref routine);
+
+            var tween = SPTween.PlayCurve(targ, state, "*SHAKE IT*");
+            tween.OnStopped += (s,e) =>
+            {
+                ((s as ObjectTweener)?.Curve as StateToken).Complete();
+            };
+            SPTween.AutoKill(tween);
+
             return true;
         }
 
@@ -208,18 +145,84 @@ namespace com.spacepuppy.Events
         }
 
         private static readonly ObjectCachePool<StateToken> _pool = new ObjectCachePool<StateToken>(-1, () => new StateToken());
-        private class StateToken : System.IDisposable
+        private class StateToken : TweenCurve, System.IDisposable
         {
 
+            public i_Shake Owner;
             public float CurrentPrecedence;
             public Transform Targ;
+            public Transform RelativeTarg;
             public Trans Cache;
+
+            public void Complete()
+            {
+                if(this.Targ)
+                {
+                    this.Cache.SetToLocal(this.Targ);
+                }
+                this.Dispose();
+            }
 
             public void Dispose()
             {
+                this.Owner = null;
                 this.CurrentPrecedence = 0f;
                 this.Targ = null;
+                this.RelativeTarg = null;
                 this.Cache = default(Trans);
+                this.DeInit();
+                _pool.Release(this);
+            }
+
+            public override float TotalTime => Owner?._duration.Seconds ?? 0f;
+
+            public override void Update(object targ, float dt, float t)
+            {
+                var _linear = Owner._linear;
+                var _angular = Owner._angular;
+                var _scale = Owner._scale;
+                var duration = Owner._duration.Seconds;
+
+                //linear
+                if (_linear?.Count > 0)
+                {
+                    Vector3 adjust = Vector3.zero;
+                    for (int i = 0; i < _linear.Count; i++)
+                    {
+                        _linear[i].Effect(ref adjust, t, duration);
+                    }
+                    if (RelativeTarg != null)
+                    {
+                        adjust = QuaternionUtil.FromToRotation(this.Targ.rotation, RelativeTarg.rotation) * adjust;
+                    }
+                    this.Targ.localPosition = this.Cache.Position + adjust;
+                }
+
+                //angular
+                if (_angular?.Count > 0)
+                {
+                    Vector3 adjust = Vector3.zero;
+                    for (int i = 0; i < _angular.Count; i++)
+                    {
+                        _angular[i].Effect(ref adjust, t, duration);
+                    }
+                    if (RelativeTarg != null)
+                    {
+                        adjust = QuaternionUtil.FromToRotation(this.Targ.rotation, RelativeTarg.rotation) * adjust;
+                    }
+                    this.Targ.localEulerAngles = this.Cache.Rotation.eulerAngles + adjust;
+                }
+
+                //scale
+                if (_scale?.Count > 0)
+                {
+                    Vector3 adjust = Vector3.zero;
+                    for (int i = 0; i < _scale.Count; i++)
+                    {
+                        _scale[i].Effect(ref adjust, t, duration);
+                    }
+                    this.Targ.localScale = this.Cache.Scale + adjust;
+                }
             }
 
         }

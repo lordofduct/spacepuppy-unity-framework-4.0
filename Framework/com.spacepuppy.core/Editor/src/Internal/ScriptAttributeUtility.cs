@@ -19,7 +19,6 @@ namespace com.spacepuppyeditor.Internal
         #region Fields
 
         private static PropertyHandlerCache _handlerCache = new PropertyHandlerCache();
-        private static PropertyHandlerCache _internalHandlerCache = new PropertyHandlerCache();
 
 
 
@@ -44,6 +43,15 @@ namespace com.spacepuppyeditor.Internal
         {
             var klass = InternalTypeUtil.UnityEditorAssembly.GetType("UnityEditor.ScriptAttributeUtility");
             _accessWrapper = new TypeAccessWrapper(klass, true);
+        }
+
+        #endregion
+
+        #region Properties
+
+        internal static object InternalPropertyHandlerCache
+        {
+            get => _accessWrapper.GetStaticProperty("propertyHandlerCache");
         }
 
         #endregion
@@ -110,7 +118,7 @@ namespace com.spacepuppyeditor.Internal
 
             //USE STANDARD HANDLER if none was found
             var handler = GetInternalHandler(property);
-            _handlerCache.SetHandler(property, handler);
+            //_handlerCache.SetHandler(property, handler);
             return handler;
         }
 
@@ -118,16 +126,9 @@ namespace com.spacepuppyeditor.Internal
         {
             if (property == null) throw new System.ArgumentNullException(nameof(property));
 
-            IPropertyHandler result = _internalHandlerCache.GetHandler(property);
-            if (result != null)
-            {
-                return result;
-            }
-
             if (_imp_getHandler == null) _imp_getHandler = _accessWrapper.GetStaticMethod("GetHandler", typeof(System.Func<SerializedProperty, object>)) as System.Func<SerializedProperty, object>;
             var ihandler = _imp_getHandler(property);
             var handler = ihandler != null ? new UnityInternalPropertyHandler(ihandler) : ScriptAttributeUtility.SharedNullPropertyHandler;
-            _internalHandlerCache.SetHandler(property, handler);
             return handler;
 
         }

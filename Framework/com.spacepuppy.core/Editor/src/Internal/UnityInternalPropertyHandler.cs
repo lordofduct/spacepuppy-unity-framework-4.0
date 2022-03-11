@@ -6,6 +6,7 @@ using System.Linq;
 using com.spacepuppy;
 using com.spacepuppy.Dynamic;
 using com.spacepuppy.Utils;
+using System.Reflection;
 
 namespace com.spacepuppyeditor.Internal
 {
@@ -14,13 +15,26 @@ namespace com.spacepuppyeditor.Internal
 
         #region Fields
 
-        private TypeAccessWrapper _internalPropertyHandler;
+        private static TypeAccessWrapper _internalPropertyHandler;
+        static UnityInternalPropertyHandler()
+        {
+            var klass = InternalTypeUtil.UnityEditorAssembly.GetType("UnityEditor.PropertyHandler");
+            _internalPropertyHandler = new TypeAccessWrapper(klass, true);
+        }
 
-        private System.Func<SerializedProperty, GUIContent, bool, float> _imp_GetHeight;
-        private System.Func<Rect, SerializedProperty, GUIContent, bool, bool> _imp_OnGUI;
-        private System.Func<SerializedProperty, GUIContent, bool, GUILayoutOption[], bool> _imp_OnGUILayout;
+        //private System.Func<SerializedProperty, GUIContent, bool, float> _imp_GetHeight;
+        //private System.Func<Rect, SerializedProperty, GUIContent, bool, bool> _imp_OnGUI;
+        //private System.Func<SerializedProperty, GUIContent, bool, GUILayoutOption[], bool> _imp_OnGUILayout;
 
-        private System.Action<SerializedProperty, PropertyAttribute, System.Reflection.FieldInfo, System.Type> _imp_HandleAttribute;
+        //private System.Action<SerializedProperty, PropertyAttribute, System.Reflection.FieldInfo, System.Type> _imp_HandleAttribute;
+
+        private static System.Delegate _uimp_GetHeight;
+        private static System.Delegate _uimp_OnGUI;
+        private static System.Delegate _uimp_OnGUILayout;
+
+        private static System.Delegate _uimp_HandleAttribute;
+
+        private object _wrappedObject;
 
         #endregion
 
@@ -28,16 +42,13 @@ namespace com.spacepuppyeditor.Internal
 
         public UnityInternalPropertyHandler(object internalPropertyhandler)
         {
-            var klass = InternalTypeUtil.UnityEditorAssembly.GetType("UnityEditor.PropertyHandler");
-            if (!klass.IsInstanceOfType(internalPropertyhandler)) throw new System.ArgumentException("Must be an instance of the internal UnityEditor.PropertyHandler type.", nameof(internalPropertyhandler));
-            _internalPropertyHandler = new TypeAccessWrapper(klass, internalPropertyhandler, true);
+            if (!_internalPropertyHandler.WrappedType.IsInstanceOfType(internalPropertyhandler)) throw new System.ArgumentException("Must be an instance of the internal UnityEditor.PropertyHandler type.", nameof(internalPropertyhandler));
+            _wrappedObject = internalPropertyhandler;
         }
 
         public UnityInternalPropertyHandler()
         {
-            var klass = InternalTypeUtil.UnityEditorAssembly.GetType("UnityEditor.PropertyHandler");
-            var obj = System.Activator.CreateInstance(klass);
-            _internalPropertyHandler = new TypeAccessWrapper(klass, obj, true);
+            _wrappedObject = System.Activator.CreateInstance(_internalPropertyHandler.WrappedType);
         }
 
         #endregion
@@ -48,11 +59,11 @@ namespace com.spacepuppyeditor.Internal
         {
             get
             {
-                return _internalPropertyHandler.GetProperty("m_PropertyDrawer") as PropertyDrawer;
+                return _internalPropertyHandler.GetProperty("m_PropertyDrawer", _wrappedObject) as PropertyDrawer;
             }
             set
             {
-                _internalPropertyHandler.SetProperty("m_PropertyDrawer", value);
+                _internalPropertyHandler.SetProperty("m_PropertyDrawer", _wrappedObject, value);
             }
         }
 
@@ -60,22 +71,22 @@ namespace com.spacepuppyeditor.Internal
         {
             get
             {
-                return _internalPropertyHandler.GetProperty("m_DecoratorDrawers") as List<DecoratorDrawer>;
+                return _internalPropertyHandler.GetProperty("m_DecoratorDrawers", _wrappedObject) as List<DecoratorDrawer>;
             }
             set
             {
-                _internalPropertyHandler.SetProperty("m_DecoratorDrawers", value);
+                _internalPropertyHandler.SetProperty("m_DecoratorDrawers", _wrappedObject, value);
             }
         }
 
         protected bool isCurrentlyNested
         {
-            get { return (bool)_internalPropertyHandler.GetProperty("isCurrentlyNested"); }
+            get { return (bool)_internalPropertyHandler.GetProperty("isCurrentlyNested", _wrappedObject); }
         }
 
         protected string tooltip
         {
-            get { return _internalPropertyHandler.GetProperty("tooltip") as string; }
+            get { return _internalPropertyHandler.GetProperty("tooltip", _wrappedObject) as string; }
         }
 
         #endregion
@@ -84,8 +95,11 @@ namespace com.spacepuppyeditor.Internal
 
         protected virtual void HandleAttribute(SerializedProperty property, PropertyAttribute attribute, System.Reflection.FieldInfo field, System.Type propertyType)
         {
-            if (_imp_HandleAttribute == null) _imp_HandleAttribute = _internalPropertyHandler.GetMethod("HandleAttribute", typeof(System.Action<SerializedProperty, PropertyAttribute, System.Reflection.FieldInfo, System.Type>)) as System.Action<SerializedProperty, PropertyAttribute, System.Reflection.FieldInfo, System.Type>;
-            _imp_HandleAttribute(property, attribute, field, propertyType);
+            //if (_imp_HandleAttribute == null) _imp_HandleAttribute = _internalPropertyHandler.GetMethod("HandleAttribute", typeof(System.Action<SerializedProperty, PropertyAttribute, System.Reflection.FieldInfo, System.Type>)) as System.Action<SerializedProperty, PropertyAttribute, System.Reflection.FieldInfo, System.Type>;
+            //_imp_HandleAttribute(property, attribute, field, propertyType);
+
+            if (_uimp_HandleAttribute == null) _uimp_HandleAttribute = _internalPropertyHandler.GetUnboundAction<SerializedProperty, PropertyAttribute, FieldInfo, System.Type>("HandleAttribute");
+            _uimp_HandleAttribute?.DynamicInvoke(_wrappedObject, property, attribute, field, propertyType);
         }
 
         #endregion
@@ -136,15 +150,21 @@ namespace com.spacepuppyeditor.Internal
             }
             else
             {
-                if (_imp_GetHeight == null) _imp_GetHeight = _internalPropertyHandler.GetMethod("GetHeight", typeof(System.Func<SerializedProperty, GUIContent, bool, float>)) as System.Func<SerializedProperty, GUIContent, bool, float>;
-                return _imp_GetHeight(property, label, includeChildren);
+                //if (_imp_GetHeight == null) _imp_GetHeight = _internalPropertyHandler.GetMethod("GetHeight", typeof(System.Func<SerializedProperty, GUIContent, bool, float>)) as System.Func<SerializedProperty, GUIContent, bool, float>;
+                //return _imp_GetHeight(property, label, includeChildren);
+
+                if (_uimp_GetHeight == null) _uimp_GetHeight = _internalPropertyHandler.GetUnboundFunc<SerializedProperty, GUIContent, bool, float>("GetHeight");
+                return (float)(_uimp_GetHeight?.DynamicInvoke(_wrappedObject, property, label, includeChildren) ?? 0f);
             }
         }
 
         public virtual bool OnGUI(UnityEngine.Rect position, UnityEditor.SerializedProperty property, UnityEngine.GUIContent label, bool includeChildren)
         {
-            if (_imp_OnGUI == null) _imp_OnGUI = _internalPropertyHandler.GetMethod("OnGUI", typeof(System.Func<Rect, SerializedProperty, GUIContent, bool, bool>)) as System.Func<Rect, SerializedProperty, GUIContent, bool, bool>;
-            return _imp_OnGUI(position, property, label, includeChildren);
+            //if (_imp_OnGUI == null) _imp_OnGUI = _internalPropertyHandler.GetMethod("OnGUI", typeof(System.Func<Rect, SerializedProperty, GUIContent, bool, bool>)) as System.Func<Rect, SerializedProperty, GUIContent, bool, bool>;
+            //return _imp_OnGUI(position, property, label, includeChildren);
+
+            if (_uimp_OnGUI == null) _uimp_OnGUI = _internalPropertyHandler.GetUnboundFunc<Rect, SerializedProperty, GUIContent, bool, bool>("OnGUI");
+            return (bool)(_uimp_OnGUI?.DynamicInvoke(_wrappedObject, position, property, label, includeChildren) ?? false);
         }
 
         public virtual bool OnGUILayout(UnityEditor.SerializedProperty property, UnityEngine.GUIContent label, bool includeChildren, UnityEngine.GUILayoutOption[] options)
@@ -156,8 +176,11 @@ namespace com.spacepuppyeditor.Internal
             }
             else
             {
-                if (_imp_OnGUILayout == null) _imp_OnGUILayout = _internalPropertyHandler.GetMethod("OnGUILayout", typeof(System.Func<SerializedProperty, GUIContent, bool, GUILayoutOption[], bool>)) as System.Func<SerializedProperty, GUIContent, bool, GUILayoutOption[], bool>;
-                return _imp_OnGUILayout(property, label, includeChildren, options);
+                //if (_imp_OnGUILayout == null) _imp_OnGUILayout = _internalPropertyHandler.GetMethod("OnGUILayout", typeof(System.Func<SerializedProperty, GUIContent, bool, GUILayoutOption[], bool>)) as System.Func<SerializedProperty, GUIContent, bool, GUILayoutOption[], bool>;
+                //return _imp_OnGUILayout(property, label, includeChildren, options);
+
+                if (_uimp_OnGUILayout == null) _uimp_OnGUILayout = _internalPropertyHandler.GetUnboundFunc<SerializedProperty, GUIContent, bool, GUILayoutOption[], bool>("OnGUILayout");
+                return (bool)(_uimp_OnGUILayout?.DynamicInvoke(_wrappedObject, property, label, includeChildren, options) ?? false);
             }
         }
 

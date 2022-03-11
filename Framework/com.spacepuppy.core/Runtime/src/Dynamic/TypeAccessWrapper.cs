@@ -69,8 +69,6 @@ namespace com.spacepuppy.Dynamic
 
         public MemberInfo[] GetMembers()
         {
-            if (_wrappedObject == null) throw new InvalidOperationException("Can only access static members.");
-
             var binding = PUBLIC_MEMBERS;
             if (_includeNonPublic) binding |= BindingFlags.NonPublic;
             return _wrappedType.GetMembers(binding);
@@ -78,8 +76,6 @@ namespace com.spacepuppy.Dynamic
 
         public MethodInfo[] GetMethods()
         {
-            if (_wrappedObject == null) throw new InvalidOperationException("Can only access static members.");
-
             var binding = PUBLIC_MEMBERS;
             if (_includeNonPublic) binding |= BindingFlags.NonPublic;
             return _wrappedType.GetMethods(binding);
@@ -87,8 +83,6 @@ namespace com.spacepuppy.Dynamic
 
         public string[] GetPropertyNames()
         {
-            if (_wrappedObject == null) throw new InvalidOperationException("Can only access static members.");
-
             var binding = PUBLIC_MEMBERS;
             if (_includeNonPublic) binding |= BindingFlags.NonPublic;
             return (from p in _wrappedType.GetProperties(binding) select p.Name).Union(from f in _wrappedType.GetFields(binding) select f.Name).ToArray();
@@ -120,7 +114,7 @@ namespace com.spacepuppy.Dynamic
 
                 }
             }
-            
+
 
             if (meth != null)
             {
@@ -137,7 +131,55 @@ namespace com.spacepuppy.Dynamic
             {
                 throw new InvalidOperationException("A method matching the name and shape requested could not be found.");
             }
-            
+
+        }
+
+        public T GetMethod<T>(string name) where T : System.Delegate
+        {
+            return GetMethod(name, typeof(T)) as T;
+        }
+
+        public Delegate GetUnboundMethod(string name, System.Type delegShape)
+        {
+            if (!delegShape.IsSubclassOf(typeof(Delegate))) throw new ArgumentException("Type must inherit from Delegate.", nameof(delegShape));
+
+            var binding = PUBLIC_MEMBERS;
+            if (_includeNonPublic) binding |= BindingFlags.NonPublic;
+
+            var invokeMeth = delegShape.GetMethod("Invoke");
+            var paramTypes = (from p in invokeMeth.GetParameters().Skip(1) select p.ParameterType).ToArray();
+            MethodInfo meth = null;
+            try
+            {
+                meth = _wrappedType.GetMethod(name, binding, null, paramTypes, null);
+            }
+            catch
+            {
+                try
+                {
+                    meth = _wrappedType.GetMethod(name, binding);
+                }
+                catch
+                {
+
+                }
+            }
+
+            if (meth != null)
+            {
+                try
+                {
+                    return meth.CreateDelegate(delegShape);
+                }
+                catch (Exception ex)
+                {
+                    throw new InvalidOperationException("A method matching the name and shape requested could not be found.", ex);
+                }
+            }
+            else
+            {
+                throw new InvalidOperationException("A method matching the name and shape requested could not be found.");
+            }
         }
 
         public object CallMethod(string name, System.Type delegShape, params object[] args)
@@ -149,6 +191,12 @@ namespace com.spacepuppy.Dynamic
         public object GetProperty(string name)
         {
             if (_wrappedObject == null) throw new InvalidOperationException("Can only access static members.");
+            return GetProperty(name, _wrappedObject);
+        }
+
+        public object GetProperty(string name, object wrappedobject)
+        {
+            if (wrappedobject == null) throw new ArgumentNullException(nameof(wrappedobject));
 
             var binding = PUBLIC_MEMBERS;
             if (_includeNonPublic) binding |= BindingFlags.NonPublic;
@@ -156,13 +204,13 @@ namespace com.spacepuppy.Dynamic
             var prop = _wrappedType.GetProperty(name, binding, null, null, Type.EmptyTypes, null);
             if (prop != null)
             {
-                return prop.GetValue(_wrappedObject, null);
+                return prop.GetValue(wrappedobject, null);
             }
 
             var field = _wrappedType.GetField(name, binding);
             if (field != null)
             {
-                return field.GetValue(_wrappedObject);
+                return field.GetValue(wrappedobject);
             }
 
             return null;
@@ -171,6 +219,12 @@ namespace com.spacepuppy.Dynamic
         public void SetProperty(string name, object value)
         {
             if (_wrappedObject == null) throw new InvalidOperationException("Can only access static members.");
+            SetProperty(name, _wrappedObject, value);
+        }
+
+        public void SetProperty(string name, object wrappedobject, object value)
+        {
+            if (wrappedobject == null) throw new ArgumentNullException(nameof(wrappedobject));
 
             var binding = PUBLIC_MEMBERS;
             if (_includeNonPublic) binding |= BindingFlags.NonPublic;
@@ -180,7 +234,7 @@ namespace com.spacepuppy.Dynamic
             {
                 try
                 {
-                    prop.SetValue(_wrappedObject, value, null);
+                    prop.SetValue(wrappedobject, value, null);
                     return;
                 }
                 catch (Exception ex)
@@ -194,7 +248,7 @@ namespace com.spacepuppy.Dynamic
             {
                 try
                 {
-                    field.SetValue(_wrappedObject, value);
+                    field.SetValue(wrappedobject, value);
                     return;
                 }
                 catch (Exception ex)
@@ -261,6 +315,11 @@ namespace com.spacepuppy.Dynamic
 
         }
 
+        public T GetStaticMethod<T>(string name) where T : System.Delegate
+        {
+            return GetStaticMethod(name, typeof(T)) as T;
+        }
+
         public object CallStaticMethod(string name, System.Type delegShape, params object[] args)
         {
             var d = GetMethod(name, delegShape);
@@ -319,6 +378,70 @@ namespace com.spacepuppy.Dynamic
                     throw new InvalidOperationException("Mismatch when attempting to set property.", ex);
                 }
             }
+        }
+
+        #endregion
+
+        #region Unbound Method Accessor
+
+        public Delegate GetUnboundAction(string name)
+        {
+            var dtp = typeof(Action<>).MakeGenericType(_wrappedType);
+            return this.GetUnboundMethod(name, dtp);
+        }
+
+        public Delegate GetUnboundAction<T>(string name)
+        {
+            var dtp = typeof(Action<,>).MakeGenericType(_wrappedType, typeof(T));
+            return this.GetUnboundMethod(name, dtp);
+        }
+
+        public Delegate GetUnboundAction<T1, T2>(string name)
+        {
+            var dtp = typeof(Action<,,>).MakeGenericType(_wrappedType, typeof(T1), typeof(T2));
+            return this.GetUnboundMethod(name, dtp);
+        }
+
+        public Delegate GetUnboundAction<T1, T2, T3>(string name)
+        {
+            var dtp = typeof(Action<,,,>).MakeGenericType(_wrappedType, typeof(T1), typeof(T2), typeof(T3));
+            return this.GetUnboundMethod(name, dtp);
+        }
+
+        public Delegate GetUnboundAction<T1, T2, T3, T4>(string name)
+        {
+            var dtp = typeof(Action<,,,,>).MakeGenericType(_wrappedType, typeof(T1), typeof(T2), typeof(T3), typeof(T4));
+            return this.GetUnboundMethod(name, dtp);
+        }
+
+        public Delegate GetUnboundFunc<TReturn>(string name)
+        {
+            var dtp = typeof(Func<,>).MakeGenericType(_wrappedType, typeof(TReturn));
+            return this.GetUnboundMethod(name, dtp);
+        }
+
+        public Delegate GetUnboundFunc<T, TReturn>(string name)
+        {
+            var dtp = typeof(Func<,,>).MakeGenericType(_wrappedType, typeof(T), typeof(TReturn));
+            return this.GetUnboundMethod(name, dtp);
+        }
+
+        public Delegate GetUnboundFunc<T1, T2, TReturn>(string name)
+        {
+            var dtp = typeof(Func<,,,>).MakeGenericType(_wrappedType, typeof(T1), typeof(T2), typeof(TReturn));
+            return this.GetUnboundMethod(name, dtp);
+        }
+
+        public Delegate GetUnboundFunc<T1, T2, T3, TReturn>(string name)
+        {
+            var dtp = typeof(Func<,,,,>).MakeGenericType(_wrappedType, typeof(T1), typeof(T2), typeof(T3), typeof(TReturn));
+            return this.GetUnboundMethod(name, dtp);
+        }
+
+        public Delegate GetUnboundFunc<T1, T2, T3, T4, TReturn>(string name)
+        {
+            var dtp = typeof(Func<,,,,,>).MakeGenericType(_wrappedType, typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(TReturn));
+            return this.GetUnboundMethod(name, dtp);
         }
 
         #endregion

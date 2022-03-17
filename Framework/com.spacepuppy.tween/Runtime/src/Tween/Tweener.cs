@@ -217,7 +217,7 @@ namespace com.spacepuppy.Tween
             get { return _normalizedPlayHeadPosition; }
         }
 
-        [System.Obsolete("User PlayHeadPosition")]
+        [System.Obsolete("Use PlayHeadPosition")]
         public float PlayHeadTime
         {
             get { return _normalizedPlayHeadPosition; }

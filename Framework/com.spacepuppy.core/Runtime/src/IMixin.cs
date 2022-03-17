@@ -47,7 +47,7 @@ namespace com.spacepuppy
     /// </summary>
     public interface IAutoMixinDecorator
     {
-
+        T GetMixinState<T>() where T : class, IMixin;
     }
 
     [System.AttributeUsage(System.AttributeTargets.Interface, AllowMultiple = false, Inherited = true)]

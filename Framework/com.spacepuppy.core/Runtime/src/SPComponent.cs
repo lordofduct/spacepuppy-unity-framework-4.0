@@ -72,16 +72,19 @@ namespace com.spacepuppy
 
         #region Methods
 
-        public void RegisterMixins(IEnumerable<IMixin> mixins)
+        protected void RegisterMixins(IEnumerable<IMixin> mixins)
         {
             if (mixins == null) throw new System.ArgumentNullException(nameof(mixins));
             foreach(var mixin in mixins)
             {
-                this.RegisterMixin(mixin);
+                if(mixin.Awake(this))
+                {
+                    (_mixins = _mixins ?? new List<IMixin>()).Add(mixin);
+                }
             }
         }
 
-        public void RegisterMixin(IMixin mixin)
+        protected void RegisterMixin(IMixin mixin)
         {
             if (mixin == null) throw new System.ArgumentNullException(nameof(mixin));
 
@@ -89,6 +92,18 @@ namespace com.spacepuppy
             {
                 (_mixins = _mixins ?? new List<IMixin>()).Add(mixin);
             }
+        }
+
+        public T GetMixinState<T>() where T : class, IMixin
+        {
+            if (_mixins != null)
+            {
+                for (int i = 0; i < _mixins.Count; i++)
+                {
+                    if (_mixins[i] is T) return _mixins[i] as T;
+                }
+            }
+            return null;
         }
 
         public new void StopAllCoroutines()

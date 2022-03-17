@@ -163,6 +163,26 @@ namespace com.spacepuppy
             }
         }
 
+        public static bool TryUnregister<T>(T service, bool donotSignalUnregister = false) where T : class, IService
+        {
+            var inst = Entry<T>.Instance;
+            if(object.ReferenceEquals(inst, service) && !object.ReferenceEquals(inst, null))
+            {
+                Entry<T>.Instance = null;
+                _services.Remove(inst);
+                if (!inst.IsNullOrDestroyed())
+                {
+                    if (!donotSignalUnregister)
+                    {
+                        inst.OnServiceUnregistered();
+                    }
+                }
+                return true;
+            }
+
+            return false;
+        }
+
         public static object Get(Type tp)
         {
             if (tp == null) throw new System.ArgumentNullException("tp");

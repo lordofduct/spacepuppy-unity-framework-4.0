@@ -1,0 +1,20 @@
+{
+  "name": "com.spacepuppy.ui",
+  "version": "4.0.0",
+  "displayName": "Spacepuppy Framework UI",
+  "description": "UI library for Unity.",
+  "unity": "2020.3",
+  "unityRelease": "22f1",
+  "documentationUrl": "https://github.com/lordofduct/spacepuppy-unity-framework-4.0",
+  "changelogUrl": "https://github.com/lordofduct/spacepuppy-unity-framework-4.0",
+  "licensesUrl": "https://github.com/lordofduct/spacepuppy-unity-framework-4.0/blob/master/LICENSE",
+  "dependencies": {
+    "com.spacepuppy.core": "4.0.0",
+    "com.spacepuppy.radicalcoroutine": "4.0.0"
+  },
+  "author": {
+    "name": "Dylan Engelman",
+    "email": "dylan@jupiterlighthouse.com",
+    "url": "https://github.com/lordofduct"
+  }
+}

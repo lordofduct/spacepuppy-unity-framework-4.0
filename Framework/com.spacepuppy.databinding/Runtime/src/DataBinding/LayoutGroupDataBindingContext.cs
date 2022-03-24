@@ -175,7 +175,7 @@ namespace com.spacepuppy.DataBinding
 
                 foreach (var item in dataprovider.Cast<object>().Take(_maxVisible))
                 {
-                    GameObject inst = _stampSource.InstantiateStamp(_container);
+                    GameObject inst = _stampSource.InstantiateStamp(_container, item);
                     DataBindingContext.SendBindMessage(_bindMessageSettings, inst, item, index);
                     index++;
                 }
@@ -191,7 +191,7 @@ namespace com.spacepuppy.DataBinding
             int index = 0;
             foreach (var item in dataProvider.Cast<object>().Take(_maxVisible))
             {
-                GameObject inst = await source.InstantiateStampAsync(container);
+                GameObject inst = await source.InstantiateStampAsync(container, item);
                 if (inst == null) continue;
 
                 DataBindingContext.SendBindMessage(_bindMessageSettings, inst, item, index);

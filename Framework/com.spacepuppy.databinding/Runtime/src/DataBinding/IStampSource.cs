@@ -17,10 +17,25 @@ namespace com.spacepuppy.DataBinding
 
     public interface IStampSource
     {
+        /// <summary>
+        /// Returns true if InstantiateStampAsync MUST be called and InstantiateStamp will throw an exception.
+        /// </summary>
         bool IsAsync { get; }
 
-        GameObject InstantiateStamp(Transform parent);
-        AsyncWaitHandle<GameObject> InstantiateStampAsync(Transform parent);
+        /// <summary>
+        /// Create an instance of the ui that will be databound.
+        /// </summary>
+        /// <param name="parent">The container it should be instantiated inside of</param>
+        /// <param name="datasource">The datasource that will be bound, this can be used if the stamp created depends on what is in the datasource</param>
+        /// <returns></returns>
+        GameObject InstantiateStamp(Transform parent, object datasource);
+        /// <summary>
+        /// Create an instance of the ui that will be databound asynchronously.
+        /// </summary>
+        /// <param name="parent">The container it should be instantiated inside of</param>
+        /// <param name="datasource">The datasource that will be bound, this can be used if the stamp created depends on what is in the datasource</param>
+        /// <returns></returns>
+        AsyncWaitHandle<GameObject> InstantiateStampAsync(Transform parent, object datasource);
 
     }
 
@@ -63,16 +78,16 @@ namespace com.spacepuppy.DataBinding
 
         public bool IsAsync => false;
 
-        public GameObject InstantiateStamp(Transform parent)
+        public GameObject InstantiateStamp(Transform parent, object datasource)
         {
             if (_stampPrefab == null) return null;
 
             return UnityEngine.Object.Instantiate(_stampPrefab, parent);
         }
 
-        public AsyncWaitHandle<GameObject> InstantiateStampAsync(Transform parent)
+        public AsyncWaitHandle<GameObject> InstantiateStampAsync(Transform parent, object datasource)
         {
-            return new AsyncWaitHandle<GameObject>(InstantiateStamp(parent));
+            return new AsyncWaitHandle<GameObject>(InstantiateStamp(parent, datasource));
         }
 
         #endregion
@@ -120,12 +135,12 @@ namespace com.spacepuppy.DataBinding
 
         public bool IsAsync => true;
 
-        public GameObject InstantiateStamp(Transform parent)
+        public GameObject InstantiateStamp(Transform parent, object datasource)
         {
             throw new System.NotSupportedException("This IStampSource is asynchronous only.");
         }
 
-        public AsyncWaitHandle<GameObject> InstantiateStampAsync(Transform parent)
+        public AsyncWaitHandle<GameObject> InstantiateStampAsync(Transform parent, object datasource)
         {
             if (!_stampPrefabReference.IsConfigured()) return new AsyncWaitHandle<GameObject>(null);
 

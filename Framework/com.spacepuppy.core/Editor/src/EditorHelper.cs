@@ -98,21 +98,12 @@ namespace com.spacepuppyeditor
                 nextElement = null;
             }
 
-            property.NextVisible(true);
-            while (true)
+            bool enterChildren = true;
+            while (property.NextVisible(enterChildren))
             {
-                if ((SerializedProperty.EqualContents(property, nextElement)))
-                {
-                    yield break;
-                }
-
+                enterChildren = false;
+                if ((SerializedProperty.EqualContents(property, nextElement))) yield break;
                 yield return property;
-
-                bool hasNext = property.NextVisible(false);
-                if (!hasNext)
-                {
-                    break;
-                }
             }
         }
 

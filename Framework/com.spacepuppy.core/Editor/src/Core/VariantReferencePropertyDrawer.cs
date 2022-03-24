@@ -10,6 +10,7 @@ using com.spacepuppy.Utils;
 using com.spacepuppyeditor.Core;
 using com.spacepuppy.Collections;
 using com.spacepuppy.Events;
+using System.Reflection;
 
 namespace com.spacepuppyeditor.Core
 {
@@ -300,15 +301,23 @@ namespace com.spacepuppyeditor.Core
                 var targObj = targProp.objectReferenceValue;
                 var memberName = memberProp.stringValue;
 
+                IEnumerable<MemberInfo> GetMembersFromTarget(object o)
+                {
+                    return o is IDynamic ? DynamicUtil.GetMembers(o, false, MASK) : DynamicUtil.GetMembersFromType((o.IsProxy_ParamsRespecting() ? (o as IProxy).GetTargetType() : o.GetType()), false, MASK);
+                }
+
                 var go = GameObjectUtil.GetGameObjectFromSource(targObj);
                 if (go != null)
                 {
                     using (var lst = TempCollection.GetList<Component>())
                     {
                         go.GetComponents(lst);
+                        //var members = (from o in lst.Cast<object>().Prepend(go)
+                        //               let mtp = (o.IsProxy_ParamsRespecting() ? (o as IProxy).GetTargetType() : o.GetType())
+                        //               from m in DynamicUtil.GetMembersFromType(mtp, false, MASK).Where(m => DynamicUtil.GetMemberAccessLevel(m).HasFlag(ACCESS) && !m.IsObsolete())
+                        //               select (o, m)).ToArray();
                         var members = (from o in lst.Cast<object>().Prepend(go)
-                                       let mtp = (o.IsProxy_ParamsRespecting() ? (o as IProxy).GetTargetType() : o.GetType())
-                                       from m in DynamicUtil.GetMembersFromType(mtp, false, MASK).Where(m => DynamicUtil.GetMemberAccessLevel(m).HasFlag(ACCESS) && !m.IsObsolete()) //DynamicUtil.GetEasilySerializedMembersFromType(mtp, MASK, ACCESS)
+                                       from m in GetMembersFromTarget(o).Where(m => DynamicUtil.GetMemberAccessLevel(m).HasFlag(ACCESS) && !m.IsObsolete())
                                        select (o, m)).ToArray();
                         var entries = members.Select(t =>
                         {
@@ -355,8 +364,9 @@ namespace com.spacepuppyeditor.Core
                 }
                 else
                 {
-                    var mtp = targObj.IsProxy_ParamsRespecting() ? (targObj as IProxy).GetTargetType() : targObj.GetType();
-                    var members = DynamicUtil.GetMembersFromType(mtp, false, MASK).Where(m => DynamicUtil.GetMemberAccessLevel(m).HasFlag(ACCESS) && !m.IsObsolete()).ToArray(); //DynamicUtil.GetEasilySerializedMembersFromType(mtp, MASK, ACCESS).ToArray();
+                    //var mtp = targObj.IsProxy_ParamsRespecting() ? (targObj as IProxy).GetTargetType() : targObj.GetType();
+                    //var members = DynamicUtil.GetMembersFromType(mtp, false, MASK).Where(m => DynamicUtil.GetMemberAccessLevel(m).HasFlag(ACCESS) && !m.IsObsolete()).ToArray();
+                    var members = GetMembersFromTarget(targObj).Where(m => DynamicUtil.GetMemberAccessLevel(m).HasFlag(ACCESS) && !m.IsObsolete()).ToArray();
                     var entries = members.Select(m =>
                     {
                         if (targObj.IsProxy_ParamsRespecting())

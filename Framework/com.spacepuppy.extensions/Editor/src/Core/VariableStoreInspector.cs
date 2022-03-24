@@ -20,7 +20,9 @@ namespace com.spacepuppyeditor.Core
 
         protected override void OnSPInspectorGUI()
         {
-            this.serializedObject.Update();
+            this.serializedObject.UpdateIfRequiredOrScript();
+
+            this.DrawPropertyField(EditorHelper.PROP_SCRIPT);
 
             var propReflect = this.serializedObject.FindProperty(PROP_REFLECTNAMES);
             SPEditorGUILayout.PropertyField(propReflect);

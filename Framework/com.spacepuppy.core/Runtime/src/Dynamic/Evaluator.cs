@@ -715,6 +715,10 @@ namespace com.spacepuppy.Dynamic
                     return;
                 case ')':
                     return;
+                case '!':
+                    this.EvalNextValue(state);
+                    state.BoolValue = !state.BoolValue;
+                    return;
                 default:
                     throw new System.InvalidOperationException("Failed to parse the command.");
             }
@@ -1429,7 +1433,7 @@ namespace com.spacepuppy.Dynamic
 
         private static bool IsValidWordPrefix(char c)
         {
-            return char.IsLetterOrDigit(c) || c == '$' || c == '_' || c == '+' || c == '-' || c == '(' || c == '\"' || c == ')';
+            return char.IsLetterOrDigit(c) || c == '$' || c == '_' || c == '+' || c == '-' || c == '(' || c == '\"' || c == ')' || c == '!';
         }
 
 

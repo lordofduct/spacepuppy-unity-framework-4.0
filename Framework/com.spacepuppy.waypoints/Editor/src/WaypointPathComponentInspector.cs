@@ -218,7 +218,7 @@ namespace com.spacepuppyeditor.Waypoints
 
             var go = new GameObject("Node" + lst.index.ToString("000"));
             IconHelper.SetIconForObject(go, IconHelper.Icon.DiamondPurple);
-            go.transform.parent = _targ.transform;
+            go.transform.SetParent(_targ.transform, false);
             if (lastNode != null)
             {
                 go.transform.position = lastNode.transform.position;
@@ -355,7 +355,7 @@ namespace com.spacepuppyeditor.Waypoints
             if (GUILayout.Button("Add Node After This"))
             {
                 var go = new GameObject("Node" + targ.Owner.Count.ToString("000"));
-                go.transform.parent = targ.Owner.transform;
+                go.transform.SetParent(targ.Owner.transform, false);
                 go.transform.position = targ.transform.position;
                 go.transform.rotation = targ.transform.rotation;
                 go.transform.localScale = targ.transform.localScale;

@@ -32,7 +32,7 @@ namespace com.spacepuppy.Utils
                 var result = UnityEditor.PrefabUtility.InstantiatePrefab(obj) as T;
                 var go = GameObjectUtil.GetGameObjectFromSource(result);
                 if (go != null)
-                    go.transform.parent = parent;
+                    go.transform.SetParent(parent);
                 return result;
             }
             else
@@ -53,7 +53,7 @@ namespace com.spacepuppy.Utils
                 var go = GameObjectUtil.GetGameObjectFromSource(result);
                 if (go != null)
                 {
-                    go.transform.parent = parent;
+                    go.transform.SetParent(parent, false);
                     go.transform.position = position;
                     go.transform.rotation = rotation;
                 }

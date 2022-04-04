@@ -214,7 +214,7 @@ namespace com.spacepuppy.Waypoints.Events
 
             var tween = SPTween.Tween(targ)
                                .UseCurve(curve)
-                               .Wrap(this._wrapMode, ((DiscreteFloat.IsInfinity(this._wrapCount)) ? 0 : Mathf.RoundToInt(this._wrapCount)))
+                               .Wrap(this._wrapMode, _wrapCount.ToStandardMetricInt())
                                .Use(this._updateType)
                                .Use(_timeSupplier.TimeSupplier)
                                .Reverse(this._reverse)

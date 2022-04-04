@@ -139,7 +139,7 @@ namespace com.vivarium
                 {
                     if (!_maintainOriginalParent)
                     {
-                        this.transform.parent = this.LastBeginGlobalTransformation.Parent;
+                        this.transform.SetParent(this.LastBeginGlobalTransformation.Parent, true);
                         this.transform.SetSiblingIndex(this.LastBeginGlobalTransformation.SiblingIndex);
                     }
                     this.LastBeginGlobalTransformation.Trans.SetToGlobal(this.transform, false);
@@ -168,7 +168,7 @@ namespace com.vivarium
 
             if (!_maintainOriginalParent)
             {
-                this.transform.parent = _surface;
+                this.transform.SetParent(_surface, true);
             }
 
             SetPositionInParent(eventData);

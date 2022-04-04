@@ -15,6 +15,9 @@ namespace com.spacepuppy.Events
         [SerializeField]
         private TriggerableTargetObject _parent;
 
+        [SerializeField]
+        private bool _worldPositionStays = true;
+
         #endregion
 
         #region Methods
@@ -27,7 +30,7 @@ namespace com.spacepuppy.Events
             var parent = _parent.GetTarget<Transform>(arg);
 
             if (child == null) return false;
-            child.parent = parent;
+            child.SetParent(parent, _worldPositionStays);
             return true;
         }
 

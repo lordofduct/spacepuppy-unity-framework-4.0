@@ -692,7 +692,7 @@ namespace com.spacepuppy.Spawn
 
                     _activeInstances.Add(cntrl);
 
-                    cntrl.transform.parent = par;
+                    cntrl.transform.SetParent(par, false);
                     cntrl.transform.position = pos;
                     cntrl.transform.rotation = rot;
                     cntrl.SetSpawned();
@@ -722,7 +722,7 @@ namespace com.spacepuppy.Spawn
                 if (!_activeInstances.Remove(cntrl)) return false;
 
                 cntrl.SetDespawned();
-                cntrl.transform.parent = _owner.transform;
+                cntrl.transform.SetParent(_owner.transform, false);
                 cntrl.transform.localPosition = Vector3.zero;
                 cntrl.transform.rotation = Quaternion.identity;
 
@@ -747,7 +747,7 @@ namespace com.spacepuppy.Spawn
                 var cntrl = obj.AddOrGetComponent<SpawnedObjectController>();
                 cntrl.Init(_owner, this.Prefab.GetInstanceID(), _itemName);
 
-                obj.transform.parent = _owner.transform;
+                obj.transform.SetParent(_owner.transform, false);
                 obj.transform.localPosition = Vector3.zero;
                 obj.transform.rotation = Quaternion.identity;
                 

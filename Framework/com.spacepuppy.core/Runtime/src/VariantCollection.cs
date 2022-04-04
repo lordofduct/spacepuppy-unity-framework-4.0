@@ -438,12 +438,6 @@ namespace com.spacepuppy
 
         #region IDynamic Interface
 
-        object IDynamic.this[string sMemberName]
-        {
-            get { return (this as IDynamic).GetValue(sMemberName); }
-            set { (this as IDynamic).SetValue(sMemberName, value); }
-        }
-
         bool IDynamic.SetValue(string sMemberName, object value, params object[] index)
         {
             if (_table.ContainsKey(sMemberName))
@@ -458,14 +452,6 @@ namespace com.spacepuppy
                 this[sMemberName] = value;
                 return true;
             }
-        }
-
-        object IDynamic.GetValue(string sMemberName, params object[] args)
-        {
-            if (_table.ContainsKey(sMemberName))
-                return this[sMemberName];
-            else
-                return DynamicUtil.GetValueDirect(this, sMemberName, args);
         }
 
         bool IDynamic.TryGetValue(string sMemberName, out object result, params object[] args)

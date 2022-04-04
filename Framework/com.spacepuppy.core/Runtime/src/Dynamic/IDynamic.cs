@@ -11,10 +11,7 @@ namespace com.spacepuppy.Dynamic
 
     public interface IDynamic
     {
-        object this[string sMemberName] { get; set; }
-
         bool SetValue(string sMemberName, object value, params object[] index);
-        object GetValue(string sMemberName, params object[] args);
         bool TryGetValue(string sMemberName, out object result, params object[] args);
         object InvokeMethod(string sMemberName, params object[] args);
 
@@ -111,18 +108,25 @@ namespace com.spacepuppy.Dynamic
             return _accessor.SetValue<T>(obj, member, value);
         }
 
+        public static object GetValue(this IDynamic obj, string sMemberName, params object[] args)
+        {
+            object result;
+            obj.TryGetValue(sMemberName, out result, args);
+            return result;
+        }
+
         public static object GetValue(this object obj, string sMemberName, params object[] args)
         {
+            object result;
             if (obj is IDynamic d)
             {
-                return d.GetValue(sMemberName, args);
+                d.TryGetValue(sMemberName, out result, args);
             }
             else
             {
-                object result;
                 _accessor.TryGetValue(obj, sMemberName, out result);
-                return result;
             }
+            return result;
         }
 
         public static T GetValue<T>(this object obj, string sMemberName, params object[] args)
@@ -197,7 +201,7 @@ namespace com.spacepuppy.Dynamic
             return _accessor.TryGetValue<T>(obj, member, out result, args);
         }
 
-        public static object InvokeMethod(this object obj, string name, params object[] args)
+        public static object InvokeMethod(object obj, string name, params object[] args)
         {
             if (obj is IDynamic d)
             {

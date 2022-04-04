@@ -238,27 +238,10 @@ namespace com.spacepuppy.Dynamic
 
         #region IDynamic Interface
 
-        object IDynamic.this[string sMemberName]
-        {
-            get
-            {
-                return this.GetValue(sMemberName);
-            }
-            set
-            {
-                this.SetValue(sMemberName, value);
-            }
-        }
-
         bool IDynamic.SetValue(string sMemberName, object value, params object[] index)
         {
             this.SetValue(sMemberName, value);
             return true;
-        }
-
-        object IDynamic.GetValue(string sMemberName, params object[] args)
-        {
-            return this.GetValue(sMemberName);
         }
 
         bool IDynamic.TryGetValue(string sMemberName, out object result, params object[] args)

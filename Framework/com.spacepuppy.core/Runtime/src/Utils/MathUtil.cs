@@ -1124,6 +1124,25 @@ namespace com.spacepuppy.Utils
                 return a + Math.Sign(v) * dv;
         }
 
+        public static double Lerp(double a, double b, double t)
+        {
+            return (b - a) * t + a;
+        }
+
+        public static float ClampLerped(float value, float max, float min, float t)
+        {
+            if (value < min) return Mathf.Lerp(value, min, t);
+            else if (value > max) return Mathf.Lerp(value, max, t);
+            return value;
+        }
+
+        public static double ClampLerped(double value, double max, double min, double t)
+        {
+            if (value < min) return MathUtil.Lerp(value, min, t);
+            else if (value > max) return MathUtil.Lerp(value, max, t);
+            return value;
+        }
+
         #endregion
 
         #region "Simple fuzzy arithmetic"

@@ -695,6 +695,21 @@ namespace com.spacepuppy.Utils
                 return a + v.normalized * dv;
         }
 
+        public static Vector2 ClampLerped(Vector2 value, Vector2 max, Vector2 min, float t)
+        {
+            value.x = MathUtil.ClampLerped(value.x, max.x, min.x, t);
+            value.y = MathUtil.ClampLerped(value.y, max.y, min.y, t);
+            return value;
+        }
+
+        public static Vector3 ClampLerped(Vector3 value, Vector3 max, Vector3 min, float t)
+        {
+            value.x = MathUtil.ClampLerped(value.x, max.x, min.x, t);
+            value.y = MathUtil.ClampLerped(value.y, max.y, min.y, t);
+            value.z = MathUtil.ClampLerped(value.z, max.z, min.z, t);
+            return value;
+        }
+
         #endregion
 
 

@@ -329,9 +329,10 @@ namespace com.spacepuppy
         /// Returns the value as a positive value int where infinite is represented as -1.
         /// </summary>
         /// <returns></returns>
-        public int ToStandardMetricInt()
+        public int ToStandardMetricInt(int valueForInfinity = -1)
         {
-            if (float.IsInfinity(_value)) return -1;
+            if (float.IsInfinity(_value)) return valueForInfinity;
+            else if (float.IsNaN(_value)) return 0;
             else return (int)Mathf.Abs(_value);
         }
 
@@ -504,7 +505,7 @@ namespace com.spacepuppy
             return new DiscreteFloat((float)f);
         }
 
-        public static implicit operator int(DiscreteFloat df)
+        public static explicit operator int(DiscreteFloat df)
         {
             return (int)df._value;
         }
@@ -519,7 +520,7 @@ namespace com.spacepuppy
             return df._value;
         }
 
-        public static implicit operator DiscreteFloat(double d)
+        public static explicit operator DiscreteFloat(double d)
         {
             return new DiscreteFloat((float)d);
         }
@@ -529,12 +530,12 @@ namespace com.spacepuppy
             return (double)df._value;
         }
 
-        public static implicit operator DiscreteFloat(decimal d)
+        public static explicit operator DiscreteFloat(decimal d)
         {
             return new DiscreteFloat((float)d);
         }
 
-        public static implicit operator decimal(DiscreteFloat df)
+        public static explicit operator decimal(DiscreteFloat df)
         {
             return (decimal)df._value;
         }

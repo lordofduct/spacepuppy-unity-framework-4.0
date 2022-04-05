@@ -7,11 +7,11 @@ namespace com.spacepuppy.Geom
 {
     public static class GeomUtil
     {
-		
-		public const float DOT_EPSILON = 0.0001f;
+
+        public const float DOT_EPSILON = 0.0001f;
         public static BoundingSphereAlgorithm DefaultBoundingSphereAlgorithm = BoundingSphereAlgorithm.FromBounds;
-		
-		
+
+
         #region Intersections
 
         public static bool Intersects(this IGeom geom1, IGeom geom2)
@@ -22,7 +22,7 @@ namespace com.spacepuppy.Geom
             var s2 = geom2.GetBoundingSphere();
             if ((s1.Center - s2.Center).magnitude > (s1.Radius + s2.Radius)) return false;
 
-            foreach(var a in geom1.GetAxes().Union(geom2.GetAxes()))
+            foreach (var a in geom1.GetAxes().Union(geom2.GetAxes()))
             {
                 if (geom1.Project(a).Intersects(geom2.Project(a))) return true;
             }
@@ -168,12 +168,12 @@ namespace com.spacepuppy.Geom
         #endregion
 
         #region Plane Extension Methods
-        
+
         public static Vector3 ProjectVectorOnPlane(this Plane pl, Vector3 v)
         {
             return v - (Vector3.Dot(v, pl.normal) * pl.normal);
         }
-        
+
         public static float AngleBetweenVectorAndPlane(this Plane pl, Vector3 v)
         {
             float dot = Vector3.Dot(v.normalized, pl.normal);
@@ -270,43 +270,100 @@ namespace com.spacepuppy.Geom
 
         public static Sphere GetGlobalBoundingSphere(this GameObject go, BoundingSphereAlgorithm algorithm, bool bRecurseChildren = true)
         {
-            var s = new Sphere(go.transform.position, 0.0f);
+            if (go == null) throw new System.ArgumentNullException(nameof(go));
 
-            var rend = go.GetComponent<Renderer>();
-            if (rend != null) s.Encapsulate(rend.GetGlobalBoundingSphere(algorithm));
-            var coll = go.GetComponent<Collider>();
-            if (coll != null) s.Encapsulate(coll.GetGlobalBoundingSphere(algorithm));
-
-            if (bRecurseChildren)
+            Sphere s = default;
+            bool found = false;
+            using (var renderers = com.spacepuppy.Collections.TempCollection.GetList<Renderer>())
+            using (var colliders = com.spacepuppy.Collections.TempCollection.GetList<Collider>())
             {
-                foreach (Transform child in go.transform)
+                if (bRecurseChildren)
                 {
-                    s.Encapsulate(GetGlobalBoundingSphere(child.gameObject, algorithm, bRecurseChildren));
+                    go.GetComponentsInChildren<Renderer>(renderers);
+                    go.GetComponentsInChildren<Collider>(colliders);
+                }
+                else
+                {
+                    go.GetComponents<Renderer>(renderers);
+                    go.GetComponents<Collider>(colliders);
+                }
+
+                foreach (var r in renderers)
+                {
+                    if (found)
+                    {
+                        s.Encapsulate(r.GetGlobalBoundingSphere(algorithm));
+                    }
+                    else
+                    {
+                        found = true;
+                        s = r.GetGlobalBoundingSphere(algorithm);
+                    }
+                }
+                foreach (var c in colliders)
+                {
+                    if (found)
+                    {
+                        s.Encapsulate(c.GetGlobalBoundingSphere(algorithm));
+                    }
+                    else
+                    {
+                        found = true;
+                        s = c.GetGlobalBoundingSphere(algorithm);
+                    }
                 }
             }
 
-            return s;
+            return found ? s : new Sphere(go.transform.position, 0.0f);
         }
-
 
         public static Bounds GetGlobalBounds(this GameObject go, bool bRecurseChildren = true)
         {
-            var b = new Bounds(go.transform.position, Vector3.zero);
+            if (go == null) throw new System.ArgumentNullException(nameof(go));
 
-            var rend = go.GetComponent<Renderer>();
-            if (rend != null) b.Encapsulate(rend.bounds);
-            var coll = go.GetComponent<Collider>();
-            if (coll != null) b.Encapsulate(coll.bounds);
-
-            if (bRecurseChildren)
+            Bounds b = default;
+            bool found = false;
+            using (var renderers = com.spacepuppy.Collections.TempCollection.GetList<Renderer>())
+            using (var colliders = com.spacepuppy.Collections.TempCollection.GetList<Collider>())
             {
-                foreach (Transform child in go.transform)
+                if (bRecurseChildren)
                 {
-                    b.Encapsulate(GetGlobalBounds(child.gameObject, bRecurseChildren));
+                    go.GetComponentsInChildren<Renderer>(renderers);
+                    go.GetComponentsInChildren<Collider>(colliders);
+                }
+                else
+                {
+                    go.GetComponents<Renderer>(renderers);
+                    go.GetComponents<Collider>(colliders);
+                }
+
+                foreach (var r in renderers)
+                {
+                    if (found)
+                    {
+                        b.Encapsulate(r.bounds);
+                    }
+                    else
+                    {
+                        found = true;
+                        b = r.bounds;
+                    }
+                }
+                foreach (var c in colliders)
+                {
+                    if (found)
+                    {
+                        b.Encapsulate(c.bounds);
+                    }
+                    else
+                    {
+                        found = true;
+                        b = c.bounds;
+                    }
                 }
             }
 
-            return b;
+            return found ? b : new Bounds(go.transform.position, Vector3.zero);
         }
 
         #endregion
@@ -344,7 +401,7 @@ namespace com.spacepuppy.Geom
         /// <returns></returns>
         public static IPhysicsGeom GetGeom(this Collider c, BoundingSphereAlgorithm algorithm, bool local = false)
         {
-            if(c == null) return null;
+            if (c == null) return null;
 
             if (c is CharacterController)
             {
@@ -364,7 +421,7 @@ namespace com.spacepuppy.Geom
             }
             else if (algorithm != BoundingSphereAlgorithm.FromBounds && c is MeshCollider)
             {
-                if(local)
+                if (local)
                 {
                     return Sphere.FromMesh((c as MeshCollider).sharedMesh, algorithm);
                 }
@@ -383,14 +440,14 @@ namespace com.spacepuppy.Geom
         #endregion
 
         public static Vector3 CircumCenter(Vector3 a, Vector3 b, Vector3 c)
-		{
-			var a2b = Mathf.Pow(a.magnitude, 2.0f) * b;
-			var b2a = Mathf.Pow(b.magnitude, 2.0f) * a;
-			var aCrossb = Vector3.Cross(a, b);
-			var numer = Vector3.Cross(a2b - b2a, aCrossb);
-			var denom = 2.0f * Mathf.Pow(aCrossb.magnitude, 2.0f);
-			return numer / denom + c;
-		}
-		
+        {
+            var a2b = Mathf.Pow(a.magnitude, 2.0f) * b;
+            var b2a = Mathf.Pow(b.magnitude, 2.0f) * a;
+            var aCrossb = Vector3.Cross(a, b);
+            var numer = Vector3.Cross(a2b - b2a, aCrossb);
+            var denom = 2.0f * Mathf.Pow(aCrossb.magnitude, 2.0f);
+            return numer / denom + c;
+        }
+
     }
 }

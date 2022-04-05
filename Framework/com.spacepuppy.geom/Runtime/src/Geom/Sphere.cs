@@ -90,6 +90,19 @@ namespace com.spacepuppy.Geom
             return this;
         }
 
+        public Vector3 ClosestPoint(Vector3 pos)
+        {
+            var v = pos - _cent;
+            if(v.sqrMagnitude > _rad * _rad)
+            {
+                return _cent + v.normalized * _rad;
+            }
+            else
+            {
+                return pos;
+            }
+        }
+
         #endregion
 
 

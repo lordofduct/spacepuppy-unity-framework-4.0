@@ -42,11 +42,16 @@ namespace com.spacepuppy.Scenes.Events
 
         #region Methods
 
-        public override bool CanTrigger => base.CanTrigger && _options != null;
+        //public override bool CanTrigger => base.CanTrigger && _options != null;
 
         public override bool Trigger(object sender, object arg)
         {
             if (!this.CanTrigger) return false;
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.Log("i_LoadSceneByOptions: " + (_options?.GetType().Name ?? "NULL"));
+#endif
+            if (_options == null) return false;
 
             var manager = Services.Get<ISceneManager>();
             if (manager == null) return false;
@@ -171,9 +176,9 @@ namespace com.spacepuppy.Scenes.Events
                 }
             }
 
-#endregion
+            #endregion
 
-#region ICloneable Interface
+            #region ICloneable Interface
 
             public override LoadSceneOptions Clone()
             {
@@ -182,11 +187,11 @@ namespace com.spacepuppy.Scenes.Events
                 return result;
             }
 
-#endregion
+            #endregion
 
         }
 
-#endregion
+        #endregion
 
     }
 }

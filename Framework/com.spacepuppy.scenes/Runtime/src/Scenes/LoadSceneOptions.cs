@@ -2,8 +2,6 @@
 using UnityEngine.SceneManagement;
 using UnitySceneManager = UnityEngine.SceneManagement.SceneManager;
 using System.Collections.Generic;
-using System.Linq;
-using com.spacepuppy.Dynamic;
 using com.spacepuppy.Async;
 
 #if SP_UNITASK
@@ -45,6 +43,7 @@ namespace com.spacepuppy.Scenes
 
         private UnityLoadResult _primaryResult;
         private List<UnityLoadResult> _additiveResults;
+        private LoadSceneOptions _parent;
 
         #endregion
 
@@ -130,14 +129,18 @@ namespace com.spacepuppy.Scenes
                 throw new System.InvalidOperationException("LoadSceneOptions should be ran only once. Clone if you need a copy.");
             }
 
+            this.SceneManager = manager;
+            this.Status = LoadSceneOptionsStatus.Running;
             if (GameLoop.InvokeRequired)
             {
-                GameLoop.UpdateHandle.Invoke(() => this.Begin(manager));
+                GameLoop.UpdateHandle.Invoke(() =>
+                {
+                    this.OnBeforeLoadBegins();
+                    this.DoBegin(manager);
+                });
             }
             else
             {
-                this.SceneManager = manager;
-                this.Status = LoadSceneOptionsStatus.Running;
                 this.OnBeforeLoadBegins();
                 this.DoBegin(manager);
             }
@@ -205,6 +208,20 @@ namespace com.spacepuppy.Scenes
             }
         }
 
+        /// <summary>
+        /// Loads a scene via some options as a sub-operation of this LoadSceneOptions and then injects the resulting scene objects into this.
+        /// </summary>
+        /// <param name="options"></param>
+        /// <returns></returns>
+        protected LoadSceneOptions LoadScene(LoadSceneOptions options)
+        {
+            if (options.Status != LoadSceneOptionsStatus.Unused) throw new System.ArgumentException("Can not load an already loaded options.", nameof(options));
+
+            options._parent = this;
+            options.Begin(this.SceneManager);
+            return options;
+        }
+
         protected virtual void OnBeforeLoadBegins()
         {
             this.BeforeLoadBegins?.Invoke(this, this);
@@ -234,6 +251,21 @@ namespace com.spacepuppy.Scenes
             }
         }
 
+        /// <summary>
+        /// Calls SignalComplete if, and only if, Status = Running.
+        /// </summary>
+        /// <returns>Returns true if SignalComplete was called</returns>
+        protected bool TrySignalComplete()
+        {
+            if (this.Status == LoadSceneOptionsStatus.Running)
+            {
+                this.SignalComplete();
+                return true;
+            }
+
+            return false;
+        }
+
         protected void SignalError()
         {
             this.Status = LoadSceneOptionsStatus.Error;
@@ -260,6 +292,8 @@ namespace com.spacepuppy.Scenes
 
         private UnityLoadResult RegisterHandlesScene(AsyncOperation op, Scene scene, LoadSceneMode mode)
         {
+            if (_parent != null) _parent.RegisterHandlesScene(op, scene, mode);
+
             var result = new UnityLoadResult()
             {
                 Op = op,
@@ -284,7 +318,6 @@ namespace com.spacepuppy.Scenes
             }
             return result;
         }
-
 
         public virtual bool HandlesScene(Scene scene)
         {

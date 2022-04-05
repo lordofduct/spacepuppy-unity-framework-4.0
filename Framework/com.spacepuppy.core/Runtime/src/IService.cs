@@ -767,11 +767,7 @@ namespace com.spacepuppy
         {
             base.OnDestroy();
 
-            var inst = Services.Get<T>();
-            if (object.ReferenceEquals(this, inst))
-            {
-                Services.Unregister<T>();
-            }
+            if (this is T s) Services.TryUnregister<T>(s);
         }
 
         #endregion
@@ -1052,11 +1048,7 @@ namespace com.spacepuppy
 
         protected virtual void OnDestroy()
         {
-            var inst = Services.Get<T>();
-            if (object.ReferenceEquals(this, inst))
-            {
-                Services.Unregister<T>();
-            }
+            if (this is T s) Services.TryUnregister<T>(s);
         }
 
         #endregion

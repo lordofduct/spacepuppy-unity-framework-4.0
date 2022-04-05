@@ -2,11 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+
 using com.spacepuppy.Dynamic;
 using com.spacepuppy.Utils;
-using System.CodeDom;
-using com.spacepuppy.Pathfinding;
-using System.Runtime.CompilerServices;
 
 namespace com.spacepuppy.AI
 {

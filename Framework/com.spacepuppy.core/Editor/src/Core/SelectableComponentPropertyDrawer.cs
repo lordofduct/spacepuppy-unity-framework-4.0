@@ -133,7 +133,9 @@ namespace com.spacepuppyeditor.Core
             {
                 //SPEditorGUI.DefaultPropertyField(position, property, label);
                 if (!this.ForceOnlySelf)
+                {
                     this.DrawObjectRefField(position, property);
+                }
                 else
                 {
                     EditorGUI.LabelField(position, "Malformed serializable field.");

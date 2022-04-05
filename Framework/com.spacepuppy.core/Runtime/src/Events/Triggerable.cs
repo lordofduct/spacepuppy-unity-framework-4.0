@@ -79,7 +79,17 @@ namespace com.spacepuppy.Events
 
             if ((_activateOn & ActivateEvent.OnEnable) != 0)
             {
-                this.Trigger(this, null);
+                if (GameLoop.LateUpdateWasCalled)
+                {
+                    this.Trigger(this, null);
+                }
+                else
+                {
+                    GameLoop.LateUpdateHandle.BeginInvoke(() =>
+                    {
+                        this.Trigger(this, null);
+                    });
+                }
             }
         }
 

@@ -235,7 +235,7 @@ namespace com.spacepuppy
         /// </summary>
         public static bool LateUpdateWasCalled
         {
-            get { return _currentFrame == UnityEngine.Time.frameCount; }
+            get { return _currentLateFrame == UnityEngine.Time.frameCount; }
         }
 
         #endregion

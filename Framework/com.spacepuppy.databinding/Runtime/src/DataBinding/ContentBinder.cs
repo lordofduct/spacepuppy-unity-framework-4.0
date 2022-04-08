@@ -9,6 +9,7 @@ namespace com.spacepuppy.DataBinding
 
     public interface IContentBinder
     {
+        DataBindingContext Context { get; }
         string Key { get; }
         void Bind(object source, object value);
     }

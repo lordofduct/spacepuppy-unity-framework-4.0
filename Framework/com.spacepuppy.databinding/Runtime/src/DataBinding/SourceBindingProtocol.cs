@@ -21,7 +21,7 @@ namespace com.spacepuppy.DataBinding
         /// Returns a list of the keys that the protocol definitely supports. This is used to facilitate the ditor for the various ContentBinders.
         /// </summary>
         /// <returns></returns>
-        IEnumerable<string> GetDefinedKeys();
+        IEnumerable<string> GetDefinedKeys(DataBindingContext context);
 
         /// <summary>
         /// Return a value from a source for a key.
@@ -29,7 +29,7 @@ namespace com.spacepuppy.DataBinding
         /// <param name="source"></param>
         /// <param name="key"></param>
         /// <returns></returns>
-        object GetValue(object source, string key);
+        object GetValue(DataBindingContext context, object source, string key);
 
     }
 
@@ -40,12 +40,12 @@ namespace com.spacepuppy.DataBinding
 
         public virtual System.Type PreferredSourceType => null;
 
-        public virtual IEnumerable<string> GetDefinedKeys()
+        public virtual IEnumerable<string> GetDefinedKeys(DataBindingContext context)
         {
             return Enumerable.Empty<string>();
         }
 
-        public virtual object GetValue(object source, string key)
+        public virtual object GetValue(DataBindingContext context, object source, string key)
         {
             if (source is System.Collections.IDictionary dict && dict.Contains(key))
             {
@@ -87,10 +87,10 @@ namespace com.spacepuppy.DataBinding
 
         public override System.Type PreferredSourceType => this.SourceType;
 
-        public override IEnumerable<string> GetDefinedKeys()
+        public override IEnumerable<string> GetDefinedKeys(DataBindingContext context)
         {
             var sourcetype = _sourceType.Type;
-            if (sourcetype == null) return base.GetDefinedKeys();
+            if (sourcetype == null) return base.GetDefinedKeys(context);
 
             return DynamicUtil.GetMembersFromType(sourcetype, false, System.Reflection.MemberTypes.Field | System.Reflection.MemberTypes.Property)
                               .Where(o => this.IsAcceptableKeyType(DynamicUtil.GetReturnType(o)))
@@ -100,11 +100,6 @@ namespace com.spacepuppy.DataBinding
         protected virtual bool IsAcceptableKeyType(System.Type tp)
         {
             return IsAcceptableMemberType(tp);
-        }
-
-        public override object GetValue(object source, string key)
-        {
-            return base.GetValue(source, key);
         }
 
         #endregion

@@ -8,48 +8,79 @@ using com.spacepuppy.Dynamic;
 using com.spacepuppy.Utils;
 using com.spacepuppyeditor;
 using com.spacepuppy.DataBinding;
+using com.spacepuppy.Collections;
 
 namespace com.spacepuppyeditor.DataBinding
 {
 
     //[CustomEditor(typeof(ContentBinder), true)]
-    public class ContentBinderInspector : SPEditor
-    {
+    //public class ContentBinderInspector : SPEditor
+    //{
 
-        protected override void OnSPInspectorGUI()
-        {
-            ContentBinder target;
-            DataBindingContext context;
-            ISourceBindingProtocol protocol;
-            if (this.serializedObject.isEditingMultipleObjects ||
-                (target = this.serializedObject.targetObject as ContentBinder) == null ||
-                (context = target.GetComponent<DataBindingContext>()) == null ||
-                (protocol = context.BindingProtocol) == null)
-            {
-                this.DrawDefaultInspector();
-                return;
-            }
+    //    protected override void OnEnable()
+    //    {
+    //        base.OnEnable();
 
-            var keys = protocol.GetDefinedKeys();
-            if (keys == null || !keys.Any())
-            {
-                this.DrawDefaultInspector();
-                return;
-            }
+    //        var targ = this.serializedObject.targetObject as ContentBinder;
+    //        if (targ && targ.GetComponent<IDataBindingContext>() == null)
+    //        {
+    //            var c = targ.gameObject.AddComponent<DataBindingContext>();
+    //            using (var lst = TempCollection.GetList<Component>())
+    //            {
+    //                while(true)
+    //                {
+    //                    lst.Clear();
+    //                    targ.gameObject.GetComponents<Component>(lst);
 
-            this.serializedObject.UpdateIfRequiredOrScript();
+    //                    int icontext = lst.IndexOf(c);
+    //                    if (icontext <= 0) break;
 
-            this.DrawPropertyField(EditorHelper.PROP_SCRIPT);
+    //                    int ibinder = lst.IndexOf(o => o is ContentBinder);
+    //                    if (ibinder < 0) break;
 
-            var keyprop = this.serializedObject.FindProperty(ContentBinder.PROP_KEY);
-            keyprop.stringValue = SPEditorGUILayout.OptionPopupWithCustom(EditorHelper.TempContent(keyprop.displayName, keyprop.tooltip), keyprop.stringValue, keys.ToArray());
+    //                    if (icontext < ibinder) break;
 
-            this.DrawDefaultInspectorExcept(EditorHelper.PROP_SCRIPT, ContentBinder.PROP_KEY);
+    //                    if (!UnityEditorInternal.ComponentUtility.MoveComponentUp(c)) break;
+    //                }
+    //            }
+    //            this.serializedObject.Update();
+    //        }
+    //    }
 
-            this.serializedObject.ApplyModifiedProperties();
-        }
+    //    //protected override void OnSPInspectorGUI()
+    //    //{
+    //    //    ContentBinder target;
+    //    //    DataBindingContext context;
+    //    //    ISourceBindingProtocol protocol;
+    //    //    if (this.serializedObject.isEditingMultipleObjects ||
+    //    //        (target = this.serializedObject.targetObject as ContentBinder) == null ||
+    //    //        (context = target.GetComponent<DataBindingContext>()) == null ||
+    //    //        (protocol = context.BindingProtocol) == null)
+    //    //    {
+    //    //        this.DrawDefaultInspector();
+    //    //        return;
+    //    //    }
 
-    }
+    //    //    var keys = protocol.GetDefinedKeys();
+    //    //    if (keys == null || !keys.Any())
+    //    //    {
+    //    //        this.DrawDefaultInspector();
+    //    //        return;
+    //    //    }
+
+    //    //    this.serializedObject.UpdateIfRequiredOrScript();
+
+    //    //    this.DrawPropertyField(EditorHelper.PROP_SCRIPT);
+
+    //    //    var keyprop = this.serializedObject.FindProperty(ContentBinder.PROP_KEY);
+    //    //    keyprop.stringValue = SPEditorGUILayout.OptionPopupWithCustom(EditorHelper.TempContent(keyprop.displayName, keyprop.tooltip), keyprop.stringValue, keys.ToArray());
+
+    //    //    this.DrawDefaultInspectorExcept(EditorHelper.PROP_SCRIPT, ContentBinder.PROP_KEY);
+
+    //    //    this.serializedObject.ApplyModifiedProperties();
+    //    //}
+
+    //}
 
     [CustomPropertyDrawer(typeof(ContentBinderKeyAttribute))]
     public class ContentBinderKeyPropertyDrawer : PropertyDrawer
@@ -81,7 +112,7 @@ namespace com.spacepuppyeditor.DataBinding
                 return;
             }
 
-            var keys = protocol.GetDefinedKeys();
+            var keys = protocol.GetDefinedKeys(context);
             if (keys == null || !keys.Any())
             {
                 property.stringValue = EditorGUI.TextField(position, label, property.stringValue);

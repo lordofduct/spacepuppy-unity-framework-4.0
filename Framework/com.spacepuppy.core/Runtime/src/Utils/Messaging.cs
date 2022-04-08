@@ -33,50 +33,50 @@ namespace com.spacepuppy.Utils
                 this.IncludeDisabledComponents = includeDisabledComponents;
             }
 
-            public void Send<T>(GameObject go, System.Action<T> functor) where T : class
+            public void Send<T>(GameObject go, System.Action<T> functor, System.Comparison<T> sort = null) where T : class
             {
                 switch (this.SendMethod)
                 {
                     case MessageSendMethod.Broadcast:
-                        Broadcast<T>(go, functor, this.IncludeInactiveObjects, this.IncludeDisabledComponents);
+                        Broadcast<T>(go, functor, this.IncludeInactiveObjects, this.IncludeDisabledComponents, sort);
                         break;
                     case MessageSendMethod.Signal:
-                        Signal<T>(go, functor, this.IncludeDisabledComponents);
+                        Signal<T>(go, functor, this.IncludeDisabledComponents, sort);
                         break;
                     case MessageSendMethod.SignalUpward:
-                        SignalUpwards<T>(go, functor, this.IncludeDisabledComponents);
+                        SignalUpwards<T>(go, functor, this.IncludeDisabledComponents, sort);
                         break;
                 }
             }
 
-            public void Send<TInterface, TArg>(GameObject go, TArg arg, System.Action<TInterface, TArg> functor) where TInterface : class
+            public void Send<TInterface, TArg>(GameObject go, TArg arg, System.Action<TInterface, TArg> functor, System.Comparison<TInterface> sort = null) where TInterface : class
             {
                 switch (this.SendMethod)
                 {
                     case MessageSendMethod.Broadcast:
-                        Broadcast<TInterface, TArg>(go, arg, functor, this.IncludeInactiveObjects, this.IncludeDisabledComponents);
+                        Broadcast<TInterface, TArg>(go, arg, functor, this.IncludeInactiveObjects, this.IncludeDisabledComponents, sort);
                         break;
                     case MessageSendMethod.Signal:
-                        Signal<TInterface, TArg>(go, arg, functor, this.IncludeDisabledComponents);
+                        Signal<TInterface, TArg>(go, arg, functor, this.IncludeDisabledComponents, sort);
                         break;
                     case MessageSendMethod.SignalUpward:
-                        SignalUpwards<TInterface, TArg>(go, arg, functor, this.IncludeDisabledComponents);
+                        SignalUpwards<TInterface, TArg>(go, arg, functor, this.IncludeDisabledComponents, sort);
                         break;
                 }
             }
 
-            public void Send(GameObject go, System.Type receiverType, System.Action<Component> functor)
+            public void Send(GameObject go, System.Type receiverType, System.Action<Component> functor, System.Comparison<Component> sort = null)
             {
                 switch (this.SendMethod)
                 {
                     case MessageSendMethod.Broadcast:
-                        Broadcast(go, receiverType, functor, this.IncludeInactiveObjects, this.IncludeDisabledComponents);
+                        Broadcast(go, receiverType, functor, this.IncludeInactiveObjects, this.IncludeDisabledComponents, sort);
                         break;
                     case MessageSendMethod.Signal:
-                        Signal(go, receiverType, functor, this.IncludeDisabledComponents);
+                        Signal(go, receiverType, functor, this.IncludeDisabledComponents, sort);
                         break;
                     case MessageSendMethod.SignalUpward:
-                        SignalUpwards(go, receiverType, functor, this.IncludeDisabledComponents);
+                        SignalUpwards(go, receiverType, functor, this.IncludeDisabledComponents, sort);
                         break;
                 }
             }
@@ -87,7 +87,7 @@ namespace com.spacepuppy.Utils
 
         #region Standard Execute Methods
 
-        public static void Signal<T>(this GameObject go, System.Action<T> functor, bool includeDisabledComponents = false) where T : class
+        public static void Signal<T>(this GameObject go, System.Action<T> functor, bool includeDisabledComponents = false, System.Comparison<T> sort = null) where T : class
         {
             if (functor == null) throw new System.ArgumentNullException("functor");
 
@@ -96,6 +96,7 @@ namespace com.spacepuppy.Utils
                 go.GetComponents<T>(lst);
                 if (lst.Count > 0)
                 {
+                    if (sort != null) lst.Sort(sort);
                     for (int i = 0; i < lst.Count; i++)
                     {
                         if (includeDisabledComponents || TargetIsValid(lst[i]))
@@ -105,7 +106,7 @@ namespace com.spacepuppy.Utils
             }
         }
 
-        public static void Signal<TInterface, TArg>(this GameObject go, TArg arg, System.Action<TInterface, TArg> functor, bool includeDisabledComponents = false) where TInterface : class
+        public static void Signal<TInterface, TArg>(this GameObject go, TArg arg, System.Action<TInterface, TArg> functor, bool includeDisabledComponents = false, System.Comparison<TInterface> sort = null) where TInterface : class
         {
             if (functor == null) throw new System.ArgumentNullException("functor");
 
@@ -114,6 +115,7 @@ namespace com.spacepuppy.Utils
                 go.GetComponents<TInterface>(lst);
                 if (lst.Count > 0)
                 {
+                    if (sort != null) lst.Sort(sort);
                     for (int i = 0; i < lst.Count; i++)
                     {
                         if (includeDisabledComponents || TargetIsValid(lst[i]))
@@ -123,7 +125,7 @@ namespace com.spacepuppy.Utils
             }
         }
 
-        public static void Signal(this GameObject go, System.Type receiverType, System.Action<Component> functor, bool includeDisabledComponents = false)
+        public static void Signal(this GameObject go, System.Type receiverType, System.Action<Component> functor, bool includeDisabledComponents = false, System.Comparison<Component> sort = null)
         {
             if (functor == null) throw new System.ArgumentNullException("functor");
 
@@ -132,6 +134,7 @@ namespace com.spacepuppy.Utils
                 go.GetComponents(receiverType, lst);
                 if (lst.Count > 0)
                 {
+                    if (sort != null) lst.Sort(sort);
                     for (int i = 0; i < lst.Count; i++)
                     {
                         if (includeDisabledComponents || TargetIsValid(lst[i]))
@@ -148,7 +151,7 @@ namespace com.spacepuppy.Utils
         /// <param name="go"></param>
         /// <param name="functor"></param>
         /// <param name="includeInactive"></param>
-        public static void Broadcast<T>(this GameObject go, System.Action<T> functor, bool includeInactiveObjects = false, bool includeDisabledComponents = false) where T : class
+        public static void Broadcast<T>(this GameObject go, System.Action<T> functor, bool includeInactiveObjects = false, bool includeDisabledComponents = false, System.Comparison<T> sort = null) where T : class
         {
             if (functor == null) throw new System.ArgumentNullException("functor");
 
@@ -157,6 +160,7 @@ namespace com.spacepuppy.Utils
                 go.GetComponentsInChildren<T>(includeInactiveObjects, lst);
                 if (lst.Count > 0)
                 {
+                    if (sort != null) lst.Sort(sort);
                     for (int i = 0; i < lst.Count; i++)
                     {
                         if (includeDisabledComponents || TargetIsValid(lst[i]))
@@ -175,7 +179,7 @@ namespace com.spacepuppy.Utils
         /// <param name="arg"></param>
         /// <param name="functor"></param>
         /// <param name="includeInactive"></param>
-        public static void Broadcast<TInterface, TArg>(this GameObject go, TArg arg, System.Action<TInterface, TArg> functor, bool includeInactiveObjects = false, bool includeDisabledComponents = false) where TInterface : class
+        public static void Broadcast<TInterface, TArg>(this GameObject go, TArg arg, System.Action<TInterface, TArg> functor, bool includeInactiveObjects = false, bool includeDisabledComponents = false, System.Comparison<TInterface> sort = null) where TInterface : class
         {
             if (functor == null) throw new System.ArgumentNullException("functor");
 
@@ -184,6 +188,7 @@ namespace com.spacepuppy.Utils
                 go.GetComponentsInChildren<TInterface>(includeInactiveObjects, lst);
                 if (lst.Count > 0)
                 {
+                    if (sort != null) lst.Sort(sort);
                     for (int i = 0; i < lst.Count; i++)
                     {
                         if (includeDisabledComponents || TargetIsValid(lst[i]))
@@ -199,49 +204,81 @@ namespace com.spacepuppy.Utils
         /// <param name="go"></param>
         /// <param name="functor"></param>
         /// <param name="includeInactive"></param>
-        public static void Broadcast(this GameObject go, System.Type receiverType, System.Action<Component> functor, bool includeInactiveObjects = false, bool includeDisabledComponents = false)
+        public static void Broadcast(this GameObject go, System.Type receiverType, System.Action<Component> functor, bool includeInactiveObjects = false, bool includeDisabledComponents = false, System.Comparison<Component> sort = null)
         {
-            if (functor == null) throw new System.ArgumentNullException("functor");
+            if (receiverType == null) throw new System.ArgumentNullException(nameof(receiverType));
+            if (functor == null) throw new System.ArgumentNullException(nameof(functor));
 
-            //a alloc free version of GetComponentsInChildren by Type doesn't exist
-            var arr = go.GetComponentsInChildren(receiverType, includeInactiveObjects);
-            if (arr?.Length > 0)
+            using (var lst = TempCollection.GetList<Component>())
             {
-                for (int i = 0; i < arr.Length; i++)
+                go.GetComponentsInChildren<Component>(includeInactiveObjects, lst);
+                if (lst.Count > 0)
                 {
-                    if (includeDisabledComponents || TargetIsValid(arr[i]))
-                        functor(arr[i]);
+                    if (sort != null) lst.Sort(sort);
+                    for (int i = 0; i < lst.Count; i++)
+                    {
+                        if (receiverType.IsInstanceOfType(lst[i]) && (includeDisabledComponents || TargetIsValid(lst[i])))
+                            functor(lst[i]);
+                    }
                 }
             }
         }
 
-        public static void SignalUpwards<T>(this GameObject go, System.Action<T> functor, bool includeDisabledComponents = false) where T : class
+        public static void SignalUpwards<T>(this GameObject go, System.Action<T> functor, bool includeDisabledComponents = false, System.Comparison<T> sort = null) where T : class
         {
-            var p = go.transform;
-            while (p != null)
+            if (functor == null) throw new System.ArgumentNullException(nameof(functor));
+
+            using (var lst = TempCollection.GetList<T>())
             {
-                Signal<T>(p.gameObject, functor, includeDisabledComponents);
-                p = p.parent;
+                go.GetComponentsInParent<T>(includeDisabledComponents, lst);
+                if (lst.Count > 0)
+                {
+                    if (sort != null) lst.Sort(sort);
+                    for (int i = 0; i < lst.Count; i++)
+                    {
+                        if (includeDisabledComponents || TargetIsValid(lst[i]))
+                            functor(lst[i]);
+                    }
+                }
             }
         }
 
-        public static void SignalUpwards<TInterface, TArg>(this GameObject go, TArg arg, System.Action<TInterface, TArg> functor, bool includeDisabledComponents = false) where TInterface : class
+        public static void SignalUpwards<TInterface, TArg>(this GameObject go, TArg arg, System.Action<TInterface, TArg> functor, bool includeDisabledComponents = false, System.Comparison<TInterface> sort = null) where TInterface : class
         {
-            var p = go.transform;
-            while (p != null)
+            if (functor == null) throw new System.ArgumentNullException(nameof(functor));
+
+            using (var lst = TempCollection.GetList<TInterface>())
             {
-                Signal<TInterface, TArg>(p.gameObject, arg, functor, includeDisabledComponents);
-                p = p.parent;
+                go.GetComponentsInParent<TInterface>(includeDisabledComponents, lst);
+                if (lst.Count > 0)
+                {
+                    if (sort != null) lst.Sort(sort);
+                    for (int i = 0; i < lst.Count; i++)
+                    {
+                        if (includeDisabledComponents || TargetIsValid(lst[i]))
+                            functor(lst[i], arg);
+                    }
+                }
             }
         }
 
-        public static void SignalUpwards(this GameObject go, System.Type receiverType, System.Action<Component> functor, bool includeDisabledComponents = false)
+        public static void SignalUpwards(this GameObject go, System.Type receiverType, System.Action<Component> functor, bool includeDisabledComponents = false, System.Comparison<Component> sort = null)
         {
-            var p = go.transform;
-            while (p != null)
+            if (receiverType == null) throw new System.ArgumentNullException(nameof(receiverType));
+            if (functor == null) throw new System.ArgumentNullException(nameof(functor));
+
+            using (var lst = TempCollection.GetList<Component>())
             {
-                Signal(p.gameObject, receiverType, functor, includeDisabledComponents);
-                p = p.parent;
+                go.GetComponentsInParent<Component>(includeDisabledComponents, lst);
+                if (lst.Count > 0)
+                {
+                    if (sort != null) lst.Sort(sort);
+                    for (int i = 0; i < lst.Count; i++)
+                    {
+                        if (receiverType.IsInstanceOfType(lst[i]) && (includeDisabledComponents || TargetIsValid(lst[i])))
+                            functor(lst[i]);
+                    }
+                }
             }
         }
 

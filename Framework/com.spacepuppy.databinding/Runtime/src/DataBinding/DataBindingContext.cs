@@ -14,6 +14,8 @@ namespace com.spacepuppy.DataBinding
     public interface IDataBindingMessageHandler
     {
 
+        int BindOrder { get; }
+
         void Bind(object source, int index);
 
     }
@@ -25,6 +27,7 @@ namespace com.spacepuppy.DataBinding
 
     }
 
+    [DisallowMultipleComponent()]
     public class DataBindingContext : SPComponent, IDataBindingContext, IDataProvider
     {
 
@@ -47,8 +50,15 @@ namespace com.spacepuppy.DataBinding
         private bool _respectProxySources = false;
 
         [SerializeField]
+        [Tooltip("If the 'source' is a INotifyPropertyChanged the context will listen for the PropertyChanged event and rebind.")]
+        private bool _bindToPropertyChangedEvent = false;
+
+        [SerializeField]
         [SPEvent.Config("source (object)")]
         private SPEvent _onDataBound = new SPEvent("OnDataBound");
+
+        [System.NonSerialized]
+        private bool _waitingToBind;
 
         #endregion
 
@@ -82,7 +92,15 @@ namespace com.spacepuppy.DataBinding
 
             if ((_activateOn & ActivateEvent.OnEnable) != 0 && _dataSource)
             {
-                this.BindConfiguredDataSource();
+                //this.BindConfiguredDataSource();
+                if (GameLoop.LateUpdateWasCalled)
+                {
+                    this.BindConfiguredDataSource();
+                }
+                else
+                {
+                    GameLoop.LateUpdateHandle.BeginInvoke(this.BindConfiguredDataSource);
+                }
             }
         }
 
@@ -114,12 +132,15 @@ namespace com.spacepuppy.DataBinding
 
         #region IDataBindingContext Interface
 
+        int IDataBindingMessageHandler.BindOrder => 0;
+
         public object DataSource { get; private set; }
 
         public virtual void Bind(object source, int index)
         {
-            var protocol = this.BindingProtocol;
+            this.UnbindPropertyChangedEvent();
 
+            var protocol = this.BindingProtocol;
             if (_respectProxySources) source = IProxyExtensions.ReduceIfProxy(source);
 
             object reducedref;
@@ -129,20 +150,11 @@ namespace com.spacepuppy.DataBinding
             }
             this.DataSource = source;
 
-            using (var lst = TempCollection.GetList<IContentBinder>())
+            this.DoBind();
+
+            if (_bindToPropertyChangedEvent && source is System.ComponentModel.INotifyPropertyChanged npc)
             {
-                this.GetComponents<IContentBinder>(lst);
-                for (int i = 0; i < lst.Count; i++)
-                {
-                    try
-                    {
-                        lst[i].Bind(source, protocol.GetValue(source, lst[i].Key));
-                    }
-                    catch (System.Exception ex)
-                    {
-                        Debug.LogException(ex);
-                    }
-                }
+                npc.PropertyChanged += DataSource_PropertyChanged;
             }
 
             _onDataBound.ActivateTrigger(this, this.DataSource);
@@ -151,6 +163,44 @@ namespace com.spacepuppy.DataBinding
         public void BindConfiguredDataSource()
         {
             this.Bind(_dataSource, 0);
+        }
+
+        public void UnbindPropertyChangedEvent()
+        {
+            if(this.DataSource is System.ComponentModel.INotifyPropertyChanged npc)
+            {
+                npc.PropertyChanged -= DataSource_PropertyChanged;
+            }
+        }
+
+
+        private void DataSource_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (!_waitingToBind)
+            {
+                _waitingToBind = true;
+                GameLoop.LateUpdateHandle.BeginInvoke(this.DoBind);
+            }
+        }
+
+        private void DoBind()
+        {
+            _waitingToBind = false;
+            using (var lst = TempCollection.GetList<IContentBinder>())
+            {
+                this.GetComponents<IContentBinder>(lst);
+                for (int i = 0; i < lst.Count; i++)
+                {
+                    try
+                    {
+                        lst[i].Bind(this.DataSource, this.BindingProtocol.GetValue(this, this.DataSource, lst[i].Key));
+                    }
+                    catch (System.Exception ex)
+                    {
+                        Debug.LogException(ex);
+                    }
+                }
+            }
         }
 
         #endregion
@@ -170,23 +220,24 @@ namespace com.spacepuppy.DataBinding
 
         public static void SendBindMessage(Messaging.MessageSendCommand settings, GameObject go, object source, int index)
         {
-            settings.Send(go, (source, index), _stampFunctor);
+            settings.Send(go, (source, index), _bindFunctor, _bindSortOrder);
         }
 
         public static void SignalBindMessage(GameObject go, object source, int index, bool includeDisabledComponents = false)
         {
-            go.Signal((source, index), _stampFunctor, includeDisabledComponents);
+            go.Signal((source, index), _bindFunctor, includeDisabledComponents, _bindSortOrder);
         }
         public static void SignalUpwardsBindMessage(GameObject go, object source, int index, bool includeDisabledComponents = false)
         {
-            go.SignalUpwards((source, index), _stampFunctor, includeDisabledComponents);
+            go.SignalUpwards((source, index), _bindFunctor, includeDisabledComponents, _bindSortOrder);
         }
         public static void BroadcastBindMessage(GameObject go, object source, int index, bool includeInactiveObject = false, bool includeDisabledComponents = false)
         {
-            go.Broadcast((source, index), _stampFunctor, includeInactiveObject, includeDisabledComponents);
+            go.Broadcast((source, index), _bindFunctor, includeInactiveObject, includeDisabledComponents, _bindSortOrder);
         }
 
-        private static readonly System.Action<IDataBindingMessageHandler, System.ValueTuple<object, int>> _stampFunctor = (s, t) => s.Bind(t.Item1, t.Item2);
+        private static readonly System.Action<IDataBindingMessageHandler, System.ValueTuple<object, int>> _bindFunctor = (s, t) => s.Bind(t.Item1, t.Item2);
+        private static readonly System.Comparison<IDataBindingMessageHandler> _bindSortOrder = (a, b) => a.BindOrder.CompareTo(b.BindOrder);
 
         #endregion
 

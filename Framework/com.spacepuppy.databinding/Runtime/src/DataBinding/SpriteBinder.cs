@@ -15,6 +15,9 @@ namespace com.spacepuppy.DataBinding
         [SerializeField]
         private UnityEngine.UI.Image _target;
 
+        [SerializeField]
+        private bool _bindIfNull;
+
         #endregion
 
         #region Properties
@@ -42,7 +45,7 @@ namespace com.spacepuppy.DataBinding
         {
             if (!_target) return;
 
-            switch(value)
+            switch (value)
             {
                 case Sprite spr:
                     this.Sprite = spr;
@@ -50,23 +53,44 @@ namespace com.spacepuppy.DataBinding
 #if SP_ADDRESSABLES
                 case UnityEngine.AddressableAssets.AssetReference assref:
                     {
-                        var handle = com.spacepuppy.Addressables.AddressableUtils.LoadOrGetAssetAsync<Sprite>(assref);
-                        if (handle.IsComplete)
-                        {
-                            this.Sprite = handle.GetResult();
-                        }
-                        else
-                        {
-                            handle.OnComplete(h =>
-                            {
-                                this.Sprite = h.GetResult();
-                            });
-                        }
+                        _asyncLoadHash++;
+                        this.DoAssetLoad(assref, _asyncLoadHash);
                     }
                     break;
 #endif
+                default:
+                    if (_bindIfNull)
+                    {
+                        this.Sprite = null;
+                    }
+                    break;
             }
         }
+
+
+#if SP_ADDRESSABLES
+        private int _asyncLoadHash;
+        private void DoAssetLoad(UnityEngine.AddressableAssets.AssetReference assref, int hash)
+        {
+            var handle = com.spacepuppy.Addressables.AddressableUtils.LoadOrGetAssetAsync<Sprite>(assref);
+            if (handle.IsComplete)
+            {
+                this.Sprite = handle.GetResult();
+            }
+            else
+            {
+                handle.OnComplete(h =>
+                {
+                    if (_asyncLoadHash == hash)
+                    {
+                        this.Sprite = h.GetResult();
+                    }
+                });
+            }
+        }
+
+#endif
+
 
         #endregion
 

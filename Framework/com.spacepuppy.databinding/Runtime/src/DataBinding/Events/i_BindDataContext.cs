@@ -73,7 +73,7 @@ namespace com.spacepuppy.DataBinding.Events
 
             GameObject go;
             IDataBindingContext context;
-            if (_bindMessageSettings.SendMethod != Messaging.MessageSendMethod.Signal && (go = GameObjectUtil.GetGameObjectFromSource(_targetDataBindingContext, true)))
+            if (go = GameObjectUtil.GetGameObjectFromSource(_targetDataBindingContext, true))
             {
                 com.spacepuppy.DataBinding.DataBindingContext.SendBindMessage(_bindMessageSettings, go, source, 0);
             }

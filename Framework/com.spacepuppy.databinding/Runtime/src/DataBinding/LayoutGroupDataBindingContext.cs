@@ -80,7 +80,15 @@ namespace com.spacepuppy.DataBinding
 
             if ((_activateOn & ActivateEvent.OnEnable) != 0)
             {
-                this.BindConfiguredDataSource();
+                //this.BindConfiguredDataSource();
+                if (GameLoop.LateUpdateWasCalled)
+                {
+                    this.BindConfiguredDataSource();
+                }
+                else
+                {
+                    GameLoop.LateUpdateHandle.BeginInvoke(this.BindConfiguredDataSource);
+                }
             }
         }
 
@@ -133,6 +141,8 @@ namespace com.spacepuppy.DataBinding
         #endregion
 
         #region IDataBindingContext Interface
+
+        int IDataBindingMessageHandler.BindOrder => 0;
 
         public object DataSource { get; private set; }
 

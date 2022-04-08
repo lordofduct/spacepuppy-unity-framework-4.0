@@ -28,6 +28,8 @@ namespace com.spacepuppy.DataBinding.Events
 
         #region IDataBindingContext Interface
 
+        int IDataBindingMessageHandler.BindOrder => 0;
+
         void IDataBindingMessageHandler.Bind(object source, int index)
         {
             if (_onBoundByIndex.HasReceivers)

@@ -2,7 +2,6 @@
 using UnityEditor;
 
 using com.spacepuppy;
-using UnityEditor.Graphs;
 
 namespace com.spacepuppyeditor.Core
 {
@@ -20,6 +19,11 @@ namespace com.spacepuppyeditor.Core
         {
             const float WIDTH_INFTOGGLE = 50f;
 
+            var shortlabel = (this.attribute as NegativeIsInfinityAttribute)?.ShortInfinityLabel;
+            var longlabel = (this.attribute as NegativeIsInfinityAttribute)?.InfinityLabel;
+            if (string.IsNullOrEmpty(shortlabel)) shortlabel = "Inf";
+            if (string.IsNullOrEmpty(longlabel)) longlabel = "Infinity";
+
             position = SPEditorGUI.SafePrefixLabel(position, label);
             var r0 = new Rect(position.xMin, position.yMin, WIDTH_INFTOGGLE, EditorGUIUtility.singleLineHeight);
             var r1 = new Rect(r0.xMax, r0.yMin, Mathf.Max(0f, position.width - r0.width), EditorGUIUtility.singleLineHeight);
@@ -30,7 +34,7 @@ namespace com.spacepuppyeditor.Core
                     {
                         bool isinf = property.intValue < 0;
                         EditorGUI.BeginChangeCheck();
-                        isinf = EditorGUI.ToggleLeft(r0, "Inf", isinf);
+                        isinf = EditorGUI.ToggleLeft(r0, shortlabel, isinf);
                         if(EditorGUI.EndChangeCheck())
                         {
                             property.intValue = isinf ? -1 : 0;
@@ -39,7 +43,7 @@ namespace com.spacepuppyeditor.Core
                         if(isinf)
                         {
                             property.intValue = -1;
-                            EditorGUI.SelectableLabel(r1, "Infinity", GUI.skin.textField);
+                            EditorGUI.SelectableLabel(r1, longlabel, GUI.skin.textField);
                         }
                         else
                         {
@@ -51,7 +55,7 @@ namespace com.spacepuppyeditor.Core
                     {
                         bool isinf = property.floatValue < 0;
                         EditorGUI.BeginChangeCheck();
-                        isinf = EditorGUI.ToggleLeft(r0, "Inf", isinf);
+                        isinf = EditorGUI.ToggleLeft(r0, shortlabel, isinf);
                         if (EditorGUI.EndChangeCheck())
                         {
                             property.floatValue = isinf ? -1 : 0;
@@ -60,7 +64,7 @@ namespace com.spacepuppyeditor.Core
                         if (isinf)
                         {
                             property.floatValue = -1;
-                            EditorGUI.SelectableLabel(r1, "Infinity", GUI.skin.textField);
+                            EditorGUI.SelectableLabel(r1, longlabel, GUI.skin.textField);
                         }
                         else
                         {

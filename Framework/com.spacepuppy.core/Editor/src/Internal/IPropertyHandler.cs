@@ -6,7 +6,7 @@ using System.Text;
 
 namespace com.spacepuppyeditor.Internal
 {
-    internal interface IPropertyHandler
+    public interface IPropertyHandler
     {
 
         float GetHeight(SerializedProperty property, GUIContent label, bool includeChildren);

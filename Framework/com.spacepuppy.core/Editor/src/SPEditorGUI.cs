@@ -810,7 +810,7 @@ namespace com.spacepuppyeditor
                     var r0 = new Rect(position.xMin, position.yMin, position.width - w, EditorGUIUtility.singleLineHeight);
                     var r1 = new Rect(r0.xMax, position.yMin, w, EditorGUIUtility.singleLineHeight);
 
-                    value = EditorGUI.TextField(r0, label, value);
+                    value = EditorGUI.TextField(r0, value);
                     index = EditorGUI.Popup(r1, index, guiOptions);
                     if (index >= 0 && index < options.Length)
                     {
@@ -1083,7 +1083,18 @@ namespace com.spacepuppyeditor
                                                System.Func<System.Type, string, bool> searchFilter = null,
                                                int maxVisibleCount = TypeDropDownWindowSelector.DEFAULT_MAXCOUNT)
         {
-            return TypeDropDownWindowSelector.Popup(position, label, selectedType, TypeDropDownWindowSelector.CreateEnumeratePredicate(baseType, allowAbstractTypes, allowInterfaces, allowGeneric, excludedTypes), baseType, defaultType, listType, searchFilter, maxVisibleCount);
+            return TypeDropDownWindowSelector.Popup(position, label, selectedType, TypeDropDownWindowSelector.CreateTypeEnumerator(baseType, allowAbstractTypes, allowInterfaces, allowGeneric, excludedTypes), baseType, defaultType, listType, searchFilter, maxVisibleCount);
+        }
+
+        public static System.Type TypeDropDown(Rect position, GUIContent label,
+                                               System.Type selectedType,
+                                               IEnumerable<System.Type> typeEnumerator,
+                                               System.Type baseType = null, System.Type defaultType = null,
+                                               TypeDropDownListingStyle listType = TypeDropDownListingStyle.Flat,
+                                               System.Func<System.Type, string, bool> searchFilter = null,
+                                               int maxVisibleCount = TypeDropDownWindowSelector.DEFAULT_MAXCOUNT)
+        {
+            return TypeDropDownWindowSelector.Popup(position, label, selectedType, typeEnumerator, baseType, defaultType, listType, searchFilter, maxVisibleCount);
         }
 
         public static System.Type TypeDropDown(Rect position, GUIContent label,

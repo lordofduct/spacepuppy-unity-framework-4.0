@@ -252,14 +252,19 @@ namespace com.spacepuppyeditor
 
         #region Option Popup w/ Custom
 
+        public static string OptionPopupWithCustom(string value, string[] options)
+        {
+            return SPEditorGUI.OptionPopupWithCustom(EditorGUILayout.GetControlRect(false), GUIContent.none, value, options);
+        }
+
         public static string OptionPopupWithCustom(string label, string value, string[] options)
         {
-            return SPEditorGUI.OptionPopupWithCustom(EditorGUILayout.GetControlRect(false), label, value, options);
+            return SPEditorGUI.OptionPopupWithCustom(EditorGUILayout.GetControlRect(true), label, value, options);
         }
 
         public static string OptionPopupWithCustom(GUIContent label, string value, string[] options)
         {
-            return SPEditorGUI.OptionPopupWithCustom(EditorGUILayout.GetControlRect(false), label, value, options);
+            return SPEditorGUI.OptionPopupWithCustom(EditorGUILayout.GetControlRect(label != null && label != GUIContent.none), label, value, options);
         }
 
         #endregion
@@ -341,6 +346,18 @@ namespace com.spacepuppyeditor
         {
             var position = EditorGUILayout.GetControlRect(true);
             return SPEditorGUI.TypeDropDown(position, label, selectedType, baseType, allowAbstractTypes, allowInterfaces, allowGeneric, defaultType, excludedTypes, listType, searchFilter, maxVisisbleCount);
+        }
+
+        public static System.Type TypeDropDown(GUIContent label,
+                                               System.Type selectedType,
+                                               IEnumerable<System.Type> typeEnumerator,
+                                               System.Type baseType = null, System.Type defaultType = null,
+                                               TypeDropDownListingStyle listType = TypeDropDownListingStyle.Flat,
+                                               System.Func<System.Type, string, bool> searchFilter = null,
+                                               int maxVisisbleCount = TypeDropDownWindowSelector.DEFAULT_MAXCOUNT)
+        {
+            var position = EditorGUILayout.GetControlRect(true);
+            return SPEditorGUI.TypeDropDown(position, label, selectedType, typeEnumerator, baseType, defaultType, listType, searchFilter, maxVisisbleCount);
         }
 
         public static System.Type TypeDropDown(GUIContent label,

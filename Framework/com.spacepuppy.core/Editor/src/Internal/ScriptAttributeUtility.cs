@@ -10,7 +10,7 @@ using com.spacepuppy.Dynamic;
 
 namespace com.spacepuppyeditor.Internal
 {
-    internal static class ScriptAttributeUtility
+    public static class ScriptAttributeUtility
     {
 
         public static readonly IPropertyHandler SharedNullPropertyHandler = new DefaultPropertyHandler();
@@ -83,7 +83,7 @@ namespace com.spacepuppyeditor.Internal
 
         //#######################
         // GetHandler
-        
+
         public static IPropertyHandler GetHandler(SerializedProperty property)
         {
             if (property == null) throw new System.ArgumentNullException(nameof(property));

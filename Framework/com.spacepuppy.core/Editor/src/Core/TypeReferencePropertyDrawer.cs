@@ -28,7 +28,7 @@ namespace com.spacepuppyeditor.Core
 
         public TypeDropDownListingStyle DropDownStyle { get; set; } = TypeDropDownListingStyle.Flat;
 
-        public System.Predicate<System.Type> EnumeratePredicate { get; set; }
+        public IEnumerable<System.Type> TypeEnumerator { get; set; }
 
         public System.Func<System.Type, string, bool> SearchFilter { get; set; }
 
@@ -39,7 +39,7 @@ namespace com.spacepuppyeditor.Core
         public void ConfigureSimple(System.Type inheritsFromType, bool allowAbstract = false, bool allowInterfaces = false, bool allowGeneric = false, System.Type[] excludedTypes = null)
         {
             this.InheritsFromTypes = new System.Type[] { inheritsFromType ?? typeof(object) };
-            this.EnumeratePredicate = TypeDropDownWindowSelector.CreateEnumeratePredicate(inheritsFromType, allowAbstract, allowInterfaces, allowGeneric, excludedTypes);
+            this.TypeEnumerator = TypeDropDownWindowSelector.CreateTypeEnumerator(inheritsFromType, allowAbstract, allowInterfaces, allowGeneric, excludedTypes);
         }
 
         private void Init()
@@ -53,7 +53,7 @@ namespace com.spacepuppyeditor.Core
                     this.InheritsFromTypes = _currentAttrib.inheritsFromTypes;
                     this.DefaultType = _currentAttrib.defaultType;
                     this.DropDownStyle = _currentAttrib.dropDownStyle;
-                    this.EnumeratePredicate = CreateEnumeratePredicate(_currentAttrib);
+                    this.TypeEnumerator = CreateTypeEnumerator(_currentAttrib);
                     this.MaxVisibleCount = _currentAttrib.MaxVisibleCount > int.MinValue ? _currentAttrib.MaxVisibleCount : TypeDropDownWindowSelector.DEFAULT_MAXCOUNT;
                 }
             }
@@ -67,7 +67,7 @@ namespace com.spacepuppyeditor.Core
 
             var tp = GetTypeFromTypeReference(property);
             EditorGUI.BeginChangeCheck();
-            tp = SPEditorGUI.TypeDropDown(position, label, tp, this.EnumeratePredicate, this.InheritsFromTypes?.Length == 1 ? this.InheritsFromTypes[0] : null, this.DefaultType, this.DropDownStyle, this.SearchFilter, this.MaxVisibleCount);
+            tp = SPEditorGUI.TypeDropDown(position, label, tp, this.TypeEnumerator, this.InheritsFromTypes?.Length == 1 ? this.InheritsFromTypes[0] : null, this.DefaultType, this.DropDownStyle, this.SearchFilter, this.MaxVisibleCount);
             if (EditorGUI.EndChangeCheck())
             {
                 SetTypeToTypeReference(property, tp);
@@ -104,15 +104,15 @@ namespace com.spacepuppyeditor.Core
         }
 
 
-        public static System.Predicate<System.Type> CreateEnumeratePredicate(TypeReference.ConfigAttribute attrib)
+        public static IEnumerable<System.Type> CreateTypeEnumerator(TypeReference.ConfigAttribute attrib)
         {
             if(attrib.inheritsFromTypes?.Length > 1)
             {
-                return TypeDropDownWindowSelector.CreateEnumeratePredicate(attrib.inheritsFromTypes, attrib.allowAbstractClasses, attrib.allowInterfaces, attrib.allowGeneric, attrib.excludedTypes);
+                return TypeDropDownWindowSelector.CreateTypeEnumerator(attrib.inheritsFromTypes, attrib.allowAbstractClasses, attrib.allowInterfaces, attrib.allowGeneric, attrib.excludedTypes);
             }
             else
             {
-                return TypeDropDownWindowSelector.CreateEnumeratePredicate(attrib.inheritsFromTypes?.FirstOrDefault() ?? typeof(object), attrib.allowAbstractClasses, attrib.allowInterfaces, attrib.allowGeneric, attrib.excludedTypes);
+                return TypeDropDownWindowSelector.CreateTypeEnumerator(attrib.inheritsFromTypes?.FirstOrDefault() ?? typeof(object), attrib.allowAbstractClasses, attrib.allowInterfaces, attrib.allowGeneric, attrib.excludedTypes);
             }
         }
 

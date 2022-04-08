@@ -21,7 +21,7 @@ namespace com.spacepuppyeditor.Windows
         private System.Type _defaultType = null;
         private System.Type _baseType = typeof(object);
         private TypeDropDownListingStyle _listStyle;
-        private System.Predicate<System.Type> _enumeratePredicate;
+        private IEnumerable<System.Type> _typeEnumerator;
         private System.Func<System.Type, string, bool> _searchFilter;
 
         #endregion
@@ -77,7 +77,7 @@ namespace com.spacepuppyeditor.Windows
             {
                 window.Header = (_baseType == typeof(object) || _baseType == null) ? "Types" : _baseType.Name + "/s";
 
-                results = TypeUtil.GetTypes(_enumeratePredicate)
+                results = _typeEnumerator
                                 .Where(tp => _searchFilter(tp, match))
                                 .Select(tp => new SearchDropDownElement()
                                 {
@@ -89,7 +89,7 @@ namespace com.spacepuppyeditor.Windows
             {
                 window.Header = (_baseType == typeof(object) || _baseType == null) ? "Types" : _baseType.Name + "/s";
 
-                results = TypeUtil.GetTypes(_enumeratePredicate)
+                results = _typeEnumerator
                                 .Select(tp => new SearchDropDownElement()
                                 {
                                     Content = GetLabel(tp),
@@ -100,7 +100,7 @@ namespace com.spacepuppyeditor.Windows
             {
                 window.Header = (_baseType == typeof(object) || _baseType == null) ? "Filtered Types" : "Filtered " + _baseType.Name + "/s";
 
-                results = TypeUtil.GetTypes(_enumeratePredicate)
+                results = _typeEnumerator
                                 .Where(tp => tp.Name.IndexOf(match, 0, System.StringComparison.OrdinalIgnoreCase) >= 0)
                                 .Select(tp => new SearchDropDownElement()
                                 {
@@ -121,6 +121,46 @@ namespace com.spacepuppyeditor.Windows
 
         public static System.Type Popup(Rect position, GUIContent label,
                                         System.Type selectedType,
+                                        IEnumerable<System.Type> typeEnumerator,
+                                        System.Type baseType = null,
+                                        System.Type defaultType = null,
+                                        TypeDropDownListingStyle listType = TypeDropDownListingStyle.Flat,
+                                        System.Func<System.Type, string, bool> searchFilter = null,
+                                        int maxVisibleCount = DEFAULT_MAXCOUNT)
+        {
+            return GenericSearchDropDownWindow.Popup(position, label, selectedType, new TypeDropDownWindowSelector()
+            {
+                _baseType = baseType,
+                _typeEnumerator = typeEnumerator ?? TypeUtil.GetTypes(),
+                _defaultType = defaultType,
+                _listStyle = listType,
+                _searchFilter = searchFilter,
+                MaxCount = maxVisibleCount,
+            }) as System.Type;
+        }
+
+        public static void ShowAndCallbackOnSelect(int controlId, Rect positionUnder, System.Type selectedType,
+                                        IEnumerable<System.Type> typeEnumerator,
+                                                   System.Action<System.Type> callback,
+                                                   System.Type baseType = null,
+                                                   System.Type defaultType = null,
+                                                   TypeDropDownListingStyle listType = TypeDropDownListingStyle.Flat,
+                                                   System.Func<System.Type, string, bool> searchFilter = null,
+                                                   int maxVisibleCount = DEFAULT_MAXCOUNT)
+        {
+            GenericSearchDropDownWindow.ShowAndCallbackOnSelect(controlId, positionUnder, null, (o) => callback(o as System.Type), new TypeDropDownWindowSelector()
+            {
+                _baseType = baseType,
+                _typeEnumerator = typeEnumerator ?? TypeUtil.GetTypes(),
+                _defaultType = defaultType,
+                _listStyle = listType,
+                _searchFilter = searchFilter,
+                MaxCount = maxVisibleCount,
+            });
+        }
+
+        public static System.Type Popup(Rect position, GUIContent label,
+                                        System.Type selectedType,
                                         System.Predicate<System.Type> enumeratePredicate,
                                         System.Type baseType = null,
                                         System.Type defaultType = null,
@@ -131,7 +171,7 @@ namespace com.spacepuppyeditor.Windows
             return GenericSearchDropDownWindow.Popup(position, label, selectedType, new TypeDropDownWindowSelector()
             {
                 _baseType = baseType,
-                _enumeratePredicate = enumeratePredicate,
+                _typeEnumerator = TypeUtil.GetTypes(enumeratePredicate),
                 _defaultType = defaultType,
                 _listStyle = listType,
                 _searchFilter = searchFilter,
@@ -151,7 +191,7 @@ namespace com.spacepuppyeditor.Windows
             GenericSearchDropDownWindow.ShowAndCallbackOnSelect(controlId, positionUnder, null, (o) => callback(o as System.Type), new TypeDropDownWindowSelector()
             {
                 _baseType = baseType,
-                _enumeratePredicate = enumeratePredicate,
+                _typeEnumerator = TypeUtil.GetTypes(enumeratePredicate),
                 _defaultType = defaultType,
                 _listStyle = listType,
                 _searchFilter = searchFilter,
@@ -159,9 +199,9 @@ namespace com.spacepuppyeditor.Windows
             });
         }
 
-        public static System.Predicate<System.Type> CreateEnumeratePredicate(System.Type baseType, bool allowAbstractTypes = false, bool allowInterfaces = false, bool allowGeneric = false, System.Type[] excludedTypes = null)
+        public static IEnumerable<System.Type> CreateTypeEnumerator(System.Type baseType, bool allowAbstractTypes = false, bool allowInterfaces = false, bool allowGeneric = false, System.Type[] excludedTypes = null)
         {
-            return new System.Predicate<System.Type>(tp =>
+            return TypeUtil.GetTypes(tp =>
             {
                 if (tp == null) return false;
 
@@ -175,9 +215,9 @@ namespace com.spacepuppyeditor.Windows
             });
         }
 
-        public static System.Predicate<System.Type> CreateEnumeratePredicate(System.Type[] baseTypes, bool allowAbstractTypes = false, bool allowInterfaces = false, bool allowGeneric = false, System.Type[] excludedTypes = null)
+        public static IEnumerable<System.Type> CreateTypeEnumerator(System.Type[] baseTypes, bool allowAbstractTypes = false, bool allowInterfaces = false, bool allowGeneric = false, System.Type[] excludedTypes = null)
         {
-            return new System.Predicate<System.Type>(tp =>
+            return TypeUtil.GetTypes(tp =>
             {
                 if (tp == null) return false;
 

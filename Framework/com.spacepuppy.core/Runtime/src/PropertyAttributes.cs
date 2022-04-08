@@ -186,6 +186,9 @@ namespace com.spacepuppy
     public class NegativeIsInfinityAttribute : SPPropertyAttribute
     {
 
+        public string ShortInfinityLabel;
+        public string InfinityLabel;
+
     }
 
     /// <summary>
@@ -586,7 +589,7 @@ namespace com.spacepuppy
     #region DecoratorDrawer Attributes
 
     [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = true)]
-    public class InsertButtonAttribute : PropertyAttribute
+    public class InsertButtonAttribute : SPPropertyAttribute
     {
 
         public string Label;

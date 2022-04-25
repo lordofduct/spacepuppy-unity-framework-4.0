@@ -59,7 +59,7 @@ namespace com.spacepuppyeditor.Core
                 var asPropAttrib = this.fieldInfo.GetCustomAttributes(typeof(VariantCollection.AsPropertyListAttribute), false).FirstOrDefault() as VariantCollection.AsPropertyListAttribute;
                 if (asPropAttrib != null && asPropAttrib.TargetType != null)
                 {
-                    this.ConfigurePropertyList(asPropAttrib.TargetType);
+                    this.ConfigurePropertyList(asPropAttrib.TargetType, asPropAttrib.BlockCustomEntry);
                 }
 
                 var asTypedList = this.fieldInfo.GetCustomAttributes(typeof(VariantCollection.AsTypedList), false).FirstOrDefault() as VariantCollection.AsTypedList;
@@ -98,11 +98,16 @@ namespace com.spacepuppyeditor.Core
 
         public VariantReferencePropertyDrawer VariantDrawer => _variantDrawer;
 
+        /// <summary>
+        /// If configured as a property list, this will return true if we are configured to allow a 'custom' entry, and the last element of _propertyListNames is that entry.
+        /// </summary>
+        private bool PropertyListAllowsCustom { get; set; }
+
         #endregion
 
         #region Methods
 
-        public void ConfigurePropertyList(System.Type tp)
+        public void ConfigurePropertyList(System.Type tp, bool blockCustomEntry = false)
         {
             _propertyListTargetType = tp;
             if (tp != null)
@@ -110,6 +115,8 @@ namespace com.spacepuppyeditor.Core
                 _propertyListMembers = (from m
                                          in DynamicUtil.GetEasilySerializedMembersFromType(_propertyListTargetType, System.Reflection.MemberTypes.Field | System.Reflection.MemberTypes.Property, DynamicMemberAccess.Write)
                                         select m).ToArray();
+
+                this.PropertyListAllowsCustom = !blockCustomEntry;
                 _propertyListNames = (from m in _propertyListMembers select m.Name).ToArray();
             }
             else
@@ -163,18 +170,52 @@ namespace com.spacepuppyeditor.Core
             if (_propertyListTargetType != null)
             {
                 var nameRect = new Rect(area.xMin, area.yMin, w, EditorGUIUtility.singleLineHeight);
-                EditorGUI.BeginChangeCheck();
-                int i = EditorGUI.Popup(nameRect, _propertyListNames.IndexOf(keyProp.stringValue), _propertyListNames);
-                if (EditorGUI.EndChangeCheck() && i >= 0 && !NameIsInUse(_currentKeysProp, _propertyListNames[i]))
-                    keyProp.stringValue = _propertyListNames[i];
+                int propIndex = _propertyListNames.IndexOf(keyProp.stringValue);
+
+                if (this.PropertyListAllowsCustom)
+                {
+                    EditorGUI.BeginChangeCheck();
+                    string sprop = SPEditorGUI.OptionPopupWithCustom(nameRect, GUIContent.none, keyProp.stringValue, _propertyListNames);
+                    if(EditorGUI.EndChangeCheck())
+                    {
+                        if (string.IsNullOrEmpty(sprop))
+                        {
+                            sprop = GetNextEntryName(_currentKeysProp);
+                            propIndex = -1;
+                            keyProp.stringValue = sprop;
+                        }
+                        else if(!NameIsInUse(_currentKeysProp, sprop))
+                        {
+                            propIndex = _propertyListNames.IndexOf(keyProp.stringValue);
+                            keyProp.stringValue = sprop;
+                        }
+                    }
+                }
+                else
+                {
+                    EditorGUI.BeginChangeCheck();
+                    int i = EditorGUI.Popup(nameRect, propIndex, _propertyListNames);
+                    if (i >= 0 && !NameIsInUse(_currentKeysProp, _propertyListNames[i]))
+                    {
+                        propIndex = i;
+                        keyProp.stringValue = _propertyListNames[i];
+                    }
+                }
 
                 var variantRect = new Rect(nameRect.xMax + 1f, area.yMin, area.width - (nameRect.width + 1f), area.height);
-                if (i >= 0)
+                if (propIndex >= 0)
                 {
-                    var propType = com.spacepuppy.Dynamic.DynamicUtil.GetReturnType(_propertyListMembers[i]);
+                    var propType = com.spacepuppy.Dynamic.DynamicUtil.GetReturnType(_propertyListMembers[propIndex]);
                     _variantDrawer.RestrictVariantType = true;
                     _variantDrawer.TypeRestrictedTo = propType;
                     _variantDrawer.ForcedObjectType = propType;
+                    _variantDrawer.DrawValueField(variantRect, variantProp);
+                }
+                else if(this.PropertyListAllowsCustom)
+                {
+                    _variantDrawer.RestrictVariantType = false;
+                    _variantDrawer.TypeRestrictedTo = null;
+                    _variantDrawer.ForcedObjectType = null;
                     _variantDrawer.DrawValueField(variantRect, variantProp);
                 }
                 else
@@ -188,6 +229,9 @@ namespace com.spacepuppyeditor.Core
                 keyProp.stringValue = EditorGUI.TextField(nameRect, keyProp.stringValue);
 
                 var variantRect = new Rect(nameRect.xMax + 1f, area.yMin, area.width - (nameRect.width + 1f), area.height);
+                _variantDrawer.RestrictVariantType = false;
+                _variantDrawer.TypeRestrictedTo = null;
+                _variantDrawer.ForcedObjectType = null;
                 _variantDrawer.DrawValueField(variantRect, variantProp);
             }
         }
@@ -197,15 +241,17 @@ namespace com.spacepuppyeditor.Core
             if (_propertyListTargetType != null)
             {
                 int i = _currentKeysProp.arraySize;
+                string sprop = this.PropertyListAllowsCustom ? GetNextEntryName(_currentKeysProp) : null;
                 _currentKeysProp.arraySize = i + 1;
-                _currentKeysProp.GetArrayElementAtIndex(i).stringValue = null;
+                _currentKeysProp.GetArrayElementAtIndex(i).stringValue = sprop;
                 _currentValuesProp.arraySize = i + 1;
             }
             else
             {
                 int i = _currentKeysProp.arraySize;
+                string sprop = GetNextEntryName(_currentKeysProp);
                 _currentKeysProp.arraySize = i + 1;
-                _currentKeysProp.GetArrayElementAtIndex(i).stringValue = "Entry " + i.ToString();
+                _currentKeysProp.GetArrayElementAtIndex(i).stringValue = sprop;
                 _currentValuesProp.arraySize = i + 1;
             }
         }
@@ -234,6 +280,18 @@ namespace com.spacepuppyeditor.Core
         #endregion
 
         #region Static Utils
+
+        private static string GetNextEntryName(SerializedProperty keysArrayProp)
+        {
+            int i = Mathf.Max(keysArrayProp.arraySize, 1);
+            string sname = string.Format("Entry {0}", i);
+            while(NameIsInUse(keysArrayProp, sname))
+            {
+                i++;
+                sname = string.Format("Entry {0}", i);
+            }
+            return sname;
+        }
 
         private static bool NameIsInUse(SerializedProperty keysArrayProp, string name)
         {

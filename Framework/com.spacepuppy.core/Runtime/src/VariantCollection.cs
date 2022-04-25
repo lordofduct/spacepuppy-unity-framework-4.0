@@ -343,6 +343,13 @@ namespace com.spacepuppy
             return _table.Remove(key);
         }
 
+        public void Clear()
+        {
+            _table.Clear();
+            _keys = null;
+            _values = null;
+        }
+
         #endregion
 
         #region IToken Interface
@@ -539,7 +546,7 @@ namespace com.spacepuppy
 
 #endregion
 
-#region ISerializationCallbackReceiver Interface
+        #region ISerializationCallbackReceiver Interface
 
         void ISerializationCallbackReceiver.OnAfterDeserialize()
         {
@@ -560,9 +567,9 @@ namespace com.spacepuppy
             _values = _table.Values.ToArray();
         }
 
-#endregion
+        #endregion
 
-#region ISerializable Interface
+        #region ISerializable Interface
 
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
@@ -584,9 +591,9 @@ namespace com.spacepuppy
             (this as ISerializationCallbackReceiver).OnAfterDeserialize();
         }
 
-#endregion
+        #endregion
 
-#region IEnumerable Interface
+        #region IEnumerable Interface
 
         public Enumerator GetEnumerator()
         {
@@ -658,9 +665,9 @@ namespace com.spacepuppy
             }
         }
 
-#endregion
+        #endregion
 
-#region Special Types
+        #region Special Types
 
         /// <summary>
         /// Configure the list to include name/type pairs reflected from a target type.
@@ -677,6 +684,8 @@ namespace com.spacepuppy
             }
 
             public System.Type TargetType { get { return _tp; } }
+
+            public bool BlockCustomEntry { get; set; }
 
         }
 
@@ -698,7 +707,7 @@ namespace com.spacepuppy
 
         }
 
-#endregion
+        #endregion
 
     }
 

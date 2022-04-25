@@ -369,7 +369,7 @@ namespace com.spacepuppyeditor
             SerializedProperty iterator = serializedObject.GetIterator();
             for (bool enterChildren = true; iterator.NextVisible(enterChildren); enterChildren = false)
             {
-                if (propsNotToDraw == null || !propsNotToDraw.Contains(iterator.name))
+                if (propsNotToDraw == null || !propsNotToDraw.Contains(iterator.propertyPath))
                 {
                     //using (new EditorGUI.DisabledScope(EditorHelper.PROP_SCRIPT == iterator.propertyPath))
                     {

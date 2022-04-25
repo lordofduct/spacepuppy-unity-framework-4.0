@@ -6,6 +6,7 @@ using System.Linq;
 using com.spacepuppy;
 using com.spacepuppy.Utils;
 using System.Runtime.CompilerServices;
+using System.Reflection;
 
 namespace com.spacepuppyeditor.Core
 {
@@ -50,6 +51,12 @@ namespace com.spacepuppyeditor.Core
         {
             get => (this.attribute as SerializeRefPickerAttribute)?.AlwaysExpanded ?? _alwaysExpanded;
             set => _alwaysExpanded = value;
+        }
+
+        public string NullLabel
+        {
+            get;
+            set;
         }
 
         #endregion
@@ -146,26 +153,7 @@ namespace com.spacepuppyeditor.Core
 
             if (this.RefType != null)
             {
-                var info = GetAvailableTypes(this.RefType);
-                if (info == null) return;
-
-                var tp = property.GetManagedReferenceType();
-
-                var atypes = this.AllowNull ? info.Value.AvailableTypesWithNull : info.Value.AvailableTypes;
-                var anames = this.AllowNull ? info.Value.AvailableTypeNamesWithNull : info.Value.AvailableTypeNames;
-
-                int index = atypes.IndexOf(tp);
-                EditorGUI.BeginChangeCheck();
-                index = EditorGUI.Popup(selectorArea, GUIContent.none, index, anames);
-                if (EditorGUI.EndChangeCheck())
-                {
-                    if (index >= 0)
-                    {
-                        tp = atypes[index];
-                        property.managedReferenceValue = tp != null ? System.Activator.CreateInstance(tp) : null;
-                        com.spacepuppyeditor.Internal.ScriptAttributeUtility.ResetPropertyHandler(property, true);
-                    }
-                }
+                DrawRefPicker(selectorArea, property, GUIContent.none, this.RefType, this.AllowNull, this.NullLabel);
             }
         }
 
@@ -174,7 +162,38 @@ namespace com.spacepuppyeditor.Core
 
         private static Dictionary<System.Type, TypeInfo> _availableTypes = new Dictionary<System.Type, TypeInfo>();
 
-        public static TypeInfo? GetAvailableTypes(System.Type reftp)
+
+        public static bool DrawRefPicker(Rect position, SerializedProperty property, GUIContent label, System.Type reftp, bool allownull, string nulllabel = null)
+        {
+            if (property == null) throw new System.ArgumentNullException(nameof(property));
+            if (reftp == null) throw new System.ArgumentNullException(nameof(reftp));
+
+            var info = GetAvailableTypes(reftp, nulllabel);
+            if (info == null) return false;
+
+            var tp = property.GetManagedReferenceType();
+
+            var atypes = allownull ? info.Value.AvailableTypesWithNull : info.Value.AvailableTypes;
+            var anames = allownull ? info.Value.AvailableTypeNamesWithNull : info.Value.AvailableTypeNames;
+
+            int index = atypes.IndexOf(tp);
+            EditorGUI.BeginChangeCheck();
+            index = EditorGUI.Popup(position, label ?? GUIContent.none, index, anames);
+            if (EditorGUI.EndChangeCheck())
+            {
+                if (index >= 0 && atypes[index] != tp)
+                {
+                    tp = atypes[index];
+                    property.managedReferenceValue = tp != null ? System.Activator.CreateInstance(tp) : null;
+                    com.spacepuppyeditor.Internal.ScriptAttributeUtility.ResetPropertyHandler(property, true);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public static TypeInfo? GetAvailableTypes(System.Type reftp, string nulllabel = null)
         {
             if (reftp == null) return null;
 
@@ -188,6 +207,9 @@ namespace com.spacepuppyeditor.Core
             info.AvailableTypes = TypeUtil.GetTypesAssignableFrom(reftp).Where(o => !o.IsAbstract && !o.IsInterface && (o.IsValueType || o.GetConstructor(System.Type.EmptyTypes) != null) && !TypeUtil.IsType(o, typeof(UnityEngine.Object)) && o.IsSerializable).OrderBy(o => o.Name).ToArray();
             info.AvailableTypeNames = info.AvailableTypes.Select(tp =>
             {
+                var attrib = tp.GetCustomAttribute<SerializeRefLabelAttribute>();
+                if (attrib != null) return new GUIContent(attrib.Label ?? string.Empty);
+
                 if (info.AvailableTypes.Count(o => string.Equals(o.Name, tp.Name)) > 1)
                 {
                     return new GUIContent(tp.Name + " : " + tp.FullName);
@@ -199,7 +221,7 @@ namespace com.spacepuppyeditor.Core
             }).ToArray();
 
             info.AvailableTypesWithNull = info.AvailableTypes.Append(null).ToArray();
-            info.AvailableTypeNamesWithNull = info.AvailableTypeNames.Append(new GUIContent("NULL")).ToArray();
+            info.AvailableTypeNamesWithNull = info.AvailableTypeNames.Append(new GUIContent(nulllabel ?? "NULL")).ToArray();
 
             _availableTypes[reftp] = info;
             return info;

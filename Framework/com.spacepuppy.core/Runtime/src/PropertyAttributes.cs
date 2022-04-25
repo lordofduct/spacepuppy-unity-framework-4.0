@@ -101,6 +101,16 @@ namespace com.spacepuppy
         }
     }
 
+    public class SerializeRefLabelAttribute : System.Attribute
+    {
+        public string Label { get; set; }
+
+        public SerializeRefLabelAttribute(string label)
+        {
+            this.Label = label;
+        }
+    }
+
     public class DisplayFlatAttribute : SPPropertyAttribute
     {
 

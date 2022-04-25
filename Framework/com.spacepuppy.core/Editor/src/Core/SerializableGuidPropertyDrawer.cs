@@ -15,16 +15,15 @@ namespace com.spacepuppyeditor.Core
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
+            float h;
+            if (EditorHelper.AssertMultiObjectEditingNotSupportedHeight(property, label, out h)) return h;
+
             return EditorGUIUtility.singleLineHeight;
         }
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-            if (property.serializedObject.isEditingMultipleObjects)
-            {
-                EditorGUI.LabelField(position, label, EditorHelper.TempContent("Not Supported in Multi-Edit Mode"));
-                return;
-            }
+            if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
 
             EditorGUI.BeginProperty(position, label, property);
 

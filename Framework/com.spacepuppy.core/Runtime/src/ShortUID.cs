@@ -177,7 +177,7 @@ namespace com.spacepuppy
         #region Operators
 
         /// <summary>
-        /// Determines if both ShortGuids have the same underlying
+        /// Determines if both ShortUids have the same underlying
         /// Guid value.
         /// </summary>
         /// <param name="x"></param>
@@ -189,7 +189,7 @@ namespace com.spacepuppy
         }
 
         /// <summary>
-        /// Determines if both ShortGuids do not have the
+        /// Determines if both ShortUids do not have the
         /// same underlying Guid value.
         /// </summary>
         /// <param name="x"></param>
@@ -201,7 +201,7 @@ namespace com.spacepuppy
         }
 
         /// <summary>
-        /// Implicitly converts the ShortGuid to it's string equivilent
+        /// Implicitly converts the ShortUid to it's string equivilent
         /// </summary>
         /// <param name="uid"></param>
         /// <returns></returns>

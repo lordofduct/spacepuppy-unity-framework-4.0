@@ -1901,6 +1901,13 @@ namespace com.spacepuppy
             return VariantType.Ref;
         }
 
+        public static VariantType GetVariantType(object obj)
+        {
+            if (obj == null) return VariantType.Null;
+            if (obj is System.Type tp) return GetVariantType(tp);
+            return GetVariantType(obj.GetType());
+        }
+
         public static System.Type GetTypeFromVariantType(VariantType etp)
         {
             switch (etp)
@@ -1942,6 +1949,52 @@ namespace com.spacepuppy
             }
 
             return typeof(object);
+        }
+
+        public static object Coerce(object obj, VariantType etp)
+        {
+            switch(etp)
+            {
+                case VariantType.Object:
+                    return obj as UnityEngine.Object;
+                case VariantType.Null:
+                    return null;
+                case VariantType.String:
+                    return obj?.ToString() ?? string.Empty;
+                case VariantType.Boolean:
+                    return ConvertUtil.ToBool(obj);
+                case VariantType.Integer:
+                    return ConvertUtil.ToInt(obj);
+                case VariantType.Float:
+                    return ConvertUtil.ToSingle(obj);
+                case VariantType.Double:
+                    return ConvertUtil.ToDouble(obj);
+                case VariantType.Vector2:
+                    return ConvertUtil.ToVector2(obj);
+                case VariantType.Vector3:
+                    return ConvertUtil.ToVector3(obj);
+                case VariantType.Vector4:
+                    return ConvertUtil.ToVector4(obj);
+                case VariantType.Quaternion:
+                    return ConvertUtil.ToQuaternion(obj);
+                case VariantType.Color:
+                    return ConvertUtil.ToColor(obj);
+                case VariantType.DateTime:
+                    return ConvertUtil.ToDate(obj);
+                case VariantType.GameObject:
+                    return GameObjectUtil.GetGameObjectFromSource(obj);
+                case VariantType.Component:
+                    return obj as Component;
+                case VariantType.LayerMask:
+                    return (LayerMask)ConvertUtil.ToInt(obj);
+                case VariantType.Rect:
+                    return obj is Rect ? (Rect)obj : new Rect();
+                case VariantType.Numeric:
+                    return ConvertUtil.ToDouble(obj);
+                case VariantType.Ref:
+                default:
+                    return obj;
+            }
         }
 
         private static void EncodeDateTime(System.DateTime dt, out double low, out float high)

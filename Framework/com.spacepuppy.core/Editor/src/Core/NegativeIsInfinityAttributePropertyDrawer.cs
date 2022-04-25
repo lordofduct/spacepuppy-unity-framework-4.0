@@ -30,6 +30,36 @@ namespace com.spacepuppyeditor.Core
 
             switch(property.propertyType)
             {
+                case SerializedPropertyType.Integer when property.type == "long":
+                    {
+                        bool isinf = property.longValue < 0;
+                        EditorGUI.BeginChangeCheck();
+                        isinf = EditorGUI.ToggleLeft(r0, shortlabel, isinf);
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            property.longValue = isinf ? -1 : 0;
+                        }
+
+                        if (isinf)
+                        {
+                            property.longValue = -1;
+                            EditorGUI.BeginChangeCheck();
+                            string soutput = EditorGUI.DelayedTextField(r1, longlabel, GUI.skin.textField);
+                            if (EditorGUI.EndChangeCheck())
+                            {
+                                long output;
+                                if(long.TryParse(soutput, out output) && output >= 0)
+                                {
+                                    property.longValue = output;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            property.longValue = EditorGUI.LongField(r1, property.longValue);
+                        }
+                    }
+                    break;
                 case SerializedPropertyType.Integer:
                     {
                         bool isinf = property.intValue < 0;
@@ -43,11 +73,50 @@ namespace com.spacepuppyeditor.Core
                         if(isinf)
                         {
                             property.intValue = -1;
-                            EditorGUI.SelectableLabel(r1, longlabel, GUI.skin.textField);
+                            EditorGUI.BeginChangeCheck();
+                            string soutput = EditorGUI.DelayedTextField(r1, longlabel, GUI.skin.textField);
+                            if (EditorGUI.EndChangeCheck())
+                            {
+                                int output;
+                                if (int.TryParse(soutput, out output) && output >= 0)
+                                {
+                                    property.intValue = output;
+                                }
+                            }
                         }
                         else
                         {
                             property.intValue = EditorGUI.IntField(r1, property.intValue);
+                        }
+                    }
+                    break;
+                case SerializedPropertyType.Float when property.type == "double":
+                    {
+                        bool isinf = property.doubleValue < 0;
+                        EditorGUI.BeginChangeCheck();
+                        isinf = EditorGUI.ToggleLeft(r0, shortlabel, isinf);
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            property.doubleValue = isinf ? -1 : 0;
+                        }
+
+                        if (isinf)
+                        {
+                            property.doubleValue = -1;
+                            EditorGUI.BeginChangeCheck();
+                            string soutput = EditorGUI.DelayedTextField(r1, longlabel, GUI.skin.textField);
+                            if (EditorGUI.EndChangeCheck())
+                            {
+                                double output;
+                                if (double.TryParse(soutput, out output) && output >= 0)
+                                {
+                                    property.doubleValue = output;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            property.doubleValue = EditorGUI.DoubleField(r1, property.doubleValue);
                         }
                     }
                     break;
@@ -64,7 +133,16 @@ namespace com.spacepuppyeditor.Core
                         if (isinf)
                         {
                             property.floatValue = -1;
-                            EditorGUI.SelectableLabel(r1, longlabel, GUI.skin.textField);
+                            EditorGUI.BeginChangeCheck();
+                            string soutput = EditorGUI.DelayedTextField(r1, longlabel, GUI.skin.textField);
+                            if (EditorGUI.EndChangeCheck())
+                            {
+                                float output;
+                                if (float.TryParse(soutput, out output) && output >= 0)
+                                {
+                                    property.floatValue = output;
+                                }
+                            }
                         }
                         else
                         {

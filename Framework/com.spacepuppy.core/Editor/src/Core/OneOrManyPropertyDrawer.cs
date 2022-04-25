@@ -24,6 +24,8 @@ namespace com.spacepuppyeditor.Core
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
+            float h;
+            if (EditorHelper.AssertMultiObjectEditingNotSupportedHeight(property, label, out h)) return h;
             if (!property.isArray) return EditorGUIUtility.singleLineHeight;
 
             if (property.arraySize == 0) property.arraySize = 1;
@@ -34,7 +36,7 @@ namespace com.spacepuppyeditor.Core
             }
             else
             {
-                var h = EditorGUIUtility.singleLineHeight;
+                h = EditorGUIUtility.singleLineHeight;
                 var lbl = EditorHelper.TempContent("Element 0");
                 for (int i = 0; i < property.arraySize; i++)
                 {
@@ -46,7 +48,9 @@ namespace com.spacepuppyeditor.Core
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-            if(!property.isArray)
+            if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
+
+            if (!property.isArray)
             {
                 EditorGUI.PropertyField(position, property, label, false);
                 return;
@@ -56,16 +60,17 @@ namespace com.spacepuppyeditor.Core
 
             if (property.arraySize == 1)
             {
-                var elementHeight = (_internalDrawer != null) ? _internalDrawer.GetPropertyHeight(property.GetArrayElementAtIndex(0), label) : EditorGUIUtility.singleLineHeight;
+                var firstchild = property.GetArrayElementAtIndex(0);
+                var elementHeight = (_internalDrawer != null) ? _internalDrawer.GetPropertyHeight(firstchild, label) : EditorGUIUtility.singleLineHeight;
                 var propArea = new Rect(position.xMin, position.yMin, Mathf.Max(0f, position.width - BTN_WIDTH), elementHeight);
                 var btnArea = new Rect(propArea.xMax, position.yMin, Mathf.Min(BTN_WIDTH, position.width), EditorGUIUtility.singleLineHeight);
 
                 if (_internalDrawer != null)
-                    _internalDrawer.OnGUI(propArea, property.GetArrayElementAtIndex(0), label);
+                    _internalDrawer.OnGUI(propArea, firstchild, label);
                 else if (property.GetArrayElementAtIndex(0).propertyType == SerializedPropertyType.ObjectReference)
-                    SPEditorGUI.ObjectFieldX(propArea, property.GetArrayElementAtIndex(0), label);
+                    SPEditorGUI.ObjectFieldX(propArea, firstchild, label);
                 else
-                    SPEditorGUI.DefaultPropertyField(propArea, property.GetArrayElementAtIndex(0), label);
+                    SPEditorGUI.DefaultPropertyField(propArea, firstchild, label);
 
                 if (GUI.Button(btnArea, _moreBtnLabel))
                 {
@@ -83,13 +88,13 @@ namespace com.spacepuppyeditor.Core
                                         Mathf.Min(SIZE_WIDTH, Mathf.Max(0f, leftOverArea.width - BTN_WIDTH)), EditorGUIUtility.singleLineHeight);
                 var btnArea = new Rect(sizeArea.xMax, position.yMin, Mathf.Min(BTN_WIDTH, position.width), EditorGUIUtility.singleLineHeight);
                 property.arraySize = Mathf.Max(EditorGUI.IntField(sizeArea, property.arraySize), 1);
-                if(GUI.Button(btnArea, _oneBtnLabel))
+                if (GUI.Button(btnArea, _oneBtnLabel))
                 {
                     property.arraySize = 1;
                 }
 
                 EditorGUI.indentLevel++;
-                for(int i = 0; i < property.arraySize; i++)
+                for (int i = 0; i < property.arraySize; i++)
                 {
                     var lbl = EditorHelper.TempContent("Element " + i.ToString());
                     var elementHeight = (_internalDrawer != null) ? _internalDrawer.GetPropertyHeight(property.GetArrayElementAtIndex(i), lbl) : EditorGUIUtility.singleLineHeight;

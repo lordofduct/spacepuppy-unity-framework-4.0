@@ -890,10 +890,42 @@ namespace com.spacepuppy.Utils
             return Math.Max(0, Math.Min(max, input));
         }
 
+        public static double Clamp(double input, double max, double min)
+        {
+            return Math.Max(min, Math.Min(max, input));
+        }
+        public static double Clamp(double input, double max)
+        {
+            return Math.Max(0, Math.Min(max, input));
+        }
+
+        public static decimal Clamp(decimal input, decimal max, decimal min)
+        {
+            return Math.Max(min, Math.Min(max, input));
+        }
+        public static decimal Clamp(decimal input, decimal max)
+        {
+            return Math.Max(0, Math.Min(max, input));
+        }
+
         public static float Clamp01(float input)
         {
             if (input < 0f) return 0f;
             else if (input > 1f) return 1f;
+            else return input;
+        }
+
+        public static double Clamp01(double input)
+        {
+            if (input < 0d) return 0d;
+            else if (input > 1d) return 1d;
+            else return input;
+        }
+
+        public static decimal Clamp01(decimal input)
+        {
+            if (input < 0m) return 0m;
+            else if (input > 1m) return 1m;
             else return input;
         }
 

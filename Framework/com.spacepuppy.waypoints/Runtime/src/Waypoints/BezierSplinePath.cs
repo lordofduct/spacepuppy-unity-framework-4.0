@@ -144,17 +144,6 @@ namespace com.spacepuppy.Waypoints
             return new Waypoint(p1, (p2 - p1));
         }
 
-        public int GetDetailedPositions(ICollection<Vector3> coll, float segmentLength)
-        {
-            if (coll == null) throw new System.ArgumentNullException("coll");
-            int detail = Mathf.FloorToInt(this.GetArcLength() / segmentLength) + 1;
-            for (int i = 0; i <= detail; i++)
-            {
-                coll.Add(this.GetPositionAt((float)i / (float)detail));
-            }
-            return detail + 1;
-        }
-
         #endregion
 
         #region IIndexedWaypointPath Interface
@@ -174,20 +163,20 @@ namespace com.spacepuppy.Waypoints
             return _controlPoints.IndexOf(controlpoint);
         }
 
-        public Vector3 GetPositionAfter(int index, float t)
+        public Vector3 GetPositionAfter(int index, float tprime)
         {
             if (index < 0 || index >= _controlPoints.Count) throw new System.IndexOutOfRangeException();
 
             float range = 1f / (_controlPoints.Count - 1);
-            return this.GetPositionAt(index * range + t * range);
+            return this.GetPositionAt(index * range + tprime * range);
         }
 
-        public Waypoint GetWaypointAfter(int index, float t)
+        public Waypoint GetWaypointAfter(int index, float tprime)
         {
             if (index < 0 || index >= _controlPoints.Count) throw new System.IndexOutOfRangeException();
 
             float range = 1f / (_controlPoints.Count - 1);
-            return this.GetWaypointAt(index * range + t * range);
+            return this.GetWaypointAt(index * range + tprime * range);
         }
 
         public float GetArcLengthAfter(int index)

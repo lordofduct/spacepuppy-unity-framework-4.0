@@ -11,19 +11,11 @@ namespace com.spacepuppy.Waypoints
     public class WaypointPathComponent : SPComponent
     {
 
-        public enum PathType
-        {
-            Cardinal = 0,
-            Linear = 1,
-            BezierChain = 2,
-            BezierSpline = 3
-        }
-
         #region Fields
 
         [Tooltip("The algorithm used for determining the path through the waypoints. NOTE - BezierSpline doesn't pass through the points and shouldn't be used with large numbers of waypoints, especially if the points animated.")]
         [SerializeField()]
-        private PathType _pathType;
+        private WaypointPathExtensions.PathType _pathType;
         [SerializeField()]
         [Tooltip("The curve makes a complete trip around to waypoint 0.")]
         private bool _closed;
@@ -31,7 +23,7 @@ namespace com.spacepuppy.Waypoints
         [Tooltip("When pathing on this path, use values relative to this transform instead of the global values.")]
         private Transform _transformRelativeTo;
         [SerializeField()]
-        private TransformControlPoint[] _controlPoints;
+        private TransformControlPoint[] _controlPoints = ArrayUtil.Empty<TransformControlPoint>();
 
         [Tooltip("If the control points move at runtime, and you'd like the WaypointPath to automatically update itself, flag this true.")]
         [SerializeField()]
@@ -72,7 +64,7 @@ namespace com.spacepuppy.Waypoints
             get { return _controlPoints.Length; }
         }
 
-        public PathType Type
+        public WaypointPathExtensions.PathType Type
         {
             get { return _pathType; }
             set
@@ -230,69 +222,7 @@ namespace com.spacepuppy.Waypoints
 
         public static IConfigurableIndexedWaypointPath GetPath(WaypointPathComponent c, bool cloneWaypoints)
         {
-            IConfigurableIndexedWaypointPath path = null;
-            switch (c._pathType)
-            {
-                case PathType.Cardinal:
-                    path = new CardinalSplinePath();
-                    break;
-                case PathType.Linear:
-                    path = new LinearPath();
-                    break;
-                case PathType.BezierChain:
-                    path = new BezierChainPath();
-                    break;
-                case PathType.BezierSpline:
-                    path = new BezierSplinePath();
-                    break;
-            }
-            if (path != null)
-            {
-                path.IsClosed = c._closed;
-                if (c._controlPoints != null)
-                {
-                    for (int i = 0; i < c._controlPoints.Length; i++)
-                    {
-                        if (cloneWaypoints)
-                            path.AddControlPoint(new Waypoint(c._controlPoints[i]));
-                        else
-                            path.AddControlPoint(c._controlPoints[i]);
-                    }
-                }
-            }
-            return path;
-        }
-
-        public static IConfigurableIndexedWaypointPath GetPath(PathType type, IEnumerable<IControlPoint> waypoints, bool isClosed, bool cloneWaypoints)
-        {
-            IConfigurableIndexedWaypointPath path = null;
-            switch (type)
-            {
-                case PathType.Cardinal:
-                    path = new CardinalSplinePath();
-                    break;
-                case PathType.Linear:
-                    path = new LinearPath();
-                    break;
-                case PathType.BezierChain:
-                    path = new BezierChainPath();
-                    break;
-                case PathType.BezierSpline:
-                    path = new BezierSplinePath();
-                    break;
-            }
-            if (path != null)
-            {
-                path.IsClosed = isClosed;
-                foreach (var wp in waypoints)
-                {
-                    if (cloneWaypoints)
-                        path.AddControlPoint(new Waypoint(wp));
-                    else
-                        path.AddControlPoint(wp);
-                }
-            }
-            return path;
+            return WaypointPathExtensions.CreatePath(c._pathType, c._controlPoints, c._closed, cloneWaypoints);
         }
 
         #endregion

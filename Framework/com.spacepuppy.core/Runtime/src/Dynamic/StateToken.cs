@@ -168,8 +168,9 @@ namespace com.spacepuppy.Dynamic
         /// <summary>
         /// Dumps the keys in this collection, and then copies keys to match the entire state of the passed in object.
         /// </summary>
-        /// <param name="obj"></param>
-        public void CopyFrom(object obj)
+        /// <param name="obj">The object to copy the state of.</param>
+        /// <param name="preserveState">Don't clear the keys in this collection before copying.</param>
+        public void CopyFrom(object obj, bool preserveState = false)
         {
             _table.Clear();
             foreach (var m in DynamicUtil.GetMembers(obj, false, System.Reflection.MemberTypes.Property | System.Reflection.MemberTypes.Field))

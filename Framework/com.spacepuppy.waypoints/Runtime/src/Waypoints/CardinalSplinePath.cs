@@ -171,17 +171,6 @@ namespace com.spacepuppy.Waypoints
             return _speedTable.TotalArcLength;
         }
 
-        public int GetDetailedPositions(ICollection<Vector3> coll, float segmentLength)
-        {
-            if (coll == null) throw new System.ArgumentNullException("coll");
-            int detail = Mathf.FloorToInt(this.GetArcLength() / segmentLength) + 1;
-            for (int i = 0; i <= detail; i++)
-            {
-                coll.Add(this.GetPositionAt((float)i / (float)detail));
-            }
-            return detail + 1;
-        }
-
         #endregion
 
         #region IIndexedWaypointPath Interface
@@ -205,7 +194,7 @@ namespace com.spacepuppy.Waypoints
             return _controlPoints.IndexOf(controlpoint);
         }
 
-        public Vector3 GetPositionAfter(int index, float t)
+        public Vector3 GetPositionAfter(int index, float tprime)
         {
             if (index < 0 || index >= _controlPoints.Count) throw new System.IndexOutOfRangeException();
             if (_controlPoints.Count < 2) return (_controlPoints.Count == 0) ? VectorUtil.NaNVector3 : _controlPoints[0].Position;
@@ -213,11 +202,11 @@ namespace com.spacepuppy.Waypoints
 
             float st = 1f / (float)(_controlPoints.Count - 1);
             float nt = (float)index * st;
-            nt += st * t;
+            nt += st * tprime;
             return this.GetRealPositionAt(nt);
         }
 
-        public Waypoint GetWaypointAfter(int index, float t)
+        public Waypoint GetWaypointAfter(int index, float tprime)
         {
             if (index < 0 || index >= _controlPoints.Count) throw new System.IndexOutOfRangeException();
             if (_controlPoints.Count < 2) return (_controlPoints.Count == 0) ? Waypoint.Invalid : new Waypoint(_controlPoints[0].Position, Vector3.zero);
@@ -225,7 +214,7 @@ namespace com.spacepuppy.Waypoints
 
             float st = 1f / (float)(_controlPoints.Count - 1);
             float nt = (float)index * st;
-            nt += st * t;
+            nt += st * tprime;
 
             var p1 = this.GetRealPositionAt(nt);
             var p2 = this.GetRealPositionAt(nt + 0.01f); //TODO - figure out a more efficient way of calculating the tangent
@@ -326,22 +315,6 @@ namespace com.spacepuppy.Waypoints
         {
             _controlPoints.Clear();
             _points = null;
-        }
-
-        public void DrawGizmos(float segmentLength)
-        {
-            if (_controlPoints.Count <= 1) return;
-
-            var length = this.GetArcLength();
-            int divisions = Mathf.FloorToInt(length / segmentLength) + 1;
-
-            for (int i = 0; i < divisions; i++)
-            {
-                float t1 = (float)i / (float)divisions;
-                float t2 = (float)(i + 1) / (float)divisions;
-
-                Gizmos.DrawLine(this.GetPositionAt(t1), this.GetPositionAt(t2));
-            }
         }
 
         #endregion

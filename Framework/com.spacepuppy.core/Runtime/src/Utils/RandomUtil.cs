@@ -170,6 +170,18 @@ namespace com.spacepuppy.Utils
         }
 
         /// <summary>
+        /// Select between min and max, exclussive of max.
+        /// </summary>
+        /// <param name="rng"></param>
+        /// <param name="max"></param>
+        /// <param name="min"></param>
+        /// <returns></returns>
+        public static long Range(this IRandom rng, long max, long min = 0)
+        {
+            return (long)((max - min) * rng.NextDouble()) + min;
+        }
+
+        /// <summary>
         /// Select an weighted index from 0 to length of weights.
         /// </summary>
         /// <param name="rng"></param>
@@ -352,6 +364,15 @@ namespace com.spacepuppy.Utils
 
             public LinearCongruentialRNG(long seed, ulong increment, ulong mult, ulong mode)
             {
+                this.Reset(seed, increment, mult, mode);
+            }
+
+            #endregion
+
+            #region Methods
+
+            public void Reset(long seed, ulong increment, ulong mult, ulong mode)
+            {
                 _mode = mode;
                 _mult = System.Math.Max(1, System.Math.Min(mode - 1, mult));
                 _incr = System.Math.Max(0, System.Math.Min(mode - 1, increment));
@@ -452,6 +473,15 @@ namespace com.spacepuppy.Utils
 
             public SimplePCG(long seed = -1, ulong inc = 1)
             {
+                this.Reset(seed, inc);
+            }
+
+            #endregion
+
+            #region Methods
+
+            public void Reset(long seed, ulong inc = 1)
+            {
                 if (seed < 0)
                 {
                     seed = System.DateTime.Now.Ticks;
@@ -462,10 +492,6 @@ namespace com.spacepuppy.Utils
                 _seed += (ulong)seed;
                 this.GetNext();
             }
-
-            #endregion
-
-            #region Methods
 
             private uint GetNext()
             {

@@ -1,6 +1,8 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 
+using com.spacepuppy.Geom;
+
 namespace com.spacepuppy.Waypoints
 {
     public interface IWaypointPath
@@ -12,7 +14,6 @@ namespace com.spacepuppy.Waypoints
         Vector3 GetPositionAt(float t);
         Waypoint GetWaypointAt(float t);
 
-        int GetDetailedPositions(ICollection<Vector3> coll, float segmentLength);
     }
 
     public interface IIndexedWaypointPath : IWaypointPath, IEnumerable<IControlPoint>
@@ -21,8 +22,8 @@ namespace com.spacepuppy.Waypoints
         int Count { get; }
         IControlPoint ControlPoint(int index);
         int IndexOf(IControlPoint waypoint);
-        Vector3 GetPositionAfter(int index, float t);
-        Waypoint GetWaypointAfter(int index, float t);
+        Vector3 GetPositionAfter(int index, float tprime);
+        Waypoint GetWaypointAfter(int index, float tprime);
         float GetArcLengthAfter(int index);
         /// <summary>
         /// Returns data pertaining to the relative position between the 2 control points on either side of 't'.
@@ -66,6 +67,29 @@ namespace com.spacepuppy.Waypoints
 
     public static class WaypointPathExtensions
     {
+
+        public enum PathType
+        {
+            Cardinal = 0,
+            Linear = 1,
+            BezierChain = 2,
+            BezierSpline = 3
+        }
+
+        public static int GetDetailedPositions(this IWaypointPath path, ICollection<Vector3> coll, float segmentLength)
+        {
+            if (path == null) throw new System.ArgumentNullException(nameof(path));
+            if (coll == null) throw new System.ArgumentNullException(nameof(coll));
+
+            if (path is LinearPath lin) return lin.GetDetailedPositions(coll);
+
+            int detail = Mathf.FloorToInt(path.GetArcLength() / segmentLength) + 1;
+            for (int i = 0; i <= detail; i++)
+            {
+                coll.Add(path.GetPositionAt((float)i / (float)detail));
+            }
+            return detail + 1;
+        }
 
         /// <summary>
         /// Tries to find the nearest point on a segment defined from index to index + 1 for a WaypointPath. 
@@ -132,6 +156,64 @@ namespace com.spacepuppy.Waypoints
                     }
             }
         }
+
+        public static IConfigurableIndexedWaypointPath CreatePath(PathType type)
+        {
+            switch (type)
+            {
+                case PathType.Cardinal:
+                    return new CardinalSplinePath();
+                case PathType.Linear:
+                    return new LinearPath();
+                case PathType.BezierChain:
+                    return new BezierChainPath();
+                case PathType.BezierSpline:
+                    return new BezierSplinePath();
+                default:
+                    return new CardinalSplinePath();
+            }
+        }
+
+        public static IConfigurableIndexedWaypointPath CreatePath(PathType type, IEnumerable<IControlPoint> waypoints, bool isClosed, bool cloneWaypoints)
+        {
+            IConfigurableIndexedWaypointPath path = CreatePath(type);
+            path.IsClosed = isClosed;
+            if (waypoints != null)
+            {
+                foreach (var wp in waypoints)
+                {
+                    if (cloneWaypoints)
+                        path.AddControlPoint(new Waypoint(wp));
+                    else
+                        path.AddControlPoint(wp);
+                }
+            }
+            return path;
+        }
+
+        public static void DrawGizmos(this IConfigurableIndexedWaypointPath path, float segmentLength)
+        {
+            DrawGizmos(path, segmentLength, Trans.Identity);
+        }
+
+        public static void DrawGizmos(this IConfigurableIndexedWaypointPath path, float segmentLength, Trans trans)
+        {
+            if (path.Count <= 1) return;
+            if (segmentLength <= 0.001f) segmentLength = 0.001f;
+
+            var length = path.GetArcLength();
+            int divisions = Mathf.FloorToInt(length / segmentLength) + 1;
+
+            for (int i = 0; i < divisions; i++)
+            {
+                float t1 = (float)i / (float)divisions;
+                float t2 = (float)(i + 1) / (float)divisions;
+
+                Gizmos.DrawLine(path.GetPositionAt(t1), path.GetPositionAt(t2));
+                //Gizmos.DrawLine(trans.TransformPoint(path.GetPositionAt(t1)), trans.TransformPoint(path.GetPositionAt(t2)));
+            }
+        }
+
 
     }
 

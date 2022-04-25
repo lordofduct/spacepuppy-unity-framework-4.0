@@ -41,6 +41,34 @@ namespace com.spacepuppy.Addressables
             return new AsyncWaitHandle<TObject>(AsyncOperationHandleProvider<TObject>.Default, handle);
         }
 
+        public static void OnComplete(this AsyncOperationHandle handle, System.Action<AsyncOperationHandle> callback)
+        {
+            if (callback == null) throw new System.ArgumentNullException(nameof(callback));
+
+            if(handle.IsDone)
+            {
+                callback(handle);
+            }
+            else
+            {
+                handle.Completed += callback;
+            }
+        }
+
+        public static void OnComplete<TObject>(this AsyncOperationHandle<TObject> handle, System.Action<AsyncOperationHandle<TObject>> callback)
+        {
+            if (callback == null) throw new System.ArgumentNullException(nameof(callback));
+
+            if (handle.IsDone)
+            {
+                callback(handle);
+            }
+            else
+            {
+                handle.Completed += callback;
+            }
+        }
+
         /// <summary>
         /// Returns true if the AssetReference has a configured target. That target may not necessarily be valid, but one is configured.
         /// </summary>
@@ -53,6 +81,9 @@ namespace com.spacepuppy.Addressables
 
         private static void RegisterSPManaged(object asset)
         {
+#if UNITY_EDITOR
+            if (!Application.isPlaying) return; //we don't apply the kill handle if this was loaded at editor time
+#endif
             var go = GameObjectUtil.GetGameObjectFromSource(asset);
             if (go != null)
             {

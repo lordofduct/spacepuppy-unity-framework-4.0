@@ -78,12 +78,32 @@ namespace com.spacepuppy.Tween
 
         public static MemberCurve<Vector2> CreateUninitializedVector2MemberCurve(IMemberAccessor accessor, int option)
         {
-            return option == 0 ? (MemberCurve<Vector2>)new Vector2LerpMemberCurve(accessor) : (MemberCurve<Vector2>)new Vector2SlerpMemberCurve(accessor);
+            switch (option)
+            {
+                case 0:
+                    return new Vector2LerpMemberCurve(accessor);
+                case 1:
+                    return new Vector2SlerpMemberCurve(accessor);
+                case 2:
+                    return new Vector2ScaleMemberCurve(accessor);
+                default:
+                    return new Vector2LerpMemberCurve(accessor);
+            }
         }
 
         public static MemberCurve<Vector3> CreateUninitializedVector3MemberCurve(IMemberAccessor accessor, int option)
         {
-            return option == 0 ? (MemberCurve<Vector3>)new Vector3LerpMemberCurve(accessor) : (MemberCurve<Vector3>)new Vector3SlerpMemberCurve(accessor);
+            switch(option)
+            {
+                case 0:
+                    return new Vector3LerpMemberCurve(accessor);
+                case 1:
+                    return new Vector3SlerpMemberCurve(accessor);
+                case 2:
+                    return new Vector3ScaleMemberCurve(accessor);
+                default:
+                    return new Vector3LerpMemberCurve(accessor);
+            }
         }
 
         public static MemberCurve<Vector4> CreateUninitializedVector4MemberCurve(IMemberAccessor accessor, int option)

@@ -361,9 +361,9 @@ namespace com.spacepuppy.Tween
             return TweenHash.GetTweenHash(targ);
         }
 
-        public static CallbackTweenerHash Tween(TweenerUpdateCallback callback, float dur)
+        public static ITweenHash Tween(object id, TweenerUpdateCallback callback, float dur)
         {
-            return new CallbackTweenerHash(callback, dur);
+            return new CallbackTweenerHash(id, callback, dur);
         }
 
         public static Tweener PlayCurve(object targ, TweenCurve curve, object autoKillToken = null)

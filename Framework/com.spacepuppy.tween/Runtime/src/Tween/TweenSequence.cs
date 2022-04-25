@@ -10,15 +10,15 @@ namespace com.spacepuppy.Tween
 
         #region Fields
 
-        private object _id;
         private TweenSequenceCollection _sequence;
 
         #endregion
         
         #region CONSTRUCTOR
 
-        public TweenSequence()
+        public TweenSequence(object id)
         {
+            this.Id = id;
             _sequence = new TweenSequenceCollection(this);
         }
 
@@ -26,17 +26,7 @@ namespace com.spacepuppy.Tween
 
         #region Properties
 
-        public override object Id
-        {
-            get
-            {
-                return _id;
-            }
-            set
-            {
-                _id = value;
-            }
-        }
+        public override object Id { get; set; }
 
         public TweenSequenceCollection Tweens { get { return _sequence; } }
 

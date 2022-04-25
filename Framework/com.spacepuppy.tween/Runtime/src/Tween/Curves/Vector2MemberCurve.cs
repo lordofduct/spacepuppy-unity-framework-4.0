@@ -159,4 +159,86 @@ namespace com.spacepuppy.Tween.Curves
 
     }
 
+    public class Vector2ScaleMemberCurve : MemberCurve<Vector2>
+    {
+
+        #region Fields
+
+        private Vector2 _start;
+        private Vector2 _end;
+
+        #endregion
+
+        #region CONSTRUCTOR
+
+        protected internal Vector2ScaleMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor) : base(accessor)
+        {
+
+        }
+
+        public Vector2ScaleMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, float dur, Vector2 start, Vector2 end) : base(accessor, null, dur)
+        {
+            _start = start;
+            _end = end;
+        }
+
+        public Vector2ScaleMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, Ease ease, float dur, Vector2 start, Vector2 end) : base(accessor, ease, dur)
+        {
+            _start = start;
+            _end = end;
+        }
+
+        protected internal override void Configure(Ease ease, float dur, Vector2 start, Vector2 end, int option = 0)
+        {
+            this.Ease = ease;
+            this.Duration = dur;
+            _start = start;
+            _end = end;
+        }
+
+        protected internal override void ConfigureAsRedirectTo(Ease ease, float totalDur, Vector2 c, Vector2 s, Vector2 e, int option = 0)
+        {
+            this.Ease = ease;
+            _start = c;
+            _end = e;
+
+            var at = Vector2.Angle(s, e);
+            if ((System.Math.Abs(at) < MathUtil.EPSILON))
+            {
+                this.Duration = 0f;
+            }
+            else
+            {
+                var ap = Vector2.Angle(c, e);
+                this.Duration = totalDur * ap / at;
+            }
+        }
+
+        #endregion
+
+        #region Properties
+
+        public Vector2 Start { get { return _start; } }
+
+        public Vector2 End { get { return _end; } }
+
+        #endregion
+
+        #region Methods
+
+        protected override Vector2 GetValueAt(float dt, float t)
+        {
+            if (this.Duration == 0f) return _end;
+            t = this.Ease(t, 0f, 1f, this.Duration);
+
+            if (t < this.Duration)
+                return _start * t + (_end - _start) * t;
+            else
+                return _end;
+        }
+
+        #endregion
+
+    }
+
 }

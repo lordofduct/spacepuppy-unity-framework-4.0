@@ -41,6 +41,11 @@ namespace com.spacepuppy.Waypoints
 
         #region Properties
 
+        /// <summary>
+        /// The default weight if a control point is added that doesn't implement IWeightedControlPoint. Value is 0.5 by default.
+        /// </summary>
+        public float DefaultControlPoitnWeight { get; set; } = 0.5f;
+
         #endregion
 
         #region Methods
@@ -73,8 +78,8 @@ namespace com.spacepuppy.Waypoints
                     var v = (w1.Position - w2.Position);
                     var s = v.magnitude / 2.0f; //distance of the control point
 
-                    float s1 = (w1 is IWeightedControlPoint) ? (w1 as IWeightedControlPoint).Strength : 0f;
-                    float s2 = (w2 is IWeightedControlPoint) ? (w2 as IWeightedControlPoint).Strength : 0f;
+                    float s1 = (w1 is IWeightedControlPoint wcp1) ? wcp1.Strength : this.DefaultControlPoitnWeight;
+                    float s2 = (w2 is IWeightedControlPoint wcp2) ? wcp2.Strength : this.DefaultControlPoitnWeight;
                     int j = (i - 1) * 3 + 1;
                     _points[j] = w2.Position + (w2.Heading * s1 * s);
                     _points[j + 1] = w1.Position - (w1.Heading * s2 * s);
@@ -170,17 +175,6 @@ namespace com.spacepuppy.Waypoints
             return this.GetWaypointAfter(i, dt);
         }
 
-        public int GetDetailedPositions(ICollection<Vector3> coll, float segmentLength)
-        {
-            if (coll == null) throw new System.ArgumentNullException("coll");
-            int detail = Mathf.FloorToInt(this.GetArcLength() / segmentLength) + 1;
-            for (int i = 0; i <= detail; i++)
-            {
-                coll.Add(this.GetPositionAt((float)i / (float)detail));
-            }
-            return detail + 1;
-        }
-
         #endregion
 
         #region IIndexedWaypointPath Interface
@@ -200,7 +194,7 @@ namespace com.spacepuppy.Waypoints
             return _controlPoints.IndexOf(controlpoint);
         }
 
-        public Vector3 GetPositionAfter(int index, float t)
+        public Vector3 GetPositionAfter(int index, float tprime)
         {
             if (index < 0 || index >= _controlPoints.Count) throw new System.IndexOutOfRangeException();
             if (_points == null) this.Clean_Imp();
@@ -208,8 +202,8 @@ namespace com.spacepuppy.Waypoints
             if (_controlPoints.Count == 1) return _controlPoints[0].Position;
             if (!_isClosed && index == _controlPoints.Count - 1) return _controlPoints[index].Position;
 
-            t = Mathf.Clamp01(t);
-            var ft = 1 - t;
+            tprime = Mathf.Clamp01(tprime);
+            var ft = 1 - tprime;
 
             var i = index * 3;
             var p0 = _points[i];
@@ -227,18 +221,18 @@ namespace com.spacepuppy.Waypoints
              3*P3*t^2
              */
             var p = (ft * ft * ft) * p0 +
-                    3 * (ft * ft) * t * p1 +
-                    3 * (1 - t) * (t * t) * p2 +
-                    (t * t * t) * p3;
+                    3 * (ft * ft) * tprime * p1 +
+                    3 * (1 - tprime) * (tprime * tprime) * p2 +
+                    (tprime * tprime * tprime) * p3;
             var tan = -3 * p0 * (ft * ft) +
-                      p1 * (3 * (ft * ft) - 6 * ft * t) +
-                      p2 * (6 * ft * t - 3 * (t * t)) +
-                      3 * p3 * (t * t);
+                      p1 * (3 * (ft * ft) - 6 * ft * tprime) +
+                      p2 * (6 * ft * tprime - 3 * (tprime * tprime)) +
+                      3 * p3 * (tprime * tprime);
 
             return p;
         }
 
-        public Waypoint GetWaypointAfter(int index, float t)
+        public Waypoint GetWaypointAfter(int index, float tprime)
         {
             if (index < 0 || index >= _controlPoints.Count) throw new System.IndexOutOfRangeException();
             if (_points == null) this.Clean_Imp();
@@ -246,8 +240,8 @@ namespace com.spacepuppy.Waypoints
             if (_controlPoints.Count == 1) return new Waypoint(_controlPoints[0]);
             if (!_isClosed && index == _controlPoints.Count - 1) return new Waypoint(_controlPoints[index]);
 
-            t = Mathf.Clamp01(t);
-            var ft = 1 - t;
+            tprime = Mathf.Clamp01(tprime);
+            var ft = 1 - tprime;
 
             var i = index * 3;
             var p0 = _points[i];
@@ -265,13 +259,13 @@ namespace com.spacepuppy.Waypoints
              3*P3*t^2
              */
             var p = (ft * ft * ft) * p0 +
-                    3 * (ft * ft) * t * p1 +
-                    3 * (1 - t) * (t * t) * p2 +
-                    (t * t * t) * p3;
+                    3 * (ft * ft) * tprime * p1 +
+                    3 * (1 - tprime) * (tprime * tprime) * p2 +
+                    (tprime * tprime * tprime) * p3;
             var tan = -3 * p0 * (ft * ft) +
-                      p1 * (3 * (ft * ft) - 6 * ft * t) +
-                      p2 * (6 * ft * t - 3 * (t * t)) +
-                      3 * p3 * (t * t);
+                      p1 * (3 * (ft * ft) - 6 * ft * tprime) +
+                      p2 * (6 * ft * tprime - 3 * (tprime * tprime)) +
+                      3 * p3 * (tprime * tprime);
 
             return new Waypoint(p, tan);
         }

@@ -5,6 +5,7 @@ using System.Linq;
 using com.spacepuppy.Collections;
 using com.spacepuppy.Dynamic.Accessors;
 using com.spacepuppy.Utils;
+using com.spacepuppy.Tween.Curves;
 
 namespace com.spacepuppy.Tween
 {
@@ -26,8 +27,9 @@ namespace com.spacepuppy.Tween
         private TweenCurveFactory _curveFactory;
         private TweenHash _prevNode;
 
-        private object _id;
         private object _targ;
+
+        private object _id;
         private List<CurveGeneratorToken> _curves = new List<CurveGeneratorToken>();
         private Ease _defaultEase = EaseMethods.Linear;
         private float _delay;
@@ -204,8 +206,7 @@ namespace com.spacepuppy.Tween
 
             if (_prevNode != null)
             {
-                var seq = new TweenSequence();
-                seq.Id = tween.Id;
+                var seq = new TweenSequence(tween.Id);
                 seq.Tweens.Add(tween);
 
                 var node = _prevNode;
@@ -305,6 +306,12 @@ namespace com.spacepuppy.Tween
                 default:
                     return this;
             }
+        }
+
+        public TweenHash CallbackCurve(Ease ease, float dur, TweenerUpdateCallback callback)
+        {
+            if (ease == null) ease = _defaultEase;
+            return this.UseCurve(() => new CallbackCurve(ease, dur, callback));
         }
 
         #endregion
@@ -521,23 +528,6 @@ namespace com.spacepuppy.Tween
                 return _hash?.UseCurve(() => fact.CreateRedirectTo(targ, acc, ease, dur, start, end, option), acc);
             }
 
-            public TweenHash UseCurve(AnimationCurve curve, int option = 0)
-            {
-                var fact = _hash?._curveFactory;
-                var targ = _hash?._targ;
-                var acc = _accessor;
-                float dur = (curve.keys.Length > 0) ? curve.keys.Last().time : 0f;
-                return _hash?.UseCurve(() => fact.CreateFromTo(targ, acc, EaseMethods.FromAnimationCurve(curve), dur, null, null, option), acc);
-            }
-
-            public TweenHash UseCurve(AnimationCurve curve, float dur, int option = 0)
-            {
-                var fact = _hash?._curveFactory;
-                var targ = _hash?._targ;
-                var acc = _accessor;
-                return _hash?.UseCurve(() => fact.CreateFromTo(targ, acc, EaseMethods.FromAnimationCurve(curve), dur, null, null, option), acc);
-            }
-
             public TweenHash ByAnimMode(AnimMode mode, Ease ease, float dur, object value, object end, int option = 0)
             {
                 switch (mode)
@@ -704,18 +694,6 @@ namespace com.spacepuppy.Tween
 
     public static class TweenHashExtensions
     {
-
-        public static TweenHash UseCurve(this TweenHash hash, string memberName, AnimationCurve curve, int option = 0)
-        {
-            if (curve == null) throw new System.ArgumentNullException(nameof(curve));
-            return hash.Prop(memberName).UseCurve(curve, option);
-        }
-
-        public static TweenHash UseCurve(this TweenHash hash, string memberName, AnimationCurve curve, float dur, int option = 0)
-        {
-            if (curve == null) throw new System.ArgumentNullException(nameof(curve));
-            return hash.Prop(memberName).UseCurve(curve, dur, option);
-        }
 
         public static TweenHash To(this TweenHash hash, string memberName, EaseStyle ease, float dur, object end, int option = 0)
         {

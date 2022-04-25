@@ -5,8 +5,6 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Tween
 {
 
-    public delegate void TweenerUpdateCallback(Tweener tween, float dt, float t);
-
     /// <summary>
     /// A tweener that calls an update function tick by tick.
     /// 
@@ -20,20 +18,22 @@ namespace com.spacepuppy.Tween
         private TweenerUpdateCallback _callback;
         private Ease _ease;
         private float _dur;
-        
+
         #endregion
-        
+
         #region CONSTRUCTOR
 
-        public CallbackTweener(TweenerUpdateCallback callback, float dur)
+        public CallbackTweener(object id, TweenerUpdateCallback callback, float dur)
         {
+            this.Id = id;
             _callback = callback;
             _ease = EaseMethods.Linear;
             _dur = dur;
         }
 
-        public CallbackTweener(TweenerUpdateCallback callback, Ease ease, float dur)
+        public CallbackTweener(object id, TweenerUpdateCallback callback, Ease ease, float dur)
         {
+            this.Id = id;
             _callback = callback;
             _ease = ease ?? EaseMethods.Linear;
             _dur = dur;
@@ -78,13 +78,14 @@ namespace com.spacepuppy.Tween
         
     }
 
-    public class CallbackTweenerHash : ITweenHash
+    public sealed class CallbackTweenerHash : ITweenHash
     {
 
         #region Fields
 
-        private object _id;
         private TweenerUpdateCallback _callback;
+
+        private object _id;
         private Ease _ease;
         private float _dur;
         private float _delay;
@@ -108,9 +109,10 @@ namespace com.spacepuppy.Tween
             //used for pooling
         }
 
-        public CallbackTweenerHash(TweenerUpdateCallback callback, float dur)
+        public CallbackTweenerHash(object id, TweenerUpdateCallback callback, float dur)
         {
             if (callback == null) throw new System.ArgumentNullException(nameof(callback));
+            _id = id;
             _callback = callback;
             _dur = dur;
         }
@@ -198,9 +200,8 @@ namespace com.spacepuppy.Tween
 
         public Tweener Create()
         {
-            var tweener = new CallbackTweener(_callback, _dur)
+            var tweener = new CallbackTweener(_id, _callback, _dur)
             {
-                Id = _id,
                 Ease = _ease ?? EaseMethods.Linear,
                 Delay = _delay,
                 UpdateType = _updateType,
@@ -223,21 +224,23 @@ namespace com.spacepuppy.Tween
 
         public CallbackTweenerHash Clone()
         {
-            var hash = new CallbackTweenerHash(_callback, _dur);
-            hash._id = _id;
-            hash._ease = _ease;
-            hash._delay = _delay;
-            hash._updateType = _updateType;
-            hash._timeSupplier = _timeSupplier;
-            hash._wrap = _wrap;
-            hash._wrapCount = _wrapCount;
-            hash._reverse = _reverse;
-            hash._speedScale = _speedScale;
-            hash._onStep = _onStep;
-            hash._onWrap = _onWrap;
-            hash._onFinish = _onFinish;
-            hash._onStopped = _onStopped;
-            return hash;
+            return new CallbackTweenerHash() {
+                _callback = _callback,
+                _dur = _dur,
+                _id = _id,
+                _ease = _ease,
+                _delay = _delay,
+                _updateType = _updateType,
+                _timeSupplier = _timeSupplier,
+                _wrap = _wrap,
+                _wrapCount = _wrapCount,
+                _reverse = _reverse,
+                _speedScale = _speedScale,
+                _onStep = _onStep,
+                _onWrap = _onWrap,
+                _onFinish = _onFinish,
+                _onStopped = _onStopped,
+            };
         }
 
         object System.ICloneable.Clone()
@@ -278,19 +281,20 @@ namespace com.spacepuppy.Tween
         private const int CACHESIZE = 4;
         private static ObjectCachePool<CallbackTweenerHash> _pool = new ObjectCachePool<CallbackTweenerHash>(CACHESIZE, () => new CallbackTweenerHash());
 
-        public static CallbackTweenerHash GetTweenHash(TweenerUpdateCallback callback, float dur)
+        public static CallbackTweenerHash GetTweenHash(object id, TweenerUpdateCallback callback, float dur)
         {
             if (callback == null) throw new ArgumentNullException(nameof(callback));
 
             CallbackTweenerHash result;
             if (_pool.TryGetInstance(out result))
             {
+                result._id = id;
                 result._callback = callback;
                 result._dur = dur;
             }
             else
             {
-                result = new CallbackTweenerHash(callback, dur);
+                result = new CallbackTweenerHash(id, callback, dur);
             }
             return result;
         }

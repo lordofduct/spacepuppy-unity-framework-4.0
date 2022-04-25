@@ -17,13 +17,13 @@ namespace com.spacepuppy.Tween
         
         #region CONSTRUCTOR
 
-        public ObjectTweener(object targ, TweenCurve curve)
+        public ObjectTweener(object target, TweenCurve curve)
         {
-            if (targ == null) throw new System.ArgumentNullException("targ");
-            if (curve == null) throw new System.ArgumentNullException("curve");
+            if (target == null) throw new System.ArgumentNullException(nameof(target));
+            if (curve == null) throw new System.ArgumentNullException(nameof(curve));
             if (curve.Tween != null) throw new System.ArgumentException("Tweener can only be created with an unregistered Curve.", "curve");
 
-            _target = targ;
+            _target = target;
             _curve = curve;
             _curve.Init(this);
         }
@@ -36,7 +36,7 @@ namespace com.spacepuppy.Tween
         {
             get
             {
-                return (_id != null) ? _id : _target;
+                return _id ?? _target;
             }
             set
             {

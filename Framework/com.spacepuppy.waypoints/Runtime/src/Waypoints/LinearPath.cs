@@ -36,6 +36,17 @@ namespace com.spacepuppy.Waypoints
 
         #region Methods
 
+        public int GetDetailedPositions(ICollection<Vector3> coll)
+        {
+            if (coll == null) throw new System.ArgumentNullException("coll");
+            if (_points == null) this.Clean_Imp();
+            for (int i = 0; i < _points.Length; i++)
+            {
+                coll.Add(_points[i]);
+            }
+            return _points.Length;
+        }
+
         private void Clean_Imp()
         {
             if (_controlPoints.Count == 0)
@@ -128,17 +139,6 @@ namespace com.spacepuppy.Waypoints
             return this.GetWaypointAfter(i, dt);
         }
 
-        public int GetDetailedPositions(ICollection<Vector3> coll, float segmentLength)
-        {
-            if (coll == null) throw new System.ArgumentNullException("coll");
-            if (_points == null) this.Clean_Imp();
-            for (int i = 0; i < _points.Length; i++)
-            {
-                coll.Add(_points[i]);
-            }
-            return _points.Length;
-        }
-
         #endregion
 
         #region IIndexedWaypointPath Interface
@@ -158,7 +158,7 @@ namespace com.spacepuppy.Waypoints
             return _controlPoints.IndexOf(controlpoint);
         }
 
-        public Vector3 GetPositionAfter(int index, float t)
+        public Vector3 GetPositionAfter(int index, float tprime)
         {
             if (index < 0 || index >= _controlPoints.Count) throw new System.IndexOutOfRangeException();
             if (_points == null) this.Clean_Imp();
@@ -168,23 +168,23 @@ namespace com.spacepuppy.Waypoints
             {
                 if (_isClosed)
                 {
-                    return Vector3.Lerp(_points[index], _points[0], t);
+                    return Vector3.Lerp(_points[index], _points[0], tprime);
                 }
                 else
                 {
                     var pa = _points[index - 1];
                     var pb = _points[index];
                     var v = pb - pa;
-                    return pa + v * t;
+                    return pa + v * tprime;
                 }
             }
             else
             {
-                return Vector3.Lerp(_points[index], _points[index + 1], t);
+                return Vector3.Lerp(_points[index], _points[index + 1], tprime);
             }
         }
 
-        public Waypoint GetWaypointAfter(int index, float t)
+        public Waypoint GetWaypointAfter(int index, float tprime)
         {
             if (index < 0 || index >= _controlPoints.Count) throw new System.IndexOutOfRangeException();
             if (_points == null) this.Clean_Imp();
@@ -197,14 +197,14 @@ namespace com.spacepuppy.Waypoints
                     var pa = _points[index];
                     var pb = _points[0];
                     var v = pb - pa;
-                    return new Waypoint(pa + v * t, v.normalized);
+                    return new Waypoint(pa + v * tprime, v.normalized);
                 }
                 else
                 {
                     var pa = _points[index - 1];
                     var pb = _points[index];
                     var v = pb - pa;
-                    return new Waypoint(pa + v * t, v.normalized);
+                    return new Waypoint(pa + v * tprime, v.normalized);
                 }
             }
             else
@@ -212,7 +212,7 @@ namespace com.spacepuppy.Waypoints
                 var pa = _points[index];
                 var pb = _points[index + 1];
                 var v = pb - pa;
-                return new Waypoint(pa + v * t, v.normalized);
+                return new Waypoint(pa + v * tprime, v.normalized);
             }
         }
 

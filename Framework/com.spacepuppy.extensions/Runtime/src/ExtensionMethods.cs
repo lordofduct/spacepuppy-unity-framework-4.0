@@ -7,6 +7,15 @@ namespace com.spacepuppy
     public static class ExtensionMethods
     {
 
+        public static AnimationCurve Clone(this AnimationCurve curve)
+        {
+            return new AnimationCurve(curve.keys)
+            {
+                postWrapMode = curve.postWrapMode,
+                preWrapMode = curve.preWrapMode,
+            };
+        }
+
         public static void TweenTo(VariantCollection vcoll, com.spacepuppy.Tween.TweenHash hash, com.spacepuppy.Tween.Ease ease, float dur)
         {
             var e = vcoll.GetEnumerator();

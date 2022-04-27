@@ -44,9 +44,9 @@ namespace com.spacepuppy.DataBinding
 
         #region Methods
 
-        public override void Bind(object source, object value)
+        public override void Bind(DataBindingContext context, object source)
         {
-            var mesh = value as Mesh;
+            var mesh = context.GetBoundValue<Mesh>(source, this.Key);
             switch(_target)
             {
                 case MeshFilter filter:

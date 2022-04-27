@@ -20,9 +20,9 @@ namespace com.spacepuppy.DataBinding
 
         #region Methods
 
-        public override void Bind(object source, object value)
+        public override void Bind(DataBindingContext context, object source)
         {
-            if (_fillbar) _fillbar.fillAmount = Mathf.Clamp01(ConvertUtil.ToSingle(value));
+            if (_fillbar) _fillbar.fillAmount = Mathf.Clamp01(context.GetBoundValue<float>(source, this.Key));
         }
 
         #endregion

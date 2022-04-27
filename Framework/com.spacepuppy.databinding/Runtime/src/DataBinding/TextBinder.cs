@@ -64,8 +64,9 @@ namespace com.spacepuppy.DataBinding
 
         #region Methods
 
-        public override void Bind(object source, object value)
+        public override void Bind(DataBindingContext context, object source)
         {
+            var value = context.GetBoundValue(source, this.Key);
             string stxt = string.IsNullOrEmpty(_formatting) ? value?.ToString() ?? string.Empty : string.Format(_formatting, value);
             TrySetText(_target, stxt);
         }

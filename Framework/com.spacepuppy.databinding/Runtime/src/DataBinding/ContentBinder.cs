@@ -9,9 +9,8 @@ namespace com.spacepuppy.DataBinding
 
     public interface IContentBinder
     {
-        DataBindingContext Context { get; }
         string Key { get; }
-        void Bind(object source, object value);
+        void Bind(DataBindingContext context, object source);
     }
 
     public class ContentBinderKeyAttribute : PropertyAttribute { }
@@ -33,25 +32,18 @@ namespace com.spacepuppy.DataBinding
         [ContentBinderKey]
         private string _key;
 
-        [System.NonSerialized]
-        private DataBindingContext _context;
-
         #endregion
 
         #region CONSTRUCTOR
 
         protected override void Awake()
         {
-            _context = this.AddOrGetComponent<DataBindingContext>();
-
             base.Awake();
         }
 
         #endregion
 
         #region Properties
-
-        public DataBindingContext Context => _context;
 
         public string Key
         {
@@ -68,7 +60,7 @@ namespace com.spacepuppy.DataBinding
 
         #region Methods
 
-        public abstract void Bind(object source, object value);
+        public abstract void Bind(DataBindingContext context, object source);
 
         #endregion
 

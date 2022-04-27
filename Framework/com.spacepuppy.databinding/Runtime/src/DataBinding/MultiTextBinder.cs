@@ -36,9 +36,6 @@ namespace com.spacepuppy.DataBinding
         [SerializeField]
         private string _formatting;
 
-        [System.NonSerialized]
-        private DataBindingContext _context;
-
         #endregion
 
         #region Properties
@@ -80,14 +77,10 @@ namespace com.spacepuppy.DataBinding
 
         #region IContentBinder Interface
 
-        public DataBindingContext Context => _context != null ? _context : (_context = this.GetComponent<DataBindingContext>());
-
         string IContentBinder.Key => _keys != null && _keys.Length > 0 ? _keys[0] : null;
 
-        public void Bind(object source, object value)
+        public void Bind(DataBindingContext context, object source)
         {
-            var context = this.GetComponent<DataBindingContext>();
-
             string stxt = string.Empty;
             if(_keys != null && _keys.Length > 0 && !string.IsNullOrEmpty(_formatting))
             {
@@ -95,29 +88,29 @@ namespace com.spacepuppy.DataBinding
                 switch(_keys.Length)
                 {
                     case 1:
-                        arr = ArrayUtil.Temp(value);
+                        arr = ArrayUtil.Temp(context.GetBoundValue(source, _keys[0]));
                         break;
                     case 2:
-                        arr = ArrayUtil.Temp(value, 
-                                        context?.BindingProtocol?.GetValue(this.Context, source, _keys[1]));
+                        arr = ArrayUtil.Temp(context.GetBoundValue(source, _keys[0]), 
+                                             context.GetBoundValue(source, _keys[1]));
                         break;
                     case 3:
-                        arr = ArrayUtil.Temp(value,
-                                        context?.BindingProtocol?.GetValue(this.Context, source, _keys[1]),
-                                        context?.BindingProtocol?.GetValue(this.Context, source, _keys[2]));
+                        arr = ArrayUtil.Temp(context.GetBoundValue(source, _keys[0]),
+                                             context.GetBoundValue(source, _keys[1]),
+                                             context.GetBoundValue(source, _keys[2]));
                         break;
                     case 4:
-                        arr = ArrayUtil.Temp(value,
-                                        context?.BindingProtocol?.GetValue(this.Context, source, _keys[1]),
-                                        context?.BindingProtocol?.GetValue(this.Context, source, _keys[2]),
-                                        context?.BindingProtocol?.GetValue(this.Context, source, _keys[3]));
+                        arr = ArrayUtil.Temp(context.GetBoundValue(source, _keys[0]),
+                                             context.GetBoundValue(source, _keys[1]),
+                                             context.GetBoundValue(source, _keys[2]),
+                                             context.GetBoundValue(source, _keys[3]));
                         break;
                     default:
                         arr = new object[_keys.Length];
-                        arr[0] = value;
+                        arr[0] = context.GetBoundValue(source, _keys[0]);
                         for(int i = 1; i < _keys.Length; i++)
                         {
-                            arr[i] = context?.BindingProtocol?.GetValue(this.Context, source, _keys[i]);
+                            arr[i] = context.GetBoundValue(source, _keys[i]);
                         }
                         break;
                 }

@@ -20,9 +20,9 @@ namespace com.spacepuppy.DataBinding
 
         #region Methods
 
-        public override void Bind(object source, object value)
+        public override void Bind(DataBindingContext context, object source)
         {
-            TrySetColor(_target, value);
+            TrySetColor(_target, context.GetBoundValue(source, this.Key));
         }
 
         #endregion

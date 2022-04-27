@@ -44,9 +44,9 @@ namespace com.spacepuppy.DataBinding
 
         #region Methods
 
-        public override void Bind(object source, object value)
+        public override void Bind(DataBindingContext context, object source)
         {
-            var mat = value as Material;
+            var mat = context.GetBoundValue<Material>(source, this.Key);
             switch (_target)
             {
                 case Renderer renderer:

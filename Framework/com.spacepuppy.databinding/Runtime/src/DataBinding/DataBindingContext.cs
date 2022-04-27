@@ -130,6 +130,20 @@ namespace com.spacepuppy.DataBinding
 
         #endregion
 
+        #region Methods
+
+        public object GetBoundValue(object source, string key)
+        {
+            return this.BindingProtocol?.GetValue(this, source, key);
+        }
+
+        public T GetBoundValue<T>(object source, string key)
+        {
+            return ConvertUtil.Coerce<T>(this.BindingProtocol?.GetValue(this, source, key));
+        }
+
+        #endregion
+
         #region IDataBindingContext Interface
 
         int IDataBindingMessageHandler.BindOrder => 0;
@@ -193,7 +207,7 @@ namespace com.spacepuppy.DataBinding
                 {
                     try
                     {
-                        lst[i].Bind(this.DataSource, this.BindingProtocol.GetValue(this, this.DataSource, lst[i].Key));
+                        lst[i].Bind(this, this.DataSource);
                     }
                     catch (System.Exception ex)
                     {

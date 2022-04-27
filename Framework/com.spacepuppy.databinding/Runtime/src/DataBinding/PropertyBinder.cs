@@ -23,11 +23,11 @@ namespace com.spacepuppy.DataBinding
 
         #region Methods
 
-        public override void Bind(object source, object value)
+        public override void Bind(DataBindingContext context, object source)
         {
             if(_target)
             {
-                DynamicUtil.SetValue(_target, _targetProperty, value);
+                DynamicUtil.SetValue(_target, _targetProperty, context.GetBoundValue(source, this.Key));
             }
         }
 

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 
 using com.spacepuppy.Collections;
 using com.spacepuppy.Utils;
-using System.Linq;
 
 namespace com.spacepuppy.Events
 {
@@ -38,6 +37,7 @@ namespace com.spacepuppy.Events
                 TempEventArgs.Release(e);
             }
         }
+        protected bool HasTriggerActivatedListeners => _triggerActivated != null;
 
         #endregion
 
@@ -334,6 +334,12 @@ namespace com.spacepuppy.Events
 
         #endregion
 
+        #region Properties
+
+        public override bool HasReceivers => _handle != null || base.HasReceivers;
+
+        #endregion
+
         #region Methods
 
         public virtual void Register(TDelegate callback)
@@ -361,7 +367,7 @@ namespace com.spacepuppy.Events
 
 
     [System.Serializable]
-    public abstract class SPDelegate : BaseSPDelegate<System.Action>
+    public class SPDelegate : BaseSPDelegate<System.Action>
     {
 
         #region CONSTRUCTOR
@@ -378,7 +384,7 @@ namespace com.spacepuppy.Events
 
         public virtual void ActivateTrigger(object sender)
         {
-            base.ActivateTrigger(sender, null);
+            if (this.TargetCount > 0 || this.HasTriggerActivatedListeners) base.ActivateTrigger(sender, null);
             this.Trigger?.Invoke();
         }
 
@@ -402,7 +408,7 @@ namespace com.spacepuppy.Events
 
         public virtual void ActivateTrigger(object sender, T arg)
         {
-            base.ActivateTrigger(sender, null);
+            if (this.TargetCount > 0 || this.HasTriggerActivatedListeners) base.ActivateTrigger(sender, arg);
             this.Trigger?.Invoke(arg);
         }
 
@@ -426,7 +432,24 @@ namespace com.spacepuppy.Events
 
         public virtual void ActivateTrigger(object sender, T1 arg1, T2 arg2)
         {
-            base.ActivateTrigger(sender, null);
+            int targcnt = this.TargetCount;
+            if (targcnt > 0)
+            {
+                object boxedArg1 = arg1;
+                for (int i = 0; i < targcnt; i++)
+                {
+                    var targ = this.Targets[i];
+                    if (targ.IsMultiArgMethod())
+                    {
+                        targ.TryTriggerAsMultiArgMethod(sender, arg1, arg2);
+                    }
+                    else
+                    {
+                        targ.Trigger(sender, boxedArg1);
+                    }
+                }
+            }
+            if (this.HasTriggerActivatedListeners) this.OnTriggerActivated(sender, arg1);
             this.Trigger?.Invoke(arg1, arg2);
         }
 
@@ -450,7 +473,24 @@ namespace com.spacepuppy.Events
 
         public virtual void ActivateTrigger(object sender, T1 arg1, T2 arg2, T3 arg3)
         {
-            base.ActivateTrigger(sender, null);
+            int targcnt = this.TargetCount;
+            if (targcnt > 0)
+            {
+                object boxedArg1 = arg1;
+                for (int i = 0; i < targcnt; i++)
+                {
+                    var targ = this.Targets[i];
+                    if (targ.IsMultiArgMethod())
+                    {
+                        targ.TryTriggerAsMultiArgMethod(sender, arg1, arg2, arg3);
+                    }
+                    else
+                    {
+                        targ.Trigger(sender, boxedArg1);
+                    }
+                }
+            }
+            if (this.HasTriggerActivatedListeners) this.OnTriggerActivated(sender, arg1);
             this.Trigger?.Invoke(arg1, arg2, arg3);
         }
 
@@ -474,7 +514,24 @@ namespace com.spacepuppy.Events
 
         public virtual void ActivateTrigger(object sender, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
         {
-            base.ActivateTrigger(sender, null);
+            int targcnt = this.TargetCount;
+            if (targcnt > 0)
+            {
+                object boxedArg1 = arg1;
+                for (int i = 0; i < targcnt; i++)
+                {
+                    var targ = this.Targets[i];
+                    if (targ.IsMultiArgMethod())
+                    {
+                        targ.TryTriggerAsMultiArgMethod(sender, arg1, arg2, arg3, arg4);
+                    }
+                    else
+                    {
+                        targ.Trigger(sender, boxedArg1);
+                    }
+                }
+            }
+            if (this.HasTriggerActivatedListeners) this.OnTriggerActivated(sender, arg1);
             this.Trigger?.Invoke(arg1, arg2, arg3, arg4);
         }
 

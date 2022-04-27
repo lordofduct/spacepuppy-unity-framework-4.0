@@ -20,7 +20,7 @@ namespace com.spacepuppy.Events
         private UnityEngine.Object _triggerable;
         
         [SerializeField()]
-        private VariantReference[] _triggerableArgs;
+        private SpecialVariantReference[] _triggerableArgs;
         
         [SerializeField()]
         private TriggerActivationType _activationType;
@@ -68,7 +68,7 @@ namespace com.spacepuppy.Events
             }
             else
             {
-                this._triggerableArgs = new VariantReference[] { new VariantReference(arg) };
+                this._triggerableArgs = new [] { new SpecialVariantReference(arg) };
             }
             this._activationType = TriggerActivationType.TriggerAllOnTarget;
             this._methodName = null;
@@ -87,7 +87,7 @@ namespace com.spacepuppy.Events
             }
             else
             {
-                this._triggerableArgs = new VariantReference[] { new VariantReference(arg) };
+                this._triggerableArgs = new [] { new SpecialVariantReference(arg) };
             }
             this._activationType = TriggerActivationType.TriggerAllOnTarget;
             this._methodName = null;
@@ -113,7 +113,7 @@ namespace com.spacepuppy.Events
             }
             else
             {
-                this._triggerableArgs = new VariantReference[] { new VariantReference(arg) };
+                this._triggerableArgs = new [] { new SpecialVariantReference(arg) };
             }
             this._activationType = TriggerActivationType.TriggerAllOnTarget;
             this._methodName = null;
@@ -130,7 +130,7 @@ namespace com.spacepuppy.Events
             }
             else
             {
-                this._triggerableArgs = new VariantReference[] { new VariantReference(arg) };
+                this._triggerableArgs = new [] { new SpecialVariantReference(arg) };
             }
             this._activationType = TriggerActivationType.TriggerSelectedTarget;
             this._methodName = null;
@@ -146,7 +146,7 @@ namespace com.spacepuppy.Events
             }
             else
             {
-                this._triggerableArgs = new VariantReference[] { new VariantReference(arg) };
+                this._triggerableArgs = new [] { new SpecialVariantReference(arg) };
             }
             this._methodName = message;
             this._activationType = TriggerActivationType.SendMessage;
@@ -162,7 +162,7 @@ namespace com.spacepuppy.Events
             }
             else
             {
-                this._triggerableArgs = (from a in args select new VariantReference(a)).ToArray();
+                this._triggerableArgs = (from a in args select new SpecialVariantReference(a)).ToArray();
             }
             this._methodName = methodName;
             this._activationType = TriggerActivationType.CallMethodOnSelectedTarget;
@@ -179,33 +179,58 @@ namespace com.spacepuppy.Events
 
         public void Trigger(object sender, object incomingArg)
         {
+            if (this._triggerable == null) return;
+
             try
             {
-                if (this._triggerable == null) return;
-
-                var outgoingArg = (this._triggerableArgs != null && this._triggerableArgs.Length > 0) ? this._triggerableArgs[0].Value : incomingArg;
-
                 //imp
                 switch (this._activationType)
                 {
                     case TriggerActivationType.TriggerAllOnTarget:
                         {
-                            EventTriggerEvaluator.Current.TriggerAllOnTarget(_triggerable, incomingArg, sender, outgoingArg);
+                            EventTriggerEvaluator.Current.TriggerAllOnTarget(_triggerable, incomingArg, sender, GetOutgoingArg(incomingArg));
                         }
                         break;
                     case TriggerActivationType.TriggerSelectedTarget:
                         {
-                            EventTriggerEvaluator.Current.TriggerSelectedTarget(_triggerable, incomingArg, sender, outgoingArg);
+                            EventTriggerEvaluator.Current.TriggerSelectedTarget(_triggerable, incomingArg, sender, GetOutgoingArg(incomingArg));
                         }
                         break;
                     case TriggerActivationType.SendMessage:
                         {
-                            EventTriggerEvaluator.Current.SendMessageToTarget(_triggerable, incomingArg, _methodName, outgoingArg);
+                            EventTriggerEvaluator.Current.SendMessageToTarget(_triggerable, incomingArg, _methodName, GetOutgoingArg(incomingArg));
                         }
                         break;
                     case TriggerActivationType.CallMethodOnSelectedTarget:
                         {
-                            EventTriggerEvaluator.Current.CallMethodOnSelectedTarget(_triggerable, incomingArg, _methodName, _triggerableArgs);
+                            object[] args = null;
+                            try
+                            {
+                                if (_triggerableArgs != null && _triggerableArgs.Length > 0)
+                                {
+                                    args = ArrayUtil.TryGetTemp<object>(_triggerableArgs.Length);
+                                    for (int i = 0; i < args.Length; i++)
+                                    {
+                                        if (_triggerableArgs[i] != null)
+                                        {
+                                            if ((int)_triggerableArgs[i].Mode == (int)EventTriggerTarget.RefMode.TriggerArg)
+                                            {
+                                                args[i] = _triggerableArgs[i].IntValue == 0 ? incomingArg : null;
+                                            }
+                                            else
+                                            {
+                                                args[i] = _triggerableArgs[i].Value;
+                                            }
+                                        }
+                                    }
+                                }
+
+                                EventTriggerEvaluator.Current.CallMethodOnSelectedTarget(_triggerable, incomingArg, _methodName, args);
+                            }
+                            finally
+                            {
+                                ArrayUtil.ReleaseTemp(args);
+                            }
                         }
                         break;
                     case TriggerActivationType.EnableTarget:
@@ -223,6 +248,79 @@ namespace com.spacepuppy.Events
             catch(System.Exception ex)
             {
                 Debug.LogException(ex, sender as UnityEngine.Object);
+            }
+        }
+
+        internal bool IsMultiArgMethod()
+        {
+            if (_triggerable == null) return false;
+            if (_activationType != TriggerActivationType.CallMethodOnSelectedTarget) return false;
+
+            for(int i = 0; i < _triggerableArgs.Length; i++)
+            {
+                if (_triggerableArgs[i] != null && (int)_triggerableArgs[i].Mode == (int)EventTriggerTarget.RefMode.TriggerArg) return true;
+            }
+            return false;
+        }
+
+        internal bool TryTriggerAsMultiArgMethod(object sender, params object[] incomingArgs)
+        {
+            if (_triggerable == null) return false;
+            if (_activationType != TriggerActivationType.CallMethodOnSelectedTarget) return false;
+
+            object[] args = null;
+            try
+            {
+                if (_triggerableArgs != null && _triggerableArgs.Length > 0)
+                {
+                    args = ArrayUtil.TryGetTemp<object>(_triggerableArgs.Length);
+                    for (int i = 0; i < args.Length; i++)
+                    {
+                        if (_triggerableArgs[i] != null)
+                        {
+                            if ((int)_triggerableArgs[i].Mode == (int)EventTriggerTarget.RefMode.TriggerArg)
+                            {
+                                int index = _triggerableArgs[i].ArgIndex;
+                                args[i] = (incomingArgs != null && incomingArgs.InBounds(index)) ? incomingArgs[index] : null;
+                            }
+                            else
+                            {
+                                args[i] = _triggerableArgs[i].Value;
+                            }
+                        }
+                    }
+                }
+
+                EventTriggerEvaluator.Current.CallMethodOnSelectedTarget(_triggerable, incomingArgs.FirstOrDefault(), _methodName, args);
+                return true;
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogException(ex, sender as UnityEngine.Object);
+            }
+            finally
+            {
+                ArrayUtil.ReleaseTemp(args);
+            }
+            return false;
+        }
+
+        private object GetOutgoingArg(object incomingArg)
+        {
+            if (_triggerableArgs != null && _triggerableArgs.Length > 0)
+            {
+                if ((int)_triggerableArgs[0].Mode == (int)EventTriggerTarget.RefMode.TriggerArg)
+                {
+                    return incomingArg;
+                }
+                else
+                {
+                    return _triggerableArgs[0].Value;
+                }
+            }
+            else
+            {
+                return incomingArg;
             }
         }
 
@@ -250,6 +348,36 @@ namespace com.spacepuppy.Events
             }
 
             return false;
+        }
+
+        #endregion
+
+        #region Special Types
+
+        public enum RefMode : byte
+        {
+            Value = VariantReference.RefMode.Value,
+            Property = VariantReference.RefMode.Property,
+            Eval = VariantReference.RefMode.Eval,
+            TriggerArg = 3,
+        }
+
+        [System.Serializable]
+        private class SpecialVariantReference : VariantReference
+        {
+
+            public SpecialVariantReference(object arg) : base(arg) { }
+
+            public new EventTriggerTarget.RefMode Mode
+            {
+                get => (EventTriggerTarget.RefMode)base.Mode;
+            }
+
+            public int ArgIndex
+            {
+                get => (int)_w;
+            }
+
         }
 
         #endregion

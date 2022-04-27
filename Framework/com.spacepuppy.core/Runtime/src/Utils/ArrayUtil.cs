@@ -477,6 +477,18 @@ namespace com.spacepuppy.Utils
 
         #region Array Methods
 
+        /// <summary>
+        /// Returns a temp array of length len if small enough for a cached array. 
+        /// Otherwise returns a new array of length len.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="len"></param>
+        /// <returns></returns>
+        public static T[] TryGetTemp<T>(int len)
+        {
+            return TempArray<T>.TryGetTemp(len);
+        }
+
         public static T[] Empty<T>()
         {
             return TempArray<T>.Empty;
@@ -681,6 +693,68 @@ namespace com.spacepuppy.Utils
                     if (_empty == null) _empty = new T[0];
                     return _empty;
                 }
+            }
+
+            public static T[] TryGetTemp(int len)
+            {
+                T[] result;
+                lock (_lock)
+                {
+                    switch (len)
+                    {
+                        case 0:
+                            result = Empty;
+                            break;
+                        case 1:
+                            if (_oneArray != null)
+                            {
+                                result = _oneArray;
+                                _oneArray = null;
+                            }
+                            else
+                            {
+                                result = new T[1];
+                            }
+                            break;
+                        case 2:
+                            if (_twoArray != null)
+                            {
+                                result = _twoArray;
+                                _twoArray = null;
+                            }
+                            else
+                            {
+                                result = new T[2];
+                            }
+                            break;
+                        case 3:
+                            if (_threeArray != null)
+                            {
+                                result = _threeArray;
+                                _threeArray = null;
+                            }
+                            else
+                            {
+                                result = new T[3];
+                            }
+                            break;
+                        case 4:
+                            if (_fourArray != null)
+                            {
+                                result = _fourArray;
+                                _fourArray = null;
+                            }
+                            else
+                            {
+                                result = new T[4];
+                            }
+                            break;
+                        default:
+                            result = new T[len];
+                            break;
+                    }
+                }
+                return result;
             }
 
             public static T[] Temp(T value)

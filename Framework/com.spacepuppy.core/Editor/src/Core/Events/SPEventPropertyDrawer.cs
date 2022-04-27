@@ -40,6 +40,8 @@ namespace com.spacepuppyeditor.Events
 
         private string __argdesc;
 
+        private System.Reflection.ParameterInfo[] _spdelegateParameters;
+
         #endregion
 
         #region CONSTRUCTOR
@@ -51,6 +53,31 @@ namespace com.spacepuppyeditor.Events
             _targetList = CachedReorderableList.GetListDrawer(prop.FindPropertyRelative(PROP_TARGETS), _targetList_DrawHeader, _targetList_DrawElement, _targetList_OnAdd);
 
             _triggerTargetDrawer.DrawWeight = this.DrawWeight;
+
+            var sptp = this.fieldInfo?.FieldType;
+            if(TypeUtil.IsType(sptp, typeof(BaseSPDelegate<>)))
+            {
+                int argcount = 1;
+                while (sptp != null)
+                {
+                    if (sptp.IsGenericType && sptp.GetGenericTypeDefinition() == typeof(BaseSPDelegate<>))
+                    {
+                        var dtp = sptp.GetGenericArguments().FirstOrDefault();
+                        if (TypeUtil.IsType(dtp, typeof(System.Delegate)))
+                        {
+                            _spdelegateParameters = dtp.GetMethod("Invoke")?.GetParameters();
+                            argcount = _spdelegateParameters?.Length ?? 1;
+                        }
+                        break;
+                    }
+                    sptp = sptp.BaseType;
+                }
+                _triggerTargetDrawer.TriggerArgCount = argcount;
+            }
+            else
+            {
+                _triggerTargetDrawer.TriggerArgCount = 1;
+            }
         }
 
         #endregion
@@ -265,7 +292,17 @@ namespace com.spacepuppyeditor.Events
         private GUIContent GetTempArgDescriptionLabel()
         {
             var str = this.ArgumentDescription;
-            if (string.IsNullOrEmpty(str)) return GUIContent.none;
+            if (string.IsNullOrEmpty(str))
+            {
+                if(_spdelegateParameters != null && _spdelegateParameters.Length > 0)
+                {
+                    return EditorHelper.TempContent(string.Join(", ", _spdelegateParameters.Select(p => string.Format("{0} ({1})", p.Name, p.ParameterType.Name))));
+                }
+                else
+                {
+                    return GUIContent.none;
+                }
+            }
 
             return EditorHelper.TempContent(string.Format("arg: {0}", str));
         }

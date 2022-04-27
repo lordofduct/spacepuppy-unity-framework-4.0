@@ -154,10 +154,10 @@ namespace com.spacepuppyeditor.Events
                 ResolvedCurrent.TriggerSelectedTarget(target, incomingarg, sender, arg);
             }
 
-            void EventTriggerEvaluator.IEvaluator.CallMethodOnSelectedTarget(object target, object incomingarg, string methodName, VariantReference[] methodArgs)
+            void EventTriggerEvaluator.IEvaluator.CallMethodOnSelectedTarget(object target, object incomingarg, string methodName, object[] args)
             {
                 SignalTriggered(target, incomingarg, false);
-                ResolvedCurrent.CallMethodOnSelectedTarget(target, incomingarg, methodName, methodArgs);
+                ResolvedCurrent.CallMethodOnSelectedTarget(target, incomingarg, methodName, args);
             }
 
             void EventTriggerEvaluator.IEvaluator.SendMessageToTarget(object target, object incomingarg, string message, object arg)

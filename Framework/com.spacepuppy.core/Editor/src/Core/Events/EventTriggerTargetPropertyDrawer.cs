@@ -36,8 +36,18 @@ namespace com.spacepuppyeditor.Events
         private GUIContent _undefinedArgLabel = new GUIContent("Undefined Arg", "The argument is not explicitly defined unless the trigger's event defines it.");
         private GUIContent _messageArgLabel = new GUIContent("Message Arg", "A parameter to be passed to the message if one is desired.");
         private GUIContent _argBtnLabel = new GUIContent("||", "Change between accepting a configured argument or not.");
-        private VariantReferencePropertyDrawer _variantDrawer = new VariantReferencePropertyDrawer();
+        private readonly SpecialVariantReferencePropertyDrawer _variantDrawer = new SpecialVariantReferencePropertyDrawer();
         private int _callMethodModeExtraLines = 0;
+
+        #endregion
+
+        #region Properties
+
+        public int TriggerArgCount
+        {
+            get => _variantDrawer.TriggerArgCount;
+            set => _variantDrawer.TriggerArgCount = value;
+        }
 
         #endregion
 
@@ -190,6 +200,7 @@ namespace com.spacepuppyeditor.Events
                 //EditorGUI.PropertyField(argRect, argProp, _defaultArgLabel);
                 _variantDrawer.RestrictVariantType = false;
                 _variantDrawer.ForcedObjectType = null;
+                _variantDrawer.CurrentTriggerArgIndex = 0;
                 _variantDrawer.OnGUI(argRect, argProp, _defaultArgLabel);
 
                 if (GUI.Button(btnRect, _argBtnLabel))
@@ -222,6 +233,7 @@ namespace com.spacepuppyeditor.Events
                 //EditorGUI.PropertyField(argRect, argProp, _defaultArgLabel);
                 _variantDrawer.RestrictVariantType = false;
                 _variantDrawer.ForcedObjectType = null;
+                _variantDrawer.CurrentTriggerArgIndex = 0;
                 _variantDrawer.OnGUI(argRect, argProp, _defaultArgLabel);
 
                 if (GUI.Button(btnRect, _argBtnLabel))
@@ -254,6 +266,7 @@ namespace com.spacepuppyeditor.Events
                 //EditorGUI.PropertyField(argRect, argProp, _messageArgLabel);
                 _variantDrawer.RestrictVariantType = false;
                 _variantDrawer.ForcedObjectType = null;
+                _variantDrawer.CurrentTriggerArgIndex = 0;
                 _variantDrawer.OnGUI(argRect, argProp, _messageArgLabel);
 
                 if (GUI.Button(btnRect, _argBtnLabel))
@@ -318,14 +331,20 @@ namespace com.spacepuppyeditor.Events
                         //draw the default variant as the method accepts anything
                         _variantDrawer.RestrictVariantType = false;
                         _variantDrawer.ForcedObjectType = null;
-                        _variantDrawer.OnGUI(argRect, argProp, EditorHelper.TempContent("Arg " + i.ToString() + ": " + parr[i].ParameterName, "A parameter to be passed to the method if needed."));
+                        _variantDrawer.CurrentTriggerArgIndex = i;
+
+                        string title = string.Format("Arg {0}: {1} ({2})", i, parr[i].ParameterName, parr[i].ParameterType?.Name ?? "dynamic");
+                        _variantDrawer.OnGUI(argRect, argProp, EditorHelper.TempContent(title, "A parameter to be passed to the method if needed."));
                     }
                     else
                     {
                         _variantDrawer.RestrictVariantType = true;
                         _variantDrawer.TypeRestrictedTo = paramType;
                         _variantDrawer.ForcedObjectType = (paramType.IsInterface || TypeUtil.IsType(paramType, typeof(Component))) ? paramType : null;
-                        _variantDrawer.OnGUI(argRect, argProp, EditorHelper.TempContent("Arg " + i.ToString() + ": " + parr[i].ParameterName, "A parameter to be passed to the method if needed."));
+                        _variantDrawer.CurrentTriggerArgIndex = i;
+
+                        string title = string.Format("Arg {0}: {1} ({2})", i, parr[i].ParameterName, parr[i].ParameterType?.Name ?? "dynamic");
+                        _variantDrawer.OnGUI(argRect, argProp, EditorHelper.TempContent(title, "A parameter to be passed to the method if needed."));
                     }
                 }
             }
@@ -692,6 +711,81 @@ namespace com.spacepuppyeditor.Events
         }
 
         #endregion
+
+
+        private class SpecialVariantReferencePropertyDrawer : VariantReferencePropertyDrawer
+        {
+            private const float REF_SELECT_WIDTH = 85f;
+
+            public int TriggerArgCount;
+            public int CurrentTriggerArgIndex;
+
+            public override void DrawValueField(Rect position, SerializedProperty property)
+            {
+                CopyValuesToHelper(property, _helper);
+
+                //draw ref selection
+                position = this.DrawRefModeSelectionDropDown(position, property, _helper);
+
+                //draw value
+                switch ((int)_helper._mode)
+                {
+                    case (int)VariantReference.RefMode.Value:
+                        {
+                            EditorGUI.BeginChangeCheck();
+                            this.DrawValueFieldInValueMode(position, property, _helper);
+                            if (EditorGUI.EndChangeCheck())
+                            {
+                                CopyValuesFromHelper(property, _helper);
+                            }
+                        }
+                        break;
+                    case (int)VariantReference.RefMode.Property:
+                        this.DrawValueFieldInPropertyMode(position, property, _helper);
+                        break;
+                    case (int)VariantReference.RefMode.Eval:
+                        this.DrawValueFieldInEvalMode(position, property, _helper);
+                        break;
+                    case (int)EventTriggerTarget.RefMode.TriggerArg:
+                        if(this.TriggerArgCount > 1)
+                        {
+                            EditorGUI.BeginChangeCheck();
+                            int argindex = EditorGUI.Popup(position, (int)_helper._w, Enumerable.Range(0, this.TriggerArgCount).Select(i => EditorHelper.TempContent(string.Format("Trigger Arg {0}", i))).ToArray());
+                            if(EditorGUI.EndChangeCheck())
+                            {
+                                _helper.IntValue = argindex;
+                                _helper._mode = (VariantReference.RefMode)((int)EventTriggerTarget.RefMode.TriggerArg);
+                                CopyValuesFromHelper(property, _helper);
+                            }
+                        }
+                        else
+                        {
+                            EditorGUI.LabelField(position, "Trigger Arg");
+                        }
+                        break;
+                }
+            }
+
+            protected override Rect DrawRefModeSelectionDropDown(Rect position, SerializedProperty property, EditorVariantReference helper)
+            {
+                var r0 = new Rect(position.xMin, position.yMin, Mathf.Min(REF_SELECT_WIDTH, position.width), position.height);
+
+                EditorGUI.BeginChangeCheck();
+                var mode = (EventTriggerTarget.RefMode)EditorGUI.EnumPopup(r0, GUIContent.none, (EventTriggerTarget.RefMode)_helper._mode);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    _helper.PrepareForRefModeChange((VariantReference.RefMode)mode);
+                    if (mode == EventTriggerTarget.RefMode.TriggerArg && this.TriggerArgCount > 1)
+                    {
+                        _helper._w = Mathf.Clamp(this.CurrentTriggerArgIndex, 0, Mathf.Max(0, this.TriggerArgCount - 1));
+                    }
+                    CopyValuesFromHelper(property, helper);
+                }
+
+                return new Rect(r0.xMax, r0.yMin, position.width - r0.width, r0.height);
+            }
+
+        }
 
     }
 

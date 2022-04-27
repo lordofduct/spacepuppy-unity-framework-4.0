@@ -18,7 +18,7 @@ namespace com.spacepuppy
     /// TODO - add support for serializing Ref types if they are a type that can be supported by UnityEngine.SerializeRefAttribute
     /// </summary>
     [System.Serializable()]
-    public sealed class VariantReference : System.Runtime.Serialization.ISerializable, ISPDisposable, System.ICloneable
+    public class VariantReference : System.Runtime.Serialization.ISerializable, ISPDisposable, System.ICloneable
     {
 
         public enum RefMode : byte
@@ -32,28 +32,28 @@ namespace com.spacepuppy
 
         //these used for serialization
         [SerializeField()]
-        private RefMode _mode;
+        protected RefMode _mode;
         [SerializeField()]
-        private VariantType _type;
+        protected VariantType _type;
 
         [SerializeField()]
-        private float _x;
+        protected float _x;
         [SerializeField()]
-        private float _y;
+        protected float _y;
         [SerializeField()]
-        private float _z;
+        protected float _z;
         [SerializeField()]
-        private double _w;
+        protected double _w;
         [SerializeField()]
         [UnityEngine.Serialization.FormerlySerializedAs("_valueReference")]
-        private string _string;
+        protected string _string;
 
         [SerializeField()]
         [RespectsIProxy()]
-        private UnityEngine.Object _unityObjectReference;
+        protected UnityEngine.Object _unityObjectReference;
 
         [System.NonSerialized]
-        private object _objref;
+        protected object _objref;
 
         #endregion
 
@@ -2038,143 +2038,6 @@ namespace com.spacepuppy
             {
                 return null;
             }
-        }
-
-        #endregion
-
-        #region Special Types
-
-        public class EditorHelper
-        {
-
-            private VariantReference _variant;
-
-            public EditorHelper()
-            {
-                _variant = new VariantReference();
-            }
-
-            public EditorHelper(VariantReference obj)
-            {
-                _variant = obj;
-            }
-
-            public VariantReference Target
-            {
-                get { return _variant; }
-            }
-
-            public RefMode _mode
-            {
-                get { return _variant._mode; }
-                set { _variant._mode = value; }
-            }
-
-            public VariantType _type
-            {
-                get { return _variant._type; }
-                set { _variant._type = value; }
-            }
-
-            public float _x
-            {
-                get { return _variant._x; }
-                set { _variant._x = value; }
-            }
-
-            public float _y
-            {
-                get { return _variant._y; }
-                set { _variant._y = value; }
-            }
-
-            public float _z
-            {
-                get { return _variant._z; }
-                set { _variant._z = value; }
-            }
-
-            public double _w
-            {
-                get { return _variant._w; }
-                set { _variant._w = value; }
-            }
-
-            public string _string
-            {
-                get { return _variant._string; }
-                set { _variant._string = value; }
-            }
-
-            public UnityEngine.Object _unityObjectReference
-            {
-                get { return _variant._unityObjectReference; }
-                set { _variant._unityObjectReference = value; }
-            }
-
-
-            public void PrepareForValueTypeChange(VariantType type)
-            {
-                _variant._type = type;
-                _variant._mode = RefMode.Value;
-                _variant._x = 0f;
-                _variant._y = 0f;
-                _variant._z = 0f;
-                _variant._w = 0d;
-                _variant._string = string.Empty;
-                switch (type)
-                {
-                    case VariantType.Object:
-                        break;
-                    case VariantType.Null:
-                    case VariantType.String:
-                    case VariantType.Boolean:
-                    case VariantType.Integer:
-                    case VariantType.Float:
-                    case VariantType.Double:
-                    case VariantType.Vector2:
-                    case VariantType.Vector3:
-                    case VariantType.Quaternion:
-                    case VariantType.Color:
-                    case VariantType.DateTime:
-                        _variant._unityObjectReference = null;
-                        break;
-                    case VariantType.GameObject:
-                        _variant._unityObjectReference = GameObjectUtil.GetGameObjectFromSource(_variant._unityObjectReference);
-                        break;
-                    case VariantType.Component:
-                        _variant._unityObjectReference = _variant._unityObjectReference as Component;
-                        break;
-                    case VariantType.Numeric:
-                        _variant._unityObjectReference = null;
-                        break;
-                }
-            }
-
-            public void PrepareForRefModeChange(RefMode mode)
-            {
-                _variant._mode = mode;
-                _variant._x = 0f;
-                _variant._y = 0f;
-                _variant._z = 0f;
-                _variant._w = 0d;
-                _variant._string = string.Empty;
-                switch (mode)
-                {
-                    case RefMode.Value:
-                        //_variant._type = ...;
-                        _variant._unityObjectReference = null;
-                        break;
-                    case RefMode.Property:
-                        _variant._type = VariantType.Null;
-                        break;
-                    case RefMode.Eval:
-                        //_variant._type = VariantType.Double;
-                        break;
-                }
-            }
-
-
         }
 
         #endregion

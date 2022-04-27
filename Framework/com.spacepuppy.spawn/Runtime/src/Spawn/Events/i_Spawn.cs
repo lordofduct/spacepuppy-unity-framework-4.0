@@ -34,6 +34,7 @@ namespace com.spacepuppy.Spawn.Events
         private RandomRef _rng;
 
         [SerializeField()]
+        [SPEvent.Config("spawned object (GameObject)")]
         private OnSpawnEvent _onSpawnedObject = new OnSpawnEvent();
 
         #endregion
@@ -110,7 +111,9 @@ namespace com.spacepuppy.Spawn.Events
             var go = pool.Spawn(prefab, this.transform.position, this.transform.rotation, ObjUtil.GetAsFromSource<Transform>(_spawnedObjectParent, true));
 
             if (_onSpawnedObject?.HasReceivers ?? false)
+            {
                 _onSpawnedObject.ActivateTrigger(this, go);
+            }
 
             return go;
         }

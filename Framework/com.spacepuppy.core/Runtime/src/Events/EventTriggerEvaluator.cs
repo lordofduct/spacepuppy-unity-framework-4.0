@@ -188,25 +188,13 @@ namespace com.spacepuppy.Events
             }
         }
 
-        public void CallMethodOnSelectedTarget(object target, object incomingarg, string methodName, VariantReference[] methodArgs)
+        public void CallMethodOnSelectedTarget(object target, object incomingarg, string methodName, object[] args)
         {
             if (target is IProxy p) target = p.GetTarget(incomingarg);
 
             if (methodName != null)
             {
                 //CallMethod does not support using the passed in arg
-                //var args = (from a in this._triggerableArgs select (a != null) ? a.Value : null).ToArray();
-
-                object[] args = null;
-                if (methodArgs != null && methodArgs.Length > 0)
-                {
-                    args = new object[methodArgs.Length];
-                    for (int i = 0; i < args.Length; i++)
-                    {
-                        if (methodArgs[i] != null) args[i] = methodArgs[i].Value;
-                    }
-                }
-
                 if (args != null && args.Length == 1)
                 {
                     DynamicUtil.SetValue(target, methodName, args[0]);
@@ -322,7 +310,7 @@ namespace com.spacepuppy.Events
             void TriggerAllOnTarget(object target, object incomingarg, object sender, object outgoingarg);
             void TriggerSelectedTarget(object target, object incomingarg, object sender, object outgoingarg);
             void SendMessageToTarget(object target, object incomingarg, string message, object outgoingarg);
-            void CallMethodOnSelectedTarget(object target, object incomingarg, string methodName, VariantReference[] methodArgs);
+            void CallMethodOnSelectedTarget(object target, object incomingarg, string methodName, object[] methodArgs);
             void EnableTarget(object target, object incomingarg, EnableMode mode);
             void DestroyTarget(object target, object incomingarg);
 

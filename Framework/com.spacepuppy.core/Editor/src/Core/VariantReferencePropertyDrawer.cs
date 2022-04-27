@@ -30,7 +30,7 @@ namespace com.spacepuppyeditor.Core
 
         #region Fields
 
-        const float REF_SELECT_WIDTH = 70f;
+        private const float REF_SELECT_WIDTH = 70f;
 
         public bool RestrictVariantType = false;
 
@@ -39,7 +39,7 @@ namespace com.spacepuppyeditor.Core
 
         private System.Type _forcedObjectType = typeof(object);
 
-        private VariantReference.EditorHelper _helper = new VariantReference.EditorHelper(new VariantReference());
+        protected readonly EditorVariantReference _helper = new EditorVariantReference();
         private SelectableObjectPropertyDrawer _selectObjectPropertyDrawer = new SelectableObjectPropertyDrawer();
 
         #endregion
@@ -104,7 +104,7 @@ namespace com.spacepuppyeditor.Core
             this.HandleDragDrop(position, property);
         }
 
-        public void DrawValueField(Rect position, SerializedProperty property)
+        public virtual void DrawValueField(Rect position, SerializedProperty property)
         {
             CopyValuesToHelper(property, _helper);
 
@@ -133,7 +133,7 @@ namespace com.spacepuppyeditor.Core
             }
         }
 
-        private Rect DrawRefModeSelectionDropDown(Rect position, SerializedProperty property, VariantReference.EditorHelper helper)
+        protected virtual Rect DrawRefModeSelectionDropDown(Rect position, SerializedProperty property, EditorVariantReference helper)
         {
             var r0 = new Rect(position.xMin, position.yMin, Mathf.Min(REF_SELECT_WIDTH, position.width), position.height);
 
@@ -148,10 +148,9 @@ namespace com.spacepuppyeditor.Core
             return new Rect(r0.xMax, r0.yMin, position.width - r0.width, r0.height);
         }
 
-        private void DrawValueFieldInValueMode(Rect position, SerializedProperty property, VariantReference.EditorHelper helper)
+        protected virtual void DrawValueFieldInValueMode(Rect position, SerializedProperty property, EditorVariantReference helper)
         {
-            if (helper.Target == null) return;
-            var variant = helper.Target;
+            var variant = helper as VariantReference;
 
             if (this.RestrictVariantType && helper._type != this.VariantTypeRestrictedTo)
             {
@@ -271,7 +270,7 @@ namespace com.spacepuppyeditor.Core
             }
         }
 
-        private void DrawValueFieldInPropertyMode(Rect position, SerializedProperty property, VariantReference.EditorHelper helper)
+        protected virtual void DrawValueFieldInPropertyMode(Rect position, SerializedProperty property, EditorVariantReference helper)
         {
             _selectObjectPropertyDrawer.AllowProxy = true;
             _selectObjectPropertyDrawer.AllowSceneObjects = true;
@@ -413,7 +412,7 @@ namespace com.spacepuppyeditor.Core
             }
         }
 
-        private void DrawValueFieldInEvalMode(Rect position, SerializedProperty property, VariantReference.EditorHelper helper)
+        protected virtual void DrawValueFieldInEvalMode(Rect position, SerializedProperty property, EditorVariantReference helper)
         {
             _selectObjectPropertyDrawer.AllowProxy = true;
             _selectObjectPropertyDrawer.AllowSceneObjects = true;
@@ -429,7 +428,7 @@ namespace com.spacepuppyeditor.Core
             vtypeProp.SetEnumValue<VariantType>(VariantType.Null);
         }
 
-        private void HandleDragDrop(Rect position, SerializedProperty property)
+        protected virtual void HandleDragDrop(Rect position, SerializedProperty property)
         {
             if (_helper._mode == VariantReference.RefMode.Eval) return;
 
@@ -474,7 +473,7 @@ namespace com.spacepuppyeditor.Core
 
         #region Static Utils
 
-        public static void CopyValuesToHelper(SerializedProperty property, VariantReference.EditorHelper helper)
+        public static void CopyValuesToHelper(SerializedProperty property, EditorVariantReference helper)
         {
             helper._mode = property.FindPropertyRelative(PROP_MODE).GetEnumValue<VariantReference.RefMode>();
             helper._type = property.FindPropertyRelative(PROP_TYPE).GetEnumValue<VariantType>();
@@ -486,7 +485,7 @@ namespace com.spacepuppyeditor.Core
             helper._unityObjectReference = property.FindPropertyRelative(PROP_OBJREF).objectReferenceValue;
         }
 
-        public static void CopyValuesFromHelper(SerializedProperty property, VariantReference.EditorHelper helper)
+        public static void CopyValuesFromHelper(SerializedProperty property, EditorVariantReference helper)
         {
             property.FindPropertyRelative(PROP_MODE).SetEnumValue(helper._mode);
             property.FindPropertyRelative(PROP_TYPE).SetEnumValue(helper._type);
@@ -502,18 +501,138 @@ namespace com.spacepuppyeditor.Core
         {
             if (property == null) throw new System.ArgumentNullException(nameof(property));
 
-            var variant = new VariantReference();
+            var variant = new EditorVariantReference();
             variant.Value = obj;
-            CopyValuesFromHelper(property, new VariantReference.EditorHelper(variant));
+            CopyValuesFromHelper(property, variant);
         }
 
         public static object GetFromSerializedProperty(SerializedProperty property)
         {
             if (property == null) throw new System.ArgumentNullException(nameof(property));
 
-            var helper = new VariantReference.EditorHelper();
+            var helper = new EditorVariantReference();
             CopyValuesToHelper(property, helper);
-            return helper.Target.Value;
+            return helper.Value;
+        }
+
+        #endregion
+
+        #region Specail Types
+
+        public class EditorVariantReference : VariantReference
+        {
+
+            public new RefMode _mode
+            {
+                get { return base._mode; }
+                set { base._mode = value; }
+            }
+
+            public new VariantType _type
+            {
+                get { return base._type; }
+                set { base._type = value; }
+            }
+
+            public new float _x
+            {
+                get { return base._x; }
+                set { base._x = value; }
+            }
+
+            public new float _y
+            {
+                get { return base._y; }
+                set { base._y = value; }
+            }
+
+            public new float _z
+            {
+                get { return base._z; }
+                set { base._z = value; }
+            }
+
+            public new double _w
+            {
+                get { return base._w; }
+                set { base._w = value; }
+            }
+
+            public new string _string
+            {
+                get { return base._string; }
+                set { base._string = value; }
+            }
+
+            public new UnityEngine.Object _unityObjectReference
+            {
+                get { return base._unityObjectReference; }
+                set { base._unityObjectReference = value; }
+            }
+
+
+            public void PrepareForValueTypeChange(VariantType type)
+            {
+                base._type = type;
+                base._mode = RefMode.Value;
+                base._x = 0f;
+                base._y = 0f;
+                base._z = 0f;
+                base._w = 0d;
+                base._string = string.Empty;
+                switch (type)
+                {
+                    case VariantType.Object:
+                        break;
+                    case VariantType.Null:
+                    case VariantType.String:
+                    case VariantType.Boolean:
+                    case VariantType.Integer:
+                    case VariantType.Float:
+                    case VariantType.Double:
+                    case VariantType.Vector2:
+                    case VariantType.Vector3:
+                    case VariantType.Quaternion:
+                    case VariantType.Color:
+                    case VariantType.DateTime:
+                        base._unityObjectReference = null;
+                        break;
+                    case VariantType.GameObject:
+                        base._unityObjectReference = GameObjectUtil.GetGameObjectFromSource(base._unityObjectReference);
+                        break;
+                    case VariantType.Component:
+                        base._unityObjectReference = base._unityObjectReference as Component;
+                        break;
+                    case VariantType.Numeric:
+                        base._unityObjectReference = null;
+                        break;
+                }
+            }
+
+            public void PrepareForRefModeChange(RefMode mode)
+            {
+                base._mode = mode;
+                base._x = 0f;
+                base._y = 0f;
+                base._z = 0f;
+                base._w = 0d;
+                base._string = string.Empty;
+                switch (mode)
+                {
+                    case RefMode.Value:
+                        //_variant._type = ...;
+                        base._unityObjectReference = null;
+                        break;
+                    case RefMode.Property:
+                        base._type = VariantType.Null;
+                        break;
+                    case RefMode.Eval:
+                        //_variant._type = VariantType.Double;
+                        break;
+                }
+            }
+
+
         }
 
         #endregion

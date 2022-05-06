@@ -31,6 +31,12 @@ namespace com.spacepuppy
         public ShortUid(long value)
         {
             _low = (uint)(value & uint.MaxValue);
+            _high = (uint)((ulong)value >> 32);
+        }
+
+        public ShortUid(ulong value)
+        {
+            _low = (uint)(value & uint.MaxValue);
             _high = (uint)(value >> 32);
         }
 
@@ -45,11 +51,11 @@ namespace com.spacepuppy
 
         #region Properties
 
-        public long Value
+        public ulong Value
         {
             get
             {
-                return ((long)_high << 32) | (long)_low;
+                return ((ulong)_high << 32) | (ulong)_low;
             }
         }
 
@@ -167,8 +173,8 @@ namespace com.spacepuppy
         public static ShortUid ToShortUid(System.Guid uid)
         {
             var arr = uid.ToByteArray();
-            long low = (int)(arr[3] << 24) | (int)(arr[2] << 16) | (int)(arr[1] << 8) | (int)arr[0];
-            long high = (long)((int)(arr[7] << 24) | (int)(arr[6] << 16) | (int)(arr[5] << 8) | (int)arr[4]) << 32;
+            ulong low = (ulong)((int)(arr[3] << 24) | (int)(arr[2] << 16) | (int)(arr[1] << 8) | (int)arr[0]);
+            ulong high = (ulong)((int)(arr[7] << 24) | (int)(arr[6] << 16) | (int)(arr[5] << 8) | (int)arr[4]) << 32;
             return new ShortUid(high | low);
         }
 
@@ -211,6 +217,11 @@ namespace com.spacepuppy
         }
 
         public static implicit operator long(ShortUid uid)
+        {
+            return (long)uid.Value;
+        }
+
+        public static implicit operator ulong(ShortUid uid)
         {
             return uid.Value;
         }
@@ -255,6 +266,13 @@ namespace com.spacepuppy
         public TokenId(long value)
         {
             _low = (uint)(value & uint.MaxValue);
+            _high = (uint)((ulong)value >> 32);
+            _id = null;
+        }
+
+        public TokenId(ulong value)
+        {
+            _low = (uint)(value & uint.MaxValue);
             _high = (uint)(value >> 32);
             _id = null;
         }
@@ -266,9 +284,13 @@ namespace com.spacepuppy
             _id = value;
         }
 
+        public TokenId(ShortUid value) : this(value.Value)
+        {
+        }
+
         public static TokenId NewId()
         {
-            return new TokenId(System.DateTime.UtcNow.Ticks);
+            return new TokenId(ShortUid.NewId());
         }
 
         #endregion
@@ -280,11 +302,11 @@ namespace com.spacepuppy
             get { return !string.IsNullOrEmpty(_id) || _low != 0 || _high != 0; }
         }
 
-        public long LongValue
+        public ulong LongValue
         {
             get
             {
-                return ((long)_high << 32) | (long)_low;
+                return ((ulong)_high << 32) | (ulong)_low;
             }
         }
 

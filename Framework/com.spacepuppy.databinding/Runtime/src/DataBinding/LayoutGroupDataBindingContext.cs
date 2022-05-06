@@ -18,6 +18,9 @@ namespace com.spacepuppy.DataBinding
 
         #region Fields
 
+        [SerializeField]
+        private int _bindOrder;
+
         [SerializeField()]
         private ActivateEvent _activateOn = ActivateEvent.None;
 
@@ -96,6 +99,12 @@ namespace com.spacepuppy.DataBinding
 
         #region Properties
 
+        public int BindOrder
+        {
+            get => _bindOrder;
+            set => _bindOrder = value;
+        }
+
         public ActivateEvent ActivateOn
         {
             get => _activateOn;
@@ -142,7 +151,7 @@ namespace com.spacepuppy.DataBinding
 
         #region IDataBindingContext Interface
 
-        int IDataBindingMessageHandler.BindOrder => 0;
+        int IDataBindingMessageHandler.BindOrder => _bindOrder;
 
         public object DataSource { get; private set; }
 

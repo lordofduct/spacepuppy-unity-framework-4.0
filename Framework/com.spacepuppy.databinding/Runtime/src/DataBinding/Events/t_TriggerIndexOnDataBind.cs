@@ -13,6 +13,9 @@ namespace com.spacepuppy.DataBinding.Events
         #region Fields
 
         [SerializeField]
+        private int _bindOrder;
+
+        [SerializeField]
         private MathUtil.WrapMode _wrapMode = MathUtil.WrapMode.Loop;
         [SerializeField]
         [DisplayName("On Bound By Index (Triggered by index modulo length)")]
@@ -22,13 +25,19 @@ namespace com.spacepuppy.DataBinding.Events
 
         #region Properties
 
+        public int BindOrder
+        {
+            get => _bindOrder;
+            set => _bindOrder = value;
+        }
+
         public SPEvent OnBoundByIndex => _onBoundByIndex;
 
         #endregion
 
         #region IDataBindingContext Interface
 
-        int IDataBindingMessageHandler.BindOrder => 0;
+        int IDataBindingMessageHandler.BindOrder => _bindOrder;
 
         void IDataBindingMessageHandler.Bind(object source, int index)
         {

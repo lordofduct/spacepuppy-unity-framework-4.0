@@ -11,6 +11,25 @@ using com.spacepuppyeditor.Internal;
 namespace com.spacepuppyeditor.Events
 {
 
+    [CustomEditor(typeof(i_TriggerStateMachine), true)]
+    public class i_TriggerStateMachineInspector : SPEditor
+    {
+
+        protected override void OnSPInspectorGUI()
+        {
+            base.OnSPInspectorGUI();
+
+            if (Application.isPlaying)
+            {
+                if (GUILayout.Button("Next State") && this.target is i_TriggerStateMachine machine)
+                {
+                    machine.GoToNextState(i_TriggerStateMachine.WrapMode.Loop);
+                }
+            }
+        }
+
+    }
+
     [CustomPropertyDrawer(typeof(i_TriggerStateMachine.StateCollection))]
     public class i_TriggerStateMachine_StateCollectionPropertyDrawer : PropertyDrawer
     {

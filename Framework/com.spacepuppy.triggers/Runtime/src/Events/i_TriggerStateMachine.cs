@@ -24,6 +24,9 @@ namespace com.spacepuppy.Events
         private int _initialState;
 
         [SerializeField]
+        private bool _returnToInitialStateOnEnable;
+
+        [SerializeField]
         private StateCollection _states = new StateCollection();
 
         [SerializeField]
@@ -43,7 +46,17 @@ namespace com.spacepuppy.Events
         {
             base.Start();
 
-            if (_states.CurrentState == null)
+            if (_states.CurrentState == null || _returnToInitialStateOnEnable)
+            {
+                _states.GoToState(_initialState);
+            }
+        }
+
+        protected override void OnEnable()
+        {
+            base.OnEnable();
+
+            if (_returnToInitialStateOnEnable && this.started)
             {
                 _states.GoToState(_initialState);
             }
@@ -379,6 +392,15 @@ namespace com.spacepuppy.Events
             {
                 get => _target;
                 set => _target = value;
+            }
+
+            #endregion
+
+            #region Methods
+
+            public override string ToString()
+            {
+                return _id;
             }
 
             #endregion

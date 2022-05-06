@@ -178,7 +178,7 @@ namespace com.spacepuppy.Geom
         {
             float dot = Vector3.Dot(v.normalized, pl.normal);
             float a = Mathf.Acos(dot);
-            return 1.5707963f - a;
+            return MathUtil.PI_2 - a;
         }
 
         /// <summary>

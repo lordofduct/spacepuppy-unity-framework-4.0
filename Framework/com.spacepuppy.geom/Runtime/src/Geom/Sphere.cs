@@ -47,32 +47,7 @@ namespace com.spacepuppy.Geom
 
         public Sphere Encapsulate(IGeom geom)
         {
-            /*
-            var s = geom.GetBoundingSphere();
-            var v = (s.Center - _cent).normalized;
-            var p1 = this.Project(v);
-			var p2 = s.Project(v);
-			var p = p1;
-            p.Concat(p2);
-			
-			_rad = p.Length / 2.0f;
-            float dot = Vector3.Dot(_cent, p.Axis);
-			float offset = Mathf.Abs(p.Min - dot);
-			_cent = (_cent - v * offset) + v * _rad;
-             */
-
-            var s = geom.GetBoundingSphere();
-            var v = s.Center - _cent;
-            var l = v.magnitude;
-
-            if (l + s.Radius > _rad)
-            {
-                v.Normalize();
-                _rad = (l + s.Radius + _rad) / 2.0f;
-                _cent += v * (l + s.Radius - _rad);
-            }
-
-            return this;
+            return this.Encapsulate(geom.GetBoundingSphere());
         }
 
         public Sphere Encapsulate(Sphere s)
@@ -82,7 +57,7 @@ namespace com.spacepuppy.Geom
 
             if (l + s.Radius > _rad)
             {
-                v.Normalize();
+                v /= l;
                 _rad = (l + s.Radius + _rad) / 2.0f;
                 _cent += v * (l + s.Radius - _rad);
             }
@@ -93,7 +68,7 @@ namespace com.spacepuppy.Geom
         public Vector3 ClosestPoint(Vector3 pos)
         {
             var v = pos - _cent;
-            if(v.sqrMagnitude > _rad * _rad)
+            if (v.sqrMagnitude > _rad * _rad)
             {
                 return _cent + v.normalized * _rad;
             }
@@ -101,6 +76,11 @@ namespace com.spacepuppy.Geom
             {
                 return pos;
             }
+        }
+
+        public override string ToString()
+        {
+            return string.Format("Sphere - Center:{0} Radius:{1}", _cent, _rad);
         }
 
         #endregion
@@ -171,7 +151,7 @@ namespace com.spacepuppy.Geom
 
         #endregion
 
-        
+
         #region ISerializable Interface
 
         private Sphere(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
@@ -197,7 +177,7 @@ namespace com.spacepuppy.Geom
         {
             if (s == null) return new Sphere();
 
-            if(local)
+            if (local)
             {
                 return new Sphere(s.center, s.radius);
             }
@@ -212,7 +192,7 @@ namespace com.spacepuppy.Geom
 
         public static Sphere FromCollider(CapsuleCollider c, bool local = false)
         {
-            if(local)
+            if (local)
             {
                 var r = Mathf.Max(c.radius, c.height / 2.0f);
                 return new Sphere(c.center, r);
@@ -334,14 +314,14 @@ namespace com.spacepuppy.Geom
                 case BoundingSphereAlgorithm.Average:
                     {
                         Vector3 sum = Vector3.zero;
-                        foreach(var v in points)
+                        foreach (var v in points)
                         {
                             sum += v;
                         }
                         sum /= points.Length;
                         float dist = 0f;
                         float d;
-                        foreach(var v in points)
+                        foreach (var v in points)
                         {
                             d = (v - sum).sqrMagnitude;
                             if (d > dist) dist = d;

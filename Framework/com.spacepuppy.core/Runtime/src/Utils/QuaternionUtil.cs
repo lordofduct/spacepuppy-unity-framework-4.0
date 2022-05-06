@@ -33,7 +33,7 @@ namespace com.spacepuppy.Utils
         {
             var a = Vector3.Cross(v1, v2);
             double w = System.Math.Sqrt(v1.sqrMagnitude * v2.sqrMagnitude) + Vector3.Dot(v1, v2);
-            if (a.sqrMagnitude < 0.0001f)
+            if (a.sqrMagnitude < MathUtil.EPSILON)
             {
                 //the vectors are parallel, check w to find direction
                 //if w is 0 then values are opposite, and we should rotate 180 degrees around some axis
@@ -50,7 +50,7 @@ namespace com.spacepuppy.Utils
         {
             var a = Vector3.Cross(v1, v2);
             double w = System.Math.Sqrt(v1.sqrMagnitude * v2.sqrMagnitude) + Vector3.Dot(v1, v2);
-            if (a.sqrMagnitude < 0.0001f)
+            if (a.sqrMagnitude < MathUtil.EPSILON)
             {
                 //the vectors are parallel, check w to find direction
                 //if w is 0 then values are opposite, and we should rotate 180 degrees around the supplied axis

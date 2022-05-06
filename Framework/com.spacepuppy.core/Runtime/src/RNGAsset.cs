@@ -24,6 +24,7 @@ namespace com.spacepuppy
         private RNGAlgorithms _algorithm;
 
         [SerializeField]
+        [NegativeIsInfinity(InfinityLabel = "Random", ShortInfinityLabel = "Rnd")]
         [DisableIf("AlgorithmIsSeedable", DisableIfNot = true)]
         private int _seed = -1;
 

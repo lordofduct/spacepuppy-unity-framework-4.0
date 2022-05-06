@@ -7,7 +7,7 @@ using com.spacepuppy.Geom;
 using com.spacepuppy.Utils;
 using com.spacepuppy.Events;
 
-namespace com.vivarium
+namespace com.spacepuppy
 {
 
     public class DraggableUIElement : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragHandler

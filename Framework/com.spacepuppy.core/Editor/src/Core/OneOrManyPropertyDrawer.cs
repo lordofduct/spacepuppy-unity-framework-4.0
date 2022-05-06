@@ -32,7 +32,7 @@ namespace com.spacepuppyeditor.Core
 
             if (property.arraySize == 1)
             {
-                return (_internalDrawer != null) ? _internalDrawer.GetPropertyHeight(property.GetArrayElementAtIndex(0), EditorHelper.TempContent("Element 0")) : EditorGUIUtility.singleLineHeight;
+                return (_internalDrawer != null) ? _internalDrawer.GetPropertyHeight(property.GetArrayElementAtIndex(0), label) : EditorGUIUtility.singleLineHeight;
             }
             else
             {

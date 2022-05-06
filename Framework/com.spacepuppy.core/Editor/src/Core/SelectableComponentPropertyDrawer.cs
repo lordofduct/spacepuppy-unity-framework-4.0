@@ -153,8 +153,7 @@ namespace com.spacepuppyeditor.Core
                     var components = this.ChoiceSelector.GetComponents();
 
                     var fullsize = position;
-                    if (components.Length == 0 ||
-                        (this.ShowXButton && SPEditorGUI.XButton(ref position, "Clear Selected Object", this.XButtonOnRightSide)))
+                    if (this.ShowXButton && SPEditorGUI.XButton(ref position, "Clear Selected Object", this.XButtonOnRightSide))
                     {
                         property.objectReferenceValue = null;
                         fullsize = this.DrawDotDotButton(fullsize, property);

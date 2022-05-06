@@ -33,7 +33,7 @@ namespace com.spacepuppyeditor.Core
 
                 var lowProp = property.FindPropertyRelative("_low");
                 var highProp = property.FindPropertyRelative("_high");
-                long value = (lowProp.longValue & uint.MaxValue) | (highProp.longValue << 32);
+                ulong value = ((ulong)lowProp.longValue & uint.MaxValue) | ((ulong)highProp.longValue << 32);
 
                 var attrib = this.fieldInfo.GetCustomAttributes(typeof(ShortUid.ConfigAttribute), false).FirstOrDefault() as ShortUid.ConfigAttribute;
                 bool resetOnZero = attrib == null || !attrib.AllowZero;
@@ -46,10 +46,10 @@ namespace com.spacepuppyeditor.Core
                     var sval = EditorGUI.TextField(r1, value.ToString("X16"));
                     if (EditorGUI.EndChangeCheck())
                     {
-                        if (long.TryParse(sval, System.Globalization.NumberStyles.HexNumber, null, out value))
+                        if (ulong.TryParse(sval, System.Globalization.NumberStyles.HexNumber, null, out value))
                         {
-                            lowProp.longValue = (value & uint.MaxValue);
-                            highProp.longValue = (value >> 32);
+                            lowProp.longValue = (long)(value & uint.MaxValue);
+                            highProp.longValue = (long)(value >> 32);
                         }
                     }
                 }
@@ -61,9 +61,9 @@ namespace com.spacepuppyeditor.Core
 
                 if (GUI.Button(r2, "New Id") || (resetOnZero && value == 0))
                 {
-                    value = ShortUid.NewId().Value;
-                    lowProp.longValue = (value & uint.MaxValue);
-                    highProp.longValue = (value >> 32);
+                    value = (ulong)ShortUid.NewId().Value;
+                    lowProp.longValue = (long)(value & uint.MaxValue);
+                    highProp.longValue = (long)(value >> 32);
                 }
 
                 EditorGUI.EndProperty();
@@ -103,7 +103,7 @@ namespace com.spacepuppyeditor.Core
                 var highProp = property.FindPropertyRelative("_high");
                 var idProp = property.FindPropertyRelative("_id");
 
-                long lval = (lowProp.longValue & uint.MaxValue) | (highProp.longValue << 32);
+                ulong lval = ((ulong)lowProp.longValue & uint.MaxValue) | ((ulong)highProp.longValue << 32);
                 string sval = idProp.stringValue;
 
                 var attrib = this.fieldInfo.GetCustomAttributes(typeof(TokenId.ConfigAttribute), false).FirstOrDefault() as TokenId.ConfigAttribute;
@@ -121,10 +121,10 @@ namespace com.spacepuppyeditor.Core
 
                     if (EditorGUI.EndChangeCheck())
                     {
-                        if (long.TryParse(sval, System.Globalization.NumberStyles.HexNumber, null, out lval))
+                        if (ulong.TryParse(sval, System.Globalization.NumberStyles.HexNumber, null, out lval))
                         {
-                            lowProp.longValue = (lval & uint.MaxValue);
-                            highProp.longValue = (lval >> 32);
+                            lowProp.longValue = (long)(lval & uint.MaxValue);
+                            highProp.longValue = (long)(lval >> 32);
                             idProp.stringValue = string.Empty;
                         }
                         else
@@ -146,9 +146,9 @@ namespace com.spacepuppyeditor.Core
 
                 if (GUI.Button(r2, "New Id") || (resetOnZero && lval == 0 && string.IsNullOrEmpty(sval)))
                 {
-                    long value = TokenId.NewId().LongValue;
-                    lowProp.longValue = (value & uint.MaxValue);
-                    highProp.longValue = (value >> 32);
+                    ulong value = TokenId.NewId().LongValue;
+                    lowProp.longValue = (long)(value & uint.MaxValue);
+                    highProp.longValue = (long)(value >> 32);
                     idProp.stringValue = string.Empty;
                 }
 

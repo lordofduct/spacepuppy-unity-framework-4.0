@@ -211,6 +211,12 @@ namespace com.spacepuppy.Async
 
         #endregion
 
+        #region Static Methods
+
+        public static AsyncWaitHandle Empty => default(AsyncWaitHandle);
+
+        #endregion
+
     }
 
     /// <summary>
@@ -418,6 +424,8 @@ namespace com.spacepuppy.Async
         {
             return new AsyncWaitHandle<T>(result);
         }
+
+        public static AsyncWaitHandle<T> Empty => default(AsyncWaitHandle<T>);
 
         #endregion
 

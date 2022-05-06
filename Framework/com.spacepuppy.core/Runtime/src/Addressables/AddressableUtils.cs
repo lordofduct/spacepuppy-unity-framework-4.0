@@ -6,7 +6,6 @@ using UnityEngine.ResourceManagement.AsyncOperations;
 
 using com.spacepuppy.Utils;
 using com.spacepuppy.Async;
-using System.Threading.Tasks;
 using com.spacepuppy.Events;
 
 namespace com.spacepuppy.Addressables
@@ -97,6 +96,34 @@ namespace com.spacepuppy.Addressables
             if (reference == null) throw new System.ArgumentNullException(nameof(reference));
 
             var handle = reference.LoadAssetAsync<TObject>();
+            handle.Completed += (h) =>
+            {
+                if (h.Status == AsyncOperationStatus.Succeeded)
+                {
+                    RegisterSPManaged(h.Result);
+                }
+            };
+            return handle;
+        }
+
+        public static AsyncOperationHandle<TObject> LoadAssetSPManagedAsync<TObject>(UnityEngine.ResourceManagement.ResourceLocations.IResourceLocation location)
+        {
+            if (location == null) throw new System.ArgumentNullException(nameof(location));
+
+            var handle = UnityEngine.AddressableAssets.Addressables.LoadAssetAsync<TObject>(location);
+            handle.Completed += (h) =>
+            {
+                if (h.Status == AsyncOperationStatus.Succeeded)
+                {
+                    RegisterSPManaged(h.Result);
+                }
+            };
+            return handle;
+        }
+
+        public static AsyncOperationHandle<TObject> LoadAssetSPManagedAsync<TObject>(object key)
+        {
+            var handle = UnityEngine.AddressableAssets.Addressables.LoadAssetAsync<TObject>(key);
             handle.Completed += (h) =>
             {
                 if (h.Status == AsyncOperationStatus.Succeeded)
@@ -306,9 +333,9 @@ namespace com.spacepuppy.Addressables
                 {
                     if (GameLoop.InvokeRequired)
                     {
-                        Task result = null;
+                        System.Threading.Tasks.Task result = null;
                         GameLoop.UpdateHandle.Invoke(() => result = h.IsDone ? System.Threading.Tasks.Task.CompletedTask : h.Task);
-                        return result ?? Task.CompletedTask;
+                        return result ?? System.Threading.Tasks.Task.CompletedTask;
                     }
                     else
                     {
@@ -423,13 +450,13 @@ namespace com.spacepuppy.Addressables
                 {
                     if (GameLoop.InvokeRequired)
                     {
-                        Task<TObject> result = null;
-                        GameLoop.UpdateHandle.Invoke(() => result = h.IsDone ? Task.FromResult(h.Result) : h.Task);
-                        return result ?? Task.FromResult(h.Result);
+                        System.Threading.Tasks.Task<TObject> result = null;
+                        GameLoop.UpdateHandle.Invoke(() => result = h.IsDone ? System.Threading.Tasks.Task.FromResult(h.Result) : h.Task);
+                        return result ?? System.Threading.Tasks.Task.FromResult(h.Result);
                     }
                     else
                     {
-                        return h.IsDone ? Task.FromResult(h.Result) : h.Task;
+                        return h.IsDone ? System.Threading.Tasks.Task.FromResult(h.Result) : h.Task;
                     }
                 }
                 else
@@ -444,13 +471,13 @@ namespace com.spacepuppy.Addressables
                 {
                     if (GameLoop.InvokeRequired)
                     {
-                        Task<TObject> result = null;
-                        GameLoop.UpdateHandle.Invoke(() => result = h.IsDone ? Task.FromResult(h.Result) : h.Task);
-                        return result ?? Task.FromResult(h.Result);
+                        System.Threading.Tasks.Task<TObject> result = null;
+                        GameLoop.UpdateHandle.Invoke(() => result = h.IsDone ? System.Threading.Tasks.Task.FromResult(h.Result) : h.Task);
+                        return result ?? System.Threading.Tasks.Task.FromResult(h.Result);
                     }
                     else
                     {
-                        return h.IsDone ? Task.FromResult(h.Result) : h.Task;
+                        return h.IsDone ? System.Threading.Tasks.Task.FromResult(h.Result) : h.Task;
                     }
                 }
                 else

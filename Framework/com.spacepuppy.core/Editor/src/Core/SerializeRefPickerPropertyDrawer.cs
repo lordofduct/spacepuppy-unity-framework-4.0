@@ -19,8 +19,9 @@ namespace com.spacepuppyeditor.Core
         private const float BOTTOM_PAD = 5f;
         private const float MARGIN = 1f;
         private const float MARGIN_DBL = MARGIN * 2f;
-        private const float SELECTOR_MARGIN = MARGIN + 8f;
-        private const float SELECTOR_MARGIN_DBL = SELECTOR_MARGIN * 2f;
+        private const float SELECTOR_HOR_MARGIN = MARGIN + 8f;
+        private const float SELECTOR_HOR_MARGIN_DBL = SELECTOR_HOR_MARGIN * 2f;
+        private const float SELECTOR_VER_MARGIN = 2f;
 
         private System.Type _refType;
         private bool _allowNull;
@@ -68,11 +69,25 @@ namespace com.spacepuppyeditor.Core
 
             try
             {
-                float objheight = !string.IsNullOrEmpty(property.managedReferenceFullTypename) ? EditorGUI.GetPropertyHeight(property, label, true) + 4f : EditorGUIUtility.singleLineHeight * 2f;
+                //float objheight = !string.IsNullOrEmpty(property.managedReferenceFullTypename) ? EditorGUI.GetPropertyHeight(property, label, true) + 4f : EditorGUIUtility.singleLineHeight * 2f;
+                float objheight = 0f;
+                if(string.IsNullOrEmpty(property.managedReferenceFieldTypename))
+                {
+                    objheight = EditorGUIUtility.singleLineHeight;
+                }
+                else if(property.isExpanded)
+                {
+                    foreach (var child in property.GetChildren())
+                    {
+                        objheight += SPEditorGUI.GetPropertyHeight(child);
+                    }
+                }
+
+                objheight += EditorGUIUtility.singleLineHeight + SELECTOR_VER_MARGIN;
 
                 if (this.DisplayBox)
                 {
-                    return objheight + BOTTOM_PAD + TOP_PAD - EditorGUIUtility.singleLineHeight;
+                    return objheight + BOTTOM_PAD + TOP_PAD;
                 }
                 else
                 {
@@ -103,7 +118,7 @@ namespace com.spacepuppyeditor.Core
                         //float h = SPEditorGUI.GetDefaultPropertyHeight(property, label, true) + BOTTOM_PAD + TOP_PAD - EditorGUIUtility.singleLineHeight;
                         //var area = new Rect(position.xMin, position.yMax - h, position.width, h);
                         var area = position;
-                        var drawArea = new Rect(area.xMin + MARGIN, area.yMin + TOP_PAD + EditorGUIUtility.singleLineHeight, area.width - MARGIN_DBL, area.height - TOP_PAD - EditorGUIUtility.singleLineHeight);
+                        var drawArea = new Rect(area.xMin + MARGIN, area.yMin + TOP_PAD + SELECTOR_VER_MARGIN + EditorGUIUtility.singleLineHeight, area.width - MARGIN_DBL, area.height - TOP_PAD - EditorGUIUtility.singleLineHeight);
 
                         GUI.BeginGroup(area, label, GUI.skin.box);
                         GUI.EndGroup();
@@ -112,7 +127,7 @@ namespace com.spacepuppyeditor.Core
                         SPEditorGUI.FlatChildPropertyField(drawArea, property);
                         EditorGUI.indentLevel--;
 
-                        selectorArea = new Rect(position.xMin + SELECTOR_MARGIN, position.yMin + TOP_PAD, position.width - SELECTOR_MARGIN_DBL, EditorGUIUtility.singleLineHeight);
+                        selectorArea = new Rect(position.xMin + SELECTOR_HOR_MARGIN, position.yMin + TOP_PAD, position.width - SELECTOR_HOR_MARGIN_DBL, EditorGUIUtility.singleLineHeight);
                         drawSelector = true;
                     }
                     else
@@ -126,15 +141,21 @@ namespace com.spacepuppyeditor.Core
                 }
                 else
                 {
+                    var drawArea = new Rect(position.xMin, position.yMin + SELECTOR_VER_MARGIN + EditorGUIUtility.singleLineHeight, position.width, Mathf.Max(position.height - EditorGUIUtility.singleLineHeight - SELECTOR_VER_MARGIN, 0f));
                     if (this.AlwaysExpanded)
                     {
                         property.isExpanded = true;
                         EditorGUI.PrefixLabel(new Rect(position.xMin, position.yMin, position.width, EditorGUIUtility.singleLineHeight), label);
-                        SPEditorGUI.FlatChildPropertyField(new Rect(position.xMin, position.yMin + EditorGUIUtility.singleLineHeight, position.width, Mathf.Max(position.height - EditorGUIUtility.singleLineHeight, 0f)), property);
+                        SPEditorGUI.FlatChildPropertyField(drawArea, property);
                     }
                     else
                     {
-                        SPEditorGUI.DefaultPropertyField(position, property, label, true);
+                        cache = SPEditorGUI.PrefixFoldoutLabel(new Rect(position.xMin, position.yMin, position.width, EditorGUIUtility.singleLineHeight), property.isExpanded, label);
+                        if (property.isExpanded)
+                        {
+                            SPEditorGUI.FlatChildPropertyField(drawArea, property);
+                        }
+
                     }
 
                     selectorArea = new Rect(position.xMin + EditorGUIUtility.labelWidth, position.yMin, Mathf.Max(0f, position.width - EditorGUIUtility.labelWidth), EditorGUIUtility.singleLineHeight);

@@ -23,6 +23,8 @@ namespace com.spacepuppyeditor.Core
         private static readonly float TOP_PAD = 2f + EditorGUIUtility.singleLineHeight;
         private const float BOTTOM_PAD = 2f;
         private const float MARGIN = 2f;
+        private const float LENGTHFIIELD_WIDTH = 50f;
+        private const float LENGTHFIIELD_MARGIN = 5f;
 
         #region Fields
 
@@ -40,6 +42,7 @@ namespace com.spacepuppyeditor.Core
         private float _elementPadding;
         private bool _allowDragAndDrop = true;
         private bool _showTooltipInHeader;
+        private bool _hideLengthField;
 
         private PropertyDrawer _internalDrawer;
 
@@ -113,22 +116,6 @@ namespace com.spacepuppyeditor.Core
 
         private void StartOnGUI(SerializedProperty property, GUIContent label)
         {
-            var attrib = this.attribute as ReorderableArrayAttribute;
-            if (attrib != null)
-            {
-                _disallowFoldout = attrib.DisallowFoldout;
-                _removeBackgroundWhenCollapsed = attrib.RemoveBackgroundWhenCollapsed;
-                _draggable = attrib.Draggable;
-                _drawElementAtBottom = attrib.DrawElementAtBottom;
-                _hideElementLabel = attrib.HideElementLabel;
-                _childPropertyAsLabel = attrib.ChildPropertyToDrawAsElementLabel;
-                _childPropertyAsEntry = attrib.ChildPropertyToDrawAsElementEntry;
-                _elementLabelFormatString = attrib.ElementLabelFormatString;
-                _elementPadding = attrib.ElementPadding;
-                _allowDragAndDrop = attrib.AllowDragAndDrop;
-                _showTooltipInHeader = attrib.ShowTooltipInHeader;
-            }
-
             _labelContent = label;
 
             _lst = this.GetList(property, label);
@@ -174,49 +161,49 @@ namespace com.spacepuppyeditor.Core
 
         public bool DisallowFoldout
         {
-            get { return _disallowFoldout; }
+            get { return (this.attribute as ReorderableArrayAttribute)?.DisallowFoldout ?? _disallowFoldout; }
             set { _disallowFoldout = value; }
         }
 
         public bool RemoveBackgroundWhenCollapsed
         {
-            get { return _removeBackgroundWhenCollapsed; }
+            get { return (this.attribute as ReorderableArrayAttribute)?.RemoveBackgroundWhenCollapsed ?? _removeBackgroundWhenCollapsed; }
             set { _removeBackgroundWhenCollapsed = value; }
         }
 
         public bool Draggable
         {
-            get { return _draggable; }
+            get { return (this.attribute as ReorderableArrayAttribute)?.Draggable ?? _draggable; }
             set { _draggable = value; }
         }
 
         public bool DrawElementAtBottom
         {
-            get { return _drawElementAtBottom; }
+            get { return (this.attribute as ReorderableArrayAttribute)?.DrawElementAtBottom ?? _drawElementAtBottom; }
             set { _drawElementAtBottom = value; }
         }
 
         public string ChildPropertyAsLabel
         {
-            get { return _childPropertyAsLabel; }
+            get { return (this.attribute as ReorderableArrayAttribute)?.ChildPropertyToDrawAsElementLabel ?? _childPropertyAsLabel; }
             set { _childPropertyAsLabel = value; }
         }
 
         public string ChildPropertyAsEntry
         {
-            get { return _childPropertyAsEntry; }
+            get { return (this.attribute as ReorderableArrayAttribute)?.ChildPropertyToDrawAsElementEntry ?? _childPropertyAsEntry; }
             set { _childPropertyAsEntry = value; }
         }
 
         public string ElementLabelFormatString
         {
-            get { return _elementLabelFormatString; }
+            get { return (this.attribute as ReorderableArrayAttribute)?.ElementLabelFormatString ?? _elementLabelFormatString; }
             set { _elementLabelFormatString = value; }
         }
 
         public float ElementPadding
         {
-            get { return _elementPadding; }
+            get { return (this.attribute as ReorderableArrayAttribute)?.ElementPadding ?? _elementPadding; }
             set { _elementPadding = value; }
         }
 
@@ -231,14 +218,20 @@ namespace com.spacepuppyeditor.Core
         /// </summary>
         public bool AllowDragAndDrop
         {
-            get { return _allowDragAndDrop; }
+            get { return (this.attribute as ReorderableArrayAttribute)?.AllowDragAndDrop ?? _allowDragAndDrop; }
             set { _allowDragAndDrop = false; }
         }
 
         public bool ShowTooltipInHeader
         {
-            get { return _showTooltipInHeader; }
+            get { return (this.attribute as ReorderableArrayAttribute)?.ShowTooltipInHeader ?? _showTooltipInHeader; }
             set { _showTooltipInHeader = value; }
+        }
+
+        public bool HideLengthField
+        {
+            get => (this.attribute as ReorderableArrayAttribute)?.HideLengthField ?? _hideLengthField;
+            set => _hideLengthField = value;
         }
 
         /// <summary>
@@ -330,6 +323,7 @@ namespace com.spacepuppyeditor.Core
 
                 //const float WIDTH_FOLDOUT = 5f;
                 var foldoutRect = new Rect(position.xMin, position.yMin, position.width, EditorGUIUtility.singleLineHeight);
+                var lengthFieldRect = new Rect(position.xMax - (LENGTHFIIELD_WIDTH + LENGTHFIIELD_MARGIN), position.yMin, LENGTHFIIELD_WIDTH, EditorGUIUtility.singleLineHeight);
                 position = EditorGUI.IndentedRect(position);
                 Rect listArea = position;
 
@@ -365,6 +359,13 @@ namespace com.spacepuppyeditor.Core
                             ReorderableListHelper.DrawRetractedHeader(position, label);
                         }
                     }
+                }
+
+                if (!this.HideLengthField)
+                {
+                    var style = new GUIStyle(GUI.skin.textField);
+                    style.alignment = TextAnchor.MiddleRight;
+                    property.arraySize = EditorGUI.DelayedIntField(lengthFieldRect, property.arraySize, style);
                 }
 
                 this.DoDragAndDrop(property, listArea);

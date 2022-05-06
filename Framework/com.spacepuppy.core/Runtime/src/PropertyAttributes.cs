@@ -250,6 +250,7 @@ namespace com.spacepuppy
         public bool DrawElementAtBottom = false;
         public bool HideElementLabel = false;
         public bool ShowTooltipInHeader = false;
+        public bool HideLengthField = false;
 
         /// <summary>
         /// If DrawElementAtBottom is true, this child element can be displayed as the label in the reorderable list.

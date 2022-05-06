@@ -3,6 +3,12 @@ using BitConverter = System.BitConverter;
 
 namespace com.spacepuppy.Utils
 {
+
+    /// <summary>
+    /// A utility class for RNG values, when creating new RNG objects negative seeds are treated as random seeds. 
+    /// This is counter to how System.Random works which absolute values negative seeds. If you want this behaviour 
+    /// you must manually absolute value the seed.
+    /// </summary>
     public static class RandomUtil
     {
 
@@ -12,14 +18,14 @@ namespace com.spacepuppy.Utils
 
         public static IRandom Standard { get { return _unityRNG; } }
 
-        public static IRandom CreateRNG(int seed)
+        public static IRandom CreateRNG(int seed = -1)
         {
             return new MicrosoftRNG(seed);
         }
 
-        public static IRandom CreateRNG()
+        public static IRandom CreateRNG(long seed = -1)
         {
-            return new MicrosoftRNG();
+            return new MicrosoftRNG(seed);
         }
 
         /// <summary>
@@ -27,11 +33,11 @@ namespace com.spacepuppy.Utils
         /// </summary>
         /// <param name="seed"></param>
         /// <returns></returns>
-        public static IRandom CreateDeterministicRNG(int seed)
+        public static IRandom CreateDeterministicRNG(long seed = -1)
         {
             return new SimplePCG(seed);
         }
-        
+
         public static IRandom SelfOrDefault(this IRandom rng)
         {
             return rng ?? Standard;
@@ -126,7 +132,7 @@ namespace com.spacepuppy.Utils
         public static UnityEngine.Vector3 AroundAxis(this IRandom rng, Vector3 axis)
         {
             var a = rng.Angle();
-            if(VectorUtil.NearSameAxis(axis, Vector3.forward))
+            if (VectorUtil.NearSameAxis(axis, Vector3.forward))
             {
                 return Quaternion.AngleAxis(a, axis) * VectorUtil.GetForwardTangent(Vector3.up, axis);
             }
@@ -312,7 +318,12 @@ namespace com.spacepuppy.Utils
 
             }
 
-            public MicrosoftRNG(int seed) : base(seed)
+            public MicrosoftRNG(int seed) : base(seed < 0 ? (System.DateTime.Now.Ticks.GetHashCode() & 0x7FFFFFFF) : seed)
+            {
+
+            }
+
+            public MicrosoftRNG(long seed) : base((seed < 0 ? System.DateTime.Now.Ticks : seed).GetHashCode() & 0x7FFFFFF)
             {
 
             }
@@ -338,7 +349,7 @@ namespace com.spacepuppy.Utils
                 return this.Next(low, high);
             }
         }
-        
+
         /// <summary>
         /// A simple deterministic rng using a linear congruential algorithm. 
         /// Not the best, but fast and effective for deterministic rng for games.
@@ -378,7 +389,7 @@ namespace com.spacepuppy.Utils
                 _incr = System.Math.Max(0, System.Math.Min(mode - 1, increment));
                 if (seed < 0)
                 {
-                    seed = System.DateTime.Now.Millisecond;
+                    seed = System.DateTime.Now.Ticks;
                 }
                 _seed = (ulong)seed % _mode;
 

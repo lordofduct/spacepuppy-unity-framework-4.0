@@ -15,41 +15,84 @@ namespace com.spacepuppy.Pathfinding
 
         #region Async Scan
 
+        private static readonly object _lock = new object();
+        private static AsyncScanProgressHook _currentScan;
+
         public static AsyncWaitHandle BeginScanAsync(this AstarPath astar)
         {
-            var hook = new AsyncScanProgressHook();
-            if(GameLoop.InvokeRequired)
+            lock (_lock)
+            {
+                if (_currentScan != null)
+                {
+                    if (!_currentScan.Complete)
+                        return new AsyncWaitHandle(_currentScan, _currentScan);
+                    else
+                        _currentScan = null;
+                }
+                if (astar.isScanning)
+                {
+                    if (GameLoop.InvokeRequired)
+                    {
+                        var c = new RadicalCoroutine(NaiveWaitForScanComplete(astar));
+                        GameLoop.UpdateHandle.Invoke(() =>
+                        {
+                            c.Start(GameLoop.Hook);
+                        });
+                        return RadicalAsyncUtil.AsAsyncWaitHandle(c);
+                    }
+                    else
+                    {
+                        var c = GameLoop.Hook.StartRadicalCoroutine(NaiveWaitForScanComplete(astar));
+                        return RadicalAsyncUtil.AsAsyncWaitHandle(c);
+                    }
+                }
+
+                _currentScan = new AsyncScanProgressHook();
+            }
+
+            if (GameLoop.InvokeRequired)
             {
                 GameLoop.UpdateHandle.Invoke(() =>
                 {
-                    hook.e = astar.ScanAsync().GetEnumerator();
-                    hook.Routine = GameLoop.Hook.StartCoroutine(hook);
+                    _currentScan.e = astar.ScanAsync().GetEnumerator();
+                    _currentScan.Routine = GameLoop.Hook.StartCoroutine(_currentScan);
                 });
             }
             else
             {
-                hook.e = astar.ScanAsync().GetEnumerator();
-                hook.Routine = GameLoop.Hook.StartCoroutine(hook);
+                _currentScan.e = astar.ScanAsync().GetEnumerator();
+                _currentScan.Routine = GameLoop.Hook.StartCoroutine(_currentScan);
             }
-            return new AsyncWaitHandle(hook, hook);
+            return new AsyncWaitHandle(_currentScan, _currentScan);
         }
+
+        private static System.Collections.IEnumerator NaiveWaitForScanComplete(AstarPath astar)
+        {
+            while (astar.isScanning)
+            {
+                yield return null;
+            }
+        }
+
+
 
         private class AsyncScanProgressHook : IAsyncWaitHandleProvider, System.Collections.IEnumerator
         {
-            private static readonly object _lock = new object();
 
             public IEnumerator<Progress> e;
             public Coroutine Routine;
             private bool _complete;
             private System.Action<AsyncWaitHandle> _callback;
 
+            public bool Complete => _complete;
+
             #region IAsyncWaitHandleProvider Interface
 
             public Task GetTask(AsyncWaitHandle handle)
             {
-                lock(_lock)
+                lock (_lock)
                 {
-                    if(_complete)
+                    if (_complete)
                     {
                         return Task.CompletedTask;
                     }
@@ -86,7 +129,7 @@ namespace com.spacepuppy.Pathfinding
             {
                 if (callback == null) return;
 
-                lock(_lock)
+                lock (_lock)
                 {
                     _callback += callback;
                 }
@@ -100,7 +143,7 @@ namespace com.spacepuppy.Pathfinding
 
             bool System.Collections.IEnumerator.MoveNext()
             {
-                lock(_lock)
+                lock (_lock)
                 {
                     if (e?.MoveNext() ?? false)
                     {
@@ -108,6 +151,7 @@ namespace com.spacepuppy.Pathfinding
                     }
                     else
                     {
+                        if (_currentScan == this) _currentScan = null;
                         _complete = true;
                         var d = _callback;
                         _callback = null;

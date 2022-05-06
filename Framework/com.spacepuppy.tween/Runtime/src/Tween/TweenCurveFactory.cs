@@ -390,7 +390,7 @@ namespace com.spacepuppy.Tween
         {
             var result = CreateUnInitializedTweenCurve(target?.GetType(), accessor, option);
             var start = accessor.Get(target);
-            var end = Sum(start, amt);
+            var end = TrySum(accessor.GetMemberType(), start, amt);
             (result as ISupportBoxedConfigurableTweenCurve)?.Configure(ease, dur, start, end, option);
             return result;
         }
@@ -547,7 +547,7 @@ namespace com.spacepuppy.Tween
             }
             else
             {
-                return b;
+                result = TrySum(a?.GetType() ?? b?.GetType(), a, b);
             }
 
             return ConvertUtil.ToPrim<TProp>(result);

@@ -15,76 +15,61 @@ namespace com.spacepuppy.Pathfinding
 
         #region Async Scan
 
-        private static readonly object _lock = new object();
-        private static AsyncScanProgressHook _currentScan;
-
-        public static AsyncWaitHandle BeginScanAsync(this AstarPath astar)
-        {
-            lock (_lock)
-            {
-                if (_currentScan != null)
-                {
-                    if (!_currentScan.Complete)
-                        return new AsyncWaitHandle(_currentScan, _currentScan);
-                    else
-                        _currentScan = null;
-                }
-                if (astar.isScanning)
-                {
-                    if (GameLoop.InvokeRequired)
-                    {
-                        var c = new RadicalCoroutine(NaiveWaitForScanComplete(astar));
-                        GameLoop.UpdateHandle.Invoke(() =>
-                        {
-                            c.Start(GameLoop.Hook);
-                        });
-                        return RadicalAsyncUtil.AsAsyncWaitHandle(c);
-                    }
-                    else
-                    {
-                        var c = GameLoop.Hook.StartRadicalCoroutine(NaiveWaitForScanComplete(astar));
-                        return RadicalAsyncUtil.AsAsyncWaitHandle(c);
-                    }
-                }
-
-                _currentScan = new AsyncScanProgressHook();
-            }
-
-            if (GameLoop.InvokeRequired)
-            {
-                GameLoop.UpdateHandle.Invoke(() =>
-                {
-                    _currentScan.e = astar.ScanAsync().GetEnumerator();
-                    _currentScan.Routine = GameLoop.Hook.StartCoroutine(_currentScan);
-                });
-            }
-            else
-            {
-                _currentScan.e = astar.ScanAsync().GetEnumerator();
-                _currentScan.Routine = GameLoop.Hook.StartCoroutine(_currentScan);
-            }
-            return new AsyncWaitHandle(_currentScan, _currentScan);
-        }
-
-        private static System.Collections.IEnumerator NaiveWaitForScanComplete(AstarPath astar)
-        {
-            while (astar.isScanning)
-            {
-                yield return null;
-            }
-        }
-
-
+        public static AsyncWaitHandle BeginScanAsync(this AstarPath astar) => AsyncScanProgressHook.BeginScanAsync(astar);
 
         private class AsyncScanProgressHook : IAsyncWaitHandleProvider, System.Collections.IEnumerator
         {
 
-            public IEnumerator<Progress> e;
-            public Coroutine Routine;
-            private bool _complete;
+            #region Fields
+
+            internal AstarPath astar;
+            internal IEnumerator<Progress> e;
+            internal Coroutine routine;
+            internal bool _complete;
             private System.Action<AsyncWaitHandle> _callback;
 
-            public bool Complete => _complete;
+            #endregion
+
+            #region Methods/Properties
+
+            public bool Complete => _complete || !object.ReferenceEquals(AstarPath.active, astar);
+
+            internal bool Validate()
+            {
+                if (_complete) return false;
+
+                if (object.ReferenceEquals(AstarPath.active, astar) && astar.isScanning)
+                {
+                    return true;
+                }
+                else
+                {
+                    this.SignalComplete();
+                    return false;
+                }
+            }
+
+            internal void SignalComplete()
+            {
+                if (_currentScan == this) _currentScan = null;
+
+                _complete = true;
+                var d = _callback;
+                _callback = null;
+                if (d != null)
+                {
+                    try
+                    {
+                        d(new AsyncWaitHandle(this, this));
+                    }
+                    catch (System.Exception ex)
+                    {
+                        Debug.LogException(ex);
+                    }
+                }
+            }
+
+            #endregion
 
             #region IAsyncWaitHandleProvider Interface
 
@@ -117,12 +102,12 @@ namespace com.spacepuppy.Pathfinding
 
             public object GetYieldInstruction(AsyncWaitHandle handle)
             {
-                return Routine;
+                return routine;
             }
 
             public bool IsComplete(AsyncWaitHandle handle)
             {
-                return _complete;
+                return this.Complete;
             }
 
             public void OnComplete(AsyncWaitHandle handle, System.Action<AsyncWaitHandle> callback)
@@ -145,18 +130,25 @@ namespace com.spacepuppy.Pathfinding
             {
                 lock (_lock)
                 {
-                    if (e?.MoveNext() ?? false)
+                    if (!this.Validate()) return false;
+
+                    try
                     {
-                        return true;
+                        if (e?.MoveNext() ?? false)
+                        {
+                            return true;
+                        }
+                        else
+                        {
+                            this.SignalComplete();
+                            return false;
+                        }
                     }
-                    else
+                    catch (System.Exception ex)
                     {
-                        if (_currentScan == this) _currentScan = null;
-                        _complete = true;
-                        var d = _callback;
-                        _callback = null;
-                        d?.Invoke(new AsyncWaitHandle(this, this));
-                        return false;
+                        Debug.LogException(ex);
+                        this.SignalComplete();
+                        return astar != null ? astar.isScanning : false;
                     }
                 }
             }
@@ -164,6 +156,80 @@ namespace com.spacepuppy.Pathfinding
             void System.Collections.IEnumerator.Reset()
             {
                 //do nothing
+            }
+
+            #endregion
+
+            #region Static Interface
+
+            private static readonly object _lock = new object();
+            private static AsyncScanProgressHook _currentScan;
+
+            internal static AsyncWaitHandle BeginScanAsync(AstarPath astar)
+            {
+                //this logic assumes only 1 AstarPath exists at a time
+                if (astar == null) throw new System.ArgumentNullException(nameof(astar));
+                if (astar != AstarPath.active) throw new System.ArgumentException("Attempted to scan an inactive AstarPath object, AstarPath is a singleton and only 1 active instance should ever exist.", nameof(astar));
+
+                lock (_lock)
+                {
+                    if (_currentScan != null)
+                    {
+                        if (_currentScan.Validate())
+                        {
+                            return new AsyncWaitHandle(_currentScan, _currentScan);
+                        }
+                        else
+                        {
+                            _currentScan = null;
+                        }
+                    }
+                    else if (astar.isScanning)
+                    {
+                        if (GameLoop.InvokeRequired)
+                        {
+                            var c = new RadicalCoroutine(NaiveWaitForScanComplete(astar));
+                            GameLoop.UpdateHandle.Invoke(() =>
+                            {
+                                c.Start(GameLoop.Hook);
+                            });
+                            return RadicalAsyncUtil.AsAsyncWaitHandle(c);
+                        }
+                        else
+                        {
+                            var c = GameLoop.Hook.StartRadicalCoroutine(NaiveWaitForScanComplete(astar));
+                            return RadicalAsyncUtil.AsAsyncWaitHandle(c);
+                        }
+                    }
+
+                    _currentScan = new AsyncScanProgressHook()
+                    {
+                        astar = astar,
+                    };
+                }
+
+                if (GameLoop.InvokeRequired)
+                {
+                    GameLoop.UpdateHandle.Invoke(() =>
+                    {
+                        _currentScan.e = astar.ScanAsync().GetEnumerator();
+                        _currentScan.routine = GameLoop.Hook.StartCoroutine(_currentScan);
+                    });
+                }
+                else
+                {
+                    _currentScan.e = astar.ScanAsync().GetEnumerator();
+                    _currentScan.routine = GameLoop.Hook.StartCoroutine(_currentScan);
+                }
+                return new AsyncWaitHandle(_currentScan, _currentScan);
+            }
+
+            private static System.Collections.IEnumerator NaiveWaitForScanComplete(AstarPath astar)
+            {
+                while (astar.isScanning)
+                {
+                    yield return null;
+                }
             }
 
             #endregion

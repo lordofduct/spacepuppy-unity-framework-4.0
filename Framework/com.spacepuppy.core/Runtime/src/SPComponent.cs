@@ -41,22 +41,50 @@ namespace com.spacepuppy
         protected virtual void Start()
         {
             this.started = true;
-            this.OnStarted?.Invoke(this, System.EventArgs.Empty);
+            try
+            {
+                this.OnStarted?.Invoke(this, System.EventArgs.Empty);
+            }
+            catch(System.Exception ex)
+            {
+                Debug.LogException(ex);
+            }
         }
         
         protected virtual void OnEnable()
         {
-            this.OnEnabled?.Invoke(this, System.EventArgs.Empty);
+            try
+            {
+                this.OnEnabled?.Invoke(this, System.EventArgs.Empty);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogException(ex);
+            }
         }
 
         protected virtual void OnDisable()
         {
-            this.OnDisabled?.Invoke(this, System.EventArgs.Empty);
+            try
+            {
+                this.OnDisabled?.Invoke(this, System.EventArgs.Empty);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogException(ex);
+            }
         }
         
         protected virtual void OnDestroy()
         {
-            this.ComponentDestroyed?.Invoke(this, System.EventArgs.Empty);
+            try
+            {
+                this.ComponentDestroyed?.Invoke(this, System.EventArgs.Empty);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogException(ex);
+            }
         }
 
         #endregion
@@ -106,10 +134,13 @@ namespace com.spacepuppy
             return null;
         }
 
+        /// <summary>
+        /// This should only be used if you're not using RadicalCoroutine. If you are, use StopAllRadicalCoroutines instead.
+        /// </summary>
         public new void StopAllCoroutines()
         {
             //this is an attempt to capture this method, it's not guaranteed and honestly you should avoid calling StopAllCoroutines all together and instead call StopAllRadicalCoroutines.
-            this.SendMessage("RadicalCoroutineManager_InternalHook_StopAllCoroutinesCalled", this);
+            this.SendMessage("RadicalCoroutineManager_InternalHook_StopAllCoroutinesCalled", this, SendMessageOptions.DontRequireReceiver);
             base.StopAllCoroutines();
         }
 

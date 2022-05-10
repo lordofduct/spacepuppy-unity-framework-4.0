@@ -4,7 +4,6 @@ using UnityEngine;
 
 using com.spacepuppy.Geom;
 using com.spacepuppy.Utils;
-using Codice.Client.Common.Threading;
 
 namespace com.spacepuppy.Events
 {

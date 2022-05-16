@@ -40,6 +40,12 @@ namespace com.spacepuppy
             _high = (uint)(value >> 32);
         }
 
+        public ShortUid(uint high, uint low)
+        {
+            _low = low;
+            _high = high;
+        }
+
         private static long _seed = System.DateTime.UtcNow.Ticks;
         public static ShortUid NewId()
         {
@@ -123,14 +129,14 @@ namespace com.spacepuppy
             short mid = (short)(_high & ushort.MaxValue);
             short high = (short)(_high >> 16);
             return new System.Guid((int)_low, mid, high,
-                                   (byte)suffix,
-                                   (byte)(suffix >> 8),
-                                   (byte)(suffix >> 16),
-                                   (byte)(suffix >> 24),
-                                   (byte)(suffix >> 32),
-                                   (byte)(suffix >> 40),
+                                   (byte)(suffix >> 56),
                                    (byte)(suffix >> 48),
-                                   (byte)(suffix >> 56));
+                                   (byte)(suffix >> 40),
+                                   (byte)(suffix >> 32),
+                                   (byte)(suffix >> 24),
+                                   (byte)(suffix >> 16),
+                                   (byte)(suffix >> 8),
+                                   (byte)(suffix));
         }
 
         /// <summary>
@@ -277,6 +283,13 @@ namespace com.spacepuppy
             _id = null;
         }
 
+        public TokenId(uint high, uint low)
+        {
+            _low = low;
+            _high = high;
+            _id = null;
+        }
+
         public TokenId(string value)
         {
             _low = 0;
@@ -380,6 +393,117 @@ namespace com.spacepuppy
                 return (int)(_high ^ _low);
             else
                 return _id.GetHashCode();
+        }
+
+        public System.Guid ToGuid()
+        {
+            if (string.IsNullOrEmpty(_id))
+            {
+                short mid = (short)(_high & ushort.MaxValue);
+                short high = (short)(_high >> 16);
+                return new System.Guid((int)_low, mid, high, 0, 0, 0, 0, 0, 0, 0, 0);
+            }
+
+            lock (_buffer)
+            {
+                System.Array.Clear(_buffer, 0, 16);
+                GetBytes(_buffer);
+                return new System.Guid(_buffer);
+            }
+        }
+
+        /// <summary>
+        /// Places the ShortUid as the leading 64-bits of a guid, the rest is the suffix.
+        /// </summary>
+        /// <param name="suffix"></param>
+        /// <returns></returns>
+        public System.Guid ToGuid(long suffix)
+        {
+            if (string.IsNullOrEmpty(_id)) return (new ShortUid(_high, _low)).ToGuid(suffix);
+
+            lock (_buffer)
+            {
+                System.Array.Clear(_buffer, 0, 16);
+                GetBytes(_buffer);
+                _buffer[8] ^= (byte)(suffix >> 56);
+                _buffer[9] ^= (byte)(suffix >> 48);
+                _buffer[10] ^= (byte)(suffix >> 40);
+                _buffer[11] ^= (byte)(suffix >> 32);
+                _buffer[12] ^= (byte)(suffix >> 24);
+                _buffer[13] ^= (byte)(suffix >> 16);
+                _buffer[14] ^= (byte)(suffix >> 8);
+                _buffer[15] ^= (byte)(suffix);
+                return new System.Guid(_buffer);
+            }
+        }
+
+        /// <summary>
+        /// Places the ShortUid as the leading 64-bits of a guid, the rest is the suffix.
+        /// </summary>
+        /// <param name="suffix"></param>
+        /// <returns></returns>
+        public System.Guid ToGuid(byte d, byte e, byte f, byte g, byte h, byte i, byte j, byte k)
+        {
+            if (string.IsNullOrEmpty(_id)) return (new ShortUid(_high, _low)).ToGuid(d, e, f, g, h, i, j, k);
+
+            lock (_buffer)
+            {
+                System.Array.Clear(_buffer, 0, 16);
+                GetBytes(_buffer);
+                _buffer[8] ^= d;
+                _buffer[9] ^= e;
+                _buffer[10] ^= f;
+                _buffer[11] ^= g;
+                _buffer[12] ^= h;
+                _buffer[13] ^= i;
+                _buffer[14] ^= j;
+                _buffer[15] ^= k;
+                return new System.Guid(_buffer);
+            }
+        }
+
+        public System.Guid ToGuid(string suffix)
+        {
+            if (string.IsNullOrEmpty(_id)) return (new ShortUid(_high, _low)).ToGuid(suffix);
+
+            lock (_buffer)
+            {
+                System.Array.Clear(_buffer, 0, 16);
+                GetBytes(_buffer);
+
+                int len = suffix?.Length ?? 0;
+                if (len < 8) len = 8;
+                for (int i = 0; i < len; i++)
+                {
+                    _buffer[i + 8] ^= (byte)suffix[i];
+                }
+
+                return new System.Guid(_buffer);
+            }
+        }
+
+        private static byte[] _buffer = new byte[16];
+        private void GetBytes(byte[] buffer)
+        {
+            if (string.IsNullOrEmpty(_id))
+            {
+                //this mimics the same format as ShortUid.ToGuid
+                buffer[3] = (byte)(_low >> 24);
+                buffer[2] = (byte)(_low >> 16);
+                buffer[1] = (byte)(_low >> 8);
+                buffer[0] = (byte)(_low);
+                buffer[7] = (byte)(_high >> 24);
+                buffer[6] = (byte)(_high >> 16);
+                buffer[5] = (byte)(_high >> 8);
+                buffer[4] = (byte)(_high);
+            }
+            else
+            {
+                for (int i = 0; i < _id.Length; i++)
+                {
+                    buffer[i % 16] ^= (byte)_id[i];
+                }
+            }
         }
 
         #endregion

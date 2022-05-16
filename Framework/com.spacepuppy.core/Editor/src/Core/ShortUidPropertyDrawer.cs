@@ -43,11 +43,12 @@ namespace com.spacepuppyeditor.Core
                 {
                     //read-write
                     EditorGUI.BeginChangeCheck();
-                    var sval = EditorGUI.TextField(r1, value.ToString("X16"));
+                    var sval = EditorGUI.DelayedTextField(r1, string.Format("0x{0:X16}", value));
                     if (EditorGUI.EndChangeCheck())
                     {
-                        if (ulong.TryParse(sval, System.Globalization.NumberStyles.HexNumber, null, out value))
+                        if (sval != null && sval.StartsWith("0x"))
                         {
+                            ulong.TryParse(sval.Substring(2), System.Globalization.NumberStyles.HexNumber, null, out value);
                             lowProp.longValue = (long)(value & uint.MaxValue);
                             highProp.longValue = (long)(value >> 32);
                         }
@@ -56,7 +57,7 @@ namespace com.spacepuppyeditor.Core
                 else
                 {
                     //read-only
-                    EditorGUI.SelectableLabel(r1, value.ToString("X16"), EditorStyles.textField);
+                    EditorGUI.SelectableLabel(r1, string.Format("0x{0:X16}", value), EditorStyles.textField);
                 }
 
                 if (GUI.Button(r2, "New Id") || (resetOnZero && value == 0))
@@ -115,14 +116,15 @@ namespace com.spacepuppyeditor.Core
                     //read-write
                     EditorGUI.BeginChangeCheck();
                     if (lval == 0)
-                        sval = EditorGUI.TextField(r1, sval);
+                        sval = EditorGUI.DelayedTextField(r1, sval);
                     else
-                        sval = EditorGUI.TextField(r1, lval.ToString("X16"));
+                        sval = EditorGUI.DelayedTextField(r1, string.Format("0x{0:X16}", lval));
 
                     if (EditorGUI.EndChangeCheck())
                     {
-                        if (ulong.TryParse(sval, System.Globalization.NumberStyles.HexNumber, null, out lval))
+                        if (sval != null && sval.StartsWith("0x"))
                         {
+                            ulong.TryParse(sval.Substring(2), System.Globalization.NumberStyles.HexNumber, null, out lval);
                             lowProp.longValue = (long)(lval & uint.MaxValue);
                             highProp.longValue = (long)(lval >> 32);
                             idProp.stringValue = string.Empty;
@@ -139,7 +141,7 @@ namespace com.spacepuppyeditor.Core
                 {
                     //read-only
                     if (lval == 0)
-                        EditorGUI.SelectableLabel(r1, lval.ToString("X16"), EditorStyles.textField);
+                        EditorGUI.SelectableLabel(r1, string.Format("0x{0:X16}", lval), EditorStyles.textField);
                     else
                         EditorGUI.SelectableLabel(r1, sval, EditorStyles.textField);
                 }

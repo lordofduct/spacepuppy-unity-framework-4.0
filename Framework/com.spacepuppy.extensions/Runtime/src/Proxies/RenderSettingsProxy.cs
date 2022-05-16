@@ -145,11 +145,19 @@ namespace com.spacepuppy.Render
             get { return RenderSettings.fog; }
             set { RenderSettings.fog = value; }
         }
+#if UNITY_2021_2_OR_NEWER
+        public Texture CustomReflection
+        {
+            get { return RenderSettings.customReflection; }
+            set { RenderSettings.customReflection = value; }
+        }
+#else
         public Cubemap CustomReflection
         {
             get { return RenderSettings.customReflection; }
             set { RenderSettings.customReflection = value; }
         }
+#endif
 
         #endregion
 
@@ -261,8 +269,13 @@ namespace com.spacepuppy.Render
             public Color FogColor;
             public FogMode FogMode;
             public bool Fog;
+#if UNITY_2021_2_OR_NEWER
+            [System.NonSerialized]
+            public Texture CustomReflection;
+#else
             [System.NonSerialized]
             public Cubemap CustomReflection;
+#endif
 
         }
 

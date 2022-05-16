@@ -16,8 +16,10 @@ namespace com.spacepuppy
 
         #region Fields
 
+#if !UNITY_2021_2_OR_NEWER || UNITY_EDITOR
         [SerializeField]
         private TypeReference _reflectNamesFromType;
+#endif
 
         [SerializeField()]
         private VariantCollection _variables = new VariantCollection();
@@ -25,12 +27,6 @@ namespace com.spacepuppy
         #endregion
 
         #region Properties
-
-        public System.Type ReflectNamesFromType
-        {
-            get { return _reflectNamesFromType.Type; }
-            set { _reflectNamesFromType.Type = value; }
-        }
 
         public VariantCollection Variables
         {

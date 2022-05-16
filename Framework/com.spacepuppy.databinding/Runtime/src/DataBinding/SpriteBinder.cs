@@ -3,7 +3,9 @@ using System.Collections.Generic;
 
 using com.spacepuppy;
 using com.spacepuppy.Utils;
+#if SP_ADDRESSABLES
 using com.spacepuppy.Addressables;
+#endif
 
 namespace com.spacepuppy.DataBinding
 {
@@ -82,7 +84,7 @@ namespace com.spacepuppy.DataBinding
                 return;
             }
 
-            var handle = com.spacepuppy.Addressables.AddressableUtils.LoadOrGetAssetAsync<Sprite>(assref);
+            var handle = assref.LoadOrGetAssetAsync<Sprite>();
             if (handle.IsComplete)
             {
                 this.Sprite = handle.GetResult();
@@ -98,9 +100,7 @@ namespace com.spacepuppy.DataBinding
                 });
             }
         }
-
 #endif
-
 
         #endregion
 

@@ -6,7 +6,14 @@ using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.SPInput
 {
-    public class SPInputModule : StandaloneInputModule
+
+    public interface ISPInputModule
+    {
+        BaseInputModule Module { get; }
+        IInputDevice GetMainInputDevice();
+    }
+
+    public abstract class SPInputModule<TInput> : StandaloneInputModule, ISPInputModule where TInput : SPInputModule.SPInput
     {
 
         #region Fields
@@ -22,9 +29,7 @@ namespace com.spacepuppy.SPInput
         {
             base.Awake();
 
-            var module = this.AddComponent<SPInput>();
-            module.Module = this;
-            this.m_InputOverride = module;
+            this.m_InputOverride = this.AddComponent<TInput>();
         }
 
         #endregion
@@ -39,12 +44,28 @@ namespace com.spacepuppy.SPInput
 
         #endregion
 
-        public override void Process()
-        {
-            base.Process();
+        #region Methods
 
+        public virtual IInputDevice GetMainInputDevice()
+        {
+            if (string.IsNullOrEmpty(_mainInputDeviceId))
+                return Services.Get<IInputManager>()?.Main;
+            else
+                return Services.Get<IInputManager>()?.GetDevice(_mainInputDeviceId);
         }
 
+        #endregion
+
+        #region ISPInputModule Interface
+
+        BaseInputModule ISPInputModule.Module => this;
+
+        #endregion
+
+    }
+
+    public class SPInputModule : SPInputModule<SPInputModule.SPInput>
+    {
 
         #region Special Types
 
@@ -53,17 +74,17 @@ namespace com.spacepuppy.SPInput
 
             #region Fields
 
-            private SPInputModule _module;
+            private ISPInputModule _module;
+
+            #endregion
+
+            #region CONSTRUCTOR
 
             #endregion
 
             #region Properties
 
-            public SPInputModule Module
-            {
-                get { return _module; }
-                set { _module = value; }
-            }
+            public ISPInputModule Module => _module != null ? _module : (_module = this.GetComponent<ISPInputModule>());
 
             #endregion
 
@@ -71,13 +92,8 @@ namespace com.spacepuppy.SPInput
 
             public override float GetAxisRaw(string axisName)
             {
-                var serv = Services.Get<IInputManager>();
-                if (serv == null) return base.GetAxisRaw(axisName);
-
-                var input = string.IsNullOrEmpty(_module?._mainInputDeviceId) ? serv.Main : serv.GetDevice(_module._mainInputDeviceId);
-                if (input == null) return base.GetAxisRaw(axisName);
-
-                if(input.Contains(axisName))
+                var input = this.Module?.GetMainInputDevice();
+                if (input?.Contains(axisName) ?? false)
                 {
                     return input.GetAxleState(axisName);
                 }
@@ -89,13 +105,8 @@ namespace com.spacepuppy.SPInput
 
             public override bool GetButtonDown(string buttonName)
             {
-                var serv = Services.Get<IInputManager>();
-                if (serv == null) return base.GetButtonDown(buttonName);
-
-                var input = string.IsNullOrEmpty(_module?._mainInputDeviceId) ? serv.Main : serv.GetDevice(_module._mainInputDeviceId);
-                if (input == null) return base.GetButtonDown(buttonName);
-
-                if (input.Contains(buttonName))
+                var input = this.Module?.GetMainInputDevice();
+                if (input?.Contains(buttonName) ?? false)
                 {
                     return input.GetButtonState(buttonName) == spacepuppy.SPInput.ButtonState.Down;
                 }
@@ -112,4 +123,5 @@ namespace com.spacepuppy.SPInput
         #endregion
 
     }
+
 }

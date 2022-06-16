@@ -1422,11 +1422,11 @@ namespace com.spacepuppy
         /// If variant reference is in Property mode, this will SET the target property.
         /// </summary>
         /// <param name="value"></param>
-        public void ModifyProperty(object value)
+        public bool ModifyProperty(object value)
         {
-            if (_mode != RefMode.Property) return;
+            if (_mode != RefMode.Property) return false;
 
-            DynamicUtil.SetValue(IProxyExtensions.ReduceIfProxy(_unityObjectReference), _string, value);
+            return DynamicUtil.SetValue(IProxyExtensions.ReduceIfProxy(_unityObjectReference), _string, value);
         }
 
         public void SetToProperty(UnityEngine.Object obj, string property)
@@ -1871,14 +1871,23 @@ namespace com.spacepuppy
             switch (System.Type.GetTypeCode(tp))
             {
                 case System.TypeCode.String:
+                case System.TypeCode.Char:
                     return VariantType.String;
                 case System.TypeCode.Boolean:
                     return VariantType.Boolean;
+                case System.TypeCode.SByte:
+                case System.TypeCode.Byte:
+                case System.TypeCode.Int16:
+                case System.TypeCode.UInt16:
                 case System.TypeCode.Int32:
                     return VariantType.Integer;
                 case System.TypeCode.Single:
                     return VariantType.Float;
                 case System.TypeCode.Double:
+                case System.TypeCode.Decimal:
+                case System.TypeCode.UInt32:
+                case System.TypeCode.Int64:
+                case System.TypeCode.UInt64:
                     return VariantType.Double;
                 case System.TypeCode.DateTime:
                     return VariantType.DateTime;
@@ -1904,6 +1913,7 @@ namespace com.spacepuppy
         public static VariantType GetVariantType(object obj)
         {
             if (obj == null) return VariantType.Null;
+            if (obj is UnityEngine.Object uo && uo.GetInstanceID() == 0) return VariantType.Null;
             if (obj is System.Type tp) return GetVariantType(tp);
             return GetVariantType(obj.GetType());
         }
@@ -1928,6 +1938,8 @@ namespace com.spacepuppy
                     return typeof(Vector2);
                 case VariantType.Vector3:
                     return typeof(Vector3);
+                case VariantType.Vector4:
+                    return typeof(Vector4);
                 case VariantType.Quaternion:
                     return typeof(Quaternion);
                 case VariantType.Color:
@@ -2000,7 +2012,7 @@ namespace com.spacepuppy
         private static void EncodeDateTime(System.DateTime dt, out double low, out float high)
         {
             const long MASK_LOW = ((1L << 48) - 1L);
-            const long MASK_HIGH = ((1L << 8) - 1L) << 48;
+            const long MASK_HIGH = ((1L << 16) - 1L) << 48;
 
             low = (double)(dt.Ticks & MASK_LOW);
             high = (float)((dt.Ticks & MASK_HIGH) >> 48);
@@ -2009,7 +2021,7 @@ namespace com.spacepuppy
         private static System.DateTime DecodeDateTime(double low, float high)
         {
             const long MASK_LOW = ((1L << 48) - 1L);
-            const long MASK_HIGH = ((1L << 8) - 1L);
+            const long MASK_HIGH = ((1L << 16) - 1L);
 
             long ticks = (long)low & MASK_LOW;
             ticks |= ((long)high & MASK_HIGH) << 48;

@@ -398,7 +398,7 @@ namespace com.spacepuppy.Tween
         public TweenCurve CreateRedirectTo(object target, IMemberAccessor accessor, Ease ease, float dur, object start, object end, int option)
         {
             var result = CreateUnInitializedTweenCurve(target?.GetType(), accessor, option);
-            (result as ISupportBoxedConfigurableTweenCurve)?.ConfigureAsRedirectTo(ease, dur, start, end, option);
+            (result as ISupportBoxedConfigurableTweenCurve)?.ConfigureAsRedirectTo(ease, dur, accessor.Get(target), start, end, option);
             return result;
         }
 

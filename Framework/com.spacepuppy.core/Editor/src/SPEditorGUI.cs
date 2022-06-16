@@ -10,8 +10,6 @@ using com.spacepuppy.Dynamic;
 
 using com.spacepuppyeditor.Windows;
 using com.spacepuppyeditor.Internal;
-using UnityEditor.Analytics;
-using System;
 
 namespace com.spacepuppyeditor
 {
@@ -291,7 +289,7 @@ namespace com.spacepuppyeditor
                         str = EditorGUI.DelayedTextField(position, label, str ?? "NULL");
                         if (EditorGUI.EndChangeCheck())
                         {
-                            return string.IsNullOrEmpty(str) || string.Equals(str, "NULL", StringComparison.OrdinalIgnoreCase) ? null : ConvertUtil.ToPrim(value, ntp);
+                            return string.IsNullOrEmpty(str) || string.Equals(str, "NULL", System.StringComparison.OrdinalIgnoreCase) ? null : ConvertUtil.ToPrim(value, ntp);
                         }
                         else
                         {
@@ -323,6 +321,15 @@ namespace com.spacepuppyeditor
                                 if (EditorGUI.EndChangeCheck())
                                 {
                                     return num;
+                                }
+                            }
+                            break;
+                        case System.TypeCode.DateTime:
+                            {
+                                System.DateTime dt = SPEditorGUI.DateTimeField(position, label, ConvertUtil.ToDate(value));
+                                if (EditorGUI.EndChangeCheck())
+                                {
+                                    return dt;
                                 }
                             }
                             break;
@@ -472,10 +479,18 @@ namespace com.spacepuppyeditor
                     break;
                 case SerializedPropertyType.Vector4:
                     EditorGUI.BeginChangeCheck();
-                    var v4 = EditorGUI.Vector4Field(position, label.text, ConvertUtil.ToVector4(value));
+                    var v4 = EditorGUI.Vector4Field(position, label, ConvertUtil.ToVector4(value));
                     if (EditorGUI.EndChangeCheck())
                     {
                         return v4;
+                    }
+                    break;
+                case SerializedPropertyType.Quaternion:
+                    EditorGUI.BeginChangeCheck();
+                    var q = SPEditorGUI.QuaternionField(position, label, ConvertUtil.ToQuaternion(value)); 
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        return q;
                     }
                     break;
                 case SerializedPropertyType.Rect:
@@ -715,6 +730,25 @@ namespace com.spacepuppyeditor
 
         #endregion
 
+        #region DateTimeField
+
+        public static System.DateTime DateTimeField(Rect position, System.DateTime dateTime)
+        {
+            return ConvertUtil.ToDate(EditorGUI.DelayedTextField(position, GUIContent.none, dateTime.ToString()));
+        }
+
+        public static System.DateTime DateTimeField(Rect position, string label, System.DateTime dateTime)
+        {
+            return ConvertUtil.ToDate(EditorGUI.DelayedTextField(position, label, dateTime.ToString()));
+        }
+
+        public static System.DateTime DateTimeField(Rect position, GUIContent label, System.DateTime dateTime)
+        {
+            return ConvertUtil.ToDate(EditorGUI.DelayedTextField(position, label, dateTime.ToString()));
+        }
+
+        #endregion
+
         #region LayerMaskField
 
         public static LayerMask LayerMaskField(Rect position, string label, int selectedMask)
@@ -790,11 +824,12 @@ namespace com.spacepuppyeditor
 
         #region Option Popup w/ Custom
 
-        public static string OptionPopupWithCustom(Rect position, string label, string value, string[] options)
+        public static string OptionPopupWithCustom(Rect position, string label, string value, string[] options, GUIContent[] guiOptions = null)
         {
             if (options == null) options = ArrayUtil.Empty<string>();
 
-            var guiOptions = (from s in options select EditorHelper.TempContent(s)).Append(EditorHelper.TempContent("Custom...")).ToArray();
+            if (guiOptions == null)
+                guiOptions = (from s in options select EditorHelper.TempContent(s)).Append(EditorHelper.TempContent("Custom...")).ToArray();
 
             int index = System.Array.IndexOf(options, value);
             if (index < 0) index = options.Length;
@@ -830,11 +865,12 @@ namespace com.spacepuppyeditor
             }
         }
 
-        public static string OptionPopupWithCustom(Rect position, GUIContent label, string value, string[] options)
+        public static string OptionPopupWithCustom(Rect position, GUIContent label, string value, string[] options, GUIContent[] guiOptions = null)
         {
             if (options == null) options = ArrayUtil.Empty<string>();
 
-            var guiOptions = (from s in options select EditorHelper.TempContent(s)).Append(EditorHelper.TempContent("Custom...")).ToArray();
+            if (guiOptions == null)
+                guiOptions = (from s in options select EditorHelper.TempContent(s)).Append(EditorHelper.TempContent("Custom...")).ToArray();
 
             int index = System.Array.IndexOf(options, value);
             if (index < 0) index = options.Length;
@@ -1517,7 +1553,7 @@ namespace com.spacepuppyeditor
                     }
                 }
 
-                entries[entries.Length - 1] = EditorHelper.TempContent("...Custom");
+                entries[entries.Length - 1] = EditorHelper.TempContent("Custom...");
                 if (index < 0)
                     index = entries.Length - 1;
 

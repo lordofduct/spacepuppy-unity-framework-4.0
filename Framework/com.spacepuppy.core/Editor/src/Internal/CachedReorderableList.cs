@@ -79,6 +79,7 @@ namespace com.spacepuppyeditor.Internal
                         prop.serializedObject.Update();
                         prop.arraySize = 0;
                         prop.serializedObject.ApplyModifiedProperties();
+                        this.index = -1;
                     });
                     menu.ShowAsContext();
                 }
@@ -90,6 +91,7 @@ namespace com.spacepuppyeditor.Internal
                     menu.AddItem(new GUIContent("Clear"), false, () =>
                     {
                         lst.Clear();
+                        this.index = -1;
                     });
                     menu.ShowAsContext();
                 }

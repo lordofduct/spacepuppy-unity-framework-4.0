@@ -674,6 +674,7 @@ namespace com.spacepuppyeditor
                 case System.TypeCode.UInt32:
                 case System.TypeCode.Int64:
                 case System.TypeCode.UInt64:
+                case System.TypeCode.DateTime:
                     return SerializedPropertyType.Integer;
                 case System.TypeCode.Boolean:
                     return SerializedPropertyType.Boolean;

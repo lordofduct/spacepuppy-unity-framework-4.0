@@ -78,6 +78,14 @@ namespace com.spacepuppy.Addressables
             return !string.IsNullOrEmpty(asset?.AssetGUID);
         }
 
+        public static bool TryReleaseAsset(this AssetReference asset)
+        {
+            if (asset == null || !asset.OperationHandle.IsValid()) return false;
+
+            asset.ReleaseAsset();
+            return true;
+        }
+
         private static void RegisterSPManaged(object asset)
         {
 #if UNITY_EDITOR

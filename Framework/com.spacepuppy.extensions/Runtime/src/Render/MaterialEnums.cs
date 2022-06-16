@@ -18,4 +18,11 @@
         W
     }
 
+    public enum MaterialSourceUniquessModes
+    {
+        UseSharedMaterial = 0,
+        MakeUniqueOnStart = 1,
+        MakeUniqueOnAccess = 2,
+    }
+
 }

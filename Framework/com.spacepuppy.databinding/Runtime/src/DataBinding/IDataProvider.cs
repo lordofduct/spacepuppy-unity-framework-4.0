@@ -22,12 +22,12 @@ namespace com.spacepuppy.DataBinding
     public static class DataProviderUtils
     {
 
-        public static System.Collections.IEnumerable GetAsDataProvider(object source)
+        public static IDataProvider GetAsDataProvider(object source)
         {
-            return GetAsDataProviderOrNull(source) ?? new object[] { source };
+            return GetAsDataProviderOrNull(source) ?? new SingleSourceDataProvider(source);
         }
 
-        public static System.Collections.IEnumerable GetAsDataProvider(object source, bool respectIfProxy)
+        public static IDataProvider GetAsDataProvider(object source, bool respectIfProxy)
         {
             if (respectIfProxy && source is IProxy p)
             {
@@ -38,22 +38,22 @@ namespace com.spacepuppy.DataBinding
                 }
 
                 source = p.GetTargetInternal(typeof(IDataProvider), null);
-                return GetAsDataProviderOrNull(source) ?? new object[] { source };
+                return GetAsDataProviderOrNull(source) ?? new SingleSourceDataProvider(source);
             }
             else
             {
-                return GetAsDataProviderOrNull(source) ?? new object[] { source };
+                return GetAsDataProviderOrNull(source) ?? new SingleSourceDataProvider(source);
             }
         }
 
-        public static System.Collections.IEnumerable GetAsDataProviderOrNull(object source)
+        public static IDataProvider GetAsDataProviderOrNull(object source)
         {
             switch (source)
             {
                 case IDataProvider dp:
                     return dp;
                 case System.Collections.IEnumerable e:
-                    return e;
+                    return new EnumerableWrapperDataProvider(e);
                 default:
                     return ObjUtil.GetAsFromSource<IDataProvider>(source);
             }
@@ -70,6 +70,53 @@ namespace com.spacepuppy.DataBinding
             if (!ignoreReducingGenericEnumerable && source is System.Collections.IEnumerable e) return e.Cast<object>().FirstOrDefault();
 
             return source;
+        }
+
+        private class SingleSourceDataProvider : IDataProvider
+        {
+            private object _source;
+
+            public SingleSourceDataProvider(object source)
+            {
+                _source = source;
+            }
+
+            public object FirstElement => _source;
+
+            public System.Collections.IEnumerator GetEnumerator()
+            {
+                yield return _source;
+            }
+        }
+
+        private class EnumerableWrapperDataProvider : IDataProvider
+        {
+            private System.Collections.IEnumerable _enumerable;
+
+            public EnumerableWrapperDataProvider(System.Collections.IEnumerable e)
+            {
+                if (e == null) throw new System.ArgumentNullException(nameof(e));
+                _enumerable = e;
+            }
+
+            public object FirstElement
+            {
+                get
+                {
+                    switch (_enumerable)
+                    {
+                        case System.Collections.IList l:
+                            return l.Count > 0 ? l[0] : null;
+                        default:
+                            return _enumerable.Cast<object>().FirstOrDefault();
+                    }
+                }
+            }
+
+            public System.Collections.IEnumerator GetEnumerator()
+            {
+                return _enumerable.GetEnumerator();
+            }
         }
 
     }

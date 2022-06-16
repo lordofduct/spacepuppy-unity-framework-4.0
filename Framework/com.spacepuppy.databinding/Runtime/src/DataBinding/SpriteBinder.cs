@@ -23,6 +23,10 @@ namespace com.spacepuppy.DataBinding
 
         #endregion
 
+        #region CONSTRUCTOR
+
+        #endregion
+
         #region Properties
 
         public UnityEngine.UI.Image Target
@@ -72,7 +76,30 @@ namespace com.spacepuppy.DataBinding
 
 
 #if SP_ADDRESSABLES
+
+        [System.NonSerialized]
+        private Sprite _addressableSpriteToBeReleased;
+        [System.NonSerialized]
         private int _asyncLoadHash;
+
+        protected override void OnDestroy()
+        {
+            base.OnDestroy();
+
+            this.TryReleaseSprite();
+        }
+
+        private void TryReleaseSprite()
+        {
+            var s = _addressableSpriteToBeReleased;
+            _addressableSpriteToBeReleased = null;
+            if (s)
+            {
+                if (this.Sprite == s) this.Sprite = null;
+                UnityEngine.AddressableAssets.Addressables.Release(s);
+            }
+        }
+
         private void DoAssetLoad(UnityEngine.AddressableAssets.AssetReference assref, int hash)
         {
             if (!assref.IsConfigured())
@@ -84,6 +111,8 @@ namespace com.spacepuppy.DataBinding
                 return;
             }
 
+            /*
+             * REDACTED - see note below
             var handle = assref.LoadOrGetAssetAsync<Sprite>();
             if (handle.IsComplete)
             {
@@ -99,6 +128,32 @@ namespace com.spacepuppy.DataBinding
                     }
                 });
             }
+            */
+
+            //NOTE - we will load the asset directly so that the SpriteBinder can release it. Otherwise if the source prematurely releases it we lose the sprite.
+            this.TryReleaseSprite();
+            var handle = UnityEngine.AddressableAssets.Addressables.LoadAssetAsync<Sprite>(assref.RuntimeKey);
+            handle.Completed += (h) =>
+            {
+                if (h.Status != UnityEngine.ResourceManagement.AsyncOperations.AsyncOperationStatus.Succeeded)
+                {
+                    if (_bindIfNull && _asyncLoadHash == hash)
+                    {
+                        this.Sprite = null;
+                    }
+                    return;
+                }
+
+                if (_asyncLoadHash == hash)
+                {
+                    _addressableSpriteToBeReleased = h.Result;
+                    this.Sprite = _addressableSpriteToBeReleased;
+                }
+                else
+                {
+                    UnityEngine.AddressableAssets.Addressables.Release(h);
+                }
+            };
         }
 #endif
 

@@ -73,6 +73,16 @@ namespace com.spacepuppy
             }
         }
 
+        public VariantType VariantType
+        {
+            get
+            {
+                if (_status == MemberStatus.Unknown) this.InitAccessor();
+                if (_memberType == null) return VariantType.Null;
+                return VariantReference.GetVariantType(_memberType);
+            }
+        }
+
         #endregion
 
         #region Methods

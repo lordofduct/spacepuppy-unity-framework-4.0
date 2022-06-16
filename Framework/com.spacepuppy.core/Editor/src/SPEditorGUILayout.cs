@@ -207,6 +207,25 @@ namespace com.spacepuppyeditor
 
         #endregion
 
+        #region DateTimeField
+
+        public static System.DateTime DateTimeField(System.DateTime dateTime)
+        {
+            return SPEditorGUI.DateTimeField(EditorGUILayout.GetControlRect(false), dateTime);
+        }
+
+        public static System.DateTime DateTimeField(string label, System.DateTime dateTime)
+        {
+            return SPEditorGUI.DateTimeField(EditorGUILayout.GetControlRect(true), label, dateTime);
+        }
+
+        public static System.DateTime DateTimeField(GUIContent label, System.DateTime dateTime)
+        {
+            return SPEditorGUI.DateTimeField(EditorGUILayout.GetControlRect(true), label, dateTime);
+        }
+
+        #endregion
+
         #region LayerMaskField
 
         public static LayerMask LayerMaskField(string label, int selectedMask)
@@ -252,19 +271,19 @@ namespace com.spacepuppyeditor
 
         #region Option Popup w/ Custom
 
-        public static string OptionPopupWithCustom(string value, string[] options)
+        public static string OptionPopupWithCustom(string value, string[] options, GUIContent[] guiOptions = null)
         {
-            return SPEditorGUI.OptionPopupWithCustom(EditorGUILayout.GetControlRect(false), GUIContent.none, value, options);
+            return SPEditorGUI.OptionPopupWithCustom(EditorGUILayout.GetControlRect(false), GUIContent.none, value, options, guiOptions);
         }
 
-        public static string OptionPopupWithCustom(string label, string value, string[] options)
+        public static string OptionPopupWithCustom(string label, string value, string[] options, GUIContent[] guiOptions = null)
         {
-            return SPEditorGUI.OptionPopupWithCustom(EditorGUILayout.GetControlRect(true), label, value, options);
+            return SPEditorGUI.OptionPopupWithCustom(EditorGUILayout.GetControlRect(true), label, value, options, guiOptions);
         }
 
-        public static string OptionPopupWithCustom(GUIContent label, string value, string[] options)
+        public static string OptionPopupWithCustom(GUIContent label, string value, string[] options, GUIContent[] guiOptions = null)
         {
-            return SPEditorGUI.OptionPopupWithCustom(EditorGUILayout.GetControlRect(label != null && label != GUIContent.none), label, value, options);
+            return SPEditorGUI.OptionPopupWithCustom(EditorGUILayout.GetControlRect(label != null && label != GUIContent.none), label, value, options, guiOptions);
         }
 
         #endregion

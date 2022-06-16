@@ -96,94 +96,9 @@ namespace com.spacepuppy.Render
         public void SetValue(object value)
         {
             var mat = this.Material;
-
             if (mat == null) return;
 
-            switch (_valueType)
-            {
-                case MaterialPropertyValueType.Float:
-                    mat.SetFloat(_propertyName, ConvertUtil.ToSingle(value));
-                    break;
-                case MaterialPropertyValueType.Color:
-                    {
-                        switch (_member)
-                        {
-                            case MaterialPropertyValueTypeMember.None:
-                                mat.SetColor(_propertyName, ConvertUtil.ToColor(value));
-                                break;
-                            case MaterialPropertyValueTypeMember.X:
-                                {
-                                    var c = mat.GetColor(_propertyName);
-                                    c.r = ConvertUtil.ToSingle(value);
-                                    mat.SetColor(_propertyName, c);
-                                }
-                                break;
-                            case MaterialPropertyValueTypeMember.Y:
-                                {
-                                    var c = mat.GetColor(_propertyName);
-                                    c.g = ConvertUtil.ToSingle(value);
-                                    mat.SetColor(_propertyName, c);
-                                }
-                                break;
-                            case MaterialPropertyValueTypeMember.Z:
-                                {
-                                    var c = mat.GetColor(_propertyName);
-                                    c.b = ConvertUtil.ToSingle(value);
-                                    mat.SetColor(_propertyName, c);
-                                }
-                                break;
-                            case MaterialPropertyValueTypeMember.W:
-                                {
-                                    var c = mat.GetColor(_propertyName);
-                                    c.a = ConvertUtil.ToSingle(value);
-                                    mat.SetColor(_propertyName, c);
-                                }
-                                break;
-                        }
-                    }
-                    break;
-                case MaterialPropertyValueType.Vector:
-                    {
-                        switch (_member)
-                        {
-                            case MaterialPropertyValueTypeMember.None:
-                                mat.SetVector(_propertyName, ConvertUtil.ToVector4(value));
-                                break;
-                            case MaterialPropertyValueTypeMember.X:
-                                {
-                                    var v = mat.GetVector(_propertyName);
-                                    v.x = ConvertUtil.ToSingle(value);
-                                    mat.SetVector(_propertyName, v);
-                                }
-                                break;
-                            case MaterialPropertyValueTypeMember.Y:
-                                {
-                                    var v = mat.GetVector(_propertyName);
-                                    v.y = ConvertUtil.ToSingle(value);
-                                    mat.SetVector(_propertyName, v);
-                                }
-                                break;
-                            case MaterialPropertyValueTypeMember.Z:
-                                {
-                                    var v = mat.GetVector(_propertyName);
-                                    v.z = ConvertUtil.ToSingle(value);
-                                    mat.SetVector(_propertyName, v);
-                                }
-                                break;
-                            case MaterialPropertyValueTypeMember.W:
-                                {
-                                    var v = mat.GetVector(_propertyName);
-                                    v.w = ConvertUtil.ToSingle(value);
-                                    mat.SetVector(_propertyName, v);
-                                }
-                                break;
-                        }
-                    }
-                    break;
-                case MaterialPropertyValueType.Texture:
-                    mat.SetTexture(_propertyName, value as Texture);
-                    break;
-            }
+            MaterialUtil.SetProperty(mat, _propertyName, _valueType, _member, value);
         }
 
         public void SetValue(float value)
@@ -473,55 +388,13 @@ namespace com.spacepuppy.Render
         public object GetValue()
         {
             var mat = this.Material;
-
             if (mat == null) return null;
 
             try
             {
-                switch (_valueType)
-                {
-                    case MaterialPropertyValueType.Float:
-                        return mat.GetFloat(_propertyName);
-                    case MaterialPropertyValueType.Color:
-                        switch (_member)
-                        {
-                            case MaterialPropertyValueTypeMember.None:
-                                return mat.GetColor(_propertyName);
-                            case MaterialPropertyValueTypeMember.X:
-                                return mat.GetColor(_propertyName).r;
-                            case MaterialPropertyValueTypeMember.Y:
-                                return mat.GetColor(_propertyName).g;
-                            case MaterialPropertyValueTypeMember.Z:
-                                return mat.GetColor(_propertyName).b;
-                            case MaterialPropertyValueTypeMember.W:
-                                return mat.GetColor(_propertyName).a;
-                            default:
-                                return 0f;
-                        }
-                    case MaterialPropertyValueType.Vector:
-                        switch (_member)
-                        {
-                            case MaterialPropertyValueTypeMember.None:
-                                return mat.GetVector(_propertyName);
-                            case MaterialPropertyValueTypeMember.X:
-                                return mat.GetVector(_propertyName).x;
-                            case MaterialPropertyValueTypeMember.Y:
-                                return mat.GetVector(_propertyName).y;
-                            case MaterialPropertyValueTypeMember.Z:
-                                return mat.GetVector(_propertyName).z;
-                            case MaterialPropertyValueTypeMember.W:
-                                return mat.GetVector(_propertyName).w;
-                            default:
-                                return 0f;
-                        }
-                    case MaterialPropertyValueType.Texture:
-                        return mat.GetTexture(_propertyName);
-                }
+                return MaterialUtil.GetProperty(mat, _propertyName, _valueType, _member);
             }
-            catch
-            {
-
-            }
+            catch { }
 
             return null;
         }

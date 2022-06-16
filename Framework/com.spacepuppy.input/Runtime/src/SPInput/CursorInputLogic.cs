@@ -671,6 +671,9 @@ namespace com.spacepuppy.SPInput
             [Tooltip("The mask of layers to check for when raycasting. This includes both the layers that should be clickable, and those that can block clickable things.")]
             private LayerMask _layerMask = -1;
             [SerializeField]
+            [Tooltip("Layers that only block but do not receive events.")]
+            private LayerMask _blockingLayerMask = 0;
+            [SerializeField]
             [Tooltip("How to deal with trigger colliders when raycasting.")]
             private QueryTriggerInteraction _queryTriggerOption;
 
@@ -751,7 +754,7 @@ namespace com.spacepuppy.SPInput
                     var cam = ObjUtil.GetAsFromSource<Camera>(_cameraSource, true);
                     if (cam == null) return default(CursorRaycastHit);
 
-                    return InputUtil.TestCursorOver(cam, pos, float.PositiveInfinity, _layerMask, _queryTriggerOption);
+                    return InputUtil.TestCursorOver(cam, pos, float.PositiveInfinity, _layerMask, _queryTriggerOption, _blockingLayerMask);
                 }
 
                 return default(CursorRaycastHit);
@@ -808,6 +811,9 @@ namespace com.spacepuppy.SPInput
             [SerializeField]
             [Tooltip("The mask of layers to check for when raycasting. This includes both the layers that should be clickable, and those that can block clickable things.")]
             private LayerMask _layerMask = -1;
+            [SerializeField]
+            [Tooltip("Layers that only block but do not receive events.")]
+            private LayerMask _blockingLayerMask = 0;
 
             [SerializeField]
             [Tooltip("If the EventSystem reports that its pointer is over something, then this raycaster will consider itself not over anything.")]
@@ -880,7 +886,7 @@ namespace com.spacepuppy.SPInput
                     var cam = ObjUtil.GetAsFromSource<Camera>(_cameraSource, true);
                     if (cam == null) return default(CursorRaycastHit);
 
-                    return InputUtil.TestCursorOver2D(cam, pos, float.PositiveInfinity, _layerMask);
+                    return InputUtil.TestCursorOver2D(cam, pos, float.PositiveInfinity, _layerMask, float.NegativeInfinity, _blockingLayerMask);
                 }
 
                 return default(CursorRaycastHit);
@@ -952,6 +958,9 @@ namespace com.spacepuppy.SPInput
             [Tooltip("The mask of layers to check for when raycasting. This includes both the layers that should be clickable, and those that can block clickable things.")]
             private LayerMask _layerMask = -1;
             [SerializeField]
+            [Tooltip("Layers that only block but do not receive events.")]
+            private LayerMask _blockingLayerMask = 0;
+            [SerializeField]
             [Tooltip("How to deal with trigger colliders when raycasting.")]
             private QueryTriggerInteraction _queryTriggerOption;
 
@@ -1045,7 +1054,7 @@ namespace com.spacepuppy.SPInput
                     var cam = ObjUtil.GetAsFromSource<Camera>(_cameraSource, true);
                     if (cam == null) return default(CursorRaycastHit);
 
-                    return InputUtil.TestCursorOver(cam, pos, float.PositiveInfinity, _layerMask, _queryTriggerOption);
+                    return InputUtil.TestCursorOver(cam, pos, float.PositiveInfinity, _layerMask, _queryTriggerOption, _blockingLayerMask);
                 }
 
                 return default(CursorRaycastHit);
@@ -1105,6 +1114,9 @@ namespace com.spacepuppy.SPInput
             [SerializeField]
             [Tooltip("The mask of layers to check for when raycasting. This includes both the layers that should be clickable, and those that can block clickable things.")]
             private LayerMask _layerMask = -1;
+            [SerializeField]
+            [Tooltip("Layers that only block but do not receive events.")]
+            private LayerMask _blockingLayerMask = 0;
 
             [SerializeField]
             private SignalTargetOptions _signalTarget;
@@ -1190,7 +1202,7 @@ namespace com.spacepuppy.SPInput
                     var cam = ObjUtil.GetAsFromSource<Camera>(_cameraSource, true);
                     if (cam == null) return default(CursorRaycastHit);
 
-                    return InputUtil.TestCursorOver2D(cam, pos, float.PositiveInfinity, _layerMask);
+                    return InputUtil.TestCursorOver2D(cam, pos, float.PositiveInfinity, _layerMask, float.NegativeInfinity, _blockingLayerMask);
                 }
 
                 return default(CursorRaycastHit);

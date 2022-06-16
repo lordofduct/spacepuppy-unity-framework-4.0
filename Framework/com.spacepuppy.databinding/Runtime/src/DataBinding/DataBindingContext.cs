@@ -7,6 +7,7 @@ using com.spacepuppy.Collections;
 using com.spacepuppy.Events;
 using com.spacepuppy.Utils;
 using com.spacepuppy.Project;
+using Cysharp.Threading.Tasks.Triggers;
 
 namespace com.spacepuppy.DataBinding
 {
@@ -51,6 +52,10 @@ namespace com.spacepuppy.DataBinding
 
         [SerializeField]
         private bool _respectProxySources = false;
+
+        [SerializeField]
+        [Tooltip("By default, if an IDataProvider is received as a data source it is reduced to its first element. By setting this true the DataBindingContext will treat the dataprovider as the source directly.")]
+        private bool _respectDataProviderAsSource = false;
 
         [SerializeField]
         [Tooltip("If the 'source' is a INotifyPropertyChanged the context will listen for the PropertyChanged event and rebind.")]
@@ -135,6 +140,12 @@ namespace com.spacepuppy.DataBinding
             set => _respectProxySources = value;
         }
 
+        public bool RespectDataProviderAsSource
+        {
+            get => _respectDataProviderAsSource;
+            set => _respectDataProviderAsSource = value;
+        }
+
         public SPEvent OnDataBound => _onDataBound;
 
         #endregion
@@ -166,6 +177,13 @@ namespace com.spacepuppy.DataBinding
             var protocol = this.BindingProtocol;
             if (_respectProxySources) source = IProxyExtensions.ReduceIfProxy(source);
 
+            if (!_respectDataProviderAsSource
+                && source is IDataProvider idp
+                && (protocol.PreferredSourceType == null || !protocol.PreferredSourceType.IsInstanceOfType(source)))
+            {
+                source = idp.FirstElement;
+            }
+
             object reducedref;
             if (protocol.PreferredSourceType != null && (reducedref = ObjUtil.GetAsFromSource(protocol.PreferredSourceType, source)) != null)
             {
@@ -190,7 +208,7 @@ namespace com.spacepuppy.DataBinding
 
         public void UnbindPropertyChangedEvent()
         {
-            if(this.DataSource is System.ComponentModel.INotifyPropertyChanged npc)
+            if (this.DataSource is System.ComponentModel.INotifyPropertyChanged npc)
             {
                 npc.PropertyChanged -= DataSource_PropertyChanged;
             }

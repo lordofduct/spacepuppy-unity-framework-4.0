@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using com.spacepuppy.Utils;
+using Cysharp.Threading.Tasks;
 
 namespace com.spacepuppy.Async
 {
@@ -28,13 +29,15 @@ namespace com.spacepuppy.Async
             return new AsyncWaitHandle<T>(RadicalAsyncWaitHandleProvider<T>.Default, inst).AsTask();
         }
 
-
         #region Special Types
 
         /// <summary>
         /// Acts as a IAsyncWaitHandleProvider to map IRadicalYieldInstructions to the AsyncWaitHandle struct.
         /// </summary>
         private class RadicalAsyncWaitHandleProvider : IAsyncWaitHandleProvider
+#if SP_UNITASK
+            , IUniTaskAsyncWaitHandleProvider
+#endif
         {
 
             public static readonly RadicalAsyncWaitHandleProvider Default = new RadicalAsyncWaitHandleProvider();
@@ -120,6 +123,38 @@ namespace com.spacepuppy.Async
                     throw new System.InvalidOperationException("An instance of RadicalAsyncWaitHandleProvider was associated with a token that was not an IRadicalYieldInstruction.");
                 }
             }
+
+#if SP_UNITASK
+            public UniTask GetUniTask(AsyncWaitHandle handle)
+            {
+                if (handle.Token is IRadicalYieldInstruction inst)
+                {
+                    bool complete = false;
+                    if (GameLoop.InvokeRequired)
+                    {
+                        GameLoop.UpdateHandle.Invoke(() => complete = inst.IsComplete);
+                    }
+                    else
+                    {
+                        complete = inst.IsComplete;
+                    }
+
+                    if (complete)
+                    {
+                        return UniTask.CompletedTask;
+                    }
+                    else
+                    {
+                        return inst.AsUniTask();
+                    }
+                }
+                else
+                {
+                    //this should never be reached as long as it remains private and is used appropriately like that in RadicalWaitHandleExtensions.AsAsyncWaitHandle
+                    throw new System.InvalidOperationException("An instance of RadicalAsyncWaitHandleProvider was associated with a token that was not an IRadicalYieldInstruction.");
+                }
+            }
+#endif
 
             public object GetYieldInstruction(AsyncWaitHandle handle)
             {
@@ -219,6 +254,9 @@ namespace com.spacepuppy.Async
         }
 
         private class RadicalAsyncWaitHandleProvider<T> : IAsyncWaitHandleProvider<T>
+#if SP_UNITASK
+            , IUniTaskAsyncWaitHandleProvider<T>
+#endif
         {
 
             public static readonly RadicalAsyncWaitHandleProvider<T> Default = new RadicalAsyncWaitHandleProvider<T>();
@@ -262,6 +300,48 @@ namespace com.spacepuppy.Async
             {
                 return RadicalAsyncWaitHandleProvider.Default.GetTask(handle);
             }
+
+#if SP_UNITASK
+            public UniTask GetUniTask(AsyncWaitHandle handle)
+            {
+                return RadicalAsyncWaitHandleProvider.Default.GetUniTask(handle);
+            }
+
+            public UniTask<T> GetUniTask(AsyncWaitHandle<T> handle)
+            {
+                if (handle.Token is RadicalWaitHandle<T> h)
+                {
+                    bool complete = false;
+                    if (GameLoop.InvokeRequired)
+                    {
+                        GameLoop.UpdateHandle.Invoke(() => complete = h.IsComplete);
+                    }
+                    else
+                    {
+                        complete = h.IsComplete;
+                    }
+
+                    if (complete)
+                    {
+                        return UniTask.FromResult(h.Result);
+                    }
+                    else
+                    {
+                        return WaitForComplete_UT(h);
+                    }
+                }
+                else
+                {
+                    //this should never be reached as long as it remains private and is used appropriately like that in RadicalWaitHandleExtensions.AsAsyncWaitHandle
+                    throw new System.InvalidOperationException("An instance of RadicalAsyncWaitHandleProvider was associated with a token that was not an IRadicalYieldInstruction.");
+                }
+            }
+            private async UniTask<T> WaitForComplete_UT(RadicalWaitHandle<T> handle)
+            {
+                await UniTask.WaitUntil(() => handle.IsComplete);
+                return handle.Result;
+            }
+#endif
 
             public object GetYieldInstruction(AsyncWaitHandle handle)
             {
@@ -371,6 +451,224 @@ namespace com.spacepuppy.Async
         }
 
         #endregion
+
+#if SP_UNITASK
+
+        public static UniTask AsUniTask(this IRadicalYieldInstruction instruction)
+        {
+            if (instruction == null) throw new System.ArgumentNullException(nameof(instruction));
+            if (instruction.IsComplete) return UniTask.CompletedTask;
+
+            return new UniTask(RadicalPromise.Create(instruction, PlayerLoopTiming.Update, System.Threading.CancellationToken.None, out var token), token);
+        }
+
+        public static UniTask.Awaiter GetAwaiter(this IRadicalYieldInstruction instruction)
+        {
+            if (instruction == null) throw new System.ArgumentNullException(nameof(instruction));
+            if (instruction.IsComplete) return UniTask.CompletedTask.GetAwaiter();
+
+            return new UniTask(RadicalPromise.Create(instruction, PlayerLoopTiming.Update, System.Threading.CancellationToken.None, out var token), token).GetAwaiter();
+        }
+
+        /// <summary>
+        /// Operates an IEnumerator coroutine as a RadicalCoroutine on the UniTask engine, granting access to all IRadicalYieldInstructions in the coroutine.  
+        /// In a UniTask you can await SomeRoutine().AsRadicalUniTask() to do this. 
+        /// </summary>
+        /// <param name="routine"></param>
+        /// <returns></returns>
+        public static UniTask AsRadicalUniTask(this System.Collections.IEnumerable routine)
+        {
+            if (routine == null) throw new System.ArgumentNullException(nameof(routine));
+            return new UniTask(RadicalPromise.Create(routine.GetEnumerator(), PlayerLoopTiming.Update, System.Threading.CancellationToken.None, out var token), token);
+        }
+
+        /// <summary>
+        /// Operates an IEnumerator coroutine as a RadicalCoroutine on the UniTask engine, granting access to all IRadicalYieldInstructions in the coroutine.  
+        /// In a UniTask you can await SomeRoutine().AsRadicalUniTask() to do this. 
+        /// </summary>
+        /// <param name="routine"></param>
+        /// <returns></returns>
+        public static UniTask AsRadicalUniTask(this System.Collections.IEnumerator routine)
+        {
+            if (routine == null) throw new System.ArgumentNullException(nameof(routine));
+            return new UniTask(RadicalPromise.Create(routine, PlayerLoopTiming.Update, System.Threading.CancellationToken.None, out var token), token);
+        }
+
+        private class RadicalPromise : IUniTaskSource, IPlayerLoopItem, System.IDisposable
+        {
+
+            #region Fields
+
+            private RadicalCoroutine _routine;
+            private System.Threading.CancellationToken _cancellationToken;
+            private int _initialFrame;
+            private bool _running;
+            private bool _calledGetResult;
+
+            private UniTaskCompletionSourceCore<object> core;
+
+            #endregion
+
+            #region IUniTaskSource Interface
+
+            public void GetResult(short token)
+            {
+                try
+                {
+                    _calledGetResult = true;
+                    core.GetResult(token);
+                }
+                finally
+                {
+                    if (!_running)
+                    {
+                        this.Dispose();
+                    }
+                }
+            }
+
+            public UniTaskStatus GetStatus(short token)
+            {
+                return core.GetStatus(token);
+            }
+
+            public UniTaskStatus UnsafeGetStatus()
+            {
+                return core.UnsafeGetStatus();
+            }
+
+            public void OnCompleted(System.Action<object> continuation, object state, short token)
+            {
+                core.OnCompleted(continuation, state, token);
+            }
+
+            #endregion
+
+            #region IPlayerLoopItem Interface
+
+            public bool MoveNext()
+            {
+                if (_calledGetResult)
+                {
+                    _running = false;
+                    this.Dispose();
+                    return false;
+                }
+
+                if (_routine == null) // invalid status, returned but loop running?
+                {
+                    return false;
+                }
+
+                if (_cancellationToken.IsCancellationRequested)
+                {
+                    _running = false;
+                    core.TrySetCanceled(_cancellationToken);
+                    return false;
+                }
+
+                if (_initialFrame == -1)
+                {
+                    // Time can not touch in threadpool.
+                    if (PlayerLoopHelper.IsMainThread)
+                    {
+                        _initialFrame = Time.frameCount;
+                    }
+                }
+                else if (_initialFrame == Time.frameCount)
+                {
+                    return true; // already executed in first frame, skip.
+                }
+
+                try
+                {
+                    if (_routine.ManualTick(GameLoop.Hook))
+                    {
+                        return true;
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    _running = false;
+                    core.TrySetException(ex);
+                    return false;
+                }
+
+                _running = false;
+                core.TrySetResult(null);
+                return false;
+            }
+
+            #endregion
+
+            #region IDisposable Interface
+
+            public void Dispose()
+            {
+                core.Reset();
+                _routine?.Dispose(true);
+                _routine = null;
+                _cancellationToken = default;
+                _running = false;
+                _calledGetResult = false;
+                _pool.Release(this);
+            }
+
+            #endregion
+
+            #region Factory
+
+            private static com.spacepuppy.Collections.ObjectCachePool<RadicalPromise> _pool = new com.spacepuppy.Collections.ObjectCachePool<RadicalPromise>(-1);
+
+            public static IUniTaskSource Create(IRadicalYieldInstruction instruction, PlayerLoopTiming timing, System.Threading.CancellationToken cancellationToken, out short token)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return AutoResetUniTaskCompletionSource.CreateFromCanceled(cancellationToken, out token);
+                }
+
+                var result = _pool.GetInstance();
+                TaskTracker.TrackActiveTask(result, 3);
+
+                result._routine = RadicalCoroutine.Create(instruction);
+                result._cancellationToken = cancellationToken;
+                result._initialFrame = -1;
+                result._running = true;
+                result._calledGetResult = false;
+
+                PlayerLoopHelper.AddAction(timing, result);
+
+                token = result.core.Version;
+                return result;
+            }
+
+            public static IUniTaskSource Create(System.Collections.IEnumerator routine, PlayerLoopTiming timing, System.Threading.CancellationToken cancellationToken, out short token)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return AutoResetUniTaskCompletionSource.CreateFromCanceled(cancellationToken, out token);
+                }
+
+                var result = _pool.GetInstance();
+                TaskTracker.TrackActiveTask(result, 3);
+
+                result._routine = RadicalCoroutine.Create(routine);
+                result._cancellationToken = cancellationToken;
+                result._initialFrame = -1;
+                result._running = true;
+                result._calledGetResult = false;
+
+                PlayerLoopHelper.AddAction(timing, result);
+
+                token = result.core.Version;
+                return result;
+            }
+
+            #endregion
+
+        }
+
+#endif
 
     }
 }

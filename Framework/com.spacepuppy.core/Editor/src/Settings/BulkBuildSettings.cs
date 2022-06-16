@@ -2,6 +2,7 @@
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 using com.spacepuppy;
 
@@ -59,25 +60,25 @@ namespace com.spacepuppyeditor.Settings
 
         #region Methods
 
-        public System.Collections.IEnumerator BuildRoutine(BuildSettings.PostBuildOption postBuildOption = BuildSettings.PostBuildOption.Nothing)
+        public async Task BuildAsync(BuildSettings.PostBuildOption postBuildOption = BuildSettings.PostBuildOption.Nothing)
         {
-            yield return null;
+            await Task.Delay(10);
 
             bool failed = false;
             foreach (var settings in _builds)
             {
                 if (settings != null)
                 {
-                    if (!settings.Build(postBuildOption))
+                    if (!(await settings.BuildAsync(postBuildOption)))
                     {
                         failed = true;
                     }
-                    yield return null;
+                    await Task.Delay(1000);
                 }
             }
 
-            if ((_postBuildScriptRunOptions & ScriptOptions.Run) == 0) yield break;
-            if ((_postBuildScriptRunOptions & ScriptOptions.CancelIfBuildFails) != 0 && failed) yield break;
+            if ((_postBuildScriptRunOptions & ScriptOptions.Run) == 0) return;
+            if ((_postBuildScriptRunOptions & ScriptOptions.CancelIfBuildFails) != 0 && failed) return;
 
             this.RunScripts();
         }
@@ -137,8 +138,7 @@ namespace com.spacepuppyeditor.Settings
                     var settings = this.target as BulkBuildSettings;
                     if (settings == null) return;
 
-                    //EditorCoroutine.StartEditorCoroutine(settings.BuildRoutine());
-                    Unity.EditorCoroutines.Editor.EditorCoroutineUtility.StartCoroutine(settings.BuildRoutine(), settings);
+                    _ = settings.BuildAsync();
                 }
             }
         }

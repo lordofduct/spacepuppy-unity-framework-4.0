@@ -488,14 +488,14 @@ namespace com.spacepuppy.Scenes
 
             public bool IsValid => Scene.IsValid();
 
-            public async System.Threading.Tasks.Task<Scene> GetTask()
+            public async System.Threading.Tasks.Task<Scene> AsTask()
             {
                 await Op.AsAsyncWaitHandle().AsTask();
                 return this.Scene;
             }
 
 #if SP_UNITASK
-            public async UniTask<Scene> GetUniTask()
+            public async UniTask<Scene> AsUniTask()
             {
                 await Op;
                 return this.Scene;

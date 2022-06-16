@@ -7,23 +7,13 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Events
 {
 
-    public sealed class i_TriggerSequence : AutoTriggerable, IMStartOrEnableReceiver, IObservableTrigger
+    public sealed class i_TriggerSequence : AutoTriggerable, IObservableTrigger
     {
-
-        public enum SignalMode
-        {
-            Manual,
-            Auto
-        }
-
 
         #region Fields
 
         [SerializeField()]
         private MathUtil.WrapMode _wrapMode;
-
-        [SerializeField]
-        private SignalMode _signal;
 
         [SerializeField()]
         private SPEvent _trigger = new SPEvent("Trigger");
@@ -35,19 +25,9 @@ namespace com.spacepuppy.Events
         [MinRange(0)]
         private int _currentIndex = 0;
 
-
-        [System.NonSerialized()]
-        private RadicalCoroutine _routine;
-
         #endregion
 
         #region CONSTRUCTOR
-
-        void IMStartOrEnableReceiver.OnStartOrEnable()
-        {
-            if (this.ActivateOn == ActivateEvent.None)
-                this.AttemptAutoStart();
-        }
 
         #endregion
 
@@ -57,12 +37,6 @@ namespace com.spacepuppy.Events
         {
             get { return _wrapMode; }
             set { _wrapMode = value; }
-        }
-
-        public SignalMode Signal
-        {
-            get { return _signal; }
-            set { _signal = value; }
         }
 
         public SPEvent TriggerSequence
@@ -96,64 +70,7 @@ namespace com.spacepuppy.Events
 
         public void Reset()
         {
-            if (_routine != null)
-            {
-                RadicalCoroutine.Release(ref _routine);
-            }
-
             _currentIndex = 0;
-
-            if (Application.isPlaying && this.enabled)
-            {
-                this.AttemptAutoStart();
-            }
-        }
-
-        public void AttemptAutoStart()
-        {
-            int i = this.CurrentIndexNormalized;
-            if (i < 0 || i >= _trigger.Targets.Count) return;
-
-            if (_signal == SignalMode.Auto)
-            {
-                IAutoSequenceSignal signal;
-                var targ = GameObjectUtil.GetGameObjectFromSource(_trigger.Targets[i].Target, true);
-                if (targ != null && targ.GetComponentInChildren<IAutoSequenceSignal>(out signal))
-                    if (signal != null)
-                    {
-                        _routine = this.StartRadicalCoroutine(this.DoAutoSequence(signal), RadicalCoroutineDisableMode.Pauses);
-                    }
-            }
-        }
-
-        private System.Collections.IEnumerator DoAutoSequence(IAutoSequenceSignal signal)
-        {
-            if (signal != null)
-            {
-                yield return signal.Wait();
-                _currentIndex++;
-            }
-
-            while (true)
-            {
-                int i = this.CurrentIndexNormalized;
-                if (i < 0 || i >= _trigger.Targets.Count) yield break;
-
-                var go = GameObjectUtil.GetGameObjectFromSource(_trigger.Targets[i].Target, true);
-                if (go != null && go.GetComponentInChildren<IAutoSequenceSignal>(out signal))
-                {
-                    var handle = signal.Wait();
-                    _trigger.ActivateTriggerAt(i, this, null);
-                    yield return handle;
-                }
-                else
-                {
-                    _trigger.ActivateTriggerAt(i, this, null);
-                    yield return null;
-                }
-
-                _currentIndex++;
-            }
         }
 
         #endregion
@@ -164,26 +81,9 @@ namespace com.spacepuppy.Events
         {
             if (!this.CanTrigger) return false;
 
-
-            switch (_signal)
-            {
-                case SignalMode.Manual:
-                    {
-                        _trigger.ActivateTriggerAt(this.CurrentIndexNormalized, this, _passAlongTriggerArg ? arg : null);
-                        _currentIndex++;
-                    }
-                    break;
-                case SignalMode.Auto:
-                    {
-                        if (_routine != null)
-                        {
-                            RadicalCoroutine.Release(ref _routine);
-                        }
-                        _routine = this.StartRadicalCoroutine(this.DoAutoSequence(null), RadicalCoroutineDisableMode.Pauses);
-                    }
-                    break;
-            }
-
+            int i = this.CurrentIndexNormalized;
+            _currentIndex++;
+            _trigger.ActivateTriggerAt(i, this, _passAlongTriggerArg ? arg : null);
             return true;
         }
 

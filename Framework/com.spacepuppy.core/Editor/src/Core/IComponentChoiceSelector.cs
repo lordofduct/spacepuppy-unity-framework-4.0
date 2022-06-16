@@ -5,6 +5,7 @@ using System.Linq;
 
 using com.spacepuppy;
 using com.spacepuppy.Utils;
+using com.spacepuppy.Collections;
 
 namespace com.spacepuppyeditor.Core
 {
@@ -149,47 +150,66 @@ namespace com.spacepuppyeditor.Core
             }
         }
 
-        private static Dictionary<System.Type, int> _uniqueCount = new Dictionary<System.Type, int>();
         public static IEnumerable<string> GetUniqueComponentNames(Component[] components)
         {
-            _uniqueCount.Clear();
-            for (int i = 0; i < components.Length; i++)
+            using (var uniqueCount = TempCollection.GetDict<System.Type, int>())
             {
-                var tp = components[i].GetType();
-                if (_uniqueCount.ContainsKey(tp))
+                for (int i = 0; i < components.Length; i++)
                 {
-                    _uniqueCount[tp]++;
-                    yield return string.Format("{0} ({1} {2})", components[i].gameObject.name, tp.Name, _uniqueCount[tp]);
-                }
-                else
-                {
-                    _uniqueCount.Add(tp, 1);
-                    yield return string.Format("{0} ({1})", components[i].gameObject.name, tp.Name);
-                }
+                    var tp = components[i].GetType();
+                    int cnt;
+                    if (uniqueCount.TryGetValue(tp, out cnt))
+                        cnt++;
+                    else
+                        cnt = 1;
+                    uniqueCount[tp] = cnt;
 
+                    if (components[i] is IIdentifiableComponent ic && !string.IsNullOrEmpty(ic.Id))
+                    {
+                        yield return string.Format("{0} ({1} : {2})", components[i].gameObject.name, tp.Name, ic.Id);
+                    }
+                    else if (cnt > 1)
+                    {
+                        yield return string.Format("{0} ({1} {2})", components[i].gameObject.name, tp.Name, cnt);
+                    }
+                    else
+                    {
+                        yield return string.Format("{0} ({1})", components[i].gameObject.name, tp.Name);
+                    }
+
+                }
             }
-            _uniqueCount.Clear();
         }
 
         public static IEnumerable<string> GetUniqueComponentNamesWithOwner(Component[] components)
         {
-            _uniqueCount.Clear();
-            for (int i = 0; i < components.Length; i++)
+            using (var uniqueCount = TempCollection.GetDict<System.Type, int>())
             {
-                //TODO - maybe come up with a better naming scheme for this
-                var tp = components[i].GetType();
-                if (_uniqueCount.ContainsKey(tp))
+                for (int i = 0; i < components.Length; i++)
                 {
-                    _uniqueCount[tp]++;
-                    yield return components[i].gameObject.name + "/" + tp.Name + " " + _uniqueCount[tp].ToString();
-                }
-                else
-                {
-                    _uniqueCount.Add(tp, 1);
-                    yield return components[i].gameObject.name + "/" + tp.Name;
+                    //TODO - maybe come up with a better naming scheme for this
+                    var tp = components[i].GetType();
+                    int cnt;
+                    if (uniqueCount.TryGetValue(tp, out cnt))
+                        cnt++;
+                    else
+                        cnt = 1;
+                    uniqueCount[tp] = cnt;
+
+                    if (components[i] is IIdentifiableComponent ic && !string.IsNullOrEmpty(ic.Id))
+                    {
+                        yield return components[i].gameObject.name + "/" + tp.Name + " : " + ic.Id;
+                    }
+                    else if (cnt > 1)
+                    {
+                        yield return components[i].gameObject.name + "/" + tp.Name + " " + cnt.ToString();
+                    }
+                    else
+                    {
+                        yield return components[i].gameObject.name + "/" + tp.Name;
+                    }
                 }
             }
-            _uniqueCount.Clear();
         }
 
     }

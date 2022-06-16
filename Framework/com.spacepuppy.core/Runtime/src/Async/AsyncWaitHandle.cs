@@ -25,6 +25,20 @@ namespace com.spacepuppy.Async
 
     }
 
+#if SP_UNITASK
+
+    public interface IUniTaskAsyncWaitHandleProvider : IAsyncWaitHandleProvider
+    {
+        UniTask GetUniTask(AsyncWaitHandle handle);
+    }
+
+    public interface IUniTaskAsyncWaitHandleProvider<T> : IUniTaskAsyncWaitHandleProvider, IAsyncWaitHandleProvider<T>
+    {
+        UniTask<T> GetUniTask(AsyncWaitHandle<T> handle);
+    }
+
+#endif
+
     /// <summary>
     /// This struct is intended to represent an asynchronous wait token while reducing garbage collection as much as possible. 
     /// By handing it an IAsyncWaitHandleProvider and a token, it will call the appropriate provider method with the token 
@@ -36,7 +50,7 @@ namespace com.spacepuppy.Async
     /// Every sort of handle out there that can be treated as an AsyncWaitHandle should provide an extension method named 
     /// 'AsAsyncWaitHandle' that creates an AsyncWaitHandle with the appropriate provider and token.
     /// </summary>
-    public struct AsyncWaitHandle : IAsyncWaitHandle
+    public readonly struct AsyncWaitHandle : IAsyncWaitHandle
     {
 
         public static readonly AsyncWaitHandle CompletedHandle = default;
@@ -144,7 +158,7 @@ namespace com.spacepuppy.Async
         /// <returns></returns>
         public UniTask AsUniTask()
         {
-            if (_provider is AsyncUtil.IUniTaskAsyncWaitHandleProvider p)
+            if (_provider is IUniTaskAsyncWaitHandleProvider p)
             {
                 return p.GetUniTask(this);
             }
@@ -168,7 +182,7 @@ namespace com.spacepuppy.Async
 
         public UniTask.Awaiter GetAwaiter()
         {
-            if (_provider is AsyncUtil.IUniTaskAsyncWaitHandleProvider p)
+            if (_provider is IUniTaskAsyncWaitHandleProvider p)
             {
                 return p.GetUniTask(this).GetAwaiter();
             }
@@ -230,14 +244,14 @@ namespace com.spacepuppy.Async
     /// Every sort of handle out there that can be treated as an AsyncWaitHandle should provide an extension method named 
     /// 'AsAsyncWaitHandle' that creates an AsyncWaitHandle with the appropriate provider and token.
     /// </summary>
-    public struct AsyncWaitHandle<T> : IAsyncWaitHandle
+    public readonly struct AsyncWaitHandle<T> : IAsyncWaitHandle
     {
 
         #region Fields
 
-        private IAsyncWaitHandleProvider<T> _provider;
+        private readonly IAsyncWaitHandleProvider<T> _provider;
         public readonly object Token;
-        private T _result;
+        private readonly T _result;
 
         #endregion
 
@@ -337,7 +351,7 @@ namespace com.spacepuppy.Async
         /// <returns></returns>
         public UniTask<T> AsUniTask()
         {
-            if (_provider is AsyncUtil.IUniTaskAsyncWaitHandleProvider<T> p)
+            if (_provider is IUniTaskAsyncWaitHandleProvider<T> p)
             {
                 return p.GetUniTask(this);
             }
@@ -368,7 +382,7 @@ namespace com.spacepuppy.Async
             {
                 return new UniTask<T>(_result).GetAwaiter();
             }
-            else if (_provider is AsyncUtil.IUniTaskAsyncWaitHandleProvider<T> p)
+            else if (_provider is IUniTaskAsyncWaitHandleProvider<T> p)
             {
                 return p.GetUniTask(this).GetAwaiter();
             }

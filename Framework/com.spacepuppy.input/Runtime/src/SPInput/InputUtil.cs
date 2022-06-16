@@ -238,13 +238,13 @@ namespace com.spacepuppy.SPInput
         }
 
 
-        public static CursorRaycastHit TestCursorOver(Camera cursorCamera, Vector2 cursorPos, float maxDistance = float.PositiveInfinity, int layerMask = Physics.AllLayers, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
+        public static CursorRaycastHit TestCursorOver(Camera cursorCamera, Vector2 cursorPos, float maxDistance = float.PositiveInfinity, int layerMask = Physics.AllLayers, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal, int blockingLayerMask = 0)
         {
             if (cursorCamera)
             {
                 var ray = cursorCamera.ScreenPointToRay(cursorPos);
                 RaycastHit hit;
-                if (Physics.Raycast(ray, out hit, maxDistance, layerMask, query))
+                if (Physics.Raycast(ray, out hit, maxDistance, layerMask | blockingLayerMask, query) && (blockingLayerMask == 0 || ((1 << hit.collider.gameObject.layer) & blockingLayerMask) == 0))
                 {
                     return (CursorRaycastHit)hit;
                 }
@@ -253,14 +253,14 @@ namespace com.spacepuppy.SPInput
             return default(CursorRaycastHit);
         }
 
-        public static bool TestCursorOver(Camera cursorCamera, Vector2 cursorPos, out Collider collider, float maxDistance = float.PositiveInfinity, int layerMask = Physics.AllLayers, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
+        public static bool TestCursorOver(Camera cursorCamera, Vector2 cursorPos, out Collider collider, float maxDistance = float.PositiveInfinity, int layerMask = Physics.AllLayers, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal, int blockingLayerMask = 0)
         {
             collider = null;
             if (cursorCamera == null) return false;
 
             var ray = cursorCamera.ScreenPointToRay(cursorPos);
             RaycastHit hit;
-            if (Physics.Raycast(ray, out hit, maxDistance, layerMask, query))
+            if (Physics.Raycast(ray, out hit, maxDistance, layerMask | blockingLayerMask, query) && (blockingLayerMask == 0 || ((1 << hit.collider.gameObject.layer) & blockingLayerMask) == 0))
             {
                 collider = hit.collider;
                 return true;
@@ -269,10 +269,10 @@ namespace com.spacepuppy.SPInput
             return false;
         }
 
-        public static bool TestCursorOverEntity(Camera cursorCamera, Vector2 cursorPos, out SPEntity entity, float maxDistance = float.PositiveInfinity, int layerMask = Physics.AllLayers, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
+        public static bool TestCursorOverEntity(Camera cursorCamera, Vector2 cursorPos, out SPEntity entity, float maxDistance = float.PositiveInfinity, int layerMask = Physics.AllLayers, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal, int blockingLayerMask = 0)
         {
             Collider c;
-            if(TestCursorOver(cursorCamera, cursorPos, out c, maxDistance, layerMask, query))
+            if(TestCursorOver(cursorCamera, cursorPos, out c, maxDistance, layerMask, query, blockingLayerMask))
             {
                 entity = SPEntity.Pool.GetFromSource(c);
                 return !object.ReferenceEquals(entity, null);
@@ -284,10 +284,10 @@ namespace com.spacepuppy.SPInput
             }
         }
 
-        public static bool TestCursorOverEntity<T>(Camera cursorCamera, Vector2 cursorPos, out T hitTarget, float maxDistance = float.PositiveInfinity, int layerMask = Physics.AllLayers, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal) where T : class
+        public static bool TestCursorOverEntity<T>(Camera cursorCamera, Vector2 cursorPos, out T hitTarget, float maxDistance = float.PositiveInfinity, int layerMask = Physics.AllLayers, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal, int blockingLayerMask = 0) where T : class
         {
             Collider c;
-            if (TestCursorOver(cursorCamera, cursorPos, out c, maxDistance, layerMask, query))
+            if (TestCursorOver(cursorCamera, cursorPos, out c, maxDistance, layerMask, query, blockingLayerMask))
             {
                 hitTarget = com.spacepuppy.Utils.ComponentUtil.FindComponent<T>(c);
                 return !object.ReferenceEquals(hitTarget, null);
@@ -299,12 +299,12 @@ namespace com.spacepuppy.SPInput
             }
         }
 
-        public static CursorRaycastHit TestCursorOver2D(Camera cursorCamera, Vector2 cursorPos, float maxDistance = float.PositiveInfinity, int layerMask = Physics.AllLayers, float minDepth = float.NegativeInfinity)
+        public static CursorRaycastHit TestCursorOver2D(Camera cursorCamera, Vector2 cursorPos, float maxDistance = float.PositiveInfinity, int layerMask = Physics.AllLayers, float minDepth = float.NegativeInfinity, int blockingLayerMask = 0)
         {
             if(cursorCamera)
             {
-                var hit = Physics2D.Raycast(cursorCamera.ScreenToWorldPoint(cursorPos), Vector2.zero, maxDistance, layerMask, minDepth);
-                if (hit)
+                var hit = Physics2D.Raycast(cursorCamera.ScreenToWorldPoint(cursorPos), Vector2.zero, maxDistance, layerMask | blockingLayerMask, minDepth);
+                if (hit && (blockingLayerMask == 0 || ((1 << hit.collider.gameObject.layer) & blockingLayerMask) == 0))
                 {
                     return (CursorRaycastHit)hit;
                 }
@@ -312,7 +312,7 @@ namespace com.spacepuppy.SPInput
             return default(CursorRaycastHit);
         }
 
-        public static bool TestCursorOver2D(Camera cursorCamera, Vector2 cursorPos, out Collider2D collider, float maxDistance = float.PositiveInfinity, int layerMask = Physics.AllLayers, float minDepth = float.NegativeInfinity)
+        public static bool TestCursorOver2D(Camera cursorCamera, Vector2 cursorPos, out Collider2D collider, float maxDistance = float.PositiveInfinity, int layerMask = Physics.AllLayers, float minDepth = float.NegativeInfinity, int blockingLayerMask = 0)
         {
             if(cursorCamera == null)
             {
@@ -320,8 +320,8 @@ namespace com.spacepuppy.SPInput
                 return false;
             }
 
-            var hit = Physics2D.Raycast(cursorCamera.ScreenToWorldPoint(cursorPos), Vector2.zero, maxDistance, layerMask, minDepth);
-            if(hit)
+            var hit = Physics2D.Raycast(cursorCamera.ScreenToWorldPoint(cursorPos), Vector2.zero, maxDistance, layerMask | blockingLayerMask, minDepth);
+            if(hit && (blockingLayerMask == 0 || ((1 << hit.collider.gameObject.layer) & blockingLayerMask) == 0))
             {
                 collider = hit.collider;
                 return true;

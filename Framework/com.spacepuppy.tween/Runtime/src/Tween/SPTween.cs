@@ -467,10 +467,10 @@ namespace com.spacepuppy.Tween
 
         #region Special Types
 
-        private struct TokenPairing
+        private readonly struct TokenPairing
         {
-            public object Target;
-            public object TokenUid;
+            public readonly object Target;
+            public readonly object TokenUid;
 
             public TokenPairing(object targ, object uid)
             {

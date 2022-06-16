@@ -45,6 +45,7 @@ namespace com.spacepuppyeditor.Settings
 
         private CustomTimeLayersData _timeLayersData;
 
+        private Vector2 _totalScrollPosition;
         private Vector2 _scenesScrollBarPosition;
 
         private void OnEnable()
@@ -66,6 +67,10 @@ namespace com.spacepuppyeditor.Settings
 
         private void OnGUI()
         {
+            var style = new GUIStyle(GUI.skin.box);
+            style.stretchHeight = true;
+            _totalScrollPosition = EditorGUILayout.BeginScrollView(_totalScrollPosition, style);
+
             Rect rect;
 
             var boxStyle = new GUIStyle(GUI.skin.box);
@@ -182,10 +187,29 @@ namespace com.spacepuppyeditor.Settings
              * Defines
              */
 
-            GUILayout.BeginVertical("Enable Defines", boxStyle);
+            GUILayout.BeginVertical("Custom Defines", boxStyle);
+            EditorGUILayout.Space();
+            EditorGUILayout.Space();
             EditorGUILayout.Space();
 
-            EditorGUILayout.LabelField("Spacepuppy Extensions support various packages, but it doesn't know if they're installed since Unity does not supply compiler defines for them. Here you can enable defines that add support in Spacepuppy for them.");
+            var currentBuildTarget = BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget);
+#if UNITY_2022_1_OR_NEWER
+            string defines = PlayerSettings.GetScriptingDefineSymbols(currentBuildTarget);
+            EditorGUI.BeginChangeCheck();
+            defines = EditorGUILayout.DelayedTextField(defines);
+            if (EditorGUI.EndChangeCheck())
+            {
+                PlayerSettings.SetScriptingDefineSymbols(currentBuildTarget, defines);
+            }
+#else
+            string defines = PlayerSettings.GetScriptingDefineSymbolsForGroup(currentBuildTarget);
+            EditorGUI.BeginChangeCheck();
+            defines = EditorGUILayout.DelayedTextField(defines);
+            if (EditorGUI.EndChangeCheck())
+            {
+                PlayerSettings.SetScriptingDefineSymbolsForGroup(currentBuildTarget, defines);
+            }
+#endif
 
             GUILayout.EndVertical();
 
@@ -193,9 +217,12 @@ namespace com.spacepuppyeditor.Settings
             EditorGUILayout.Space();
             EditorGUILayout.Space();
             this.DrawScenes();
+
+
+            EditorGUILayout.EndScrollView();
         }
 
-        #endregion
+#endregion
 
 
 
@@ -209,17 +236,11 @@ namespace com.spacepuppyeditor.Settings
 
 
 
-        #region Debug Build Scenes - OBSOLETE
+#region Debug Build Scenes - OBSOLETE
 
         private void DrawScenes()
         {
             EditorGUILayout.LabelField("Scenes in Build", EditorStyles.boldLabel);
-
-            //EditorGUI.indentLevel++;
-
-            var style = new GUIStyle(GUI.skin.box);
-            style.stretchHeight = true;
-            _scenesScrollBarPosition = EditorGUILayout.BeginScrollView(_scenesScrollBarPosition, style);
 
             bool changed = false;
             var scenes = EditorBuildSettings.scenes;
@@ -245,8 +266,6 @@ namespace com.spacepuppyeditor.Settings
                 }
             }
             if (changed) EditorBuildSettings.scenes = scenes;
-
-            EditorGUILayout.EndScrollView();
 
 
             //DRAG & DROP ON SCROLLVIEW
@@ -335,13 +354,9 @@ namespace com.spacepuppyeditor.Settings
                 EditorBuildSettings.scenes = lst.ToArray();
             }
 
-
-
-            //EditorGUI.indentLevel--;
-
         }
         
-        #endregion
+#endregion
 
     }
 

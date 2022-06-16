@@ -1434,21 +1434,46 @@ namespace com.spacepuppy.Utils
         /// <remarks></remarks>
         public static System.DateTime ToDate(object value)
         {
-            try
+            System.DateTime dt;
+            if (value is System.DateTime)
             {
-                //'try straight convert
-                return System.Convert.ToDateTime(value);
+                return (System.DateTime)value;
+            }
+            else if (value is string str)
+            {
+                if (System.DateTime.TryParse(str, out dt))
+                {
+                    return dt;
+                }
+                else
+                {
+                    return default;
+                }
+            }
+            else if (value is System.IConvertible conv)
+            {
+                try
+                {
+                    //'try straight convert
+                    return System.Convert.ToDateTime(conv);
+                }
+                catch
+                {
+                }
+            }
 
-            }
-            catch
-            {
-            }
 
             try
             {
                 //'if straight convert failed, try by string
-                return System.Convert.ToDateTime(System.Convert.ToString(value));
-
+                if (System.DateTime.TryParse(System.Convert.ToString(value), out dt))
+                {
+                    return dt;
+                }
+                else
+                {
+                    return default;
+                }
             }
             catch
             {

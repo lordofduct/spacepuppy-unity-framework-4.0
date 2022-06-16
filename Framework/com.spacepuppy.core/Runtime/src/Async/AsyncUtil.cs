@@ -365,17 +365,7 @@ namespace com.spacepuppy.Async
             }
         }
 
-        internal interface IUniTaskAsyncWaitHandleProvider : IAsyncWaitHandleProvider
-        {
-            UniTask GetUniTask(AsyncWaitHandle handle);
-        }
-
-        internal interface IUniTaskAsyncWaitHandleProvider<T> : IUniTaskAsyncWaitHandleProvider, IAsyncWaitHandleProvider<T>
-        {
-            UniTask<T> GetUniTask(AsyncWaitHandle<T> handle);
-        }
-
-        internal sealed class UniTaskAsycWaitHandleProvider : CustomYieldInstruction, IUniTaskAsyncWaitHandleProvider
+        private sealed class UniTaskAsycWaitHandleProvider : CustomYieldInstruction, IUniTaskAsyncWaitHandleProvider
         {
 
             public static UniTaskAsycWaitHandleProvider Create(UniTask task) => new UniTaskAsycWaitHandleProvider() { _task = task };
@@ -464,7 +454,7 @@ namespace com.spacepuppy.Async
 
         }
 
-        internal sealed class UniTaskAsycWaitHandleProvider<T> : CustomYieldInstruction, IUniTaskAsyncWaitHandleProvider<T>
+        private sealed class UniTaskAsycWaitHandleProvider<T> : CustomYieldInstruction, IUniTaskAsyncWaitHandleProvider<T>
         {
 
             public static UniTaskAsycWaitHandleProvider<T> Create(UniTask<T> task) => new UniTaskAsycWaitHandleProvider<T>() { _task = task };

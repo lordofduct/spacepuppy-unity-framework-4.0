@@ -69,11 +69,11 @@ namespace com.spacepuppyeditor.Core
         protected virtual CachedReorderableList GetList(SerializedProperty property, GUIContent label)
         {
             var lst = CachedReorderableList.GetListDrawer(property, _maskList_DrawHeader, _maskList_DrawElement, _maskList_OnElementAdded);
-            lst.draggable = _draggable;
+            lst.draggable = this.Draggable;
 
             if (property.arraySize > 0)
             {
-                if (_drawElementAtBottom)
+                if (this.DrawElementAtBottom)
                 {
                     lst.elementHeight = EditorGUIUtility.singleLineHeight;
                 }
@@ -120,17 +120,17 @@ namespace com.spacepuppyeditor.Core
 
             _lst = this.GetList(property, label);
             if (_lst.index >= _lst.count) _lst.index = -1;
-            
+
             if (this.fieldInfo != null)
             {
                 this.DragDropElementType = TypeUtil.GetElementTypeOfListType(this.fieldInfo.FieldType);
 
-                if (!string.IsNullOrEmpty(_childPropertyAsEntry) && this.DragDropElementType != null)
+                if (!string.IsNullOrEmpty(this.ChildPropertyAsEntry) && this.DragDropElementType != null)
                 {
-                    var field = this.DragDropElementType.GetMember(_childPropertyAsEntry, 
-                                                                   System.Reflection.MemberTypes.Field, 
-                                                                   System.Reflection.BindingFlags.Public | 
-                                                                   System.Reflection.BindingFlags.NonPublic | 
+                    var field = this.DragDropElementType.GetMember(this.ChildPropertyAsEntry,
+                                                                   System.Reflection.MemberTypes.Field,
+                                                                   System.Reflection.BindingFlags.Public |
+                                                                   System.Reflection.BindingFlags.NonPublic |
                                                                    System.Reflection.BindingFlags.Instance).FirstOrDefault() as System.Reflection.FieldInfo;
                     if (field != null) this.DragDropElementType = field.FieldType;
                 }
@@ -181,6 +181,12 @@ namespace com.spacepuppyeditor.Core
         {
             get { return (this.attribute as ReorderableArrayAttribute)?.DrawElementAtBottom ?? _drawElementAtBottom; }
             set { _drawElementAtBottom = value; }
+        }
+
+        public bool HideElementLabel
+        {
+            get { return (this.attribute as ReorderableArrayAttribute)?.HideElementLabel ?? _hideElementLabel; }
+            set { _hideElementLabel = value; }
         }
 
         public string ChildPropertyAsLabel
@@ -255,10 +261,10 @@ namespace com.spacepuppyeditor.Core
             if (property.isArray)
             {
                 this.StartOnGUI(property, label);
-                if (_disallowFoldout || property.isExpanded)
+                if (this.DisallowFoldout || property.isExpanded)
                 {
                     h = _lst.GetHeight();
-                    if (_drawElementAtBottom && _lst.index >= 0 && _lst.index < property.arraySize)
+                    if (this.DrawElementAtBottom && _lst.index >= 0 && _lst.index < property.arraySize)
                     {
                         var pchild = property.GetArrayElementAtIndex(_lst.index);
                         /*
@@ -302,10 +308,10 @@ namespace com.spacepuppyeditor.Core
                 {
                     label = this.CustomLabel;
                 }
-                else if(label != null)
+                else if (label != null)
                 {
                     label = EditorHelper.CloneContent(label);
-                    if (_showTooltipInHeader)
+                    if (this.ShowTooltipInHeader)
                     {
                         label.text = string.Format("{0} [{1:0}] - {2}", label.text, property.arraySize, (string.IsNullOrEmpty(label.tooltip) ? property.tooltip : label.tooltip));
                     }
@@ -327,7 +333,7 @@ namespace com.spacepuppyeditor.Core
                 position = EditorGUI.IndentedRect(position);
                 Rect listArea = position;
 
-                if (_disallowFoldout)
+                if (this.DisallowFoldout)
                 {
                     this.StartOnGUI(property, label);
                     listArea = new Rect(position.xMin, position.yMin, position.width, _lst.GetHeight());
@@ -348,7 +354,7 @@ namespace com.spacepuppyeditor.Core
                     }
                     else
                     {
-                        if (_removeBackgroundWhenCollapsed)
+                        if (this.RemoveBackgroundWhenCollapsed)
                         {
                             property.isExpanded = EditorGUI.Foldout(foldoutRect, property.isExpanded, label);
                         }
@@ -370,7 +376,7 @@ namespace com.spacepuppyeditor.Core
 
                 this.DoDragAndDrop(property, listArea);
 
-                if (property.isExpanded && _drawElementAtBottom && _lst.index >= 0 && _lst.index < property.arraySize)
+                if (property.isExpanded && this.DrawElementAtBottom && _lst.index >= 0 && _lst.index < property.arraySize)
                 {
                     var pchild = property.GetArrayElementAtIndex(_lst.index);
                     var label2 = TempElementLabel(pchild, _lst.index); //(string.IsNullOrEmpty(_childPropertyAsLabel)) ? TempElementLabel(_lst.index) : GUIContent.none;
@@ -489,16 +495,16 @@ namespace com.spacepuppyeditor.Core
                     area = new Rect(area.xMin + attrib.ElementPadding, area.yMin, Mathf.Max(0f, area.width - attrib.ElementPadding), area.height);
                 }
             }
-            if (label == null) label = (_hideElementLabel) ? GUIContent.none : TempElementLabel(element, index);
+            if (label == null) label = (this.HideElementLabel) ? GUIContent.none : TempElementLabel(element, index);
 
             return label;
         }
 
         protected virtual void DrawElement(Rect area, SerializedProperty element, GUIContent label, int elementIndex)
         {
-            if(_drawElementAtBottom)
+            if (this.DrawElementAtBottom)
             {
-                SerializedProperty prop = string.IsNullOrEmpty(_childPropertyAsEntry) ? null : element.FindPropertyRelative(_childPropertyAsEntry);
+                SerializedProperty prop = string.IsNullOrEmpty(this.ChildPropertyAsEntry) ? null : element.FindPropertyRelative(this.ChildPropertyAsEntry);
 
                 if (prop != null)
                 {
@@ -519,7 +525,7 @@ namespace com.spacepuppyeditor.Core
                 {
                     //we don't draw this way if it's a built-in type from Unity
 
-                    if (_hideElementLabel)
+                    if (this.HideElementLabel)
                     {
                         //no label
                         SPEditorGUI.FlatChildPropertyField(area, element);
@@ -550,7 +556,7 @@ namespace com.spacepuppyeditor.Core
             {
                 //we don't draw this way if it's a built-in type from Unity
                 element.isExpanded = true;
-                if(_hideElementLabel || elementIsAtBottom)
+                if (this.HideElementLabel || elementIsAtBottom)
                 {
                     return SPEditorGUI.GetDefaultPropertyHeight(element, label, true) - EditorGUIUtility.singleLineHeight;
                 }
@@ -571,7 +577,7 @@ namespace com.spacepuppyeditor.Core
 
         protected virtual void DoDragAndDrop(SerializedProperty property, Rect listArea)
         {
-            if (_allowDragAndDrop && this.DragDropElementType != null && Event.current != null)
+            if (this.AllowDragAndDrop && this.DragDropElementType != null && Event.current != null)
             {
                 var ev = Event.current;
                 switch (ev.type)
@@ -587,7 +593,7 @@ namespace com.spacepuppyeditor.Core
                                 if (ev.type == EventType.DragPerform && refs.Any())
                                 {
                                     DragAndDrop.AcceptDrag();
-                                    AddObjectsToArray(property, refs.ToArray(), _childPropertyAsEntry);
+                                    AddObjectsToArray(property, refs.ToArray(), this.ChildPropertyAsEntry);
                                     GUI.changed = true;
                                 }
                             }
@@ -603,11 +609,11 @@ namespace com.spacepuppyeditor.Core
         protected GUIContent TempElementLabel(SerializedProperty element, int index)
         {
             var target = EditorHelper.GetTargetObjectOfProperty(element);
-            string slbl = ConvertUtil.ToString(com.spacepuppy.Dynamic.DynamicUtil.GetValue(target, _childPropertyAsLabel));
+            string slbl = ConvertUtil.ToString(com.spacepuppy.Dynamic.DynamicUtil.GetValue(target, this.ChildPropertyAsLabel));
 
             if (string.IsNullOrEmpty(slbl))
             {
-                var propLabel = (!string.IsNullOrEmpty(_childPropertyAsLabel)) ? element.FindPropertyRelative(_childPropertyAsLabel) : null;
+                var propLabel = (!string.IsNullOrEmpty(this.ChildPropertyAsLabel)) ? element.FindPropertyRelative(this.ChildPropertyAsLabel) : null;
                 if (propLabel != null)
                     slbl = ConvertUtil.ToString(EditorHelper.GetPropertyValue(propLabel));
             }

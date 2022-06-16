@@ -213,12 +213,14 @@ namespace com.spacepuppy.Pathfinding
                     GameLoop.UpdateHandle.Invoke(() =>
                     {
                         _currentScan.e = astar.ScanAsync().GetEnumerator();
+                        _currentScan.e.MoveNext();
                         _currentScan.routine = GameLoop.Hook.StartCoroutine(_currentScan);
                     });
                 }
                 else
                 {
                     _currentScan.e = astar.ScanAsync().GetEnumerator();
+                    _currentScan.e.MoveNext();
                     _currentScan.routine = GameLoop.Hook.StartCoroutine(_currentScan);
                 }
                 return new AsyncWaitHandle(_currentScan, _currentScan);

@@ -207,7 +207,7 @@ namespace com.spacepuppyeditor.Core
                         variant.Vector3Value = EditorGUI.Vector3Field(r1, GUIContent.none, variant.Vector3Value);
                         break;
                     case VariantType.Vector4:
-                        variant.Vector4Value = EditorGUI.Vector4Field(r1, (string)null, variant.Vector4Value);
+                        variant.Vector4Value = EditorGUI.Vector4Field(r1, GUIContent.none, variant.Vector4Value);
                         break;
                     case VariantType.Quaternion:
                         variant.QuaternionValue = SPEditorGUI.QuaternionField(r1, GUIContent.none, variant.QuaternionValue);
@@ -216,7 +216,14 @@ namespace com.spacepuppyeditor.Core
                         variant.ColorValue = EditorGUI.ColorField(r1, variant.ColorValue);
                         break;
                     case VariantType.DateTime:
-                        variant.DateValue = ConvertUtil.ToDate(EditorGUI.TextField(r1, variant.DateValue.ToString()));
+                        {
+                            EditorGUI.BeginChangeCheck();
+                            var dt = SPEditorGUI.DateTimeField(r1, variant.DateValue);
+                            if (EditorGUI.EndChangeCheck())
+                            {
+                                variant.DateValue = dt;
+                            }
+                        }
                         break;
                     case VariantType.GameObject:
                     case VariantType.Component:
@@ -311,10 +318,6 @@ namespace com.spacepuppyeditor.Core
                     using (var lst = TempCollection.GetList<Component>())
                     {
                         go.GetComponents(lst);
-                        //var members = (from o in lst.Cast<object>().Prepend(go)
-                        //               let mtp = (o.IsProxy_ParamsRespecting() ? (o as IProxy).GetTargetType() : o.GetType())
-                        //               from m in DynamicUtil.GetMembersFromType(mtp, false, MASK).Where(m => DynamicUtil.GetMemberAccessLevel(m).HasFlag(ACCESS) && !m.IsObsolete())
-                        //               select (o, m)).ToArray();
                         var members = (from o in lst.Cast<object>().Prepend(go)
                                        from m in GetMembersFromTarget(o).Where(m => DynamicUtil.GetMemberAccessLevel(m).HasFlag(ACCESS) && !m.IsObsolete())
                                        select (o, m)).ToArray();
@@ -326,11 +329,11 @@ namespace com.spacepuppyeditor.Core
                             }
                             else if ((DynamicUtil.GetMemberAccessLevel(t.m) & DynamicMemberAccess.Write) != 0)
                             {
-                                return EditorHelper.TempContent(string.Format("{0} [{1}]/{2} [{3}] -> {4}", go.name, t.o.GetType().Name, t.m.Name, DynamicUtil.GetReturnType(t.m).Name, EditorHelper.GetValueWithMemberSafe(t.m, t.o, true)));
+                                return EditorHelper.TempContent(string.Format(OverrideFormatProvider.Default, "{0} [{1}]/{2} [{3}] -> {4}", go.name, t.o.GetType().Name, t.m.Name, DynamicUtil.GetReturnType(t.m).Name, EditorHelper.GetValueWithMemberSafe(t.m, t.o, true)));
                             }
                             else
                             {
-                                return EditorHelper.TempContent(string.Format("{0} [{1}]/{2} (readonly - {3}) -> {4}", go.name, t.o.GetType().Name, t.m.Name, DynamicUtil.GetReturnType(t.m).Name, EditorHelper.GetValueWithMemberSafe(t.m, t.o, true)));
+                                return EditorHelper.TempContent(string.Format(OverrideFormatProvider.Default, "{0} [{1}]/{2} (readonly - {3}) -> {4}", go.name, t.o.GetType().Name, t.m.Name, DynamicUtil.GetReturnType(t.m).Name, EditorHelper.GetValueWithMemberSafe(t.m, t.o, true)));
                             }
                         }).Prepend(EditorHelper.TempContent(string.Format("{0} --no selection--", go.name))).ToArray();
                         int index = members.IndexOf(t => object.ReferenceEquals(t.o, targObj) && t.m.Name == memberName) + 1;
@@ -363,8 +366,6 @@ namespace com.spacepuppyeditor.Core
                 }
                 else
                 {
-                    //var mtp = targObj.IsProxy_ParamsRespecting() ? (targObj as IProxy).GetTargetType() : targObj.GetType();
-                    //var members = DynamicUtil.GetMembersFromType(mtp, false, MASK).Where(m => DynamicUtil.GetMemberAccessLevel(m).HasFlag(ACCESS) && !m.IsObsolete()).ToArray();
                     var members = GetMembersFromTarget(targObj).Where(m => DynamicUtil.GetMemberAccessLevel(m).HasFlag(ACCESS) && !m.IsObsolete()).ToArray();
                     var entries = members.Select(m =>
                     {
@@ -374,11 +375,11 @@ namespace com.spacepuppyeditor.Core
                         }
                         else if ((DynamicUtil.GetMemberAccessLevel(m) & DynamicMemberAccess.Write) != 0)
                         {
-                            return EditorHelper.TempContent(string.Format("{0} [{1}].{2} [{3}] -> {4}", targObj.name, targObj.GetType().Name, m.Name, DynamicUtil.GetReturnType(m).Name, EditorHelper.GetValueWithMemberSafe(m, targObj, true)));
+                            return EditorHelper.TempContent(string.Format(OverrideFormatProvider.Default, "{0} [{1}].{2} [{3}] -> {4}", targObj.name, targObj.GetType().Name, m.Name, DynamicUtil.GetReturnType(m).Name, EditorHelper.GetValueWithMemberSafe(m, targObj, true)));
                         }
                         else
                         {
-                            return EditorHelper.TempContent(string.Format("{0} [{1}].{2} (readonly - {3}) -> {4}", targObj.name, targObj.GetType().Name, m.Name, DynamicUtil.GetReturnType(m).Name, EditorHelper.GetValueWithMemberSafe(m, targObj, true)));
+                            return EditorHelper.TempContent(string.Format(OverrideFormatProvider.Default, "{0} [{1}].{2} (readonly - {3}) -> {4}", targObj.name, targObj.GetType().Name, m.Name, DynamicUtil.GetReturnType(m).Name, EditorHelper.GetValueWithMemberSafe(m, targObj, true)));
                         }
                     }).Prepend(EditorHelper.TempContent(string.Format("{0} --no selection--", targObj.name))).ToArray();
 
@@ -632,6 +633,40 @@ namespace com.spacepuppyeditor.Core
                 }
             }
 
+
+        }
+
+        private class OverrideFormatProvider : System.IFormatProvider, System.ICustomFormatter
+        {
+            public static readonly OverrideFormatProvider Default = new OverrideFormatProvider();
+
+            object System.IFormatProvider.GetFormat(System.Type formatType)
+            {
+                if (formatType == typeof(System.ICustomFormatter))
+                    return this;
+                else
+                    return null;
+            }
+
+            string System.ICustomFormatter.Format(string format, object arg, System.IFormatProvider formatProvider)
+            {
+                if (arg is Matrix4x4 m)
+                {
+                    return string.Format("[{0:0.0}, {1:0.0}, {2:0.0}, {3:0.0}, ...]", m.m00, m.m01, m.m02, m.m03);
+                }
+                else if (arg is System.IFormattable f)
+                {
+                    return f.ToString(format, System.Globalization.CultureInfo.CurrentCulture);
+                }
+                else if (arg != null)
+                {
+                    return arg.ToString();
+                }
+                else
+                {
+                    return string.Empty;
+                }
+            }
 
         }
 

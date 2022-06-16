@@ -8,6 +8,7 @@ using System.Linq;
 using com.spacepuppy;
 using com.spacepuppy.Collections;
 using com.spacepuppy.Utils;
+using System.Threading.Tasks;
 
 namespace com.spacepuppyeditor.Settings
 {
@@ -152,7 +153,7 @@ namespace com.spacepuppyeditor.Settings
             }
         }
 
-        public virtual bool Build(PostBuildOption option)
+        public virtual Task<bool> BuildAsync(PostBuildOption option)
         {
             string path;
             try
@@ -163,9 +164,9 @@ namespace com.spacepuppyeditor.Settings
                 {
                     string extension = GetExtension(this.BuildTarget);
                     path = EditorUtility.SaveFilePanel("Build", dir, string.IsNullOrEmpty(extension) ? Application.productName + "." + extension : Application.productName, extension);
-                    if (!string.IsNullOrEmpty(path))
+                    if (string.IsNullOrEmpty(path))
                     {
-                        return false;
+                        return Task.FromResult(false);
                     }
                 }
                 else
@@ -186,7 +187,7 @@ namespace com.spacepuppyeditor.Settings
                         }
                         else
                         {
-                            return false;
+                            return Task.FromResult(false);
                         }
                     }
                 }
@@ -195,13 +196,13 @@ namespace com.spacepuppyeditor.Settings
             catch (System.Exception ex)
             {
                 Debug.LogException(ex);
-                return false;
+                return Task.FromResult(false);
             }
 
-            return this.Build(path, option);
+            return this.BuildAsync(path, option);
         }
 
-        public virtual bool Build(string path, PostBuildOption option)
+        public async virtual Task<bool> BuildAsync(string path, PostBuildOption option)
         {
             try
             {
@@ -209,6 +210,7 @@ namespace com.spacepuppyeditor.Settings
                 var buildGroup = BuildPipeline.GetBuildTargetGroup(this.BuildTarget);
 
                 //set version
+                Undo.RecordObject(this, "Build - Version Increment");
                 this.Version.Build++;
                 EditorUtility.SetDirty(this);
                 PlayerSettings.bundleVersion = this.Version.ToString();
@@ -233,8 +235,29 @@ namespace com.spacepuppyeditor.Settings
                     }
                     if (this.DefineSymbols)
                     {
+#if UNITY_2022_1_OR_NEWER
+                        cacheSymbols = PlayerSettings.GetScriptingDefineSymbols(buildGroup) ?? string.Empty;
+#else
                         cacheSymbols = PlayerSettings.GetScriptingDefineSymbolsForGroup(buildGroup) ?? string.Empty;
-                        PlayerSettings.SetScriptingDefineSymbolsForGroup(buildGroup, this.Symbols);
+#endif
+
+                        if (cacheSymbols != this.Symbols)
+                        {
+#if UNITY_2022_1_OR_NEWER
+                            PlayerSettings.SetScriptingDefineSymbols(buildGroup, this.Symbols);
+#else
+                            PlayerSettings.SetScriptingDefineSymbolsForGroup(buildGroup, this.Symbols);
+#endif
+
+                            //EditorUtility.DisplayDialog("Spacepuppy Build Pipeline", "There are distinct custom defines for this build, unity will take a couple seconds to recompile before continuing.", "Ok");
+                            Debug.Log("Spacepuppy Build Pipeline - There are distinct custom defines for this build, unity will take a couple seconds to recompile before continuing.");
+                            await Task.Delay(2000);
+                        }
+                        else
+                        {
+                            cacheSymbols = null;
+                        }
+                        
                     }
 
                     if (_playerSettingOverrides.Count > 0)
@@ -263,7 +286,11 @@ namespace com.spacepuppyeditor.Settings
                     }
                     if (cacheSymbols != null)
                     {
+#if UNITY_2022_1_OR_NEWER
+                        PlayerSettings.SetScriptingDefineSymbols(buildGroup, cacheSymbols);
+#else
                         PlayerSettings.SetScriptingDefineSymbolsForGroup(buildGroup, cacheSymbols);
+#endif
                     }
                     if (cachePlayerSettings != null)
                     {
@@ -314,9 +341,9 @@ namespace com.spacepuppyeditor.Settings
             return false;
         }
 
-        #endregion
+#endregion
 
-        #region Special Utils
+#region Special Utils
 
         [System.Serializable]
         public class PlayerSettingOverride : ISerializationCallbackReceiver
@@ -338,7 +365,7 @@ namespace com.spacepuppyeditor.Settings
             [System.NonSerialized]
             public object SettingValue;
 
-            #region Serialization Interface
+#region Serialization Interface
 
             [SerializeField]
             private string _propertyName;
@@ -392,7 +419,7 @@ namespace com.spacepuppyeditor.Settings
                 }
             }
 
-            #endregion
+#endregion
 
         }
 
@@ -445,7 +472,7 @@ namespace com.spacepuppyeditor.Settings
             }
         }
 
-        #endregion
+#endregion
 
     }
 
@@ -465,22 +492,22 @@ namespace com.spacepuppyeditor.Settings
         public const string PROP_SYMBOLS = "_symbols";
         public const string PROP_PLAYERSETTINGSOVERRIDES = "_playerSettingOverrides";
 
-        #region Fields
+#region Fields
 
         private com.spacepuppyeditor.Core.ReorderableArrayPropertyDrawer _scenesDrawer = new com.spacepuppyeditor.Core.ReorderableArrayPropertyDrawer(typeof(SceneAsset));
 
-        #endregion
+#endregion
 
-        #region Properties
+#region Properties
 
         public com.spacepuppyeditor.Core.ReorderableArrayPropertyDrawer ScenesDrawer
         {
             get { return _scenesDrawer; }
         }
 
-        #endregion
+#endregion
 
-        #region Methods
+#region Methods
 
         protected override void OnEnable()
         {
@@ -572,21 +599,19 @@ namespace com.spacepuppyeditor.Settings
             {
                 EditorHelper.Invoke(() => this.DoBuild(BuildSettings.PostBuildOption.OpenFolderAndRun));
             }
-            if (GUILayout.Button("Sync To Global Build"))
+            if (GUILayout.Button(EditorHelper.TempContent("Sync To Active Build Target", "Copies the symbols, inputsettings, and scenes to the currently active build target found in File->Build Settings.")))
             {
                 this.SyncToGlobalBuild();
             }
         }
 
-        protected virtual System.Collections.IEnumerator DoBuild(BuildSettings.PostBuildOption postBuildOption)
+        protected virtual void DoBuild(BuildSettings.PostBuildOption postBuildOption)
         {
             var settings = this.target as BuildSettings;
             if (settings != null)
             {
-                settings.Build(postBuildOption);
+                _ = settings.BuildAsync(postBuildOption);
             }
-
-            yield break;
         }
 
 
@@ -594,8 +619,29 @@ namespace com.spacepuppyeditor.Settings
 
         public virtual void SyncToGlobalBuild()
         {
-            var lst = new List<EditorBuildSettingsScene>();
             var settings = this.target as BuildSettings;
+            if (settings == null)
+            {
+                Debug.LogError("Failed to copy build settings to global.");
+                return;
+            }
+
+            if (settings.DefineSymbols)
+            {
+                var currentBuildTarget = BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget);
+#if UNITY_2022_1_OR_NEWER
+                PlayerSettings.SetScriptingDefineSymbols(currentBuildTarget, settings.Symbols);
+#else
+                PlayerSettings.SetScriptingDefineSymbolsForGroup(currentBuildTarget, settings.Symbols);
+#endif
+            }
+
+            if (settings.InputSettings != null)
+            {
+                settings.InputSettings.ApplyToGlobal();
+            }
+
+            var lst = new List<EditorBuildSettingsScene>();
             foreach (var sc in settings.GetScenePaths())
             {
                 lst.Add(new EditorBuildSettingsScene(sc, true));
@@ -603,7 +649,7 @@ namespace com.spacepuppyeditor.Settings
             EditorBuildSettings.scenes = lst.ToArray();
         }
         
-        #endregion
+#endregion
 
     }
 

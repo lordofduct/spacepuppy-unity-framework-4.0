@@ -701,13 +701,19 @@ namespace com.spacepuppy.Dynamic
             return GetMembersFromType(obj.GetType(), name, includeNonPublic, mask);
         }
 
-        public static IEnumerable<MemberInfo> GetMemberNamesDirect(object obj, bool includeNonPublic, MemberTypes mask = MemberTypes.Field | MemberTypes.Property | MemberTypes.Method)
+        public static IEnumerable<string> GetMemberNamesDirect(object obj, bool includeNonPublic, MemberTypes mask = MemberTypes.Field | MemberTypes.Property | MemberTypes.Method)
         {
-            if (obj == null) return Enumerable.Empty<MemberInfo>();
+            if (obj == null) return Enumerable.Empty<string>();
 
-            return GetMembersFromType(obj.GetType(), includeNonPublic, mask);
+            return GetMemberNamesFromType(obj.GetType(), includeNonPublic, mask);
         }
 
+        public static MemberInfo GetMemberDirect(object obj, string sMemberName, bool includeNonPublic)
+        {
+            if (obj == null) return null;
+
+            return GetMemberFromType(obj.GetType(), sMemberName, includeNonPublic);
+        }
 
 
 

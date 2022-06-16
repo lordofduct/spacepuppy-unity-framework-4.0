@@ -86,6 +86,7 @@ namespace com.spacepuppyeditor.Core.Commands
             var tr = Selection.activeTransform;
             if (tr == null) return;
 
+            Undo.RecordObject(tr, "Paste Transformation");
             if (_local)
                 _currentTrans.Value.SetToLocal(tr);
             else
@@ -112,6 +113,7 @@ namespace com.spacepuppyeditor.Core.Commands
             var tr = cmnd.context as Transform;
             if (tr == null) return;
 
+            Undo.RecordObject(tr, "Paste Transformation");
             if (_local)
                 _currentTrans.Value.SetToLocal(tr);
             else

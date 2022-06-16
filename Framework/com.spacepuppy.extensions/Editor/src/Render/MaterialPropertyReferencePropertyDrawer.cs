@@ -54,7 +54,9 @@ namespace com.spacepuppyeditor.Render
                 if (!MaterialUtil.IsMaterialSource(matProp.objectReferenceValue))
                 {
                     var go = GameObjectUtil.GetGameObjectFromSource(matProp.objectReferenceValue);
-                    matProp.objectReferenceValue = (go != null) ? go.GetComponent<Renderer>() : null;
+                    matProp.objectReferenceValue = (go != null) ?
+                                                   (go.GetComponent<MaterialSource>() ?? go.GetComponent<Renderer>() ?? (UnityEngine.Object)go.GetComponent<UnityEngine.UI.Graphic>()) 
+                                                   : (UnityEngine.Object)null;
                 }
             }
 

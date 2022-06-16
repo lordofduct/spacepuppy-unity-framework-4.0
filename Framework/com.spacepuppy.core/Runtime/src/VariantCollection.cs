@@ -129,6 +129,31 @@ namespace com.spacepuppy
             }
         }
 
+        public string GetString(string key)
+        {
+            VariantReference v;
+            if (_table.TryGetValue(key, out v))
+                return v.StringValue;
+            else
+                return null;
+        }
+
+        public void SetString(string key, string value)
+        {
+            VariantReference v;
+            if (_table.TryGetValue(key, out v))
+            {
+                v.StringValue = value;
+            }
+            else
+            {
+                _table.Add(key, new VariantReference()
+                {
+                    StringValue = value
+                });
+            }
+        }
+
         public bool GetBool(string key)
         {
             VariantReference v;
@@ -501,12 +526,12 @@ namespace com.spacepuppy
             else
             {
 #endif
-            var ptp = typeof(Variant);
-            var e = _table.GetEnumerator();
-            while (e.MoveNext())
-            {
-                yield return new DynamicPropertyInfo(e.Current.Key, tp, ptp);
-            }
+                var ptp = typeof(Variant);
+                var e = _table.GetEnumerator();
+                while (e.MoveNext())
+                {
+                    yield return new DynamicPropertyInfo(e.Current.Key, tp, ptp);
+                }
 #if UNITY_EDITOR
             }
 #endif
@@ -544,7 +569,7 @@ namespace com.spacepuppy
             return DynamicUtil.GetMemberFromType(this.GetType(), sMemberName, includeNonPublic);
         }
 
-#endregion
+        #endregion
 
         #region ISerializationCallbackReceiver Interface
 

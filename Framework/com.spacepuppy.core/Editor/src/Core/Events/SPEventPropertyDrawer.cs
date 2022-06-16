@@ -205,7 +205,7 @@ namespace com.spacepuppyeditor.Events
         protected virtual float GetTargetsHeight(SerializedProperty property, GUIContent label)
         {
             var h = _targetList.GetHeight();
-            if (_targetList.index >= 0)
+            if (_targetList.count > 0 && _targetList.index >= 0)
             {
                 h += ARG_MARGIN;
                 var element = _targetList.serializedProperty.GetArrayElementAtIndex(_targetList.index);
@@ -267,7 +267,7 @@ namespace com.spacepuppyeditor.Events
         {
             position = new Rect(position.xMin, position.yMin + ARG_MARGIN, position.width, position.height - ARG_MARGIN);
 
-            if (_targetList.index >= 0)
+            if (_targetList.count > 0 && _targetList.index >= 0)
             {
                 var element = _targetList.serializedProperty.GetArrayElementAtIndex(_targetList.index);
                 const float INDENT_MRG = 14f;

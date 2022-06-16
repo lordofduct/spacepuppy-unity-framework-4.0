@@ -25,4 +25,12 @@ namespace com.spacepuppy
         bool started { get; }
     }
 
+    /// <summary>
+    /// Implement on a component that has a 'Id' property that can be used to uniquely distinguish it from other components on the same GameObject of the same type.
+    /// </summary>
+    public interface IIdentifiableComponent : IComponent
+    {
+        string Id { get; }
+    }
+
 }

@@ -6,6 +6,7 @@ using com.spacepuppy.Events;
 using com.spacepuppy.Utils;
 
 using Pathfinding;
+using com.spacepuppy.Pathfinding;
 
 namespace com.spacepuppy.Events
 {
@@ -15,6 +16,7 @@ namespace com.spacepuppy.Events
 
         public enum RecalculateMode
         {
+            AllAsync = -1,
             All = 0,
             Region = 1,
             BoundsOfCollider = 2
@@ -56,12 +58,20 @@ namespace com.spacepuppy.Events
 
             switch(_mode)
             {
+                case RecalculateMode.AllAsync:
+                    {
+                        if (_delay > 0)
+                            this.InvokeGuaranteed(() => AstarPath.active?.BeginScanAsync(), _delay);
+                        else
+                            AstarPath.active?.BeginScanAsync();
+                        return true;
+                    }
                 case RecalculateMode.All:
                     {
                         if (_delay > 0f)
-                            this.InvokeGuaranteed(() => AstarPath.active.Scan(), _delay);
+                            this.InvokeGuaranteed(() => AstarPath.active?.TryScan(), _delay);
                         else
-                            AstarPath.active.Scan();
+                            AstarPath.active?.TryScan();
                         return true;
                     }
                 case RecalculateMode.Region:
@@ -72,9 +82,9 @@ namespace com.spacepuppy.Events
                             updatePhysics = true
                         };
                         if (_delay > 0f)
-                            this.InvokeGuaranteed(() => AstarPath.active.UpdateGraphs(guo), _delay);
+                            this.InvokeGuaranteed(() => AstarPath.active?.UpdateGraphs(guo), _delay);
                         else
-                            AstarPath.active.UpdateGraphs(guo);
+                            AstarPath.active?.UpdateGraphs(guo);
                     }
                     break;
                 case RecalculateMode.BoundsOfCollider:
@@ -86,9 +96,9 @@ namespace com.spacepuppy.Events
                             updatePhysics = true
                         };
                         if (_delay > 0f)
-                            this.InvokeGuaranteed(() => AstarPath.active.UpdateGraphs(guo), _delay);
+                            this.InvokeGuaranteed(() => AstarPath.active?.UpdateGraphs(guo), _delay);
                         else
-                            AstarPath.active.UpdateGraphs(guo);
+                            AstarPath.active?.UpdateGraphs(guo);
                     }
                     break;
             }

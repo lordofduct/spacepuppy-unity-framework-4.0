@@ -15,6 +15,21 @@ namespace com.spacepuppy.Pathfinding
 
         #region Async Scan
 
+        public static bool TryScan(this AstarPath astar)
+        {
+            if (AsyncScanProgressHook.IsSafe(astar))
+            {
+                try
+                {
+                    astar.Scan();
+                    return true;
+                }
+                catch { }
+            }
+
+            return false;
+        }
+
         public static AsyncWaitHandle BeginScanAsync(this AstarPath astar) => AsyncScanProgressHook.BeginScanAsync(astar);
 
         private class AsyncScanProgressHook : IAsyncWaitHandleProvider, System.Collections.IEnumerator
@@ -164,6 +179,31 @@ namespace com.spacepuppy.Pathfinding
 
             private static readonly object _lock = new object();
             private static AsyncScanProgressHook _currentScan;
+
+            internal static bool IsSafe(AstarPath astar)
+            {
+                if (astar == null || astar != AstarPath.active || astar.isScanning) return false;
+
+                lock(_lock)
+                {
+                    if (_currentScan != null)
+                    {
+                        if (_currentScan.Validate())
+                        {
+                            return false;
+                        }
+                        else
+                        {
+                            _currentScan = null;
+                            return true;
+                        }
+                    }
+                    else
+                    {
+                        return true;
+                    }
+                }
+            }
 
             internal static AsyncWaitHandle BeginScanAsync(AstarPath astar)
             {

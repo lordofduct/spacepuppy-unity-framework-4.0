@@ -6,12 +6,15 @@ using com.spacepuppy;
 using com.spacepuppy.Geom;
 using com.spacepuppy.Utils;
 using com.spacepuppy.Events;
+using com.spacepuppy.Collections;
 
-namespace com.spacepuppy
+namespace com.spacepuppy.UI
 {
 
     public class DraggableUIElement : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragHandler
     {
+
+        public static readonly MultitonPool<DraggableUIElement> ActivelyDraggedElements = new MultitonPool<DraggableUIElement>();
 
         #region Fields
 
@@ -38,6 +41,20 @@ namespace com.spacepuppy
         protected RectTransform _surface;
         [System.NonSerialized]
         protected DraggableUIElement _duplicateSource;
+        [System.NonSerialized]
+        private bool _calledCancel;
+        [System.NonSerialized]
+        private System.Action<IBeforeDragStartGlobalHandler> __beforeDragFunctor;
+        private System.Action<IBeforeDragStartGlobalHandler> _beforeDragFunctor => __beforeDragFunctor ?? (__beforeDragFunctor = (o) => o.OnBeforeDragStart(this));
+
+        #endregion
+
+        #region CONSTRUCTOR
+
+        protected virtual void OnDisable()
+        {
+            ActivelyDraggedElements.RemoveReference(this);
+        }
 
         #endregion
 
@@ -77,6 +94,12 @@ namespace com.spacepuppy
 
         #region Methods
 
+        public void CancelDrag()
+        {
+            _calledCancel = true;
+            this.OnEndDrag(null);
+        }
+
         void IBeginDragHandler.OnBeginDrag(PointerEventData eventData)
         {
             this.OnBeginDrag(eventData);
@@ -86,13 +109,21 @@ namespace com.spacepuppy
             var surface = this.GetComponentInParent<Canvas>()?.transform as RectTransform;
             if (surface == null) return;
 
+            _calledCancel = false;
+            Messaging.Broadcast(_beforeDragFunctor);
+            if (_calledCancel)
+            {
+                _calledCancel = false;
+                return;
+            }
+
             if (_duplicateSelfOnDrag)
             {
                 var clone = Instantiate(this, this.transform.position, this.transform.rotation, _maintainOriginalParent ? this.transform.parent : surface);
                 clone._duplicateSource = this;
                 var rts = this.transform as RectTransform;
                 var rtc = clone.transform as RectTransform;
-                if(rtc && rts)
+                if (rtc && rts)
                 {
                     rtc.sizeDelta = rts.sizeDelta;
                 }
@@ -125,6 +156,7 @@ namespace com.spacepuppy
         }
         protected void OnEndDrag(PointerEventData eventData)
         {
+            ActivelyDraggedElements.RemoveReference(this);
             if (_surface == null) return;
 
             if (this.IsDuplicate)
@@ -163,6 +195,8 @@ namespace com.spacepuppy
         protected void StartDrag(RectTransform surface, PointerEventData eventData)
         {
             if (surface == null) throw new System.ArgumentNullException(nameof(surface));
+
+            ActivelyDraggedElements.AddReference(this);
             _surface = surface;
             this.LastBeginGlobalTransformation = TransformStateCache.GetGlobal(this.transform);
 
@@ -193,6 +227,11 @@ namespace com.spacepuppy
                     SiblingIndex = t.GetSiblingIndex()
                 };
             }
+        }
+
+        public interface IBeforeDragStartGlobalHandler
+        {
+            void OnBeforeDragStart(DraggableUIElement element);
         }
 
         #endregion

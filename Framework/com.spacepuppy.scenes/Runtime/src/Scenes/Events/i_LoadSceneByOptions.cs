@@ -54,7 +54,14 @@ namespace com.spacepuppy.Scenes.Events
             if (_options == null) return false;
 
             var manager = Services.Get<ISceneManager>();
-            if (manager == null) return false;
+            if (manager == null)
+            {
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                Debug.Log("i_LoadSceneByOptions: no SceneManager present");
+#endif
+                return false;
+            }
 
             var handle = _options.Clone();
             if (handle == null) return false;
@@ -142,7 +149,7 @@ namespace com.spacepuppy.Scenes.Events
 #endif
                 try
                 {
-                    var persistentToken = IProxyExtensions.ReduceIfProxy(_persistentToken.Value);
+                    this.PersistentToken = IProxyExtensions.ReduceIfProxy(_persistentToken.Value);
 
                     var nm = _scene.SceneName ?? string.Empty;
                     UnityLoadResult handle;

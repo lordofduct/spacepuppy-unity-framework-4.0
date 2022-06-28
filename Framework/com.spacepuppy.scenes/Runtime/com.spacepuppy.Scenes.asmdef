@@ -4,7 +4,9 @@
     "references": [
         "GUID:ddd0eb9fc8f414a4d9750a013f135d36",
         "GUID:ad6239a0379b2de43a4d9e723d51db80",
-        "GUID:f51ebe6a0ceec4240a699833d6309b23"
+        "GUID:f51ebe6a0ceec4240a699833d6309b23",
+        "GUID:9e24947de15b9834991c9d8411ea37cf",
+        "GUID:84651a3751eca9349aac36a66bba901b"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -18,6 +20,11 @@
             "name": "com.cysharp.unitask",
             "expression": "",
             "define": "SP_UNITASK"
+        },
+        {
+            "name": "com.unity.addressables",
+            "expression": "",
+            "define": "SP_ADDRESSABLES"
         }
     ],
     "noEngineReferences": false

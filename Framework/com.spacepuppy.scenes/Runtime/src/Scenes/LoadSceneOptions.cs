@@ -8,6 +8,12 @@ using com.spacepuppy.Async;
 using Cysharp.Threading.Tasks;
 #endif
 
+#if SP_ADDRESSABLES
+using UnityEngine.ResourceManagement.AsyncOperations;
+using UnityEngine.ResourceManagement.ResourceProviders;
+using UnityEngine.ResourceManagement.ResourceLocations;
+#endif
+
 namespace com.spacepuppy.Scenes
 {
 
@@ -222,6 +228,37 @@ namespace com.spacepuppy.Scenes
             return options;
         }
 
+#if SP_ADDRESSABLES
+        protected AsyncWaitHandle<(SceneInstance, UnityLoadResult)> LoadAddressableScene(object key, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async)
+        {
+            this.BeforeSceneLoadCalled?.Invoke(this, this);
+            var handle = UnityEngine.AddressableAssets.Addressables.LoadSceneAsync(key, mode, behaviour != LoadSceneBehaviour.AsyncAndWait);
+            return DoLoadAddressableScene(handle, mode).AsAsyncWaitHandle();
+        }
+
+        protected AsyncWaitHandle<(SceneInstance, UnityLoadResult)> LoadAddressableScene(IResourceLocation loc, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async)
+        {
+            this.BeforeSceneLoadCalled?.Invoke(this, this);
+            var handle = UnityEngine.AddressableAssets.Addressables.LoadSceneAsync(loc, mode, behaviour != LoadSceneBehaviour.AsyncAndWait);
+            return DoLoadAddressableScene(handle, mode).AsAsyncWaitHandle();
+        }
+
+#if SP_UNITASK
+        private async UniTask<(SceneInstance, UnityLoadResult)> DoLoadAddressableScene(AsyncOperationHandle<SceneInstance> handle, LoadSceneMode mode)
+        {
+            await handle;
+#else
+        private async System.Threading.Tasks.Task<(SceneInstance, UnityLoadResult)> DoLoadAddressableScene(AsyncOperationHandle<SceneInstance> handle, LoadSceneMode mode)
+        {
+            await handle.Task;
+#endif
+
+            var sceneinst = handle.Result;
+            var result = this.RegisterHandlesScene(null, sceneinst.Scene, mode);
+            return (sceneinst, result);
+        }
+#endif
+
         protected virtual void OnBeforeLoadBegins()
         {
             this.BeforeLoadBegins?.Invoke(this, this);
@@ -290,7 +327,15 @@ namespace com.spacepuppy.Scenes
             }
         }
 
-        private UnityLoadResult RegisterHandlesScene(AsyncOperation op, Scene scene, LoadSceneMode mode)
+        /// <summary>
+        /// Call this method if you've manually loaded a scene (didn't use LoadScene/LoadAdditiveScene of this class) 
+        /// to manually add it to the collection of handled scenes that are returned by 'GetHandledScenes'.
+        /// </summary>
+        /// <param name="op"></param>
+        /// <param name="scene"></param>
+        /// <param name="mode"></param>
+        /// <returns></returns>
+        protected UnityLoadResult RegisterHandlesScene(AsyncOperation op, Scene scene, LoadSceneMode mode)
         {
             if (_parent != null) _parent.RegisterHandlesScene(op, scene, mode);
 
@@ -490,6 +535,8 @@ namespace com.spacepuppy.Scenes
 
             public async System.Threading.Tasks.Task<Scene> AsTask()
             {
+                if (Op == null) return this.Scene;
+
                 await Op.AsAsyncWaitHandle().AsTask();
                 return this.Scene;
             }
@@ -497,6 +544,8 @@ namespace com.spacepuppy.Scenes
 #if SP_UNITASK
             public async UniTask<Scene> AsUniTask()
             {
+                if (Op == null) return this.Scene;
+
                 await Op;
                 return this.Scene;
             }

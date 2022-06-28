@@ -37,7 +37,8 @@ namespace com.spacepuppyeditor.Events
                                                                               targProp.objectReferenceValue,
                                                                               memberProp.stringValue,
                                                                               com.spacepuppy.Dynamic.DynamicMemberAccess.ReadWrite,
-                                                                              out selectedMember);
+                                                                              out selectedMember,
+                                                                              true);
             this.serializedObject.ApplyModifiedProperties();
 
 

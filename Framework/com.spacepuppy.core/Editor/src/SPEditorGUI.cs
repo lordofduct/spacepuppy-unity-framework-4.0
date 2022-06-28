@@ -39,7 +39,7 @@ namespace com.spacepuppyeditor
         }
 
         #endregion
-        
+
         #region Internal EditorGUI Methods
 
         public static float GetSinglePropertyHeight(SerializedProperty property, GUIContent label)
@@ -202,7 +202,7 @@ namespace com.spacepuppyeditor
         public static bool PrefixFoldoutLabel(ref Rect position, bool foldout, GUIContent label)
         {
             //EditorGUI.PrefixLabel(position, label);
-            
+
             var r = new Rect(position.xMin, position.yMin, Mathf.Min(position.width, EditorGUIUtility.labelWidth), EditorGUIUtility.singleLineHeight);
             position = new Rect(position.xMin + r.width, position.yMin, position.width - r.width, position.height);
             return EditorGUI.Foldout(r, foldout, label);
@@ -235,7 +235,7 @@ namespace com.spacepuppyeditor
             SerializedPropertyType propertyType = SerializedPropertyType.Generic;
             if (valueType != null) propertyType = (valueType.IsInterface) ? SerializedPropertyType.ObjectReference : EditorHelper.GetPropertyType(valueType);
 
-            if(propertyType == SerializedPropertyType.ObjectReference && !TypeUtil.IsType(valueType, typeof(UnityEngine.Object)) && TypeUtil.IsType(valueType, typeof(System.Collections.ICollection)) && value is System.Collections.ICollection coll)
+            if (propertyType == SerializedPropertyType.ObjectReference && !TypeUtil.IsType(valueType, typeof(UnityEngine.Object)) && TypeUtil.IsType(valueType, typeof(System.Collections.ICollection)) && value is System.Collections.ICollection coll)
             {
                 return (1f + Mathf.Min(1, coll.Count)) * EditorGUIUtility.singleLineHeight;
             }
@@ -262,7 +262,7 @@ namespace com.spacepuppyeditor
             //return com.spacepuppyeditor.Internal.DefaultPropertyHandler.Instance.OnGUI(position, property, label, includeChildren);
             return ScriptAttributeUtility.SharedNullPropertyHandler.OnGUI(position, property, label, includeChildren);
         }
-        
+
         public static object DefaultPropertyField(Rect position, string label, object value, System.Type valueType)
         {
             return DefaultPropertyField(position, EditorHelper.TempContent(label), value, valueType);
@@ -365,6 +365,15 @@ namespace com.spacepuppyeditor
                                 }
                             }
                             break;
+                        case System.TypeCode.Decimal:
+                            {
+                                decimal num = (decimal)EditorGUI.DoubleField(position, label, ConvertUtil.ToDouble(value));
+                                if (EditorGUI.EndChangeCheck())
+                                {
+                                    return num;
+                                }
+                            }
+                            break;
                         default:
                             {
                                 float num = EditorGUI.FloatField(position, label, ConvertUtil.ToSingle(value));
@@ -393,7 +402,7 @@ namespace com.spacepuppyeditor
                     }
                     break;
                 case SerializedPropertyType.ObjectReference:
-                    if(TypeUtil.IsType(valueType, typeof(UnityEngine.Object)))
+                    if (TypeUtil.IsType(valueType, typeof(UnityEngine.Object)))
                     {
                         EditorGUI.BeginChangeCheck();
                         object obj = EditorGUI.ObjectField(position, label, value as UnityEngine.Object, valueType, true);
@@ -418,7 +427,7 @@ namespace com.spacepuppyeditor
 
                             var mtp = TypeUtil.GetElementTypeOfListType(valueType) ?? typeof(object);
                             int i = 0;
-                            foreach(var o in coll)
+                            foreach (var o in coll)
                             {
                                 i++;
                                 var r = new Rect(position.xMin + INDENT, position.yMin + EditorGUIUtility.singleLineHeight * i, Mathf.Max(0f, position.width - INDENT), EditorGUIUtility.singleLineHeight);
@@ -487,7 +496,7 @@ namespace com.spacepuppyeditor
                     break;
                 case SerializedPropertyType.Quaternion:
                     EditorGUI.BeginChangeCheck();
-                    var q = SPEditorGUI.QuaternionField(position, label, ConvertUtil.ToQuaternion(value)); 
+                    var q = SPEditorGUI.QuaternionField(position, label, ConvertUtil.ToQuaternion(value));
                     if (EditorGUI.EndChangeCheck())
                     {
                         return q;
@@ -1030,16 +1039,16 @@ namespace com.spacepuppyeditor
 
         public static WrapMode WrapModeField(Rect position, GUIContent label, WrapMode mode, bool allowDefault = false)
         {
-            if(allowDefault)
+            if (allowDefault)
             {
                 int i = 0;
-                switch(mode)
+                switch (mode)
                 {
                     case WrapMode.Default:
                         i = 0;
                         break;
                     case WrapMode.Once:
-                    //case WrapMode.Clamp: //same as once
+                        //case WrapMode.Clamp: //same as once
                         i = 1;
                         break;
                     case WrapMode.Loop:
@@ -1053,7 +1062,7 @@ namespace com.spacepuppyeditor
                         break;
                 }
                 i = EditorGUI.Popup(position, label, i, new GUIContent[] { EditorHelper.TempContent("Default"), EditorHelper.TempContent("Once|Clamp"), EditorHelper.TempContent("Loop"), EditorHelper.TempContent("PingPong"), EditorHelper.TempContent("ClampForever") });
-                switch(i)
+                switch (i)
                 {
                     case 0:
                         return WrapMode.Default;
@@ -1089,7 +1098,7 @@ namespace com.spacepuppyeditor
                         i = 3;
                         break;
                 }
-                i = EditorGUI.Popup(position, label, i, new GUIContent[] {EditorHelper.TempContent("Once|Clamp"), EditorHelper.TempContent("Loop"), EditorHelper.TempContent("PingPong"), EditorHelper.TempContent("ClampForever") });
+                i = EditorGUI.Popup(position, label, i, new GUIContent[] { EditorHelper.TempContent("Once|Clamp"), EditorHelper.TempContent("Loop"), EditorHelper.TempContent("PingPong"), EditorHelper.TempContent("ClampForever") });
                 switch (i)
                 {
                     case 0:
@@ -1443,7 +1452,7 @@ namespace com.spacepuppyeditor
         }
 
         #endregion
-        
+
 
 
 
@@ -1557,7 +1566,7 @@ namespace com.spacepuppyeditor
                 if (index < 0)
                     index = entries.Length - 1;
 
-                if(index < members.Length)
+                if (index < members.Length)
                 {
                     index = EditorGUI.Popup(position, label, index, entries);
                     selectedMember = (index >= 0 && index < members.Length) ? members[index] : null;
@@ -1601,7 +1610,7 @@ namespace com.spacepuppyeditor
                 for (int i = 0; i < members.Length; i++)
                 {
                     var m = members[i];
-                    if((DynamicUtil.GetMemberAccessLevel(m) & DynamicMemberAccess.Write) != 0)
+                    if ((DynamicUtil.GetMemberAccessLevel(m) & DynamicMemberAccess.Write) != 0)
                         entries[i] = EditorHelper.TempContent(string.Format("{0} ({1}) -> {2}", m.Name, DynamicUtil.GetReturnType(m).Name, EditorHelper.GetValueWithMemberSafe(m, targObj, true)));
                     else
                         entries[i] = EditorHelper.TempContent(string.Format("{0} (readonly - {1}) -> {2}", m.Name, DynamicUtil.GetReturnType(m).Name, EditorHelper.GetValueWithMemberSafe(m, targObj, true)));
@@ -1611,7 +1620,7 @@ namespace com.spacepuppyeditor
                         index = i;
                     }
                 }
-                
+
                 index = EditorGUI.Popup(position, label, index, entries);
                 selectedMember = (index >= 0) ? members[index] : null;
                 return (selectedMember != null) ? selectedMember.Name : null;
@@ -1623,7 +1632,7 @@ namespace com.spacepuppyeditor
                 return null;
             }
         }
-        
+
         public static string ReflectedPropertyField(Rect position, GUIContent label, object targObj, string selectedMemberName, DynamicMemberAccess access, bool allowSetterMethods = false)
         {
             System.Reflection.MemberInfo selectedMember;
@@ -1693,7 +1702,7 @@ namespace com.spacepuppyeditor
         }
 
         #endregion
-        
+
         #region X Button
 
         public const float X_BTN_WIDTH = 30f;
@@ -1711,7 +1720,7 @@ namespace com.spacepuppyeditor
         {
             var w = Mathf.Min(X_BTN_WIDTH, position.width);
             Rect r;
-            if(rightSide)
+            if (rightSide)
             {
                 r = new Rect(position.xMax - w, position.yMin, w, EditorGUIUtility.singleLineHeight);
                 position = new Rect(position.xMin, position.yMin, position.width - w, position.height);

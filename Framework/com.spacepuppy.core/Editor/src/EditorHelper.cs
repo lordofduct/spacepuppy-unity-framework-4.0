@@ -41,7 +41,7 @@ namespace com.spacepuppyeditor
         {
             get
             {
-                if(s_WhiteTextureStyle == null)
+                if (s_WhiteTextureStyle == null)
                 {
                     s_WhiteTextureStyle = new GUIStyle();
                     s_WhiteTextureStyle.normal.background = EditorHelper.WhiteTexture;
@@ -49,7 +49,7 @@ namespace com.spacepuppyeditor
                 return s_WhiteTextureStyle;
             }
         }
-        
+
 
         static EditorHelper()
         {
@@ -63,7 +63,7 @@ namespace com.spacepuppyeditor
 
         public static bool AssertMultiObjectEditingNotSupportedHeight(SerializedProperty property, GUIContent label, out float height)
         {
-            if(property.hasMultipleDifferentValues)
+            if (property.hasMultipleDifferentValues)
             {
                 height = EditorGUIUtility.singleLineHeight;
                 return true;
@@ -75,7 +75,7 @@ namespace com.spacepuppyeditor
 
         public static bool AssertMultiObjectEditingNotSupported(Rect position, SerializedProperty property, GUIContent label)
         {
-            if(property.hasMultipleDifferentValues)
+            if (property.hasMultipleDifferentValues)
             {
                 EditorGUI.LabelField(position, label, EditorHelper.TempContent("Multi-Object editing is not supported."));
                 return true;
@@ -122,7 +122,7 @@ namespace com.spacepuppyeditor
         {
             if (obj == null) return null;
 
-            if(obj.isEditingMultipleObjects)
+            if (obj.isEditingMultipleObjects)
             {
                 var c = obj.targetObjects[0];
                 return c.GetType();
@@ -138,7 +138,7 @@ namespace com.spacepuppyeditor
             if (prop == null) return null;
 
             System.Reflection.FieldInfo field;
-            switch(prop.propertyType)
+            switch (prop.propertyType)
             {
                 case SerializedPropertyType.Generic:
                     return TypeUtil.FindType(prop.type) ?? typeof(object);
@@ -209,7 +209,7 @@ namespace com.spacepuppyeditor
                     }
             }
         }
-        
+
         /// <summary>
         /// Gets the object the property represents.
         /// </summary>
@@ -419,7 +419,7 @@ namespace com.spacepuppyeditor
             if (prop == null) throw new System.ArgumentNullException("prop");
             if (prop.propertyType != SerializedPropertyType.Enum) throw new System.ArgumentException("SerializedProperty is not an enum type.", "prop");
 
-            if(value == null)
+            if (value == null)
             {
                 prop.enumValueIndex = 0;
                 return;
@@ -660,11 +660,11 @@ namespace com.spacepuppyeditor
         public static SerializedPropertyType GetPropertyType(System.Type tp)
         {
             if (tp == null) throw new System.ArgumentNullException("tp");
-            
-            if(tp.IsEnum) return SerializedPropertyType.Enum;
+
+            if (tp.IsEnum) return SerializedPropertyType.Enum;
 
             var code = System.Type.GetTypeCode(tp);
-            switch(code)
+            switch (code)
             {
                 case System.TypeCode.SByte:
                 case System.TypeCode.Byte:
@@ -680,6 +680,7 @@ namespace com.spacepuppyeditor
                     return SerializedPropertyType.Boolean;
                 case System.TypeCode.Single:
                 case System.TypeCode.Double:
+                case System.TypeCode.Decimal:
                     return SerializedPropertyType.Float;
                 case System.TypeCode.String:
                     return SerializedPropertyType.String;
@@ -717,7 +718,7 @@ namespace com.spacepuppyeditor
 
         public static System.TypeCode GetPropertyTypeCode(this SerializedProperty prop)
         {
-            switch(prop.propertyType)
+            switch (prop.propertyType)
             {
                 case SerializedPropertyType.Integer:
                     return prop.type == "long" ? System.TypeCode.Int64 : System.TypeCode.Int32;
@@ -742,7 +743,7 @@ namespace com.spacepuppyeditor
 
         public static double GetNumericValue(this SerializedProperty prop)
         {
-            switch(prop.propertyType)
+            switch (prop.propertyType)
             {
                 case SerializedPropertyType.Integer:
                     return (double)prop.intValue;
@@ -844,7 +845,7 @@ namespace com.spacepuppyeditor
             int cnt = 0;
 
             pstart.Next(true);
-            while(!SerializedProperty.EqualContents(pstart, pend))
+            while (!SerializedProperty.EqualContents(pstart, pend))
             {
                 cnt++;
                 pstart.Next(includeGrandChildren);
@@ -988,7 +989,7 @@ namespace com.spacepuppyeditor
         }
 
         #endregion
-        
+
         #region Event Handlers
 
         //private static void OnSceneGUI(SceneView scene)
@@ -1141,16 +1142,16 @@ namespace com.spacepuppyeditor
 
         private static void EditorUpdate()
         {
-            using(var lst = TempCollection.GetList<InvokeCallback>())
+            using (var lst = TempCollection.GetList<InvokeCallback>())
             {
-                lock(_invokeCallbacks)
+                lock (_invokeCallbacks)
                 {
                     var dt = System.DateTime.UtcNow;
-                    if(_invokeCallbacks.Count > 0)
+                    if (_invokeCallbacks.Count > 0)
                     {
-                        for(int i = 0; i < _invokeCallbacks.Count; i++)
+                        for (int i = 0; i < _invokeCallbacks.Count; i++)
                         {
-                            if((dt - _invokeCallbacks[i].timestamp).TotalSeconds >= _invokeCallbacks[i].duration)
+                            if ((dt - _invokeCallbacks[i].timestamp).TotalSeconds >= _invokeCallbacks[i].duration)
                             {
                                 lst.Add(_invokeCallbacks[i]);
                                 _invokeCallbacks.RemoveAt(i);
@@ -1160,15 +1161,15 @@ namespace com.spacepuppyeditor
                     }
                 }
 
-                if(lst.Count > 0)
+                if (lst.Count > 0)
                 {
-                    foreach(var o in lst)
+                    foreach (var o in lst)
                     {
                         try
                         {
                             o.callback?.Invoke();
                         }
-                        catch(System.Exception ex)
+                        catch (System.Exception ex)
                         {
                             Debug.LogException(ex);
                         }

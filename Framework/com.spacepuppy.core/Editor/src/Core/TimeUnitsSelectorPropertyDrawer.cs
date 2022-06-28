@@ -37,18 +37,20 @@ namespace com.spacepuppyeditor.Core
         //    _unitsCache[hash] = units;
         //}
         private static Dictionary<int, string> _unitsCache = new Dictionary<int, string>();
-        private static string GetUnits(SerializedProperty property, TimeUnitsSelectorAttribute attrib, ITimeUnitsCalculator calculator)
+        private static string GetUnits(SerializedProperty property, string defaultUnits, ITimeUnitsCalculator calculator)
         {
             int hash = com.spacepuppyeditor.Internal.PropertyHandlerCache.GetPropertyHash(property);
-            
+
             string units;
-            if(!_unitsCache.TryGetValue(hash,out units))
+            if (!_unitsCache.TryGetValue(hash, out units))
             {
-                if (attrib != null)
-                    units = attrib.DefaultUnits; 
+                if (!string.IsNullOrEmpty(defaultUnits) && (calculator.TimeUnits?.Contains(defaultUnits) ?? false))
+                {
+                    units = defaultUnits;
+                }
             }
 
-            if(!calculator.TimeUnits.Contains(units))
+            if (!calculator.TimeUnits.Contains(units))
             {
                 units = calculator.DefaultUnits;
             }
@@ -65,6 +67,7 @@ namespace com.spacepuppyeditor.Core
         #region Fields
 
         private ITimeUnitsCalculator _calculator;
+        private string _defaultUnits;
 
         public ITimeUnitsCalculator TimeUnitsCalculator
         {
@@ -75,13 +78,19 @@ namespace com.spacepuppyeditor.Core
             }
         }
 
+        public string DefaultUnits
+        {
+            get => _defaultUnits ?? (this.attribute as TimeUnitsSelectorAttribute)?.DefaultUnits;
+            set => _defaultUnits = value;
+        }
+
         #endregion
 
         #region Methods
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-            position = EditorGUI.PrefixLabel(position, label);
+            position = SPEditorGUI.SafePrefixLabel(position, label);
             EditorHelper.SuppressIndentLevel();
 
             try
@@ -112,9 +121,9 @@ namespace com.spacepuppyeditor.Core
 
             if (property.IsNumericValue())
             {
-                var units = GetUnits(property, this.attribute as TimeUnitsSelectorAttribute, this.TimeUnitsCalculator);
+                var units = GetUnits(property, this.DefaultUnits, this.TimeUnitsCalculator);
 
-                if(property.GetPropertyTypeCode() == System.TypeCode.Single)
+                if (property.GetPropertyTypeCode() == System.TypeCode.Single)
                 {
                     float dur = property.floatValue;
                     if (MathUtil.IsReal(dur)) dur = (float)this.TimeUnitsCalculator.SecondsToTimeUnits(units, dur);
@@ -153,7 +162,7 @@ namespace com.spacepuppyeditor.Core
 
             var r = new Rect(position.xMin, position.yMin, Mathf.Min(position.width, desiredWidth), position.height);
 
-            var units = GetUnits(property, this.attribute as TimeUnitsSelectorAttribute, this.TimeUnitsCalculator);
+            var units = GetUnits(property, this.DefaultUnits, this.TimeUnitsCalculator);
 
             EditorGUI.BeginChangeCheck();
 
@@ -180,12 +189,12 @@ namespace com.spacepuppyeditor.Core
             int order = int.MinValue;
             System.Type selectedType = null;
 
-            foreach(var tp in TypeUtil.GetTypesAssignableFrom(typeof(ITimeUnitsCalculator)))
+            foreach (var tp in TypeUtil.GetTypesAssignableFrom(typeof(ITimeUnitsCalculator)))
             {
                 var attrib = tp.GetCustomAttributes(typeof(OverrideDefaultTimeUnitsCalculatorAttribute), false).FirstOrDefault() as OverrideDefaultTimeUnitsCalculatorAttribute;
-                if(attrib != null)
+                if (attrib != null)
                 {
-                    if(attrib.order > order || selectedType == null)
+                    if (attrib.order > order || selectedType == null)
                     {
                         order = attrib.order;
                         selectedType = tp;
@@ -205,7 +214,7 @@ namespace com.spacepuppyeditor.Core
                 }
             }
 
-            if(_defaultCalculator == null)
+            if (_defaultCalculator == null)
             {
                 _defaultCalculator = new DefaultTimeUnitsCalculator();
             }
@@ -258,7 +267,7 @@ namespace com.spacepuppyeditor.Core
             {
                 var span = System.TimeSpan.FromSeconds(seconds);
 
-                switch(units)
+                switch (units)
                 {
                     case "Seconds":
                         //return span.TotalSeconds;
@@ -278,7 +287,7 @@ namespace com.spacepuppyeditor.Core
 
             public virtual double TimeUnitsToSeconds(string units, double time)
             {
-                switch(units)
+                switch (units)
                 {
                     case "Seconds":
                         return time;

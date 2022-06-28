@@ -789,7 +789,8 @@ namespace com.spacepuppy.Dynamic
             const BindingFlags PRIV_BINDING = BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
             if (tp == null) yield break;
 
-            foreach (var m in tp.GetMembers(BINDING))
+            var arr = tp.GetMembers(BINDING);
+            foreach (var m in arr)
             {
                 if ((m.MemberType & mask) != 0)
                 {
@@ -1271,7 +1272,7 @@ namespace com.spacepuppy.Dynamic
 
             bool bRead = (access & DynamicMemberAccess.Read) != 0;
             bool bWrite = (access & DynamicMemberAccess.Write) != 0;
-            var members = com.spacepuppy.Dynamic.DynamicUtil.GetMembers(obj, false);
+            var members = com.spacepuppy.Dynamic.DynamicUtil.GetMembers(obj, false, mask);
             foreach (var mi in members)
             {
                 if ((mi.MemberType & mask) == 0) continue;
@@ -1339,7 +1340,7 @@ namespace com.spacepuppy.Dynamic
 
             bool bRead = (access & DynamicMemberAccess.Read) != 0;
             bool bWrite = (access & DynamicMemberAccess.Write) != 0;
-            var members = com.spacepuppy.Dynamic.DynamicUtil.GetMembersFromType(tp, false);
+            var members = com.spacepuppy.Dynamic.DynamicUtil.GetMembersFromType(tp, false, mask);
             foreach (var mi in members)
             {
                 if ((mi.MemberType & mask) == 0) continue;

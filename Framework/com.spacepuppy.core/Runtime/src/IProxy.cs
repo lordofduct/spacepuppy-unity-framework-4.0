@@ -212,6 +212,15 @@ namespace com.spacepuppy
             return obj is IProxy p && (p.Params & ProxyParams.PrioritizeAsTargetFirst) == 0;
         }
 
+        public static System.Type GetType(this object obj, bool respectProxy)
+        {
+            if (respectProxy && obj is IProxy p)
+            {
+                return p.GetTargetType() ?? typeof(object);
+            }
+            return obj?.GetType();
+        }
+
     }
 
     [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]

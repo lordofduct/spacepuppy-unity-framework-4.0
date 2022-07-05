@@ -42,7 +42,14 @@ namespace com.spacepuppy.DataBinding
 
         public virtual IEnumerable<string> GetDefinedKeys(DataBindingContext context)
         {
-            return Enumerable.Empty<string>();
+            if (context.ConfiguredDataSource == null || (context.ConfiguredDataSource is IDataProvider && !context.RespectDataProviderAsSource)) return Enumerable.Empty<string>();
+
+            var sourcetype = IProxyExtensions.GetType(context.ConfiguredDataSource, context.RespectProxySources);
+            if (sourcetype == null) return Enumerable.Empty<string>();
+
+            return DynamicUtil.GetMembersFromType(sourcetype, false, System.Reflection.MemberTypes.Field | System.Reflection.MemberTypes.Property)
+                              .Where(o => IsAcceptableMemberType(DynamicUtil.GetReturnType(o)))
+                              .Select(o => o.Name);
         }
 
         public virtual object GetValue(DataBindingContext context, object source, string key)
@@ -56,6 +63,26 @@ namespace com.spacepuppy.DataBinding
                 return DynamicUtil.GetValue(source, key);
             }
         }
+
+        protected virtual bool IsAcceptableKeyType(System.Type tp)
+        {
+            return IsAcceptableMemberType(tp);
+        }
+
+        #region Static Utils
+
+        public static bool IsAcceptableMemberType(System.Type tp)
+        {
+            return VariantReference.AcceptableSerializableType(tp) || TypeUtil.IsType(tp, _acceptableTypes);
+        }
+
+#if SP_ADDRESSABLES
+        private static readonly System.Type[] _acceptableTypes = new System.Type[] { typeof(UnityEngine.AddressableAssets.AssetReference), typeof(System.DateTime), typeof(System.DateTime?), typeof(System.TimeSpan), typeof(System.TimeSpan?), typeof(Sprite), typeof(System.IConvertible) };
+#else
+        private static readonly System.Type[] _acceptableTypes = new System.Type[] { typeof(System.DateTime), typeof(System.DateTime?), typeof(System.TimeSpan), typeof(System.TimeSpan?), typeof(Sprite), typeof(System.IConvertible) };
+#endif
+
+        #endregion
 
     }
 
@@ -96,26 +123,6 @@ namespace com.spacepuppy.DataBinding
                               .Where(o => this.IsAcceptableKeyType(DynamicUtil.GetReturnType(o)))
                               .Select(o => o.Name);
         }
-
-        protected virtual bool IsAcceptableKeyType(System.Type tp)
-        {
-            return IsAcceptableMemberType(tp);
-        }
-
-        #endregion
-
-        #region Static Utils
-
-        public static bool IsAcceptableMemberType(System.Type tp)
-        {
-            return VariantReference.AcceptableSerializableType(tp) || TypeUtil.IsType(tp, _acceptableTypes);
-        }
-
-#if SP_ADDRESSABLES
-        private static readonly System.Type[] _acceptableTypes = new System.Type[] { typeof(UnityEngine.AddressableAssets.AssetReference), typeof(System.DateTime), typeof(System.DateTime?), typeof(System.TimeSpan), typeof(System.TimeSpan?), typeof(Sprite), typeof(System.IConvertible) };
-#else
-        private static readonly System.Type[] _acceptableTypes = new System.Type[] { typeof(System.DateTime), typeof(System.DateTime?), typeof(System.TimeSpan), typeof(System.TimeSpan?), typeof(Sprite), typeof(System.IConvertible) };
-#endif
 
         #endregion
 

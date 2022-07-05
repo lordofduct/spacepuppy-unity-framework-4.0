@@ -18,7 +18,20 @@ namespace com.spacepuppy
         /// </summary>
         float FadeVolume { get; set; }
 
-        AudioSource BackgroundAmbientAudioSource { get; }
+        /// <summary>
+        /// sets the volume of a group linearly with a value from 0->1
+        /// </summary>
+        /// <param name="groupname"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        bool SetVolume(string label, float value);
+        /// <summary>
+        /// get the volume of a group linearly as a value from 0->1
+        /// </summary>
+        /// <param name="groupname"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        bool GetVolume(string label, out float value);
 
     }
 

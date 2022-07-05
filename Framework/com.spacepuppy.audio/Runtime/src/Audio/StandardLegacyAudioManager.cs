@@ -17,9 +17,6 @@ namespace com.spacepuppy.Audio
         [System.NonSerialized]
         private float _fadeVolume;
 
-        [System.NonSerialized]
-        private AudioSource _backgroundAmbientAudioSource;
-
         #endregion
 
         #region CONSTRUCTOR
@@ -30,7 +27,6 @@ namespace com.spacepuppy.Audio
 
             _masterVolume = AudioListener.volume;
             _fadeVolume = 1f;
-            _backgroundAmbientAudioSource = this.AddOrGetComponent<AudioSource>();
         }
 
         #endregion
@@ -57,9 +53,15 @@ namespace com.spacepuppy.Audio
             }
         }
 
-        public AudioSource BackgroundAmbientAudioSource
+        bool IAudioManager.SetVolume(string label, float value)
         {
-            get { return _backgroundAmbientAudioSource; }
+            return false;
+        }
+
+        bool IAudioManager.GetVolume(string label, out float value)
+        {
+            value = 0f;
+            return false;
         }
 
         #endregion

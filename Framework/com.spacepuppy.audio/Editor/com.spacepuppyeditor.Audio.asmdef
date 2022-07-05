@@ -1,0 +1,20 @@
+{
+    "name": "com.spacepuppyeditor.Audio",
+    "rootNamespace": "com.spacepuppyeditor",
+    "references": [
+        "GUID:ddd0eb9fc8f414a4d9750a013f135d36",
+        "GUID:87cd754e50a115d40a8f05c6d8dc95ee",
+        "GUID:1ee188d194970794881e269a67b3bfc8"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

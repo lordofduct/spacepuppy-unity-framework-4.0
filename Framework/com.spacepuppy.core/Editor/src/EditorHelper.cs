@@ -18,6 +18,8 @@ namespace com.spacepuppyeditor
         public const string PROP_SCRIPT = "m_Script";
         public const string PROP_ORDER = "_order";
         public const string PROP_ACTIVATEON = "_activateOn";
+        public const string PROP_SERVICEREGISTRATIONOPTS = "_serviceRegistrationOptions";
+
 
         public const float OBJFIELD_DOT_WIDTH = 18f;
 

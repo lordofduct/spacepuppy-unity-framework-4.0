@@ -22,6 +22,8 @@ namespace com.spacepuppyeditor.Tween.Events
         public const string PROP_ACTIVATEON = "_activateOn";
 
         public const string PROP_TIMESUPPLIER = "_timeSupplier";
+        public const string PROP_WRAPMODE = "_wrapMode";
+        public const string PROP_WRAPCOUNT = "_wrapCount";
         public const string PROP_TARGET = "_target";
         public const string PROP_TWEENDATA = "_data";
         public const string PROP_ONCOMPLETE = "_onComplete";
@@ -61,12 +63,17 @@ namespace com.spacepuppyeditor.Tween.Events
             this.DrawPropertyField(PROP_ACTIVATEON);
             this.DrawPropertyField(PROP_TIMESUPPLIER);
             SPEditorGUILayout.PropertyField(_targetProp);
+            this.DrawPropertyField(PROP_WRAPMODE);
+            if (this.serializedObject.FindProperty(PROP_WRAPMODE).GetEnumValue<TweenWrapMode>() != TweenWrapMode.Once)
+            {
+                this.DrawPropertyField(PROP_WRAPCOUNT);
+            }
             this.DrawPropertyField(PROP_TWEENTOKEN);
             _dataList.DoLayoutList();
             this.DrawPropertyField(PROP_ONCOMPLETE);
 
 
-            this.DrawDefaultInspectorExcept(EditorHelper.PROP_SCRIPT, PROP_ORDER, PROP_ACTIVATEON, PROP_TARGET, PROP_TIMESUPPLIER, PROP_TWEENDATA, PROP_ONCOMPLETE, PROP_TWEENTOKEN);
+            this.DrawDefaultInspectorExcept(EditorHelper.PROP_SCRIPT, PROP_ORDER, PROP_ACTIVATEON, PROP_WRAPMODE, PROP_WRAPCOUNT, PROP_TARGET, PROP_TIMESUPPLIER, PROP_TWEENDATA, PROP_ONCOMPLETE, PROP_TWEENTOKEN);
 
             this.serializedObject.ApplyModifiedProperties();
         }

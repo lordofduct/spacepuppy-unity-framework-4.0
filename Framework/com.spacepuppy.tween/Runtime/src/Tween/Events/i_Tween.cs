@@ -1,5 +1,4 @@
-﻿#pragma warning disable 0649 // variable declared but not used.
-using UnityEngine;
+﻿using UnityEngine;
 
 using com.spacepuppy.Events;
 using com.spacepuppy.Tween;
@@ -19,6 +18,13 @@ namespace com.spacepuppy.Tween.Events
         [SerializeField()]
         [TriggerableTargetObject.Config(typeof(UnityEngine.Object))]
         private TriggerableTargetObject _target = new TriggerableTargetObject();
+
+        [SerializeField]
+        private TweenWrapMode _wrapMode;
+        [SerializeField]
+        [Tooltip("How many time should the tween wrap. If WrapMode is 'Once', this is ignored.")]
+        [DiscreteFloat.Positive()]
+        private DiscreteFloat _wrapCount = DiscreteFloat.PositiveInfinity;
 
         [SerializeReference()]
         private ITweenData[] _data;
@@ -57,6 +63,50 @@ namespace com.spacepuppy.Tween.Events
 
         #endregion
 
+        #region Properties
+
+        public SPTime TimeSupplier
+        {
+            get => _timeSupplier;
+            set => _timeSupplier = value;
+        }
+
+        public TriggerableTargetObject Target => _target;
+
+        public TweenWrapMode WrapMode
+        {
+            get => _wrapMode;
+            set => _wrapMode = value;
+        }
+
+        /// <summary>
+        /// If WrapMode is not Once, this is the number of times it will loop. 
+        /// 0 or negative values mean infinity.
+        /// </summary>
+        public DiscreteFloat WrapCount
+        {
+            get => _wrapCount;
+            set => _wrapCount = value;
+        }
+
+        public ITweenData[] Data
+        {
+            get => _data;
+            set => _data = value;
+        }
+
+        public SPEvent OnComplete => _onComplete;
+
+        public SPEvent OnTick => _onTick;
+
+        public string TweenToken
+        {
+            get => _tweenToken;
+            set => _tweenToken = value;
+        }
+
+        #endregion
+
         #region Methods
 
         #endregion
@@ -67,7 +117,7 @@ namespace com.spacepuppy.Tween.Events
         {
             get
             {
-                return base.CanTrigger && _data.Length > 0;
+                return base.CanTrigger && _data?.Length > 0;
             }
         }
 
@@ -85,6 +135,10 @@ namespace com.spacepuppy.Tween.Events
             }
             twn.Use(_timeSupplier.TimeSupplier);
             twn.SetId(target);
+            if (_wrapMode != TweenWrapMode.Once)
+            {
+                twn.Wrap(_wrapMode, _wrapCount.ToStandardMetricInt());
+            }
 
             if (_onComplete?.HasReceivers ?? false)
                 twn.OnFinish((t) => _onComplete.ActivateTrigger(this, null));

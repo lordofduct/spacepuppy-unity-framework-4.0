@@ -171,7 +171,7 @@ namespace com.spacepuppy.Tween
                         if (_wrapCount <= 0)
                             return false;
                         else
-                            return (_time - _delay) >= (this.PlayHeadLength * _wrapCount);
+                            return _time >= this.PlayHeadLength * _wrapCount + _delay;
                 }
                 return false;
             }
@@ -363,20 +363,22 @@ namespace com.spacepuppy.Tween
 
             this.MovePlayHeadPosition(dt);
 
-            this.DoUpdate(dt, _normalizedPlayHeadPosition);
-
             switch (_wrap)
             {
                 case TweenWrapMode.Once:
                     if (this.IsComplete)
                     {
                         _time = this.PlayHeadLength + _delay + 0.0001f;
+                        _normalizedPlayHeadPosition = (_reverse) ? 0f : _time;
+                        _unwrappedPlayHeadPosition = _normalizedPlayHeadPosition;
+                        this.DoUpdate(dt, _normalizedPlayHeadPosition);
                         this.Stop();
                         if (this.OnFinish != null) this.OnFinish(this, System.EventArgs.Empty);
                         break;
                     }
                     else
                     {
+                        this.DoUpdate(dt, _normalizedPlayHeadPosition);
                         if (this.OnStep != null) this.OnStep(this, System.EventArgs.Empty);
                     }
                     break;
@@ -388,17 +390,22 @@ namespace com.spacepuppy.Tween
                         if (this.IsComplete)
                         {
                             _time = this.PlayHeadLength * _wrapCount + _delay + 0.0001f;
+                            _normalizedPlayHeadPosition = (_reverse) ? 0f : _time;
+                            _unwrappedPlayHeadPosition = _normalizedPlayHeadPosition;
+                            this.DoUpdate(dt, _normalizedPlayHeadPosition);
                             this.Stop();
                             if (this.OnFinish != null) this.OnFinish(this, System.EventArgs.Empty);
                         }
                         else
                         {
+                            this.DoUpdate(dt, _normalizedPlayHeadPosition);
                             if (this.OnStep != null) this.OnStep(this, System.EventArgs.Empty);
                             if (this.OnWrap != null) this.OnWrap(this, System.EventArgs.Empty);
                         }
                     }
                     else
                     {
+                        this.DoUpdate(dt, _normalizedPlayHeadPosition);
                         if (this.OnStep != null) this.OnStep(this, System.EventArgs.Empty);
                     }
                     break;

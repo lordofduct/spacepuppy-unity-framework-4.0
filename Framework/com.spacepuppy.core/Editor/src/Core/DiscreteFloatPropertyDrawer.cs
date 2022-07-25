@@ -3,6 +3,7 @@ using UnityEditor;
 
 using com.spacepuppy;
 using com.spacepuppy.Utils;
+using System.Reflection;
 
 namespace com.spacepuppyeditor.Core
 {
@@ -14,11 +15,30 @@ namespace com.spacepuppyeditor.Core
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            const float WIDTH_INFTOGGLE = 50f;
+
             var valueProp = property.FindPropertyRelative("_value");
+            float value;
+
+            position = SPEditorGUI.SafePrefixLabel(position, label);
+            if (this.fieldInfo.GetCustomAttribute<DiscreteFloat.HideInfinityCheckbox>() == null)
+            {
+                var r_inftoggle = new Rect(position.xMin, position.yMin, WIDTH_INFTOGGLE, EditorGUIUtility.singleLineHeight);
+                position = new Rect(r_inftoggle.xMax, r_inftoggle.yMin, Mathf.Max(0f, position.width - r_inftoggle.width), EditorGUIUtility.singleLineHeight);
+
+                bool isinf = float.IsPositiveInfinity(valueProp.floatValue);
+                EditorGUI.BeginChangeCheck();
+                isinf = EditorGUI.ToggleLeft(r_inftoggle, "Inf", isinf);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    value = isinf ? float.PositiveInfinity : 0f;
+                    value = NormalizeBasedOnAttribs(value);
+                    valueProp.floatValue = value;
+                }
+            }
 
             EditorGUI.BeginChangeCheck();
-
-            var value = EditorGUI.FloatField(position, label, valueProp.floatValue);
+            value = EditorGUI.FloatField(position, valueProp.floatValue);
 
             if (EditorGUI.EndChangeCheck())
             {
@@ -27,11 +47,7 @@ namespace com.spacepuppyeditor.Core
 
                 if (this.fieldInfo != null)
                 {
-                    var attribs = this.fieldInfo.GetCustomAttributes(typeof(DiscreteFloat.ConfigAttribute), false) as DiscreteFloat.ConfigAttribute[];
-                    foreach (var attrib in attribs)
-                    {
-                        value = attrib.Normalize(value);
-                    }
+                    value = NormalizeBasedOnAttribs(value);
 
                     //if the value increased ever so much, ceil the value, good for the mouse scroll
                     value = NormalizeValue(valueProp.floatValue, value);
@@ -39,6 +55,16 @@ namespace com.spacepuppyeditor.Core
 
                 valueProp.floatValue = value;
             }
+        }
+
+        private float NormalizeBasedOnAttribs(float value)
+        {
+            var attribs = this.fieldInfo.GetCustomAttributes(typeof(DiscreteFloat.ConfigAttribute), false) as DiscreteFloat.ConfigAttribute[];
+            foreach (var attrib in attribs)
+            {
+                value = attrib.Normalize(value);
+            }
+            return value;
         }
 
 

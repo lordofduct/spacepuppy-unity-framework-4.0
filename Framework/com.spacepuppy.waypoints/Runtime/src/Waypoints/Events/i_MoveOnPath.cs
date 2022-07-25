@@ -32,7 +32,7 @@ namespace com.spacepuppy.Waypoints.Events
 
         [SerializeField()]
         [Tooltip("How many time should the tween wrap. If WrapMode is 'Once', this is ignored.")]
-        [DiscreteFloat.NonNegative()]
+        [DiscreteFloat.Positive()]
         private DiscreteFloat _wrapCount = DiscreteFloat.PositiveInfinity;
 
         [SerializeField()]

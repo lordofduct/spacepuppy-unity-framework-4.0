@@ -21,6 +21,11 @@ namespace com.spacepuppyeditor.Core
 
             var shortlabel = (this.attribute as NegativeIsInfinityAttribute)?.ShortInfinityLabel;
             var longlabel = (this.attribute as NegativeIsInfinityAttribute)?.InfinityLabel;
+            bool includeZero = (this.attribute as NegativeIsInfinityAttribute)?.ZeroIsAlsoInfinity ?? false;
+            const int DEFAULT_INF_VALUE = -1;
+            int MAX_INF_VALUE = includeZero ? 0 : -1;
+            int MIN_REAL_VALUE = includeZero ? 1 : 0;
+
             if (string.IsNullOrEmpty(shortlabel)) shortlabel = "Inf";
             if (string.IsNullOrEmpty(longlabel)) longlabel = "Infinity";
 
@@ -32,23 +37,23 @@ namespace com.spacepuppyeditor.Core
             {
                 case SerializedPropertyType.Integer when property.type == "long":
                     {
-                        bool isinf = property.longValue < 0;
+                        bool isinf = property.longValue <= MAX_INF_VALUE;
                         EditorGUI.BeginChangeCheck();
                         isinf = EditorGUI.ToggleLeft(r0, shortlabel, isinf);
                         if (EditorGUI.EndChangeCheck())
                         {
-                            property.longValue = isinf ? -1 : 0;
+                            property.longValue = isinf ? DEFAULT_INF_VALUE : MIN_REAL_VALUE;
                         }
 
                         if (isinf)
                         {
-                            property.longValue = -1;
+                            property.longValue = DEFAULT_INF_VALUE;
                             EditorGUI.BeginChangeCheck();
                             string soutput = EditorGUI.DelayedTextField(r1, longlabel, GUI.skin.textField);
                             if (EditorGUI.EndChangeCheck())
                             {
                                 long output;
-                                if(long.TryParse(soutput, out output) && output >= 0)
+                                if(long.TryParse(soutput, out output) && output > MAX_INF_VALUE)
                                 {
                                     property.longValue = output;
                                 }
@@ -62,23 +67,23 @@ namespace com.spacepuppyeditor.Core
                     break;
                 case SerializedPropertyType.Integer:
                     {
-                        bool isinf = property.intValue < 0;
+                        bool isinf = property.intValue <= MAX_INF_VALUE;
                         EditorGUI.BeginChangeCheck();
                         isinf = EditorGUI.ToggleLeft(r0, shortlabel, isinf);
                         if(EditorGUI.EndChangeCheck())
                         {
-                            property.intValue = isinf ? -1 : 0;
+                            property.intValue = isinf ? DEFAULT_INF_VALUE : MIN_REAL_VALUE;
                         }
                         
                         if(isinf)
                         {
-                            property.intValue = -1;
+                            property.intValue = DEFAULT_INF_VALUE;
                             EditorGUI.BeginChangeCheck();
                             string soutput = EditorGUI.DelayedTextField(r1, longlabel, GUI.skin.textField);
                             if (EditorGUI.EndChangeCheck())
                             {
                                 int output;
-                                if (int.TryParse(soutput, out output) && output >= 0)
+                                if (int.TryParse(soutput, out output) && output > MAX_INF_VALUE)
                                 {
                                     property.intValue = output;
                                 }
@@ -92,23 +97,23 @@ namespace com.spacepuppyeditor.Core
                     break;
                 case SerializedPropertyType.Float when property.type == "double":
                     {
-                        bool isinf = property.doubleValue < 0;
+                        bool isinf = property.doubleValue <= MAX_INF_VALUE;
                         EditorGUI.BeginChangeCheck();
                         isinf = EditorGUI.ToggleLeft(r0, shortlabel, isinf);
                         if (EditorGUI.EndChangeCheck())
                         {
-                            property.doubleValue = isinf ? -1 : 0;
+                            property.doubleValue = isinf ? DEFAULT_INF_VALUE : MIN_REAL_VALUE;
                         }
 
                         if (isinf)
                         {
-                            property.doubleValue = -1;
+                            property.doubleValue = DEFAULT_INF_VALUE;
                             EditorGUI.BeginChangeCheck();
                             string soutput = EditorGUI.DelayedTextField(r1, longlabel, GUI.skin.textField);
                             if (EditorGUI.EndChangeCheck())
                             {
                                 double output;
-                                if (double.TryParse(soutput, out output) && output >= 0)
+                                if (double.TryParse(soutput, out output) && output > MAX_INF_VALUE)
                                 {
                                     property.doubleValue = output;
                                 }
@@ -122,23 +127,23 @@ namespace com.spacepuppyeditor.Core
                     break;
                 case SerializedPropertyType.Float:
                     {
-                        bool isinf = property.floatValue < 0;
+                        bool isinf = property.floatValue <= MAX_INF_VALUE;
                         EditorGUI.BeginChangeCheck();
                         isinf = EditorGUI.ToggleLeft(r0, shortlabel, isinf);
                         if (EditorGUI.EndChangeCheck())
                         {
-                            property.floatValue = isinf ? -1 : 0;
+                            property.floatValue = isinf ? DEFAULT_INF_VALUE : MIN_REAL_VALUE;
                         }
 
                         if (isinf)
                         {
-                            property.floatValue = -1;
+                            property.floatValue = DEFAULT_INF_VALUE;
                             EditorGUI.BeginChangeCheck();
                             string soutput = EditorGUI.DelayedTextField(r1, longlabel, GUI.skin.textField);
                             if (EditorGUI.EndChangeCheck())
                             {
                                 float output;
-                                if (float.TryParse(soutput, out output) && output >= 0)
+                                if (float.TryParse(soutput, out output) && output > MAX_INF_VALUE)
                                 {
                                     property.floatValue = output;
                                 }

@@ -198,6 +198,7 @@ namespace com.spacepuppy
 
         public string ShortInfinityLabel;
         public string InfinityLabel;
+        public bool ZeroIsAlsoInfinity;
 
     }
 

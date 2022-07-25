@@ -711,6 +711,8 @@ namespace com.spacepuppy
 
         #region Special Types
 
+        public class HideInfinityCheckbox : System.Attribute { }
+
         public abstract class ConfigAttribute : System.Attribute
         {
 
@@ -727,6 +729,15 @@ namespace com.spacepuppy
                 else return value;
             }
 
+        }
+
+        public class Positive : ConfigAttribute
+        {
+            public override float Normalize(float value)
+            {
+                if (value <= 0f) return 1f;
+                else return value;
+            }
         }
 
         #endregion

@@ -26,6 +26,9 @@ namespace com.spacepuppy.Events
         private SPTimePeriod _gateDelay = 0f;
 
         [SerializeField]
+        private bool _resetGateOnEnable;
+
+        [SerializeField]
         [DisableOnPlay]
         [OneOrMany]
         private ProxyMediator[] _activateGateSilentlyMediator;
@@ -46,6 +49,16 @@ namespace com.spacepuppy.Events
             if (_activateGateSilentlyMediator != null && _activateGateSilentlyMediator.Length > 0)
             {
                 _mediatorColl = new MediatorCollection(this);
+            }
+        }
+
+        protected override void OnEnable()
+        {
+            base.OnEnable();
+
+            if (_resetGateOnEnable)
+            {
+                this.ResetGate();
             }
         }
 
@@ -76,12 +89,18 @@ namespace com.spacepuppy.Events
             get { return _gateDelay; }
             set
             {
-                if(this.IsGated)
+                if (this.IsGated)
                 {
-                    _lastTimeGated = null;
+                    this.ResetGate();
                 }
                 _gateDelay = value;
             }
+        }
+
+        public bool ResetGateOnEnable
+        {
+            get => _resetGateOnEnable;
+            set => _resetGateOnEnable = value;
         }
 
         [ShowNonSerializedProperty("Runtime Activate Gate Silently Mediators", Readonly = true)]
@@ -108,6 +127,11 @@ namespace com.spacepuppy.Events
         public void ActivateGate()
         {
             _lastTimeGated = _gateDelay.TimeSupplier?.TotalPrecise;
+        }
+
+        public void ResetGate()
+        {
+            _lastTimeGated = null;
         }
 
         #endregion
@@ -178,7 +202,7 @@ namespace com.spacepuppy.Events
                 if (item == null) return;
                 if (_mediators.Contains(item)) return;
 
-                if(_mediators.Add(item))
+                if (_mediators.Add(item))
                 {
                     item.OnTriggered += OnMediatorTriggered;
                 }
@@ -212,7 +236,7 @@ namespace com.spacepuppy.Events
             {
                 if (object.ReferenceEquals(item, null)) return false;
 
-                if(_mediators.Remove(item))
+                if (_mediators.Remove(item))
                 {
                     item.OnTriggered -= OnMediatorTriggered;
                     return true;

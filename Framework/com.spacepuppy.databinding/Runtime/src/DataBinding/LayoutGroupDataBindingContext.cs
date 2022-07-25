@@ -5,6 +5,8 @@ using System.Linq;
 using com.spacepuppy;
 using com.spacepuppy.Utils;
 using com.spacepuppy.Events;
+using com.spacepuppy.Async;
+using com.spacepuppy.Collections;
 
 #if SP_UNITASK
 using Cysharp.Threading.Tasks;
@@ -149,15 +151,17 @@ namespace com.spacepuppy.DataBinding
 
         #endregion
 
-        #region IDataBindingContext Interface
+        #region Methods
 
-        int IDataBindingMessageHandler.BindOrder => _bindOrder;
-
-        public object DataSource { get; private set; }
-
-        public void Bind(object source, int index)
+        public void ClearStamps()
         {
-            this.Bind(source);
+            if (_container && _container.childCount > 0)
+            {
+                foreach (Transform t in _container)
+                {
+                    t.gameObject.Kill();
+                }
+            }
         }
 
         public void BindConfiguredDataSource()
@@ -167,55 +171,75 @@ namespace com.spacepuppy.DataBinding
 
         public void Bind(object source)
         {
+            _ = this.DoBindAsync(source, null);
+        }
+
+        public AsyncWaitHandle BindAsync(object source)
+        {
+            return this.DoBindAsync(source, null).AsAsyncWaitHandle();
+        }
+
+        public AsyncWaitHandle<int> BindAsync(object source, ICollection<GameObject> output)
+        {
+            return this.DoBindAsync(source, output).AsAsyncWaitHandle();
+        }
+
+#if SP_UNITASK
+        private async UniTask<int> DoBindAsync(object source, ICollection<GameObject> output)
+#else
+        private async System.Threading.Tasks.Task<int> DoBindAsync(object source, ICollection<GameObject> output)
+#endif
+        {
             var dataprovider = DataProviderUtils.GetAsDataProvider(source, _respectProxySources);
             this.DataSource = dataprovider;
 
-            if (_container && _container.childCount > 0)
-            {
-                foreach (Transform t in _container)
-                {
-                    t.gameObject.Kill();
-                }
-            }
+            this.ClearStamps();
 
-            if (dataprovider == null) return;
+            if (dataprovider == null) return 0;
 
             if (_stampSource == null)
             {
-                return;
+                return 0;
             }
             else if (_stampSource.IsAsync)
             {
-                _ = this.DoStampLayoutGroup(_container, dataprovider, _stampSource);
+                int index = 0;
+                foreach (var item in dataprovider.Cast<object>().Take(_maxVisible))
+                {
+                    GameObject inst = await _stampSource.InstantiateStampAsync(_container, item);
+                    if (inst == null) continue;
+
+                    DataBindingContext.SendBindMessage(_bindMessageSettings, inst, item, index);
+                    index++;
+                    output?.Add(inst);
+                }
+                return index;
             }
             else
             {
                 int index = 0;
-
                 foreach (var item in dataprovider.Cast<object>().Take(_maxVisible))
                 {
                     GameObject inst = _stampSource.InstantiateStamp(_container, item);
                     DataBindingContext.SendBindMessage(_bindMessageSettings, inst, item, index);
                     index++;
+                    output?.Add(inst);
                 }
+                return index;
             }
         }
 
-#if SP_UNITASK
-        private async UniTaskVoid DoStampLayoutGroup(Transform container, System.Collections.IEnumerable dataProvider, IStampSource source)
-#else
-        private async System.Threading.Tasks.Task DoStampLayoutGroup(Transform container, System.Collections.IEnumerable dataProvider, IStampSource source)
-#endif
-        {
-            int index = 0;
-            foreach (var item in dataProvider.Cast<object>().Take(_maxVisible))
-            {
-                GameObject inst = await source.InstantiateStampAsync(container, item);
-                if (inst == null) continue;
+        #endregion
 
-                DataBindingContext.SendBindMessage(_bindMessageSettings, inst, item, index);
-                index++;
-            }
+        #region IDataBindingContext Interface
+
+        int IDataBindingMessageHandler.BindOrder => _bindOrder;
+
+        public object DataSource { get; private set; }
+
+        public void Bind(object source, int index)
+        {
+            this.Bind(source);
         }
 
         #endregion

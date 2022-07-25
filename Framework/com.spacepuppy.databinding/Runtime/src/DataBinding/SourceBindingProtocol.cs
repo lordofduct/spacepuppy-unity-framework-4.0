@@ -42,9 +42,13 @@ namespace com.spacepuppy.DataBinding
 
         public virtual IEnumerable<string> GetDefinedKeys(DataBindingContext context)
         {
-            if (context.ConfiguredDataSource == null || (context.ConfiguredDataSource is IDataProvider && !context.RespectDataProviderAsSource)) return Enumerable.Empty<string>();
+            if (context.ConfiguredDataSource == null) return Enumerable.Empty<string>();
 
-            var sourcetype = IProxyExtensions.GetType(context.ConfiguredDataSource, context.RespectProxySources);
+            System.Type sourcetype = null;
+            if (context.RespectProxySources || context.RespectDataProviderAsSource)
+            {
+                sourcetype = IProxyExtensions.GetType(context.ConfiguredDataSource, context.RespectProxySources);
+            }
             if (sourcetype == null) return Enumerable.Empty<string>();
 
             return DynamicUtil.GetMembersFromType(sourcetype, false, System.Reflection.MemberTypes.Field | System.Reflection.MemberTypes.Property)

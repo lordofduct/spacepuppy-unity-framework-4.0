@@ -920,11 +920,9 @@ namespace com.spacepuppyeditor
 
         public static string GetFullPathForAssetPath(string assetPath)
         {
-            //return Application.dataPath.EnsureNotEndsWith("Assets") + "/" + assetPath.EnsureNotStartWith("/");
             var dataPath = Application.dataPath;
             if (dataPath.EndsWith("Assets")) dataPath = dataPath.Substring(0, dataPath.Length - 6);
-            if (assetPath.EndsWith("/")) assetPath = assetPath.Substring(0, assetPath.Length - 1);
-            return dataPath + "/" + assetPath;
+            return System.IO.Path.Combine(dataPath, assetPath);
         }
 
         #endregion

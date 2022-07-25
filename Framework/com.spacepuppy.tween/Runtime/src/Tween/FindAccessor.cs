@@ -12,15 +12,16 @@ namespace com.spacepuppy.Tween
 
         public static void RegisterFastAccessorsWithTweenCurveFactory(TweenCurveFactory.TweenMemberAccessorFactory factory)
         {
-            factory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("position"), FindAccessor.TransformPosition);
-            factory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("localPosition"), FindAccessor.TransformLocalPosition);
-            factory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("localScale"), FindAccessor.TransformLocalScale);
-            factory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("eulerAngles"), FindAccessor.TransformEulerAngles);
-            factory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("localEulerAngles"), FindAccessor.TransformLocalEulerAngles);
-            factory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("rotation"), FindAccessor.TransformRotation);
-            factory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("localRotation"), FindAccessor.TransformLocalRotation);
-            factory.RegisterPerminentlyCachedAccessor(typeof(RectTransform).GetProperty("sizeDelta"), FindAccessor.RectTransformSizeDelta);
-            factory.RegisterPerminentlyCachedAccessor(typeof(UnityEngine.UI.Text).GetProperty("text"), FindAccessor.TextGraphicText);
+            factory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty(nameof(Transform.position)), FindAccessor.TransformPosition);
+            factory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty(nameof(Transform.localPosition)), FindAccessor.TransformLocalPosition);
+            factory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty(nameof(Transform.localScale)), FindAccessor.TransformLocalScale);
+            factory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty(nameof(Transform.eulerAngles)), FindAccessor.TransformEulerAngles);
+            factory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty(nameof(Transform.localEulerAngles)), FindAccessor.TransformLocalEulerAngles);
+            factory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty(nameof(Transform.rotation)), FindAccessor.TransformRotation);
+            factory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty(nameof(Transform.localRotation)), FindAccessor.TransformLocalRotation);
+            factory.RegisterPerminentlyCachedAccessor(typeof(RectTransform).GetProperty(nameof(RectTransform.sizeDelta)), FindAccessor.RectTransformSizeDelta);
+            factory.RegisterPerminentlyCachedAccessor(typeof(UnityEngine.UI.Text).GetProperty(nameof(UnityEngine.UI.Text.text)), FindAccessor.TextGraphicText);
+            factory.RegisterPerminentlyCachedAccessor(typeof(CanvasGroup).GetProperty(nameof(CanvasGroup.alpha)), FindAccessor.CanvasGroupAlpha);
         }
 
         #region Transform
@@ -74,6 +75,14 @@ namespace com.spacepuppy.Tween
         private static IMemberAccessor<string> _textGraphicText;
         public static IMemberAccessor<string> TextGraphicText { get { return _textGraphicText ?? (_textGraphicText = new GetterSetterMemberAccessor<UnityEngine.UI.Text, string>(t => t.text, (t, v) => t.text = v)); } }
         public static IMemberAccessor<string> text_ref(this UnityEngine.UI.Text t) { return TextGraphicText; }
+
+        #endregion
+
+        #region CanvasGroup
+
+        private static IMemberAccessor<float> _canvasGroupAlpha;
+        public static IMemberAccessor<float> CanvasGroupAlpha { get { return _canvasGroupAlpha ?? (_canvasGroupAlpha = new GetterSetterMemberAccessor<CanvasGroup, float>(c => c.alpha, (c, v) => c.alpha = v)); } }
+        public static IMemberAccessor<float> alpha_ref(this CanvasGroup c) { return CanvasGroupAlpha; }
 
         #endregion
 

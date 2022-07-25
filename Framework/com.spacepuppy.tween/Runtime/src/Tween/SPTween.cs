@@ -24,10 +24,7 @@ namespace com.spacepuppy.Tween
 
         #region Fields
 
-        private HashSet<Tweener> _runningTweens = new HashSet<Tweener>();
-        private HashSet<Tweener> _toAdd = new HashSet<Tweener>();
-        private HashSet<Tweener> _toRemove = new HashSet<Tweener>();
-        private bool _locked;
+        private TweenerCollection _runningTweens = new TweenerCollection();
 
         private static Dictionary<TokenPairing, Tweener> _autoKillDict = new Dictionary<TokenPairing, Tweener>(new TokenPairingComparer());
 
@@ -84,100 +81,22 @@ namespace com.spacepuppy.Tween
         {
             if (GameLoop.ApplicationClosing) return false;
             if (_instance == null) return false;
-            return _instance._runningTweens.Contains(tween) || _instance._toAdd.Contains(tween);
+            return _instance._runningTweens.Contains(tween);
         }
 
         internal static void AddReference(Tweener tween)
         {
             if (GameLoop.ApplicationClosing) return;
             if (_instance == null) SPTween.Init();
-            _instance.AddReference_Imp(tween);
-        }
-        private void AddReference_Imp(Tweener tween)
-        {
-            if (_locked)
-            {
-                if (_runningTweens.Contains(tween) || _toAdd.Contains(tween)) return;
-                _toAdd.Add(tween);
-            }
-            else
-            {
-                if (_runningTweens.Contains(tween)) return;
-
-                _runningTweens.Add(tween);
-                tween.Scrub(0f); //scrub to initialize values, this way if update doesn't happen for an entire frame, we get that init value
-
-                if (tween.Id != null)
-                {
-                    var token = new TokenPairing(tween.Id, tween.AutoKillToken);
-                    Tweener old;
-                    if (_autoKillDict.TryGetValue(token, out old) && old != tween)
-                    {
-                        old.Kill();
-                    }
-                }
-            }
+            _instance._runningTweens.Add(tween);
         }
 
         internal static void RemoveReference(Tweener tween)
         {
             if (GameLoop.ApplicationClosing) return;
             if (_instance == null) return;
-            _instance.RemoveReference_Imp(tween);
+            _instance._runningTweens.Remove(tween);
         }
-        private void RemoveReference_Imp(Tweener tween)
-        {
-            if (_locked)
-            {
-                if (!_runningTweens.Contains(tween)) return;
-                if (_toRemove.Contains(tween)) return;
-                _toRemove.Add(tween);
-            }
-            else
-            {
-                _runningTweens.Remove(tween);
-                if (tween.Id != null && tween.IsComplete)
-                {
-                    var token = new TokenPairing(tween.Id, tween.AutoKillToken);
-                    Tweener auto;
-                    if (_autoKillDict.TryGetValue(token, out auto) && auto == tween)
-                    {
-                        _autoKillDict.Remove(token);
-                    }
-                }
-            }
-        }
-
-
-        private void LockTweenSet()
-        {
-            _locked = true;
-        }
-
-        private void UnlockTweenSet()
-        {
-            _locked = false;
-
-            if (_toRemove.Count > 0)
-            {
-                var e = _toRemove.GetEnumerator();
-                while (e.MoveNext())
-                {
-                    this.RemoveReference_Imp(e.Current);
-                }
-                _toRemove.Clear();
-            }
-            if (_toAdd.Count > 0)
-            {
-                var e = _toAdd.GetEnumerator();
-                while (e.MoveNext())
-                {
-                    this.AddReference_Imp(e.Current);
-                }
-                _toAdd.Clear();
-            }
-        }
-
 
 
         public static bool IsActiveAutoKill(object id, object autoKillToken)
@@ -266,22 +185,8 @@ namespace com.spacepuppy.Tween
             if (pred == null) return null;
             if (GameLoop.ApplicationClosing) return null;
             if (_instance == null) return null;
-            if (_instance._runningTweens.Count == 0) return null;
 
-            try
-            {
-                _instance.LockTweenSet();
-                var e = _instance._runningTweens.GetEnumerator();
-                while (e.MoveNext())
-                {
-                    if (pred(e.Current)) return e.Current;
-                }
-                return null;
-            }
-            finally
-            {
-                _instance.UnlockTweenSet();
-            }
+            return _instance._runningTweens.Find(pred);
         }
 
         #endregion
@@ -310,7 +215,7 @@ namespace com.spacepuppy.Tween
 
         private void DoUpdate(UpdateSequence updateType)
         {
-            this.LockTweenSet();
+            _runningTweens.Lock();
 
             var e = _runningTweens.GetEnumerator();
             while (e.MoveNext())
@@ -323,12 +228,12 @@ namespace com.spacepuppy.Tween
                     }
                     catch
                     {
-                        _toRemove.Add(e.Current);
+                        _runningTweens.StageRemove(e.Current);
                     }
                 }
             }
 
-            this.UnlockTweenSet();
+            _runningTweens.Unlock();
         }
 
         #endregion
@@ -337,15 +242,18 @@ namespace com.spacepuppy.Tween
 
         private void OnSceneUnloaded(Scene scene)
         {
-            this.LockTweenSet();
+            _runningTweens.Lock();
 
             var e = _runningTweens.GetEnumerator();
             while (e.MoveNext())
             {
-                if (e.Current.GetTargetIsDestroyed()) _toRemove.Add(e.Current);
+                if (e.Current.GetTargetIsDestroyed())
+                {
+                    _runningTweens.StageRemove(e.Current);
+                }
             }
 
-            this.UnlockTweenSet();
+            _runningTweens.Unlock();
         }
 
         #endregion
@@ -503,6 +411,192 @@ namespace com.spacepuppy.Tween
                 //return a ^ b;
                 return (obj.Target?.GetHashCode() ?? 0) ^ (obj.Target?.GetHashCode() ?? 0);
             }
+        }
+
+        private class TweenerCollection : ICollection<Tweener>
+        {
+
+            #region Fields
+
+            private HashSet<Tweener> _tweens = new HashSet<Tweener>();
+            private HashSet<Tweener> _toAdd = new HashSet<Tweener>();
+            private HashSet<Tweener> _toRemove = new HashSet<Tweener>();
+            private int _lockCount = 0;
+
+            #endregion
+
+            #region Properties
+
+            public bool Locked => _lockCount > 0;
+
+            #endregion
+
+            #region Methods
+
+            public Tweener Find(System.Func<Tweener, bool> pred)
+            {
+                if (this.Count == 0) return null;
+
+                try
+                {
+                    this.Lock();
+                    var e = _instance._runningTweens.GetEnumerator();
+                    while (e.MoveNext())
+                    {
+                        if (pred(e.Current)) return e.Current;
+                    }
+                    return null;
+                }
+                finally
+                {
+                    this.Unlock();
+                }
+            }
+
+            public void Lock()
+            {
+                _lockCount++;
+            }
+
+            public void Unlock()
+            {
+                _lockCount--;
+
+                if (_lockCount <= 0)
+                {
+                    _lockCount = 0;
+                    if (_toRemove.Count > 0)
+                    {
+                        var e = _toRemove.GetEnumerator();
+                        while (e.MoveNext())
+                        {
+                            this.Remove(e.Current);
+                        }
+                        _toRemove.Clear();
+                    }
+                    if (_toAdd.Count > 0)
+                    {
+                        var e = _toAdd.GetEnumerator();
+                        while (e.MoveNext())
+                        {
+                            this.Add(e.Current);
+                        }
+                        _toAdd.Clear();
+                    }
+                }
+            }
+
+            internal void StageRemove(Tweener tween)
+            {
+                _toRemove.Add(tween);
+            }
+
+            #endregion
+
+            #region ICollection Interface
+
+            public int Count => _tweens.Count;
+
+            bool ICollection<Tweener>.IsReadOnly => false;
+
+            public void Add(Tweener tween)
+            {
+                if (_lockCount > 0)
+                {
+                    if (_tweens.Contains(tween) || _toAdd.Contains(tween)) return;
+                    _toAdd.Add(tween);
+                }
+                else
+                {
+                    if (_tweens.Contains(tween)) return;
+
+                    _tweens.Add(tween);
+                    tween.Scrub(0f); //scrub to initialize values, this way if update doesn't happen for an entire frame, we get that init value
+
+                    if (tween.Id != null)
+                    {
+                        var token = new TokenPairing(tween.Id, tween.AutoKillToken);
+                        Tweener old;
+                        if (_autoKillDict.TryGetValue(token, out old) && old != tween)
+                        {
+                            old.Kill();
+                        }
+                    }
+                }
+            }
+
+            public bool Remove(Tweener tween)
+            {
+                if (_lockCount > 0)
+                {
+                    if (!_tweens.Contains(tween)) return false;
+                    if (_toRemove.Contains(tween)) return false;
+                    _toRemove.Add(tween);
+                    return true;
+                }
+                else if (_tweens.Remove(tween))
+                {
+                    if (tween.Id != null && tween.IsComplete)
+                    {
+                        var token = new TokenPairing(tween.Id, tween.AutoKillToken);
+                        Tweener auto;
+                        if (_autoKillDict.TryGetValue(token, out auto) && auto == tween)
+                        {
+                            _autoKillDict.Remove(token);
+                        }
+                    }
+                    return true;
+                }
+
+                return false;
+            }
+
+            public void Clear()
+            {
+                if (_lockCount > 0)
+                {
+                    _toRemove.AddRange(_tweens);
+                }
+                else
+                {
+                    _tweens.Clear();
+                }
+            }
+
+            public bool Contains(Tweener item)
+            {
+                if (_lockCount > 0)
+                {
+                    return (_tweens.Contains(item) && !_toRemove.Contains(item)) || _toAdd.Contains(item);
+                }
+                else
+                {
+                    return _tweens.Contains(item);
+                }
+            }
+
+            public void CopyTo(Tweener[] array, int arrayIndex)
+            {
+                _tweens.CopyTo(array, arrayIndex);
+            }
+
+            public HashSet<Tweener>.Enumerator GetEnumerator()
+            {
+                return _tweens.GetEnumerator();
+            }
+
+            IEnumerator<Tweener> IEnumerable<Tweener>.GetEnumerator()
+            {
+                return _tweens.GetEnumerator();
+            }
+
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+            {
+                return _tweens.GetEnumerator();
+            }
+
+            #endregion
+
         }
 
         #endregion

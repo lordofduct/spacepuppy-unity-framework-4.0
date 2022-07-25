@@ -35,6 +35,9 @@ namespace com.spacepuppy.Tween.Events
         [SerializeField()]
         private SPEvent _onTick = new SPEvent("OnTick");
 
+        [SerializeField]
+        private SPEvent _onWrap = new SPEvent("OnWrap");
+
         [SerializeField()]
         [Tooltip("Leave blank for tweens to be unique to this component.")]
         private string _tweenToken;
@@ -99,6 +102,8 @@ namespace com.spacepuppy.Tween.Events
 
         public SPEvent OnTick => _onTick;
 
+        public SPEvent OnWrap => _onWrap;
+
         public string TweenToken
         {
             get => _tweenToken;
@@ -146,6 +151,9 @@ namespace com.spacepuppy.Tween.Events
             if (_onTick?.HasReceivers ?? false)
                 twn.OnStep((t) => _onTick.ActivateTrigger(this, null));
 
+            if (_onWrap?.HasReceivers ?? false)
+                twn.OnWrap((t) => _onWrap.ActivateTrigger(this, null));
+
             twn.Play(true, _tweenToken);
             return true;
         }
@@ -191,7 +199,7 @@ namespace com.spacepuppy.Tween.Events
 
         BaseSPEvent[] IObservableTrigger.GetEvents()
         {
-            return new BaseSPEvent[] { _onTick, _onComplete };
+            return new BaseSPEvent[] { _onTick, _onComplete, _onWrap };
         }
 
         #endregion

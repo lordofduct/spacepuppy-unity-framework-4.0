@@ -55,6 +55,22 @@ namespace com.spacepuppyeditor.Internal
 
         #region Properties
 
+#if UNITY_2021_1_OR_NEWER
+        private PropertyDrawer _internalDrawer;
+        protected PropertyDrawer InternalDrawer
+        {
+            get
+            {
+                if (_internalDrawer != null) return _internalDrawer;
+
+                var lst = _internalPropertyHandler.GetProperty("m_PropertyDrawers", _wrappedObject) as List<PropertyDrawer>;
+                return lst != null ? lst.LastOrDefault() : null;
+            }
+            set
+            {
+                _internalDrawer = value;
+            }
+#else
         protected PropertyDrawer InternalDrawer
         {
             get
@@ -65,6 +81,7 @@ namespace com.spacepuppyeditor.Internal
             {
                 _internalPropertyHandler.SetProperty("m_PropertyDrawer", _wrappedObject, value);
             }
+#endif
         }
 
         protected List<DecoratorDrawer> DecoratorDrawers
@@ -100,6 +117,21 @@ namespace com.spacepuppyeditor.Internal
 
             if (_uimp_HandleAttribute == null) _uimp_HandleAttribute = _internalPropertyHandler.GetUnboundAction<SerializedProperty, PropertyAttribute, FieldInfo, System.Type>("HandleAttribute");
             _uimp_HandleAttribute?.DynamicInvoke(_wrappedObject, property, attribute, field, propertyType);
+        }
+
+        protected virtual PropertyDrawer HandleAttributeAndGetDrawer(SerializedProperty property, PropertyAttribute attribute, System.Reflection.FieldInfo field, System.Type propertyType)
+        {
+            //if (_imp_HandleAttribute == null) _imp_HandleAttribute = _internalPropertyHandler.GetMethod("HandleAttribute", typeof(System.Action<SerializedProperty, PropertyAttribute, System.Reflection.FieldInfo, System.Type>)) as System.Action<SerializedProperty, PropertyAttribute, System.Reflection.FieldInfo, System.Type>;
+            //_imp_HandleAttribute(property, attribute, field, propertyType);
+
+            if (_uimp_HandleAttribute == null) _uimp_HandleAttribute = _internalPropertyHandler.GetUnboundAction<SerializedProperty, PropertyAttribute, FieldInfo, System.Type>("HandleAttribute");
+            _uimp_HandleAttribute?.DynamicInvoke(_wrappedObject, property, attribute, field, propertyType);
+#if UNITY_2021_1_OR_NEWER
+            var lst = _internalPropertyHandler.GetProperty("m_PropertyDrawers", _wrappedObject) as List<PropertyDrawer>;
+            return lst != null ? lst.LastOrDefault() : null;
+#else
+            return _internalPropertyHandler.GetProperty("m_PropertyDrawer", _wrappedObject) as PropertyDrawer;
+#endif
         }
 
         #endregion

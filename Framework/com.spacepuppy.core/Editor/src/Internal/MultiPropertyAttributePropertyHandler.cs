@@ -10,6 +10,7 @@ using com.spacepuppy.Utils;
 
 namespace com.spacepuppyeditor.Internal
 {
+
     internal class MultiPropertyAttributePropertyHandler : UnityInternalPropertyHandler
     {
 
@@ -73,7 +74,7 @@ namespace com.spacepuppyeditor.Internal
                 }
             }
 
-            if(_drawer == null)
+            if (_drawer == null)
             {
                 if (_modifiers != null && _modifiers.Count > 0)
                 {
@@ -94,7 +95,7 @@ namespace com.spacepuppyeditor.Internal
 
         protected override void HandleAttribute(SerializedProperty property, PropertyAttribute attribute, System.Reflection.FieldInfo field, System.Type propertyType)
         {
-            if(attribute is PropertyModifierAttribute)
+            if (attribute is PropertyModifierAttribute)
             {
                 var mtp = ScriptAttributeUtility.GetDrawerTypeForType(attribute.GetType());
                 if (TypeUtil.IsType(mtp, typeof(PropertyModifier)))
@@ -127,11 +128,12 @@ namespace com.spacepuppyeditor.Internal
             {
                 var drawerTypeForType = ScriptAttributeUtility.GetDrawerTypeForType(attribute.GetType());
                 if (drawerTypeForType == null)
+                {
                     return;
+                }
                 else if (typeof(PropertyDrawer).IsAssignableFrom(drawerTypeForType))
                 {
-                    base.HandleAttribute(property, attribute, field, propertyType);
-                    var drawer = this.InternalDrawer; //this retrieves the drawer that was selected by called 'base.HandleAttribute'
+                    var drawer = base.HandleAttributeAndGetDrawer(property, attribute, field, propertyType);
                     this.AppendDrawer(drawer);
                 }
                 else if (typeof(DecoratorDrawer).IsAssignableFrom(drawerTypeForType))
@@ -150,17 +152,17 @@ namespace com.spacepuppyeditor.Internal
             if (_drawer == null)
             {
                 //no drawer has been set before... lets see if we got one
-                if(drawer is PropertyModifier)
+                if (drawer is PropertyModifier)
                 {
                     if (_modifiers == null) _modifiers = new List<PropertyModifier>();
                     _modifiers.Add(drawer as PropertyModifier);
-                    
-                    if(_propertyIsArray)
+
+                    if (_propertyIsArray)
                     {
                         _drawer = new ArrayPropertyDrawer(null);
                     }
                 }
-                else if(drawer != null)
+                else if (drawer != null)
                 {
                     //we got a new drawer, set it
                     if (!(drawer is IArrayHandlingPropertyDrawer) && _propertyIsArray) drawer = new ArrayPropertyDrawer(drawer);
@@ -355,7 +357,7 @@ namespace com.spacepuppyeditor.Internal
                     for (int i = 0; i < property.arraySize; i++)
                     {
                         var pchild = property.GetArrayElementAtIndex(i);
-                        if(_drawer != null)
+                        if (_drawer != null)
                             h += _drawer.GetPropertyHeight(pchild, EditorHelper.TempContent(pchild.displayName)) + 2f;
                         else
                             h += SPEditorGUI.GetPropertyHeight(pchild, EditorHelper.TempContent(pchild.displayName)) + 2f;
@@ -391,7 +393,7 @@ namespace com.spacepuppyeditor.Internal
                         {
                             var pchild = property.GetArrayElementAtIndex(i);
                             lbl.text = pchild.displayName;
-                            if(_drawer != null)
+                            if (_drawer != null)
                             {
                                 var h = _drawer.GetPropertyHeight(pchild, lbl);
                                 rect = new Rect(rect.xMin, rect.yMax + 2f, rect.width, h);
@@ -434,7 +436,7 @@ namespace com.spacepuppyeditor.Internal
 
         }
 
-        
+
 
         private class DefaultPropertyDrawer : PropertyDrawer
         {

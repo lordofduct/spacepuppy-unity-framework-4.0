@@ -583,7 +583,7 @@ namespace com.spacepuppy
         public bool ManualTick(MonoBehaviour handle)
         {
             if (_owner != null || _state != RadicalCoroutineOperatingState.Inactive) throw new System.InvalidOperationException("Can not manually operate a RadicalCoroutine that is already being operated.");
-            if (handle == null) throw new System.ArgumentNullException("handle");
+            if (object.ReferenceEquals(handle, null)) throw new System.ArgumentNullException(nameof(handle));
 
             _state = RadicalCoroutineOperatingState.Active;
             bool result = false;
@@ -604,6 +604,11 @@ namespace com.spacepuppy
 
                 if (current is YieldInstruction) // || current is WWW) //OBSOLETE - WWW is obsolete
                 {
+                    if (ObjUtil.IsDestroyed(handle))
+                    {
+                        throw new System.InvalidOperationException("Can not wait on a UnityEngine.YieldInstruction from within a RadicalCoroutine with a destroyed MonoBehaviour handle.");
+                    }
+
                     var wait = ManualWaitForGeneric.Create(this, handle, current);
                     _stack.Push(wait);
                     wait.Start();
@@ -772,7 +777,7 @@ namespace com.spacepuppy
 
                 //deal with the current yieldObject
                 if (current is IAsyncWaitHandle handle) current = handle.AsYieldInstruction();
-                switch(current)
+                switch (current)
                 {
                     case null:
                         //do nothing
@@ -1240,9 +1245,9 @@ namespace com.spacepuppy
         };
 
         private static readonly System.Action _delayedReleaseCallback = () => {
-            lock(_toRelease)
+            lock (_toRelease)
             {
-                while(_toRelease.Count > 0)
+                while (_toRelease.Count > 0)
                 {
                     Release(_toRelease.Pop());
                 }
@@ -1305,7 +1310,7 @@ namespace com.spacepuppy
         {
             if (routine == null) return null;
 
-            if(!routine.Finished)
+            if (!routine.Finished)
             {
                 IRadicalYieldInstruction h = routine;
                 routine.OnFinished += _onPooledComplete;
@@ -1355,7 +1360,7 @@ namespace com.spacepuppy
         {
             if (routine == null) return false;
 
-            lock(_toRelease)
+            lock (_toRelease)
             {
                 _toRelease.Push(routine);
                 routine = null;
@@ -1456,7 +1461,7 @@ namespace com.spacepuppy
 
             public bool MoveNext()
             {
-                switch(_state)
+                switch (_state)
                 {
                     case States.Uninitialized:
                         _state = States.Running;

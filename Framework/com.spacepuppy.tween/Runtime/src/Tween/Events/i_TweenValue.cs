@@ -6,6 +6,7 @@ using com.spacepuppy.Events;
 namespace com.spacepuppy.Tween.Events
 {
 
+    [System.Obsolete("USE i_Tween instead")]
     public class i_TweenValue : AutoTriggerable, IObservableTrigger
     {
 

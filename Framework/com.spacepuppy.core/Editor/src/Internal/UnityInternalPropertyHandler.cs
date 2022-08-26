@@ -66,20 +66,12 @@ namespace com.spacepuppyeditor.Internal
                 var lst = _internalPropertyHandler.GetProperty("m_PropertyDrawers", _wrappedObject) as List<PropertyDrawer>;
                 return lst != null ? lst.LastOrDefault() : null;
             }
-            set
-            {
-                _internalDrawer = value;
-            }
 #else
         protected PropertyDrawer InternalDrawer
         {
             get
             {
                 return _internalPropertyHandler.GetProperty("m_PropertyDrawer", _wrappedObject) as PropertyDrawer;
-            }
-            set
-            {
-                _internalPropertyHandler.SetProperty("m_PropertyDrawer", _wrappedObject, value);
             }
 #endif
         }
@@ -109,6 +101,30 @@ namespace com.spacepuppyeditor.Internal
         #endregion
 
         #region Methods
+
+        protected void ConfigureInternalDrawer(PropertyDrawer drawer)
+        {
+#if UNITY_2021_1_OR_NEWER
+            _internalDrawer = drawer;
+
+            var lst = _internalPropertyHandler.GetProperty("m_PropertyDrawers", _wrappedObject) as List<PropertyDrawer>;
+            if (lst == null)
+            {
+                lst = new List<PropertyDrawer>() { drawer };
+                _internalPropertyHandler.SetProperty("m_PropertyDrawers", _wrappedObject, lst);
+            }
+            else if (lst.Count == 0)
+            {
+                lst.Add(drawer);
+            }
+            else
+            {
+                lst[0] = drawer;
+            }
+#else
+            _internalPropertyHandler.SetProperty("m_PropertyDrawer", _wrappedObject, drawer);
+#endif
+        }
 
         protected virtual void HandleAttribute(SerializedProperty property, PropertyAttribute attribute, System.Reflection.FieldInfo field, System.Type propertyType)
         {

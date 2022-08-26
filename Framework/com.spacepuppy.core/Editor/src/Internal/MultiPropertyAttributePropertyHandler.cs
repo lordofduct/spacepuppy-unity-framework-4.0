@@ -19,7 +19,6 @@ namespace com.spacepuppyeditor.Internal
         private System.Reflection.FieldInfo _fieldInfo;
         private bool _propertyIsArray;
 
-        private PropertyDrawer _drawer;
         private List<PropertyModifier> _modifiers;
         private string _customDisplayName;
         private string _customTooltip;
@@ -59,11 +58,12 @@ namespace com.spacepuppyeditor.Internal
             if (fieldType.IsListType()) fieldType = fieldType.GetElementTypeOfListType();
 
             var fieldTypePropertyDrawerType = ScriptAttributeUtility.GetDrawerTypeForType(fieldType);
+            PropertyDrawer drawer = null;
             if (fieldTypePropertyDrawerType != null && TypeUtil.IsType(fieldTypePropertyDrawerType, typeof(PropertyDrawer)))
             {
-                _drawer = PropertyDrawerActivator.Create(fieldTypePropertyDrawerType, null, _fieldInfo);
-                if (_drawer != null && _propertyIsArray) _drawer = new ArrayPropertyDrawer(_drawer);
-                this.InternalDrawer = _drawer;
+                drawer = PropertyDrawerActivator.Create(fieldTypePropertyDrawerType, null, _fieldInfo);
+                if (drawer != null && _propertyIsArray) drawer = new ArrayPropertyDrawer(drawer);
+                this.ConfigureInternalDrawer(drawer);
             }
 
             if (attribs != null)
@@ -74,36 +74,33 @@ namespace com.spacepuppyeditor.Internal
                 }
             }
 
-            if (_drawer == null)
+            if (this.InternalDrawer == null)
             {
                 if (_modifiers != null && _modifiers.Count > 0)
                 {
                     var modifier = _modifiers.Last();
                     modifier.IsDrawer = true;
-                    _drawer = modifier;
-                    if (_propertyIsArray) _drawer = new ArrayPropertyDrawer(_drawer);
-                    this.InternalDrawer = _drawer;
+                    drawer = modifier;
+                    if (_propertyIsArray) drawer = new ArrayPropertyDrawer(drawer);
+                    this.ConfigureInternalDrawer(drawer);
                 }
                 else
                 {
-                    _drawer = DefaultPropertyDrawer.SharedInstance;
-                    if (_drawer != null && _propertyIsArray) _drawer = new ArrayPropertyDrawer(_drawer);
-                    this.InternalDrawer = _drawer;
+                    drawer = DefaultPropertyDrawer.SharedInstance;
+                    if (drawer != null && _propertyIsArray) drawer = new ArrayPropertyDrawer(drawer);
+                    this.ConfigureInternalDrawer(drawer);
                 }
             }
         }
 
         protected override void HandleAttribute(SerializedProperty property, PropertyAttribute attribute, System.Reflection.FieldInfo field, System.Type propertyType)
         {
-            if (attribute is PropertyModifierAttribute)
+            var drawerTypeForType = ScriptAttributeUtility.GetDrawerTypeForType(attribute.GetType());
+            if (TypeUtil.IsType(drawerTypeForType, typeof(PropertyModifier)))
             {
-                var mtp = ScriptAttributeUtility.GetDrawerTypeForType(attribute.GetType());
-                if (TypeUtil.IsType(mtp, typeof(PropertyModifier)))
-                {
-                    var modifier = PropertyDrawerActivator.Create(mtp, attribute, field) as PropertyModifier;
-                    if (_modifiers == null) _modifiers = new List<PropertyModifier>();
-                    _modifiers.Add(modifier);
-                }
+                var modifier = PropertyDrawerActivator.Create(drawerTypeForType, attribute, field) as PropertyModifier;
+                if (_modifiers == null) _modifiers = new List<PropertyModifier>();
+                _modifiers.Add(modifier);
             }
             else if (attribute is DisplayNameAttribute)
             {
@@ -126,7 +123,6 @@ namespace com.spacepuppyeditor.Internal
             }
             else
             {
-                var drawerTypeForType = ScriptAttributeUtility.GetDrawerTypeForType(attribute.GetType());
                 if (drawerTypeForType == null)
                 {
                     return;
@@ -149,7 +145,8 @@ namespace com.spacepuppyeditor.Internal
 
         protected void AppendDrawer(PropertyDrawer drawer)
         {
-            if (_drawer == null)
+            var internaldrawer = this.InternalDrawer;
+            if (internaldrawer == null)
             {
                 //no drawer has been set before... lets see if we got one
                 if (drawer is PropertyModifier)
@@ -159,17 +156,17 @@ namespace com.spacepuppyeditor.Internal
 
                     if (_propertyIsArray)
                     {
-                        _drawer = new ArrayPropertyDrawer(null);
+                        internaldrawer = new ArrayPropertyDrawer(null);
                     }
                 }
                 else if (drawer != null)
                 {
                     //we got a new drawer, set it
                     if (!(drawer is IArrayHandlingPropertyDrawer) && _propertyIsArray) drawer = new ArrayPropertyDrawer(drawer);
-                    _drawer = drawer;
+                    internaldrawer = drawer;
                 }
             }
-            else if (drawer != _drawer)
+            else if (drawer != internaldrawer)
             {
                 //a new drawer was created, lets see what we need to do with it compared to the last one
                 if (drawer is PropertyModifier)
@@ -180,44 +177,44 @@ namespace com.spacepuppyeditor.Internal
                 else if (drawer is IArrayHandlingPropertyDrawer)
                 {
                     //got an array drawer, this overrides previous drawers
-                    if (_drawer is IArrayHandlingPropertyDrawer)
+                    if (internaldrawer is IArrayHandlingPropertyDrawer)
                     {
-                        var temp = _drawer as IArrayHandlingPropertyDrawer;
-                        _drawer = drawer;
-                        (_drawer as IArrayHandlingPropertyDrawer).InternalDrawer = temp.InternalDrawer;
+                        var temp = internaldrawer as IArrayHandlingPropertyDrawer;
+                        internaldrawer = drawer;
+                        (internaldrawer as IArrayHandlingPropertyDrawer).InternalDrawer = temp.InternalDrawer;
                     }
-                    else if (_drawer != null)
+                    else if (internaldrawer != null)
                     {
-                        var temp = _drawer;
-                        _drawer = drawer;
-                        (_drawer as IArrayHandlingPropertyDrawer).InternalDrawer = temp;
+                        var temp = internaldrawer;
+                        internaldrawer = drawer;
+                        (internaldrawer as IArrayHandlingPropertyDrawer).InternalDrawer = temp;
                     }
                     else
                     {
-                        _drawer = drawer;
+                        internaldrawer = drawer;
                     }
                 }
-                else if (_drawer is IArrayHandlingPropertyDrawer)
+                else if (internaldrawer is IArrayHandlingPropertyDrawer)
                 {
                     //got an internal drawer for the existing array drawer
-                    (_drawer as IArrayHandlingPropertyDrawer).InternalDrawer = drawer;
+                    (internaldrawer as IArrayHandlingPropertyDrawer).InternalDrawer = drawer;
                 }
                 else
                 {
                     //we got a new drawer, set it
                     if (_propertyIsArray)
                     {
-                        _drawer = new ArrayPropertyDrawer(drawer);
+                        internaldrawer = new ArrayPropertyDrawer(drawer);
                     }
                     else
                     {
-                        _drawer = drawer;
+                        internaldrawer = drawer;
                     }
                 }
             }
 
             //ensure internal drawer is set appropriately
-            this.InternalDrawer = _drawer;
+            this.ConfigureInternalDrawer(internaldrawer);
         }
 
 

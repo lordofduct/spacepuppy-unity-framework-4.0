@@ -8,6 +8,9 @@ namespace com.spacepuppy
     /// </summary>
     public class SPConstants
     {
+
+        public static readonly System.DateTime UnixEpoch = new System.DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
+
         /// <summary>
         /// A hard minimum delta time to consider waiting one frame. Used in places like Invoke to determine if a WaitForSeconds/WaitForDuration should be used.
         /// </summary>

@@ -45,7 +45,7 @@ namespace com.spacepuppy.DataBinding
             if (context.ConfiguredDataSource == null) return Enumerable.Empty<string>();
 
             System.Type sourcetype = null;
-            if (context.RespectProxySources || context.RespectDataProviderAsSource)
+            if (context.RespectProxySources || !(context.ConfiguredDataSource is IDataProvider) || context.RespectDataProviderAsSource)
             {
                 sourcetype = IProxyExtensions.GetType(context.ConfiguredDataSource, context.RespectProxySources);
             }

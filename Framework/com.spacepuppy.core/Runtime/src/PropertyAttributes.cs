@@ -551,7 +551,7 @@ namespace com.spacepuppy
     /// Display a field in the inspector only if the property/method returns true (supports private).
     /// </summary>
     [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
-    public class DisplayIfAttribute : SPPropertyAttribute
+    public class DisplayIfAttribute : PropertyModifierAttribute
     {
         public readonly string MemberName;
         public bool DisplayIfNot;

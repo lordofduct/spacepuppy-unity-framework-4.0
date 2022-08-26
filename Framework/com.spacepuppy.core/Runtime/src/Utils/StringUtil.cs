@@ -420,6 +420,13 @@ namespace com.spacepuppy.Utils
             return _pool.GetInstance();
         }
 
+        public static StringBuilder GetTempStringBuilder(string sval)
+        {
+            var sb = _pool.GetInstance();
+            sb.Append(sval);
+            return sb;
+        }
+
         public static string Release(StringBuilder b)
         {
             if (b == null) return null;

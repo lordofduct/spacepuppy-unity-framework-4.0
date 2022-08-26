@@ -14,6 +14,8 @@ namespace com.spacepuppyeditor.Core
     public class TimeUnitsSelectorPropertyDrawer : PropertyDrawer
     {
 
+        private com.spacepuppyeditor.Core.Geom.IntervalInspector _intervalInspector;
+
         #region Get/Set TimeUnits
 
         //private static Dictionary<int, TimeUnits> _unitsCache = new Dictionary<int, TimeUnits>();
@@ -147,6 +149,15 @@ namespace com.spacepuppyeditor.Core
                         property.SetNumericValue(dur);
                     }
                 }
+            }
+            else if (property.type == nameof(com.spacepuppy.Geom.Interval))
+            {
+                var units = GetUnits(property, this.DefaultUnits, this.TimeUnitsCalculator);
+
+                if (_intervalInspector == null) _intervalInspector = new com.spacepuppyeditor.Core.Geom.IntervalInspector(this.fieldInfo);
+
+                _intervalInspector.ValueScale = this.TimeUnitsCalculator.SecondsToTimeUnits(units, 1f);
+                _intervalInspector.OnGUI(r, property, GUIContent.none);
             }
             else
             {

@@ -20,6 +20,11 @@ namespace com.spacepuppy.Events
         private SPEvent _targets = new SPEvent("Targets");
 
         [SerializeField]
+        [DisplayIf("SelectOnlyActiveTargets")]
+        [Tooltip("If 'Select Only Active Targets' is true and no target is found when attempting to trigger, this is called in its place.")]
+        private SPEvent _failOver = new SPEvent("FailOver");
+
+        [SerializeField]
         private bool _selectOnlyActiveTargets;
 
         [SerializeField()]
@@ -58,6 +63,8 @@ namespace com.spacepuppy.Events
 
         public SPEvent Targets => _targets;
 
+        public SPEvent FailOver => _failOver;
+
         #endregion
         
         #region ITriggerableMechanism Interface
@@ -66,22 +73,24 @@ namespace com.spacepuppy.Events
         {
             if (!this.CanTrigger) return false;
 
+            if (!_passAlongTriggerArg) arg = null;
+
             if (_delay.Seconds > 0f)
             {
                 this.InvokeGuaranteed(() =>
                 {
-                    if (this._passAlongTriggerArg)
-                        _targets.ActivateRandomTrigger(this, arg, true, _selectOnlyActiveTargets, _rng.Value);
-                    else
-                        _targets.ActivateRandomTrigger(this, null, true, _selectOnlyActiveTargets, _rng.Value);
+                    if (!_targets.ActivateRandomTrigger(this, arg, true, _selectOnlyActiveTargets, _rng.Value) && _selectOnlyActiveTargets)
+                    {
+                        _failOver.ActivateTrigger(this, arg);
+                    }
                 }, _delay.Seconds, _delay.TimeSupplier);
             }
             else
             {
-                if (this._passAlongTriggerArg)
-                    _targets.ActivateRandomTrigger(this, arg, true, _selectOnlyActiveTargets, _rng.Value);
-                else
-                    _targets.ActivateRandomTrigger(this, null, true, _selectOnlyActiveTargets, _rng.Value);
+                if (!_targets.ActivateRandomTrigger(this, arg, true, _selectOnlyActiveTargets, _rng.Value) && _selectOnlyActiveTargets)
+                {
+                    _failOver.ActivateTrigger(this, arg);
+                }
             }
 
             return true;
@@ -93,7 +102,7 @@ namespace com.spacepuppy.Events
 
         BaseSPEvent[] IObservableTrigger.GetEvents()
         {
-            return new BaseSPEvent[] { _targets };
+            return new BaseSPEvent[] { _targets, _failOver };
         }
 
         #endregion

@@ -29,12 +29,19 @@ namespace com.spacepuppy.Events
         }
         protected virtual void OnTriggerActivated(object sender, object arg)
         {
-            if (_triggerActivated != null)
+            try
             {
-                var e = TempEventArgs.Create(arg);
-                var d = _triggerActivated;
-                d(sender, e);
-                TempEventArgs.Release(e);
+                if (_triggerActivated != null)
+                {
+                    var e = TempEventArgs.Create(arg);
+                    var d = _triggerActivated;
+                    d(sender, e);
+                    TempEventArgs.Release(e);
+                }
+            }
+            catch(System.Exception ex)
+            {
+                Debug.LogException(ex);
             }
         }
         protected bool HasTriggerActivatedListeners => _triggerActivated != null;
@@ -567,31 +574,46 @@ namespace com.spacepuppy.Events
             base.ActivateTriggerAt(index, sender, arg);
         }
 
-        public virtual void ActivateRandomTrigger(object sender, object arg, bool considerWeights, bool selectOnlyIfActive, IRandom rng = null)
+        public virtual bool ActivateRandomTrigger(object sender, object arg, bool considerWeights, bool selectOnlyIfActive, IRandom rng = null)
         {
-            if (this.Targets.Count > 0 && !this.CurrentlyHijacked)
+            try
             {
-                EventTriggerTarget trig;
-                if (selectOnlyIfActive)
+                bool result = false;
+                if (this.Targets.Count > 0 && !this.CurrentlyHijacked)
                 {
-                    using (var lst = TempCollection.GetList<EventTriggerTarget>())
+                    EventTriggerTarget trig;
+                    if (selectOnlyIfActive)
                     {
-                        for (int i = 0; i < this.Targets.Count; i++)
+                        using (var lst = TempCollection.GetList<EventTriggerTarget>())
                         {
-                            var go = GameObjectUtil.GetGameObjectFromSource(this.Targets[i].CalculateTarget(arg));
-                            if (object.ReferenceEquals(go, null) || go.IsAliveAndActive()) lst.Add(this.Targets[i]);
+                            for (int i = 0; i < this.Targets.Count; i++)
+                            {
+                                var go = GameObjectUtil.GetGameObjectFromSource(this.Targets[i].CalculateTarget(arg));
+                                if (object.ReferenceEquals(go, null) || go.IsAliveAndActive()) lst.Add(this.Targets[i]);
+                            }
+                            trig = (considerWeights) ? lst.PickRandom((t) => { return t.Weight; }, rng) : lst.PickRandom(rng);
                         }
-                        trig = (considerWeights) ? lst.PickRandom((t) => { return t.Weight; }, rng) : lst.PickRandom(rng);
+                    }
+                    else
+                    {
+                        trig = (considerWeights) ? this.Targets.PickRandom((t) => { return t.Weight; }, rng) : this.Targets.PickRandom(rng);
+                    }
+
+                    if (trig != null)
+                    {
+                        result = true;
+                        trig.Trigger(sender, arg);
                     }
                 }
-                else
-                {
-                    trig = (considerWeights) ? this.Targets.PickRandom((t) => { return t.Weight; }, rng) : this.Targets.PickRandom(rng);
-                }
-                if (trig != null) trig.Trigger(sender, arg);
-            }
 
-            this.OnTriggerActivated(sender, arg);
+                this.OnTriggerActivated(sender, arg);
+                return result;
+            }
+            catch(System.Exception ex)
+            {
+                Debug.LogException(ex);
+                return false;
+            }
         }
 
         #endregion

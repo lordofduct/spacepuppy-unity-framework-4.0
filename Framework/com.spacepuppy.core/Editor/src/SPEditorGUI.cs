@@ -592,7 +592,51 @@ namespace com.spacepuppyeditor
                 var h = GetPropertyHeight(iterator);
                 var rect = new Rect(position.xMin, position.yMin, position.width, h);
                 position = new Rect(position.xMin, rect.yMax, position.width, position.height - h);
-                PropertyField(rect, iterator, EditorHelper.TempContent(iterator.displayName), true);
+                PropertyField(rect, iterator, EditorHelper.TempContent(iterator.displayName, iterator.tooltip), true);
+            }
+            return EditorGUI.EndChangeCheck();
+        }
+
+        public static bool FlatChildPropertyFieldExcept(Rect position, SerializedProperty property, params string[] names)
+        {
+            if (property == null) throw new System.ArgumentNullException("property");
+
+            EditorGUI.BeginChangeCheck();
+            var iterator = property.Copy();
+            var end = property.GetEndProperty();
+            for (bool enterChildren = true; iterator.NextVisible(enterChildren); enterChildren = false)
+            {
+                if (SerializedProperty.EqualContents(iterator, end))
+                    break;
+
+                if (names?.Contains(iterator.name) ?? false) continue;
+
+                var h = GetPropertyHeight(iterator);
+                var rect = new Rect(position.xMin, position.yMin, position.width, h);
+                position = new Rect(position.xMin, rect.yMax, position.width, position.height - h);
+                PropertyField(rect, iterator, EditorHelper.TempContent(iterator.displayName, iterator.tooltip), true);
+            }
+            return EditorGUI.EndChangeCheck();
+        }
+
+        public static bool FlatChildPropertyFieldExcept(Rect position, SerializedProperty property, System.Func<SerializedProperty, bool> callback)
+        {
+            if (property == null) throw new System.ArgumentNullException("property");
+
+            EditorGUI.BeginChangeCheck();
+            var iterator = property.Copy();
+            var end = property.GetEndProperty();
+            for (bool enterChildren = true; iterator.NextVisible(enterChildren); enterChildren = false)
+            {
+                if (SerializedProperty.EqualContents(iterator, end))
+                    break;
+
+                if (callback?.Invoke(iterator) ?? false) continue;
+
+                var h = GetPropertyHeight(iterator);
+                var rect = new Rect(position.xMin, position.yMin, position.width, h);
+                position = new Rect(position.xMin, rect.yMax, position.width, position.height - h);
+                PropertyField(rect, iterator, EditorHelper.TempContent(iterator.displayName, iterator.tooltip), true);
             }
             return EditorGUI.EndChangeCheck();
         }

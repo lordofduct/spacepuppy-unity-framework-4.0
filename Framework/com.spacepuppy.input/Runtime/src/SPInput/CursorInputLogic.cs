@@ -732,7 +732,11 @@ namespace com.spacepuppy.SPInput
 
             public virtual bool UseBroadcast => _signalTarget >= SignalTargetOptions.BroadcastCollider;
 
+#if (UNITY_IOS || UNITY_ANDROID)
+            public virtual bool CursorIsBlocked => _eventSystemUIBlocks && ((EventSystem.current?.IsPointerOverGameObject() ?? false) || (EventSystem.current?.IsPointerOverGameObject(0) ?? false));
+#else
             public virtual bool CursorIsBlocked => _eventSystemUIBlocks && (EventSystem.current?.IsPointerOverGameObject() ?? false);
+#endif
 
             public virtual Ray GetRay()
             {
@@ -864,7 +868,11 @@ namespace com.spacepuppy.SPInput
 
             public virtual bool UseBroadcast => _signalTarget >= SignalTargetOptions.BroadcastCollider;
 
+#if (UNITY_IOS || UNITY_ANDROID)
+            public virtual bool CursorIsBlocked => _eventSystemUIBlocks && ((EventSystem.current?.IsPointerOverGameObject() ?? false) || (EventSystem.current?.IsPointerOverGameObject(0) ?? false));
+#else
             public virtual bool CursorIsBlocked => _eventSystemUIBlocks && (EventSystem.current?.IsPointerOverGameObject() ?? false);
+#endif
 
             public virtual Ray GetRay()
             {

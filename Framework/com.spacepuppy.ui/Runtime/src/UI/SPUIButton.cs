@@ -17,6 +17,13 @@ namespace com.spacepuppy.UI
         [SerializeField]
         private SPEvent _onClick = new SPEvent("OnClick");
 
+        [SerializeField]
+        [TimeUnitsSelector("Seconds")]
+        private float _clickDuration = float.PositiveInfinity;
+
+        [System.NonSerialized]
+        private double _lastDownTime;
+
         #endregion
 
         #region CONSTRUCTOR
@@ -43,11 +50,21 @@ namespace com.spacepuppy.UI
             _onClick.ActivateTrigger(this, null);
         }
 
+        public override void OnPointerDown(PointerEventData eventData)
+        {
+            base.OnPointerDown(eventData);
+            _lastDownTime = Time.unscaledTimeAsDouble;
+        }
+
         public virtual void OnPointerClick(PointerEventData eventData)
         {
             if (eventData.button != PointerEventData.InputButton.Left) return;
 
-            SignalOnClick();
+            double delta = Time.unscaledTimeAsDouble - _lastDownTime;
+            if (delta >= 0f && delta <= _clickDuration)
+            {
+                SignalOnClick();
+            }
         }
 
         public virtual void OnSubmit(BaseEventData eventData)

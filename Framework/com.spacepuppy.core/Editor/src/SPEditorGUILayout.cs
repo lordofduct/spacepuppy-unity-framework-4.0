@@ -147,6 +147,44 @@ namespace com.spacepuppyeditor
             return EditorGUI.EndChangeCheck();
         }
 
+        public static bool FlatChildPropertyFieldExcept(SerializedProperty property, params string[] names)
+        {
+            if (property == null) throw new System.ArgumentNullException("property");
+
+            EditorGUI.BeginChangeCheck();
+            var iterator = property.Copy();
+            var end = property.GetEndProperty();
+            for (bool enterChildren = true; iterator.NextVisible(enterChildren); enterChildren = false)
+            {
+                if (SerializedProperty.EqualContents(iterator, end))
+                    break;
+
+                if (names?.Contains(iterator.name) ?? false) continue;
+
+                PropertyField(iterator, EditorHelper.TempContent(iterator.displayName, iterator.tooltip), true);
+            }
+            return EditorGUI.EndChangeCheck();
+        }
+
+        public static bool FlatChildPropertyFieldExcept(SerializedProperty property, System.Func<SerializedProperty, bool> callback)
+        {
+            if (property == null) throw new System.ArgumentNullException("property");
+
+            EditorGUI.BeginChangeCheck();
+            var iterator = property.Copy();
+            var end = property.GetEndProperty();
+            for (bool enterChildren = true; iterator.NextVisible(enterChildren); enterChildren = false)
+            {
+                if (SerializedProperty.EqualContents(iterator, end))
+                    break;
+
+                if (callback?.Invoke(iterator) ?? false) continue;
+
+                PropertyField(iterator, EditorHelper.TempContent(iterator.displayName, iterator.tooltip), true);
+            }
+            return EditorGUI.EndChangeCheck();
+        }
+
         #endregion
 
         #region ObjectField w/ X-btn
@@ -513,8 +551,6 @@ namespace com.spacepuppyeditor
         #endregion
 
 
-
-
         #region SelectionTabs
 
         public static int SelectionTabs(int mode, string[] modes, int xCount)
@@ -528,7 +564,7 @@ namespace com.spacepuppyeditor
             rect.x += 4;
             rect.width -= 7;
 
-            if(currentRow == yCount - 1)
+            if (currentRow == yCount - 1)
             {
                 //if selected row is last row, don't bother remapping
                 return GUI.SelectionGrid(rect, mode, modes, 2, gridStyle);
@@ -537,7 +573,7 @@ namespace com.spacepuppyeditor
             {
                 //remap so that selected row is the last row
                 var altModes = modes.Clone() as string[];
-                for(int i = 0; i < xCount; i++)
+                for (int i = 0; i < xCount; i++)
                 {
                     altModes[(altModes.Length - xCount) + i] = modes[xCount * currentRow + i]; //move selected row to end
                     altModes[xCount * currentRow + i] = modes[(modes.Length - xCount) + i]; //move last row to selected row
@@ -545,14 +581,14 @@ namespace com.spacepuppyeditor
                 int altMode = (modes.Length - xCount) + (mode % xCount);
                 EditorGUI.BeginChangeCheck();
                 altMode = GUI.SelectionGrid(rect, altMode, altModes, 2, gridStyle);
-                if(EditorGUI.EndChangeCheck())
+                if (EditorGUI.EndChangeCheck())
                 {
                     var newRow = Mathf.FloorToInt((float)altMode / (float)xCount);
                     if (newRow == yCount - 1)
                     {
                         return (currentRow * xCount) + (altMode % xCount);
                     }
-                    else if(newRow == currentRow)
+                    else if (newRow == currentRow)
                     {
                         return (modes.Length - xCount) + (altMode % xCount);
                     }

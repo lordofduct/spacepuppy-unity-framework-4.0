@@ -34,6 +34,7 @@ namespace com.spacepuppy.Cameras
         {
             base.Awake();
 
+            if (object.ReferenceEquals(_camera, null)) _camera = this.GetComponent<Camera>();
             if (_camera != null)
             {
                 CameraPool.Register(this);

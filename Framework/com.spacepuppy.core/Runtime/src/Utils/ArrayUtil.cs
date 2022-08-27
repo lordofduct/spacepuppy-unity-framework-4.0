@@ -431,7 +431,7 @@ namespace com.spacepuppy.Utils
             {
                 int i;
                 float w;
-                float total = 0f;
+                double total = 0f;
                 for (i = 0; i < arr.Count; i++)
                 {
                     w = weightPredicate(arr[i]);
@@ -441,8 +441,8 @@ namespace com.spacepuppy.Utils
                 }
 
                 if (rng == null) rng = RandomUtil.Standard;
-                float r = rng.Next();
-                float s = 0f;
+                double r = rng.NextDouble();
+                double s = 0f;
 
                 for (i = 0; i < weights.Count; i++)
                 {
@@ -460,6 +460,80 @@ namespace com.spacepuppy.Utils
                 i = arr.Count - 1;
                 while (i > 0 && weights[i] <= 0f) i--;
                 return arr[i];
+            }
+        }
+
+        public static T[] PickRandom<T>(this IEnumerable<T> lst, System.Func<T, float> weightPredicate, int count, IRandom rng = null)
+        {
+            if (count <= 0) return ArrayUtil.Empty<T>();
+            if (count == 1) return new T[] { PickRandom<T>(lst, weightPredicate, rng) };
+
+
+            using (var arr = TempCollection.GetList<T>(lst))
+            {
+                if (arr.Count < count) return arr.ToArray();
+
+                var result = new T[count];
+                int ri = 0;
+                using (var weights = com.spacepuppy.Collections.TempCollection.GetList<float>())
+                {
+                    int i;
+                    float w = 0f;
+                    double total = 0f;
+                    for (i = 0; i < arr.Count; i++)
+                    {
+                        w = weightPredicate(arr[i]);
+                        if (float.IsPositiveInfinity(w))
+                        {
+                            result[ri] = arr[i];
+                            ri++;
+                            arr.RemoveAt(i);
+                            i--;
+                            if (ri >= result.Length) return result;
+                        }
+                        else
+                        {
+                            if (w >= 0f && !float.IsNaN(w)) total += w;
+                            weights.Add(w);
+                        }
+                    }
+
+                    if (rng == null) rng = RandomUtil.Standard;
+
+                    while (ri < result.Length)
+                    {
+                        double r = rng.NextDouble();
+                        double s = 0f;
+                        int choice = -1;
+                        for (i = 0; i < weights.Count; i++)
+                        {
+                            w = weights[i];
+                            if (float.IsNaN(w) || w <= 0f) continue;
+
+                            s += w / total;
+                            if (s > r)
+                            {
+                                choice = i;
+                                break;
+                            }
+                        }
+
+                        if (choice < 0)
+                        {
+                            //should only get here if last element had a zero weight, and the r was large
+                            choice = arr.Count - 1;
+                            while (choice > 0 && weights[choice] <= 0f) choice--;
+                        }
+                        result[ri] = arr[choice];
+                        ri++;
+                        w = weights[choice];
+                        arr.RemoveAt(choice);
+                        weights.RemoveAt(choice);
+                        if (!float.IsPositiveInfinity(w) && w >= 0f && !float.IsNaN(w)) total -= w;
+                    }
+                }
+
+                return result;
             }
         }
 

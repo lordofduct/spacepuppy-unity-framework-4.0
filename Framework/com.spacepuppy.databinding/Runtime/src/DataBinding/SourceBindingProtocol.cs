@@ -49,6 +49,10 @@ namespace com.spacepuppy.DataBinding
             {
                 sourcetype = IProxyExtensions.GetType(context.ConfiguredDataSource, context.RespectProxySources);
             }
+            else if (context.ConfiguredDataSource is IDataProvider dp)
+            {
+                sourcetype = dp.ElementType;
+            }
             if (sourcetype == null) return Enumerable.Empty<string>();
 
             return DynamicUtil.GetMembersFromType(sourcetype, false, System.Reflection.MemberTypes.Field | System.Reflection.MemberTypes.Property)

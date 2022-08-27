@@ -246,6 +246,8 @@ namespace com.spacepuppy.DataBinding
 
         #region IDataProvider Interface
 
+        System.Type IDataProvider.ElementType => typeof(object);
+
         object IDataProvider.FirstElement => DataProviderUtils.GetFirstElementOfDataProvider(this.DataSource);
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()

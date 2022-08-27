@@ -12,6 +12,8 @@ namespace com.spacepuppy.DataBinding
     public interface IDataProvider : System.Collections.IEnumerable
     {
 
+        System.Type ElementType { get; }
+
         /// <summary>
         /// A binding context's might only care about binding the first element of the list, this is a fast accessor for that element.
         /// </summary>
@@ -81,6 +83,8 @@ namespace com.spacepuppy.DataBinding
                 _source = source;
             }
 
+            public System.Type ElementType => typeof(object);
+
             public object FirstElement => _source;
 
             public System.Collections.IEnumerator GetEnumerator()
@@ -98,6 +102,8 @@ namespace com.spacepuppy.DataBinding
                 if (e == null) throw new System.ArgumentNullException(nameof(e));
                 _enumerable = e;
             }
+
+            public System.Type ElementType => typeof(object);
 
             public object FirstElement
             {

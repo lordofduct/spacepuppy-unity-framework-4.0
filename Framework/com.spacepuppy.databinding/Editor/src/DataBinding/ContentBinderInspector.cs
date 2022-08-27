@@ -112,6 +112,9 @@ namespace com.spacepuppyeditor.DataBinding
                 return;
             }
 
+            var pftp = protocol.PreferredSourceType;
+            if (pftp != null) label = EditorHelper.TempContent(string.Format("{0} (type: {1})", label.text, pftp.Name), label.tooltip);
+
             var keys = protocol.GetDefinedKeys(context);
             if (keys == null || !keys.Any())
             {

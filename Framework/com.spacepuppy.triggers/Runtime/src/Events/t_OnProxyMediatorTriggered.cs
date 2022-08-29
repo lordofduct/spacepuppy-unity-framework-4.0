@@ -13,8 +13,12 @@ namespace com.spacepuppy.Events
     /// 
     /// Associate a ProxyMediator to facilitate communication between transient assets like prefab instances.
     /// </summary>
-    public class t_OnProxyMediatorTriggered : TriggerComponent
+    public class t_OnProxyMediatorTriggered : SPComponent, IObservableTrigger
     {
+
+        [SerializeField()]
+        [SPEvent.Config("daisy chained arg (object)")]
+        private SPEvent _trigger = new SPEvent("Trigger");
 
         [SerializeField]
         private ProxyMediator _mediator;
@@ -27,8 +31,8 @@ namespace com.spacepuppy.Events
 
             if (_mediator != null)
             {
-                _mediator.OnTriggered -= this.OnMediatorTriggered;
-                _mediator.OnTriggered += this.OnMediatorTriggered;
+                _mediator.OnTriggered -= this.OnMediatorTriggeredCallback;
+                _mediator.OnTriggered += this.OnMediatorTriggeredCallback;
             }
         }
 
@@ -38,13 +42,15 @@ namespace com.spacepuppy.Events
 
             if (!object.ReferenceEquals(_mediator, null))
             {
-                _mediator.OnTriggered -= this.OnMediatorTriggered;
+                _mediator.OnTriggered -= this.OnMediatorTriggeredCallback;
             }
         }
 
         #endregion
 
         #region Properties
+
+        public SPEvent Trigger => _trigger;
 
         public ProxyMediator Mediator
         {
@@ -55,12 +61,12 @@ namespace com.spacepuppy.Events
 
                 if (Application.isPlaying && this.enabled)
                 {
-                    if (!object.ReferenceEquals(_mediator, null)) _mediator.OnTriggered -= this.OnMediatorTriggered;
+                    if (!object.ReferenceEquals(_mediator, null)) _mediator.OnTriggered -= this.OnMediatorTriggeredCallback;
                     _mediator = value;
                     if (_mediator != null)
                     {
-                        _mediator.OnTriggered -= this.OnMediatorTriggered;
-                        _mediator.OnTriggered += this.OnMediatorTriggered;
+                        _mediator.OnTriggered -= this.OnMediatorTriggeredCallback;
+                        _mediator.OnTriggered += this.OnMediatorTriggeredCallback;
                     }
                 }
                 else
@@ -74,18 +80,27 @@ namespace com.spacepuppy.Events
 
         #region Methods
 
-        private System.EventHandler _onMediatorTriggered;
-        private System.EventHandler OnMediatorTriggered
+        private System.EventHandler<TempEventArgs> _onMediatorTriggeredCallback;
+        private System.EventHandler<TempEventArgs> OnMediatorTriggeredCallback
         {
             get
             {
-                if (_onMediatorTriggered == null) _onMediatorTriggered = this.OnMediatorTriggered_Imp;
-                return _onMediatorTriggered;
+                if (_onMediatorTriggeredCallback == null) _onMediatorTriggeredCallback = this.ReceivedMediatorTriggeredMessage;
+                return _onMediatorTriggeredCallback;
             }
         }
-        private void OnMediatorTriggered_Imp(object sender, System.EventArgs e)
+        protected virtual void ReceivedMediatorTriggeredMessage(object sender, TempEventArgs e)
         {
-            this.ActivateTrigger(null);
+            _trigger.ActivateTrigger(this, e.Value);
+        }
+
+        #endregion
+
+        #region IObservableTrigger Interface
+
+        BaseSPEvent[] IObservableTrigger.GetEvents()
+        {
+            return new BaseSPEvent[] { _trigger };
         }
 
         #endregion

@@ -8,7 +8,7 @@ namespace com.spacepuppy
     /// These are temporary event args that avoid gc when calling an event that needs to include a single value with it, 
     /// while still conforming to the traditional Microsoft (sender,eventArgs) format.
     /// </summary>
-    public sealed class TempEventArgs : EventArgs
+    public sealed class TempEventArgs : EventArgs, IDisposable
     {
 
         #region Fields
@@ -31,6 +31,15 @@ namespace com.spacepuppy
         public object Value
         {
             get { return _value; }
+        }
+
+        #endregion
+
+        #region IDisposable Interface
+
+        public void Dispose()
+        {
+            Release(this);
         }
 
         #endregion
@@ -76,5 +85,5 @@ namespace com.spacepuppy
         #endregion
 
     }
-    
+
 }

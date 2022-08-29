@@ -67,7 +67,7 @@ namespace com.spacepuppy
         public static bool SetProxyTarget(System.Guid guid, object target)
         {
             CrossDomainHook hook;
-            if(_crossDomainLookupTable.TryGetValue(guid, out hook))
+            if (_crossDomainLookupTable.TryGetValue(guid, out hook))
             {
                 hook.Target = target;
                 return true;
@@ -97,7 +97,7 @@ namespace com.spacepuppy
         #endregion
 
 
-        public event System.EventHandler OnTriggered
+        public event System.EventHandler<TempEventArgs> OnTriggered
         {
             add
             {
@@ -201,7 +201,14 @@ namespace com.spacepuppy
                 var h = hook.Handle;
                 hook.Handle = null;
 
-                hook.OnTriggered?.Invoke(this, System.EventArgs.Empty);
+                var d = hook.OnTriggered;
+                if (d != null)
+                {
+                    using (var ev = TempEventArgs.Create(arg))
+                    {
+                        d(this, ev);
+                    }
+                }
                 if (_triggerSyncedTargetWhenTriggered && hook.Target != null)
                 {
                     EventTriggerEvaluator.Current.TriggerAllOnTarget(hook.Target, arg, sender, _passAlongTriggerArgWhenTrigger ? arg : null);
@@ -302,7 +309,7 @@ namespace com.spacepuppy
 
         private class CrossDomainHook
         {
-            public System.EventHandler OnTriggered;
+            public System.EventHandler<TempEventArgs> OnTriggered;
             public RadicalWaitHandle Handle;
             public object Target;
             public int RefCount;

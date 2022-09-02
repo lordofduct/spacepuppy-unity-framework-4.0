@@ -10,6 +10,8 @@ namespace com.spacepuppy.Spawn
     public class SpawnedObjectController : SPComponent, IKillableEntity
     {
 
+        public const float KILLABLEENTITYPRIORITY = 0f;
+
         public event System.EventHandler OnSpawned;
         public event System.EventHandler OnDespawned;
         public event System.EventHandler OnKilled;
@@ -141,53 +143,60 @@ namespace com.spacepuppy.Spawn
             get { return !_isSpawned; }
         }
 
-        public bool Kill()
+        void IKillableEntity.OnPreKill(ref com.spacepuppy.KillableEntityToken token, UnityEngine.GameObject target)
         {
+            //if not initialized, if this is dead, or if it's not the root of this entity being killed... exit now
+            if (_pool == null || !ObjUtil.IsObjectAlive(this) || this.gameObject != target) return;
+
+            token.ProposeKillCandidate(this, KILLABLEENTITYPRIORITY);
+        }
+
+        void IKillableEntity.OnKill(KillableEntityToken token)
+        {
+            if (_pool != null && !object.ReferenceEquals(token.Candidate, this)) _pool.Purge(this);
+
             try
             {
-                if (!_pool.Despawn(this))
-                {
-                    return false;
-                }
-
-                //TODO - need a cleaner way of doing this
-                using (var lst = TempCollection.GetList<Rigidbody>())
-                {
-                    this.transform.GetComponentsInChildren<Rigidbody>(lst);
-                    var e = lst.GetEnumerator();
-                    while (e.MoveNext())
-                    {
-                        e.Current.velocity = Vector3.zero;
-                        e.Current.angularVelocity = Vector3.zero;
-                    }
-                }
-                using (var lst = TempCollection.GetList<Rigidbody2D>())
-                {
-                    this.transform.GetComponentsInChildren<Rigidbody2D>(lst);
-                    var e = lst.GetEnumerator();
-                    while (e.MoveNext())
-                    {
-                        e.Current.velocity = Vector2.zero;
-                        e.Current.angularVelocity = 0f;
-                    }
-                }
-
-                return true;
+                this.OnKilled?.Invoke(this, System.EventArgs.Empty);
             }
-            finally
+            catch (System.Exception ex)
             {
-                try
+                Debug.LogException(ex);
+            }
+        }
+
+        void IKillableEntity.OnElectedKillCandidate()
+        {
+            if (!_pool.Despawn(this))
+            {
+                Destroy(this.gameObject);
+                return;
+            }
+
+            //TODO - need a cleaner way of doing this
+            using (var lst = TempCollection.GetList<Rigidbody>())
+            {
+                this.transform.GetComponentsInChildren<Rigidbody>(lst);
+                var e = lst.GetEnumerator();
+                while (e.MoveNext())
                 {
-                    this.OnKilled?.Invoke(this, System.EventArgs.Empty);
+                    e.Current.velocity = Vector3.zero;
+                    e.Current.angularVelocity = Vector3.zero;
                 }
-                catch(System.Exception ex)
+            }
+            using (var lst = TempCollection.GetList<Rigidbody2D>())
+            {
+                this.transform.GetComponentsInChildren<Rigidbody2D>(lst);
+                var e = lst.GetEnumerator();
+                while (e.MoveNext())
                 {
-                    Debug.LogException(ex);
+                    e.Current.velocity = Vector2.zero;
+                    e.Current.angularVelocity = 0f;
                 }
             }
         }
 
-         #endregion
+        #endregion
 
     }
 

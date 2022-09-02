@@ -10,6 +10,8 @@ namespace com.spacepuppy.Addressables
     public class AddressableKillHandle : MonoBehaviour, IKillableEntity
     {
 
+        public const float KILLABLEENTITYPRIORITY = 0f;
+
         void Awake()
         {
             this.AddTag(SPConstants.TAG_ROOT);
@@ -21,9 +23,25 @@ namespace com.spacepuppy.Addressables
 
         public bool IsDead => !ObjUtil.IsObjectAlive(this);
 
-        public bool Kill()
+        void IKillableEntity.OnPreKill(ref com.spacepuppy.KillableEntityToken token, UnityEngine.GameObject target)
         {
-            return UnityEngine.AddressableAssets.Addressables.ReleaseInstance(this.gameObject);
+            //if this is dead, or if it's not the root of this entity being killed... exit now
+            if (!ObjUtil.IsObjectAlive(this) || this.gameObject != target) return;
+
+            token.ProposeKillCandidate(this, KILLABLEENTITYPRIORITY);
+        }
+
+        void IKillableEntity.OnKill(KillableEntityToken token)
+        {
+            //do nothing
+        }
+
+        void IKillableEntity.OnElectedKillCandidate()
+        {
+            if (!UnityEngine.AddressableAssets.Addressables.ReleaseInstance(this.gameObject))
+            {
+                Destroy(this.gameObject);
+            }
         }
 
         #endregion

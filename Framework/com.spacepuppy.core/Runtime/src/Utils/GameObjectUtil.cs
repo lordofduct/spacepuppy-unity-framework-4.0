@@ -193,15 +193,15 @@ namespace com.spacepuppy.Utils
         /// Destroys the GameObject and its children, if the GameObject contains a KillableEntity component that will handle the death first and foremost.
         /// </summary>
         /// <param name="obj"></param>
-        public static void Kill(this GameObject obj)
+        public static bool Kill(this GameObject obj)
         {
-            if (obj.IsNullOrDestroyed()) return;
+            if (obj.IsNullOrDestroyed()) return false;
 
 #if UNITY_EDITOR
             if (Application.isEditor && !Application.isPlaying)
             {
                 UnityEngine.Object.Destroy(obj);
-                return;
+                return true;
             }
 #endif
 
@@ -211,20 +211,56 @@ namespace com.spacepuppy.Utils
                 obj.GetComponentsInChildren<IKillableEntity>(true, lst);
                 if (lst.Count > 0)
                 {
-                    bool success = false;
+                    KillableEntityToken token = new KillableEntityToken();
                     for (int i = lst.Count - 1; i > -1; i--)
                     {
-                        if (lst[i].Kill()) success = true;
+                        try
+                        {
+                            lst[i].OnPreKill(ref token, obj);
+                        }
+                        catch(System.Exception ex)
+                        {
+                            Debug.LogException(ex);
+                        }
+                    }
+                    if (token.Cancelled) return false;
+
+
+                    for (int i = lst.Count - 1; i > -1; i--)
+                    {
+                        try
+                        {
+                            lst[i].OnKill(token);
+                        }
+                        catch (System.Exception ex)
+                        {
+                            Debug.LogException(ex);
+                        }
                     }
 
-                    if (!success)
+                    if (token.Candidate != null)
+                    {
+                        try
+                        {
+                            token.Candidate.OnElectedKillCandidate();
+                            return true;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            Debug.LogException(ex);
+                            return false;
+                        }
+                    }
+                    else
                     {
                         UnityEngine.Object.Destroy(obj);
+                        return true;
                     }
                 }
                 else
                 {
                     UnityEngine.Object.Destroy(obj);
+                    return true;
                 }
             }
         }

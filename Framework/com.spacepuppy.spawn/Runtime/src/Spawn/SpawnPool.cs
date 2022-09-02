@@ -806,20 +806,6 @@ namespace com.spacepuppy.Spawn
 
         #endregion
 
-        #region Static Methods
-
-        public static void DeSpawn(GameObject go)
-        {
-            if (go == null) throw new System.ArgumentNullException("go");
-
-            var c = go.GetComponent<SpawnedObjectController>();
-            if (c == null) return;
-
-            c.Kill();
-        }
-
-        #endregion
-
     }
 
 }

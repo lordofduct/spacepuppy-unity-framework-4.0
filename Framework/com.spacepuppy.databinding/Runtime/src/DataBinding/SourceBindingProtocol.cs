@@ -44,6 +44,7 @@ namespace com.spacepuppy.DataBinding
         {
             if (context.ConfiguredDataSource == null) return Enumerable.Empty<string>();
 
+            /*
             System.Type sourcetype = null;
             if (context.RespectProxySources || !(context.ConfiguredDataSource is IDataProvider) || context.RespectDataProviderAsSource)
             {
@@ -58,6 +59,30 @@ namespace com.spacepuppy.DataBinding
             return DynamicUtil.GetMembersFromType(sourcetype, false, System.Reflection.MemberTypes.Field | System.Reflection.MemberTypes.Property)
                               .Where(o => IsAcceptableMemberType(DynamicUtil.GetReturnType(o)))
                               .Select(o => o.Name);
+            */
+
+            if (context.RespectProxySources && context.ConfiguredDataSource is IProxy proxy)
+            {
+                return DynamicUtil.GetMembersFromType(proxy.GetTargetType() ?? typeof(object), false, System.Reflection.MemberTypes.Field | System.Reflection.MemberTypes.Property)
+                                  .Where(o => IsAcceptableMemberType(DynamicUtil.GetReturnType(o)))
+                                  .Select(o => o.Name);
+            }
+            else if(!context.RespectDataProviderAsSource && context.ConfiguredDataSource is IDataProvider dp)
+            {
+                return DynamicUtil.GetMembersFromType(dp.ElementType ?? typeof(object), false, System.Reflection.MemberTypes.Field | System.Reflection.MemberTypes.Property)
+                                  .Where(o => IsAcceptableMemberType(DynamicUtil.GetReturnType(o)))
+                                  .Select(o => o.Name);
+            }
+            else if (context.ConfiguredDataSource != null)
+            {
+                return DynamicUtil.GetMembers(context.ConfiguredDataSource, false, System.Reflection.MemberTypes.Field | System.Reflection.MemberTypes.Property)
+                                  .Where(o => IsAcceptableMemberType(DynamicUtil.GetReturnType(o)))
+                                  .Select(o => o.Name);
+            }
+            else
+            {
+                return Enumerable.Empty<string>();
+            }
         }
 
         public virtual object GetValue(DataBindingContext context, object source, string key)

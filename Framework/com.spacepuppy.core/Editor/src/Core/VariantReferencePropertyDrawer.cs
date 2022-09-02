@@ -292,7 +292,7 @@ namespace com.spacepuppyeditor.Core
             }
             else
             {
-                const System.Reflection.MemberTypes MASK = System.Reflection.MemberTypes.Field | System.Reflection.MemberTypes.Property;
+                const System.Reflection.MemberTypes MASK = System.Reflection.MemberTypes.Field | System.Reflection.MemberTypes.Property | System.Reflection.MemberTypes.Method;
                 const DynamicMemberAccess ACCESS = DynamicMemberAccess.Read;
 
                 if (SPEditorGUI.XButton(ref position, "Clear Selected Object", true))
@@ -309,7 +309,19 @@ namespace com.spacepuppyeditor.Core
 
                 IEnumerable<MemberInfo> GetMembersFromTarget(object o)
                 {
-                    return o is IDynamic ? DynamicUtil.GetMembers(o, false, MASK) : DynamicUtil.GetMembersFromType((o.IsProxy_ParamsRespecting() ? (o as IProxy).GetTargetType() : o.GetType()), false, MASK);
+                    var e = o is IDynamic ? DynamicUtil.GetMembers(o, false, MASK) : DynamicUtil.GetMembersFromType((o.IsProxy_ParamsRespecting() ? (o as IProxy).GetTargetType() : o.GetType()), false, MASK);
+                    return e.Where(o =>
+                    {
+                        if (o is MethodInfo mi)
+                        {
+                            return !mi.IsSpecialName && !mi.IsGenericMethod && mi.GetParameters().Length == 0;
+                        }
+                        else
+                        {
+                            return true;
+                        }
+                    });
+                    //return o is IDynamic ? DynamicUtil.GetEasilySerializedMembers(o) : DynamicUtil.GetEasilySerializedMembersFromType((o.IsProxy_ParamsRespecting() ? (o as IProxy).GetTargetType() : o.GetType()));
                 }
 
                 var go = GameObjectUtil.GetGameObjectFromSource(targObj);

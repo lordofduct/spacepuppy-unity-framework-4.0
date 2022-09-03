@@ -9,6 +9,7 @@ namespace com.spacepuppyeditor.Pathfinding
 {
 
     [CustomEditor(typeof(AGAstarPathSeeker))]
+    [CanEditMultipleObjects]
     public class AGAstarPathSeekerEditor : SeekerEditor
     {
         

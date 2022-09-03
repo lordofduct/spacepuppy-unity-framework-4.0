@@ -172,7 +172,7 @@ namespace com.spacepuppy.Scenes.Events
 #if SP_UNITASK
                     await handle.Op;
 #else
-                    await handle.GetTask();
+                    await handle.AsTask();
 #endif
                     this.SignalComplete();
                 }

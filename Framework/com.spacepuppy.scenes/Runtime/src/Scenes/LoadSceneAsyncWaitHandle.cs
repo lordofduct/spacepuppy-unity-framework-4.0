@@ -128,7 +128,7 @@ namespace com.spacepuppy.Scenes
                         await Task.Yield();
                         break;
                     case LoadSceneBehaviour.Async:
-                        await handle.GetTask();
+                        await handle.AsTask();
                         break;
                     case LoadSceneBehaviour.AsyncAndWait:
                         while (!handle.Op.isDone && handle.Op.progress < 0.9f)
@@ -201,9 +201,9 @@ namespace com.spacepuppy.Scenes
             return result;
         }
 
-#endregion
+        #endregion
 
-#region IProgressingAsyncOperation Interface
+        #region IProgressingAsyncOperation Interface
 
         public override bool IsComplete => _loaded;
 
@@ -217,7 +217,7 @@ namespace com.spacepuppy.Scenes
         {
             if (callback == null) return;
 
-            if(_loaded)
+            if (_loaded)
             {
                 base.RegisterWaitHandleOnComplete(callback);
             }
@@ -227,7 +227,7 @@ namespace com.spacepuppy.Scenes
             }
         }
 
-#endregion
+        #endregion
 
     }
 

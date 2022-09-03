@@ -7,7 +7,11 @@ using com.spacepuppy.Collections;
 using com.spacepuppy.Events;
 using com.spacepuppy.Utils;
 using com.spacepuppy.Project;
+
+#if SP_UNITASK
 using Cysharp.Threading.Tasks.Triggers;
+#endif
+
 
 namespace com.spacepuppy.DataBinding
 {

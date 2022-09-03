@@ -2,7 +2,10 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using com.spacepuppy.Utils;
+
+#if SP_UNITASK
 using Cysharp.Threading.Tasks;
+#endif
 
 namespace com.spacepuppy.Async
 {
@@ -65,7 +68,7 @@ namespace com.spacepuppy.Async
 
                 if (handle.Token is IRadicalWaitHandle h)
                 {
-                    if(GameLoop.InvokeRequired)
+                    if (GameLoop.InvokeRequired)
                     {
                         GameLoop.UpdateHandle.Invoke(() => complete = h.IsComplete);
                     }
@@ -190,7 +193,7 @@ namespace com.spacepuppy.Async
             {
                 if (handle.Token is IRadicalWaitHandle h)
                 {
-                    if(GameLoop.InvokeRequired)
+                    if (GameLoop.InvokeRequired)
                     {
                         GameLoop.UpdateHandle.BeginInvoke(() =>
                         {
@@ -220,7 +223,7 @@ namespace com.spacepuppy.Async
                 {
                     if (callback != null)
                     {
-                        if(GameLoop.InvokeRequired)
+                        if (GameLoop.InvokeRequired)
                         {
                             GameLoop.UpdateHandle.BeginInvoke(() => GameLoop.Hook.StartPooledRadicalCoroutine(WaitUntilHandleIsDone(inst, callback)));
                         }
@@ -362,7 +365,7 @@ namespace com.spacepuppy.Async
             {
                 if (handle.Token is RadicalWaitHandle<T> h)
                 {
-                    if(GameLoop.InvokeRequired)
+                    if (GameLoop.InvokeRequired)
                     {
                         GameLoop.UpdateHandle.BeginInvoke(() =>
                         {
@@ -376,7 +379,7 @@ namespace com.spacepuppy.Async
                             }
                         });
                     }
-                    else if(h.IsComplete)
+                    else if (h.IsComplete)
                     {
                         callback(h.AsAsyncWaitHandle());
                     }
@@ -394,7 +397,7 @@ namespace com.spacepuppy.Async
 
             public T GetResult(AsyncWaitHandle<T> handle)
             {
-                if(handle.Token is RadicalWaitHandle<T> h)
+                if (handle.Token is RadicalWaitHandle<T> h)
                 {
                     return h.Result;
                 }
@@ -406,7 +409,7 @@ namespace com.spacepuppy.Async
 
             object IAsyncWaitHandleProvider.GetResult(AsyncWaitHandle handle)
             {
-                if(handle.Token is RadicalWaitHandle<T> h)
+                if (handle.Token is RadicalWaitHandle<T> h)
                 {
                     return h.Result;
                 }
@@ -420,11 +423,11 @@ namespace com.spacepuppy.Async
             private async Task<T> WaitForComplete(RadicalWaitHandle<T> handle)
             {
                 var s = AsyncUtil.GetTempSemaphore();
-                if(GameLoop.InvokeRequired)
+                if (GameLoop.InvokeRequired)
                 {
                     GameLoop.UpdateHandle.BeginInvoke(() =>
                     {
-                        if(handle.IsComplete)
+                        if (handle.IsComplete)
                         {
                             s.Dispose();
                         }

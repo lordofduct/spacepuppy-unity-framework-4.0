@@ -23,10 +23,7 @@ namespace com.spacepuppy.Events
             set { _order = value; }
         }
 
-        public virtual bool CanTrigger
-        {
-            get { return this.isActiveAndEnabled; }
-        }
+        public virtual bool CanTrigger => this.IsActiveAndEnabled_OrderAgnostic();
 
         public void Trigger()
         {

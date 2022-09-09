@@ -685,7 +685,7 @@ namespace com.spacepuppy.Utils
 
         private static bool TargetIsValid(object obj)
         {
-            if (obj is Behaviour) return (obj as Behaviour).isActiveAndEnabled;
+            if (obj is Behaviour) return (obj as Behaviour).IsActiveAndEnabled_OrderAgnostic();
             return true;
         }
 

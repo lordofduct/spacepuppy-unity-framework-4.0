@@ -38,8 +38,8 @@ namespace com.spacepuppy.Utils
         public static bool IsEnabled(this Component comp)
         {
             if (comp == null) return false;
-            if (comp is Behaviour) return (comp as Behaviour).enabled;
-            if (comp is Collider) return (comp as Collider).enabled;
+            if (comp is Behaviour b) return b.enabled;
+            if (comp is Collider c) return c.enabled;
             return true;
         }
 
@@ -51,10 +51,40 @@ namespace com.spacepuppy.Utils
         public static bool IsActiveAndEnabled(this Component comp)
         {
             if (comp == null) return false;
-            if (comp is Behaviour) return (comp as Behaviour).isActiveAndEnabled;
+            if (comp is Behaviour b) return b.isActiveAndEnabled;
             if (!comp.gameObject.activeInHierarchy) return false;
-            if (comp is Collider) return (comp as Collider).enabled;
+            if (comp is Collider c) return c.enabled;
             return true;
+        }
+
+        /// <summary>
+        /// The property 'isActiveAndEnabled' only returns true after 'OnEnable' would be called on the target. 
+        /// This is an issue for much of the T&I system which may trigger targets during the OnEnable events, 
+        /// and since the order of children/siblings being enabled relative to one another is unkowable, we must 
+        /// treat them all as enabled if the GameObject is activeInHierarchy.
+        /// </summary>
+        /// <param name="comp"></param>
+        /// <returns>If the object is alive, its gameobject is 'activeInHierarchy', and if it's a Behaviour that its 'enabled' property is true</returns>
+        public static bool IsActiveAndEnabled_OrderAgnostic(this Component comp)
+        {
+            if (!ObjUtil.IsObjectAlive(comp) || !comp.gameObject.activeInHierarchy) return false;
+
+            if (comp is Behaviour b) return b.enabled;
+            if (comp is Collider c) return c.enabled;
+            return true;
+        }
+
+        /// <summary>
+        /// The property 'isActiveAndEnabled' only returns true after 'OnEnable' would be called on the target. 
+        /// This is an issue for much of the T&I system which may trigger targets during the OnEnable events, 
+        /// and since the order of children/siblings being enabled relative to one another is unkowable, we must 
+        /// treat them all as enabled if the GameObject is activeInHierarchy.
+        /// </summary>
+        /// <param name="comp"></param>
+        /// <returns>If the object is alive, its gameobject is 'activeInHierarchy', and if it's a Behaviour that its 'enabled' property is true</returns>
+        public static bool IsActiveAndEnabled_OrderAgnostic(this Behaviour comp)
+        {
+            return ObjUtil.IsObjectAlive(comp) && comp.enabled && comp.gameObject.activeInHierarchy;
         }
 
         public static void SetEnabled(this Component comp, bool enabled)

@@ -109,6 +109,7 @@ namespace com.spacepuppy
         {
             _instance = this;
 
+            _currentSequence = UpdateSequence.None;
             _updateHook = this.gameObject.AddComponent<UpdateEventHooks>();
             _tardyUpdateHook = this.gameObject.AddComponent<TardyExecutionUpdateEventHooks>();
 

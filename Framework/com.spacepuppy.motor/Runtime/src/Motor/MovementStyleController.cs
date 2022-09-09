@@ -45,6 +45,15 @@ namespace com.spacepuppy.Motor
         [System.NonSerialized]
         private OrderedDelegate<System.Action> _stackStyleDelayed = new OrderedDelegate<System.Action>();
 
+        [System.NonSerialized]
+        private Messaging.MessageToken<IMovementStyleModifier> _movementStyleModifierMessageToken;
+        [System.NonSerialized]
+        private System.Action<IMovementStyleModifier> __onBeforeUpdateFunctor;
+        private System.Action<IMovementStyleModifier> _onBeforeUpdateFunctor => __onBeforeUpdateFunctor ?? (__onBeforeUpdateFunctor = (o) => o.OnBeforeUpdateMovement(this));
+        [System.NonSerialized]
+        private System.Action<IMovementStyleModifier> __onUpdateCompleteFunctor;
+        private System.Action<IMovementStyleModifier> _onUpdateCompleteFunctor => __onUpdateCompleteFunctor ?? (__onUpdateCompleteFunctor = (o) => o.OnUpdateMovementComplete(this));
+
         #endregion
 
         #region CONSTRUCTOR
@@ -68,6 +77,8 @@ namespace com.spacepuppy.Motor
             }
 
             if (_updateRoutine == null || _updateRoutine.Finished) _updateRoutine = this.StartRadicalCoroutine(this.UpdateRoutine(), RadicalCoroutineDisableMode.Pauses);
+
+            _movementStyleModifierMessageToken = Messaging.CreateSignalToken<IMovementStyleModifier>(this.gameObject);
         }
 
         protected override void OnDisable()
@@ -143,9 +154,13 @@ namespace com.spacepuppy.Motor
                     }
 
                     _inUpdateSequence = true;
-                    if (this.BeforeUpdateMovement != null) this.BeforeUpdateMovement(this, System.EventArgs.Empty);
+                    this.BeforeUpdateMovement?.Invoke(this, System.EventArgs.Empty);
+                    if (_movementStyleModifierMessageToken.Count > 0) _movementStyleModifierMessageToken.Invoke(_onBeforeUpdateFunctor);
+
                     _current.UpdateMovement();
-                    if (this.UpdateMovementComplete != null) this.UpdateMovementComplete(this, System.EventArgs.Empty);
+
+                    this.UpdateMovementComplete?.Invoke(this, System.EventArgs.Empty);
+                    if (_movementStyleModifierMessageToken.Count > 0) _movementStyleModifierMessageToken.Invoke(_onUpdateCompleteFunctor);
                     _inUpdateSequence = false;
                     this.DoDelayedStyleChange();
 

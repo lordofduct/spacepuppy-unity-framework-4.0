@@ -100,7 +100,16 @@ namespace com.spacepuppy.Utils
                     for (int i = 0; i < lst.Count; i++)
                     {
                         if (includeDisabledComponents || TargetIsValid(lst[i]))
-                            functor(lst[i]);
+                        {
+                            try
+                            {
+                                functor(lst[i]);
+                            }
+                            catch (System.Exception ex)
+                            {
+                                Debug.LogException(ex);
+                            }
+                        }
                     }
                 }
             }
@@ -119,7 +128,16 @@ namespace com.spacepuppy.Utils
                     for (int i = 0; i < lst.Count; i++)
                     {
                         if (includeDisabledComponents || TargetIsValid(lst[i]))
-                            functor(lst[i], arg);
+                        {
+                            try
+                            {
+                                functor(lst[i], arg);
+                            }
+                            catch (System.Exception ex)
+                            {
+                                Debug.LogException(ex);
+                            }
+                        }
                     }
                 }
             }
@@ -138,7 +156,16 @@ namespace com.spacepuppy.Utils
                     for (int i = 0; i < lst.Count; i++)
                     {
                         if (includeDisabledComponents || TargetIsValid(lst[i]))
-                            functor(lst[i]);
+                        {
+                            try
+                            {
+                                functor(lst[i]);
+                            }
+                            catch (System.Exception ex)
+                            {
+                                Debug.LogException(ex);
+                            }
+                        }
                     }
                 }
             }
@@ -164,7 +191,16 @@ namespace com.spacepuppy.Utils
                     for (int i = 0; i < lst.Count; i++)
                     {
                         if (includeDisabledComponents || TargetIsValid(lst[i]))
-                            functor(lst[i]);
+                        {
+                            try
+                            {
+                                functor(lst[i]);
+                            }
+                            catch (System.Exception ex)
+                            {
+                                Debug.LogException(ex);
+                            }
+                        }
                     }
                 }
             }
@@ -192,7 +228,16 @@ namespace com.spacepuppy.Utils
                     for (int i = 0; i < lst.Count; i++)
                     {
                         if (includeDisabledComponents || TargetIsValid(lst[i]))
-                            functor(lst[i], arg);
+                        {
+                            try
+                            {
+                                functor(lst[i], arg);
+                            }
+                            catch (System.Exception ex)
+                            {
+                                Debug.LogException(ex);
+                            }
+                        }
                     }
                 }
             }
@@ -218,7 +263,16 @@ namespace com.spacepuppy.Utils
                     for (int i = 0; i < lst.Count; i++)
                     {
                         if (receiverType.IsInstanceOfType(lst[i]) && (includeDisabledComponents || TargetIsValid(lst[i])))
-                            functor(lst[i]);
+                        {
+                            try
+                            {
+                                functor(lst[i]);
+                            }
+                            catch (System.Exception ex)
+                            {
+                                Debug.LogException(ex);
+                            }
+                        }
                     }
                 }
             }
@@ -237,7 +291,16 @@ namespace com.spacepuppy.Utils
                     for (int i = 0; i < lst.Count; i++)
                     {
                         if (includeDisabledComponents || TargetIsValid(lst[i]))
-                            functor(lst[i]);
+                        {
+                            try
+                            {
+                                functor(lst[i]);
+                            }
+                            catch (System.Exception ex)
+                            {
+                                Debug.LogException(ex);
+                            }
+                        }
                     }
                 }
             }
@@ -256,7 +319,16 @@ namespace com.spacepuppy.Utils
                     for (int i = 0; i < lst.Count; i++)
                     {
                         if (includeDisabledComponents || TargetIsValid(lst[i]))
-                            functor(lst[i], arg);
+                        {
+                            try
+                            {
+                                functor(lst[i], arg);
+                            }
+                            catch (System.Exception ex)
+                            {
+                                Debug.LogException(ex);
+                            }
+                        }
                     }
                 }
             }
@@ -276,7 +348,16 @@ namespace com.spacepuppy.Utils
                     for (int i = 0; i < lst.Count; i++)
                     {
                         if (receiverType.IsInstanceOfType(lst[i]) && (includeDisabledComponents || TargetIsValid(lst[i])))
-                            functor(lst[i]);
+                        {
+                            try
+                            {
+                                functor(lst[i]);
+                            }
+                            catch (System.Exception ex)
+                            {
+                                Debug.LogException(ex);
+                            }
+                        }
                     }
                 }
             }
@@ -359,7 +440,16 @@ namespace com.spacepuppy.Utils
                 while (e.MoveNext())
                 {
                     if (includeDisabledComponents || TargetIsValid(e.Current))
-                        functor(e.Current);
+                    {
+                        try
+                        {
+                            functor(e.Current);
+                        }
+                        catch (System.Exception ex)
+                        {
+                            Debug.LogException(ex);
+                        }
+                    }
                 }
             }
         }
@@ -383,7 +473,16 @@ namespace com.spacepuppy.Utils
                 while (e.MoveNext())
                 {
                     if (includeDisabledComponents || TargetIsValid(e.Current))
-                        functor(e.Current, arg);
+                    {
+                        try
+                        {
+                            functor(e.Current, arg);
+                        }
+                        catch (System.Exception ex)
+                        {
+                            Debug.LogException(ex);
+                        }
+                    }
                 }
             }
         }
@@ -534,7 +633,14 @@ namespace com.spacepuppy.Utils
 
                 foreach (var t in GetTargets())
                 {
-                    functor(t);
+                    try
+                    {
+                        functor(t);
+                    }
+                    catch(System.Exception ex)
+                    {
+                        Debug.LogException(ex);
+                    }
                 }
             }
 
@@ -544,7 +650,16 @@ namespace com.spacepuppy.Utils
 
                 foreach (var t in GetTargets())
                 {
-                    functor(t, arg);
+                    {
+                        try
+                        {
+                            functor(t, arg);
+                        }
+                        catch (System.Exception ex)
+                        {
+                            Debug.LogException(ex);
+                        }
+                    }
                 }
             }
 

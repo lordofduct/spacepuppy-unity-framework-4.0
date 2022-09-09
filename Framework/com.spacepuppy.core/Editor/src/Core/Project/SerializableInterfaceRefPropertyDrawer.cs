@@ -21,9 +21,28 @@ namespace com.spacepuppyeditor.Core.Project
 
         public const string PROP_OBJ = "_obj";
 
+        private SelectableComponentPropertyDrawer _componentSelectorDrawer = new SelectableComponentPropertyDrawer()
+        {
+            RestrictionType = typeof(UnityEngine.Object),
+        };
+
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
-            return EditorGUIUtility.singleLineHeight;
+            var tp = (this.fieldInfo != null) ? this.fieldInfo.FieldType : null;
+            var objProp = property.FindPropertyRelative(PROP_OBJ);
+            if (tp == null || objProp == null || objProp.propertyType != SerializedPropertyType.ObjectReference)
+            {
+                return EditorGUIUtility.singleLineHeight;
+            }
+
+            if (objProp.objectReferenceValue == null)
+            {
+                return EditorGUIUtility.singleLineHeight;
+            }
+            else
+            {
+                return _componentSelectorDrawer.GetPropertyHeight(objProp, label);
+            }
         }
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
@@ -64,12 +83,20 @@ namespace com.spacepuppyeditor.Core.Project
             }
             catch (System.Exception) { }
 
-            object val = UnityObjectDropDownWindowSelector.ObjectField(position, label, objProp.objectReferenceValue, valueType, true, true);
-            if (val != null && !valueType.IsInstanceOfType(val) && ObjUtil.GetAsFromSource<IProxy>(val) == null)
+            if (objProp.objectReferenceValue == null)
             {
-                val = null;
+                object val = UnityObjectDropDownWindowSelector.ObjectField(position, label, objProp.objectReferenceValue, valueType, true, true);
+                if (val != null && !valueType.IsInstanceOfType(val) && ObjUtil.GetAsFromSource<IProxy>(val) == null)
+                {
+                    val = null;
+                }
+                objProp.objectReferenceValue = val as UnityEngine.Object;
             }
-            objProp.objectReferenceValue = val as UnityEngine.Object;
+            else
+            {
+                _componentSelectorDrawer.RestrictionType = valueType;
+                _componentSelectorDrawer.OnGUI(position, objProp, label);
+            }
         }
 
         private void DrawMalformed(Rect position)

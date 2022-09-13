@@ -67,6 +67,8 @@ namespace com.spacepuppy.Motor
 
         void IMStartOrEnableReceiver.OnStartOrEnable()
         {
+            _movementStyleModifierMessageToken = Messaging.CreateSignalToken<IMovementStyleModifier>(this.gameObject);
+
             if (_defaultMovementStyle is IMovementStyle && _current == null && this.Contains(_defaultMovementStyle as IMovementStyle))
             {
                 this.ChangeState(_defaultMovementStyle as IMovementStyle);
@@ -77,8 +79,6 @@ namespace com.spacepuppy.Motor
             }
 
             if (_updateRoutine == null || _updateRoutine.Finished) _updateRoutine = this.StartRadicalCoroutine(this.UpdateRoutine(), RadicalCoroutineDisableMode.Pauses);
-
-            _movementStyleModifierMessageToken = Messaging.CreateSignalToken<IMovementStyleModifier>(this.gameObject);
         }
 
         protected override void OnDisable()

@@ -1,0 +1,27 @@
+{
+    "name": "com.spacepuppyeditor.IAP",
+    "rootNamespace": "",
+    "references": [
+        "GUID:c3194fa677b845747b1e972adb024ef4",
+        "GUID:ddd0eb9fc8f414a4d9750a013f135d36",
+        "GUID:87cd754e50a115d40a8f05c6d8dc95ee",
+        "GUID:60bfecf5cb232594891bc622f40d6bed",
+        "GUID:e25a61468ff30f44fad56a6b40062363",
+        "GUID:08d1c582746949b40ba6a45cdb776bdf"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.purchasing",
+            "expression": "",
+            "define": "SP_UNITYIAP"
+        }
+    ],
+    "noEngineReferences": false
+}

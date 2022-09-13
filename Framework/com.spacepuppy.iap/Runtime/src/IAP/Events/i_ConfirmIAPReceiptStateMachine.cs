@@ -9,7 +9,7 @@ using com.spacepuppy.Events;
 namespace com.spacepuppy.IAP.Events
 {
 
-    public sealed class i_ConfirmIAPReceiptStateMachine : AutoTriggerable, IMStartOrEnableReceiver
+    public sealed class i_ConfirmIAPReceiptStateMachine : Triggerable, IMStartOrEnableReceiver
     {
 
         #region Fields

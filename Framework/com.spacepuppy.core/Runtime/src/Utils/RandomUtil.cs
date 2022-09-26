@@ -188,6 +188,17 @@ namespace com.spacepuppy.Utils
         }
 
         /// <summary>
+        /// Select between min and max, exclussive of max.
+        /// </summary>
+        /// <param name="rng"></param>
+        /// <param name="interval"></param>
+        /// <returns></returns>
+        public static float Range(this IRandom rng, com.spacepuppy.Geom.Interval interval)
+        {
+            return (float)(rng.NextDouble() * (interval.Max - interval.Min) + interval.Min);
+        }
+
+        /// <summary>
         /// Select an weighted index from 0 to length of weights.
         /// </summary>
         /// <param name="rng"></param>

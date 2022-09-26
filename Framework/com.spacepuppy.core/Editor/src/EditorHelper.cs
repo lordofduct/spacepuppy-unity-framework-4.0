@@ -802,6 +802,21 @@ namespace com.spacepuppyeditor
             }
         }
 
+        public static bool IsVectorValue(this SerializedProperty prop)
+        {
+            switch (prop.propertyType)
+            {
+                case SerializedPropertyType.Vector2:
+                case SerializedPropertyType.Vector3:
+                case SerializedPropertyType.Vector4:
+                case SerializedPropertyType.Vector2Int:
+                case SerializedPropertyType.Vector3Int:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
         public static IEnumerable<SerializedProperty> EnumerateArray(this SerializedProperty prop)
         {
             if (!prop.isArray) yield break;

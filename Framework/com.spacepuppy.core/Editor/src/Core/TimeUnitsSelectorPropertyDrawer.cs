@@ -150,6 +150,75 @@ namespace com.spacepuppyeditor.Core
                     }
                 }
             }
+            else if (property.IsVectorValue())
+            {
+                var units = GetUnits(property, this.DefaultUnits, this.TimeUnitsCalculator);
+                var scale = (float)this.TimeUnitsCalculator.SecondsToTimeUnits(units, 1f);
+
+                switch (property.propertyType)
+                {
+                    case SerializedPropertyType.Vector2:
+                        {
+                            var v = property.vector2Value;
+                            v *= scale;
+                            EditorGUI.BeginChangeCheck();
+                            v = EditorGUI.Vector2Field(r, GUIContent.none, v);
+                            if (EditorGUI.EndChangeCheck())
+                            {
+                                property.vector2Value = v / scale;
+                            }
+                        }
+                        break;
+                    case SerializedPropertyType.Vector3:
+                        {
+                            var v = property.vector3Value;
+                            v *= scale;
+                            EditorGUI.BeginChangeCheck();
+                            v = EditorGUI.Vector3Field(r, GUIContent.none, v);
+                            if (EditorGUI.EndChangeCheck())
+                            {
+                                property.vector3Value = v / scale;
+                            }
+                        }
+                        break;
+                    case SerializedPropertyType.Vector4:
+                        {
+                            var v = property.vector4Value;
+                            v *= scale;
+                            EditorGUI.BeginChangeCheck();
+                            v = EditorGUI.Vector4Field(r, GUIContent.none, v);
+                            if (EditorGUI.EndChangeCheck())
+                            {
+                                property.vector4Value = v / scale;
+                            }
+                        }
+                        break;
+                    case SerializedPropertyType.Vector2Int:
+                        {
+                            var v = (Vector2)property.vector2IntValue;
+                            v *= scale;
+                            EditorGUI.BeginChangeCheck();
+                            v = EditorGUI.Vector2Field(r, GUIContent.none, v);
+                            if (EditorGUI.EndChangeCheck())
+                            {
+                                property.vector2IntValue = Vector2Int.RoundToInt(v / scale);
+                            }
+                        }
+                        break;
+                    case SerializedPropertyType.Vector3Int:
+                        {
+                            var v = (Vector3)property.vector3IntValue;
+                            v *= scale;
+                            EditorGUI.BeginChangeCheck();
+                            v = EditorGUI.Vector3Field(r, GUIContent.none, v);
+                            if (EditorGUI.EndChangeCheck())
+                            {
+                                property.vector3IntValue = Vector3Int.RoundToInt(v / scale);
+                            }
+                        }
+                        break;
+                }
+            }
             else if (property.type == nameof(com.spacepuppy.Geom.Interval))
             {
                 var units = GetUnits(property, this.DefaultUnits, this.TimeUnitsCalculator);

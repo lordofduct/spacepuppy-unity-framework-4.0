@@ -10,6 +10,18 @@ namespace com.spacepuppy.SPInput
 
         public const float DEFAULT_AXLEBTNDEADZONE = 0.707f;
 
+        /// <summary>
+        /// Get the mouse position as a value where (0,0) is lower-left and (1,1) is upper right corner of the screen.
+        /// </summary>
+        /// <returns></returns>
+        public static Vector2 GetNormalizedMousePosition()
+        {
+            var v = (Vector2)Input.mousePosition;
+            v.x /= Screen.width;
+            v.y /= Screen.height;
+            return v;
+        }
+
         public static float CutoffAxis(float value, float deadzone, DeadZoneCutoff cutoff, bool clampNormalized = true)
         {
             if (deadzone < 0f) deadzone = 0f;

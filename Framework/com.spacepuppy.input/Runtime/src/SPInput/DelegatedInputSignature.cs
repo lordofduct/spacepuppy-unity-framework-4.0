@@ -26,7 +26,7 @@ namespace com.spacepuppy.SPInput
         public DelegatedButtonInputSignature(string id, ButtonDelegate del)
             : base(id)
         {
-            _delegate = del;
+            this.Delegate = del;
         }
 
         #endregion
@@ -36,7 +36,7 @@ namespace com.spacepuppy.SPInput
         public ButtonDelegate Delegate
         {
             get { return _delegate; }
-            set { _delegate = value; }
+            set { _delegate = value ?? (() => false); }
         }
 
         #endregion
@@ -87,7 +87,7 @@ namespace com.spacepuppy.SPInput
         public override void Update()
         {
             //determine based on history
-            _current = InputUtil.GetNextButtonState(_current, _delegate != null ? _delegate() : false);
+            _current = InputUtil.GetNextButtonState(_current, _delegate());
             if (_current == ButtonState.Down)
                 _lastDown = Time.unscaledTimeAsDouble;
         }
@@ -95,7 +95,7 @@ namespace com.spacepuppy.SPInput
         public override void FixedUpdate()
         {
             //determine based on history
-            _currentFixed = InputUtil.GetNextButtonState(_currentFixed, _delegate != null ? _delegate() : false);
+            _currentFixed = InputUtil.GetNextButtonState(_currentFixed, _delegate());
         }
 
         public override void Reset()
@@ -123,7 +123,7 @@ namespace com.spacepuppy.SPInput
         public DelegatedAxleInputSignature(string id, AxisDelegate del)
             : base(id)
         {
-            _delegate = del;
+            this.Delegate = del;
         }
 
         #endregion
@@ -133,7 +133,7 @@ namespace com.spacepuppy.SPInput
         public AxisDelegate Delegate
         {
             get { return _delegate; }
-            set { _delegate = value; }
+            set { _delegate = value ?? (() => 0f); }
         }
 
         public DeadZoneCutoff Cutoff
@@ -158,7 +158,7 @@ namespace com.spacepuppy.SPInput
             {
                 //return _current;
 
-                var v = _delegate != null ? _delegate() : 0f;
+                var v = _delegate();
                 if (this.Invert) v *= -1;
                 return InputUtil.CutoffAxis(v, this.DeadZone, this.Cutoff);
             }
@@ -352,8 +352,8 @@ namespace com.spacepuppy.SPInput
         public DelegatedDualAxleInputSignature(string id, AxisDelegate hor, AxisDelegate ver)
             : base(id)
         {
-            _horizontal = hor;
-            _vertical = ver;
+            this.HorizontalDelegate = hor;
+            this.VerticalDelegate = ver;
         }
 
         #endregion
@@ -363,13 +363,13 @@ namespace com.spacepuppy.SPInput
         public AxisDelegate HorizontalDelegate
         {
             get { return _horizontal; }
-            set { _horizontal = value; }
+            set { _horizontal = value ?? (() => 0f); }
         }
 
         public AxisDelegate VerticalDelegate
         {
             get { return _vertical; }
-            set { _vertical = value; }
+            set { _vertical = value ?? (() => 0f); }
         }
 
         public DeadZoneCutoff Cutoff
@@ -411,8 +411,8 @@ namespace com.spacepuppy.SPInput
             get
             {
                 //return _current;
-                Vector2 v = new Vector2(_horizontal != null ? _horizontal() : 0f,
-                                        _vertical != null ? _vertical() : 0f);
+                Vector2 v = new Vector2(_horizontal(),
+                                        _vertical());
                 if (this.InvertX) v.x = -v.x;
                 if (this.InvertY) v.y = -v.y;
                 return InputUtil.CutoffDualAxis(v, this.DeadZone, this.Cutoff, this.RadialDeadZone, this.RadialCutoff);
@@ -571,13 +571,13 @@ namespace com.spacepuppy.SPInput
         public DelegatedCursorInputSignature(string id, DualAxisDelegate cursor)
             : base(id)
         {
-            _cursor = cursor;
+            this.CursorDelegate = cursor;
         }
 
         public DelegatedCursorInputSignature(string id, AxisDelegate hor, AxisDelegate ver)
             : base(id)
         {
-            _cursor = () => new Vector2(hor?.Invoke() ?? 0f, ver?.Invoke() ?? 0f);
+            this.SetCursorDelegate(hor, ver);
         }
 
         #endregion
@@ -587,7 +587,7 @@ namespace com.spacepuppy.SPInput
         public DualAxisDelegate CursorDelegate
         {
             get { return _cursor; }
-            set { _cursor = value; }
+            set { _cursor = value ?? (() => Vector2.zero); }
         }
 
         public bool InvertX
@@ -600,6 +600,35 @@ namespace com.spacepuppy.SPInput
         {
             get;
             set;
+        }
+
+        #endregion
+
+        #region Methods
+
+        public void SetCursorDelegate(DualAxisDelegate cursor)
+        {
+            _cursor = cursor ?? (() => Vector2.zero);
+        }
+
+        public void SetCursorDelegate(AxisDelegate hor, AxisDelegate ver)
+        {
+            if (hor == null && ver == null)
+            {
+                _cursor = () => Vector2.zero;
+            }
+            else if (hor == null)
+            {
+                _cursor = () => new Vector2(0f, ver());
+            }
+            else if (ver == null)
+            {
+                _cursor = () => new Vector2(hor(), 0f);
+            }
+            else
+            {
+                _cursor = () => new Vector2(hor(), ver());
+            }
         }
 
         #endregion

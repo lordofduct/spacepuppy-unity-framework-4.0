@@ -63,6 +63,16 @@ namespace com.spacepuppyeditor
 
         #region Asserts
 
+        public static void MalformedProperty(Rect position)
+        {
+            EditorGUI.LabelField(position, "Malformed serialized property.");
+        }
+
+        public static void MalformedProperty(Rect position, GUIContent label)
+        {
+            EditorGUI.LabelField(position, label, TempContent("Malformed serialized property."));
+        }
+
         public static bool AssertMultiObjectEditingNotSupportedHeight(SerializedProperty property, GUIContent label, out float height)
         {
             if (property.hasMultipleDifferentValues)

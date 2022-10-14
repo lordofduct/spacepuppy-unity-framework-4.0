@@ -24,6 +24,7 @@ namespace com.spacepuppyeditor.Core.Project
         private SelectableComponentPropertyDrawer _componentSelectorDrawer = new SelectableComponentPropertyDrawer()
         {
             RestrictionType = typeof(UnityEngine.Object),
+            AllowNonComponents = true,
         };
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)

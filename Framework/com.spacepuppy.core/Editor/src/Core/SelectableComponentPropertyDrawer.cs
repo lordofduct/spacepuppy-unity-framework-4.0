@@ -138,7 +138,7 @@ namespace com.spacepuppyeditor.Core
                 }
                 else
                 {
-                    EditorGUI.LabelField(position, "Malformed serializable field.");
+                    EditorHelper.MalformedProperty(position);
                 }
             }
             else if (this.AllowNonComponents)

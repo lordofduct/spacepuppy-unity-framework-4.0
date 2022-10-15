@@ -190,6 +190,8 @@ namespace com.spacepuppy.Events
 
             public StateInfo? Find(string id)
             {
+                if (id == null) return null;
+
                 if (_states.Count < MIN_SIZE_TOSEARCH)
                 {
                     for (int i = 0; i < _states.Count; i++)
@@ -211,6 +213,8 @@ namespace com.spacepuppy.Events
 
             public int FindIndex(string id)
             {
+                if (id == null) return -1;
+
                 if (_states.Count < MIN_SIZE_TOSEARCH)
                 {
                     for (int i = 0; i < _states.Count; i++)

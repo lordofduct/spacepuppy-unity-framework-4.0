@@ -238,6 +238,7 @@ namespace com.spacepuppy.DataBinding
                 {
                     try
                     {
+                        if (lst[i] is Behaviour mb && !mb.enabled) continue;
                         lst[i].Bind(this, this.DataSource);
                     }
                     catch (System.Exception ex)

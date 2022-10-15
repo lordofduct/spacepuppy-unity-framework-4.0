@@ -124,7 +124,7 @@ namespace com.spacepuppy.Dynamic
             }
             else
             {
-                _accessor.TryGetValue(obj, sMemberName, out result);
+                _accessor.TryGetValue(obj, sMemberName, out result, args);
             }
             return result;
         }
@@ -138,7 +138,7 @@ namespace com.spacepuppy.Dynamic
             else
             {
                 T result;
-                _accessor.TryGetValue<T>(obj, sMemberName, out result);
+                _accessor.TryGetValue<T>(obj, sMemberName, out result, args);
                 return result;
             }
         }
@@ -146,14 +146,14 @@ namespace com.spacepuppy.Dynamic
         public static object GetValue(this object obj, MemberInfo member, params object[] args)
         {
             object result;
-            _accessor.TryGetValue(obj, member, out result);
+            _accessor.TryGetValue(obj, member, out result, args);
             return result;
         }
 
         public static T GetValue<T>(this object obj, MemberInfo member, params object[] args)
         {
             T result;
-            _accessor.TryGetValue<T>(obj, member, out result);
+            _accessor.TryGetValue<T>(obj, member, out result, args);
             return result;
         }
 

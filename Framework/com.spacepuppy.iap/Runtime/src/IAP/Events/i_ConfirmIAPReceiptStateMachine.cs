@@ -17,7 +17,7 @@ namespace com.spacepuppy.IAP.Events
         [SerializeField]
         private bool _forwardTrigger;
         [SerializeField]
-        [IAPCatalogProductID]
+        [IAPCatalogProductID(ProductTypeMask.NonConsumable | ProductTypeMask.Subscription)]
         private string _productId;
 
         [SerializeField]

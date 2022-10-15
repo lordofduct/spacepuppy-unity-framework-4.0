@@ -54,6 +54,10 @@ namespace com.spacepuppy.IAP.Events
         private SPEvent _onSuccess = new SPEvent("OnSuccess");
 
         [SerializeField]
+        [SPEvent.Config("product (Product)")]
+        private SPEvent _onPending = new SPEvent("OnPending");
+
+        [SerializeField]
         [SPEvent.Config("{product (Product), reason (PurchaseFailureReason)}?")]
         private SPEvent _onFailure = new SPEvent("OnFailure");
 
@@ -124,11 +128,11 @@ namespace com.spacepuppy.IAP.Events
                         var result = await iap.RestorePurchasesAsync();
                         if (result)
                         {
-                            if (_onFailure.HasReceivers) _onFailure.ActivateTrigger(this, null);
+                            if (_onSuccess.HasReceivers) _onSuccess.ActivateTrigger(this, null);
                         }
                         else
                         {
-                            if (_onSuccess.HasReceivers) _onSuccess.ActivateTrigger(this, null);
+                            if (_onFailure.HasReceivers) _onFailure.ActivateTrigger(this, null);
                         }
                     }
                     break;

@@ -14,6 +14,7 @@ namespace com.spacepuppy.IAP
     {
 
         Product FindProduct(string productId);
+        bool OwnsProduct(string productId);
 
         AsyncWaitHandle<PurchaseResult> PurchaseAsync(string productId, bool consume);
         AsyncWaitHandle<bool> RestorePurchasesAsync();

@@ -15,7 +15,7 @@ namespace com.spacepuppy.IAP.Events
         #region Fields
 
         [SerializeField]
-        [IAPCatalogProductID]
+        [IAPCatalogProductID(ProductTypeMask.NonConsumable | ProductTypeMask.Subscription)]
         private string _productId;
 
         [SerializeField]

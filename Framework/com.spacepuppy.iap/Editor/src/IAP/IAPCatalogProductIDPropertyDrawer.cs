@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 using com.spacepuppy;
+using com.spacepuppy.IAP;
 
 namespace com.spacepuppyeditor.IAP
 {
@@ -37,7 +38,8 @@ namespace com.spacepuppyeditor.IAP
             var r1 = new Rect(r0.xMin, r0.yMax, r0.width, r0.height);
 
             var catalog = ProductCatalog.LoadDefaultCatalog();
-            var validids = catalog.allProducts.Select(o => o.id).Prepend(DISPLAY_NOPRODUCT).ToArray();
+            var mask = (this.attribute as IAPCatalogProductIDAttribute)?.ProductTypes ?? ProductTypeMask.All;
+            var validids = catalog.allProducts.Where(o => o.type.Intersects(mask)).Select(o => o.id).Prepend(DISPLAY_NOPRODUCT).ToArray();
 
             int currentIndex = string.IsNullOrEmpty(property.stringValue) ? 0 : System.Array.IndexOf(validids, property.stringValue);
             EditorGUI.BeginChangeCheck();

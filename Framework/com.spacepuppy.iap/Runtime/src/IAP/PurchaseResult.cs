@@ -13,14 +13,28 @@ namespace com.spacepuppy.IAP
     {
 
         public Product Product;
+        public PurchaseStatus Status;
         public PurchaseFailureReason FailureReason;
-        public bool Failed;
+
+        public bool Failed => Status < PurchaseStatus.Complete;
+
+        public bool IsPending => Status > PurchaseStatus.Complete;
 
         public static PurchaseResult Success(Product prod)
         {
             return new PurchaseResult()
             {
                 Product = prod,
+                Status = PurchaseStatus.Complete,
+            };
+        }
+
+        public static PurchaseResult Pending(Product prod)
+        {
+            return new PurchaseResult()
+            {
+                Product = prod,
+                Status = PurchaseStatus.Pending,
             };
         }
 
@@ -29,8 +43,8 @@ namespace com.spacepuppy.IAP
             return new PurchaseResult()
             {
                 Product = prod,
+                Status = PurchaseStatus.Failed,
                 FailureReason = reason,
-                Failed = true,
             };
         }
 

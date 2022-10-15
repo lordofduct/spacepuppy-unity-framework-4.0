@@ -14,21 +14,25 @@ namespace com.spacepuppy.Async
 
         public static AsyncWaitHandle AsAsyncWaitHandle(this IRadicalYieldInstruction inst)
         {
+            if (inst == null) throw new System.ArgumentNullException(nameof(inst));
             return new AsyncWaitHandle(RadicalAsyncWaitHandleProvider.Default, inst);
         }
 
         public static AsyncWaitHandle<T> AsAsyncWaitHandle<T>(this RadicalWaitHandle<T> handle)
         {
+            if (handle == null) throw new System.ArgumentNullException(nameof(handle));
             return new AsyncWaitHandle<T>(RadicalAsyncWaitHandleProvider<T>.Default, handle);
         }
 
         public static Task AsTask(this IRadicalYieldInstruction inst)
         {
+            if (inst == null) throw new System.ArgumentNullException(nameof(inst));
             return new AsyncWaitHandle(RadicalAsyncWaitHandleProvider.Default, inst).AsTask();
         }
 
         public static Task<T> AsTask<T>(this RadicalWaitHandle<T> inst)
         {
+            if (inst == null) throw new System.ArgumentNullException(nameof(inst));
             return new AsyncWaitHandle<T>(RadicalAsyncWaitHandleProvider<T>.Default, inst).AsTask();
         }
 

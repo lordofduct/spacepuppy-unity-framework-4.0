@@ -15,21 +15,25 @@ namespace com.spacepuppy.Async
 
         public static AsyncWaitHandle AsAsyncWaitHandle(this Task task)
         {
+            if (task == null) throw new System.ArgumentNullException(nameof(task));
             return new AsyncWaitHandle(TaskAsyncWaitHandleProvider<object>.Default, task);
         }
 
         public static AsyncWaitHandle<T> AsAsyncWaitHandle<T>(this Task<T> task)
         {
+            if (task == null) throw new System.ArgumentNullException(nameof(task));
             return new AsyncWaitHandle<T>(TaskAsyncWaitHandleProvider<T>.Default, task);
         }
 
         public static AsyncWaitHandle AsAsyncWaitHandle(this UnityEngine.AsyncOperation op)
         {
+            if (op == null) throw new System.ArgumentNullException(nameof(op));
             return new AsyncWaitHandle(AsyncOperationAsyncWaitHandleProvider.Default, op);
         }
 
         public static Task AsTask(this UnityEngine.AsyncOperation op)
         {
+            if (op == null) throw new System.ArgumentNullException(nameof(op));
             return new AsyncWaitHandle(AsyncOperationAsyncWaitHandleProvider.Default, op).AsTask();
         }
 

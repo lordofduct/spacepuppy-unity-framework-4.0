@@ -147,7 +147,7 @@ namespace com.spacepuppy.Async
         /// <returns></returns>
         public System.Threading.Tasks.Task AsTask()
         {
-            return _provider?.GetTask(this);
+            return _provider?.GetTask(this) ?? System.Threading.Tasks.Task.CompletedTask;
         }
 
 #if SP_UNITASK
@@ -162,9 +162,13 @@ namespace com.spacepuppy.Async
             {
                 return p.GetUniTask(this);
             }
-            else
+            else if (_provider != null)
             {
                 return GetUniTask();
+            }
+            else
+            {
+                return UniTask.CompletedTask;
             }
         }
         private async UniTask GetUniTask()
@@ -186,9 +190,13 @@ namespace com.spacepuppy.Async
             {
                 return p.GetUniTask(this).GetAwaiter();
             }
-            else
+            else if (_provider != null)
             {
                 return GetUniTask().GetAwaiter();
+            }
+            else
+            {
+                return UniTask.CompletedTask.GetAwaiter();
             }
         }
 #else
@@ -202,17 +210,7 @@ namespace com.spacepuppy.Async
         /// Get the result, if any, of the handle after the handle has completed.
         /// </summary>
         /// <returns></returns>
-        public object GetResult()
-        {
-            if (_provider != null)
-            {
-                return _provider.GetResult(this);
-            }
-            else
-            {
-                return null;
-            }
-        }
+        public object GetResult() => _provider?.GetResult(this);
 
         #endregion
 
@@ -226,6 +224,8 @@ namespace com.spacepuppy.Async
         #endregion
 
         #region Static Methods
+
+        public static AsyncWaitHandle<T> Result<T>(T result) => new AsyncWaitHandle<T>(result);
 
         public static AsyncWaitHandle Empty => default(AsyncWaitHandle);
 
@@ -355,9 +355,13 @@ namespace com.spacepuppy.Async
             {
                 return p.GetUniTask(this);
             }
-            else
+            else if (_provider != null)
             {
                 return GetUniTask();
+            }
+            else
+            {
+                return UniTask.FromResult<T>(_result);
             }
         }
         private async UniTask<T> GetUniTask()
@@ -378,17 +382,17 @@ namespace com.spacepuppy.Async
 
         public UniTask<T>.Awaiter GetAwaiter()
         {
-            if (_provider == null)
-            {
-                return new UniTask<T>(_result).GetAwaiter();
-            }
-            else if (_provider is IUniTaskAsyncWaitHandleProvider<T> p)
+            if (_provider is IUniTaskAsyncWaitHandleProvider<T> p)
             {
                 return p.GetUniTask(this).GetAwaiter();
             }
-            else
+            else if (_provider != null)
             {
                 return GetUniTask().GetAwaiter();
+            }
+            else
+            {
+                return new UniTask<T>(_result).GetAwaiter();
             }
         }
         UniTask.Awaiter IAsyncWaitHandle.GetAwaiter() => ((UniTask)this.AsUniTask()).GetAwaiter();

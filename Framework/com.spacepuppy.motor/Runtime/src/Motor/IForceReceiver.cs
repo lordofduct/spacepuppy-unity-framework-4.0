@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using com.spacepuppy.Collections;
+using UnityEngine;
 
 namespace com.spacepuppy.Motor
 {
@@ -13,26 +14,10 @@ namespace com.spacepuppy.Motor
 
     }
 
-    public class RigidbodyForceReceiverWrapper : IForceReceiver
+    public class RigidbodyForceReceiver : MonoBehaviour, IForceReceiver
     {
 
         private Rigidbody _body;
-
-        public GameObject gameObject
-        {
-            get { return _body.gameObject; }
-        }
-
-        public Transform transform
-        {
-            get { return _body.transform; }
-        }
-
-        public RigidbodyForceReceiverWrapper(Rigidbody body)
-        {
-            if (body == null) throw new System.ArgumentNullException("body");
-            _body = body;
-        }
 
         public void Move(Vector3 mv)
         {
@@ -52,6 +37,25 @@ namespace com.spacepuppy.Motor
         public void AddExplosionForce(float explosionForce, Vector3 explosionPosition, float explosionRadius, float upwardsModifier, ForceMode mode)
         {
             _body.AddExplosionForce(explosionForce, explosionPosition, explosionRadius, upwardsModifier, mode);
+        }
+
+
+        public static RigidbodyForceReceiver Get(Rigidbody rb)
+        {
+            if (rb == null) throw new System.ArgumentNullException(nameof(rb));
+
+            using (var lst = TempCollection.GetList<RigidbodyForceReceiver>())
+            {
+                rb.GetComponents<RigidbodyForceReceiver>(lst);
+                foreach(var rf in lst)
+                {
+                    if (rf && rf._body == rb) return rf;
+                }
+            }
+
+            var fr = rb.gameObject.AddComponent<RigidbodyForceReceiver>();
+            fr._body = rb;
+            return fr;
         }
 
     }

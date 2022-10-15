@@ -288,6 +288,22 @@ namespace com.spacepuppy.Utils
         public static Vector2 Slerp(Vector2 from, Vector2 to, float t)
         {
             var a = MathUtil.NormalizeAngle(Mathf.Lerp(Mathf.Atan2(from.y, from.x), Mathf.Atan2(to.y, to.x), t), true);
+            var l = Mathf.LerpUnclamped(from.magnitude, to.magnitude, t);
+            return new Vector2(Mathf.Cos(a) * l, Mathf.Sin(a) * l);
+        }
+
+        /// <summary>
+        /// Angular interpolates between two vectors.
+        /// </summary>
+        /// <param name="from"></param>
+        /// <param name="to"></param>
+        /// <param name="t"></param>
+        /// <returns>The vectors are 2 dimensional, so technically this is not a spherical linear interpolation. The name Slerp is kept for consistency. 
+        /// The result would be if you Slerped between 2 Vector3's that had a z value of 0. The direction interpolates at an angular rate, where as the 
+        /// magnitude interpolates at a linear rate.</returns>
+        public static Vector2 SlerpClamped(Vector2 from, Vector2 to, float t)
+        {
+            var a = MathUtil.NormalizeAngle(Mathf.Lerp(Mathf.Atan2(from.y, from.x), Mathf.Atan2(to.y, to.x), t), true);
             var l = Mathf.Lerp(from.magnitude, to.magnitude, t);
             return new Vector2(Mathf.Cos(a) * l, Mathf.Sin(a) * l);
         }
@@ -379,7 +395,7 @@ namespace com.spacepuppy.Utils
         public static float AngleOffAroundAxis(Vector3 v, Vector3 forward, Vector3 axis, bool clockwise = false)
         {
             Vector3 right;
-            if(clockwise)
+            if (clockwise)
             {
                 right = Vector3.Cross(forward, axis);
                 forward = Vector3.Cross(axis, right);
@@ -411,6 +427,10 @@ namespace com.spacepuppy.Utils
                 q = Quaternion.AngleAxis(-a, axis);
             return q * v;
         }
+
+        public static Vector3 Slerp(Vector3 a, Vector3 b, float t) => Vector3.SlerpUnclamped(a, b, t);
+
+        public static Vector3 SlerpClamped(Vector3 a, Vector3 b, float t) => Vector3.Slerp(a, b, t);
 
         #endregion
 
@@ -514,7 +534,7 @@ namespace com.spacepuppy.Utils
             if (values == null || values.Length == 0) return Vector3.zero;
 
             Vector3 v = Vector3.zero;
-            for(int i = 0; i < values.Length; i++)
+            for (int i = 0; i < values.Length; i++)
             {
                 v += values[i];
             }
@@ -719,7 +739,7 @@ namespace com.spacepuppy.Utils
         {
             Vector3 sum = Vector3.zero;
             var e = com.spacepuppy.Collections.LightEnumerator.Create(vectors);
-            while(e.MoveNext())
+            while (e.MoveNext())
             {
                 sum += e.Current;
             }

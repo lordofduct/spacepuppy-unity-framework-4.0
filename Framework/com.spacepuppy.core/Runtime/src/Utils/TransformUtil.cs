@@ -613,7 +613,27 @@ namespace com.spacepuppy.Utils
         }
 
         #endregion
-        
+
+        #region Camera-Like
+
+        public static Ray ViewportPointToRay(Vector2 vp, Matrix4x4 proj, Matrix4x4 trs)
+        {
+            var worldToCam = Matrix4x4.Scale(new Vector3(1f, 1f, -1f)) * trs.inverse;
+            var m = proj * worldToCam;
+            var mInv = m.inverse;
+            // near clipping plane point
+            Vector4 p = new Vector4(vp.x * 2f - 1f, vp.y * 2f - 1f, -1f, 1f);
+            var p0 = mInv * p;
+            p0 /= p0.w;
+            // far clipping plane point
+            p.z = 1;
+            var p1 = mInv * p;
+            p1 /= p1.w;
+            return new Ray(p0, (p1 - p0).normalized);
+        }
+
+        #endregion
+
     }
 
 }

@@ -23,6 +23,12 @@ namespace com.spacepuppy.SPInput
 
         }
 
+        public SPInputManager(Services.AutoRegisterOption autoRegister, Services.MultipleServiceResolutionOption multipleServiceResolution, Services.UnregisterResolutionOption unregisterResolution)
+            : base(autoRegister, multipleServiceResolution, unregisterResolution)
+        {
+
+        }
+
         #endregion
 
         #region Messages

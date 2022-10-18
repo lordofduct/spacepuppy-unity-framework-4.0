@@ -686,7 +686,6 @@ namespace com.spacepuppyeditor
                 case System.TypeCode.UInt32:
                 case System.TypeCode.Int64:
                 case System.TypeCode.UInt64:
-                case System.TypeCode.DateTime:
                     return SerializedPropertyType.Integer;
                 case System.TypeCode.Boolean:
                     return SerializedPropertyType.Boolean;
@@ -698,6 +697,8 @@ namespace com.spacepuppyeditor
                     return SerializedPropertyType.String;
                 case System.TypeCode.Char:
                     return SerializedPropertyType.Character;
+                case System.TypeCode.DateTime:
+                    return SerializedPropertyType.Generic;
                 default:
                     {
                         if (TypeUtil.IsType(tp, typeof(Color)))
@@ -722,6 +723,8 @@ namespace com.spacepuppyeditor
                             return SerializedPropertyType.Bounds;
                         else if (TypeUtil.IsType(tp, typeof(Gradient)))
                             return SerializedPropertyType.Gradient;
+                        else if (TypeUtil.IsType(tp, typeof(System.TimeSpan)))
+                            return SerializedPropertyType.Generic;
                     }
                     return SerializedPropertyType.Generic;
 

@@ -324,15 +324,6 @@ namespace com.spacepuppyeditor
                                 }
                             }
                             break;
-                        case System.TypeCode.DateTime:
-                            {
-                                System.DateTime dt = SPEditorGUI.DateTimeField(position, label, ConvertUtil.ToDate(value));
-                                if (EditorGUI.EndChangeCheck())
-                                {
-                                    return dt;
-                                }
-                            }
-                            break;
                         default:
                             {
                                 int num = EditorGUI.IntField(position, label, ConvertUtil.ToInt(value));
@@ -560,7 +551,28 @@ namespace com.spacepuppyeditor
                     }
                     break;
                 default:
-                    EditorGUI.PrefixLabel(position, label);
+                    if (valueType == typeof(System.DateTime))
+                    {
+                        EditorGUI.BeginChangeCheck();
+                        System.DateTime dt = SPEditorGUI.DateTimeField(position, label, ConvertUtil.ToDate(value));
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            return dt;
+                        }
+                    }
+                    else if (valueType == typeof(System.TimeSpan))
+                    {
+                        EditorGUI.BeginChangeCheck();
+                        var ts = SPEditorGUI.TimeSpanField(position, label, ConvertUtil.ToTime(value));
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            return ts;
+                        }
+                    }
+                    else
+                    {
+                        EditorGUI.PrefixLabel(position, label);
+                    }
                     break;
             }
 
@@ -798,6 +810,25 @@ namespace com.spacepuppyeditor
         public static System.DateTime DateTimeField(Rect position, GUIContent label, System.DateTime dateTime)
         {
             return ConvertUtil.ToDate(EditorGUI.DelayedTextField(position, label, dateTime.ToString()));
+        }
+
+        #endregion
+
+        #region TimeSpan Field
+
+        public static System.TimeSpan TimeSpanField(Rect position, System.TimeSpan ts)
+        {
+            return ConvertUtil.ToTime(EditorGUI.DelayedTextField(position, GUIContent.none, ts.ToString()));
+        }
+
+        public static System.TimeSpan TimeSpanField(Rect position, string label, System.TimeSpan ts)
+        {
+            return ConvertUtil.ToTime(EditorGUI.DelayedTextField(position, label, ts.ToString()));
+        }
+
+        public static System.TimeSpan TimeSpanField(Rect position, GUIContent label, System.TimeSpan ts)
+        {
+            return ConvertUtil.ToTime(EditorGUI.DelayedTextField(position, label, ts.ToString()));
         }
 
         #endregion

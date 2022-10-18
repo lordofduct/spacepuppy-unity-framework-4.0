@@ -88,6 +88,8 @@ namespace com.spacepuppy
             }
         }
 
+        public ITimeSupplier TimeSupplierOrDefault => this.TimeSupplier ?? SPTime.Normal;
+
         public bool IsCustom
         {
             get { return _timeSupplierType == DeltaTimeType.Custom; }
@@ -111,7 +113,16 @@ namespace com.spacepuppy
         [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple=false)]
         public class Config : SPTime.Config
         {
+            public string DefaultUnits;
 
+            public Config()
+            {
+
+            }
+            public Config(string defaultUnits)
+            {
+                DefaultUnits = defaultUnits;
+            }
         }
 
         #endregion

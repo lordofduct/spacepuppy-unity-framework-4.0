@@ -28,6 +28,7 @@ namespace com.spacepuppy
 
     public enum TimeUnits
     {
+        Milliseconds = -1,
         Seconds = 0,
         Minutes = 1,
         Hours = 2,

@@ -264,6 +264,25 @@ namespace com.spacepuppyeditor
 
         #endregion
 
+        #region TimeSpan Field
+
+        public static System.TimeSpan TimeSpanField(System.TimeSpan ts)
+        {
+            return SPEditorGUI.TimeSpanField(EditorGUILayout.GetControlRect(false), ts);
+        }
+
+        public static System.TimeSpan TimeSpanField(string label, System.TimeSpan ts)
+        {
+            return SPEditorGUI.TimeSpanField(EditorGUILayout.GetControlRect(true), label, ts);
+        }
+
+        public static System.TimeSpan TimeSpanField(GUIContent label, System.TimeSpan ts)
+        {
+            return SPEditorGUI.TimeSpanField(EditorGUILayout.GetControlRect(true), label, ts);
+        }
+
+        #endregion
+
         #region LayerMaskField
 
         public static LayerMask LayerMaskField(string label, int selectedMask)

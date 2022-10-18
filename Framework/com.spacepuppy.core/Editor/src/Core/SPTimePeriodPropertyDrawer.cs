@@ -27,6 +27,7 @@ namespace com.spacepuppyeditor.Core
             var w = position.width / 3f;
             var attrib = this.fieldInfo.GetCustomAttributes(typeof(SPTime.Config), false).FirstOrDefault() as SPTime.Config;
             var availNames = (attrib != null) ? attrib.AvailableCustomTimeNames : null;
+            _timeDrawer.DefaultUnits = (attrib is SPTimePeriod.Config spta) ? spta.DefaultUnits : null;
 
             try
             {

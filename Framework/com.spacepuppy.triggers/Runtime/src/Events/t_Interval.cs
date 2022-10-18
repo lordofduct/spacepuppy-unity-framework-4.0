@@ -40,6 +40,8 @@ namespace com.spacepuppy.Events
 
         [System.NonSerialized()]
         private RadicalCoroutine _routine;
+        [System.NonSerialized]
+        private double _startTime = double.NaN;
 
         #endregion
 
@@ -51,7 +53,7 @@ namespace com.spacepuppy.Events
 
             if ((_activateOn & ActivateEvent.Awake) != 0)
             {
-                this.OnTriggerActivate();
+                this.RestartTimer();
             }
         }
 
@@ -61,7 +63,7 @@ namespace com.spacepuppy.Events
 
             if ((_activateOn & ActivateEvent.OnStart) != 0 || (_activateOn & ActivateEvent.OnEnable) != 0)
             {
-                this.OnTriggerActivate();
+                this.RestartTimer();
             }
         }
 
@@ -73,7 +75,7 @@ namespace com.spacepuppy.Events
 
             if ((_activateOn & ActivateEvent.OnEnable) != 0)
             {
-                this.OnTriggerActivate();
+                this.RestartTimer();
             }
         }
 
@@ -97,6 +99,12 @@ namespace com.spacepuppy.Events
             set { _interval = value; }
         }
 
+        public float IntervalSeconds
+        {
+            get => _interval.Seconds;
+            set => _interval.Seconds = value;
+        }
+
         public float Duration
         {
             get { return _interval.Seconds; }
@@ -118,6 +126,22 @@ namespace com.spacepuppy.Events
 
         public SPEvent OnComplete => _onComplete;
 
+        public double ElapsedSecondsPrecise => double.IsNaN(_startTime) ? 0d : System.Math.Clamp(_interval.TimeSupplierOrDefault.TotalPrecise - _startTime, 0d, _interval.Seconds);
+
+        [ShowNonSerializedProperty("Elapsed Seconds", ShowAtEditorTime = true)]
+        public float ElapsedSeconds => (float)this.ElapsedSecondsPrecise;
+
+        [ShowNonSerializedProperty("Elapsed Time", ShowAtEditorTime = true)]
+        public System.TimeSpan ElapsedTime => System.TimeSpan.FromSeconds(this.ElapsedSecondsPrecise);
+
+        public double RemainingSecondsPrecise => double.IsNaN(_startTime) ? (double)_interval.Seconds : (double)_interval.Seconds - System.Math.Clamp(_interval.TimeSupplierOrDefault.TotalPrecise - _startTime, 0d, _interval.Seconds);
+
+        [ShowNonSerializedProperty("Remaining Seconds", ShowAtEditorTime = true)]
+        public float RemainingSeconds => (float)this.RemainingSecondsPrecise;
+
+        [ShowNonSerializedProperty("Remaining Time", ShowAtEditorTime = true)]
+        public System.TimeSpan RemainingTime => System.TimeSpan.FromSeconds(this.RemainingSecondsPrecise);
+
         #endregion
 
         #region Methods
@@ -126,7 +150,7 @@ namespace com.spacepuppy.Events
         {
             if (_routine != null) return;
 
-            _routine = this.StartRadicalCoroutine(this.TickerCallback(_delay, _interval, _repeatCount), RadicalCoroutineDisableMode.CancelOnDisable);
+            _routine = this.StartRadicalCoroutine(this.TickerCallback(), RadicalCoroutineDisableMode.CancelOnDisable);
         }
 
         public void RestartTimer()
@@ -136,23 +160,38 @@ namespace com.spacepuppy.Events
                 RadicalCoroutine.Release(ref _routine);
             }
 
-            _routine = this.StartRadicalCoroutine(this.TickerCallback(_delay, _interval, _repeatCount), RadicalCoroutineDisableMode.CancelOnDisable);
+            _routine = this.StartRadicalCoroutine(this.TickerCallback(), RadicalCoroutineDisableMode.CancelOnDisable);
         }
 
-        private void OnTriggerActivate()
+        public void Reset()
         {
-            this.RestartTimer();
+            if (_routine != null)
+            {
+                RadicalCoroutine.Release(ref _routine);
+            }
+
+            _startTime = double.NaN;
         }
 
-
-        private System.Collections.IEnumerator TickerCallback(float delay, SPTimePeriod interval, DiscreteFloat repeatCount)
+        public void AddTimeToInterval(float seconds)
         {
-            if (delay > 0f) yield return WaitForDuration.Seconds(delay, interval.TimeSupplier);
+            _interval.Seconds += seconds;
+        }
+
+        private System.Collections.IEnumerator TickerCallback()
+        {
+            _startTime = double.NaN;
+
+            if (_delay > 0f) yield return WaitForDuration.Seconds(_delay, _interval.TimeSupplierOrDefault);
 
             int cnt = 0;
-            while (cnt <= repeatCount)
+            while (cnt <= _repeatCount)
             {
-                yield return WaitForDuration.Period(interval);
+                _startTime = _interval.TimeSupplierOrDefault.TotalPrecise;
+                while((_interval.TimeSupplierOrDefault.TotalPrecise - _startTime) < _interval.Seconds)
+                {
+                    yield return null;
+                }
                 cnt++;
 
                 if (_onInterval.HasReceivers) _onInterval.ActivateTrigger(this, null);

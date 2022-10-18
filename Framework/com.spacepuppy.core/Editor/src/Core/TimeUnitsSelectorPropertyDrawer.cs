@@ -326,6 +326,7 @@ namespace com.spacepuppyeditor.Core
 
             private string[] _units = new string[]
             {
+                "Milliseconds",
                 "Seconds",
                 "Minutes",
                 "Hours",
@@ -349,6 +350,8 @@ namespace com.spacepuppyeditor.Core
 
                 switch (units)
                 {
+                    case "Milliseconds":
+                        return span.TotalMilliseconds;
                     case "Seconds":
                         //return span.TotalSeconds;
                         return seconds;
@@ -369,6 +372,8 @@ namespace com.spacepuppyeditor.Core
             {
                 switch (units)
                 {
+                    case "Milliseconds":
+                        return System.TimeSpan.FromMilliseconds(time).TotalSeconds;
                     case "Seconds":
                         return time;
                     case "Minutes":

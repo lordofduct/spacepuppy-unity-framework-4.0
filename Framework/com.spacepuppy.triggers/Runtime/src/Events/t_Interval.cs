@@ -102,7 +102,7 @@ namespace com.spacepuppy.Events
         public float IntervalSeconds
         {
             get => _interval.Seconds;
-            set => _interval.Seconds = value;
+            set => _interval.Seconds = Mathf.Max(value, 0f);
         }
 
         public float Duration
@@ -175,7 +175,7 @@ namespace com.spacepuppy.Events
 
         public void AddTimeToInterval(float seconds)
         {
-            _interval.Seconds += seconds;
+            _interval.Seconds = Mathf.Max(_interval.Seconds + seconds, 0f);
         }
 
         private System.Collections.IEnumerator TickerCallback()
@@ -188,7 +188,8 @@ namespace com.spacepuppy.Events
             while (cnt <= _repeatCount)
             {
                 _startTime = _interval.TimeSupplierOrDefault.TotalPrecise;
-                while((_interval.TimeSupplierOrDefault.TotalPrecise - _startTime) < _interval.Seconds)
+                yield return null;
+                while ((_interval.TimeSupplierOrDefault.TotalPrecise - _startTime) < _interval.Seconds)
                 {
                     yield return null;
                 }
@@ -198,6 +199,11 @@ namespace com.spacepuppy.Events
             }
 
             if (_onComplete.HasReceivers) _onComplete.ActivateTrigger(this, null);
+
+            if (_routine != null)
+            {
+                RadicalCoroutine.Release(ref _routine);
+            }
         }
 
         #endregion

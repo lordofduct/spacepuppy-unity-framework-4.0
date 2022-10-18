@@ -10,7 +10,7 @@ namespace com.spacepuppy.Spawn
 
     public class SpawnPool : SPComponent, ICollection<IPrefabCache>
     {
-        
+
         #region Static Multiton Interface
 
         public const string DEFAULT_SPAWNPOOL_NAME = "Spacepuppy.PrimarySpawnPool";
@@ -26,7 +26,7 @@ namespace com.spacepuppy.Spawn
                 return _defaultPool;
             }
         }
-        
+
         public static void CreatePrimaryPool()
         {
             if (PrimaryPoolExists) return;
@@ -42,7 +42,7 @@ namespace com.spacepuppy.Spawn
                 if (_defaultPool != null) return true;
 
                 _defaultPool = null;
-                if(Pools.Count > 0)
+                if (Pools.Count > 0)
                 {
                     SpawnPool point = null;
                     var e = Pools.GetEnumerator();
@@ -86,7 +86,7 @@ namespace com.spacepuppy.Spawn
             base.Awake();
 
             Pools.AddReference(this);
-            if(this.CompareName(DEFAULT_SPAWNPOOL_NAME) && _defaultPool == null)
+            if (this.CompareName(DEFAULT_SPAWNPOOL_NAME) && _defaultPool == null)
             {
                 _defaultPool = this;
             }
@@ -97,7 +97,7 @@ namespace com.spacepuppy.Spawn
             base.Start();
 
             var e = _registeredPrefabs.GetEnumerator();
-            while(e.MoveNext())
+            while (e.MoveNext())
             {
                 if (e.Current.Prefab == null) continue;
 
@@ -117,7 +117,7 @@ namespace com.spacepuppy.Spawn
             Pools.RemoveReference(this);
 
             var e = _registeredPrefabs.GetEnumerator();
-            while(e.MoveNext())
+            while (e.MoveNext())
             {
                 e.Current.Clear();
             }
@@ -288,6 +288,18 @@ namespace com.spacepuppy.Spawn
             return (controller != null) ? controller.gameObject : null;
         }
 
+        public T Spawn<T>(T prefab, Transform parent = null) where T : Component
+        {
+            var controller = SpawnAsController(prefab.gameObject, parent);
+            return (controller != null) ? controller.GetComponent<T>() : null;
+        }
+
+        public T Spawn<T>(T prefab, Vector3 position, Quaternion rotation, Transform par = null) where T : Component
+        {
+            var controller = SpawnAsController(prefab.gameObject, position, rotation, par);
+            return (controller != null) ? controller.GetComponent<T>() : null;
+        }
+
         public SpawnedObjectController SpawnAsController(GameObject prefab, Transform par = null)
         {
             if (prefab == null) return null;
@@ -389,7 +401,7 @@ namespace com.spacepuppy.Spawn
             if (Object.ReferenceEquals(cntrl, null)) throw new System.ArgumentNullException("cntrl");
 
             PrefabCache cache;
-            if(!_prefabToCache.TryGetValue(cntrl.PrefabID, out cache) || !cache.ContainsActive(cntrl))
+            if (!_prefabToCache.TryGetValue(cntrl.PrefabID, out cache) || !cache.ContainsActive(cntrl))
             {
                 return false;
             }
@@ -449,7 +461,7 @@ namespace com.spacepuppy.Spawn
             id = controller.PrefabID;
             PrefabCache result;
             if (_prefabToCache.TryGetValue(id, out result)) return result;
-            
+
             return null;
         }
 
@@ -512,7 +524,7 @@ namespace com.spacepuppy.Spawn
                 array[arrayIndex + i] = _registeredPrefabs[i];
             }
         }
-        
+
         public Enumerator GetEnumerator()
         {
             return new Enumerator(this);
@@ -542,7 +554,7 @@ namespace com.spacepuppy.Spawn
             private string _itemName;
             [SerializeField]
             private GameObject _prefab;
-            
+
             [Tooltip("The starting CacheSize.")]
             public int CacheSize = 0;
             [Tooltip("How much should the cache resize by if an empty/used cache is spawned from.")]
@@ -566,7 +578,7 @@ namespace com.spacepuppy.Spawn
                 _instances = new HashSet<SpawnedObjectController>(ObjectReferenceEqualityComparer<SpawnedObjectController>.Default);
                 _activeInstances = new HashSet<SpawnedObjectController>(ObjectReferenceEqualityComparer<SpawnedObjectController>.Default);
             }
-            
+
             public PrefabCache(GameObject prefab, string name)
             {
                 _prefab = prefab;
@@ -583,7 +595,7 @@ namespace com.spacepuppy.Spawn
             #endregion
 
             #region Properties
-            
+
             public SpawnPool Owner
             {
                 get { return _owner; }
@@ -647,7 +659,7 @@ namespace com.spacepuppy.Spawn
                 this.Clear();
                 if (_prefab == null) return;
 
-                for(int i = 0; i < this.CacheSize; i++)
+                for (int i = 0; i < this.CacheSize; i++)
                 {
                     _instances.Add(this.CreateCachedInstance());
                 }
@@ -655,10 +667,10 @@ namespace com.spacepuppy.Spawn
 
             internal void Clear()
             {
-                if(_instances.Count > 0)
+                if (_instances.Count > 0)
                 {
                     var e = _instances.GetEnumerator();
-                    while(e.MoveNext())
+                    while (e.MoveNext())
                     {
                         e.Current.DeInit();
                         Object.Destroy(e.Current.gameObject);
@@ -671,22 +683,22 @@ namespace com.spacepuppy.Spawn
 
             internal SpawnedObjectController Spawn(Vector3 pos, Quaternion rot, Transform par)
             {
-                if(_instances.Count == 0)
+                if (_instances.Count == 0)
                 {
                     int cnt = this.Count;
                     int newSize = cnt + this.ResizeBuffer;
                     if (this.LimitAmount > 0) newSize = Mathf.Min(newSize, this.LimitAmount);
 
-                    if(newSize > cnt)
+                    if (newSize > cnt)
                     {
-                        for(int i = cnt; i < newSize; i++)
+                        for (int i = cnt; i < newSize; i++)
                         {
                             _instances.Add(this.CreateCachedInstance());
                         }
                     }
                 }
 
-                if(_instances.Count > 0)
+                if (_instances.Count > 0)
                 {
                     var cntrl = _instances.Pop();
 
@@ -750,7 +762,7 @@ namespace com.spacepuppy.Spawn
                 obj.transform.SetParent(_owner.transform, false);
                 obj.transform.localPosition = Vector3.zero;
                 obj.transform.rotation = Quaternion.identity;
-                
+
                 obj.SetActive(false);
 
                 return cntrl;
@@ -759,7 +771,7 @@ namespace com.spacepuppy.Spawn
             #endregion
 
         }
-        
+
         public struct Enumerator : IEnumerator<IPrefabCache>
         {
 

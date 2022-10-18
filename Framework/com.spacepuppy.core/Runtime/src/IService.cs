@@ -670,7 +670,6 @@ namespace com.spacepuppy
         #region Fields
 
         [SerializeField]
-        [DisplayFlat(DisplayBox = true)]
         private ServiceRegistrationOptions _serviceRegistrationOptions;
 
         #endregion
@@ -943,7 +942,7 @@ namespace com.spacepuppy
         #region Special Types
 
         [System.Serializable]
-        private struct ServiceRegistrationOptions
+        public struct ServiceRegistrationOptions
         {
 
             [SerializeField]
@@ -972,7 +971,6 @@ namespace com.spacepuppy
         #region Fields
 
         [SerializeField]
-        [DisplayFlat(DisplayBox = true)]
         private ServiceRegistrationOptions _serviceRegistrationOptions;
 
         #endregion
@@ -1187,7 +1185,7 @@ namespace com.spacepuppy
         #region Special Types
 
         [System.Serializable]
-        private struct ServiceRegistrationOptions
+        public struct ServiceRegistrationOptions
         {
 
             [SerializeField]

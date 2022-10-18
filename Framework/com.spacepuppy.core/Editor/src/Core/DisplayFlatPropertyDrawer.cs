@@ -136,7 +136,7 @@ namespace com.spacepuppyeditor.Core
                 }
                 else
                 {
-                    EditorGUI.PrefixLabel(position, label);
+                    SPEditorGUI.SafePrefixLabel(position, label);
                 }
             }
             finally

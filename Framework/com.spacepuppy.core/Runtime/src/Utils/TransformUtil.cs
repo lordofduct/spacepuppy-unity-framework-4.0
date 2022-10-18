@@ -108,7 +108,7 @@ namespace com.spacepuppy.Utils
 
             return Vector3.zero;
         }
-        
+
         public static Vector3 GetAxis(this Transform trans, CartesianAxis axis)
         {
             if (trans == null) throw new System.ArgumentNullException("trans");
@@ -131,7 +131,7 @@ namespace com.spacepuppy.Utils
 
             return Vector3.zero;
         }
-        
+
         public static Vector3 GetAxis(this Transform trans, CartesianAxis axis, bool inLocalSpace)
         {
             if (trans == null) throw new System.ArgumentNullException("trans");
@@ -140,7 +140,7 @@ namespace com.spacepuppy.Utils
             switch (axis)
             {
                 case CartesianAxis.Xneg:
-                    v= -trans.right;
+                    v = -trans.right;
                     break;
                 case CartesianAxis.Yneg:
                     v = -trans.up;
@@ -230,14 +230,14 @@ namespace com.spacepuppy.Utils
             body.angularVelocity = Vector3.zero;
         }
 
-        public static void CopyTransform(GameObject src, GameObject dst, bool bSetScale = false)
+        public static void CopyTransform(this GameObject src, GameObject dst, bool bSetScale = false)
         {
             if (src == null) throw new System.ArgumentNullException("src");
             if (dst == null) throw new System.ArgumentNullException("dst");
             CopyTransform(src.transform, dst.transform);
         }
 
-        public static void CopyTransform(Transform src, Transform dst, bool bSetScale = false)
+        public static void CopyTransform(this Transform src, Transform dst, bool bSetScale = false)
         {
             if (src == null) throw new System.ArgumentNullException("src");
             if (dst == null) throw new System.ArgumentNullException("dst");
@@ -534,7 +534,7 @@ namespace com.spacepuppy.Utils
         /// <param name="rotation">The new rotation in world space.</param>
         public static void TransposeAroundAnchor(this Transform trans, Vector3 anchor, Vector3 position, Quaternion rotation)
         {
-            if(trans.parent != null)
+            if (trans.parent != null)
             {
                 position = trans.parent.InverseTransformPoint(position);
                 rotation = trans.parent.InverseTransformRotation(rotation);

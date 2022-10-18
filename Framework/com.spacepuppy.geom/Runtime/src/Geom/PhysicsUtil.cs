@@ -14,28 +14,6 @@ namespace com.spacepuppy.Geom
 
         public static float Detail = 0.1f;
 
-        private const int MAX_BUFFER = 1024;
-        private static Collider[] _nonallocColliderBuffer;
-        private static Collider[] NonAllocColliderBuffer
-        {
-            get
-            {
-                if(_nonallocColliderBuffer == null)
-                    _nonallocColliderBuffer = new Collider[MAX_BUFFER];
-                return _nonallocColliderBuffer;
-            }
-        }
-        private static RaycastHit[] _nonallocRaycastBuffer;
-        private static RaycastHit[] NonAllocRaycastBuffer
-        {
-            get
-            {
-                if (_nonallocRaycastBuffer == null)
-                    _nonallocRaycastBuffer = new RaycastHit[MAX_BUFFER];
-                return _nonallocRaycastBuffer;
-            }
-        }
-
         public class RaycastHitDistanceComparer : IComparer<RaycastHit>
         {
             private static RaycastHitDistanceComparer _default;
@@ -95,21 +73,27 @@ namespace com.spacepuppy.Geom
             }
             else
             {
-                var nonAllocArr = NonAllocRaycastBuffer;
-                int cnt = Physics.RaycastNonAlloc(ray, nonAllocArr, maxDistance, layerMask, query);
-                if (results is List<RaycastHit>)
+                var buffer = GetNonAllocRaycastBuffer();
+                try
                 {
-                    var lst = results as List<RaycastHit>;
-                    var num = cnt + lst.Count;
-                    if (lst.Capacity < num) lst.Capacity = num;
-                }
+                    int cnt = Physics.RaycastNonAlloc(ray, buffer, maxDistance, layerMask, query);
+                    if (results is List<RaycastHit>)
+                    {
+                        var lst = results as List<RaycastHit>;
+                        var num = cnt + lst.Count;
+                        if (lst.Capacity < num) lst.Capacity = num;
+                    }
 
-                for (int i = 0; i < cnt; i++)
-                {
-                    results.Add(nonAllocArr[i]);
-                    nonAllocArr[i] = default(RaycastHit);
+                    for (int i = 0; i < cnt; i++)
+                    {
+                        results.Add(buffer[i]);
+                    }
+                    return cnt;
                 }
-                return cnt;
+                finally
+                {
+                    ReleaseNonAllocRaycastBuffer(buffer);
+                }
             }
         }
 
@@ -117,39 +101,43 @@ namespace com.spacepuppy.Geom
         {
             if (results == null) throw new System.ArgumentNullException("results");
 
-            var nonAllocArr = NonAllocRaycastBuffer;
-
-            var dir = end - start;
-            var dist = dir.magnitude;
-            int cnt = Physics.RaycastNonAlloc(new Ray(start, dir), nonAllocArr, dist, layerMask, query);
-
-            if (results is Collider[])
+            var buffer = GetNonAllocRaycastBuffer();
+            try
             {
-                var arr = results as Collider[];
-                if (arr.Length < cnt) cnt = arr.Length;
+                var dir = end - start;
+                var dist = dir.magnitude;
+                int cnt = Physics.RaycastNonAlloc(new Ray(start, dir), buffer, dist, layerMask, query);
 
-                for (int i = 0; i < cnt; i++)
+                if (results is Collider[])
                 {
-                    arr[i] = nonAllocArr[i].collider;
-                    nonAllocArr[i] = default(RaycastHit);
+                    var arr = results as Collider[];
+                    if (arr.Length < cnt) cnt = arr.Length;
+
+                    for (int i = 0; i < cnt; i++)
+                    {
+                        arr[i] = buffer[i].collider;
+                    }
+                    return cnt;
                 }
-                return cnt;
+                else
+                {
+                    if (results is List<Collider>)
+                    {
+                        var lst = results as List<Collider>;
+                        var num = cnt + lst.Count;
+                        if (lst.Capacity < num) lst.Capacity = num;
+                    }
+
+                    for (int i = 0; i < cnt; i++)
+                    {
+                        results.Add(buffer[i].collider);
+                    }
+                    return cnt;
+                }
             }
-            else
+            finally
             {
-                if (results is List<Collider>)
-                {
-                    var lst = results as List<Collider>;
-                    var num = cnt + lst.Count;
-                    if (lst.Capacity < num) lst.Capacity = num;
-                }
-
-                for (int i = 0; i < cnt; i++)
-                {
-                    results.Add(nonAllocArr[i].collider);
-                    nonAllocArr[i] = default(RaycastHit);
-                }
-                return cnt;
+                ReleaseNonAllocRaycastBuffer(buffer);
             }
         }
 
@@ -167,7 +155,7 @@ namespace com.spacepuppy.Geom
         /// <param name="layerMask"></param>
         /// <param name="query"></param>
         /// <returns>The amount of colliders stored in results</returns>
-        public static int OverlapBox(Vector3 center, Vector3 halfExtents, ICollection<Collider> results, 
+        public static int OverlapBox(Vector3 center, Vector3 halfExtents, ICollection<Collider> results,
                                      Quaternion orientation, int layerMask = Physics.AllLayers, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
         {
             if (results == null) throw new System.ArgumentNullException("results");
@@ -178,27 +166,32 @@ namespace com.spacepuppy.Geom
             }
             else
             {
-                var nonAllocArr = NonAllocColliderBuffer;
-
-                int cnt = Physics.OverlapBoxNonAlloc(center, halfExtents, nonAllocArr, orientation, layerMask, query);
-                if (results is List<Collider>)
+                var buffer = GetNonAllocColliderBuffer();
+                try
                 {
-                    var lst = results as List<Collider>;
-                    var num = cnt + lst.Count;
-                    if (lst.Capacity < num) lst.Capacity = num;
-                }
+                    int cnt = Physics.OverlapBoxNonAlloc(center, halfExtents, buffer, orientation, layerMask, query);
+                    if (results is List<Collider>)
+                    {
+                        var lst = results as List<Collider>;
+                        var num = cnt + lst.Count;
+                        if (lst.Capacity < num) lst.Capacity = num;
+                    }
 
-                for (int i = 0; i < cnt; i++)
-                {
-                    results.Add(nonAllocArr[i]);
-                    nonAllocArr[i] = null;
+                    for (int i = 0; i < cnt; i++)
+                    {
+                        results.Add(buffer[i]);
+                    }
+                    return cnt;
                 }
-                return cnt;
+                finally
+                {
+                    ReleaseNonAllocColliderBuffer(buffer);
+                }
             }
         }
 
-        public static int BoxCastAll(Vector3 center, Vector3 halfExtents, Vector3 direction, ICollection<RaycastHit> results, 
-                                  Quaternion orientation, float maxDistance = float.PositiveInfinity, 
+        public static int BoxCastAll(Vector3 center, Vector3 halfExtents, Vector3 direction, ICollection<RaycastHit> results,
+                                  Quaternion orientation, float maxDistance = float.PositiveInfinity,
                                   int layerMask = Physics.AllLayers, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
         {
             if (results == null) throw new System.ArgumentNullException("results");
@@ -209,22 +202,27 @@ namespace com.spacepuppy.Geom
             }
             else
             {
-                var nonAllocArr = NonAllocRaycastBuffer;
-
-                int cnt = Physics.BoxCastNonAlloc(center, halfExtents, direction, nonAllocArr, orientation, maxDistance, layerMask);
-                if (results is List<RaycastHit>)
+                var buffer = GetNonAllocRaycastBuffer();
+                try
                 {
-                    var lst = results as List<RaycastHit>;
-                    var num = cnt + lst.Count;
-                    if (lst.Capacity < num) lst.Capacity = num;
-                }
+                    int cnt = Physics.BoxCastNonAlloc(center, halfExtents, direction, buffer, orientation, maxDistance, layerMask);
+                    if (results is List<RaycastHit>)
+                    {
+                        var lst = results as List<RaycastHit>;
+                        var num = cnt + lst.Count;
+                        if (lst.Capacity < num) lst.Capacity = num;
+                    }
 
-                for (int i = 0; i < cnt; i++)
-                {
-                    results.Add(nonAllocArr[i]);
-                    nonAllocArr[i] = default(RaycastHit);
+                    for (int i = 0; i < cnt; i++)
+                    {
+                        results.Add(buffer[i]);
+                    }
+                    return cnt;
                 }
-                return cnt;
+                finally
+                {
+                    ReleaseNonAllocRaycastBuffer(buffer);
+                }
             }
         }
 
@@ -239,22 +237,27 @@ namespace com.spacepuppy.Geom
             }
             else
             {
-                var nonAllocArr = NonAllocColliderBuffer;
-
-                int cnt = Physics.OverlapSphereNonAlloc(center, radius, nonAllocArr, layerMask, query);
-                if (results is List<Collider>)
+                var buffer = GetNonAllocColliderBuffer();
+                try
                 {
-                    var lst = results as List<Collider>;
-                    var num = cnt + lst.Count;
-                    if (lst.Capacity < num) lst.Capacity = num;
-                }
+                    int cnt = Physics.OverlapSphereNonAlloc(center, radius, buffer, layerMask, query);
+                    if (results is List<Collider>)
+                    {
+                        var lst = results as List<Collider>;
+                        var num = cnt + lst.Count;
+                        if (lst.Capacity < num) lst.Capacity = num;
+                    }
 
-                for (int i = 0; i < cnt; i++)
-                {
-                    results.Add(nonAllocArr[i]);
-                    nonAllocArr[i] = null;
+                    for (int i = 0; i < cnt; i++)
+                    {
+                        results.Add(buffer[i]);
+                    }
+                    return cnt;
                 }
-                return cnt;
+                finally
+                {
+                    ReleaseNonAllocColliderBuffer(buffer);
+                }
             }
         }
 
@@ -270,22 +273,27 @@ namespace com.spacepuppy.Geom
             }
             else
             {
-                var nonAllocArr = NonAllocRaycastBuffer;
-
-                int cnt = Physics.SphereCastNonAlloc(center, radius, direction, nonAllocArr, maxDistance, layerMask, query);
-                if (results is List<RaycastHit>)
+                var buffer = GetNonAllocRaycastBuffer();
+                try
                 {
-                    var lst = results as List<RaycastHit>;
-                    var num = cnt + lst.Count;
-                    if (lst.Capacity < num) lst.Capacity = num;
-                }
+                    int cnt = Physics.SphereCastNonAlloc(center, radius, direction, buffer, maxDistance, layerMask, query);
+                    if (results is List<RaycastHit>)
+                    {
+                        var lst = results as List<RaycastHit>;
+                        var num = cnt + lst.Count;
+                        if (lst.Capacity < num) lst.Capacity = num;
+                    }
 
-                for (int i = 0; i < cnt; i++)
-                {
-                    results.Add(nonAllocArr[i]);
-                    nonAllocArr[i] = default(RaycastHit);
+                    for (int i = 0; i < cnt; i++)
+                    {
+                        results.Add(buffer[i]);
+                    }
+                    return cnt;
                 }
-                return cnt;
+                finally
+                {
+                    ReleaseNonAllocRaycastBuffer(buffer);
+                }
             }
         }
 
@@ -300,22 +308,27 @@ namespace com.spacepuppy.Geom
             }
             else
             {
-                var nonAllocArr = NonAllocColliderBuffer;
-
-                int cnt = Physics.OverlapCapsuleNonAlloc(point1, point2, radius, nonAllocArr, layerMask, query);
-                if (results is List<Collider>)
+                var buffer = GetNonAllocColliderBuffer();
+                try
                 {
-                    var lst = results as List<Collider>;
-                    var num = cnt + lst.Count;
-                    if (lst.Capacity < num) lst.Capacity = num;
-                }
+                    int cnt = Physics.OverlapCapsuleNonAlloc(point1, point2, radius, buffer, layerMask, query);
+                    if (results is List<Collider>)
+                    {
+                        var lst = results as List<Collider>;
+                        var num = cnt + lst.Count;
+                        if (lst.Capacity < num) lst.Capacity = num;
+                    }
 
-                for (int i = 0; i < cnt; i++)
-                {
-                    results.Add(nonAllocArr[i]);
-                    nonAllocArr[i] = null;
+                    for (int i = 0; i < cnt; i++)
+                    {
+                        results.Add(buffer[i]);
+                    }
+                    return cnt;
                 }
-                return cnt;
+                finally
+                {
+                    ReleaseNonAllocColliderBuffer(buffer);
+                }
             }
         }
 
@@ -331,22 +344,27 @@ namespace com.spacepuppy.Geom
             }
             else
             {
-                var nonAllocArr = NonAllocRaycastBuffer;
-
-                int cnt = Physics.CapsuleCastNonAlloc(point1, point2, radius, direction, nonAllocArr, maxDistance, layerMask, query);
-                if (results is List<RaycastHit>)
+                var buffer = GetNonAllocRaycastBuffer();
+                try
                 {
-                    var lst = results as List<RaycastHit>;
-                    var num = cnt + lst.Count;
-                    if (lst.Capacity < num) lst.Capacity = num;
-                }
+                    int cnt = Physics.CapsuleCastNonAlloc(point1, point2, radius, direction, buffer, maxDistance, layerMask, query);
+                    if (results is List<RaycastHit>)
+                    {
+                        var lst = results as List<RaycastHit>;
+                        var num = cnt + lst.Count;
+                        if (lst.Capacity < num) lst.Capacity = num;
+                    }
 
-                for (int i = 0; i < cnt; i++)
-                {
-                    results.Add(nonAllocArr[i]);
-                    nonAllocArr[i] = default(RaycastHit);
+                    for (int i = 0; i < cnt; i++)
+                    {
+                        results.Add(buffer[i]);
+                    }
+                    return cnt;
                 }
-                return cnt;
+                finally
+                {
+                    ReleaseNonAllocRaycastBuffer(buffer);
+                }
             }
         }
 
@@ -361,7 +379,7 @@ namespace com.spacepuppy.Geom
             if (geom is Sphere)
             {
                 var s = (Sphere)geom;
-                return Physics.CheckSphere(s.Center, s.Radius, Physics.AllLayers,  query);
+                return Physics.CheckSphere(s.Center, s.Radius, Physics.AllLayers, query);
             }
             else if (geom is Capsule)
             {
@@ -397,27 +415,27 @@ namespace com.spacepuppy.Geom
         #endregion
 
         #region OverlapGeom
-        
+
         public static Collider[] OverlapGeom(IPhysicsObject geom, int layerMask = Physics.AllLayers, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
         {
             if (geom == null) throw new System.ArgumentNullException("geom");
-            
+
             using (var lst = TempCollection.GetList<Collider>())
             {
                 geom.Overlap(lst, layerMask, query);
                 return lst.ToArray();
             }
         }
-        
+
         public static int OverlapGeom(IPhysicsObject geom, IList<Collider> results, int layerMask = Physics.AllLayers, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
         {
             if (geom == null) throw new System.ArgumentNullException("geom");
-            
+
             return geom.Overlap(results, layerMask, query);
         }
 
         #endregion
-        
+
         #region Cast
 
         public static bool Cast(IPhysicsObject geom, Vector3 dir, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
@@ -511,7 +529,7 @@ namespace com.spacepuppy.Geom
         public static int CastAll(IPhysicsObject geom, Vector3 dir, ICollection<RaycastHit> results, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
         {
             if (geom == null) throw new System.ArgumentNullException("geom");
-            
+
             return geom.CastAll(dir, results, float.PositiveInfinity, Physics.AllLayers, query);
         }
 
@@ -660,7 +678,7 @@ namespace com.spacepuppy.Geom
 
             using (var set = TempCollection.GetSet<Collider>())
             {
-                if(geom.Overlap(set, layerMask, query) > 0)
+                if (geom.Overlap(set, layerMask, query) > 0)
                 {
                     var e = LightEnumerator.Create<Collider>(colliders);
                     while (e.MoveNext())
@@ -679,10 +697,10 @@ namespace com.spacepuppy.Geom
 
             using (var set = TempCollection.GetSet<Collider>())
             {
-                if(geom.Overlap(set, layerMask, query) > 0)
+                if (geom.Overlap(set, layerMask, query) > 0)
                 {
                     var e = set.GetEnumerator();
-                    while(e.MoveNext())
+                    while (e.MoveNext())
                     {
                         if (!ignoredColliders.Contains(e.Current)) return true;
                     }
@@ -757,29 +775,33 @@ namespace com.spacepuppy.Geom
 
         public static bool RaycastAgainst(Ray ray, out RaycastHit hit, Collider coll, float maxDistance = float.PositiveInfinity)
         {
-            var nonAllocArr = NonAllocRaycastBuffer;
-            LayerMask mask = 1 << coll.gameObject.layer;
-
-            int cnt = Physics.RaycastNonAlloc(ray, nonAllocArr, maxDistance, mask, QueryTriggerInteraction.Collide);
-            if (cnt > 0)
+            var buffer = GetNonAllocRaycastBuffer();
+            try
             {
-                System.Array.Sort(nonAllocArr, 0, cnt, RaycastHitDistanceComparer.Default);
+                LayerMask mask = 1 << coll.gameObject.layer;
 
-                for (int i = 0; i < cnt; i++)
+                int cnt = Physics.RaycastNonAlloc(ray, buffer, maxDistance, mask, QueryTriggerInteraction.Collide);
+                if (cnt > 0)
                 {
-                    if (coll == nonAllocArr[i].collider)
+                    System.Array.Sort(buffer, 0, cnt, RaycastHitDistanceComparer.Default);
+
+                    for (int i = 0; i < cnt; i++)
                     {
-                        hit = nonAllocArr[i];
-                        System.Array.Clear(nonAllocArr, 0, cnt);
-                        return true;
+                        if (coll == buffer[i].collider)
+                        {
+                            hit = buffer[i];
+                            return true;
+                        }
                     }
                 }
 
-                System.Array.Clear(nonAllocArr, 0, cnt);
+                hit = default(RaycastHit);
+                return false;
             }
-
-            hit = default(RaycastHit);
-            return false;
+            finally
+            {
+                ReleaseNonAllocRaycastBuffer(buffer);
+            }
         }
 
         /// <summary>
@@ -840,28 +862,31 @@ namespace com.spacepuppy.Geom
                 return false;
             }
 
-            var nonAllocArr = NonAllocRaycastBuffer;
-
-            int cnt = Physics.RaycastNonAlloc(ray, nonAllocArr, maxDistance, Physics.AllLayers, QueryTriggerInteraction.Collide);
-            if(cnt > 0)
+            var buffer = GetNonAllocRaycastBuffer();
+            try
             {
-                System.Array.Sort(nonAllocArr, 0, cnt, RaycastHitDistanceComparer.Default);
-                
-                for(int i = 0; i < cnt; i++)
+                int cnt = Physics.RaycastNonAlloc(ray, buffer, maxDistance, Physics.AllLayers, QueryTriggerInteraction.Collide);
+                if (cnt > 0)
                 {
-                    if(colliders.Contains(nonAllocArr[i].collider))
+                    System.Array.Sort(buffer, 0, cnt, RaycastHitDistanceComparer.Default);
+
+                    for (int i = 0; i < cnt; i++)
                     {
-                        hit = nonAllocArr[i];
-                        System.Array.Clear(nonAllocArr, 0, cnt);
-                        return true;
+                        if (colliders.Contains(buffer[i].collider))
+                        {
+                            hit = buffer[i];
+                            return true;
+                        }
                     }
                 }
 
-                System.Array.Clear(nonAllocArr, 0, cnt);
+                hit = default(RaycastHit);
+                return false;
             }
-
-            hit = default(RaycastHit);
-            return false;
+            finally
+            {
+                ReleaseNonAllocRaycastBuffer(buffer);
+            }
         }
 
         public static bool RaycastIgnoring(Vector3 pos, Vector3 dir, IEnumerable<Collider> ignoredColliders, float maxDistance = float.PositiveInfinity, int layerMask = Physics.AllLayers, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
@@ -869,43 +894,46 @@ namespace com.spacepuppy.Geom
             RaycastHit hit;
             return RaycastIgnoring(new Ray(pos, dir), out hit, ignoredColliders, maxDistance, layerMask, query);
         }
-        
+
         public static bool RaycastIgnoring(Ray ray, IEnumerable<Collider> ignoredColliders, float maxDistance = float.PositiveInfinity, int layerMask = Physics.AllLayers, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
         {
             RaycastHit hit;
             return RaycastIgnoring(ray, out hit, ignoredColliders, maxDistance, layerMask, query);
         }
-        
+
         public static bool RaycastIgnoring(Vector3 pos, Vector3 dir, out RaycastHit hit, IEnumerable<Collider> ignoredColliders, float maxDistance = float.PositiveInfinity, int layerMask = Physics.AllLayers, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
         {
             return RaycastIgnoring(new Ray(pos, dir), out hit, ignoredColliders, maxDistance, layerMask, query);
         }
-        
+
         public static bool RaycastIgnoring(Ray ray, out RaycastHit hit, IEnumerable<Collider> ignoredColliders, float maxDistance = float.PositiveInfinity, int layerMask = Physics.AllLayers, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
         {
-            var nonAllocArr = NonAllocRaycastBuffer;
-
-            int cnt = Physics.RaycastNonAlloc(ray, nonAllocArr, maxDistance, layerMask, query);
-
-            if (cnt > 0)
+            var buffer = GetNonAllocRaycastBuffer();
+            try
             {
-                System.Array.Sort<RaycastHit>(nonAllocArr, 0, cnt, RaycastHitDistanceComparer.Default);
+                int cnt = Physics.RaycastNonAlloc(ray, buffer, maxDistance, layerMask, query);
 
-                for (int i = 0; i < cnt; i++)
+                if (cnt > 0)
                 {
-                    if (!ignoredColliders.Contains(nonAllocArr[i].collider))
+                    System.Array.Sort<RaycastHit>(buffer, 0, cnt, RaycastHitDistanceComparer.Default);
+
+                    for (int i = 0; i < cnt; i++)
                     {
-                        hit = nonAllocArr[i];
-                        System.Array.Clear(nonAllocArr, 0, cnt);
-                        return true;
+                        if (!ignoredColliders.Contains(buffer[i].collider))
+                        {
+                            hit = buffer[i];
+                            return true;
+                        }
                     }
                 }
 
-                System.Array.Clear(nonAllocArr, 0, cnt);
+                hit = default(RaycastHit);
+                return false;
             }
-
-            hit = default(RaycastHit);
-            return false;
+            finally
+            {
+                ReleaseNonAllocRaycastBuffer(buffer);
+            }
         }
 
         #endregion
@@ -937,37 +965,41 @@ namespace com.spacepuppy.Geom
 
         public static int RaycastAllAgainst(Ray ray, ICollection<RaycastHit> results, IEnumerable<Collider> colliders, float maxDistance = float.PositiveInfinity)
         {
-            var nonAllocArr = NonAllocRaycastBuffer;
-
-            int cnt = Physics.RaycastNonAlloc(ray, nonAllocArr, maxDistance, Physics.AllLayers, QueryTriggerInteraction.Collide);
-            
-            if(results is RaycastHit[])
+            var buffer = GetNonAllocRaycastBuffer();
+            try
             {
-                var arr = results as RaycastHit[];
-                int j = 0;
-                for (int i = 0; i < cnt; i++)
-                {
-                    if(j < arr.Length && colliders.Contains(nonAllocArr[i].collider))
-                    {
-                        arr[j] = nonAllocArr[i];
-                        j++;
-                    }
-                    nonAllocArr[i] = default(RaycastHit);
-                }
-            }
-            else
-            {
-                for (int i = 0; i < cnt; i++)
-                {
-                    if (colliders.Contains(nonAllocArr[i].collider))
-                    {
-                        results.Add(nonAllocArr[i]);
-                    }
-                    nonAllocArr[i] = default(RaycastHit);
-                }
-            }
+                int cnt = Physics.RaycastNonAlloc(ray, buffer, maxDistance, Physics.AllLayers, QueryTriggerInteraction.Collide);
 
-            return cnt;
+                if (results is RaycastHit[])
+                {
+                    var arr = results as RaycastHit[];
+                    int j = 0;
+                    for (int i = 0; i < cnt; i++)
+                    {
+                        if (j < arr.Length && colliders.Contains(buffer[i].collider))
+                        {
+                            arr[j] = buffer[i];
+                            j++;
+                        }
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < cnt; i++)
+                    {
+                        if (colliders.Contains(buffer[i].collider))
+                        {
+                            results.Add(buffer[i]);
+                        }
+                    }
+                }
+
+                return cnt;
+            }
+            finally
+            {
+                ReleaseNonAllocRaycastBuffer(buffer);
+            }
         }
 
         public static RaycastHit[] RaycastAllIgnoring(Vector3 origin, Vector3 dir, IEnumerable<Collider> ignoredColliders, float maxDistance = float.PositiveInfinity)
@@ -995,37 +1027,41 @@ namespace com.spacepuppy.Geom
 
         public static int RaycastAllIgnoring(Ray ray, ICollection<RaycastHit> results, IEnumerable<Collider> ignoredColliders, float maxDistance = float.PositiveInfinity)
         {
-            var nonAllocArr = NonAllocRaycastBuffer;
-
-            int cnt = Physics.RaycastNonAlloc(ray, nonAllocArr, maxDistance, Physics.AllLayers, QueryTriggerInteraction.Collide);
-
-            if (results is RaycastHit[])
+            var buffer = GetNonAllocRaycastBuffer();
+            try
             {
-                var arr = results as RaycastHit[];
-                int j = 0;
-                for (int i = 0; i < cnt; i++)
-                {
-                    if (j < arr.Length && !ignoredColliders.Contains(nonAllocArr[i].collider))
-                    {
-                        arr[j] = nonAllocArr[i];
-                        j++;
-                    }
-                    nonAllocArr[i] = default(RaycastHit);
-                }
-            }
-            else
-            {
-                for (int i = 0; i < cnt; i++)
-                {
-                    if (!ignoredColliders.Contains(nonAllocArr[i].collider))
-                    {
-                        results.Add(nonAllocArr[i]);
-                    }
-                    nonAllocArr[i] = default(RaycastHit);
-                }
-            }
+                int cnt = Physics.RaycastNonAlloc(ray, buffer, maxDistance, Physics.AllLayers, QueryTriggerInteraction.Collide);
 
-            return cnt;
+                if (results is RaycastHit[])
+                {
+                    var arr = results as RaycastHit[];
+                    int j = 0;
+                    for (int i = 0; i < cnt; i++)
+                    {
+                        if (j < arr.Length && !ignoredColliders.Contains(buffer[i].collider))
+                        {
+                            arr[j] = buffer[i];
+                            j++;
+                        }
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < cnt; i++)
+                    {
+                        if (!ignoredColliders.Contains(buffer[i].collider))
+                        {
+                            results.Add(buffer[i]);
+                        }
+                    }
+                }
+
+                return cnt;
+            }
+            finally
+            {
+                ReleaseNonAllocRaycastBuffer(buffer);
+            }
         }
 
         #endregion
@@ -1064,6 +1100,68 @@ namespace com.spacepuppy.Geom
         }
 
         #endregion
-        
+
+
+        #region Temporary Collider Array For NonAlloc Calls
+
+        private const int MAX_COLLIDER_BUFFER = 1024;
+        private const int MAX_RAYCAST_BUFFER = 256;
+        private static Collider[] _colliderBuffer;
+        private static RaycastHit[] _raycastBuffer;
+
+        /// <summary>
+        /// Returns a large array to be used as a nonalloc call buffer. It should be used and immediately released. 
+        /// This should only ever be used on the main unity thread and therefore double calls to this method should 
+        /// never happen, but in the case that it does, a new array is created that will be garbage collected.
+        /// </summary>
+        /// <param name="minsize"></param>
+        /// <returns></returns>
+        public static Collider[] GetNonAllocColliderBuffer(int minsize = MAX_COLLIDER_BUFFER)
+        {
+            var arr = _colliderBuffer ?? new Collider[Mathf.Max(1024, minsize)];
+            _colliderBuffer = null;
+            if (arr.Length < minsize) arr = new Collider[minsize];
+            return arr;
+        }
+
+        /// <summary>
+        /// Returns an array to be used as the collider buffer next time GetNonAllocColliderBuffer is called. 
+        /// </summary>
+        /// <param name="arr"></param>
+        public static void ReleaseNonAllocColliderBuffer(Collider[] arr)
+        {
+            if (_colliderBuffer != null) return;
+            _colliderBuffer = arr;
+            if (arr != null) System.Array.Clear(arr, 0, arr.Length);
+        }
+
+        /// <summary>
+        /// Returns a large array to be used as a nonalloc call buffer. It should be used and immediately released. 
+        /// This should only ever be used on the main unity thread and therefore double calls to this method should 
+        /// never happen, but in the case that it does, a new array is created that will be garbage collected.
+        /// </summary>
+        /// <param name="minsize"></param>
+        /// <returns></returns>
+        public static RaycastHit[] GetNonAllocRaycastBuffer(int minsize = MAX_RAYCAST_BUFFER)
+        {
+            var arr = _raycastBuffer ?? new RaycastHit[Mathf.Max(1024, minsize)];
+            _raycastBuffer = null;
+            if (arr.Length < minsize) arr = new RaycastHit[minsize];
+            return arr;
+        }
+
+        /// <summary>
+        /// Returns an array to be used as the collider buffer next time GetNonAllocRaycastBuffer is called. 
+        /// </summary>
+        /// <param name="arr"></param>
+        public static void ReleaseNonAllocRaycastBuffer(RaycastHit[] arr)
+        {
+            if (_raycastBuffer != null) return;
+            _raycastBuffer = arr;
+            if (arr != null) System.Array.Clear(arr, 0, arr.Length);
+        }
+
+        #endregion
+
     }
 }

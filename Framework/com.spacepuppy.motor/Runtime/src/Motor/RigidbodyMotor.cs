@@ -32,6 +32,9 @@ namespace com.spacepuppy.Motor
         [SerializeField()]
         private float _skinWidth;
         [SerializeField]
+        [Tooltip("The velocity of the Rigidbody is locked to (0,0,0) so that it can't be moved around. The motor's velocity still reflects its motion applied to it.")]
+        private bool _constrainSimulatedRigidbodyVelocity = true;
+        [SerializeField]
         private bool _paused;
 
         [System.NonSerialized()]
@@ -42,11 +45,11 @@ namespace com.spacepuppy.Motor
         private Vector3 _lastVel;
 
         [System.NonSerialized()]
-        private bool _moveCalledLastFrame;
-        [System.NonSerialized()]
         private Vector3 _talliedMove;
+
+
         [System.NonSerialized()]
-        private float _lastDt;
+        private bool _moveCalledLastFrame;
         [System.NonSerialized()]
         private Vector3 _fullTalliedMove;
 
@@ -80,7 +83,6 @@ namespace com.spacepuppy.Motor
             _vel = Vector3.zero;
             _moveCalledLastFrame = false;
             _talliedMove = Vector3.zero;
-            _lastDt = 0f;
             _fullTalliedMove = Vector3.zero;
 
             GameLoop.TardyFixedUpdatePump.Add(this);
@@ -152,6 +154,12 @@ namespace com.spacepuppy.Motor
             {
                 _skinWidth = Mathf.Max(value, 0f);
             }
+        }
+
+        public bool ConstrainSimulatedRigidbodyVelocity
+        {
+            get => _constrainSimulatedRigidbodyVelocity;
+            set => _constrainSimulatedRigidbodyVelocity = value;
         }
 
         public bool CollisionEnabled
@@ -371,38 +379,25 @@ namespace com.spacepuppy.Motor
         void IUpdateable.Update()
         {
             _lastPos = _rigidbody.position;
-            _lastVel = _vel;
 
             if (_moveCalledLastFrame)
             {
-                _moveCalledLastFrame = false;
-
-                //we calculate velocity of LAST move in this move
-                if (_lastDt != 0f)
-                {
-                    var actualMove = (_rigidbody.transform.position - _lastPos);
-                    actualMove -= (_fullTalliedMove - _talliedMove);
-
-                    //_vel = actualMove / _lastDt;
-
-                    //var n = actualMove.normalized;
-                    //_vel = n * MathUtil.Average(actualMove.magnitude, Vector3.Dot(_talliedMove, n)) / _lastDt;
-
-                    var n = _talliedMove.normalized;
-                    _vel = n * Mathf.Max(Vector3.Dot(actualMove, n), 0f) / _lastDt;
-                }
-
+                //_rigidbody.velocity = Vector3.zero;
                 _rigidbody.MovePosition(_rigidbody.position + _fullTalliedMove);
             }
 
+            if (_constrainSimulatedRigidbodyVelocity)
+            {
+                _rigidbody.velocity = Vector3.zero;
+                _rigidbody.angularVelocity = Vector3.zero;
+            }
+
+            _vel = _talliedMove / Time.deltaTime;
+            _lastVel = _vel;
+
+            _moveCalledLastFrame = false;
             _fullTalliedMove = Vector3.zero;
             _talliedMove = Vector3.zero;
-
-            _lastDt = Time.deltaTime;
-
-            //zero out rigidbody velocity, as this should ONLY use MovePosition
-            _rigidbody.velocity = Vector3.zero;
-            _rigidbody.angularVelocity = Vector3.zero;
         }
 
         #endregion

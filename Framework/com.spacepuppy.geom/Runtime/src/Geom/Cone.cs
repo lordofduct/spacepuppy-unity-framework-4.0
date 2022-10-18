@@ -150,8 +150,6 @@ namespace com.spacepuppy.Geom
 
         #endregion
 
-
-
         #region Static Utils
 
         public static bool ContainsPoint(Vector3 start, Vector3 end, float startRadius, float endRadius, Vector3 pnt)

@@ -11,6 +11,7 @@ namespace com.spacepuppy.Waypoints
         bool IsClosed { get; set; }
 
         float GetArcLength();
+        float GetArcLength(float t);
         Vector3 GetPositionAt(float t);
         Waypoint GetWaypointAt(float t);
 
@@ -24,6 +25,17 @@ namespace com.spacepuppy.Waypoints
         int IndexOf(IControlPoint waypoint);
         Vector3 GetPositionAfter(int index, float tprime);
         Waypoint GetWaypointAfter(int index, float tprime);
+        /// <summary>
+        /// Get the arclength from start to controlpoint at 'index'.
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        float GetArcLengthAtIndex(int index);
+        /// <summary>
+        /// Get the arclength between controlpoint at 'index' and the next control point.
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
         float GetArcLengthAfter(int index);
         /// <summary>
         /// Returns data pertaining to the relative position between the 2 control points on either side of 't'.

@@ -127,6 +127,12 @@ namespace com.spacepuppy.Waypoints
             return _totalArcLength;
         }
 
+        public float GetArcLength(float t)
+        {
+            if (_points == null) this.Clean_Imp();
+            return _totalArcLength * Mathf.Clamp01(t);
+        }
+
         public Vector3 GetPositionAt(float t)
         {
             if (_points == null) this.Clean_Imp();
@@ -268,6 +274,27 @@ namespace com.spacepuppy.Waypoints
                       3 * p3 * (tprime * tprime);
 
             return new Waypoint(p, tan);
+        }
+
+        public float GetArcLengthAtIndex(int index)
+        {
+            if (index < 0 || index >= _controlPoints.Count) throw new System.IndexOutOfRangeException();
+            if (_points == null) this.Clean_Imp();
+            if (_points.Length < 2) return 0f;
+
+            if (index == _points.Length - 1)
+            {
+                return this.GetArcLength();
+            }
+            else
+            {
+                float len = 0f;
+                for (int i = 0; i < index; i++)
+                {
+                    len += _lengths[i];
+                }
+                return len;
+            }
         }
 
         public float GetArcLengthAfter(int index)

@@ -124,6 +124,13 @@ namespace com.spacepuppy.Waypoints
             return _speedTable.TotalArcLength;
         }
 
+        public float GetArcLength(float t)
+        {
+            if (_speedTable.IsDirty) this.Clean_Imp();
+
+            return _speedTable.TotalArcLength * Mathf.Clamp01(t);
+        }
+
         public Vector3 GetPositionAt(float t)
         {
             if (_controlPoints.Count == 0) return Vector3.zero;
@@ -179,6 +186,17 @@ namespace com.spacepuppy.Waypoints
             return this.GetWaypointAt(index * range + tprime * range);
         }
 
+        public float GetArcLengthAtIndex(int index)
+        {
+            if (index < 0 || index >= _controlPoints.Count) throw new System.IndexOutOfRangeException();
+            if (_points == null) this.Clean_Imp();
+            if (_points.Length < 2) return 0f;
+
+            if (index == 0) return 0f;
+            if (index == _points.Length - 1) return this.GetArcLength();
+            return index * this.GetArcLength() / (_controlPoints.Count - 1);
+        }
+
         public float GetArcLengthAfter(int index)
         {
             if (index < 0 || index >= _controlPoints.Count) throw new System.IndexOutOfRangeException();
@@ -191,7 +209,7 @@ namespace com.spacepuppy.Waypoints
             }
             else
             {
-                return 1f / (_controlPoints.Count - 1);
+                return this.GetArcLength() / (_controlPoints.Count - 1);
             }
         }
 

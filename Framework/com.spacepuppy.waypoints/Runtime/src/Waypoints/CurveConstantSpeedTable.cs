@@ -123,6 +123,23 @@ namespace com.spacepuppy.Waypoints
             return h - l;
         }
 
+        public float GetArcLengthAtTimePerc(float t)
+        {
+            if (t <= 0f)
+                return 0f;
+            else if (t >= 1f)
+                return _totalArcLength;
+
+            int ilow = Mathf.FloorToInt(t * _lengthsTable.Length);
+            int ihigh = Mathf.CeilToInt(t * _lengthsTable.Length);
+
+            float flow = ilow == 0 ? 0 : _lengthsTable[ilow - 1];
+            float fhigh = ihigh == 0 ? 0 : _lengthsTable[ihigh - 1];
+            float st = 1f / (float)_lengthsTable.Length;
+            t = t % st;
+            return Mathf.Lerp(flow, fhigh, t);
+        }
+
         #endregion
 
     }

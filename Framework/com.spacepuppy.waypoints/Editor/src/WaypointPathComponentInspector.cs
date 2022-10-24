@@ -316,6 +316,7 @@ namespace com.spacepuppyeditor.Waypoints
     }
 
     [CustomEditor(typeof(TransformControlPoint), true)]
+    [CanEditMultipleObjects()]
     public class TransformWaypointInspector : SPEditor
     {
 
@@ -333,20 +334,28 @@ namespace com.spacepuppyeditor.Waypoints
             this.DrawPropertyField(PROP_OWNER);
             GUI.enabled = true;
 
-            var trans = ObjUtil.GetAsFromSource<Transform>(this.serializedObject.targetObject);
-            float scale = ObjUtil.GetAsFromSource<Transform>(this.serializedObject.targetObject).localScale.z;
-            EditorGUI.BeginChangeCheck();
-            scale = EditorGUILayout.Slider("Strength", scale, 0f, 1f);
-            if (EditorGUI.EndChangeCheck())
+            if (this.serializedObject.isEditingMultipleObjects)
             {
-                Undo.RecordObject(trans, "Change Waypoint Path Control Point Strength");
-                trans.localScale = Vector3.one * scale;
+                EditorGUILayout.LabelField("Strength", "Not supported in multi-edit mode.");
+            }
+            else
+            {
+                var trans = ObjUtil.GetAsFromSource<Transform>(this.serializedObject.targetObject);
+                float scale = ObjUtil.GetAsFromSource<Transform>(this.serializedObject.targetObject).localScale.z;
+                EditorGUI.BeginChangeCheck();
+                scale = EditorGUILayout.Slider("Strength", scale, 0f, 1f);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Undo.RecordObject(trans, "Change Waypoint Path Control Point Strength");
+                    trans.localScale = Vector3.one * scale;
+                }
             }
 
             this.DrawDefaultInspectorExcept(EditorHelper.PROP_SCRIPT, PROP_OWNER);
 
             this.serializedObject.ApplyModifiedProperties();
 
+            if (this.serializedObject.isEditingMultipleObjects) return;
 
             //draw button at bottom
             var targ = this.serializedObject.targetObject as TransformControlPoint;

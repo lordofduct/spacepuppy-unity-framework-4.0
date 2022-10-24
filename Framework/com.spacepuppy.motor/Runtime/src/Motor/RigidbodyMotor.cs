@@ -14,6 +14,8 @@ namespace com.spacepuppy.Motor
     /// 
     /// Rigidbody.MovePosition is used to move the Rigidbody around.
     /// </summary>
+    [RequireComponentInEntity(typeof(Rigidbody))]
+    [Infobox("Rigidbody.MovePosition is used to move the Rigidbody around.")]
     public class RigidbodyMotor : SPComponent, IMotor, IUpdateable, ISignalEnabledMessageHandler
     {
 
@@ -111,6 +113,12 @@ namespace com.spacepuppy.Motor
             set { _colliders = value ?? ArrayUtil.Empty<Collider>(); }
         }
 
+        public bool ConstrainSimulatedRigidbodyVelocity
+        {
+            get => _constrainSimulatedRigidbodyVelocity;
+            set => _constrainSimulatedRigidbodyVelocity = value;
+        }
+
         #endregion
 
         #region IMotor Interface
@@ -154,12 +162,6 @@ namespace com.spacepuppy.Motor
             {
                 _skinWidth = Mathf.Max(value, 0f);
             }
-        }
-
-        public bool ConstrainSimulatedRigidbodyVelocity
-        {
-            get => _constrainSimulatedRigidbodyVelocity;
-            set => _constrainSimulatedRigidbodyVelocity = value;
         }
 
         public bool CollisionEnabled

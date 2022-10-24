@@ -1,6 +1,5 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections.Generic;
-using System.Linq;
 
 using com.spacepuppy.Collections;
 using com.spacepuppy.Geom;
@@ -11,19 +10,17 @@ namespace com.spacepuppy.Motor
 {
 
     /// <summary>
-    /// IMotor interface for a Rigidbody that treats the Rigidbody as a simulation of forces.
-    /// 
-    /// Velocity/Forces are used to move.
+    /// IMotor interface that directly positions a Transform.
     /// </summary>
-    [RequireComponentInEntity(typeof(Rigidbody))]
-    [Infobox("Velocity/Forces are used to move.")]
-    public class SimulatedRigidbodyMotor : SPComponent, IMotor, IUpdateable, ISignalEnabledMessageHandler
+    [Infobox("A motor the directly translates the transform.position property. While this does not require a Rigidbody, one attached and configured as kinematic is useful for accurate collision events.")]
+    public class TransformMotor : SPComponent, IMotor, IUpdateable, ISignalEnabledMessageHandler
     {
 
         #region Fields
 
         [SerializeField]
         [DefaultFromSelf(Relativity = EntityRelativity.Entity)]
+        [Tooltip("This is optional, but you likely want one attached and configured as kinematic.")]
         private Rigidbody _rigidbody;
         [SerializeField]
         [OneOrMany]
@@ -34,20 +31,21 @@ namespace com.spacepuppy.Motor
         private float _stepOffset;
         [SerializeField()]
         private float _skinWidth;
-        [SerializeField()]
-        [Tooltip("When false Velocity is reset to 0 if Move is not called in FixedUpdate.")]
-        private bool _freeMovement;
+        [SerializeField]
+        [Tooltip("The velocity of the Rigidbody is locked to (0,0,0) so that it can't be moved around. The motor's velocity still reflects its motion applied to it.")]
+        private bool _constrainSimulatedRigidbodyVelocity = true;
         [SerializeField]
         private bool _paused;
+
+        [System.NonSerialized()]
+        private Vector3 _vel;
+        [System.NonSerialized()]
+        private Vector3 _talliedVel;
 
         [System.NonSerialized()]
         private Vector3 _lastPos;
         [System.NonSerialized()]
         private Vector3 _lastVel;
-        [System.NonSerialized()]
-        private Vector3 _talliedMove;
-        [System.NonSerialized]
-        private bool _moveCalled;
 
         [System.NonSerialized]
         private Messaging.MessageToken<IMotorCollisionMessageHandler> _onCollisionMessage;
@@ -62,34 +60,31 @@ namespace com.spacepuppy.Motor
         {
             base.Awake();
 
-            if (!object.ReferenceEquals(_rigidbody, null) && _colliders == null || _colliders.Length == 0)
+            if (_colliders == null || _colliders.Length == 0)
             {
-                _colliders = _rigidbody.GetComponentsInChildren<Collider>();
+                _colliders = _rigidbody != null ? _rigidbody.GetComponentsInChildren<Collider>() : this.GetComponentsInChildren<Collider>();
             }
             _onCollisionMessage = Messaging.CreateBroadcastToken<IMotorCollisionMessageHandler>(this.gameObject);
         }
 
         protected override void OnEnable()
         {
-            if (object.ReferenceEquals(_rigidbody, null)) throw new System.InvalidOperationException("SimulatedRigidbodyMotor must be initialized with an appropriate Rigidbody.");
-
             base.OnEnable();
 
-            _rigidbody.isKinematic = false;
+            _onCollisionMessage = Messaging.CreateBroadcastToken<IMotorCollisionMessageHandler>(this.gameObject);
 
-            _lastPos = _rigidbody.position;
+            _lastPos = this.transform.position;
             _lastVel = Vector3.zero;
-            _talliedMove = Vector3.zero;
-            _moveCalled = false;
-            
-            GameLoop.TardyFixedUpdatePump.Add(this);
+            _vel = Vector3.zero;
+            _talliedVel = Vector3.zero;
+            GameLoop.EarlyUpdatePump.Add(this);
         }
 
         protected override void OnDisable()
         {
             base.OnDisable();
 
-            GameLoop.TardyFixedUpdatePump.Remove(this);
+            GameLoop.EarlyUpdatePump.Remove(this);
         }
 
         #endregion
@@ -108,10 +103,10 @@ namespace com.spacepuppy.Motor
             set { _colliders = value ?? ArrayUtil.Empty<Collider>(); }
         }
 
-        public bool FreeMovement
+        public bool ConstrainSimulatedRigidbodyVelocity
         {
-            get { return _freeMovement; }
-            set { _freeMovement = value; }
+            get => _constrainSimulatedRigidbodyVelocity;
+            set => _constrainSimulatedRigidbodyVelocity = value;
         }
 
         #endregion
@@ -120,7 +115,7 @@ namespace com.spacepuppy.Motor
 
         public bool PrefersFixedUpdate
         {
-            get { return true; }
+            get { return false; }
         }
 
         public float Mass
@@ -182,29 +177,18 @@ namespace com.spacepuppy.Motor
 
         public Vector3 Velocity
         {
-            get
-            {
-                return !object.ReferenceEquals(_rigidbody, null) ? _rigidbody.velocity : Vector3.zero;
-            }
+            get { return _vel; }
             set
             {
-                if (!object.ReferenceEquals(_rigidbody, null)) _rigidbody.velocity = value;
-                _talliedMove = value;
+                _vel = value;
+                _talliedVel = _vel;
             }
         }
 
         public Vector3 Position
         {
-            get
-            {
-                return !object.ReferenceEquals(_rigidbody, null) ? _rigidbody.position : Vector3.zero;
-            }
-            set
-            {
-                if (object.ReferenceEquals(_rigidbody, null)) throw new System.InvalidOperationException("SimulatedRigidbodyMotor must be initialized with an appropriate Rigidbody.");
-
-                _rigidbody.position = value;
-            }
+            get { return this.transform.position; }
+            set { this.transform.position = value; }
         }
 
         public Vector3 LastPosition
@@ -217,45 +201,36 @@ namespace com.spacepuppy.Motor
             get { return _lastVel; }
         }
 
-
-
         public void Move(Vector3 mv)
         {
-            if (object.ReferenceEquals(_rigidbody, null)) throw new System.InvalidOperationException("SimulatedRigidbodyMotor must be initialized with an appropriate Rigidbody.");
             if (_paused) return;
 
-            _talliedMove += mv;
-
-            Vector3 v = _talliedMove / Time.deltaTime;
-            //v -= _owner.LastVelocity; //remove the old velocity so it's setting to, not adding to
-            //_rigidbody.AddForce(v, ForceMode.VelocityChange);
-            _rigidbody.velocity = v;
-
-            _moveCalled = true;
+            this.transform.position += mv;
+            //update velocity
+            _talliedVel += mv / Time.deltaTime;
+            _vel = _talliedVel;
         }
 
         public void AtypicalMove(Vector3 mv)
         {
-            if (object.ReferenceEquals(_rigidbody, null)) throw new System.InvalidOperationException("SimulatedRigidbodyMotor must be initialized with an appropriate Rigidbody.");
             if (_paused) return;
 
-            //_rigidbody.MovePosition(_rigidbody.position + mv);
-            _rigidbody.position += mv; //for some reason moveposition doesn't work with moving platforms
+            this.transform.position += mv;
         }
 
         public void MovePosition(Vector3 pos, bool setVelocityByChangeInPosition = false)
         {
-            if (object.ReferenceEquals(_rigidbody, null)) throw new System.InvalidOperationException("SimulatedRigidbodyMotor must be initialized with an appropriate Rigidbody.");
             if (_paused) return;
 
             if (setVelocityByChangeInPosition)
             {
-                var v = (pos - _rigidbody.position);
-                v /= Time.deltaTime;
-                _rigidbody.velocity = v;
-                _moveCalled = true;
+                var mv = pos - this.transform.position;
+                //update velocity
+                _talliedVel += mv / Time.deltaTime;
+                _vel = _talliedVel;
+
             }
-            _rigidbody.MovePosition(pos);
+            this.transform.position = pos;
         }
 
         #endregion
@@ -264,28 +239,48 @@ namespace com.spacepuppy.Motor
 
         public void AddForce(Vector3 f, ForceMode mode)
         {
-            if (object.ReferenceEquals(_rigidbody, null)) throw new System.InvalidOperationException("SimulatedRigidbodyMotor must be initialized with an appropriate Rigidbody.");
             if (_paused) return;
 
-            _rigidbody.AddForce(f, mode);
-            _moveCalled = true;
+            switch (mode)
+            {
+                case ForceMode.Force:
+                    //force = mass*distance/time^2
+                    //distance = force * time^2 / mass
+                    this.Move(f * Time.deltaTime * Time.deltaTime / this.Mass);
+                    break;
+                case ForceMode.Acceleration:
+                    //acceleration = distance/time^2
+                    //distance = acceleration * time^2
+                    this.Move(f * (Time.deltaTime * Time.deltaTime));
+                    break;
+                case ForceMode.Impulse:
+                    //impulse = mass*distance/time
+                    //distance = impulse * time / mass
+                    this.Move(f * Time.deltaTime / this.Mass);
+                    break;
+                case ForceMode.VelocityChange:
+                    //velocity = distance/time
+                    //distance = velocity * time
+                    this.Move(f * Time.deltaTime);
+                    break;
+            }
         }
 
         public void AddForceAtPosition(Vector3 f, Vector3 pos, ForceMode mode)
         {
-            if (object.ReferenceEquals(_rigidbody, null)) throw new System.InvalidOperationException("SimulatedRigidbodyMotor must be initialized with an appropriate Rigidbody.");
-            if (_paused) return;
-
-            _rigidbody.AddForceAtPosition(f, pos, mode);
-            _moveCalled = true;
+            this.AddForce(f, mode);
         }
 
         public void AddExplosionForce(float explosionForce, Vector3 explosionPosition, float explosionRadius, float upwardsModifier = 0f, ForceMode mode = ForceMode.Force)
         {
             if (_paused) return;
 
-            _rigidbody.AddExplosionForce(explosionForce, explosionPosition, explosionRadius, upwardsModifier, mode);
-            _moveCalled = true;
+            var com = _rigidbody != null ? _rigidbody.centerOfMass : this.transform.position;
+            var v = com - explosionPosition;
+            var force = v.normalized * Mathf.Clamp01(v.magnitude / explosionRadius) * explosionForce;
+            //TODO - apply upwards modifier
+
+            this.AddForce(force, mode);
         }
 
         #endregion
@@ -294,7 +289,7 @@ namespace com.spacepuppy.Motor
 
         public bool TestOverlap(int layerMask, QueryTriggerInteraction query)
         {
-            foreach(var c in _colliders)
+            foreach (var c in _colliders)
             {
                 if (GeomUtil.GetGeom(c).TestOverlap(layerMask, query)) return true;
             }
@@ -313,10 +308,10 @@ namespace com.spacepuppy.Motor
                     GeomUtil.GetGeom(c).Overlap(set, layerMask, query);
                 }
 
-                if(set.Count > 0)
+                if (set.Count > 0)
                 {
                     var e = set.GetEnumerator();
-                    while(e.MoveNext())
+                    while (e.MoveNext())
                     {
                         results.Add(e.Current);
                     }
@@ -349,10 +344,10 @@ namespace com.spacepuppy.Motor
                     GeomUtil.GetGeom(c).CastAll(direction, set, distance, layerMask, query);
                 }
 
-                if(set.Count > 0)
+                if (set.Count > 0)
                 {
                     var e = set.GetEnumerator();
-                    while(e.MoveNext())
+                    while (e.MoveNext())
                     {
                         results.Add(e.Current);
                     }
@@ -369,19 +364,15 @@ namespace com.spacepuppy.Motor
 
         void IUpdateable.Update()
         {
-            if (!_freeMovement && !_moveCalled)
+            _lastPos = this.transform.position;
+            _lastVel = _vel;
+            _talliedVel = Vector3.zero;
+
+            if (_constrainSimulatedRigidbodyVelocity && _rigidbody)
             {
                 _rigidbody.velocity = Vector3.zero;
-                _lastVel = Vector3.zero;
+                _rigidbody.angularVelocity = Vector3.zero;
             }
-            else
-            {
-                _lastVel = _rigidbody.velocity;
-            }
-
-            _lastPos = _rigidbody.position;
-            _talliedMove = Vector3.zero;
-            _moveCalled = false;
         }
 
         #endregion

@@ -230,26 +230,19 @@ namespace com.spacepuppy.Utils
             body.angularVelocity = Vector3.zero;
         }
 
-        public static void CopyTransform(this GameObject src, GameObject dst, bool bSetScale = false)
+        public static void CopyTransform(this GameObject dst, GameObject src, bool bSetScale = false)
         {
             if (src == null) throw new System.ArgumentNullException("src");
             if (dst == null) throw new System.ArgumentNullException("dst");
             CopyTransform(src.transform, dst.transform);
         }
 
-        public static void CopyTransform(this Transform src, Transform dst, bool bSetScale = false)
+        public static void CopyTransform(this Transform dst, Transform src, bool bSetScale = false)
         {
             if (src == null) throw new System.ArgumentNullException("src");
             if (dst == null) throw new System.ArgumentNullException("dst");
 
             Trans.GetGlobal(src).SetToGlobal(dst, bSetScale);
-
-            foreach (Transform child in dst)
-            {
-                //match the transform by name
-                var srcChild = src.Find(child.name);
-                if (srcChild != null) CopyTransform(srcChild, child);
-            }
         }
 
 

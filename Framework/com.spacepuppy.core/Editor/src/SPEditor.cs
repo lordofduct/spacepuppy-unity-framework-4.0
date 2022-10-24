@@ -28,6 +28,8 @@ namespace com.spacepuppyeditor
         private List<ShownPropertyInfo> _shownFields;
         private ConstantlyRepaintEditorAttribute _constantlyRepaint;
 
+        private bool _runtimeValuesFoldoutOpen = false;
+
         #endregion
 
         #region CONSTRUCTOR
@@ -57,7 +59,7 @@ namespace com.spacepuppyeditor
 
         protected virtual void OnDisable()
         {
-            
+
         }
 
         #endregion
@@ -116,38 +118,43 @@ namespace com.spacepuppyeditor
                 EditorGUILayout.BeginVertical("box");
                 var style = new GUIStyle(EditorStyles.boldLabel);
                 style.alignment = TextAnchor.MiddleCenter;
-                GUILayout.Label("Runtime Values", style);
 
-                foreach (var info in _shownFields.Where(o => o.Attrib.ShowAtEditorTime || UnityEngine.Application.isPlaying))
+                var r = EditorGUILayout.GetControlRect();
+                GUI.Label(r, "Runtime Values", style);
+                if (_runtimeValuesFoldoutOpen = EditorGUI.Foldout(r, _runtimeValuesFoldoutOpen, GUIContent.none, true))
                 {
-                    switch(DynamicUtil.GetMemberAccessLevel(info.MemberInfo))
+
+                    foreach (var info in _shownFields.Where(o => o.Attrib.ShowAtEditorTime || UnityEngine.Application.isPlaying))
                     {
-                        case DynamicMemberAccess.Read:
-                            {
-                                var cache = SPGUI.DisableIf(info.Attrib.Readonly);
-                                var value = DynamicUtil.GetValue(this.target, info.MemberInfo);
-                                SPEditorGUILayout.DefaultPropertyField(info.Label, value, DynamicUtil.GetReturnType(info.MemberInfo));
-                                cache.Reset();
-                            }
-                            break;
-                        case DynamicMemberAccess.ReadWrite:
-                            {
-                                var cache = SPGUI.DisableIf(info.Attrib.Readonly);
-
-                                var value = DynamicUtil.GetValue(this.target, info.MemberInfo);
-                                EditorGUI.BeginChangeCheck();
-                                value = SPEditorGUILayout.DefaultPropertyField(info.Label, value, DynamicUtil.GetReturnType(info.MemberInfo));
-                                if (EditorGUI.EndChangeCheck() && !info.Attrib.Readonly)
+                        switch (DynamicUtil.GetMemberAccessLevel(info.MemberInfo))
+                        {
+                            case DynamicMemberAccess.Read:
                                 {
-                                    DynamicUtil.SetValue(this.target, info.MemberInfo, value);
+                                    var cache = SPGUI.DisableIf(info.Attrib.Readonly);
+                                    var value = DynamicUtil.GetValue(this.target, info.MemberInfo);
+                                    SPEditorGUILayout.DefaultPropertyField(info.Label, value, DynamicUtil.GetReturnType(info.MemberInfo));
+                                    cache.Reset();
                                 }
+                                break;
+                            case DynamicMemberAccess.ReadWrite:
+                                {
+                                    var cache = SPGUI.DisableIf(info.Attrib.Readonly);
 
-                                cache.Reset();
-                            }
-                            break;
-                        default:
-                            EditorGUILayout.LabelField(info.Label, EditorHelper.TempContent("* Unreadable Member *"));
-                            break;
+                                    var value = DynamicUtil.GetValue(this.target, info.MemberInfo);
+                                    EditorGUI.BeginChangeCheck();
+                                    value = SPEditorGUILayout.DefaultPropertyField(info.Label, value, DynamicUtil.GetReturnType(info.MemberInfo));
+                                    if (EditorGUI.EndChangeCheck() && !info.Attrib.Readonly)
+                                    {
+                                        DynamicUtil.SetValue(this.target, info.MemberInfo, value);
+                                    }
+
+                                    cache.Reset();
+                                }
+                                break;
+                            default:
+                                EditorGUILayout.LabelField(info.Label, EditorHelper.TempContent("* Unreadable Member *"));
+                                break;
+                        }
                     }
                 }
                 EditorGUILayout.EndVertical();
@@ -163,23 +170,23 @@ namespace com.spacepuppyeditor
 
         protected virtual void OnSPInspectorGUI()
         {
-            if(this.serializedObject.isEditingMultipleObjects)
+            if (this.serializedObject.isEditingMultipleObjects)
             {
                 var tp = this.GetType();
-                if(tp != typeof(SPEditor) && tp.GetCustomAttribute<CanEditMultipleObjects>(false) == null)
+                if (tp != typeof(SPEditor) && tp.GetCustomAttribute<CanEditMultipleObjects>(false) == null)
                 {
                     this.DrawPropertyField(EditorHelper.PROP_SCRIPT);
                     EditorGUILayout.LabelField("Multi-object editing not supported.");
                     return;
                 }
 
-                if(tp == typeof(SPEditor))
+                if (tp == typeof(SPEditor))
                 {
                     //var dtp = ScriptAttributeUtility.GetDrawerTypeForType(this.serializedObject.targetObject.GetType());
                     //Debug.Log(dtp?.Name ?? "NULL");
 
                     var editor = CreateEditor(this.serializedObject.targetObject);
-                    if(editor != null)
+                    if (editor != null)
                     {
                         tp = editor.GetType();
                         if (tp != typeof(SPEditor) && tp.GetCustomAttribute<CanEditMultipleObjects>(false) == null)
@@ -262,11 +269,11 @@ namespace com.spacepuppyeditor
                     }
                 }
             }
-            
+
             for (int i = 0; i < _headerDrawers.Count; i++)
             {
                 var drawer = _headerDrawers[i];
-                if(drawer is DecoratorDrawer)
+                if (drawer is DecoratorDrawer)
                 {
                     var decorator = drawer as DecoratorDrawer;
                     var h = decorator.GetHeight();
@@ -282,7 +289,7 @@ namespace com.spacepuppyeditor
                 }
             }
 
-            if(_addons != null)
+            if (_addons != null)
             {
                 foreach (var d in _addons)
                 {

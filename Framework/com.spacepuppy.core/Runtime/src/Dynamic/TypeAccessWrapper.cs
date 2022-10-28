@@ -322,7 +322,7 @@ namespace com.spacepuppy.Dynamic
 
         public object CallStaticMethod(string name, System.Type delegShape, params object[] args)
         {
-            var d = GetMethod(name, delegShape);
+            var d = GetStaticMethod(name, delegShape);
             return d.DynamicInvoke(args);
         }
 

@@ -1,7 +1,4 @@
-﻿#pragma warning disable 0414 // variable declared but not used.
-#pragma warning disable 0649 // variable declared but not used.
-
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.Serialization;
 using System.Collections.Generic;
 
@@ -22,13 +19,13 @@ namespace com.spacepuppy.Anim.Events
 
         [SerializeField]
         [TriggerableTargetObject.Config(typeof(UnityEngine.Object))]
-        private TriggerableTargetObject _targetAnimator;
+        private TriggerableTargetObject _targetAnimator = new TriggerableTargetObject();
 
         [SerializeField]
-        private List<PlayAnimInfo> _clips;
+        private List<PlayAnimInfo> _clips = new List<PlayAnimInfo>();
 
         [SerializeField]
-        private RandomRef _rng;
+        private RandomRef _rng = new RandomRef();
 
         [SerializeField()]
         [SPEvent.Config("daisy chained arg (object)")]
@@ -39,8 +36,30 @@ namespace com.spacepuppy.Anim.Events
 
         #endregion
 
+        #region Properties
+
+        public TriggerableTargetObject TargetAnimator => _targetAnimator;
+
+        public IList<PlayAnimInfo> Clips => _clips;
+
+        public IRandom RNG
+        {
+            get => _rng.Value;
+            set => _rng.Value = value;
+        }
+
+        public SPEvent OnAnimComplete => _onAnimComplete;
+
+        public bool TriggerCompleteIfNoAnim
+        {
+            get => _triggerCompleteIfNoAnim;
+            set => _triggerCompleteIfNoAnim = value;
+        }
+
+        #endregion
+
         #region Methods
-        
+
         private object PlayClip(SPLegacyAnimController controller, UnityEngine.Object clip, PlayAnimInfo info)
         {
             if (clip is AnimationClip)

@@ -1,6 +1,4 @@
-﻿#pragma warning disable 0649 // variable declared but not used.
-
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace com.spacepuppy.Events
 {
@@ -11,12 +9,22 @@ namespace com.spacepuppy.Events
         #region Fields
 
         [SerializeField]
-        private TriggerableTargetObject _child;
+        [TriggerableTargetObject.Config(typeof(Transform))]
+        private TriggerableTargetObject _child = new TriggerableTargetObject();
         [SerializeField]
-        private TriggerableTargetObject _parent;
+        [TriggerableTargetObject.Config(typeof(Transform))]
+        private TriggerableTargetObject _parent = new TriggerableTargetObject();
 
         [SerializeField]
         private bool _worldPositionStays = true;
+
+        #endregion
+
+        #region Properties
+
+        public TriggerableTargetObject Child => _child;
+
+        public TriggerableTargetObject Parent => _parent;
 
         #endregion
 

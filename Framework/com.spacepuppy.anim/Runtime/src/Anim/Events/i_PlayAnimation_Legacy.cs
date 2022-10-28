@@ -1,7 +1,4 @@
-﻿#pragma warning disable 0414 // variable declared but not used.
-#pragma warning disable 0649 // variable declared but not used.
-
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.Serialization;
 using System.Collections.Generic;
 
@@ -28,7 +25,7 @@ namespace com.spacepuppy.Anim.Events
 
         [SerializeField]
         [TriggerableTargetObject.Config(typeof(UnityEngine.Object))]
-        private TriggerableTargetObject _targetAnimator;
+        private TriggerableTargetObject _targetAnimator = new TriggerableTargetObject();
 
         [SerializeField]
         private PlayByMode _mode;
@@ -55,6 +52,67 @@ namespace com.spacepuppy.Anim.Events
         [SerializeField()]
         [Tooltip("If an animation doesn't play, should we signal complete. This is useful if the animation is supposed to be chaining to another i_ that MUST run.")]
         private bool _triggerCompleteIfNoAnim = true;
+
+        #endregion
+
+        #region Properties
+
+        public TriggerableTargetObject TargetAnimator => _targetAnimator;
+
+        public PlayByMode Mode
+        {
+            get => _mode;
+            set => _mode = value;
+        }
+
+        public string Id
+        {
+            get => _id;
+            set => _id = value;
+        }
+
+        public UnityEngine.Object Clip
+        {
+            get => _clip;
+            set => _clip = value;
+        }
+
+        public AnimSettingsMask SettingsMask
+        {
+            get => _settingsMask;
+        }
+
+        public AnimSettings Settings
+        {
+            get => _settings;
+            set => _settings = value;
+        }
+
+        public QueueMode QueueMode
+        {
+            get => _queueMode;
+            set => _queueMode = value;
+        }
+
+        public PlayMode PlayMode
+        {
+            get => _playMode;
+            set => _playMode = value;
+        }
+
+        public float CrossFadeDur
+        {
+            get => _crossFadeDur;
+            set => _crossFadeDur = value;
+        }
+
+        public SPEvent OnAnimComplete => _onAnimComplete;
+
+        public bool TriggerCompleteIfNoAnim
+        {
+            get => _triggerCompleteIfNoAnim;
+            set => _triggerCompleteIfNoAnim = value;
+        }
 
         #endregion
 

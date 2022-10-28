@@ -15,7 +15,7 @@ namespace com.spacepuppy.Mecanim.Events
 
         [SerializeField]
         [TriggerableTargetObject.Config(typeof(Animator))]
-        private TriggerableTargetObject _targetAnimator;
+        private TriggerableTargetObject _targetAnimator = new TriggerableTargetObject();
 
         [SerializeField]
         private AnimatorOverrideSourceRef _animatorOverrides;

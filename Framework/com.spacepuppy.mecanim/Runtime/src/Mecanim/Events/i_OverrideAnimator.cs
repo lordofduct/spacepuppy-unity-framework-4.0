@@ -16,7 +16,7 @@ namespace com.spacepuppy.Mecanim.Events
 
         [SerializeField]
         [TriggerableTargetObject.Config(typeof(Animator))]
-        private TriggerableTargetObject _targetAnimator;
+        private TriggerableTargetObject _targetAnimator = new TriggerableTargetObject();
 
         [SerializeField]
         private AnimatorOverrideSourceRef _animatorOverrides;
@@ -32,6 +32,12 @@ namespace com.spacepuppy.Mecanim.Events
         public TriggerableTargetObject TargetAnimator => _targetAnimator;
 
         public AnimatorOverrideSourceRef AnimatorOverrides => _animatorOverrides;
+
+        public string Token
+        {
+            get => _token;
+            set => _token = value;
+        }
 
         #endregion
 

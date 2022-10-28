@@ -1,6 +1,4 @@
-﻿#pragma warning disable 0649 // variable declared but not used.
-
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.Serialization;
 using System.Collections.Generic;
 
@@ -25,7 +23,7 @@ namespace com.spacepuppy.Anim.Events
 
         [SerializeField()]
         [TriggerableTargetObject.Config(typeof(UnityEngine.Object))]
-        private TriggerableTargetObject _targetAnimator;
+        private TriggerableTargetObject _targetAnimator = new TriggerableTargetObject();
 
         [SerializeField]
         private StopMode _mode;

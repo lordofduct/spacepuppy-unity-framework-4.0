@@ -17,16 +17,22 @@ namespace com.spacepuppy.Mecanim.Events
 
         [SerializeField]
         [TriggerableTargetObject.Config(typeof(Animator))]
-        private TriggerableTargetObject _targetAnimator;
+        private TriggerableTargetObject _targetAnimator = new TriggerableTargetObject();
 
         [SerializeField]
-        private SPAnimatorStateMachineEvent _parameters;
+        private SPAnimatorStateMachineEvent _parameters = new SPAnimatorStateMachineEvent();
 
         #endregion
+
+        #region Properties
 
         public TriggerableTargetObject TargetAnimator => _targetAnimator;
 
         public SPAnimatorStateMachineEvent Parameters => _parameters;
+
+        #endregion
+
+        #region Triggerable Interface
 
         public override bool Trigger(object sender, object arg)
         {
@@ -38,6 +44,8 @@ namespace com.spacepuppy.Mecanim.Events
             _parameters.ActivateTrigger(targ, null);
             return true;
         }
+
+        #endregion
 
     }
 

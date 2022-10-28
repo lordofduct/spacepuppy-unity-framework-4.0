@@ -10,6 +10,7 @@ namespace com.spacepuppy.Events
         #region Fields
 
         [SerializeField()]
+        [DefaultFromSelf()]
         [TypeRestriction(typeof(Transform), AllowProxy = true)]
         private UnityEngine.Object _target;
 

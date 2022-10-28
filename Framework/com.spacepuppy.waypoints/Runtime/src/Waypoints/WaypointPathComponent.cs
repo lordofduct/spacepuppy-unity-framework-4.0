@@ -108,7 +108,7 @@ namespace com.spacepuppy.Waypoints
 
         public IConfigurableIndexedWaypointPath Path
         {
-            get { return _path; }
+            get { return _path ?? (_path = GetPath(this, false)); }
         }
 
         #endregion
@@ -159,38 +159,43 @@ namespace com.spacepuppy.Waypoints
             {
                 try
                 {
-                    _path.IsClosed = _closed;
-                    if (_controlPoints.Length != _path.Count)
+                    if (_path != null)
                     {
-                        //refill path
-                        _path.Clear();
-                        for (int i = 0; i < _controlPoints.Length; i++)
+                        _path.IsClosed = _closed;
+                        if (_controlPoints.Length != _path.Count)
                         {
-                            _path.AddControlPoint(_controlPoints[i]);
-                        }
-                    }
-                    else
-                    {
-                        bool needsCleaning = false;
-                        for (int i = 0; i < _controlPoints.Length; i++)
-                        {
-                            if (!object.ReferenceEquals(_controlPoints[i], _path.ControlPoint(i)))
+                            //refill path
+                            _path.Clear();
+                            for (int i = 0; i < _controlPoints.Length; i++)
                             {
-                                _path.ReplaceControlPoint(i, _controlPoints[i]);
-                            }
-                            else if (!needsCleaning && !Waypoint.Compare(_path.ControlPoint(i), _controlPoints[i]))
-                            {
-                                needsCleaning = true;
+                                _controlPoints[i].Initialize(this);
+                                _path.AddControlPoint(_controlPoints[i]);
                             }
                         }
+                        else
+                        {
+                            bool needsCleaning = false;
+                            for (int i = 0; i < _controlPoints.Length; i++)
+                            {
+                                if (!object.ReferenceEquals(_controlPoints[i], _path.ControlPoint(i)))
+                                {
+                                    _controlPoints[i].Initialize(this);
+                                    _path.ReplaceControlPoint(i, _controlPoints[i]);
+                                }
+                                else if (!needsCleaning && !Waypoint.Compare(_path.ControlPoint(i), _controlPoints[i]))
+                                {
+                                    needsCleaning = true;
+                                }
+                            }
 
-                        if (needsCleaning)
-                        {
-                            _path.Clean();
+                            if (needsCleaning)
+                            {
+                                _path.Clean();
+                            }
                         }
                     }
                 }
-                catch(System.Exception ex)
+                catch (System.Exception ex)
                 {
                     _cleaning = false;
                     throw ex;

@@ -89,6 +89,18 @@ namespace com.spacepuppy.Geom
         }
 
         /// <summary>
+        /// Calculate at what percentage some value is between min/max.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public float CalculatePercentage(float value)
+        {
+            float len = _max - _min;
+            if (len == 0f) return 0f;
+            return (value - _min) / len;
+        }
+
+        /// <summary>
         /// Tests if Min and Max intersects.
         /// </summary>
         /// <param name="inter"></param>

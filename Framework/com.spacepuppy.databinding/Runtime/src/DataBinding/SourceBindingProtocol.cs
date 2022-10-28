@@ -44,30 +44,13 @@ namespace com.spacepuppy.DataBinding
         {
             if (context.ConfiguredDataSource == null) return Enumerable.Empty<string>();
 
-            /*
-            System.Type sourcetype = null;
-            if (context.RespectProxySources || !(context.ConfiguredDataSource is IDataProvider) || context.RespectDataProviderAsSource)
-            {
-                sourcetype = IProxyExtensions.GetType(context.ConfiguredDataSource, context.RespectProxySources);
-            }
-            else if (context.ConfiguredDataSource is IDataProvider dp)
-            {
-                sourcetype = dp.ElementType;
-            }
-            if (sourcetype == null) return Enumerable.Empty<string>();
-
-            return DynamicUtil.GetMembersFromType(sourcetype, false, System.Reflection.MemberTypes.Field | System.Reflection.MemberTypes.Property)
-                              .Where(o => IsAcceptableMemberType(DynamicUtil.GetReturnType(o)))
-                              .Select(o => o.Name);
-            */
-
             if (context.RespectProxySources && context.ConfiguredDataSource is IProxy proxy)
             {
                 return DynamicUtil.GetMembersFromType(proxy.GetTargetType() ?? typeof(object), false, System.Reflection.MemberTypes.Field | System.Reflection.MemberTypes.Property)
                                   .Where(o => IsAcceptableMemberType(DynamicUtil.GetReturnType(o)))
                                   .Select(o => o.Name);
             }
-            else if(!context.RespectDataProviderAsSource && context.ConfiguredDataSource is IDataProvider dp)
+            else if (!context.RespectDataProviderAsSource && context.ConfiguredDataSource is IDataProvider dp)
             {
                 return DynamicUtil.GetMembersFromType(dp.ElementType ?? typeof(object), false, System.Reflection.MemberTypes.Field | System.Reflection.MemberTypes.Property)
                                   .Where(o => IsAcceptableMemberType(DynamicUtil.GetReturnType(o)))

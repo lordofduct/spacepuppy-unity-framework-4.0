@@ -1,10 +1,12 @@
 ﻿using UnityEngine;
+using System.Collections.Generic;
 using System.Linq;
 
 using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.Geom
 {
+
     public static class GeomUtil
     {
 
@@ -263,53 +265,68 @@ namespace com.spacepuppy.Geom
             return Sphere.FromCollider(c, algorithm, true);
         }
 
-        public static Sphere GetGlobalBoundingSphere(this GameObject go, bool bRecurseChildren = true)
+        public static Sphere GetGlobalBoundingSphere(this GameObject go, bool donotRecurseChildren = false, bool ignoreColliders = false, bool ignoreRenderers = false)
         {
-            return GetGlobalBoundingSphere(go, GeomUtil.DefaultBoundingSphereAlgorithm);
+            return GetGlobalBoundingSphere(go, GeomUtil.DefaultBoundingSphereAlgorithm, donotRecurseChildren, ignoreColliders, ignoreRenderers);
         }
 
-        public static Sphere GetGlobalBoundingSphere(this GameObject go, BoundingSphereAlgorithm algorithm, bool bRecurseChildren = true)
+        public static Sphere GetGlobalBoundingSphere(this GameObject go, BoundingSphereAlgorithm algorithm, bool donotRecurseChildren = false, bool ignoreColliders = false, bool ignoreRenderers = false)
         {
             if (go == null) throw new System.ArgumentNullException(nameof(go));
 
             Sphere s = default;
             bool found = false;
-            using (var renderers = com.spacepuppy.Collections.TempCollection.GetList<Renderer>())
-            using (var colliders = com.spacepuppy.Collections.TempCollection.GetList<Collider>())
+            if (!ignoreRenderers)
             {
-                if (bRecurseChildren)
+                using (var renderers = com.spacepuppy.Collections.TempCollection.GetList<Renderer>())
                 {
-                    go.GetComponentsInChildren<Renderer>(renderers);
-                    go.GetComponentsInChildren<Collider>(colliders);
-                }
-                else
-                {
-                    go.GetComponents<Renderer>(renderers);
-                    go.GetComponents<Collider>(colliders);
-                }
+                    if (donotRecurseChildren)
+                    {
+                        go.GetComponents<Renderer>(renderers);
+                    }
+                    else
+                    {
+                        go.GetComponentsInChildren<Renderer>(renderers);
+                    }
 
-                foreach (var r in renderers)
-                {
-                    if (found)
+                    foreach (var r in renderers)
                     {
-                        s.Encapsulate(r.GetGlobalBoundingSphere(algorithm));
-                    }
-                    else
-                    {
-                        found = true;
-                        s = r.GetGlobalBoundingSphere(algorithm);
+                        if (found)
+                        {
+                            s.Encapsulate(r.GetGlobalBoundingSphere(algorithm));
+                        }
+                        else
+                        {
+                            found = true;
+                            s = r.GetGlobalBoundingSphere(algorithm);
+                        }
                     }
                 }
-                foreach (var c in colliders)
+            }
+            if (!ignoreColliders)
+            {
+                using (var colliders = com.spacepuppy.Collections.TempCollection.GetList<Collider>())
                 {
-                    if (found)
+                    if (donotRecurseChildren)
                     {
-                        s.Encapsulate(c.GetGlobalBoundingSphere(algorithm));
+                        go.GetComponents<Collider>(colliders);
                     }
                     else
                     {
-                        found = true;
-                        s = c.GetGlobalBoundingSphere(algorithm);
+                        go.GetComponentsInChildren<Collider>(colliders);
+                    }
+
+                    foreach (var c in colliders)
+                    {
+                        if (found)
+                        {
+                            s.Encapsulate(c.GetGlobalBoundingSphere(algorithm));
+                        }
+                        else
+                        {
+                            found = true;
+                            s = c.GetGlobalBoundingSphere(algorithm);
+                        }
                     }
                 }
             }
@@ -317,53 +334,162 @@ namespace com.spacepuppy.Geom
             return found ? s : new Sphere(go.transform.position, 0.0f);
         }
 
-        public static Bounds GetGlobalBounds(this GameObject go, bool bRecurseChildren = true)
+        public static Bounds GetGlobalBounds(this GameObject go, bool donotRecurseChildren = false, bool ignoreColliders = false, bool ignoreRenderers = false)
         {
             if (go == null) throw new System.ArgumentNullException(nameof(go));
 
             Bounds b = default;
             bool found = false;
-            using (var renderers = com.spacepuppy.Collections.TempCollection.GetList<Renderer>())
-            using (var colliders = com.spacepuppy.Collections.TempCollection.GetList<Collider>())
+            if (!ignoreRenderers)
             {
-                if (bRecurseChildren)
+                using (var renderers = com.spacepuppy.Collections.TempCollection.GetList<Renderer>())
                 {
-                    go.GetComponentsInChildren<Renderer>(renderers);
-                    go.GetComponentsInChildren<Collider>(colliders);
-                }
-                else
-                {
-                    go.GetComponents<Renderer>(renderers);
-                    go.GetComponents<Collider>(colliders);
-                }
+                    if (donotRecurseChildren)
+                    {
+                        go.GetComponents<Renderer>(renderers);
+                    }
+                    else
+                    {
+                        go.GetComponentsInChildren<Renderer>(renderers);
+                    }
 
-                foreach (var r in renderers)
-                {
-                    if (found)
+                    foreach (var r in renderers)
                     {
-                        b.Encapsulate(r.bounds);
-                    }
-                    else
-                    {
-                        found = true;
-                        b = r.bounds;
+                        if (found)
+                        {
+                            b.Encapsulate(r.bounds);
+                        }
+                        else
+                        {
+                            found = true;
+                            b = r.bounds;
+                        }
                     }
                 }
-                foreach (var c in colliders)
+            }
+            if (!ignoreColliders)
+            {
+                using (var colliders = com.spacepuppy.Collections.TempCollection.GetList<Collider>())
                 {
-                    if (found)
+                    if (donotRecurseChildren)
                     {
-                        b.Encapsulate(c.bounds);
+                        go.GetComponents<Collider>(colliders);
                     }
                     else
                     {
-                        found = true;
-                        b = c.bounds;
+                        go.GetComponentsInChildren<Collider>(colliders);
+                    }
+
+                    foreach (var c in colliders)
+                    {
+                        if (found)
+                        {
+                            b.Encapsulate(c.bounds);
+                        }
+                        else
+                        {
+                            found = true;
+                            b = c.bounds;
+                        }
                     }
                 }
             }
 
             return found ? b : new Bounds(go.transform.position, Vector3.zero);
+        }
+
+        public static Sphere? GetGlobalBoundingSphere(this IEnumerable<Renderer> renderers)
+        {
+            return GetGlobalBoundingSphere(renderers, GeomUtil.DefaultBoundingSphereAlgorithm);
+        }
+
+        public static Sphere? GetGlobalBoundingSphere(this IEnumerable<Renderer> renderers, BoundingSphereAlgorithm algorithm)
+        {
+            if (renderers == null) return null;
+
+            Sphere s = default;
+            bool found = false;
+            foreach (var r in renderers)
+            {
+                if (found)
+                {
+                    s.Encapsulate(r.GetGlobalBoundingSphere(algorithm));
+                }
+                else
+                {
+                    found = true;
+                    s = r.GetGlobalBoundingSphere(algorithm);
+                }
+            }
+            return found ? s : null;
+        }
+
+        public static Bounds? GetGlobalBounds(this IEnumerable<Renderer> renderers)
+        {
+            if (renderers == null) return null;
+
+            Bounds b = default;
+            bool found = false;
+            foreach (var r in renderers)
+            {
+                if (found)
+                {
+                    b.Encapsulate(r.bounds);
+                }
+                else
+                {
+                    found = true;
+                    b = r.bounds;
+                }
+            }
+            return found ? b : null;
+        }
+
+        public static Sphere? GetGlobalBoundingSphere(this IEnumerable<Collider> colliders)
+        {
+            return GetGlobalBoundingSphere(colliders, GeomUtil.DefaultBoundingSphereAlgorithm);
+        }
+
+        public static Sphere? GetGlobalBoundingSphere(this IEnumerable<Collider> colliders, BoundingSphereAlgorithm algorithm)
+        {
+            if (colliders == null) return null;
+
+            Sphere s = default;
+            bool found = false;
+            foreach (var c in colliders)
+            {
+                if (found)
+                {
+                    s.Encapsulate(c.GetGlobalBoundingSphere(algorithm));
+                }
+                else
+                {
+                    found = true;
+                    s = c.GetGlobalBoundingSphere(algorithm);
+                }
+            }
+            return found ? s : null;
+        }
+
+        public static Bounds? GetGlobalBounds(this IEnumerable<Collider> colliders)
+        {
+            if (colliders == null) return null;
+
+            Bounds b = default;
+            bool found = false;
+            foreach (var c in colliders)
+            {
+                if (found)
+                {
+                    b.Encapsulate(c.bounds);
+                }
+                else
+                {
+                    found = true;
+                    b = c.bounds;
+                }
+            }
+            return found ? b : null;
         }
 
         #endregion
@@ -450,4 +576,5 @@ namespace com.spacepuppy.Geom
         }
 
     }
+
 }

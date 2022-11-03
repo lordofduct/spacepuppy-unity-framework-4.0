@@ -57,9 +57,11 @@ namespace com.spacepuppy.Geom
 
             if (l + s.Radius > _rad)
             {
-                v /= l;
                 _rad = (l + s.Radius + _rad) / 2.0f;
-                _cent += v * (l + s.Radius - _rad);
+                if (l > 0f)
+                {
+                    _cent += (v / l) * (l + s.Radius - _rad);
+                }
             }
 
             return this;

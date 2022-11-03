@@ -22,6 +22,8 @@ namespace com.spacepuppy.SPInput
             return v;
         }
 
+        #region Axis Extensions
+
         public static float CutoffAxis(float value, float deadzone, DeadZoneCutoff cutoff, bool clampNormalized = true)
         {
             if (deadzone < 0f) deadzone = 0f;
@@ -87,6 +89,10 @@ namespace com.spacepuppy.SPInput
 
             return value;
         }
+
+        #endregion
+
+        #region Button Extensions
 
         public static ButtonState ConsumeButtonState(ButtonState current)
         {
@@ -189,6 +195,13 @@ namespace com.spacepuppy.SPInput
             return sig.CurrentState.ResolvePressState(sig.LastDownTime, duration);
         }
 
+        public static ButtonPress GetButtonPress(this IButtonInputSignature button, float duration)
+        {
+            if (button == null) return ButtonPress.None;
+
+            return button.CurrentState.ResolvePressState(button.LastDownTime, duration);
+        }
+
         /// <summary>
         /// Returns a ButtonPress state based on the last time the ButtonState was 'Down'.
         /// </summary>
@@ -233,6 +246,35 @@ namespace com.spacepuppy.SPInput
             return (Time.unscaledTimeAsDouble - sig.LastDownTime) <= duration;
         }
 
+        public static bool GetButtonRecentlyDown(this IButtonInputSignature button, float duration)
+        {
+            if (button == null) return false;
+            return (Time.unscaledTimeAsDouble - button.LastDownTime) <= duration;
+        }
+
+        public static double TimeSinceLastDown(this IButtonInputSignature button)
+        {
+            return button != null ? (Time.unscaledTimeAsDouble - button.LastDownTime) : double.PositiveInfinity;
+        }
+
+        public static double TimeSinceLastRelease(this IButtonInputSignature button)
+        {
+            return button != null ? (Time.unscaledTimeAsDouble - button.LastReleaseTime) : double.PositiveInfinity;
+        }
+
+        public static double LastButtonFullPressDuration(this IButtonInputSignature button)
+        {
+            if (button == null) return 0d;
+            if (button.LastReleaseTime < button.LastDownTime) return 0d;
+            if (double.IsInfinity(button.LastReleaseTime)) return 0d;
+
+            return button.LastReleaseTime - button.LastDownTime;
+        }
+
+        #endregion
+
+        #region Generic Input Extensions
+
         public static bool GetInputIsActivated(this IInputSignature sig)
         {
             if (sig == null) return false;
@@ -249,6 +291,9 @@ namespace com.spacepuppy.SPInput
             return false;
         }
 
+        #endregion
+
+        #region Cursor Extensions
 
         public static CursorRaycastHit TestCursorOver(Camera cursorCamera, Vector2 cursorPos, float maxDistance = float.PositiveInfinity, int layerMask = Physics.AllLayers, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal, int blockingLayerMask = 0)
         {
@@ -344,6 +389,8 @@ namespace com.spacepuppy.SPInput
                 return false;
             }
         }
+
+        #endregion
 
     }
 

@@ -23,7 +23,8 @@ namespace com.spacepuppy.SPInput
 
         private ButtonState _current;
         private ButtonState _currentFixed;
-        private double _lastDown;
+        private double _lastDown = double.NegativeInfinity;
+        private double _lastUp = double.NegativeInfinity;
 
         private float _delay;
         private int _repeatCount;
@@ -137,10 +138,9 @@ namespace com.spacepuppy.SPInput
             }
         }
 
-        public double LastDownTime
-        {
-            get { return _lastDown; }
-        }
+        public double LastDownTime => _lastDown;
+
+        public double LastReleaseTime => _lastUp;
 
         #endregion
 
@@ -166,6 +166,10 @@ namespace com.spacepuppy.SPInput
                     _delay = Mathf.Lerp(_delay, _maxRepeat, _repeatLerp);
                 _repeatCount++;
             }
+            else if(_current == ButtonState.Released)
+            {
+                _lastUp = Time.unscaledTimeAsDouble;
+            }
         }
 
         public override void FixedUpdate()
@@ -178,7 +182,8 @@ namespace com.spacepuppy.SPInput
         {
             _current = ButtonState.None;
             _currentFixed = ButtonState.None;
-            _lastDown = 0d;
+            _lastDown = double.NegativeInfinity;
+            _lastUp = double.NegativeInfinity;
         }
 
         #endregion
@@ -201,7 +206,8 @@ namespace com.spacepuppy.SPInput
 
         private ButtonState _current;
         private ButtonState _currentFixed;
-        private double _lastDown;
+        private double _lastDown = double.NegativeInfinity;
+        private double _lastUp = double.NegativeInfinity;
 
         private ButtonState _realState;
         private int _count;
@@ -262,10 +268,9 @@ namespace com.spacepuppy.SPInput
             }
         }
 
-        public double LastDownTime
-        {
-            get { return _lastDown; }
-        }
+        public double LastDownTime => _lastDown;
+
+        public double LastReleaseTime => _lastUp;
 
         public void Consume()
         {
@@ -323,6 +328,7 @@ namespace com.spacepuppy.SPInput
                     case ButtonState.Released:
                     case ButtonState.None:
                         _current = ButtonState.Released;
+                        _lastUp = Time.unscaledTimeAsDouble;
                         _count = 0;
                         break;
                     default:
@@ -346,7 +352,8 @@ namespace com.spacepuppy.SPInput
         {
             _current = ButtonState.None;
             _currentFixed = ButtonState.None;
-            _lastDown = 0d;
+            _lastDown = double.NegativeInfinity;
+            _lastUp = double.NegativeInfinity;
 
             _realState = ButtonState.None;
             _lastRealDown = 0d;

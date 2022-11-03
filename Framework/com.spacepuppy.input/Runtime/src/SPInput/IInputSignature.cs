@@ -39,9 +39,14 @@ namespace com.spacepuppy.SPInput
         void Consume();
 
         /// <summary>
-        /// Last time 'Down' was signaled (as realTimeSinceStartup)
+        /// Last time 'Down' was signaled (as unscaledTimeAsDouble)
         /// </summary>
         double LastDownTime { get; }
+
+        /// <summary>
+        /// Last time 'Released' was signaled (as unscaledTimeAsDouble)
+        /// </summary>
+        double LastReleaseTime { get; }
 
     }
 

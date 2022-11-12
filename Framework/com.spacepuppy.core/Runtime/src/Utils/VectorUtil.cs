@@ -825,7 +825,15 @@ namespace com.spacepuppy.Utils
 
         #endregion
 
-        #region Setters
+        #region Setters/Getters
+
+        public static Vector2 ToXZ(this Vector3 v) => new Vector2(v.x, v.z);
+
+        public static Vector2 ToXY(this Vector3 v) => new Vector2(v.x, v.y);
+
+        public static Vector3 FromXZ(this Vector2 v) => new Vector3(v.x, 0f, v.y);
+
+        public static Vector3 FromXY(this Vector2 v) => new Vector3(v.x, v.y, 0f);
 
         public static Vector2 SetX(this Vector2 v, float x)
         {

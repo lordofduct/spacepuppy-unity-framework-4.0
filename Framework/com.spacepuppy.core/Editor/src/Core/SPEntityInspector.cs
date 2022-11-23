@@ -14,20 +14,6 @@ namespace com.spacepuppyeditor.Core
     public class SPEntityInspector : SPEditor
     {
 
-        protected override void OnSPInspectorGUI()
-        {
-            this.EnsureHasRootTag();
-
-            this.DrawDefaultInspector();
-        }
-
-        public void EnsureHasRootTag()
-        {
-            var ent = this.target as SPEntity;
-            if (!ent.HasTag(SPConstants.TAG_ROOT)) ent.AddTag(SPConstants.TAG_ROOT);
-        }
-
-
         static SPEntityInspector()
         {
             var tp = typeof(SPEntity);

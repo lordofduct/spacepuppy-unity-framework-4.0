@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 
 using com.spacepuppy.Collections;
-using System.Threading;
 
 namespace com.spacepuppy.Utils
 {
@@ -432,6 +431,33 @@ namespace com.spacepuppy.Utils
             return null;
         }
 
+        public static T GetAsFromSource<T>(object obj, bool respectProxy) where T : class
+        {
+            obj = respectProxy ? obj.ReduceIfProxyAs(typeof(T)) : obj.SanitizeRef();
+            if (obj == null) return null;
+
+            if (obj is T) return obj as T;
+            if (obj is IComponent)
+            {
+                var c = (obj as IComponent).component;
+                if (c is T) return c as T;
+            }
+            var go = GameObjectUtil.GetGameObjectFromSource(obj);
+            if (go is T) return go as T;
+
+            //if (go != null && ComponentUtil.IsAcceptableComponentType(typeof(T))) return go.GetComponentAlt<T>();
+            if (go != null)
+            {
+                var tp = typeof(T);
+                if (typeof(SPEntity).IsAssignableFrom(tp))
+                    return SPEntity.Pool.GetFromSource(tp, go) as T;
+                else if (ComponentUtil.IsAcceptableComponentType(tp))
+                    return go.GetComponent(tp) as T;
+            }
+
+            return null;
+        }
+
         public static bool GetAsFromSource<T>(object obj, out T result, bool respectProxy = false) where T : class
         {
             result = null;
@@ -511,6 +537,32 @@ namespace com.spacepuppy.Utils
             return null;
         }
 
+        public static object GetAsFromSource(System.Type tp, object obj, bool respectProxy)
+        {
+            obj = respectProxy ? obj.ReduceIfProxyAs(tp) : obj.SanitizeRef();
+            if (obj == null) return null;
+
+            if (tp.IsInstanceOfType(obj)) return obj;
+            if (obj is IComponent)
+            {
+                var c = (obj as IComponent).component;
+                if (!object.ReferenceEquals(c, null) && tp.IsInstanceOfType(c)) return c;
+            }
+
+            var go = GameObjectUtil.GetGameObjectFromSource(obj);
+            if (tp == typeof(UnityEngine.GameObject)) return go;
+
+            if (go != null)
+            {
+                if (typeof(SPEntity).IsAssignableFrom(tp))
+                    return SPEntity.Pool.GetFromSource(tp, go);
+                else if (ComponentUtil.IsAcceptableComponentType(tp))
+                    return go.GetComponent(tp);
+            }
+
+            return null;
+        }
+
         public static bool GetAsFromSource(System.Type tp, object obj, out object result, bool respectProxy = false)
         {
             result = null;
@@ -564,60 +616,6 @@ namespace com.spacepuppy.Utils
         }
 
 
-        public static T GetAsFromSource<T>(object obj, bool respectProxy) where T : class
-        {
-            obj = respectProxy ? obj.ReduceIfProxyAs(typeof(T)) : obj.SanitizeRef();
-            if (obj == null) return null;
-
-            if (obj is T) return obj as T;
-            if (obj is IComponent)
-            {
-                var c = (obj as IComponent).component;
-                if (c is T) return c as T;
-            }
-            var go = GameObjectUtil.GetGameObjectFromSource(obj);
-            if (go is T) return go as T;
-
-            //if (go != null && ComponentUtil.IsAcceptableComponentType(typeof(T))) return go.GetComponentAlt<T>();
-            if (go != null)
-            {
-                var tp = typeof(T);
-                if (typeof(SPEntity).IsAssignableFrom(tp))
-                    return SPEntity.Pool.GetFromSource(tp, go) as T;
-                else if (ComponentUtil.IsAcceptableComponentType(tp))
-                    return go.GetComponent(tp) as T;
-            }
-
-            return null;
-        }
-
-        public static object GetAsFromSource(System.Type tp, object obj, bool respectProxy)
-        {
-            obj = respectProxy ? obj.ReduceIfProxyAs(tp) : obj.SanitizeRef();
-            if (obj == null) return null;
-
-            if (tp.IsInstanceOfType(obj)) return obj;
-            if (obj is IComponent)
-            {
-                var c = (obj as IComponent).component;
-                if (!object.ReferenceEquals(c, null) && tp.IsInstanceOfType(c)) return c;
-            }
-
-            var go = GameObjectUtil.GetGameObjectFromSource(obj);
-            if (tp == typeof(UnityEngine.GameObject)) return go;
-
-            if (go != null)
-            {
-                if (typeof(SPEntity).IsAssignableFrom(tp))
-                    return SPEntity.Pool.GetFromSource(tp, go);
-                else if (ComponentUtil.IsAcceptableComponentType(tp))
-                    return go.GetComponent(tp);
-            }
-
-            return null;
-        }
-
-
         /// <summary>
         /// Returns a ref to the object as the first type in the array that it can resolve as.
         /// </summary>
@@ -662,7 +660,37 @@ namespace com.spacepuppy.Utils
             return false;
         }
 
+        public static bool IsType(object obj, System.Type tp)
+        {
+            if (obj == null) return false;
 
+            return tp.IsInstanceOfType(obj);
+        }
+
+        public static bool IsType(object obj, System.Type tp, bool respectProxy)
+        {
+            if (obj == null) return false;
+
+            if (respectProxy && obj is IProxy p)
+            {
+                if (p.PrioritizesSelfAsTarget() && ObjUtil.IsType(obj, tp)) return true;
+                if (TypeUtil.IsType(p.GetTargetType(), tp)) return true;
+#if UNITY_EDITOR
+                if (Application.isPlaying || (p.Params & ProxyParams.QueriesTarget) == 0) return ObjUtil.IsType(p.GetTarget(), tp);
+                return false;
+#else
+                return ObjUtil.IsType(p.GetTarget(), tp);
+#endif
+            }
+            else
+            {
+                return tp.IsInstanceOfType(obj);
+            }
+        }
+
+        #endregion
+
+        #region Casting All
 
         public static T[] GetAllFromSource<T>(object obj, bool includeChildren = false) where T : class
         {
@@ -864,35 +892,6 @@ namespace com.spacepuppy.Utils
             return totalCount;
         }
 
-
-        public static bool IsType(object obj, System.Type tp)
-        {
-            if (obj == null) return false;
-
-            return tp.IsInstanceOfType(obj);
-        }
-
-        public static bool IsType(object obj, System.Type tp, bool respectProxy)
-        {
-            if (obj == null) return false;
-
-            if (respectProxy && obj is IProxy p)
-            {
-                if (p.PrioritizesSelfAsTarget() && ObjUtil.IsType(obj, tp)) return true;
-                if (TypeUtil.IsType(p.GetTargetType(), tp)) return true;
-#if UNITY_EDITOR
-                if (Application.isPlaying || (p.Params & ProxyParams.QueriesTarget) == 0) return ObjUtil.IsType(p.GetTarget(), tp);
-                return false;
-#else
-                return ObjUtil.IsType(p.GetTarget(), tp);
-#endif
-            }
-            else
-            {
-                return tp.IsInstanceOfType(obj);
-            }
-        }
-
         #endregion
 
         #region Destruction Methods
@@ -1033,7 +1032,7 @@ namespace com.spacepuppy.Utils
 
 #endregion
 
-#region Misc
+        #region Misc
 
         /// <summary>
         /// Returns true if 'obj' is 'parent', attached to 'parent', or part of the child hiearchy of 'parent'.
@@ -1061,7 +1060,7 @@ namespace com.spacepuppy.Utils
             return System.Array.IndexOf(others, obj) >= 0;
         }
 
-#endregion
+        #endregion
 
     }
 

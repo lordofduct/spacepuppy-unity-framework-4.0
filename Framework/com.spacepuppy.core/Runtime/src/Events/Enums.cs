@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace com.spacepuppy.Events
+﻿namespace com.spacepuppy.Events
 {
 
     public enum EnableMode

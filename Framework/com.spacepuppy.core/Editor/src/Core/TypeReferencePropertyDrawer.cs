@@ -99,7 +99,7 @@ namespace com.spacepuppyeditor.Core
             if (property == null) return null;
             var hashProp = property.FindPropertyRelative(PROP_TYPEHASH);
             if (hashProp == null) return null;
-            return TypeReference.UnHashType(hashProp.stringValue);
+            return TypeUtil.UnHashType(hashProp.stringValue);
         }
 
         public static void SetTypeToTypeReference(SerializedProperty property, System.Type tp)
@@ -109,7 +109,7 @@ namespace com.spacepuppyeditor.Core
             var hashProp = property.FindPropertyRelative(PROP_TYPEHASH);
             if (hashProp == null) return;
 
-            hashProp.stringValue = TypeReference.HashType(tp);
+            hashProp.stringValue = TypeUtil.HashType(tp);
 
             if(Application.isPlaying)
             {

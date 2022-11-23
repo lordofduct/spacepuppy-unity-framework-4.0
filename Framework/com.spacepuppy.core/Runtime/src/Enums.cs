@@ -1,7 +1,4 @@
-﻿using System.ComponentModel;
-using UnityEngine;
-
-namespace com.spacepuppy
+﻿namespace com.spacepuppy
 {
 
     public enum VariantType : sbyte
@@ -73,9 +70,9 @@ namespace com.spacepuppy
         GreaterThan = 2,
         NotEqualAlt = 3,
         Equal = 4,
-        [Description("Less Than Or Equal")]
+        [System.ComponentModel.Description("Less Than Or Equal")]
         LessThanEqual = 5,
-        [Description("Greater Than Or Equal")]
+        [System.ComponentModel.Description("Greater Than Or Equal")]
         GreatThanEqual = 6,
         Always = 7
     }
@@ -96,6 +93,16 @@ namespace com.spacepuppy
         StopIfPlaying = 0,
         DoNotPlayIfPlaying = 1,
         PlayOverExisting = 2
+    }
+
+    /// <summary>
+    /// Used with the TypeReference class to define how the inspector should show the types in the drop down.
+    /// </summary>
+    public enum TypeDropDownListingStyle
+    {
+        Flat = 0,
+        Namespace = 1,
+        ComponentMenu = 2
     }
 
 }

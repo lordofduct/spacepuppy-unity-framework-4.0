@@ -25,7 +25,7 @@ namespace com.spacepuppy.Project
         {
             if (!_loaded) Reload();
             if (_instance == null) return false;
-            return _instance._taglookup.Contains(stag);
+            return _instance._taglookup?.Contains(stag) ?? false;
         }
 
         public static TagData Asset

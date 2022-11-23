@@ -2,7 +2,6 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
-using com.spacepuppy.Project;
 using ObjUtil = com.spacepuppy.Utils.ObjUtil;
 using TypeUtil = com.spacepuppy.Utils.TypeUtil;
 
@@ -230,7 +229,7 @@ namespace com.spacepuppy
     }
 
     [System.Serializable]
-    public class ProxyRef : SerializableInterfaceRef<IProxy>
+    public class ProxyRef : com.spacepuppy.Project.SerializableInterfaceRef<IProxy>
     {
 
     }

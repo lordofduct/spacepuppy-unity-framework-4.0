@@ -41,6 +41,40 @@ namespace com.spacepuppy.Utils
 
         #endregion
 
+        #region Hash
+
+        public static string HashType(System.Type tp)
+        {
+            if (tp != null)
+            {
+                return tp.Assembly.GetName().Name + "|" + tp.FullName;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        public static System.Type UnHashType(string hash)
+        {
+            if (!string.IsNullOrEmpty(hash))
+            {
+                var arr = hash.Split('|');
+                var tp = TypeUtil.ParseType(arr.Length > 0 ? arr[0] : string.Empty,
+                                            arr.Length > 1 ? arr[1] : string.Empty);
+
+                //set type to void if the type is unfruitful, this way we're not constantly retesting this
+                if (tp == null) tp = typeof(void);
+                return tp;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        #endregion
+
         public static bool IsNullableType(System.Type tp)
         {
             var ntp = Nullable.GetUnderlyingType(tp);

@@ -2,7 +2,6 @@
 
 using com.spacepuppy.Dynamic;
 using com.spacepuppy.Utils;
-using System;
 
 namespace com.spacepuppy
 {
@@ -18,7 +17,10 @@ namespace com.spacepuppy
     /// TODO - add support for serializing Ref types if they are a type that can be supported by UnityEngine.SerializeRefAttribute
     /// </summary>
     [System.Serializable()]
-    public class VariantReference : System.Runtime.Serialization.ISerializable, ISPDisposable, System.ICloneable
+    public class VariantReference : System.Runtime.Serialization.ISerializable, 
+        System.ICloneable, 
+        System.IDisposable, 
+        ISPDisposable
     {
 
         public enum RefMode : byte
@@ -1521,7 +1523,7 @@ namespace com.spacepuppy
                     case System.TypeCode.UInt32:
                         {
                             _x = (int)tc;
-                            _string = TypeReference.HashType(value.GetType());
+                            _string = TypeUtil.HashType(value.GetType());
                             _w = value.ToDouble(null);
                         }
                         break;
@@ -1529,7 +1531,7 @@ namespace com.spacepuppy
                     case System.TypeCode.UInt64:
                         {
                             _x = (int)tc;
-                            _string = TypeReference.HashType(value.GetType());
+                            _string = TypeUtil.HashType(value.GetType());
                             long v = value.ToInt64(null);
                             _w = (double)(v >> 16);
                             _z = (float)(v & 0xFFFF);
@@ -1539,7 +1541,7 @@ namespace com.spacepuppy
                     case System.TypeCode.Double:
                         {
                             _x = (int)tc;
-                            _string = TypeReference.HashType(value.GetType());
+                            _string = TypeUtil.HashType(value.GetType());
                             _w = value.ToDouble(null);
                         }
                         break;
@@ -1566,7 +1568,7 @@ namespace com.spacepuppy
                 case System.TypeCode.Int32:
                 case System.TypeCode.UInt32:
                     {
-                        var tp = TypeReference.UnHashType(_string);
+                        var tp = TypeUtil.UnHashType(_string);
                         if (tp == null || !typeof(INumeric).IsAssignableFrom(tp)) return null;
 
                         return Numerics.CreateNumeric(tp, _w);
@@ -1574,7 +1576,7 @@ namespace com.spacepuppy
                 case System.TypeCode.Int64:
                 case System.TypeCode.UInt64:
                     {
-                        var tp = TypeReference.UnHashType(_string);
+                        var tp = TypeUtil.UnHashType(_string);
                         if (tp == null || !typeof(INumeric).IsAssignableFrom(tp)) return null;
 
                         long v = (long)_w;
@@ -1585,7 +1587,7 @@ namespace com.spacepuppy
                 case System.TypeCode.Single:
                 case System.TypeCode.Double:
                     {
-                        var tp = TypeReference.UnHashType(_string);
+                        var tp = TypeUtil.UnHashType(_string);
                         if (tp == null || !typeof(INumeric).IsAssignableFrom(tp)) return null;
 
                         return Numerics.CreateNumeric(tp, _w);
@@ -1634,7 +1636,7 @@ namespace com.spacepuppy
 
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
         {
-            info.SetValue("mode", (byte)_mode);
+            info.AddValue("mode", (byte)_mode);
             switch (_mode)
             {
                 case RefMode.Value:
@@ -1647,28 +1649,28 @@ namespace com.spacepuppy
                                 //do nothing
                                 break;
                             case VariantType.String:
-                                info.SetValue("value", this.StringValue);
+                                info.AddValue("value", this.StringValue);
                                 break;
                             case VariantType.Boolean:
-                                info.SetValue("value", this.BoolValue);
+                                info.AddValue("value", this.BoolValue);
                                 break;
                             case VariantType.Integer:
-                                info.SetValue("value", this.IntValue);
+                                info.AddValue("value", this.IntValue);
                                 break;
                             case VariantType.Float:
-                                info.SetValue("value", this.FloatValue);
+                                info.AddValue("value", this.FloatValue);
                                 break;
                             case VariantType.Double:
-                                info.SetValue("value", this.DoubleValue);
+                                info.AddValue("value", this.DoubleValue);
                                 break;
                             case VariantType.Vector2:
                             case VariantType.Vector3:
                             case VariantType.Quaternion:
                             case VariantType.Color:
-                                info.SetValue("value", string.Format("{0},{1},{2},{3}", _x, _y, _z, _w));
+                                info.AddValue("value", string.Format("{0},{1},{2},{3}", _x, _y, _z, _w));
                                 break;
                             case VariantType.DateTime:
-                                info.SetValue("value", this.DateValue);
+                                info.AddValue("value", this.DateValue);
                                 break;
                             case VariantType.GameObject:
                             case VariantType.Component:
@@ -1679,15 +1681,15 @@ namespace com.spacepuppy
                                     var n = this.NumericValue;
                                     if (n == null)
                                     {
-                                        info.SetValue("value", null);
+                                        info.AddValue("value", null);
                                     }
                                     else if (n.GetType().IsSerializable)
                                     {
-                                        info.SetValue("value", n);
+                                        info.AddValue("value", n);
                                     }
                                     else
                                     {
-                                        info.SetValue("value", EncodeB64Numeric(n));
+                                        info.AddValue("value", EncodeB64Numeric(n));
                                     }
                                 }
                                 break;
@@ -2031,7 +2033,7 @@ namespace com.spacepuppy
         private static string EncodeB64Numeric(INumeric n)
         {
             if (n == null) return null;
-            return System.Convert.ToBase64String(n.ToByteArray()) + "|" + TypeReference.HashType(n.GetType());
+            return System.Convert.ToBase64String(n.ToByteArray()) + "|" + TypeUtil.HashType(n.GetType());
         }
 
         private static INumeric DecodeB64Numeric(string sdata)
@@ -2041,7 +2043,7 @@ namespace com.spacepuppy
             {
                 int i = sdata.IndexOf('|', 0);
                 if (i < 0) return null;
-                var tp = TypeReference.UnHashType(sdata.Substring(i + 1));
+                var tp = TypeUtil.UnHashType(sdata.Substring(i + 1));
                 if (tp == null) return null;
                 var data = System.Convert.FromBase64String(sdata.Substring(0, i));
                 return Numerics.CreateNumeric(tp, data);

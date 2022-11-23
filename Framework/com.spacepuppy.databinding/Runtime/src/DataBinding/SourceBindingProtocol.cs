@@ -89,7 +89,17 @@ namespace com.spacepuppy.DataBinding
 
         public static bool IsAcceptableMemberType(System.Type tp)
         {
-            return VariantReference.AcceptableSerializableType(tp) || TypeUtil.IsType(tp, _acceptableTypes);
+            switch (VariantReference.GetVariantType(tp))
+            {
+                case VariantType.Object:
+                case VariantType.GameObject:
+                case VariantType.Component:
+                case VariantType.Ref:
+                    return TypeUtil.IsType(tp, _acceptableTypes);
+                default:
+                    return true;
+            }
+            //return VariantReference.AcceptableSerializableType(tp) || TypeUtil.IsType(tp, _acceptableTypes);
         }
 
 #if SP_ADDRESSABLES

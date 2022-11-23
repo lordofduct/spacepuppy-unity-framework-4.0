@@ -251,6 +251,19 @@ namespace com.spacepuppy
 
         #endregion
 
+#if UNITY_EDITOR
+
+        protected virtual void OnValidate()
+        {
+            if (!this.HasTag(SPConstants.TAG_ROOT)) this.AddTag(SPConstants.TAG_ROOT);
+        }
+
+#else
+
+        protected virtual void OnValidate() { }
+
+#endif
+
     }
 
 }

@@ -6,16 +6,6 @@ namespace com.spacepuppy
 {
 
     /// <summary>
-    /// Used with the TypeReference class to define how the inspector should show the types in the drop down.
-    /// </summary>
-    public enum TypeDropDownListingStyle
-    {
-        Flat = 0,
-        Namespace = 1,
-        ComponentMenu = 2
-    }
-
-    /// <summary>
     /// Allows for a serializable reference to a type in the namespace.
     /// 
     /// If the serialized type deserializes improperly, the Type returned with be the 'void' type. 
@@ -41,7 +31,7 @@ namespace com.spacepuppy
         public TypeReference(System.Type tp)
         {
             _type = tp;
-            _typeHash = HashType(_type);
+            _typeHash = TypeUtil.HashType(_type);
         }
 
         #endregion
@@ -52,13 +42,13 @@ namespace com.spacepuppy
         {
             get
             {
-                if (_type == null) _type = UnHashType(_typeHash);
+                if (_type == null) _type = TypeUtil.UnHashType(_typeHash);
                 return _type;
             }
             set
             {
                 _type = value;
-                _typeHash = HashType(_type);
+                _typeHash = TypeUtil.HashType(_type);
             }
         }
 
@@ -83,7 +73,7 @@ namespace com.spacepuppy
 
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
         {
-            _typeHash = HashType(_type);
+            _typeHash = TypeUtil.HashType(_type);
             info.AddValue("hash", _typeHash);
         }
 
@@ -124,40 +114,6 @@ namespace com.spacepuppy
                 this.inheritsFromTypes = inheritsFromTypes;
             }
 
-        }
-
-        #endregion
-
-        #region Util Methods
-
-        public static string HashType(System.Type tp)
-        {
-            if (tp != null)
-            {
-                return tp.Assembly.GetName().Name + "|" + tp.FullName;
-            }
-            else
-            {
-                return null;
-            }
-        }
-
-        public static System.Type UnHashType(string hash)
-        {
-            if (!string.IsNullOrEmpty(hash))
-            {
-                var arr = hash.Split('|');
-                var tp = TypeUtil.ParseType(arr.Length > 0 ? arr[0] : string.Empty, 
-                                            arr.Length > 1 ? arr[1] : string.Empty);
-
-                //set type to void if the type is unfruitful, this way we're not constantly retesting this
-                if (tp == null) tp = typeof(void);
-                return tp;
-            }
-            else
-            {
-                return null;
-            }
         }
 
         #endregion

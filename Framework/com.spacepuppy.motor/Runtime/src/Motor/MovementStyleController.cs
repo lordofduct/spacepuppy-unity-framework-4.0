@@ -9,7 +9,7 @@ namespace com.spacepuppy.Motor
 {
 
     [RequireComponentInEntity(typeof(IMotor))]
-    public sealed class MovementStyleController : SPComponent, IMStartOrEnableReceiver
+    public class MovementStyleController : SPComponent, IMStartOrEnableReceiver
     {
 
         #region Events
@@ -26,8 +26,6 @@ namespace com.spacepuppy.Motor
         [TypeRestriction(typeof(IMovementStyle))]
         private Component _defaultMovementStyle;
 
-        [System.NonSerialized]
-        private RadicalCoroutine _updateRoutine;
         [System.NonSerialized]
         private bool _inUpdateSequence;
 
@@ -67,6 +65,10 @@ namespace com.spacepuppy.Motor
 
         void IMStartOrEnableReceiver.OnStartOrEnable()
         {
+            this.OnStartOrEnable();
+        }
+        protected virtual void OnStartOrEnable()
+        {
             _movementStyleModifierMessageToken = Messaging.CreateSignalToken<IMovementStyleModifier>(this.gameObject);
 
             if (_defaultMovementStyle is IMovementStyle && _current == null && this.Contains(_defaultMovementStyle as IMovementStyle))
@@ -77,8 +79,6 @@ namespace com.spacepuppy.Motor
             {
                 _current.OnActivate(null, ActivationReason.MotorPaused);
             }
-
-            if (_updateRoutine == null || _updateRoutine.Finished) _updateRoutine = this.StartRadicalCoroutine(this.UpdateRoutine(), RadicalCoroutineDisableMode.Pauses);
         }
 
         protected override void OnDisable()
@@ -134,49 +134,56 @@ namespace com.spacepuppy.Motor
 
         #region Update Routine
 
-        private System.Collections.IEnumerator UpdateRoutine()
+        protected virtual void Update()
         {
-            while (true)
+            if (_current == null || _current.PrefersFixedUpdate) return;
+
+            try
             {
-                if (_current != null)
-                {
-                    switch (GameLoop.CurrentSequence)
-                    {
-                        case UpdateSequence.Update:
-                            if (_current.PrefersFixedUpdate) yield return RadicalCoroutine.WaitForFixedUpdate;
-                            break;
-                        case UpdateSequence.FixedUpdate:
-                            if (!_current.PrefersFixedUpdate) yield return null;
-                            break;
-                        default:
-                            yield return _current.PrefersFixedUpdate ? RadicalCoroutine.WaitForFixedUpdate : null;
-                            break;
-                    }
+                _inUpdateSequence = true;
+                this.BeforeUpdateMovement?.Invoke(this, System.EventArgs.Empty);
+                if (_movementStyleModifierMessageToken.Count > 0) _movementStyleModifierMessageToken.Invoke(_onBeforeUpdateFunctor);
 
-                    _inUpdateSequence = true;
-                    this.BeforeUpdateMovement?.Invoke(this, System.EventArgs.Empty);
-                    if (_movementStyleModifierMessageToken.Count > 0) _movementStyleModifierMessageToken.Invoke(_onBeforeUpdateFunctor);
+                _current.UpdateMovement();
 
-                    _current.UpdateMovement();
+                this.UpdateMovementComplete?.Invoke(this, System.EventArgs.Empty);
+                if (_movementStyleModifierMessageToken.Count > 0) _movementStyleModifierMessageToken.Invoke(_onUpdateCompleteFunctor);
+                _inUpdateSequence = false;
+                this.DoDelayedStyleChange();
+            }
+            finally
+            {
+                _inUpdateSequence = false;
+            }
+        }
 
-                    this.UpdateMovementComplete?.Invoke(this, System.EventArgs.Empty);
-                    if (_movementStyleModifierMessageToken.Count > 0) _movementStyleModifierMessageToken.Invoke(_onUpdateCompleteFunctor);
-                    _inUpdateSequence = false;
-                    this.DoDelayedStyleChange();
+        protected virtual void FixedUpdate()
+        {
+            if (_current == null || !_current.PrefersFixedUpdate) return;
 
-                    yield return _current.PrefersFixedUpdate ? RadicalCoroutine.WaitForFixedUpdate : null;
-                }
-                else
-                {
-                    yield return null;
-                }
+            try
+            {
+                _inUpdateSequence = true;
+                this.BeforeUpdateMovement?.Invoke(this, System.EventArgs.Empty);
+                if (_movementStyleModifierMessageToken.Count > 0) _movementStyleModifierMessageToken.Invoke(_onBeforeUpdateFunctor);
+
+                _current.UpdateMovement();
+
+                this.UpdateMovementComplete?.Invoke(this, System.EventArgs.Empty);
+                if (_movementStyleModifierMessageToken.Count > 0) _movementStyleModifierMessageToken.Invoke(_onUpdateCompleteFunctor);
+                _inUpdateSequence = false;
+                this.DoDelayedStyleChange();
+            }
+            finally
+            {
+                _inUpdateSequence = false;
             }
         }
 
         #endregion
 
         #region Methods
-        
+
         private void ChangeState_Imp(IMovementStyle style, float precedence, bool dumpStack)
         {
             if (_inUpdateSequence)
@@ -358,7 +365,7 @@ namespace com.spacepuppy.Motor
 
             return style;
         }
-        
+
         public IMovementStyle PopState(float precedence = 0f)
         {
             if (_styleStack.Count > 0)
@@ -405,9 +412,9 @@ namespace com.spacepuppy.Motor
         {
             if (object.ReferenceEquals(style, null)) throw new System.ArgumentNullException("style");
 
-            if(_styleStack.Count > 0)
+            if (_styleStack.Count > 0)
             {
-                if(object.ReferenceEquals(_current, style))
+                if (object.ReferenceEquals(_current, style))
                 {
                     this.PopState();
                 }
@@ -421,7 +428,7 @@ namespace com.spacepuppy.Motor
                     }
                 }
             }
-            else if(object.ReferenceEquals(_current, style))
+            else if (object.ReferenceEquals(_current, style))
             {
                 this.ChangeStateToNull(float.NegativeInfinity);
             }
@@ -458,7 +465,7 @@ namespace com.spacepuppy.Motor
             PopOrNull = Pop | Null,
             PopAllOrNull = PopAll | Null
         }
-        
+
         #endregion
 
     }

@@ -38,6 +38,13 @@ namespace com.spacepuppy.Waypoints
         /// <returns></returns>
         float GetArcLengthAfter(int index);
         /// <summary>
+        /// Get the arclength between controlpoint at 'index' to a waypoint found at GetWaypointAfter(index, tprime)
+        /// </summary>
+        /// <param name="index"></param>
+        /// <param name="t"></param>
+        /// <returns></returns>
+        float GetArcLengthAfter(int index, float tprime);
+        /// <summary>
         /// Returns data pertaining to the relative position between the 2 control points on either side of 't'.
         /// </summary>
         /// <param name="t"></param>

@@ -290,6 +290,22 @@ namespace com.spacepuppy.Waypoints
             return _speedTable.GetArcLength(ilow, ihigh);
         }
 
+        public float GetArcLengthAfter(int index, float tprime)
+        {
+            if (_useConstantSpeed)
+            {
+                return GetArcLengthAfter(index) * Mathf.Clamp01(tprime);
+            }
+            else
+            {
+                //similar logic found in GetPositionAfter, we estimate the t based on tprime
+                float a = 1f / (float)(_controlPoints.Count - 1);
+                float t = (float)index * a;
+                t += a * tprime;
+                return GetArcLength(t) - GetArcLengthAtIndex(index);
+            }
+        }
+
         public RelativePositionData GetRelativePositionData(float t)
         {
             int cnt = _controlPoints.Count;

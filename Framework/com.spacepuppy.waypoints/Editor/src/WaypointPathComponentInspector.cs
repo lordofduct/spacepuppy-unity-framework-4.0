@@ -246,6 +246,11 @@ namespace com.spacepuppyeditor.Waypoints
         {
             if (gizmoType.HasFlag(GizmoType.NotInSelectionHierarchy) && !c.transform.IsParentOf(Selection.activeTransform)) return;
 
+            DrawWaypointPath(c, gizmoType);
+        }
+
+        protected static void DrawWaypointPath(WaypointPathComponent c, GizmoType gizmoType)
+        {
             var cam = SceneView.lastActiveSceneView.camera;
             if (cam == null) return;
 

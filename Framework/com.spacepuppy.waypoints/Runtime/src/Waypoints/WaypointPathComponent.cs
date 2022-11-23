@@ -33,6 +33,8 @@ namespace com.spacepuppy.Waypoints
         private IConfigurableIndexedWaypointPath _path;
         [System.NonSerialized()]
         private bool _cleaning;
+        [System.NonSerialized]
+        private long _controlPointHash;
 
         #endregion
 
@@ -141,6 +143,7 @@ namespace com.spacepuppy.Waypoints
                 _path.IsClosed = _closed;
                 _path.Clear();
                 foreach (var wp in _controlPoints) _path.AddControlPoint(wp);
+                _controlPointHash = GetPathIdentityHash(_controlPoints);
             }
         }
 
@@ -154,6 +157,9 @@ namespace com.spacepuppy.Waypoints
         {
             _cleaning = true;
             yield return null;
+
+            _path?.Clean();
+            _controlPointHash = GetPathIdentityHash(_controlPoints);
 
             while (_controlPointsAnimate)
             {
@@ -170,27 +176,16 @@ namespace com.spacepuppy.Waypoints
                             {
                                 _controlPoints[i].Initialize(this);
                                 _path.AddControlPoint(_controlPoints[i]);
+                                _controlPointHash = GetPathIdentityHash(_controlPoints);
                             }
                         }
                         else
                         {
-                            bool needsCleaning = false;
-                            for (int i = 0; i < _controlPoints.Length; i++)
-                            {
-                                if (!object.ReferenceEquals(_controlPoints[i], _path.ControlPoint(i)))
-                                {
-                                    _controlPoints[i].Initialize(this);
-                                    _path.ReplaceControlPoint(i, _controlPoints[i]);
-                                }
-                                else if (!needsCleaning && !Waypoint.Compare(_path.ControlPoint(i), _controlPoints[i]))
-                                {
-                                    needsCleaning = true;
-                                }
-                            }
-
-                            if (needsCleaning)
+                            long hash = GetPathIdentityHash(_controlPoints);
+                            if (hash != _controlPointHash)
                             {
                                 _path.Clean();
+                                _controlPointHash = hash;
                             }
                         }
                     }
@@ -224,6 +219,18 @@ namespace com.spacepuppy.Waypoints
         #endregion
 
         #region Static Interface
+
+        private static long GetPathIdentityHash(IControlPoint[] points)
+        {
+            if (points == null) return 0;
+
+            long hash = 0;
+            for (int i = 0; i < points.Length; i++)
+            {
+                hash ^= (long)points[i].GetHashCode() ^ ((long)points[i].Position.GetHashCode() << 32) ^ ((long)points[i].Heading.GetHashCode() << 16);
+            }
+            return hash;
+        }
 
         public static IConfigurableIndexedWaypointPath GetPath(WaypointPathComponent c, bool cloneWaypoints)
         {

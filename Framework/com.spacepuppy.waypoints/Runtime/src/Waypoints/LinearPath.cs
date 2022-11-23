@@ -266,6 +266,11 @@ namespace com.spacepuppy.Waypoints
             }
         }
 
+        public float GetArcLengthAfter(int index, float tprime)
+        {
+            return GetArcLengthAfter(index) * Mathf.Clamp01(tprime);
+        }
+
         public RelativePositionData GetRelativePositionData(float t)
         {
             var cnt = _controlPoints.Count;

@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace com.spacepuppy.Utils
 {
@@ -10,6 +12,59 @@ namespace com.spacepuppy.Utils
     /// </summary>
     public static class EnumUtil
     {
+
+        #region unsafe conversion
+        static uint ToUint<T>(T e) where T : struct, Enum
+        {
+            unsafe
+            {
+                void* ptr = UnsafeUtility.AddressOf(ref e);
+                return *((uint*)ptr);
+            }
+        }
+        static ulong ToUlong<T>(T e) where T : struct, Enum
+        {
+            unsafe
+            {
+                void* ptr = UnsafeUtility.AddressOf(ref e);
+                return *((ulong*)ptr);
+            }
+        }
+        static byte ToByte<T>(T e) where T : struct, Enum
+        {
+            unsafe
+            {
+                void* ptr = UnsafeUtility.AddressOf(ref e);
+                return *((byte*)ptr);
+            }
+        }
+        static ulong ToNumeric<T>(T e) where T : struct, Enum
+        {
+            int size = UnsafeUtility.SizeOf<T>();
+            unsafe
+            {
+                void* ptr = UnsafeUtility.AddressOf(ref e);
+                if (size == s_UIntSize)
+                {
+                    return (ulong)(*((uint*)ptr));
+                }
+                else if (size == s_ULongSize)
+                {
+                    return *((ulong*)ptr);
+                }
+                else if (size == s_ByteSize)
+                {
+                    return (ulong)(*((byte*)ptr));
+                }
+            }
+            throw new Exception("No matching conversion function found for an Enum of size: " + size);
+        }
+        static int s_UIntSize = UnsafeUtility.SizeOf<uint>();
+        static int s_ULongSize = UnsafeUtility.SizeOf<ulong>();
+        static int s_ByteSize = UnsafeUtility.SizeOf<byte>();
+        #endregion
+
+
 
         public static object ToEnumsNumericType(System.Enum e)
         {
@@ -91,19 +146,19 @@ namespace com.spacepuppy.Utils
             return EnumValueIsDefined(value, typeof(T));
         }
 
-        public static T AddFlag<T>(this T e, T value) where T : struct, System.IConvertible
+        public static T AddFlag<T>(this T e, T value) where T : struct, System.Enum
         {
             return (T)System.Enum.ToObject(typeof(T), System.Convert.ToInt64(e) | System.Convert.ToInt64(value));
         }
 
-        public static T RedactFlag<T>(this T e, T value) where T : struct, System.IConvertible
+        public static T RedactFlag<T>(this T e, T value) where T : struct, System.Enum
         {
             var x = System.Convert.ToInt64(e);
             var y = System.Convert.ToInt64(value);
             return (T)System.Enum.ToObject(typeof(T), x & ~(x & y));
         }
 
-        public static T SetFlag<T>(this T e, T flag, bool status) where T : struct, System.IConvertible
+        public static T SetFlag<T>(this T e, T flag, bool status) where T : struct, System.Enum
         {
             var x = System.Convert.ToInt64(e);
             var y = System.Convert.ToInt64(flag);
@@ -114,15 +169,33 @@ namespace com.spacepuppy.Utils
             return (T)System.Enum.ToObject(typeof(T), x);
         }
 
+        /*
+         * UNNECESSARY - latest versions of .net has Enum.HasFlag built in
+         * 
         public static bool HasFlag(this System.Enum e, System.Enum value)
         {
-            long v = System.Convert.ToInt64(value);
-            return (System.Convert.ToInt64(e) & v) == v;
+            ulong v = System.Convert.ToUInt64(value);
+            return (System.Convert.ToUInt64(e) & v) == v;
         }
-        
+         */
+
+        public static bool HasFlagT<T>(this T e, T value) where T : struct, System.Enum
+        {
+            ulong v = ToNumeric(value);
+            return (ToNumeric(e) & v) == v;
+            //ulong v = System.Convert.ToUInt64(value);
+            //return (System.Convert.ToUInt64(e) & v) == v;
+        }
+
         public static bool HasFlag(this System.Enum e, ulong value)
         {
             return (System.Convert.ToUInt64(e) & value) == value;
+        }
+
+        public static bool HasFlagT<T>(this T e, ulong value) where T : struct, System.Enum
+        {
+            return (ToNumeric(e) & value) == value;
+            //return (System.Convert.ToUInt64(e) & value) == value;
         }
 
         public static bool HasFlag(this System.Enum e, long value)
@@ -130,19 +203,43 @@ namespace com.spacepuppy.Utils
             return (System.Convert.ToInt64(e) & value) == value;
         }
 
+        public static bool HasFlagT<T>(this T e, long value) where T : struct, System.Enum
+        {
+            return (ToNumeric(e) & (ulong)value) == (ulong)value;
+            //return (System.Convert.ToInt64(e) & value) == value;
+        }
+
+        public static bool HasAnyFlagT<T>(this T e, T value) where T : struct, System.Enum
+        {
+            return (ToNumeric(e) & ToNumeric(value)) != 0UL;
+            //return (System.Convert.ToUInt64(e) & System.Convert.ToUInt64(value)) != 0UL;
+        }
+
         public static bool HasAnyFlag(this System.Enum e, System.Enum value)
         {
-            return (System.Convert.ToInt64(e) & System.Convert.ToInt64(value)) != 0;
+            return (System.Convert.ToUInt64(e) & System.Convert.ToUInt64(value)) != 0UL;
+        }
+
+        public static bool HasAnyFlagT<T>(this T e, ulong value) where T : struct, System.Enum
+        {
+            return (ToNumeric(e) & value) != 0UL;
+            //return (System.Convert.ToUInt64(e) & value) != 0;
         }
 
         public static bool HasAnyFlag(this System.Enum e, ulong value)
         {
-            return (System.Convert.ToUInt64(e) & value) != 0;
+            return (System.Convert.ToUInt64(e) & value) != 0UL;
+        }
+
+        public static bool HasAnyFlagT<T>(this T e, long value) where T : struct, System.Enum
+        {
+            return (ToNumeric(e) & (ulong)value) != 0UL;
+            //return (System.Convert.ToInt64(e) & value) != 0;
         }
 
         public static bool HasAnyFlag(this System.Enum e, long value)
         {
-            return (System.Convert.ToInt64(e) & value) != 0;
+            return (System.Convert.ToInt64(e) & value) != 0L;
         }
 
         public static IEnumerable<System.Enum> EnumerateFlags(System.Enum e)
@@ -171,7 +268,7 @@ namespace com.spacepuppy.Utils
             }
         }
 
-        public static IEnumerable<T> EnumerateFlags<T>(T e) where T : struct, System.IConvertible
+        public static IEnumerable<T> EnumerateFlags<T>(T e) where T : struct, System.Enum
         {
             var tp = e.GetType();
             if (!tp.IsEnum) throw new System.ArgumentException("Type must be an enum.", "T");

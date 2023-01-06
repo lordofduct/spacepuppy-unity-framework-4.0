@@ -331,7 +331,7 @@ namespace com.spacepuppyeditor.Core
                     {
                         go.GetComponents(lst);
                         var members = (from o in lst.Cast<object>().Prepend(go)
-                                       from m in GetMembersFromTarget(o).Where(m => DynamicUtil.GetMemberAccessLevel(m).HasFlag(ACCESS) && !m.IsObsolete())
+                                       from m in GetMembersFromTarget(o).Where(m => DynamicUtil.GetMemberAccessLevel(m).HasFlagT(ACCESS) && !m.IsObsolete())
                                        select (o, m)).ToArray();
                         var entries = members.Select(t =>
                         {

@@ -90,7 +90,7 @@ namespace com.spacepuppy.Graphs
 
                 for(int i = 1; i < 8; i++)
                 {
-                    if(!side.HasFlag(1 << i))
+                    if(!side.HasFlagT(1 << i))
                     {
                         start = (GridNeighbour)(1 << (i + 1));
                     }

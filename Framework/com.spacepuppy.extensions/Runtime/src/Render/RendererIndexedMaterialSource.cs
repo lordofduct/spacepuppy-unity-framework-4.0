@@ -47,6 +47,8 @@ namespace com.spacepuppy.Render
             }
         }
 
+        public int MaterialIndex => _materialIndex;
+
         /// <summary>
         /// Does not reflect if the material is truly unique. But suggests the possibly of uniqueness if 
         /// 'GetUniqueMaterial' were called.

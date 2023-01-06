@@ -265,6 +265,8 @@ namespace com.spacepuppy.Render
 
         public static RendererMaterialSource GetMaterialSource(Renderer renderer, bool donotAddSourceIfNull = false)
         {
+            if (!renderer) return null;
+
             using (var lst = TempCollection.GetList<RendererMaterialSource>())
             {
                 renderer.GetComponents<RendererMaterialSource>(lst);

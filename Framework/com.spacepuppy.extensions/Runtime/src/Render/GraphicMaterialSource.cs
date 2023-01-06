@@ -143,6 +143,8 @@ namespace com.spacepuppy.Render
 
         public static GraphicMaterialSource GetMaterialSource(UnityEngine.UI.Graphic graphic, bool donotAddSourceIfNull = false)
         {
+            if (!graphic) return null;
+
             using (var lst = TempCollection.GetList<GraphicMaterialSource>())
             {
                 graphic.GetComponents<GraphicMaterialSource>(lst);

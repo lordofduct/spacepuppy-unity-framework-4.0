@@ -39,12 +39,14 @@ namespace com.spacepuppy
         protected VariantType _type;
 
         [SerializeField()]
+        [UnityEngine.Serialization.FormerlySerializedAs("_value_num")] //ensures conversion compatibility with SPLite
         protected float _x;
         [SerializeField()]
         protected float _y;
         [SerializeField()]
         protected float _z;
         [SerializeField()]
+        [UnityEngine.Serialization.FormerlySerializedAs("_value_num")] //ensures conversion compatibility with SPLite
         protected double _w;
         [SerializeField()]
         [UnityEngine.Serialization.FormerlySerializedAs("_valueReference")]

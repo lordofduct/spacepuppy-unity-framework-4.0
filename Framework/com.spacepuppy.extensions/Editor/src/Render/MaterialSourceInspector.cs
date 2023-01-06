@@ -12,6 +12,7 @@ namespace com.spacepuppyeditor.Render
 {
 
     [CustomEditor(typeof(MaterialSource), true)]
+    [CanEditMultipleObjects]
     public class MaterialSourceInspector : SPEditor
     {
 
@@ -65,55 +66,64 @@ namespace com.spacepuppyeditor.Render
 
         private void GetInfoAndContent()
         {
-            var mat = (this.target as MaterialSource)?.Material;
-            _valueTypes = null;
-            _options = null;
-            _displayOptions = null;
-
-            if (mat != null && mat.shader != null)
+            if (this.serializedObject.isEditingMultipleObjects)
             {
-                int cnt = ShaderUtil.GetPropertyCount(mat.shader);
-                using (var infoLst = TempCollection.GetList<MaterialSource.ForwardedMaterialProperty>(cnt))
-                using (var contentLst = TempCollection.GetList<GUIContent>(cnt))
-                {
-                    for (int i = 0; i < cnt; i++)
-                    {
-                        var nm = ShaderUtil.GetPropertyName(mat.shader, i);
-                        var tp = ShaderUtil.GetPropertyType(mat.shader, i);
+                _valueTypes = ArrayUtil.Empty<MaterialPropertyValueType>();
+                _options = ArrayUtil.Empty<string>();
+                _displayOptions = new GUIContent[] { new GUIContent("Custom...") };
+            }
+            else
+            {
+                var mat = (this.target as MaterialSource)?.Material;
+                _valueTypes = null;
+                _options = null;
+                _displayOptions = null;
 
-                        switch (tp)
+                if (mat != null && mat.shader != null)
+                {
+                    int cnt = ShaderUtil.GetPropertyCount(mat.shader);
+                    using (var infoLst = TempCollection.GetList<MaterialSource.ForwardedMaterialProperty>(cnt))
+                    using (var contentLst = TempCollection.GetList<GUIContent>(cnt))
+                    {
+                        for (int i = 0; i < cnt; i++)
                         {
-                            case ShaderUtil.ShaderPropertyType.Float:
-                                {
-                                    infoLst.Add(new MaterialSource.ForwardedMaterialProperty(nm, MaterialPropertyValueType.Float));
-                                    contentLst.Add(EditorHelper.TempContent(nm + " (float)"));
-                                }
-                                break;
-                            case ShaderUtil.ShaderPropertyType.Range:
-                                {
-                                    infoLst.Add(new MaterialSource.ForwardedMaterialProperty(nm, MaterialPropertyValueType.Float));
-                                    var min = ShaderUtil.GetRangeLimits(mat.shader, i, 1);
-                                    var max = ShaderUtil.GetRangeLimits(mat.shader, i, 2);
-                                    contentLst.Add(EditorHelper.TempContent(string.Format("{0} (Range [{1}, {2}]])", nm, min, max)));
-                                }
-                                break;
-                            case ShaderUtil.ShaderPropertyType.Color:
-                                {
-                                    infoLst.Add(new MaterialSource.ForwardedMaterialProperty(nm, MaterialPropertyValueType.Color));
-                                    contentLst.Add(EditorHelper.TempContent(nm + " (color)"));
-                                }
-                                break;
-                            case ShaderUtil.ShaderPropertyType.Vector:
-                                {
-                                    infoLst.Add(new MaterialSource.ForwardedMaterialProperty(nm, MaterialPropertyValueType.Vector));
-                                    contentLst.Add(EditorHelper.TempContent(nm + " (vector)"));
-                                }
-                                break;
+                            var nm = ShaderUtil.GetPropertyName(mat.shader, i);
+                            var tp = ShaderUtil.GetPropertyType(mat.shader, i);
+
+                            switch (tp)
+                            {
+                                case ShaderUtil.ShaderPropertyType.Float:
+                                    {
+                                        infoLst.Add(new MaterialSource.ForwardedMaterialProperty(nm, MaterialPropertyValueType.Float));
+                                        contentLst.Add(EditorHelper.TempContent(nm + " (float)"));
+                                    }
+                                    break;
+                                case ShaderUtil.ShaderPropertyType.Range:
+                                    {
+                                        infoLst.Add(new MaterialSource.ForwardedMaterialProperty(nm, MaterialPropertyValueType.Float));
+                                        var min = ShaderUtil.GetRangeLimits(mat.shader, i, 1);
+                                        var max = ShaderUtil.GetRangeLimits(mat.shader, i, 2);
+                                        contentLst.Add(EditorHelper.TempContent(string.Format("{0} (Range [{1}, {2}]])", nm, min, max)));
+                                    }
+                                    break;
+                                case ShaderUtil.ShaderPropertyType.Color:
+                                    {
+                                        infoLst.Add(new MaterialSource.ForwardedMaterialProperty(nm, MaterialPropertyValueType.Color));
+                                        contentLst.Add(EditorHelper.TempContent(nm + " (color)"));
+                                    }
+                                    break;
+                                case ShaderUtil.ShaderPropertyType.Vector:
+                                    {
+                                        infoLst.Add(new MaterialSource.ForwardedMaterialProperty(nm, MaterialPropertyValueType.Vector));
+                                        contentLst.Add(EditorHelper.TempContent(nm + " (vector)"));
+                                    }
+                                    break;
+                            }
                         }
+                        _displayOptions = contentLst.Append(EditorHelper.TempContent("Custom...")).ToArray();
+                        _options = infoLst.Select(o => o.Name).ToArray();
+                        _valueTypes = infoLst.Select(o => o.ValueType).ToArray();
                     }
-                    _displayOptions = contentLst.Append(EditorHelper.TempContent("Custom...")).ToArray();
-                    _options = infoLst.Select(o => o.Name).ToArray();
-                    _valueTypes = infoLst.Select(o => o.ValueType).ToArray();
                 }
             }
         }
@@ -165,6 +175,7 @@ namespace com.spacepuppyeditor.Render
     }
 
     [CustomEditor(typeof(RendererMaterialSource))]
+    [CanEditMultipleObjects]
     public class RendererMaterialSourceInspector : MaterialSourceInspector
     {
 
@@ -178,6 +189,7 @@ namespace com.spacepuppyeditor.Render
             this.DrawPropertyField(EditorHelper.PROP_SCRIPT);
 
             this.DrawDefaultMaterialSourceInspector();
+            
             this.DrawForwardedMaterialProps();
 
             this.DrawDefaultInspectorExcept(EditorHelper.PROP_SCRIPT, PROP_RENDERER, PROP_MODE, PROP_FORWARDEDMATPROPS);
@@ -187,6 +199,15 @@ namespace com.spacepuppyeditor.Render
 
         protected void DrawDefaultMaterialSourceInspector()
         {
+            if (this.serializedObject.isEditingMultipleObjects)
+            {
+                var cache = SPGUI.Disable();
+                this.DrawPropertyField(PROP_RENDERER);
+                cache.Reset();
+                this.DrawPropertyField(PROP_MODE);
+                return;
+            }
+            
             var prop = this.serializedObject.FindProperty(PROP_RENDERER);
             var source = this.target as RendererMaterialSource;
             var go = GameObjectUtil.GetGameObjectFromSource(source);
@@ -249,6 +270,7 @@ namespace com.spacepuppyeditor.Render
     }
 
     [CustomEditor(typeof(GraphicMaterialSource))]
+    [CanEditMultipleObjects]
     public class GraphicMaterialSourceInspector : MaterialSourceInspector
     {
 
@@ -271,6 +293,15 @@ namespace com.spacepuppyeditor.Render
 
         protected void DrawDefaultMaterialSourceInspector()
         {
+            if (this.serializedObject.isEditingMultipleObjects)
+            {
+                var cache = SPGUI.Disable();
+                this.DrawPropertyField(PROP_GRAPHICS);
+                cache.Reset();
+                this.DrawPropertyField(PROP_MODE);
+                return;
+            }
+
             var prop = this.serializedObject.FindProperty(PROP_GRAPHICS);
             var source = this.target as GraphicMaterialSource;
             var go = GameObjectUtil.GetGameObjectFromSource(source);

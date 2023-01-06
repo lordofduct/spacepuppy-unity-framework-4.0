@@ -282,7 +282,7 @@ namespace com.spacepuppy.Render
             {
                 case Material mat:
                     return mat;
-                case MaterialSource src:
+                case IMaterialSource src:
                     return src.Material;
                 case Renderer rend:
                     {
@@ -350,7 +350,7 @@ namespace com.spacepuppy.Render
             {
                 case Material mat:
                     return index == 0 ? mat : null;
-                case MaterialSource src:
+                case IMaterialSource src:
                     return index == 0 ? src.Material : null;
                 case Renderer rend:
                     if (index == 0)
@@ -429,7 +429,7 @@ namespace com.spacepuppy.Render
         public static Material CopyMaterialFromSource(object obj, bool reduceFromGameObjectSource = false)
         {
             var source = MaterialSource.GetMaterialSource(obj, reduceFromGameObjectSource, false);
-            return source ? source.GetUniqueMaterial() : null;
+            return source?.GetUniqueMaterial();
         }
 
         public static Material GetUniqueMaterial(this Renderer renderer)

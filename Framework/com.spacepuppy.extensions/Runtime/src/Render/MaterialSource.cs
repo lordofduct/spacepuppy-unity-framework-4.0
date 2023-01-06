@@ -168,10 +168,12 @@ namespace com.spacepuppy.Render
 
         #region Static Interface
 
-        public static MaterialSource GetMaterialSource(object src, bool reduceFromGameObjectSource = false, bool donotAddSourceIfNull = false)
+        public static IMaterialSource GetMaterialSource(object src, bool reduceFromGameObjectSource = false, bool donotAddSourceIfNull = false)
         {
             switch (src)
             {
+                case IMaterialSource ims:
+                    return ims;
                 case Renderer rend:
                     return RendererMaterialSource.GetMaterialSource(rend, donotAddSourceIfNull);
                 case UnityEngine.UI.Graphic gr:

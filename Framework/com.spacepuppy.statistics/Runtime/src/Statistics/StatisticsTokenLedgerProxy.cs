@@ -70,7 +70,7 @@ namespace com.spacepuppy.Statistics
 
         public IEnumerable<System.Reflection.MemberInfo> GetMembers(bool includeNonPublic)
         {
-            return Enumerable.Empty<MemberInfo>();
+            return Enumerable.Empty<System.Reflection.MemberInfo>();
         }
 #endif
 

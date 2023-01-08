@@ -11,7 +11,8 @@ namespace com.spacepuppy.Utils
         public static T Instantiate<T>(T obj) where T : UnityEngine.Object
         {
 #if UNITY_EDITOR
-            if (!Application.isPlaying && UnityEditor.PrefabUtility.GetPrefabType(obj) == UnityEditor.PrefabType.Prefab)
+            //if (!Application.isPlaying && UnityEditor.PrefabUtility.GetPrefabType(obj) == UnityEditor.PrefabType.Prefab)
+            if (!Application.isPlaying && UnityEditor.PrefabUtility.GetPrefabAssetType(obj) != UnityEditor.PrefabAssetType.NotAPrefab)
             {
                 return UnityEditor.PrefabUtility.InstantiatePrefab(obj) as T;
             }
@@ -27,7 +28,8 @@ namespace com.spacepuppy.Utils
         public static T Instantiate<T>(T obj, Transform parent) where T : UnityEngine.Object
         {
 #if UNITY_EDITOR
-            if (!Application.isPlaying && UnityEditor.PrefabUtility.GetPrefabType(obj) == UnityEditor.PrefabType.Prefab)
+            //if (!Application.isPlaying && UnityEditor.PrefabUtility.GetPrefabType(obj) == UnityEditor.PrefabType.Prefab)
+            if (!Application.isPlaying && UnityEditor.PrefabUtility.GetPrefabAssetType(obj) != UnityEditor.PrefabAssetType.NotAPrefab)
             {
                 var result = UnityEditor.PrefabUtility.InstantiatePrefab(obj) as T;
                 var go = GameObjectUtil.GetGameObjectFromSource(result);
@@ -47,7 +49,8 @@ namespace com.spacepuppy.Utils
         public static T Instantiate<T>(T obj, Vector3 position, Quaternion rotation, Transform parent) where T : UnityEngine.Object
         {
 #if UNITY_EDITOR
-            if (!Application.isPlaying && UnityEditor.PrefabUtility.GetPrefabType(obj) == UnityEditor.PrefabType.Prefab)
+            //if (!Application.isPlaying && UnityEditor.PrefabUtility.GetPrefabType(obj) == UnityEditor.PrefabType.Prefab)
+            if (!Application.isPlaying && UnityEditor.PrefabUtility.GetPrefabAssetType(obj) != UnityEditor.PrefabAssetType.NotAPrefab)
             {
                 var result = UnityEditor.PrefabUtility.InstantiatePrefab(obj) as T;
                 var go = GameObjectUtil.GetGameObjectFromSource(result);

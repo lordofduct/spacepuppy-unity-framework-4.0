@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 
 using com.spacepuppy.Utils;
-using Codice.Client.Commands;
 
 namespace com.spacepuppy.Waypoints
 {

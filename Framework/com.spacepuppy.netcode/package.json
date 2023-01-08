@@ -1,0 +1,20 @@
+{
+  "name": "com.spacepuppy.netcode",
+  "version": "4.0.0",
+  "displayName": "Spacepuppy Netcode",
+  "description": "Netcode library for UI.",
+  "unity": "2021.3",
+  "unityRelease": "22f1",
+  "documentationUrl": "https://github.com/lordofduct/spacepuppy-unity-framework-4.0",
+  "changelogUrl": "https://github.com/lordofduct/spacepuppy-unity-framework-4.0",
+  "licensesUrl": "https://github.com/lordofduct/spacepuppy-unity-framework-4.0/blob/master/LICENSE",
+  "dependencies": {
+    "com.spacepuppy.core": "4.0.0",
+    "com.unity.netcode": "1.0.2"
+  },
+  "author": {
+    "name": "Jupiter Lighthouse",
+    "email": "dylan@jupiterlighthouse.com",
+    "url": "https://github.com/lordofduct"
+  }
+}

@@ -20,7 +20,7 @@ namespace com.spacepuppy.UI
             {
                 bool check = _onClick == null;
                 _onClick += value;
-                if(check)
+                if (check)
                 {
                     this.AddEventHandlerHook();
                 }
@@ -29,7 +29,7 @@ namespace com.spacepuppy.UI
             {
                 bool check = _onClick != null;
                 _onClick -= value;
-                if(check && _onClick == null)
+                if (check && _onClick == null)
                 {
                     this.RemoveEventHandlerHook();
                 }
@@ -40,30 +40,34 @@ namespace com.spacepuppy.UI
 
         [SerializeField]
         [TypeRestriction(new System.Type[] { typeof(UnityEngine.UI.Button), typeof(SPUIButton) })]
-        private UnityEngine.Object _value;
+        private Component _value;
 
         #endregion
 
         #region Properties
 
-        public UnityEngine.Object Value
+        public Component Button
         {
             get => _value;
             set
             {
                 if (_value == value) return;
 
-                if(_value && _onClick != null)
+                if (_value && _onClick != null)
                 {
                     RemoveEventHandlerHook();
                 }
-                _value = ObjUtil.GetAsFromSource(_supportedTypes, value) as UnityEngine.Object;
-                if(_onClick != null)
+                _value = ObjUtil.GetAsFromSource(_supportedTypes, value) as Component;
+                if (_onClick != null)
                 {
                     AddEventHandlerHook();
                 }
             }
         }
+
+        public GameObject gameObject => this.Button ? this.Button.gameObject : null;
+
+        public Transform transform => this.Button ? this.Button.transform : null;
 
         #endregion
 
@@ -71,7 +75,7 @@ namespace com.spacepuppy.UI
 
         private void AddEventHandlerHook()
         {
-            switch(_value)
+            switch (_value)
             {
                 case UnityEngine.UI.Button btn:
                     btn.onClick.AddListener(this.UnityButtonHandler);

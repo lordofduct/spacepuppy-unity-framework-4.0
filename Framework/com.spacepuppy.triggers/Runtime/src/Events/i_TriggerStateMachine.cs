@@ -30,7 +30,11 @@ namespace com.spacepuppy.Events
         private StateCollection _states = new StateCollection();
 
         [SerializeField]
-        private SPEvent _onStateChanged = new SPEvent("OnStateChanged");
+        private SPEvent _onExitState = new SPEvent("OnExitState");
+
+        [SerializeField]
+        [UnityEngine.Serialization.FormerlySerializedAs("_onStateChanged")]
+        private SPEvent _onEnterState = new SPEvent("OnEnterState");
 
         #endregion
 
@@ -38,7 +42,8 @@ namespace com.spacepuppy.Events
 
         protected override void Awake()
         {
-            _states.StateChanged += (s, e) => _onStateChanged.ActivateTrigger(this, null);
+            _states.ExitingState += (s, e) => _onExitState.ActivateTrigger(this, null);
+            _states.EnteringState += (s, e) => _onEnterState.ActivateTrigger(this, null);
             base.Awake();
         }
 
@@ -74,7 +79,9 @@ namespace com.spacepuppy.Events
 
         public StateCollection States => _states;
 
-        public SPEvent OnStateChanged => _onStateChanged;
+        public SPEvent OnExitState => _onExitState;
+
+        public SPEvent OnEnterState => _onEnterState;
 
         #endregion
 
@@ -122,7 +129,7 @@ namespace com.spacepuppy.Events
 
         BaseSPEvent[] IObservableTrigger.GetEvents()
         {
-            return new BaseSPEvent[] { _onStateChanged };
+            return new BaseSPEvent[] { _onExitState, _onEnterState };
         }
 
         #endregion
@@ -133,7 +140,8 @@ namespace com.spacepuppy.Events
         public class StateCollection : IList<StateInfo>
         {
 
-            public event System.EventHandler StateChanged;
+            public event System.EventHandler ExitingState;
+            public event System.EventHandler EnteringState;
 
             #region Fields
 
@@ -247,6 +255,11 @@ namespace com.spacepuppy.Events
             {
                 bool signal = (_currentState != index);
 
+                if (signal && _currentState >= 0)
+                {
+                    this.ExitingState?.Invoke(this, System.EventArgs.Empty);
+                }
+
                 _currentState = index;
                 var currentGo = index >= 0 && index < _states.Count ? GameObjectUtil.GetGameObjectFromSource(_states[index].Target) : null;
                 for (int i = 0; i < _states.Count; i++)
@@ -257,7 +270,7 @@ namespace com.spacepuppy.Events
 
                 if (signal)
                 {
-                    this.StateChanged?.Invoke(this, System.EventArgs.Empty);
+                    this.EnteringState?.Invoke(this, System.EventArgs.Empty);
                 }
             }
 

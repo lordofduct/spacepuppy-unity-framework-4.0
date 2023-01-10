@@ -8,7 +8,6 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Motor
 {
 
-    [RequireComponentInEntity(typeof(IMotor))]
     public class MovementStyleController : SPComponent, IMStartOrEnableReceiver
     {
 

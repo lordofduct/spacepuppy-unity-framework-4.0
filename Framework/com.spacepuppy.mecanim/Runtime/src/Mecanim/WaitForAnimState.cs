@@ -45,7 +45,7 @@ namespace com.spacepuppy.Mecanim
 
         #region IRadicalEnumerator Interface
 
-        public bool IsComplete => _mode?.Invoke(this) ?? false;
+        public bool IsComplete => _mode?.Invoke(this) ?? true;
 
         object System.Collections.IEnumerator.Current => null;
 

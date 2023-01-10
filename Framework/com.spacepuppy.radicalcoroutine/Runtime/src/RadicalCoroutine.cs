@@ -895,7 +895,7 @@ namespace com.spacepuppy
 
         #region IYieldInstruction/IEnumerator Interface
 
-        bool IRadicalYieldInstruction.IsComplete { get { return this.Finished; } }
+        bool IRadicalYieldInstruction.IsComplete => this.Finished;
 
         object IEnumerator.Current
         {
@@ -1507,7 +1507,7 @@ namespace com.spacepuppy
                 _owner = null;
                 _handle = null;
                 _yieldObject = null;
-                _state = States.Uninitialized;
+                _state = States.Complete;
                 _pool.Release(this);
             }
 

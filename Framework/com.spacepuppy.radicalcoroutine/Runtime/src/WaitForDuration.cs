@@ -17,7 +17,7 @@ namespace com.spacepuppy
     public class WaitForDuration : IRadicalEnumerator, IPausibleYieldInstruction, IProgressingYieldInstruction, System.IDisposable
     {
 
-        private enum States : sbyte
+        protected enum States : sbyte
         {
             Pooled = -2,
             WaitingRelease = -1,
@@ -58,6 +58,8 @@ namespace com.spacepuppy
         public float Duration { get { return _dur; } }
 
         public double CurrentTime { get { return _tally + this.GetCurrentRunningTime(); } }
+
+        protected States State => _state;
 
         #endregion
 

@@ -53,7 +53,8 @@
             _complete = true;
             this.Cancelled = true;
 
-            _callback?.Invoke(this);
+            var d = _callback;
+            d?.Invoke(this);
             _callback = null;
         }
 
@@ -63,7 +64,8 @@
 
             _complete = true;
 
-            _callback?.Invoke(this);
+            var d = _callback;
+            d?.Invoke(this);
             _callback = null;
         }
 
@@ -117,12 +119,18 @@
 
         #region IPooledYieldInstruction Interface
 
-        void System.IDisposable.Dispose()
+        public void Dispose()
         {
-            this.Reset();
             if (this.GetType() == typeof(RadicalWaitHandle)) //we only release if the handle is directly a RadicalWaitHandle rather than one inherited from RadicalWaitHandle
             {
+                _complete = true;
+                this.Cancelled = false;
+                _callback = null;
                 _pool.Release(this);
+            }
+            else
+            {
+                this.Reset();
             }
         }
 
@@ -147,7 +155,7 @@
 
         #region Static Interface
 
-        private static com.spacepuppy.Collections.ObjectCachePool<RadicalWaitHandle> _pool = new com.spacepuppy.Collections.ObjectCachePool<RadicalWaitHandle>(-1, () => new RadicalWaitHandle());
+        private static com.spacepuppy.Collections.ObjectCachePool<RadicalWaitHandle> _pool = new com.spacepuppy.Collections.ObjectCachePool<RadicalWaitHandle>(-1, () => new RadicalWaitHandle(), o => o.Reset(), true);
 
         public static IRadicalWaitHandle Null
         {

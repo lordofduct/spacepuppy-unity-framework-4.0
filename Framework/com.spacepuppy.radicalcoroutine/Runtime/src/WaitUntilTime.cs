@@ -55,7 +55,7 @@ namespace com.spacepuppy
         {
             get
             {
-                return _timeSupplier.Total >= _finishTime;
+                return _timeSupplier != null ? _timeSupplier.Total >= _finishTime : true;
             }
         }
 

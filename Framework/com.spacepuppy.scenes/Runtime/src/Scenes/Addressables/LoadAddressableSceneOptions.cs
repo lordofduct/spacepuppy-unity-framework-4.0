@@ -76,13 +76,19 @@ namespace com.spacepuppy.Addressables
                 }
 
                 var op = _scene.LoadSceneAsync(_mode, true);
+
+                this.RegisterHandlesScene(new LoadSceneInternalResult()
+                {
+                    Op = null,
+                    Scene = op.Result.Scene,
+                    Parameters = new LoadSceneParameters(_mode),
+                });
+
 #if SP_UNITASK
                 await op;
 #else
                 await op.Task;
 #endif
-
-                this.RegisterHandlesScene(null, op.Result.Scene, _mode);
 
                 this.SignalComplete();
             }

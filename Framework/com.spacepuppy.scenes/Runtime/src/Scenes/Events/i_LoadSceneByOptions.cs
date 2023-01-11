@@ -152,7 +152,7 @@ namespace com.spacepuppy.Scenes.Events
                     this.PersistentToken = IProxyExtensions.ReduceIfProxy(_persistentToken.Value);
 
                     var nm = _scene.SceneName ?? string.Empty;
-                    UnityLoadResult handle;
+                    LoadSceneInternalResult handle;
                     if (nm.StartsWith("#"))
                     {
                         nm = nm.Substring(1);
@@ -170,7 +170,7 @@ namespace com.spacepuppy.Scenes.Events
                     }
 
 #if SP_UNITASK
-                    await handle.Op;
+                    await handle.AsUniTask();
 #else
                     await handle.AsTask();
 #endif

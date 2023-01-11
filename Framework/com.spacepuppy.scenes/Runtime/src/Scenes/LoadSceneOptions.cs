@@ -47,8 +47,8 @@ namespace com.spacepuppy.Scenes
 
         #region Fields
 
-        private UnityLoadResult _primaryResult;
-        private List<UnityLoadResult> _additiveResults;
+        private LoadSceneInternalResult _primaryResult;
+        private List<LoadSceneInternalResult> _additiveResults;
         private LoadSceneOptions _parent;
 
         #endregion
@@ -118,7 +118,7 @@ namespace com.spacepuppy.Scenes
             }
         }
 
-        protected UnityLoadResult PrimaryLoadResult => _primaryResult;
+        protected LoadSceneInternalResult PrimaryLoadResult => _primaryResult;
 
         #endregion
 
@@ -152,66 +152,20 @@ namespace com.spacepuppy.Scenes
             }
         }
 
-        protected UnityLoadResult LoadScene(string sceneName, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async)
+        protected LoadSceneInternalResult LoadScene(string sceneName, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async)
         {
-            switch (behaviour)
-            {
-                case LoadSceneBehaviour.Standard:
-                    {
-                        this.BeforeSceneLoadCalled?.Invoke(this, this);
-                        UnitySceneManager.LoadScene(sceneName, mode);
-                        var scene = UnitySceneManager.GetSceneAt(UnitySceneManager.sceneCount - 1);
-                        return this.RegisterHandlesScene(null, scene, mode);
-                    }
-                case LoadSceneBehaviour.Async:
-                    {
-                        this.BeforeSceneLoadCalled?.Invoke(this, this);
-                        var op = UnitySceneManager.LoadSceneAsync(sceneName, mode);
-                        var scene = UnitySceneManager.GetSceneAt(UnitySceneManager.sceneCount - 1);
-                        return this.RegisterHandlesScene(op, scene, mode);
-                    }
-                case LoadSceneBehaviour.AsyncAndWait:
-                    {
-                        this.BeforeSceneLoadCalled?.Invoke(this, this);
-                        var op = UnitySceneManager.LoadSceneAsync(sceneName, mode);
-                        op.allowSceneActivation = false;
-                        var scene = UnitySceneManager.GetSceneAt(UnitySceneManager.sceneCount - 1);
-                        return this.RegisterHandlesScene(op, scene, mode);
-                    }
-                default:
-                    throw new System.InvalidOperationException("Unsupported LoadSceneBehaviour.");
-            }
+            this.BeforeSceneLoadCalled?.Invoke(this, this);
+            var result = this.SceneManager?.LoadSceneInternal(sceneName, new LoadSceneParameters(mode), behaviour) ?? SceneManagerUtils.LoadSceneInternal(sceneName, new LoadSceneParameters(mode), behaviour);
+            this.RegisterHandlesScene(result);
+            return result;
         }
 
-        protected UnityLoadResult LoadScene(int index, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async)
+        protected LoadSceneInternalResult LoadScene(int index, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async)
         {
-            switch (behaviour)
-            {
-                case LoadSceneBehaviour.Standard:
-                    {
-                        this.BeforeSceneLoadCalled?.Invoke(this, this);
-                        UnitySceneManager.LoadScene(index, mode);
-                        var scene = UnitySceneManager.GetSceneAt(UnitySceneManager.sceneCount - 1);
-                        return this.RegisterHandlesScene(null, scene, mode);
-                    }
-                case LoadSceneBehaviour.Async:
-                    {
-                        this.BeforeSceneLoadCalled?.Invoke(this, this);
-                        var op = UnitySceneManager.LoadSceneAsync(index, mode);
-                        var scene = UnitySceneManager.GetSceneAt(UnitySceneManager.sceneCount - 1);
-                        return this.RegisterHandlesScene(op, scene, mode);
-                    }
-                case LoadSceneBehaviour.AsyncAndWait:
-                    {
-                        this.BeforeSceneLoadCalled?.Invoke(this, this);
-                        var op = UnitySceneManager.LoadSceneAsync(index, mode);
-                        op.allowSceneActivation = false;
-                        var scene = UnitySceneManager.GetSceneAt(UnitySceneManager.sceneCount - 1);
-                        return this.RegisterHandlesScene(op, scene, mode);
-                    }
-                default:
-                    throw new System.InvalidOperationException("Unsupported LoadSceneBehaviour.");
-            }
+            this.BeforeSceneLoadCalled?.Invoke(this, this);
+            var result = this.SceneManager?.LoadSceneInternal(SceneUtility.GetScenePathByBuildIndex(index), new LoadSceneParameters(mode), behaviour) ?? SceneManagerUtils.LoadSceneInternal(index, new LoadSceneParameters(mode), behaviour);
+            this.RegisterHandlesScene(result);
+            return result;
         }
 
         /// <summary>
@@ -229,34 +183,23 @@ namespace com.spacepuppy.Scenes
         }
 
 #if SP_ADDRESSABLES
-        protected AsyncWaitHandle<(SceneInstance, UnityLoadResult)> LoadAddressableScene(object key, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async)
+        
+        protected AsyncWaitHandle<(SceneInstance, LoadSceneInternalResult)> LoadAddressableScene(object key, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async)
         {
             this.BeforeSceneLoadCalled?.Invoke(this, this);
-            var handle = UnityEngine.AddressableAssets.Addressables.LoadSceneAsync(key, mode, behaviour != LoadSceneBehaviour.AsyncAndWait);
-            return DoLoadAddressableScene(handle, mode).AsAsyncWaitHandle();
+            var handle = SceneManagerUtils.LoadAddressableSceneInternal(key, mode, behaviour);
+            handle.OnComplete(h => this.RegisterHandlesScene(h.GetResult().Item2));
+            return handle;
         }
 
-        protected AsyncWaitHandle<(SceneInstance, UnityLoadResult)> LoadAddressableScene(IResourceLocation loc, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async)
+        protected AsyncWaitHandle<(SceneInstance, LoadSceneInternalResult)> LoadAddressableScene(IResourceLocation loc, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async)
         {
             this.BeforeSceneLoadCalled?.Invoke(this, this);
-            var handle = UnityEngine.AddressableAssets.Addressables.LoadSceneAsync(loc, mode, behaviour != LoadSceneBehaviour.AsyncAndWait);
-            return DoLoadAddressableScene(handle, mode).AsAsyncWaitHandle();
+            var handle = SceneManagerUtils.LoadAddressableSceneInternal(loc, mode, behaviour);
+            handle.OnComplete(h => this.RegisterHandlesScene(h.GetResult().Item2));
+            return handle;
         }
 
-#if SP_UNITASK
-        private async UniTask<(SceneInstance, UnityLoadResult)> DoLoadAddressableScene(AsyncOperationHandle<SceneInstance> handle, LoadSceneMode mode)
-        {
-            await handle;
-#else
-        private async System.Threading.Tasks.Task<(SceneInstance, UnityLoadResult)> DoLoadAddressableScene(AsyncOperationHandle<SceneInstance> handle, LoadSceneMode mode)
-        {
-            await handle.Task;
-#endif
-
-            var sceneinst = handle.Result;
-            var result = this.RegisterHandlesScene(null, sceneinst.Scene, mode);
-            return (sceneinst, result);
-        }
 #endif
 
         protected virtual void OnBeforeLoadBegins()
@@ -335,17 +278,11 @@ namespace com.spacepuppy.Scenes
         /// <param name="scene"></param>
         /// <param name="mode"></param>
         /// <returns></returns>
-        protected UnityLoadResult RegisterHandlesScene(AsyncOperation op, Scene scene, LoadSceneMode mode)
+        protected void RegisterHandlesScene(LoadSceneInternalResult result)
         {
-            if (_parent != null) _parent.RegisterHandlesScene(op, scene, mode);
+            if (_parent != null) _parent.RegisterHandlesScene(result);
 
-            var result = new UnityLoadResult()
-            {
-                Op = op,
-                Scene = scene,
-                Mode = mode
-            };
-            switch (mode)
+            switch (result.Mode)
             {
                 case LoadSceneMode.Single:
                     _primaryResult = result;
@@ -357,11 +294,10 @@ namespace com.spacepuppy.Scenes
                     {
                         _primaryResult = result;
                     }
-                    if (_additiveResults == null) _additiveResults = new List<UnityLoadResult>();
+                    if (_additiveResults == null) _additiveResults = new List<LoadSceneInternalResult>();
                     _additiveResults.Add(result);
                     break;
             }
-            return result;
         }
 
         public virtual bool HandlesScene(Scene scene)
@@ -397,7 +333,7 @@ namespace com.spacepuppy.Scenes
             }
         }
 
-        protected virtual IEnumerable<UnityLoadResult> GetHandledLoadResults()
+        protected virtual IEnumerable<LoadSceneInternalResult> GetHandledLoadResults()
         {
             if (_primaryResult.IsValid) yield return _primaryResult;
 
@@ -515,54 +451,6 @@ namespace com.spacepuppy.Scenes
         {
             //make sure we clean ourselves up
             this.Dispose();
-        }
-
-        #endregion
-
-        #region Special Types
-
-        protected struct UnityLoadResult
-        {
-            public AsyncOperation Op;
-            public Scene Scene;
-            public LoadSceneMode Mode;
-
-            public float Progress => Op?.progress ?? 0f;
-
-            public bool IsComplete => Op?.isDone ?? false;
-
-            public bool IsValid => Scene.IsValid();
-
-            public async System.Threading.Tasks.Task<Scene> AsTask()
-            {
-                if (Op == null) return this.Scene;
-
-                await Op.AsAsyncWaitHandle().AsTask();
-                return this.Scene;
-            }
-
-#if SP_UNITASK
-            public async UniTask<Scene> AsUniTask()
-            {
-                if (Op == null) return this.Scene;
-
-                await Op;
-                return this.Scene;
-            }
-#endif
-
-            public object GetYieldInstruction()
-            {
-                return Op;
-            }
-
-            public void OnComplete(System.Action<UnityLoadResult> callback)
-            {
-                var r = this;
-                Op.AsAsyncWaitHandle().OnComplete((h) => callback(r));
-            }
-
-            public static readonly UnityLoadResult Empty = new UnityLoadResult();
         }
 
         #endregion

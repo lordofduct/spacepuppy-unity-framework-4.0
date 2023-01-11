@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.SceneManagement;
 using com.spacepuppy.Scenes;
+using com.spacepuppy.Async;
 
 namespace com.spacepuppy
 {
@@ -42,8 +43,6 @@ namespace com.spacepuppy
         event System.EventHandler<LoadSceneOptions> CompletedLoad;
 
         void LoadScene(LoadSceneOptions options);
-        LoadSceneWaitHandle LoadScene(string sceneName, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async, object persistentToken = null);
-        LoadSceneWaitHandle LoadScene(int sceneBuildIndex, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async, object persistentToken = null);
 
         AsyncOperation UnloadScene(Scene scene);
         Scene GetActiveScene();
@@ -54,6 +53,42 @@ namespace com.spacepuppy
         /// <param name="excludeInactive">False to test if the scene exists as a loadable scene, True if to test if the scene exists and is actively loaded.</param>
         /// <returns></returns>
         bool SceneExists(string sceneName, bool excludeInactive = false);
+
+        /// <summary>
+        /// Calls directly through to the SceneManager to load a scene, this should never be called directly.
+        /// </summary>
+        /// <param name="sceneName"></param>
+        /// <param name="mode"></param>
+        /// <param name="behaviour"></param>
+        /// <returns></returns>
+        /// <remarks>This method is intended to allow a ISceneManager implementation to redirect through which unity api the scene is loaded other than 
+        /// the default UnityEngine.SceneManagement.SceneManager. Examples include using Addressables to load scenes, or NetworkManager.Singleton.SceneManager.
+        /// </remarks>
+        LoadSceneInternalResult LoadSceneInternal(string sceneName, LoadSceneParameters parameters, LoadSceneBehaviour behaviour);
+
+    }
+
+    public static class ISceneManagerExtensions
+    {
+
+        public static LoadSceneWaitHandle LoadScene(this ISceneManager sceneManager, string sceneName, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async, object persistentToken = null)
+        {
+            if (sceneManager == null) throw new System.InvalidOperationException(nameof(sceneManager));
+
+            var handle = new LoadSceneWaitHandle(sceneName, mode, behaviour, persistentToken);
+            sceneManager.LoadScene(handle);
+            return handle;
+        }
+
+        public static LoadSceneWaitHandle LoadScene(this ISceneManager sceneManager, int sceneBuildIndex, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async, object persistentToken = null)
+        {
+            if (sceneManager == null) throw new System.InvalidOperationException(nameof(sceneManager));
+            if (sceneBuildIndex < 0 || sceneBuildIndex >= SceneManager.sceneCountInBuildSettings) throw new System.IndexOutOfRangeException(nameof(sceneBuildIndex));
+
+            var handle = new LoadSceneWaitHandle(sceneBuildIndex, mode, behaviour, persistentToken);
+            sceneManager.LoadScene(handle);
+            return handle;
+        }
 
     }
 

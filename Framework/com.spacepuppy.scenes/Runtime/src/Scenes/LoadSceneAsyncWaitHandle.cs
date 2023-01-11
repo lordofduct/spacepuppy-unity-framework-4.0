@@ -72,7 +72,10 @@ namespace com.spacepuppy.Scenes
 
         public bool ReadyAndWaitingToActivate
         {
-            get { return _loaded && !object.ReferenceEquals(this.PrimaryLoadResult.Op, null) && !this.PrimaryLoadResult.Op.isDone; }
+            get
+            {
+                return _loaded && !object.ReferenceEquals(this.PrimaryLoadResult.Op, null) && !this.PrimaryLoadResult.Op.isDone;
+            }
         }
 
         #endregion
@@ -112,12 +115,19 @@ namespace com.spacepuppy.Scenes
                         await UniTask.Yield();
                         break;
                     case LoadSceneBehaviour.Async:
-                        await handle.Op;
+                        await handle.AsUniTask();
                         break;
                     case LoadSceneBehaviour.AsyncAndWait:
-                        while (!handle.Op.isDone && handle.Op.progress < 0.9f)
+                        if (handle.Op != null)
                         {
-                            await UniTask.Yield();
+                            while (!handle.Op.isDone && handle.Op.progress < 0.9f)
+                            {
+                                await UniTask.Yield();
+                            }
+                        }
+                        else
+                        {
+                            await handle.AsUniTask();
                         }
                         break;
                 }
@@ -190,7 +200,8 @@ namespace com.spacepuppy.Scenes
 
         public void ActivateScene()
         {
-            if (this.PrimaryLoadResult.Op != null) this.PrimaryLoadResult.Op.allowSceneActivation = true;
+            var op = this.PrimaryLoadResult.Op;
+            if (op != null) op.allowSceneActivation = true;
         }
 
         public override LoadSceneOptions Clone()

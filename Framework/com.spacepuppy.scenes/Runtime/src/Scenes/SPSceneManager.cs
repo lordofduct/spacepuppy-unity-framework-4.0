@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
+using com.spacepuppy.Async;
 
 namespace com.spacepuppy.Scenes
 {
@@ -58,7 +59,7 @@ namespace com.spacepuppy.Scenes
         public event System.EventHandler<LoadSceneOptions> BeganLoad;
         public event System.EventHandler<LoadSceneOptions> CompletedLoad;
 
-        public void LoadScene(LoadSceneOptions options)
+        public virtual void LoadScene(LoadSceneOptions options)
         {
             if (options == null) throw new System.ArgumentNullException(nameof(options));
 
@@ -90,34 +91,18 @@ namespace com.spacepuppy.Scenes
             }
         }
 
-        public LoadSceneWaitHandle LoadScene(string sceneName, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async, object persistentToken = null)
-        {
-            var handle = new LoadSceneWaitHandle(sceneName, mode, behaviour, persistentToken);
-            this.LoadScene(handle);
-            return handle;
-        }
-
-        public LoadSceneWaitHandle LoadScene(int sceneBuildIndex, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async, object persistentToken = null)
-        {
-            if (sceneBuildIndex < 0 || sceneBuildIndex >= SceneManager.sceneCountInBuildSettings) throw new System.IndexOutOfRangeException("sceneBuildIndex");
-
-            var handle = new LoadSceneWaitHandle(sceneBuildIndex, mode, behaviour, persistentToken);
-            this.LoadScene(handle);
-            return handle;
-        }
-
-        public AsyncOperation UnloadScene(Scene scene)
+        public virtual AsyncOperation UnloadScene(Scene scene)
         {
             this.OnBeforeSceneUnloaded(scene);
             return SceneManager.UnloadSceneAsync(scene);
         }
 
-        public Scene GetActiveScene()
+        public virtual Scene GetActiveScene()
         {
             return SceneManager.GetActiveScene();
         }
 
-        public bool SceneExists(string sceneName, bool excludeInactive = false)
+        public virtual bool SceneExists(string sceneName, bool excludeInactive = false)
         {
             if (excludeInactive)
             {
@@ -129,6 +114,8 @@ namespace com.spacepuppy.Scenes
                 return SceneUtility.GetBuildIndexByScenePath(sceneName) >= 0;
             }
         }
+
+        public virtual LoadSceneInternalResult LoadSceneInternal(string sceneName, LoadSceneParameters parameters, LoadSceneBehaviour behaviour) => SceneManagerUtils.LoadSceneInternal(sceneName, parameters, behaviour);
 
         #endregion
 

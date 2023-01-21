@@ -19,6 +19,7 @@ namespace com.spacepuppy.Geom
         void OnCompoundTriggerExit(Collider other);
     }
 
+    [Infobox("Colliders on or in this GameObject are grouped together and treated as a single collider signaling with the ICompoundTriggerXResponder message.")]
     public class CompoundTrigger : SPComponent
     {
 
@@ -26,6 +27,22 @@ namespace com.spacepuppy.Geom
 
         private Dictionary<Collider, CompoundTriggerMember> _colliders = new Dictionary<Collider, CompoundTriggerMember>();
         private HashSet<Collider> _active = new HashSet<Collider>();
+
+        [SerializeField]
+        private Messaging.MessageSendCommand _onEnterMessageSetting = new Messaging.MessageSendCommand()
+        {
+            SendMethod = Messaging.MessageSendMethod.Signal,
+            IncludeDisabledComponents = false,
+            IncludeInactiveObjects = false,
+        };
+
+        [SerializeField]
+        private Messaging.MessageSendCommand _onExitMessageSetting = new Messaging.MessageSendCommand()
+        {
+            SendMethod = Messaging.MessageSendMethod.Signal,
+            IncludeDisabledComponents = false,
+            IncludeInactiveObjects = false,
+        };
 
         #endregion
 
@@ -154,16 +171,17 @@ namespace com.spacepuppy.Geom
 
         protected virtual void OnCompoundTriggerEnter(Collider other)
         {
-            Messaging.Signal(this.gameObject, other, OnEnterFunctor);
+            //Messaging.Signal(this.gameObject, other, OnEnterFunctor);
+            _onEnterMessageSetting.Send(this.gameObject, other, OnEnterFunctor);
         }
 
         protected virtual void OnCompoundTriggerExit(Collider other)
         {
-            Messaging.Signal(this.gameObject, other, OnExitFunctor);
+            //Messaging.Signal(this.gameObject, other, OnExitFunctor);
+            _onExitMessageSetting.Send(this.gameObject, other, OnExitFunctor);
         }
 
         #endregion
-
 
         #region Special Types
 
@@ -221,6 +239,7 @@ namespace com.spacepuppy.Geom
 
         public static readonly System.Action<ICompoundTriggerEnterResponder, Collider> OnEnterFunctor = (x, y) => x.OnCompoundTriggerEnter(y);
         public static readonly System.Action<ICompoundTriggerExitResponder, Collider> OnExitFunctor = (x, y) => x.OnCompoundTriggerExit(y);
+
     }
 
 }

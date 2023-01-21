@@ -26,7 +26,6 @@ namespace com.spacepuppy.SPInput
 
         #endregion
 
-
         public event System.EventHandler OnClick;
         public event System.EventHandler OnDoubleClick;
         public event System.EventHandler CursorEnter;

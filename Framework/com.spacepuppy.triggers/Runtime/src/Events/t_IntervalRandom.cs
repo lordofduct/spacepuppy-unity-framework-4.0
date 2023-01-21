@@ -121,7 +121,7 @@ namespace com.spacepuppy.Events
         public DiscreteFloat RepeatCount
         {
             get { return _repeatCount; }
-            set { _repeatCount = (value < 0f) ? DiscreteFloat.Zero : value; }
+            set { _repeatCount = (value < 0f) ? DiscreteFloat.PositiveInfinity : value; }
         }
 
         public SPEvent OnInterval => _onInterval;

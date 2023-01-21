@@ -106,11 +106,6 @@ namespace com.spacepuppyeditor.Internal
             {
                 var dattrib = attribute as DisplayNameAttribute;
                 _customDisplayName = dattrib.DisplayName;
-                if (dattrib.tooltip != null)
-                {
-                    _customTooltip = dattrib.tooltip;
-                    base.HandleAttribute(property, attribute, field, propertyType);
-                }
             }
             else if (attribute is TooltipAttribute)
             {

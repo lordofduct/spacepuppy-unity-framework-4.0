@@ -16,17 +16,12 @@ namespace com.spacepuppy
     }
 
     [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
-    public class DisplayNameAttribute : TooltipAttribute
+    public class DisplayNameAttribute : SPPropertyAttribute
     {
 
         public string DisplayName;
 
-        public DisplayNameAttribute(string displayName) : base(null)
-        {
-            this.DisplayName = displayName;
-        }
-
-        public DisplayNameAttribute(string displayName, string tooltip) : base(tooltip)
+        public DisplayNameAttribute(string displayName)
         {
             this.DisplayName = displayName;
         }

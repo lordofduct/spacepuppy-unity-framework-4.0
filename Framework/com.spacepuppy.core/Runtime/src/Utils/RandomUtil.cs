@@ -18,6 +18,11 @@ namespace com.spacepuppy.Utils
 
         public static IRandom Standard { get { return _unityRNG; } }
 
+        public static void ReseedStandard(int seed)
+        {
+            _unityRNG.SetSeed(seed);
+        }
+
         public static IRandom CreateRNG(int seed = -1)
         {
             return new MicrosoftRNG(seed);
@@ -292,6 +297,11 @@ namespace com.spacepuppy.Utils
 
         private class UnityRNG : IRandom
         {
+
+            public void SetSeed(int seed)
+            {
+                Random.InitState(seed);
+            }
 
             public float Next()
             {

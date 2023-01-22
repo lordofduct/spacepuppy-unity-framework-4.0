@@ -793,12 +793,7 @@ namespace com.spacepuppy.Utils
         {
             if (go == null) return null;
 
-            var entity = SPEntity.Pool.GetFromSource(go);
-            if (entity != null) return entity.GetComponentInChildren<T>();
-            else
-            {
-                return go.FindRoot().GetComponentInChildren<T>();
-            }
+            return go.FindRoot().GetComponentInChildren<T>();
         }
 
         /// <summary>
@@ -811,7 +806,8 @@ namespace com.spacepuppy.Utils
         public static T FindComponent<T>(this Component c) where T : class
         {
             if (c == null) return null;
-            return FindComponent<T>(c.gameObject);
+
+            return c.FindRoot().GetComponentInChildren<T>();
         }
 
         public static bool FindComponent<T>(this GameObject go, out T comp) where T : class
@@ -827,7 +823,8 @@ namespace com.spacepuppy.Utils
                 comp = null;
                 return false;
             }
-            comp = FindComponent<T>(c.gameObject);
+
+            comp = c.FindRoot().GetComponentInChildren<T>();
             return ObjUtil.IsObjectAlive(comp as UnityEngine.Object);
         }
 
@@ -842,13 +839,7 @@ namespace com.spacepuppy.Utils
         {
             if (go == null) return null;
 
-            var entity = SPEntity.Pool.GetFromSource(go);
-            if (entity != null) return entity.GetComponentInChildren(tp);
-            else
-            {
-                var root = go.FindRoot();
-                return root.GetComponentInChildren(tp);
-            }
+            return go.FindRoot().GetComponentInChildren(tp);
         }
 
         /// <summary>
@@ -861,7 +852,8 @@ namespace com.spacepuppy.Utils
         public static Component FindComponent(this Component c, System.Type tp)
         {
             if (c == null) return null;
-            return FindComponent(c.gameObject, tp);
+
+            return c.FindRoot().GetComponentInChildren(tp);
         }
 
         public static bool FindComponent(this GameObject go, System.Type tp, out Component comp)
@@ -889,13 +881,12 @@ namespace com.spacepuppy.Utils
         {
             if (go == null) return ArrayUtil.Empty<T>();
 
-            var root = go.FindRoot();
-            return root.GetComponentsInChildren<T>(bIncludeInactive);
+            return go.FindRoot().GetComponentsInChildren<T>(bIncludeInactive);
         }
         public static T[] FindComponents<T>(this Component c, bool bIncludeInactive = false) where T : class
         {
             if (c == null) return ArrayUtil.Empty<T>();
-            return FindComponents<T>(c.gameObject, bIncludeInactive);
+            return c.FindRoot().GetComponentsInChildren<T>(bIncludeInactive);
         }
 
         public static Component[] FindComponents(this GameObject go, System.Type tp, bool bIncludeInactive = false)
@@ -906,7 +897,7 @@ namespace com.spacepuppy.Utils
         public static Component[] FindComponents(this Component c, System.Type tp, bool bIncludeInactive = false)
         {
             if (c == null) return ArrayUtil.Empty<Component>();
-            return FindComponents(c.gameObject, tp, bIncludeInactive);
+            return c.FindRoot().GetComponentsInChildren(tp, bIncludeInactive);
         }
 
 
@@ -953,7 +944,17 @@ namespace com.spacepuppy.Utils
         {
             if (c == null) return ArrayUtil.Empty<Component>();
 
-            return FindComponents(c.gameObject, types, bIncludeInactive);
+            var go = c.FindRoot();
+            using (var lst = TempCollection.GetList<Component>())
+            using (var set = ReduceLikeTypes(types))
+            {
+                var e = set.GetEnumerator();
+                while (e.MoveNext())
+                {
+                    GetChildComponents(go, e.Current, lst, true, bIncludeInactive);
+                }
+                return lst.ToArray();
+            }
         }
 
         public static void FindComponents(this GameObject go, System.Type[] types, ICollection<Component> coll, bool bIncludeInactive = false)
@@ -975,7 +976,15 @@ namespace com.spacepuppy.Utils
         {
             if (c == null) return;
 
-            FindComponents(c.gameObject, types, coll, bIncludeInactive);
+            var go = c.FindRoot();
+            using (var set = ReduceLikeTypes(types))
+            {
+                var e = set.GetEnumerator();
+                while (e.MoveNext())
+                {
+                    GetChildComponents(go, e.Current, coll, true, bIncludeInactive);
+                }
+            }
         }
 
         #endregion

@@ -29,7 +29,18 @@ namespace com.spacepuppy.Geom
     [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
     public class ExpectsCompoundTriggerAttribute : ComponentHeaderAttribute
     {
-        
+        public string CustomMessage;
+        public System.Type RestrictType;
+
+        public ExpectsCompoundTriggerAttribute()
+        {
+            this.CustomMessage = null;
+        }
+
+        public ExpectsCompoundTriggerAttribute(string customMessage) 
+        {
+            this.CustomMessage = customMessage;
+        }
     }
 
     [Infobox("Colliders on or in this GameObject are grouped together and treated as a single collider signaling with the ICompoundTriggerXHandler message.")]
@@ -289,6 +300,74 @@ namespace com.spacepuppy.Geom
                 foreach (var t in lst)
                 {
                     if (t.InMessagePath(go)) return t;
+                }
+            }
+
+            return null;
+        }
+
+        public static T FindCompoundTriggerWithTarget<T>(GameObject go) where T : class, ICompoundTrigger
+        {
+            using (var lst = TempCollection.GetList<T>())
+            {
+                var entity = SPEntity.Pool.GetFromSource(go);
+                if (entity)
+                {
+                    entity.GetComponentsInChildren(lst);
+                    foreach (var t in lst)
+                    {
+                        if (t.InMessagePath(go)) return t;
+                    }
+                }
+                else
+                {
+                    go.GetComponentsInChildren(lst);
+                    foreach (var t in lst)
+                    {
+                        if (t.InMessagePath(go)) return t;
+                    }
+                }
+
+                lst.Clear();
+                go.GetComponentsInParent(true, lst);
+                foreach (var t in lst)
+                {
+                    if (t.InMessagePath(go)) return t;
+                }
+            }
+
+            return null;
+        }
+
+        public static ICompoundTrigger FindCompoundTriggerWithTarget(GameObject go, System.Type restrictType)
+        {
+            if (restrictType == null) return FindCompoundTriggerWithTarget(go);
+
+            using (var lst = TempCollection.GetList<ICompoundTrigger>())
+            {
+                var entity = SPEntity.Pool.GetFromSource(go);
+                if (entity)
+                {
+                    entity.GetComponentsInChildren(lst);
+                    foreach (var t in lst)
+                    {
+                        if (restrictType.IsInstanceOfType(t) && t.InMessagePath(go)) return t;
+                    }
+                }
+                else
+                {
+                    go.GetComponentsInChildren(lst);
+                    foreach (var t in lst)
+                    {
+                        if (restrictType.IsInstanceOfType(t) && t.InMessagePath(go)) return t;
+                    }
+                }
+
+                lst.Clear();
+                go.GetComponentsInParent(true, lst);
+                foreach (var t in lst)
+                {
+                    if (restrictType.IsInstanceOfType(t) && t.InMessagePath(go)) return t;
                 }
             }
 

@@ -23,6 +23,24 @@ namespace com.spacepuppy.Geom
             return _activeEntities.Contains(entity);
         }
 
+        public SPEntity[] GetActiveEntities()
+        {
+            return _activeEntities.Count > 0 ? _activeEntities.ToArray() : ArrayUtil.Empty<SPEntity>();
+        }
+
+        public int GetActiveEntities<T>(ICollection<T> output) where T : SPEntity
+        {
+            int cnt = _active.Count;
+            if (cnt == 0) return 0;
+
+            var e = _active.GetEnumerator();
+            while (e.MoveNext())
+            {
+                if (e.Current is T ent) output.Add(ent);
+            }
+            return cnt;
+        }
+
 
         protected override void SignalTriggerEnter(CompoundTriggerMember member, Collider other)
         {

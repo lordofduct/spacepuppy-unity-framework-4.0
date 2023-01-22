@@ -10,10 +10,14 @@ namespace com.spacepuppy.Project
 {
 
     [CreateAssetMenu(fileName = "AssetSet", menuName = "Spacepuppy/Asset Set")]
-    public class QueryableAssetSet : ScriptableObject, IAssetSet
+    public class QueryableAssetSet : ScriptableObject, IAssetSet, IAssetGuidIdentifiable
     {
 
         #region Fields
+
+        [SerializeField]
+        [SerializableGuid.Config(LinkToAsset = true)]
+        private SerializableGuid _assetId;
 
         [SerializeField]
         private bool _supportNestedGroups;
@@ -24,6 +28,8 @@ namespace com.spacepuppy.Project
 
         [System.NonSerialized]
         private Dictionary<string, UnityEngine.Object> _table;
+        [System.NonSerialized]
+        private Dictionary<System.Guid, UnityEngine.Object> _guidTable;
         [System.NonSerialized]
         private bool _clean;
         [System.NonSerialized]
@@ -59,16 +65,21 @@ namespace com.spacepuppy.Project
 
         private void SetupTable()
         {
-            if (_table == null)
-                _table = new Dictionary<string, Object>();
-            else
-                _table.Clear();
+            (_table ?? (_table = new Dictionary<string, Object>())).Clear();
+            _guidTable?.Clear();
 
             _nested = false;
             for (int i = 0; i < _assets.Length; i++)
             {
                 _table[_assets[i].name] = _assets[i];
                 if (_supportNestedGroups && _assets[i] is IAssetSet) _nested = true;
+
+                var agid = ObjUtil.GetAsFromSource<IAssetGuidIdentifiable>(_assets[i]);
+                if (agid != null && agid.AssetId != System.Guid.Empty)
+                {
+                    if (_guidTable == null) _guidTable = new Dictionary<System.Guid, Object>();
+                    _guidTable[agid.AssetId] = _assets[i];
+                }
             }
             _clean = true;
         }
@@ -155,7 +166,7 @@ namespace com.spacepuppy.Project
                 obj = ObjUtil.GetAsFromSource<T>(o);
                 if (!object.ReferenceEquals(obj, null)) return true;
             }
-            
+
             if (_nested)
             {
                 for (int i = 0; i < _assets.Length; i++)
@@ -281,6 +292,86 @@ namespace com.spacepuppy.Project
             }
         }
 
+
+
+
+
+        /// <summary>
+        /// Get the available shallow asset guids. Not all assets have associated guids.
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerable<System.Guid> GetAssetGuids()
+        {
+            if (!_clean) this.SetupTable();
+
+            return _guidTable?.Keys ?? Enumerable.Empty<System.Guid>();
+        }
+
+        public bool TryGetAsset(System.Guid guid, out UnityEngine.Object obj)
+        {
+            if (!_clean) this.SetupTable();
+
+            obj = null;
+            if (_guidTable?.TryGetValue(guid, out obj) ?? false)
+            {
+                return true;
+            }
+
+            obj = null;
+            return false;
+        }
+
+        public bool TryGetAsset(System.Guid guid, System.Type tp, out UnityEngine.Object obj)
+        {
+            if (!_clean) this.SetupTable();
+
+            obj = null;
+            if (_guidTable?.TryGetValue(guid, out obj) ?? false)
+            {
+                obj = ObjUtil.GetAsFromSource(tp, obj) as UnityEngine.Object;
+                if (!object.ReferenceEquals(obj, null)) return true;
+            }
+
+            obj = null;
+            return false;
+        }
+
+        public bool TryGetAsset<T>(System.Guid guid, out T obj) where T : class
+        {
+            if (!_clean) this.SetupTable();
+
+            UnityEngine.Object o = null;
+            if (_guidTable?.TryGetValue(guid, out o) ?? false)
+            {
+                obj = ObjUtil.GetAsFromSource<T>(o);
+                if (!object.ReferenceEquals(obj, null)) return true;
+            }
+
+            obj = null;
+            return false;
+        }
+
+        public UnityEngine.Object GetAsset(System.Guid guid)
+        {
+            UnityEngine.Object obj;
+            TryGetAsset(guid, out obj);
+            return obj;
+        }
+
+        public UnityEngine.Object GetAsset(System.Guid guid, System.Type tp)
+        {
+            UnityEngine.Object obj;
+            TryGetAsset(guid, tp, out obj);
+            return obj;
+        }
+
+        public T GetAsset<T>(System.Guid guid) where T : class
+        {
+            T obj;
+            TryGetAsset<T>(guid, out obj);
+            return obj;
+        }
+
         #endregion
 
         #region IAssetSet Interface
@@ -390,6 +481,12 @@ namespace com.spacepuppy.Project
         {
             _nameCache.SetDirty();
         }
+
+        #endregion
+
+        #region IAssetGuidIdentifiable Interface
+
+        public System.Guid AssetId => _assetId;
 
         #endregion
 

@@ -8,7 +8,7 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Events
 {
 
-    public class t_OnTriggerOccupied : SPComponent, ICompoundTriggerEnterResponder, ICompoundTriggerExitResponder, IOccupiedTrigger
+    public sealed class t_OnTriggerOccupied : SPComponent, ICompoundTriggerEnterHandler, ICompoundTriggerExitHandler, IOccupiedTrigger
     {
 
         #region Fields
@@ -29,6 +29,26 @@ namespace com.spacepuppy.Events
         
         [System.NonSerialized]
         private HashSet<GameObject> _activeObjects = new HashSet<GameObject>();
+        [System.NonSerialized]
+        private bool _usesCompoundTrigger;
+
+        #endregion
+
+        #region CONSTRUCTOR
+
+        protected override void Start()
+        {
+            base.Start();
+
+            this.ResolveCompoundTrigger();
+        }
+
+        protected override void OnEnable()
+        {
+            base.OnEnable();
+
+            this.ResolveCompoundTrigger();
+        }
 
         #endregion
 
@@ -61,9 +81,27 @@ namespace com.spacepuppy.Events
             get { return _activeObjects.Count > 0; }
         }
 
+        [ShowNonSerializedProperty("Uses Compound Trigger", ShowAtEditorTime = true, ShowOutsideRuntimeValuesFoldout = true)]
+        public bool UsesCompoundTrigger
+        {
+            get
+            {
+#if UNITY_EDITOR
+                if (!Application.isPlaying) return this.HasComponent<ICompoundTrigger>() || !(this.HasComponent<Collider>() || this.HasComponent<Rigidbody>());
+#endif
+                return _usesCompoundTrigger;
+            }
+        }
+
         #endregion
 
         #region Methods
+
+        public void ResolveCompoundTrigger()
+        {
+            //we assume CompoundTrigger if we have one OR if we don't have anything that can signal OnTriggerEnter attached to us.
+            _usesCompoundTrigger = this.HasComponent<ICompoundTrigger>() || !(this.HasComponent<Collider>() || this.HasComponent<Rigidbody>());
+        }
 
         private void AddObject(GameObject obj)
         {
@@ -94,25 +132,25 @@ namespace com.spacepuppy.Events
 
         void OnTriggerEnter(Collider other)
         {
-            if (this.HasComponent<CompoundTrigger>() || other == null) return;
+            if (_usesCompoundTrigger || other == null) return;
 
             this.AddObject(other.gameObject);
         }
 
         void OnTriggerExit(Collider other)
         {
-            if (this.HasComponent<CompoundTrigger>() || other == null) return;
+            if (_usesCompoundTrigger || other == null) return;
 
             this.RemoveObject(other.gameObject);
         }
 
-        void ICompoundTriggerEnterResponder.OnCompoundTriggerEnter(Collider other)
+        void ICompoundTriggerEnterHandler.OnCompoundTriggerEnter(ICompoundTrigger trigger, Collider other)
         {
             if (other == null) return;
             this.AddObject(other.gameObject);
         }
 
-        void ICompoundTriggerExitResponder.OnCompoundTriggerExit(Collider other)
+        void ICompoundTriggerExitHandler.OnCompoundTriggerExit(ICompoundTrigger trigger, Collider other)
         {
             if (other == null) return;
             this.RemoveObject(other.gameObject);

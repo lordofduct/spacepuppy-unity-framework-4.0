@@ -113,7 +113,43 @@ namespace com.spacepuppyeditor
                 PropertyHandlerValidationUtility.OnInspectorGUIComplete(this.serializedObject, false);
             }
 
-            if (_shownFields != null && _shownFields.Any(o => o.Attrib.ShowAtEditorTime || UnityEngine.Application.isPlaying))
+            if (_shownFields != null && _shownFields.Any(o => o.Attrib.ShowOutsideRuntimeValuesFoldout && o.Attrib.ShowAtEditorTime || UnityEngine.Application.isPlaying))
+            {
+                foreach (var info in _shownFields.Where(o => o.Attrib.ShowOutsideRuntimeValuesFoldout && o.Attrib.ShowAtEditorTime || UnityEngine.Application.isPlaying))
+                {
+                    switch (DynamicUtil.GetMemberAccessLevel(info.MemberInfo))
+                    {
+                        case DynamicMemberAccess.Read:
+                            {
+                                var cache = SPGUI.DisableIf(info.Attrib.Readonly);
+                                var value = DynamicUtil.GetValue(this.target, info.MemberInfo);
+                                SPEditorGUILayout.DefaultPropertyField(info.Label, value, DynamicUtil.GetReturnType(info.MemberInfo));
+                                cache.Reset();
+                            }
+                            break;
+                        case DynamicMemberAccess.ReadWrite:
+                            {
+                                var cache = SPGUI.DisableIf(info.Attrib.Readonly);
+
+                                var value = DynamicUtil.GetValue(this.target, info.MemberInfo);
+                                EditorGUI.BeginChangeCheck();
+                                value = SPEditorGUILayout.DefaultPropertyField(info.Label, value, DynamicUtil.GetReturnType(info.MemberInfo));
+                                if (EditorGUI.EndChangeCheck() && !info.Attrib.Readonly)
+                                {
+                                    DynamicUtil.SetValue(this.target, info.MemberInfo, value);
+                                }
+
+                                cache.Reset();
+                            }
+                            break;
+                        default:
+                            EditorGUILayout.LabelField(info.Label, EditorHelper.TempContent("* Unreadable Member *"));
+                            break;
+                    }
+                }
+            }
+
+            if (_shownFields != null && _shownFields.Any(o => !o.Attrib.ShowOutsideRuntimeValuesFoldout && o.Attrib.ShowAtEditorTime || UnityEngine.Application.isPlaying))
             {
                 EditorGUILayout.BeginVertical("box");
                 var style = new GUIStyle(EditorStyles.boldLabel);
@@ -121,10 +157,10 @@ namespace com.spacepuppyeditor
 
                 var r = EditorGUILayout.GetControlRect();
                 GUI.Label(r, "Runtime Values", style);
-                if (_runtimeValuesFoldoutOpen = EditorGUI.Foldout(r, _runtimeValuesFoldoutOpen, GUIContent.none, true))
+                _runtimeValuesFoldoutOpen = EditorGUI.Foldout(r, _runtimeValuesFoldoutOpen, GUIContent.none, true);
+                if (_runtimeValuesFoldoutOpen)
                 {
-
-                    foreach (var info in _shownFields.Where(o => o.Attrib.ShowAtEditorTime || UnityEngine.Application.isPlaying))
+                    foreach (var info in _shownFields.Where(o => !o.Attrib.ShowOutsideRuntimeValuesFoldout && o.Attrib.ShowAtEditorTime || UnityEngine.Application.isPlaying))
                     {
                         switch (DynamicUtil.GetMemberAccessLevel(info.MemberInfo))
                         {

@@ -3,41 +3,49 @@ using System.Collections.Generic;
 using System.Linq;
 
 using com.spacepuppy.Collections;
-using com.spacepuppy.Events;
 using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.Geom
 {
 
-    public interface ICompoundTriggerEnterResponder
+    /// <summary>
+    /// Represents a component that can send either ICompoundTriggerEnterHandler or ICompoundTriggerExitHandler messages.
+    /// </summary>
+    public interface ICompoundTrigger : IComponent
     {
-        void OnCompoundTriggerEnter(Collider other);
+        bool InMessagePath(GameObject go);
     }
 
-    public interface ICompoundTriggerExitResponder
+    public interface ICompoundTriggerEnterHandler
     {
-        void OnCompoundTriggerExit(Collider other);
+        void OnCompoundTriggerEnter(ICompoundTrigger trigger, Collider other);
     }
 
-    [Infobox("Colliders on or in this GameObject are grouped together and treated as a single collider signaling with the ICompoundTriggerXResponder message.")]
-    public class CompoundTrigger : SPComponent
+    public interface ICompoundTriggerExitHandler
+    {
+        void OnCompoundTriggerExit(ICompoundTrigger trigger, Collider other);
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
+    public class ExpectsCompoundTriggerAttribute : ComponentHeaderAttribute
+    {
+        
+    }
+
+    [Infobox("Colliders on or in this GameObject are grouped together and treated as a single collider signaling with the ICompoundTriggerXHandler message.")]
+    public class CompoundTrigger : SPComponent, IMStartOrEnableReceiver, ICompoundTrigger
     {
 
         #region Fields
 
         private Dictionary<Collider, CompoundTriggerMember> _colliders = new Dictionary<Collider, CompoundTriggerMember>();
-        private HashSet<Collider> _active = new HashSet<Collider>();
+        protected readonly HashSet<Collider> _active = new HashSet<Collider>();
 
         [SerializeField]
-        private Messaging.MessageSendCommand _onEnterMessageSetting = new Messaging.MessageSendCommand()
-        {
-            SendMethod = Messaging.MessageSendMethod.Signal,
-            IncludeDisabledComponents = false,
-            IncludeInactiveObjects = false,
-        };
-
-        [SerializeField]
-        private Messaging.MessageSendCommand _onExitMessageSetting = new Messaging.MessageSendCommand()
+        [DisableOnPlay]
+        [DisplayFlat(DisplayBox = true)]
+        [UnityEngine.Serialization.FormerlySerializedAs("_onEnterMessageSetting")]
+        protected Messaging.MessageSendCommand _messageSettings = new Messaging.MessageSendCommand()
         {
             SendMethod = Messaging.MessageSendMethod.Signal,
             IncludeDisabledComponents = false,
@@ -48,10 +56,10 @@ namespace com.spacepuppy.Geom
 
         #region CONSTRUCTOR
 
-        protected override void Start()
-        {
-            base.Start();
+        void IMStartOrEnableReceiver.OnStartOrEnable() => this.OnStartOrEnable();
 
+        protected virtual void OnStartOrEnable()
+        {
             this.SyncTriggers();
         }
 
@@ -60,6 +68,16 @@ namespace com.spacepuppy.Geom
             base.OnDisable();
 
             this.PurgeActiveState();
+        }
+
+        #endregion
+
+        #region Properties
+
+        public Messaging.MessageSendCommand MessageSettings
+        {
+            get => _messageSettings;
+            set => _messageSettings = value;
         }
 
         #endregion
@@ -114,6 +132,8 @@ namespace com.spacepuppy.Geom
             }
         }
 
+        public bool ContainsActive(Collider c) => c != null && _active.Contains(c);
+
         public Collider[] GetActiveColliders()
         {
             return _active.Count > 0 ? _active.ToArray() : ArrayUtil.Empty<Collider>();
@@ -137,7 +157,7 @@ namespace com.spacepuppy.Geom
         /// Caution using this, any member collider currently intersected will not refire OnTriggerEnter. 
         /// This is usually reserved for OnDisable to revert state.
         /// </summary>
-        protected void PurgeActiveState()
+        public void PurgeActiveState()
         {
             _active.Clear();
             var e = _colliders.GetEnumerator();
@@ -147,45 +167,48 @@ namespace com.spacepuppy.Geom
             }
         }
 
-        private void SignalTriggerEnter(CompoundTriggerMember member, Collider other)
-        {
-            if (_active.Add(other))
-            {
-                this.OnCompoundTriggerEnter(other);
-            }
-        }
-
-        private void SignalTriggerExit(CompoundTriggerMember member, Collider other)
+        protected bool AnyRelatedColliderOverlaps(Collider c)
         {
             var e = _colliders.GetEnumerator();
             while (e.MoveNext())
             {
-                if (e.Current.Value.Active.Contains(other)) return;
+                if (e.Current.Value.Active.Contains(c)) return true;
             }
+            return false;
+        }
+
+        protected virtual void SignalTriggerEnter(CompoundTriggerMember member, Collider other)
+        {
+            if (_active.Add(other))
+            {
+                _messageSettings.Send(this.gameObject, (this, other), OnEnterFunctor);
+            }
+        }
+
+        protected virtual void SignalTriggerExit(CompoundTriggerMember member, Collider other)
+        {
+            if (this.AnyRelatedColliderOverlaps(other)) return;
 
             if (_active.Remove(other))
             {
-                this.OnCompoundTriggerExit(other);
+                _messageSettings.Send(this.gameObject, (this, other), OnExitFunctor);
             }
         }
 
-        protected virtual void OnCompoundTriggerEnter(Collider other)
-        {
-            //Messaging.Signal(this.gameObject, other, OnEnterFunctor);
-            _onEnterMessageSetting.Send(this.gameObject, other, OnEnterFunctor);
-        }
+        #endregion
 
-        protected virtual void OnCompoundTriggerExit(Collider other)
+        #region ICompoundTrigger Interface
+
+        public bool InMessagePath(GameObject go)
         {
-            //Messaging.Signal(this.gameObject, other, OnExitFunctor);
-            _onExitMessageSetting.Send(this.gameObject, other, OnExitFunctor);
+            return _messageSettings.IsInMessagePath(this.gameObject, go);
         }
 
         #endregion
 
         #region Special Types
 
-        private class CompoundTriggerMember : MonoBehaviour
+        protected class CompoundTriggerMember : MonoBehaviour
         {
 
             [System.NonSerialized]
@@ -237,8 +260,45 @@ namespace com.spacepuppy.Geom
 
         #endregion
 
-        public static readonly System.Action<ICompoundTriggerEnterResponder, Collider> OnEnterFunctor = (x, y) => x.OnCompoundTriggerEnter(y);
-        public static readonly System.Action<ICompoundTriggerExitResponder, Collider> OnExitFunctor = (x, y) => x.OnCompoundTriggerExit(y);
+        #region Messages
+
+        public static ICompoundTrigger FindCompoundTriggerWithTarget(GameObject go)
+        {
+            using (var lst = TempCollection.GetList<ICompoundTrigger>())
+            {
+                var entity = SPEntity.Pool.GetFromSource(go);
+                if (entity)
+                {
+                    entity.GetComponentsInChildren(lst);
+                    foreach (var t in lst)
+                    {
+                        if (t.InMessagePath(go)) return t;
+                    }
+                }
+                else
+                {
+                    go.GetComponentsInChildren(lst);
+                    foreach (var t in lst)
+                    {
+                        if (t.InMessagePath(go)) return t;
+                    }
+                }
+
+                lst.Clear();
+                go.GetComponentsInParent(true, lst);
+                foreach (var t in lst)
+                {
+                    if (t.InMessagePath(go)) return t;
+                }
+            }
+
+            return null;
+        }
+
+        public static readonly System.Action<ICompoundTriggerEnterHandler, (ICompoundTrigger, Collider)> OnEnterFunctor = (x, y) => x.OnCompoundTriggerEnter(y.Item1, y.Item2);
+        public static readonly System.Action<ICompoundTriggerExitHandler, (ICompoundTrigger, Collider)> OnExitFunctor = (x, y) => x.OnCompoundTriggerExit(y.Item1, y.Item2);
+
+        #endregion
 
     }
 

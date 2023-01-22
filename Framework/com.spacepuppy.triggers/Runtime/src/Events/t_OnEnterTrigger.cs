@@ -7,11 +7,11 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Events
 {
 
-    public class t_OnEnterTrigger : TriggerComponent, ICompoundTriggerEnterResponder
+    public sealed class t_OnEnterTrigger : TriggerComponent, ICompoundTriggerEnterHandler
     {
 
         #region Fields
-        
+
         [SerializeField]
         private EventActivatorMaskRef _mask = new EventActivatorMaskRef();
         [SerializeField]
@@ -21,10 +21,26 @@ namespace com.spacepuppy.Events
 
         [System.NonSerialized()]
         private bool _coolingDown;
+        [System.NonSerialized]
+        private bool _usesCompoundTrigger;
 
         #endregion
 
         #region CONSTRUCTOR
+
+        protected override void Start()
+        {
+            base.Start();
+
+            this.ResolveCompoundTrigger();
+        }
+
+        protected override void OnEnable()
+        {
+            base.OnEnable();
+
+            this.ResolveCompoundTrigger();
+        }
 
         protected override void OnDisable()
         {
@@ -55,9 +71,27 @@ namespace com.spacepuppy.Events
             set { _includeColliderAsTriggerArg = value; }
         }
 
+        [ShowNonSerializedProperty("Uses Compound Trigger", ShowAtEditorTime = true, ShowOutsideRuntimeValuesFoldout = true)]
+        public bool UsesCompoundTrigger
+        {
+            get
+            {
+#if UNITY_EDITOR
+                if (!Application.isPlaying) return this.HasComponent<ICompoundTrigger>() || !(this.HasComponent<Collider>() || this.HasComponent<Rigidbody>());
+#endif
+                return _usesCompoundTrigger;
+            }
+        }
+
         #endregion
 
         #region Methods
+
+        public void ResolveCompoundTrigger()
+        {
+            //we assume CompoundTrigger if we have one OR if we don't have anything that can signal OnTriggerEnter attached to us.
+            _usesCompoundTrigger = this.HasComponent<ICompoundTrigger>() || !(this.HasComponent<Collider>() || this.HasComponent<Rigidbody>());
+        }
 
         private void DoTestTriggerEnter(Collider other)
         {
@@ -87,12 +121,12 @@ namespace com.spacepuppy.Events
 
         void OnTriggerEnter(Collider other)
         {
-            if (_coolingDown || this.HasComponent<CompoundTrigger>()) return;
+            if (_coolingDown || _usesCompoundTrigger) return;
 
             this.DoTestTriggerEnter(other);
         }
 
-        void ICompoundTriggerEnterResponder.OnCompoundTriggerEnter(Collider other)
+        void ICompoundTriggerEnterHandler.OnCompoundTriggerEnter(ICompoundTrigger trigger, Collider other)
         {
             this.DoTestTriggerEnter(other);
         }

@@ -17,6 +17,8 @@ namespace com.spacepuppy.Utils
             Broadcast = 0,
             Signal = 1,
             SignalUpward = 2,
+            BroadcastEntity = 3,
+            SignalEntity = 4,
         }
 
         [System.Serializable]
@@ -33,6 +35,34 @@ namespace com.spacepuppy.Utils
                 this.IncludeDisabledComponents = includeDisabledComponents;
             }
 
+            /// <summary>
+            /// Returns true if 'target' is in the potential list of targets if a message were sent by 'sender' with this command's configuration.
+            /// </summary>
+            /// <param name="sender"></param>
+            /// <param name="target"></param>
+            /// <returns></returns>
+            public bool IsInMessagePath(GameObject sender, GameObject target)
+            {
+                if (!sender || !target) return false;
+                if (!IncludeInactiveObjects && !target.activeInHierarchy) return false;
+
+                switch(this.SendMethod)
+                {
+                    case MessageSendMethod.Broadcast:
+                        return target.transform.IsChildOf(sender.transform);
+                    case MessageSendMethod.Signal:
+                        return target == sender;
+                    case MessageSendMethod.SignalUpward:
+                        return sender.transform.IsChildOf(target.transform);
+                    case MessageSendMethod.BroadcastEntity:
+                        return target.transform.IsChildOf(SPEntity.Pool.GetFromSource(sender)?.transform ?? sender.transform);
+                    case MessageSendMethod.SignalEntity:
+                        return (SPEntity.Pool.GetFromSource(sender)?.gameObject ?? sender) == target;
+                }
+
+                return false;
+            }
+
             public void Send<T>(GameObject go, System.Action<T> functor, System.Comparison<T> sort = null) where T : class
             {
                 switch (this.SendMethod)
@@ -45,6 +75,12 @@ namespace com.spacepuppy.Utils
                         break;
                     case MessageSendMethod.SignalUpward:
                         SignalUpwards<T>(go, functor, this.IncludeDisabledComponents, sort);
+                        break;
+                    case MessageSendMethod.BroadcastEntity:
+                        Broadcast<T>(SPEntity.Pool.GetFromSource(go)?.gameObject ?? go, functor, this.IncludeInactiveObjects, this.IncludeDisabledComponents, sort);
+                        break;
+                    case MessageSendMethod.SignalEntity:
+                        Signal<T>(go, functor, this.IncludeDisabledComponents, sort);
                         break;
                 }
             }
@@ -62,6 +98,12 @@ namespace com.spacepuppy.Utils
                     case MessageSendMethod.SignalUpward:
                         SignalUpwards<TInterface, TArg>(go, arg, functor, this.IncludeDisabledComponents, sort);
                         break;
+                    case MessageSendMethod.BroadcastEntity:
+                        Broadcast<TInterface, TArg>(SPEntity.Pool.GetFromSource(go)?.gameObject ?? go, arg, functor, this.IncludeInactiveObjects, this.IncludeDisabledComponents, sort);
+                        break;
+                    case MessageSendMethod.SignalEntity:
+                        Signal<TInterface, TArg>(SPEntity.Pool.GetFromSource(go)?.gameObject ?? go, arg, functor, this.IncludeDisabledComponents, sort);
+                        break;
                 }
             }
 
@@ -77,6 +119,12 @@ namespace com.spacepuppy.Utils
                         break;
                     case MessageSendMethod.SignalUpward:
                         SignalUpwards(go, receiverType, functor, this.IncludeDisabledComponents, sort);
+                        break;
+                    case MessageSendMethod.BroadcastEntity:
+                        Broadcast(SPEntity.Pool.GetFromSource(go)?.gameObject ?? go, receiverType, functor, this.IncludeInactiveObjects, this.IncludeDisabledComponents, sort);
+                        break;
+                    case MessageSendMethod.SignalEntity:
+                        Signal(SPEntity.Pool.GetFromSource(go)?.gameObject ?? go, receiverType, functor, this.IncludeDisabledComponents, sort);
                         break;
                 }
             }
@@ -549,10 +597,10 @@ namespace com.spacepuppy.Utils
         {
             if (object.ReferenceEquals(go, null)) throw new System.ArgumentNullException("go");
 
-            using(var lst = TempCollection.GetList<T>())
+            using (var lst = TempCollection.GetList<T>())
             {
                 go.GetComponentsInChildren<T>(includeInactiveObjects, lst);
-                if(lst.Count > 0)
+                if (lst.Count > 0)
                 {
                     return new MessageToken<T>(() => go.GetComponentsInChildren<T>(includeInactiveObjects));
                 }
@@ -637,7 +685,7 @@ namespace com.spacepuppy.Utils
                     {
                         functor(t);
                     }
-                    catch(System.Exception ex)
+                    catch (System.Exception ex)
                     {
                         Debug.LogException(ex);
                     }

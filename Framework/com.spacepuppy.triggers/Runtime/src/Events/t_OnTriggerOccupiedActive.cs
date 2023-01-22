@@ -12,7 +12,7 @@ namespace com.spacepuppy.Events
 
     [Infobox("Similar to t_OnTriggerOccupied, only that it can perform active scanning of the region.\n" +
              "Note that when active it doesn't necessarily make sense to have 'no mask'. It would behave effectively like t_OnOccupiedTrigger but with added overhead. So either disable the scanning, or use t_OnOccupiedTrigger instead.")]
-    public class t_OnTriggerOccupiedActive : SPComponent, ICompoundTriggerEnterResponder, ICompoundTriggerExitResponder, IOccupiedTrigger, IUpdateable
+    public sealed class t_OnTriggerOccupiedActive : SPComponent, ICompoundTriggerEnterHandler, ICompoundTriggerExitHandler, IOccupiedTrigger, IUpdateable
     {
 
         #region Fields
@@ -46,6 +46,8 @@ namespace com.spacepuppy.Events
         private HashSet<GameObject> _intersectingObjects = new HashSet<GameObject>();
         [System.NonSerialized]
         private HashSet<GameObject> _activeObjects = new HashSet<GameObject>();
+        [System.NonSerialized]
+        private bool _usesCompoundTrigger;
 
         [System.NonSerialized]
         private bool _activeScannerIsRunning;
@@ -56,10 +58,18 @@ namespace com.spacepuppy.Events
 
         #region CONSTRUCTOR
 
+        protected override void Start()
+        {
+            base.Start();
+
+            this.ResolveCompoundTrigger();
+        }
+
         protected override void OnEnable()
         {
             base.OnEnable();
 
+            this.ResolveCompoundTrigger();
             if (_activelyScanning && _activeObjects.Count > 0) this.StartUpdate();
         }
 
@@ -117,6 +127,18 @@ namespace com.spacepuppy.Events
         public bool IsOccupied
         {
             get { return _activeObjects.Count > 0; }
+        }
+
+        [ShowNonSerializedProperty("Uses Compound Trigger", ShowAtEditorTime = true, ShowOutsideRuntimeValuesFoldout = true)]
+        public bool UsesCompoundTrigger
+        {
+            get
+            {
+#if UNITY_EDITOR
+                if (!Application.isPlaying) return this.HasComponent<ICompoundTrigger>() || !(this.HasComponent<Collider>() || this.HasComponent<Rigidbody>());
+#endif
+                return _usesCompoundTrigger;
+            }
         }
 
         #endregion
@@ -179,27 +201,33 @@ namespace com.spacepuppy.Events
 
         #region Messages
 
+        public void ResolveCompoundTrigger()
+        {
+            //we assume CompoundTrigger if we have one OR if we don't have anything that can signal OnTriggerEnter attached to us.
+            _usesCompoundTrigger = this.HasComponent<ICompoundTrigger>() || !(this.HasComponent<Collider>() || this.HasComponent<Rigidbody>());
+        }
+
         void OnTriggerEnter(Collider other)
         {
-            if (this.HasComponent<CompoundTrigger>() || other == null) return;
+            if (_usesCompoundTrigger || other == null) return;
 
             this.AddObject(other.gameObject);
         }
 
         void OnTriggerExit(Collider other)
         {
-            if (this.HasComponent<CompoundTrigger>() || other == null) return;
+            if (_usesCompoundTrigger || other == null) return;
 
             this.RemoveObject(other.gameObject);
         }
 
-        void ICompoundTriggerEnterResponder.OnCompoundTriggerEnter(Collider other)
+        void ICompoundTriggerEnterHandler.OnCompoundTriggerEnter(ICompoundTrigger trigger, Collider other)
         {
             if (other == null) return;
             this.AddObject(other.gameObject);
         }
 
-        void ICompoundTriggerExitResponder.OnCompoundTriggerExit(Collider other)
+        void ICompoundTriggerExitHandler.OnCompoundTriggerExit(ICompoundTrigger trigger, Collider other)
         {
             if (other == null) return;
             this.RemoveObject(other.gameObject);

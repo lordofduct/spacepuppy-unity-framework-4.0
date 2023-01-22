@@ -635,6 +635,7 @@ namespace com.spacepuppy
         public string Tooltip;
         public bool Readonly;
         public bool ShowAtEditorTime;
+        public bool ShowOutsideRuntimeValuesFoldout;
 
         public ShowNonSerializedPropertyAttribute(string label)
         {

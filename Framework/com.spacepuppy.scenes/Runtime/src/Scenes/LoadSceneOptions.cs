@@ -157,7 +157,10 @@ namespace com.spacepuppy.Scenes
         {
             this.BeforeSceneLoadCalled?.Invoke(this, this);
             var result = this.SceneManager?.LoadSceneInternal(sceneName, new LoadSceneParameters(mode), behaviour) ?? SceneManagerUtils.LoadSceneInternal(sceneName, new LoadSceneParameters(mode), behaviour);
-            this.RegisterHandlesScene(result);
+            if (result.IsValid)
+            {
+                this.RegisterHandlesScene(result);
+            }
             return result;
         }
 
@@ -165,7 +168,10 @@ namespace com.spacepuppy.Scenes
         {
             this.BeforeSceneLoadCalled?.Invoke(this, this);
             var result = this.SceneManager?.LoadSceneInternal(SceneUtility.GetScenePathByBuildIndex(index), new LoadSceneParameters(mode), behaviour) ?? SceneManagerUtils.LoadSceneInternal(index, new LoadSceneParameters(mode), behaviour);
-            this.RegisterHandlesScene(result);
+            if (result.IsValid)
+            {
+                this.RegisterHandlesScene(result);
+            }
             return result;
         }
 
@@ -184,7 +190,7 @@ namespace com.spacepuppy.Scenes
         }
 
 #if SP_ADDRESSABLES
-        
+
         protected AsyncWaitHandle<(SceneInstance, LoadSceneInternalResult)> LoadAddressableScene(object key, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async)
         {
             this.BeforeSceneLoadCalled?.Invoke(this, this);

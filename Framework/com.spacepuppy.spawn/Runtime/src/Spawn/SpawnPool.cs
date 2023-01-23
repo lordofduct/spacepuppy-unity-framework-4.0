@@ -27,12 +27,33 @@ namespace com.spacepuppy.Spawn
             }
         }
 
-        public static void CreatePrimaryPool()
+        public static SpawnPool CreatePrimaryPool()
         {
-            if (PrimaryPoolExists) return;
+            if (PrimaryPoolExists) return _defaultPool;
 
             var go = new GameObject(DEFAULT_SPAWNPOOL_NAME);
             _defaultPool = go.AddComponent<SpawnPool>();
+            return _defaultPool;
+        }
+
+        public static SpawnPool CreatePrimaryPool<T>() where T : SpawnPool
+        {
+            if (_defaultPool != null) return _defaultPool is T ? _defaultPool as T : throw new System.InvalidOperationException($"A primary spawn pool that does not match type {nameof(T)} already exists.");
+
+            var go = new GameObject(DEFAULT_SPAWNPOOL_NAME);
+            _defaultPool = go.AddComponent<T>();
+            return _defaultPool;
+        }
+
+        public static void RegisterPrimaryPool(SpawnPool pool)
+        {
+            if (_defaultPool != null)
+            {
+                if (!object.ReferenceEquals(_defaultPool, pool)) throw new System.InvalidOperationException("A primary spawn pool already exists.");
+                return;
+            }
+
+            _defaultPool = pool;
         }
 
         public static bool PrimaryPoolExists
@@ -314,22 +335,19 @@ namespace com.spacepuppy.Spawn
                 this.SignalSpawned(controller);
                 return controller;
             }
-            else
+            else if (prefab)
             {
-                var obj = Object.Instantiate(prefab, pos, rot, par);
-                if (obj != null)
+                var controller = this.CreateInstanceInternal(prefab, pos, rot, par);
+                if (controller)
                 {
-                    var controller = obj.AddOrGetComponent<SpawnedObjectController>();
                     controller.Init(this, prefab.GetInstanceID());
                     controller.SetSpawned();
                     this.SignalSpawned(controller);
                     return controller;
                 }
-                else
-                {
-                    return null;
-                }
             }
+
+            return null;
         }
 
         public SpawnedObjectController SpawnAsController(GameObject prefab, Vector3 position, Quaternion rotation, Transform par = null)
@@ -343,22 +361,19 @@ namespace com.spacepuppy.Spawn
                 this.SignalSpawned(controller);
                 return controller;
             }
-            else
+            else if (prefab)
             {
-                var obj = Object.Instantiate(prefab, position, rotation, par);
-                if (obj != null)
+                var controller = this.CreateInstanceInternal(prefab, position, rotation, par);
+                if (controller)
                 {
-                    var controller = obj.AddOrGetComponent<SpawnedObjectController>();
                     controller.Init(this, prefab.GetInstanceID());
                     controller.SetSpawned();
                     this.SignalSpawned(controller);
                     return controller;
                 }
-                else
-                {
-                    return null;
-                }
             }
+
+            return null;
         }
 
         public GameObject SpawnByPrefabId(int prefabId, Transform par = null)
@@ -437,6 +452,13 @@ namespace com.spacepuppy.Spawn
         }
 
 
+
+
+        protected virtual SpawnedObjectController CreateInstanceInternal(GameObject prefab, Vector3 pos, Quaternion rot, Transform par)
+        {
+            var inst = Instantiate(prefab, pos, rot, par);
+            return inst.AddOrGetComponent<SpawnedObjectController>();
+        }
 
 
         /// <summary>
@@ -545,7 +567,7 @@ namespace com.spacepuppy.Spawn
         #region Special Types
 
         [System.Serializable()]
-        private class PrefabCache : IPrefabCache
+        private sealed class PrefabCache : IPrefabCache
         {
 
             #region Fields
@@ -573,7 +595,7 @@ namespace com.spacepuppy.Spawn
 
             #region CONSTRUCTOR
 
-            protected PrefabCache()
+            private PrefabCache()
             {
                 _instances = new HashSet<SpawnedObjectController>(ObjectReferenceEqualityComparer<SpawnedObjectController>.Default);
                 _activeInstances = new HashSet<SpawnedObjectController>(ObjectReferenceEqualityComparer<SpawnedObjectController>.Default);
@@ -711,22 +733,19 @@ namespace com.spacepuppy.Spawn
 
                     return cntrl;
                 }
-                else
+                else if (this.Prefab)
                 {
-                    var obj = Object.Instantiate(this.Prefab, pos, rot, par);
-                    if (obj != null)
+                    var controller = _owner.CreateInstanceInternal(this.Prefab, pos, rot, par);
+                    if (controller)
                     {
-                        var controller = obj.AddOrGetComponent<SpawnedObjectController>();
                         controller.Init(_owner, this.Prefab.GetInstanceID());
                         controller.SetSpawned();
                         _owner.SignalSpawned(controller);
                         return controller;
                     }
-                    else
-                    {
-                        return null;
-                    }
                 }
+
+                return null;
             }
 
             internal bool Despawn(SpawnedObjectController cntrl)
@@ -754,18 +773,22 @@ namespace com.spacepuppy.Spawn
 
             private SpawnedObjectController CreateCachedInstance()
             {
-                var obj = Object.Instantiate(this.Prefab, Vector3.zero, Quaternion.identity);
-                obj.name = _itemName + "(CachedInstance)";
-                var cntrl = obj.AddOrGetComponent<SpawnedObjectController>();
-                cntrl.Init(_owner, this.Prefab.GetInstanceID(), _itemName);
+                if (this.Prefab)
+                {
+                    var controller = _owner.CreateInstanceInternal(this.Prefab, Vector3.zero, Quaternion.identity, _owner.transform);
+                    controller.gameObject.name = _itemName + "(CachedInstance)";
+                    controller.Init(_owner, this.Prefab.GetInstanceID(), _itemName);
 
-                obj.transform.SetParent(_owner.transform, false);
-                obj.transform.localPosition = Vector3.zero;
-                obj.transform.rotation = Quaternion.identity;
+                    controller.transform.SetParent(_owner.transform, false);
+                    controller.transform.localPosition = Vector3.zero;
+                    controller.transform.rotation = Quaternion.identity;
 
-                obj.SetActive(false);
+                    controller.gameObject.SetActive(false);
 
-                return cntrl;
+                    return controller;
+                }
+
+                return null;
             }
 
             #endregion

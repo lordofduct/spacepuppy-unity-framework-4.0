@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 using com.spacepuppy.Collections;
+using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.Utils
 {
@@ -414,6 +415,8 @@ namespace com.spacepuppy.Utils
         #endregion
 
         #region Global Execute
+
+        public static bool HasRegisteredGlobalListener<T>() where T : class => GlobalMessagePool<T>.Count > 0;
 
         /// <summary>
         /// Register a listener for a global Broadcast.

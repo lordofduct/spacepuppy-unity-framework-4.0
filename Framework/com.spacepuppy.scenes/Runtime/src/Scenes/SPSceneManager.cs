@@ -2,6 +2,7 @@
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 using com.spacepuppy.Async;
+using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.Scenes
 {
@@ -171,7 +172,7 @@ namespace com.spacepuppy.Scenes
         {
             var d1 = this.SceneLoaded;
             var d2 = this.CompletedLoad;
-            if (d1 == null && d2 == null) return;
+            if (d1 == null && d2 == null && !Messaging.HasRegisteredGlobalListener<ISceneLoadedGlobalHandler>()) return;
 
             LoadSceneOptions handle = null;
             if (_activeLoadOptions.Count > 0)
@@ -199,6 +200,10 @@ namespace com.spacepuppy.Scenes
                 d1?.Invoke(this, handle);
             }
 
+            if (Messaging.HasRegisteredGlobalListener<ISceneLoadedGlobalHandler>())
+            {
+                Messaging.Broadcast<ISceneLoadedGlobalHandler, LoadSceneOptions>(handle, (o, a) => o.OnSceneLoaded(a));
+            }
         }
         protected virtual void OnCompletedLoad(LoadSceneOptions options)
         {

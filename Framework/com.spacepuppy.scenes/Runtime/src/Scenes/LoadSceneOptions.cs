@@ -3,6 +3,7 @@ using UnityEngine.SceneManagement;
 using UnitySceneManager = UnityEngine.SceneManagement.SceneManager;
 using System.Collections.Generic;
 using com.spacepuppy.Async;
+using com.spacepuppy.Utils;
 
 #if SP_UNITASK
 using Cysharp.Threading.Tasks;
@@ -39,7 +40,7 @@ namespace com.spacepuppy.Scenes
     public abstract class LoadSceneOptions : System.EventArgs, IProgressingYieldInstruction, IRadicalWaitHandle, IRadicalEnumerator, ISPDisposable, System.ICloneable
     {
 
-        private static readonly System.Action<ISceneLoadedGlobalHandler, LoadSceneOptions> OnSceneLoadedFunctor = (o, d) => o.OnSceneLoaded(d);
+        private static readonly System.Action<ILoadSceneOptionsCompleteGlobalHandler, LoadSceneOptions> OnCompleteFunctor = (o, d) => o.OnComplete(d);
 
         public event System.EventHandler<LoadSceneOptions> BeforeLoadBegins;
         public event System.EventHandler<LoadSceneOptions> BeforeSceneLoadCalled;
@@ -223,7 +224,10 @@ namespace com.spacepuppy.Scenes
             }
             try
             {
-                com.spacepuppy.Utils.Messaging.Broadcast(this, OnSceneLoadedFunctor);
+                if (_parent != null)
+                {
+                    Messaging.Broadcast(this, OnCompleteFunctor);
+                }
             }
             catch (System.Exception ex)
             {
@@ -262,7 +266,10 @@ namespace com.spacepuppy.Scenes
             }
             try
             {
-                com.spacepuppy.Utils.Messaging.Broadcast(this, OnSceneLoadedFunctor);
+                if (_parent != null)
+                {
+                    Messaging.Broadcast(this, OnCompleteFunctor);
+                }
             }
             catch (System.Exception ex)
             {

@@ -3,13 +3,18 @@
 namespace com.spacepuppy.Scenes
 {
 
+    public interface ISceneLoadedGlobalHandler
+    {
+        void OnSceneLoaded(LoadSceneOptions options);
+    }
+
     /// <summary>
     /// A found message receiver to handle OnSceneLoaded event.
     /// </summary>
-    public interface ISceneLoadedGlobalHandler
+    public interface ILoadSceneOptionsCompleteGlobalHandler
     {
 
-        void OnSceneLoaded(LoadSceneOptions options);
+        void OnComplete(LoadSceneOptions options);
 
     }
 

@@ -5,20 +5,20 @@ namespace com.spacepuppy
 
     /// <summary>
     /// A serializable semi-unique id. It is not universely unique, but will be system unique at the least, and should be team unique confidently.
-    /// It consists of the current ticks whose upper 4 bytes are xor'd by a large random number.
+    /// It consists of the current ticks whose upper 3 bytes are xor'd by a large random number.
     /// </summary>
     [System.Serializable]
     public struct ShortUid : IEquatable<ShortUid>
     {
 
-        public static ShortUid Zero { get { return new ShortUid(); } }
+        public static readonly ShortUid Zero = default;
 
         #region Fields
 
         //has to be stored with uint's
         //unity has a bug at the time of writing this where long doesn't serialize in prefabs correctly
         //there is a fix in unity beta 2017.1, but we are unsure as to when the full release will be out
-        //so stuck with this hack fix
+        //so stuck with this hack fix to maintain backwards compatibility
         [UnityEngine.SerializeField]
         private uint _low;
         [UnityEngine.SerializeField]
@@ -50,7 +50,7 @@ namespace com.spacepuppy
         public static ShortUid NewId()
         {
             _seed = 6364136223846793005L * _seed + 1442695040888963407L; //MMIX Knuth LCG
-            return new ShortUid(System.DateTime.UtcNow.Ticks ^ (_seed << 38));
+            return new ShortUid(System.DateTime.UtcNow.Ticks ^ (_seed << 40));
         }
 
         #endregion

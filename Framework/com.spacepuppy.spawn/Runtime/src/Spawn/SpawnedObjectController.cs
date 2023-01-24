@@ -7,7 +7,7 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Spawn
 {
 
-    public class SpawnedObjectController : SPComponent, IKillableEntity
+    public class SpawnedObjectController : SPComponent, IKillableEntity, INameable
     {
 
         public const float KILLABLEENTITYPRIORITY = 0f;
@@ -18,12 +18,13 @@ namespace com.spacepuppy.Spawn
 
         #region Fields
 
+        [SerializeField]
+        private float _killableEntityPriority = KILLABLEENTITYPRIORITY;
+
         [System.NonSerialized()]
-        private SpawnPool _pool;
+        private ISpawnPool _pool;
         [System.NonSerialized]
-        private int _prefabId;
-        [System.NonSerialized()]
-        private string _sCacheName;
+        private GameObject _prefab;
         
         [System.NonSerialized()]
         private bool _isSpawned;
@@ -32,31 +33,9 @@ namespace com.spacepuppy.Spawn
 
         #region CONSTRUCTOR
 
-        internal void Init(SpawnPool pool, int prefabId)
+        public SpawnedObjectController()
         {
-            _pool = pool;
-            _prefabId = prefabId;
-            _sCacheName = null;
-        }
-
-        /// <summary>
-        /// Initialize with a reference to the pool that spawned this object. Include a cache name if this gameobject is cached, otherwise no cache name should be included.
-        /// </summary>
-        /// <param name="pool"></param>
-        /// <param name="prefab">prefab this was spawned from</param>
-        /// <param name="sCacheName"></param>
-        internal void Init(SpawnPool pool, int prefabId, string sCacheName)
-        {
-            _pool = pool;
-            _prefabId = prefabId;
-            _sCacheName = sCacheName;
-        }
-
-        internal void DeInit()
-        {
-            _pool = null;
-            _prefabId = 0;
-            _sCacheName = null;
+            _nameCache = new NameCache.UnityObjectNameCache(this);
         }
 
         protected override void OnDestroy()
@@ -67,7 +46,9 @@ namespace com.spacepuppy.Spawn
             {
                 _pool.Purge(this);
             }
-            if (this.OnKilled != null) this.OnKilled(this, System.EventArgs.Empty);
+            this.OnKilled?.Invoke(this, System.EventArgs.Empty);
+            _pool = null;
+            _prefab = null;
         }
 
         #endregion
@@ -82,29 +63,28 @@ namespace com.spacepuppy.Spawn
         /// <summary>
         /// The pool that created this object.
         /// </summary>
-        public SpawnPool Pool
+        public ISpawnPool Pool
         {
             get { return _pool; }
         }
 
-        public int PrefabID
+        public GameObject Prefab
         {
-            get { return _prefabId; }
+            get { return _prefab; }
         }
-        
-        public string CacheName
-        {
-            get { return _sCacheName; }
-        }
-        
+
+        public int PrefabID { get; private set; }
+
+        public bool IsCached { get; private set; }
+
         #endregion
 
         #region Methods
 
         /// <summary>
-        /// This method ONLY called by SpawnPool
+        /// This method ONLY called by ISpawnPool
         /// </summary>
-        internal void SetSpawned()
+        public void SetSpawned()
         {
             _isSpawned = true;
             this.gameObject.SetActive(true);
@@ -112,9 +92,9 @@ namespace com.spacepuppy.Spawn
         }
 
         /// <summary>
-        /// This method ONLY called by SpawnPool
+        /// This method ONLY called by ISpawnPool
         /// </summary>
-        internal void SetDespawned()
+        public void SetDespawned()
         {
             _isSpawned = false;
             this.gameObject.SetActive(false);
@@ -126,12 +106,19 @@ namespace com.spacepuppy.Spawn
             if (_pool != null) _pool.Purge(this);
         }
 
-        public GameObject CloneObject(bool fromPrefab = false)
+        /// <summary>
+        /// Creates a new spawned object from the available cache in the ISpawnPool this was spawned from.
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="System.InvalidOperationException"></exception>
+        public SpawnedObjectController CloneObject()
         {
-            if (fromPrefab && _pool != null && _pool.Contains(_prefabId))
-                return _pool.SpawnByPrefabId(_prefabId, this.transform.position, this.transform.rotation);
+            if (_pool == null) throw new System.InvalidOperationException($"Can not clone an uninitialized {nameof(SpawnedObjectController)} as it has not {nameof(ISpawnPool)} associated with it. If you want to duplicate this object, just call Instantiate.");
+
+            if (_prefab)
+                return _pool.SpawnAsController(_prefab, this.transform.position, this.transform.rotation);
             else
-                return _pool.Spawn(this.gameObject, this.transform.position, this.transform.rotation);
+                return _pool.SpawnAsController(this.gameObject, this.transform.position, this.transform.rotation);
         }
 
         #endregion
@@ -148,7 +135,7 @@ namespace com.spacepuppy.Spawn
             //if not initialized, if this is dead, or if it's not the root of this entity being killed... exit now
             if (_pool == null || !ObjUtil.IsObjectAlive(this) || this.gameObject != target) return;
 
-            token.ProposeKillCandidate(this, KILLABLEENTITYPRIORITY);
+            token.ProposeKillCandidate(this, _killableEntityPriority);
         }
 
         void IKillableEntity.OnKill(KillableEntityToken token)
@@ -194,6 +181,47 @@ namespace com.spacepuppy.Spawn
                     e.Current.angularVelocity = 0f;
                 }
             }
+        }
+
+        #endregion
+
+        #region INameable Interface
+
+        private NameCache.UnityObjectNameCache _nameCache;
+        public new string name
+        {
+            get { return _nameCache.Name; }
+            set { _nameCache.Name = value; }
+        }
+        string INameable.Name
+        {
+            get { return _nameCache.Name; }
+            set { _nameCache.Name = value; }
+        }
+        public bool CompareName(string nm)
+        {
+            return _nameCache.CompareName(nm);
+        }
+        void INameable.SetDirty()
+        {
+            _nameCache.SetDirty();
+        }
+
+        #endregion
+
+        #region Factory
+
+        public static SpawnedObjectController InitializeController(GameObject gameObject, ISpawnPool pool, GameObject prefab, bool cached)
+        {
+            if (pool == null) throw new System.ArgumentNullException(nameof(pool));
+
+            var controller = gameObject.AddOrGetComponent<SpawnedObjectController>();
+            controller._pool = pool;
+            controller._prefab = prefab;
+            controller.PrefabID = prefab != null ? prefab.GetInstanceID() : 0;
+            controller.IsCached = cached;
+            return controller;
+            
         }
 
         #endregion

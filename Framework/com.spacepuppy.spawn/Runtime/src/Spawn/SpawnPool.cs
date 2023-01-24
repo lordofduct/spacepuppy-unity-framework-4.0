@@ -8,84 +8,112 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Spawn
 {
 
-    public class SpawnPool : SPComponent, ICollection<IPrefabCache>
+    public interface ISpawnPool
+    {
+
+        SpawnedObjectController SpawnAsController(GameObject prefab, Transform par = null, System.Action<SpawnedObjectController> beforeSignalSpawnCallback = null);
+
+        SpawnedObjectController SpawnAsController(GameObject prefab, Vector3 position, Quaternion rotation, Transform par = null, System.Action<SpawnedObjectController> beforeSignalSpawnCallback = null);
+
+        bool Despawn(SpawnedObjectController cntrl);
+        bool Purge(SpawnedObjectController cntrl);
+
+    }
+
+    public static class SpawnPoolExtensions
+    {
+
+        public static GameObject Spawn(this ISpawnPool pool, GameObject prefab, Transform par = null, System.Action<SpawnedObjectController> beforeSignalSpawnCallback = null)
+        {
+            return pool.SpawnAsController(prefab, par, beforeSignalSpawnCallback)?.gameObject;
+        }
+
+        public static GameObject Spawn(this ISpawnPool pool, GameObject prefab, Vector3 position, Quaternion rotation, Transform par = null, System.Action<SpawnedObjectController> beforeSignalSpawnCallback = null)
+        {
+            return pool.SpawnAsController(prefab, position, rotation, par, beforeSignalSpawnCallback)?.gameObject;
+        }
+
+    }
+
+    public class SpawnPool : SPComponent, ISpawnPool, ICollection<IPrefabCache>
     {
 
         #region Static Multiton Interface
 
         public const string DEFAULT_SPAWNPOOL_NAME = "Spacepuppy.PrimarySpawnPool";
 
-        private static SpawnPool _defaultPool;
-        public static readonly MultitonPool<SpawnPool> Pools = new MultitonPool<SpawnPool>();
+        private static ISpawnPool _defaultPool;
+        public static readonly MultitonPool<ISpawnPool> Pools = new MultitonPool<ISpawnPool>();
 
-        public static SpawnPool DefaultPool
+        public static ISpawnPool DefaultPool
         {
             get
             {
-                if (_defaultPool == null) CreatePrimaryPool();
-                return _defaultPool;
+                return _defaultPool.IsAlive() ? _defaultPool : FindOrCreatePrimaryPool();
             }
         }
 
-        public static SpawnPool CreatePrimaryPool()
+        public static ISpawnPool FindOrCreatePrimaryPool()
         {
-            if (PrimaryPoolExists) return _defaultPool;
+            if (_defaultPool.IsAlive()) return _defaultPool;
+
+            if (Pools.Count > 0)
+            {
+                ISpawnPool point = null;
+                var e = Pools.GetEnumerator();
+                while (e.MoveNext())
+                {
+                    if (e.Current is Component c && c.CompareName(DEFAULT_SPAWNPOOL_NAME))
+                    {
+                        point = e.Current;
+                        break;
+                    }
+                }
+
+                if (!object.ReferenceEquals(point, null))
+                {
+                    _defaultPool = point;
+                    return _defaultPool;
+                }
+            }
 
             var go = new GameObject(DEFAULT_SPAWNPOOL_NAME);
             _defaultPool = go.AddComponent<SpawnPool>();
             return _defaultPool;
         }
 
-        public static SpawnPool CreatePrimaryPool<T>() where T : SpawnPool
+        public static ISpawnPool CreatePrimaryPool(bool dontDestroyOnLoad = false)
         {
-            if (_defaultPool != null) return _defaultPool is T ? _defaultPool as T : throw new System.InvalidOperationException($"A primary spawn pool that does not match type {nameof(T)} already exists.");
+            if (_defaultPool.IsAlive()) throw new System.InvalidOperationException("A primary SpawnPool already exists, call 'HasRegisteredPrimaryPool' to confirm one doesn't exist before calling CreatePrimaryPool.");
 
             var go = new GameObject(DEFAULT_SPAWNPOOL_NAME);
-            _defaultPool = go.AddComponent<T>();
+            _defaultPool = go.AddComponent<SpawnPool>();
+            if (dontDestroyOnLoad) DontDestroyOnLoad(go);
             return _defaultPool;
         }
 
-        public static void RegisterPrimaryPool(SpawnPool pool)
+        public static T CreatePrimaryPool<T>(bool dontDestroyOnLoad = false) where T : Component, ISpawnPool
         {
-            if (_defaultPool != null)
+            if (_defaultPool.IsAlive()) throw new System.InvalidOperationException("A primary SpawnPool already exists, call 'HasRegisteredPrimaryPool' to confirm one doesn't exist before calling CreatePrimaryPool.");
+
+            var go = new GameObject(DEFAULT_SPAWNPOOL_NAME);
+            _defaultPool = go.AddComponent<T>();
+            if (dontDestroyOnLoad) DontDestroyOnLoad(go);
+            return _defaultPool as T;
+        }
+
+        public static void RegisterPrimaryPool(ISpawnPool pool)
+        {
+            if (_defaultPool.IsAlive())
             {
-                if (!object.ReferenceEquals(_defaultPool, pool)) throw new System.InvalidOperationException("A primary spawn pool already exists.");
+                if (!object.ReferenceEquals(_defaultPool, pool)) throw new System.InvalidOperationException("A primary SpawnPool already exists, call 'HasRegisteredPrimaryPool' to confirm one doesn't exist before calling RegisterPrimaryPool.");
                 return;
             }
 
             _defaultPool = pool;
         }
 
-        public static bool PrimaryPoolExists
-        {
-            get
-            {
-                if (_defaultPool != null) return true;
-
-                _defaultPool = null;
-                if (Pools.Count > 0)
-                {
-                    SpawnPool point = null;
-                    var e = Pools.GetEnumerator();
-                    while (e.MoveNext())
-                    {
-                        if (e.Current.CompareName(DEFAULT_SPAWNPOOL_NAME))
-                        {
-                            point = e.Current;
-                            break;
-                        }
-                    }
-
-                    if (!object.ReferenceEquals(point, null))
-                    {
-                        _defaultPool = point;
-                        return true;
-                    }
-                }
-
-                return false;
-            }
-        }
+        public static bool HasRegisteredPrimaryPool => _defaultPool.IsAlive();
 
         #endregion
 
@@ -122,7 +150,8 @@ namespace com.spacepuppy.Spawn
             {
                 if (e.Current.Prefab == null) continue;
 
-                e.Current.Load();
+                this.OnLoadingCache(e.Current);
+                e.Current.Load(this);
                 _prefabToCache[e.Current.PrefabID] = e.Current;
             }
         }
@@ -140,6 +169,7 @@ namespace com.spacepuppy.Spawn
             var e = _registeredPrefabs.GetEnumerator();
             while (e.MoveNext())
             {
+                this.OnUnloadingCache(e.Current);
                 e.Current.Clear();
             }
         }
@@ -179,9 +209,10 @@ namespace com.spacepuppy.Spawn
                 LimitAmount = limitAmount
             };
 
+            this.OnLoadingCache(cache);
             _registeredPrefabs.Add(cache);
             _prefabToCache[cache.PrefabID] = cache;
-            cache.Load();
+            cache.Load(this);
             return cache;
         }
 
@@ -207,6 +238,7 @@ namespace com.spacepuppy.Spawn
             if (obj == null) return false;
             if (obj.Owner != this) return false;
 
+            this.OnUnloadingCache(obj);
             obj.Clear();
             _registeredPrefabs.Remove(obj);
             _prefabToCache.Remove(obj.PrefabID);
@@ -234,8 +266,7 @@ namespace com.spacepuppy.Spawn
 
 
 
-
-        public GameObject SpawnByIndex(int index, Transform par = null)
+        public GameObject SpawnByIndex(int index, Transform par = null, System.Action<SpawnedObjectController> beforeSignalSpawnCallback = null)
         {
             if (index < 0 || index >= _registeredPrefabs.Count) throw new System.IndexOutOfRangeException();
 
@@ -243,21 +274,23 @@ namespace com.spacepuppy.Spawn
             var pos = (par != null) ? par.position : Vector3.zero;
             var rot = (par != null) ? par.rotation : Quaternion.identity;
             var obj = cache.Spawn(pos, rot, par);
+            beforeSignalSpawnCallback?.Invoke(obj);
             this.SignalSpawned(obj);
             return obj.gameObject;
         }
 
-        public GameObject SpawnByIndex(int index, Vector3 position, Quaternion rotation, Transform par = null)
+        public GameObject SpawnByIndex(int index, Vector3 position, Quaternion rotation, Transform par = null, System.Action<SpawnedObjectController> beforeSignalSpawnCallback = null)
         {
             if (index < 0 || index >= _registeredPrefabs.Count) throw new System.IndexOutOfRangeException();
 
             var cache = _registeredPrefabs[index];
             var obj = cache.Spawn(position, rotation, par);
+            beforeSignalSpawnCallback?.Invoke(obj);
             this.SignalSpawned(obj);
             return obj.gameObject;
         }
 
-        public GameObject Spawn(string sname, Transform par = null)
+        public GameObject Spawn(string sname, Transform par = null, System.Action<SpawnedObjectController> beforeSignalSpawnCallback = null)
         {
             PrefabCache cache = null;
             var e = _registeredPrefabs.GetEnumerator();
@@ -274,11 +307,12 @@ namespace com.spacepuppy.Spawn
             var pos = (par != null) ? par.position : Vector3.zero;
             var rot = (par != null) ? par.rotation : Quaternion.identity;
             var obj = cache.Spawn(pos, rot, par);
+            beforeSignalSpawnCallback?.Invoke(obj);
             this.SignalSpawned(obj);
             return obj.gameObject;
         }
 
-        public GameObject Spawn(string sname, Vector3 position, Quaternion rotation, Transform par = null)
+        public GameObject Spawn(string sname, Vector3 position, Quaternion rotation, Transform par = null, System.Action<SpawnedObjectController> beforeSignalSpawnCallback = null)
         {
             PrefabCache cache = null;
             var e = _registeredPrefabs.GetEnumerator();
@@ -293,55 +327,57 @@ namespace com.spacepuppy.Spawn
             if (cache == null) return null;
 
             var obj = cache.Spawn(position, rotation, par);
+            beforeSignalSpawnCallback?.Invoke(obj);
             this.SignalSpawned(obj);
             return obj.gameObject;
         }
 
-        public GameObject Spawn(GameObject prefab, Transform par = null)
+        public GameObject Spawn(GameObject prefab, Transform par = null, System.Action<SpawnedObjectController> beforeSignalSpawnCallback = null)
         {
-            var controller = SpawnAsController(prefab, par);
+            var controller = SpawnAsController(prefab, par, beforeSignalSpawnCallback);
             return (controller != null) ? controller.gameObject : null;
         }
 
-        public GameObject Spawn(GameObject prefab, Vector3 position, Quaternion rotation, Transform par = null)
+        public GameObject Spawn(GameObject prefab, Vector3 position, Quaternion rotation, Transform par = null, System.Action<SpawnedObjectController> beforeSignalSpawnCallback = null)
         {
-            var controller = SpawnAsController(prefab, position, rotation, par);
+            var controller = SpawnAsController(prefab, position, rotation, par, beforeSignalSpawnCallback);
             return (controller != null) ? controller.gameObject : null;
         }
 
-        public T Spawn<T>(T prefab, Transform parent = null) where T : Component
+        public T Spawn<T>(T prefab, Transform parent = null, System.Action<SpawnedObjectController> beforeSignalSpawnCallback = null) where T : Component
         {
-            var controller = SpawnAsController(prefab.gameObject, parent);
+            var controller = SpawnAsController(prefab.gameObject, parent, beforeSignalSpawnCallback);
             return (controller != null) ? controller.GetComponent<T>() : null;
         }
 
-        public T Spawn<T>(T prefab, Vector3 position, Quaternion rotation, Transform par = null) where T : Component
+        public T Spawn<T>(T prefab, Vector3 position, Quaternion rotation, Transform par = null, System.Action<SpawnedObjectController> beforeSignalSpawnCallback = null) where T : Component
         {
-            var controller = SpawnAsController(prefab.gameObject, position, rotation, par);
+            var controller = SpawnAsController(prefab.gameObject, position, rotation, par, beforeSignalSpawnCallback);
             return (controller != null) ? controller.GetComponent<T>() : null;
         }
 
-        public SpawnedObjectController SpawnAsController(GameObject prefab, Transform par = null)
+        public SpawnedObjectController SpawnAsController(GameObject prefab, Transform par = null, System.Action<SpawnedObjectController> beforeSignalSpawnCallback = null)
         {
             if (prefab == null) return null;
 
             var cache = this.FindPrefabCache(prefab);
-            var pos = (par != null) ? par.position : Vector3.zero;
-            var rot = (par != null) ? par.rotation : Quaternion.identity;
+            var pos = (cache != null) ? cache.Prefab.transform.position : prefab.transform.position;
+            var rot = (cache != null) ? cache.Prefab.transform.rotation : prefab.transform.rotation;
 
             if (cache != null)
             {
                 var controller = cache.Spawn(pos, rot, par);
+                beforeSignalSpawnCallback?.Invoke(controller);
                 this.SignalSpawned(controller);
                 return controller;
             }
             else if (prefab)
             {
-                var controller = this.CreateInstanceInternal(prefab, pos, rot, par);
+                var controller = this.CreateInstanceInternal(prefab, pos, rot, par, false);
                 if (controller)
                 {
-                    controller.Init(this, prefab.GetInstanceID());
                     controller.SetSpawned();
+                    beforeSignalSpawnCallback?.Invoke(controller);
                     this.SignalSpawned(controller);
                     return controller;
                 }
@@ -350,7 +386,7 @@ namespace com.spacepuppy.Spawn
             return null;
         }
 
-        public SpawnedObjectController SpawnAsController(GameObject prefab, Vector3 position, Quaternion rotation, Transform par = null)
+        public SpawnedObjectController SpawnAsController(GameObject prefab, Vector3 position, Quaternion rotation, Transform par = null, System.Action<SpawnedObjectController> beforeSignalSpawnCallback = null)
         {
             if (prefab == null) return null;
 
@@ -358,16 +394,17 @@ namespace com.spacepuppy.Spawn
             if (cache != null)
             {
                 var controller = cache.Spawn(position, rotation, par);
+                beforeSignalSpawnCallback?.Invoke(controller);
                 this.SignalSpawned(controller);
                 return controller;
             }
             else if (prefab)
             {
-                var controller = this.CreateInstanceInternal(prefab, position, rotation, par);
+                var controller = this.CreateInstanceInternal(prefab, position, rotation, par, false);
                 if (controller)
                 {
-                    controller.Init(this, prefab.GetInstanceID());
                     controller.SetSpawned();
+                    beforeSignalSpawnCallback?.Invoke(controller);
                     this.SignalSpawned(controller);
                     return controller;
                 }
@@ -376,19 +413,19 @@ namespace com.spacepuppy.Spawn
             return null;
         }
 
-        public GameObject SpawnByPrefabId(int prefabId, Transform par = null)
+        public GameObject SpawnByPrefabId(int prefabId, Transform par = null, System.Action<SpawnedObjectController> beforeSignalSpawnCallback = null)
         {
-            var controller = SpawnAsControllerByPrefabId(prefabId, par);
+            var controller = SpawnAsControllerByPrefabId(prefabId, par, beforeSignalSpawnCallback);
             return (controller != null) ? controller.gameObject : null;
         }
 
-        public GameObject SpawnByPrefabId(int prefabId, Vector3 position, Quaternion rotation, Transform par = null)
+        public GameObject SpawnByPrefabId(int prefabId, Vector3 position, Quaternion rotation, Transform par = null, System.Action<SpawnedObjectController> beforeSignalSpawnCallback = null)
         {
-            var controller = SpawnAsControllerByPrefabId(prefabId, position, rotation, par);
+            var controller = SpawnAsControllerByPrefabId(prefabId, position, rotation, par, beforeSignalSpawnCallback);
             return (controller != null) ? controller.gameObject : null;
         }
 
-        public SpawnedObjectController SpawnAsControllerByPrefabId(int prefabId, Transform par = null)
+        public SpawnedObjectController SpawnAsControllerByPrefabId(int prefabId, Transform par = null, System.Action<SpawnedObjectController> beforeSignalSpawnCallback = null)
         {
             PrefabCache cache;
             if (!_prefabToCache.TryGetValue(prefabId, out cache)) return null;
@@ -396,24 +433,26 @@ namespace com.spacepuppy.Spawn
             var pos = (par != null) ? par.position : Vector3.zero;
             var rot = (par != null) ? par.rotation : Quaternion.identity;
             var controller = cache.Spawn(pos, rot, par);
+            beforeSignalSpawnCallback?.Invoke(controller);
             this.SignalSpawned(controller);
             return controller;
         }
 
-        public SpawnedObjectController SpawnAsControllerByPrefabId(int prefabId, Vector3 position, Quaternion rotation, Transform par = null)
+        public SpawnedObjectController SpawnAsControllerByPrefabId(int prefabId, Vector3 position, Quaternion rotation, Transform par = null, System.Action<SpawnedObjectController> beforeSignalSpawnCallback = null)
         {
             PrefabCache cache;
             if (!_prefabToCache.TryGetValue(prefabId, out cache)) return null;
             var controller = cache.Spawn(position, rotation, par);
             this.SignalSpawned(controller);
+            beforeSignalSpawnCallback?.Invoke(controller);
             return controller;
         }
 
 
 
-        internal bool Despawn(SpawnedObjectController cntrl)
+        public bool Despawn(SpawnedObjectController cntrl)
         {
-            if (Object.ReferenceEquals(cntrl, null)) throw new System.ArgumentNullException("cntrl");
+            if (Object.ReferenceEquals(cntrl, null)) throw new System.ArgumentNullException(nameof(cntrl));
 
             PrefabCache cache;
             if (!_prefabToCache.TryGetValue(cntrl.PrefabID, out cache) || !cache.ContainsActive(cntrl))
@@ -454,10 +493,9 @@ namespace com.spacepuppy.Spawn
 
 
 
-        protected virtual SpawnedObjectController CreateInstanceInternal(GameObject prefab, Vector3 pos, Quaternion rot, Transform par)
+        protected virtual SpawnedObjectController CreateInstanceInternal(GameObject prefab, Vector3 pos, Quaternion rot, Transform par, bool cached)
         {
-            var inst = Instantiate(prefab, pos, rot, par);
-            return inst.AddOrGetComponent<SpawnedObjectController>();
+            return SpawnedObjectController.InitializeController(Instantiate(prefab, pos, rot, par), this, prefab, cached);
         }
 
 
@@ -468,30 +506,23 @@ namespace com.spacepuppy.Spawn
         /// <returns></returns>
         private PrefabCache FindPrefabCache(GameObject obj)
         {
-            //TODO - figure out the best way to match a gameobject to the cache pool.
-            //as it stands this depends on the prefab being a shared instance across all scripts... 
-            //I am unsure if that's how unity works, and what the limitations are on that.
-            //consider creating a system of relating equal prefabs
+            var controller = obj.GetComponent<SpawnedObjectController>();
+            if (controller == null) return null;
 
-            //test if the object is the prefab in question
-            int id = obj.GetInstanceID();
-            if (_prefabToCache.ContainsKey(id)) return _prefabToCache[id];
-
-            var controller = obj.FindComponent<SpawnedObjectController>();
-            if (controller == null || controller.Pool != this) return null;
-
-            id = controller.PrefabID;
             PrefabCache result;
-            if (_prefabToCache.TryGetValue(id, out result)) return result;
+            if (_prefabToCache.TryGetValue(controller.PrefabID, out result)) return result;
 
             return null;
         }
 
-        private void SignalSpawned(SpawnedObjectController cntrl)
+        protected virtual void SignalSpawned(SpawnedObjectController cntrl)
         {
             this.gameObject.Broadcast<IOnSpawnHandler, SpawnedObjectController>(cntrl, (o, c) => o.OnSpawn(c));
             cntrl.gameObject.Broadcast<IOnSpawnHandler, SpawnedObjectController>(cntrl, (o, c) => o.OnSpawn(c));
         }
+
+        protected virtual void OnLoadingCache(IPrefabCache cache) { }
+        protected virtual void OnUnloadingCache(IPrefabCache cache) { }
 
         #endregion
 
@@ -525,6 +556,7 @@ namespace com.spacepuppy.Spawn
             var e = _registeredPrefabs.GetEnumerator();
             while (e.MoveNext())
             {
+                this.OnUnloadingCache(e.Current);
                 e.Current.Clear();
             }
 
@@ -580,8 +612,10 @@ namespace com.spacepuppy.Spawn
             [Tooltip("The starting CacheSize.")]
             public int CacheSize = 0;
             [Tooltip("How much should the cache resize by if an empty/used cache is spawned from.")]
+            [Min(1)]
             public int ResizeBuffer = 1;
             [Tooltip("The maximum number of instances allowed to be cached, 0 or less means infinite.")]
+            [NegativeIsInfinity(ZeroIsAlsoInfinity = true)]
             public int LimitAmount = 0;
 
             [System.NonSerialized()]
@@ -609,11 +643,6 @@ namespace com.spacepuppy.Spawn
                 _activeInstances = new HashSet<SpawnedObjectController>(ObjectReferenceEqualityComparer<SpawnedObjectController>.Default);
             }
 
-            public void Init(SpawnPool owner)
-            {
-                _owner = owner;
-            }
-
             #endregion
 
             #region Properties
@@ -636,7 +665,7 @@ namespace com.spacepuppy.Spawn
             public int PrefabID
             {
                 //use HashCode since it returns the same as GetInstanceID, but it doesn't check thread
-                get { return _prefab.GetHashCode(); }
+                get { return _prefab?.GetInstanceID() ?? 0; }
             }
 
             int IPrefabCache.CacheSize
@@ -676,11 +705,13 @@ namespace com.spacepuppy.Spawn
                 return _activeInstances.Contains(cntrl);
             }
 
-            internal void Load()
+            internal void Load(SpawnPool owner)
             {
                 this.Clear();
+                _owner = owner;
                 if (_prefab == null) return;
 
+                _prefab.AddOrGetComponent<SpawnedObjectController>();
                 for (int i = 0; i < this.CacheSize; i++)
                 {
                     _instances.Add(this.CreateCachedInstance());
@@ -694,7 +725,6 @@ namespace com.spacepuppy.Spawn
                     var e = _instances.GetEnumerator();
                     while (e.MoveNext())
                     {
-                        e.Current.DeInit();
                         Object.Destroy(e.Current.gameObject);
                     }
                     _instances.Clear();
@@ -708,7 +738,7 @@ namespace com.spacepuppy.Spawn
                 if (_instances.Count == 0)
                 {
                     int cnt = this.Count;
-                    int newSize = cnt + this.ResizeBuffer;
+                    int newSize = Mathf.Max(cnt + 1, cnt + this.ResizeBuffer);
                     if (this.LimitAmount > 0) newSize = Mathf.Min(newSize, this.LimitAmount);
 
                     if (newSize > cnt)
@@ -735,12 +765,10 @@ namespace com.spacepuppy.Spawn
                 }
                 else if (this.Prefab)
                 {
-                    var controller = _owner.CreateInstanceInternal(this.Prefab, pos, rot, par);
+                    var controller = _owner.CreateInstanceInternal(this.Prefab, pos, rot, par, false);
                     if (controller)
                     {
-                        controller.Init(_owner, this.Prefab.GetInstanceID());
                         controller.SetSpawned();
-                        _owner.SignalSpawned(controller);
                         return controller;
                     }
                 }
@@ -775,15 +803,13 @@ namespace com.spacepuppy.Spawn
             {
                 if (this.Prefab)
                 {
-                    var controller = _owner.CreateInstanceInternal(this.Prefab, Vector3.zero, Quaternion.identity, _owner.transform);
-                    controller.gameObject.name = _itemName + "(CachedInstance)";
-                    controller.Init(_owner, this.Prefab.GetInstanceID(), _itemName);
+                    var controller = _owner.CreateInstanceInternal(this.Prefab, Vector3.zero, Quaternion.identity, _owner.transform, true);
 
+                    controller.gameObject.SetActive(false);
+                    controller.name = (!string.IsNullOrEmpty(_itemName) ? _itemName : controller.name) + "(CachedInstance)";
                     controller.transform.SetParent(_owner.transform, false);
                     controller.transform.localPosition = Vector3.zero;
                     controller.transform.rotation = Quaternion.identity;
-
-                    controller.gameObject.SetActive(false);
 
                     return controller;
                 }

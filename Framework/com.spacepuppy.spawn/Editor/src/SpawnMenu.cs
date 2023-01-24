@@ -15,14 +15,14 @@ namespace com.spacepuppyeditor.Spawn
         [MenuItem(SPMenu.MENU_NAME_ROOT + "/Create Default SpawnPool", priority = SPMenu.MENU_PRIORITY_SINGLETON + 1)]
         public static void CreateDefaultSpawnPool()
         {
-            SpawnPool.CreatePrimaryPool();
+            if (!SpawnPool.HasRegisteredPrimaryPool) SpawnPool.FindOrCreatePrimaryPool();
         }
 
         [MenuItem(SPMenu.MENU_NAME_ROOT + "/Create Default SpawnPool", validate = true)]
         public static bool CreateDefaultSpawnPool_Validate()
         {
             if (Application.isPlaying) return false;
-            return !SpawnPool.PrimaryPoolExists;
+            return !SpawnPool.HasRegisteredPrimaryPool;
         }
 
     }

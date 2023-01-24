@@ -12,6 +12,9 @@ namespace com.spacepuppy.Addressables
 
         public const float KILLABLEENTITYPRIORITY = 0f;
 
+        [SerializeField]
+        private float _killableEntityPriority = KILLABLEENTITYPRIORITY;
+
         void Awake()
         {
             this.AddTag(SPConstants.TAG_ROOT);
@@ -28,7 +31,7 @@ namespace com.spacepuppy.Addressables
             //if this is dead, or if it's not the root of this entity being killed... exit now
             if (!ObjUtil.IsObjectAlive(this) || this.gameObject != target) return;
 
-            token.ProposeKillCandidate(this, KILLABLEENTITYPRIORITY);
+            token.ProposeKillCandidate(this, _killableEntityPriority);
         }
 
         void IKillableEntity.OnKill(KillableEntityToken token)

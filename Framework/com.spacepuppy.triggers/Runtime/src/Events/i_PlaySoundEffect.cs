@@ -82,8 +82,10 @@ namespace com.spacepuppy.Events
 
         #region Methods
 
-        private void OnAudioCompleteHandler()
+        System.Collections.IEnumerator WaitForComplete(AudioSource src)
         {
+            while (src.isPlaying) yield return null;
+
             _completeRoutine = null;
             _onAudioComplete.ActivateTrigger(this, null);
         }
@@ -126,7 +128,7 @@ namespace com.spacepuppy.Events
                         break;
                 }
             }
-            
+
             AudioClip clip;
             if (_clips.Length == 0)
                 return false;
@@ -146,17 +148,17 @@ namespace com.spacepuppy.Events
                     {
                         if (src != null)
                         {
-                            _completeRoutine = this.InvokeGuaranteed(this.OnAudioCompleteHandler, clip.length, SPTime.Real);
-                            //src.Play();
                             src.PlayOneShot(clip);
+                            if (_onAudioComplete.HasReceivers) _completeRoutine = GameLoop.Hook.StartRadicalCoroutine(this.WaitForComplete(src));
+                            //_completeRoutine = this.InvokeGuaranteed(this.OnAudioCompleteHandler, clip.length, SPTime.Real);
                         }
                     }, _delay.Seconds, _delay.TimeSupplier);
                 }
                 else
                 {
-                    _completeRoutine = this.InvokeGuaranteed(this.OnAudioCompleteHandler, clip.length, SPTime.Real);
-                    //src.Play();
                     src.PlayOneShot(clip);
+                    if (_onAudioComplete.HasReceivers) _completeRoutine = GameLoop.Hook.StartRadicalCoroutine(this.WaitForComplete(src));
+                    //_completeRoutine = this.InvokeGuaranteed(this.OnAudioCompleteHandler, clip.length, SPTime.Real);
                 }
 
                 return true;

@@ -4,6 +4,7 @@ using System.Linq;
 
 using com.spacepuppy.Collections;
 using com.spacepuppy.Utils;
+using com.spacepuppy.Project;
 
 namespace com.spacepuppy.Spawn
 {
@@ -34,6 +35,9 @@ namespace com.spacepuppy.Spawn
         }
 
     }
+
+    [System.Serializable]
+    public class SpawnPoolRef : SerializableInterfaceRef<ISpawnPool> { }
 
     public class SpawnPool : SPComponent, ISpawnPool, ICollection<IPrefabCache>
     {

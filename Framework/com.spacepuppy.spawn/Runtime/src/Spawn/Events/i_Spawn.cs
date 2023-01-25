@@ -18,9 +18,8 @@ namespace com.spacepuppy.Spawn.Events
 
         [SerializeField()]
         [Tooltip("If left empty the default SpawnPool will be used instead.")]
-        [TypeRestriction(typeof(ISpawnPool), AllowProxy = true, AllowSceneObjects = true, HideTypeDropDown = true)]
-        private UnityEngine.Object _spawnPool;
-        
+        private SpawnPoolRef _spawnPool = new SpawnPoolRef();
+
         [SerializeField]
         [RespectsIProxy()]
         [TypeRestriction(typeof(Transform), AllowProxy = true, HideTypeDropDown = true)]
@@ -44,8 +43,8 @@ namespace com.spacepuppy.Spawn.Events
 
         public ISpawnPool SpawnPool
         {
-            get { return _spawnPool as ISpawnPool; }
-            set { _spawnPool = value as UnityEngine.Object; }
+            get { return _spawnPool.Value; }
+            set { _spawnPool.Value = value; }
         }
 
         public List<PrefabEntry> Prefabs
@@ -108,7 +107,7 @@ namespace com.spacepuppy.Spawn.Events
         {
             if (prefab == null) return null;
 
-            var pool = this.SpawnPool.IsAlive() ? this.SpawnPool : com.spacepuppy.Spawn.SpawnPool.DefaultPool;
+            var pool = _spawnPool.Value.IsAlive() ? _spawnPool.Value : com.spacepuppy.Spawn.SpawnPool.DefaultPool;
             var go = pool.Spawn(prefab, this.transform.position, this.transform.rotation, ObjUtil.GetAsFromSource<Transform>(_spawnedObjectParent, true));
 
             if (_onSpawnedObject?.HasReceivers ?? false)

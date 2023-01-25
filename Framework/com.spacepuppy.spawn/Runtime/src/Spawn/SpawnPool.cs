@@ -662,11 +662,7 @@ namespace com.spacepuppy.Spawn
                 get { return _prefab; }
             }
 
-            public int PrefabID
-            {
-                //use HashCode since it returns the same as GetInstanceID, but it doesn't check thread
-                get { return _prefab?.GetInstanceID() ?? 0; }
-            }
+            public int PrefabID { get; private set; }
 
             int IPrefabCache.CacheSize
             {
@@ -711,7 +707,7 @@ namespace com.spacepuppy.Spawn
                 _owner = owner;
                 if (_prefab == null) return;
 
-                _prefab.AddOrGetComponent<SpawnedObjectController>();
+                this.PrefabID = SpawnedObjectController.InitializePrefab(_prefab).PrefabID;
                 for (int i = 0; i < this.CacheSize; i++)
                 {
                     _instances.Add(this.CreateCachedInstance());
@@ -801,9 +797,9 @@ namespace com.spacepuppy.Spawn
 
             private SpawnedObjectController CreateCachedInstance()
             {
-                if (this.Prefab)
+                if (_prefab)
                 {
-                    var controller = _owner.CreateInstanceInternal(this.Prefab, Vector3.zero, Quaternion.identity, _owner.transform, true);
+                    var controller = _owner.CreateInstanceInternal(_prefab, Vector3.zero, Quaternion.identity, _owner.transform, true);
 
                     controller.gameObject.SetActive(false);
                     controller.name = (!string.IsNullOrEmpty(_itemName) ? _itemName : controller.name) + "(CachedInstance)";

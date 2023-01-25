@@ -224,6 +224,17 @@ namespace com.spacepuppy.Spawn
             
         }
 
+        public static SpawnedObjectController InitializePrefab(GameObject prefab)
+        {
+            if (prefab == null) throw new System.ArgumentNullException(nameof(prefab));
+
+            var controller = prefab.AddOrGetComponent<SpawnedObjectController>();
+            controller._prefab = prefab;
+            controller.PrefabID = prefab.GetInstanceID();
+            controller.IsCached = false;
+            return controller;
+        }
+
         #endregion
 
     }

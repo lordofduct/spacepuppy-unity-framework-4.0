@@ -18,7 +18,8 @@ namespace com.spacepuppy.Spawn.Events
 
         [SerializeField()]
         [Tooltip("If left empty the default SpawnPool will be used instead.")]
-        private SpawnPool _spawnPool;
+        [TypeRestriction(typeof(ISpawnPool), AllowProxy = true, AllowSceneObjects = true, HideTypeDropDown = true)]
+        private UnityEngine.Object _spawnPool;
 
         [SerializeField]
         private Transform _spawnedObjectParent;
@@ -39,10 +40,10 @@ namespace com.spacepuppy.Spawn.Events
 
         #region Properties
 
-        public SpawnPool SpawnPool
+        public ISpawnPool SpawnPool
         {
-            get { return _spawnPool; }
-            set { _spawnPool = value; }
+            get { return _spawnPool as ISpawnPool; }
+            set { _spawnPool = value as UnityEngine.Object; }
         }
 
         public List<PrefabEntry> Prefabs
@@ -105,7 +106,7 @@ namespace com.spacepuppy.Spawn.Events
         {
             if (entry.Prefab == null) return null;
 
-            var pool = _spawnPool != null ? _spawnPool : SpawnPool.DefaultPool;
+            var pool = this.SpawnPool.IsAlive() ? this.SpawnPool : com.spacepuppy.Spawn.SpawnPool.DefaultPool;
             var go = pool.Spawn(entry.Prefab.gameObject, this.transform.position, this.transform.rotation, _spawnedObjectParent);
 
             var dur = (entry.Duration > 0f) ? entry.Duration : entry.Prefab.main.duration;

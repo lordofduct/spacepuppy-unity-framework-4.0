@@ -25,7 +25,7 @@ namespace com.spacepuppyeditor
             
             if (Event.current.shift)
             {
-                PrefabUtility.DisconnectPrefabInstance(go);
+                PrefabUtility.UnpackPrefabInstance(go, Event.current.alt ? PrefabUnpackMode.Completely : PrefabUnpackMode.OutermostRoot, InteractionMode.AutomatedAction);
             }
 
         }

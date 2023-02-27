@@ -37,7 +37,7 @@ namespace com.spacepuppyeditor
                 _xdoc = null;
             }
 
-            if(_xdoc == null)
+            if (_xdoc == null)
             {
                 _projectId = "SPProj." + System.Guid.NewGuid().ToString();
                 _xdoc = new XDocument(new XElement("root"));
@@ -80,7 +80,29 @@ namespace com.spacepuppyeditor
 
         #endregion
 
-        public class LocalSettings
+        public interface ISettings
+        {
+            void DeleteAll();
+            void DeleteKey(string key);
+            bool HasKey(string key);
+            bool GetBool(string key);
+            bool GetBool(string key, bool defaultValue);
+            int GetInt(string key);
+            int GetInt(string key, int defaultValue);
+            float GetFloat(string key);
+            float GetFloat(string key, float defaultValue);
+            string GetString(string key);
+            string GetString(string key, string defaultValue);
+            T GetEnum<T>(string key) where T : struct, System.IConvertible;
+            T GetEnum<T>(string key, T defaultValue) where T : struct, System.IConvertible;
+            void SetBool(string key, bool value);
+            void SetInt(string key, int value);
+            void SetFloat(string key, float value);
+            void SetString(string key, string value);
+            void SetEnum<T>(string key, T value) where T : struct, System.IConvertible;
+        }
+
+        public class LocalSettings : ISettings
         {
 
             public void DeleteAll()
@@ -212,11 +234,11 @@ namespace com.spacepuppyeditor
 #endif
             }
 
-        #endregion
+            #endregion
 
         }
 
-        public class GroupSettings
+        public class GroupSettings : ISettings
         {
 
             private const string NODE_NAME = "setting";
@@ -292,6 +314,19 @@ namespace com.spacepuppyeditor
                 return (xattrib != null) ? xel.Attribute("value").Value : defaultValue;
             }
 
+            public T GetEnum<T>(string key) where T : struct, System.IConvertible
+            {
+                int i = this.GetInt(key);
+                return ConvertUtil.ToEnum<T>(i);
+            }
+
+            public T GetEnum<T>(string key, T defaultValue) where T : struct, System.IConvertible
+            {
+                int i = this.GetInt(key, System.Convert.ToInt32(defaultValue));
+                return ConvertUtil.ToEnum<T>(i, defaultValue);
+            }
+
+
             public void SetBool(string key, bool value)
             {
                 this.SetValue(key, value);
@@ -310,6 +345,11 @@ namespace com.spacepuppyeditor
             public void SetString(string key, string value)
             {
                 this.SetValue(key, value);
+            }
+
+            public void SetEnum<T>(string key, T value) where T : struct, System.IConvertible
+            {
+                this.SetInt(key, System.Convert.ToInt32(value));
             }
 
 

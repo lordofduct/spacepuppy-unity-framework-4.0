@@ -338,6 +338,7 @@ namespace com.spacepuppy
     {
         public System.Type[] InheritsFromTypes;
         public bool HideTypeDropDown;
+        public bool HideTypeDropDownIfSingle;
         public bool AllowProxy;
         public bool AllowSceneObjects = true;
 

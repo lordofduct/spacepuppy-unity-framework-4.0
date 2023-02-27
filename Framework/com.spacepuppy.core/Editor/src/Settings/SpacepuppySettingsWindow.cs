@@ -37,6 +37,8 @@ namespace com.spacepuppyeditor.Settings
             }
         }
 
+        public static event System.Action DrawExtraEditorSettings;
+
         #endregion
 
         #region Window
@@ -48,7 +50,7 @@ namespace com.spacepuppyeditor.Settings
         private Vector2 _totalScrollPosition;
         private Vector2 _scenesScrollBarPosition;
 
-        private void OnEnable()
+        protected virtual void OnEnable()
         {
             if (_openWindow == null)
                 _openWindow = this;
@@ -60,12 +62,12 @@ namespace com.spacepuppyeditor.Settings
             _timeLayersData = AssetDatabase.LoadAssetAtPath(CustomTimeLayersData.PATH_DEFAULTSETTINGS_FULL, typeof(CustomTimeLayersData)) as CustomTimeLayersData;
         }
 
-        private void OnDisable()
+        protected virtual void OnDisable()
         {
             if (_openWindow == this) _openWindow = null;
         }
 
-        private void OnGUI()
+        protected virtual void OnGUI()
         {
             var style = new GUIStyle(GUI.skin.box);
             style.stretchHeight = true;
@@ -90,36 +92,7 @@ namespace com.spacepuppyeditor.Settings
             GUILayout.BeginVertical("Editor Settings", boxStyle);
             EditorGUILayout.Space();
 
-            EditorGUI.BeginChangeCheck();
-            bool useSPEditor = EditorGUILayout.ToggleLeft("Use SPEditor as default editor for MonoBehaviour", SpacepuppySettings.UseSPEditorAsDefaultEditor);
-            if (EditorGUI.EndChangeCheck()) SpacepuppySettings.UseSPEditorAsDefaultEditor = useSPEditor;
-
-            EditorGUI.BeginChangeCheck();
-            bool useAdvancedAnimInspector = EditorGUILayout.ToggleLeft("Use Advanced Animation Inspector", SpacepuppySettings.UseAdvancedAnimationInspector);
-            if (EditorGUI.EndChangeCheck()) SpacepuppySettings.UseAdvancedAnimationInspector = useAdvancedAnimInspector;
-
-            EditorGUI.BeginChangeCheck();
-            bool hierarchyDrawerActive = EditorGUILayout.ToggleLeft("Use Hierarchy Drawers", SpacepuppySettings.UseHierarchDrawer);
-            if (EditorGUI.EndChangeCheck())
-            {
-                SpacepuppySettings.UseHierarchDrawer = hierarchyDrawerActive;
-                EditorHierarchyDrawerEvents.SetActive(hierarchyDrawerActive);
-            }
-
-            EditorGUI.BeginChangeCheck();
-            bool hierarchCustomContextMenu = EditorGUILayout.ToggleLeft("Use Alternate Hierarchy Context Menu", SpacepuppySettings.UseHierarchyAlternateContextMenu);
-            if (EditorGUI.EndChangeCheck())
-            {
-                SpacepuppySettings.UseHierarchyAlternateContextMenu = hierarchCustomContextMenu;
-                EditorHierarchyAlternateContextMenuEvents.SetActive(hierarchCustomContextMenu);
-            }
-
-            EditorGUI.BeginChangeCheck();
-            bool signalValidateReceiver = EditorGUILayout.ToggleLeft("Signal IValidateReceiver OnValidate Event", SpacepuppySettings.SignalValidateReceiver);
-            if(EditorGUI.EndChangeCheck())
-            {
-                SpacepuppySettings.SignalValidateReceiver = signalValidateReceiver;
-            }
+            DrawEditorSettingsGroup();
 
             GUILayout.EndVertical();
 
@@ -222,7 +195,46 @@ namespace com.spacepuppyeditor.Settings
             EditorGUILayout.EndScrollView();
         }
 
-#endregion
+        #endregion
+
+
+
+        protected virtual void DrawEditorSettingsGroup()
+        {
+
+            EditorGUI.BeginChangeCheck();
+            bool useSPEditor = EditorGUILayout.ToggleLeft("Use SPEditor as default editor for MonoBehaviour", SpacepuppySettings.UseSPEditorAsDefaultEditor);
+            if (EditorGUI.EndChangeCheck()) SpacepuppySettings.UseSPEditorAsDefaultEditor = useSPEditor;
+
+            EditorGUI.BeginChangeCheck();
+            bool useAdvancedAnimInspector = EditorGUILayout.ToggleLeft("Use Advanced Animation Inspector", SpacepuppySettings.UseAdvancedAnimationInspector);
+            if (EditorGUI.EndChangeCheck()) SpacepuppySettings.UseAdvancedAnimationInspector = useAdvancedAnimInspector;
+
+            EditorGUI.BeginChangeCheck();
+            bool hierarchyDrawerActive = EditorGUILayout.ToggleLeft("Use Hierarchy Drawers", SpacepuppySettings.UseHierarchDrawer);
+            if (EditorGUI.EndChangeCheck())
+            {
+                SpacepuppySettings.UseHierarchDrawer = hierarchyDrawerActive;
+                EditorHierarchyDrawerEvents.SetActive(hierarchyDrawerActive);
+            }
+
+            EditorGUI.BeginChangeCheck();
+            bool hierarchCustomContextMenu = EditorGUILayout.ToggleLeft("Use Alternate Hierarchy Context Menu", SpacepuppySettings.UseHierarchyAlternateContextMenu);
+            if (EditorGUI.EndChangeCheck())
+            {
+                SpacepuppySettings.UseHierarchyAlternateContextMenu = hierarchCustomContextMenu;
+                EditorHierarchyAlternateContextMenuEvents.SetActive(hierarchCustomContextMenu);
+            }
+
+            EditorGUI.BeginChangeCheck();
+            bool signalValidateReceiver = EditorGUILayout.ToggleLeft("Signal IValidateReceiver OnValidate Event", SpacepuppySettings.SignalValidateReceiver);
+            if (EditorGUI.EndChangeCheck())
+            {
+                SpacepuppySettings.SignalValidateReceiver = signalValidateReceiver;
+            }
+
+            DrawExtraEditorSettings?.Invoke();
+        }
 
 
 
@@ -232,11 +244,7 @@ namespace com.spacepuppyeditor.Settings
 
 
 
-
-
-
-
-#region Debug Build Scenes - OBSOLETE
+        #region Debug Build Scenes - OBSOLETE
 
         private void DrawScenes()
         {
@@ -355,8 +363,8 @@ namespace com.spacepuppyeditor.Settings
             }
 
         }
-        
-#endregion
+
+        #endregion
 
     }
 

@@ -1088,6 +1088,63 @@ namespace com.spacepuppyeditor
 
         #endregion
 
+        #region Guid/GlobalId
+
+        public static System.Guid ToGuid(this GUID gid)
+        {
+            System.Guid result;
+            System.Guid.TryParse(gid.ToString(), out result);
+            return result;
+        }
+
+        public static bool TryGetNearestAssetGlobalObjectId(UnityEngine.Object obj, out GlobalObjectId gid)
+        {
+            if (obj == null)
+            {
+                gid = default;
+                return false;
+            }
+
+            //first attempt to just find the globalid
+            gid = GlobalObjectId.GetGlobalObjectIdSlow(obj);
+            if (gid.assetGUID != default) return true;
+
+            //now lets determine if this is a potential gameobject
+            var go = GameObjectUtil.GetGameObjectFromSource(obj);
+            if (!go)
+            {
+                gid = default;
+                return false;
+            }
+
+            //if it's a potential gameobject, lets try to load that prefab and get its globalid
+            var prefab = PrefabUtility.GetNearestPrefabInstanceRoot(go);
+            if (prefab)
+            {
+                var path = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(prefab);
+                if (!string.IsNullOrEmpty(path))
+                {
+                    prefab = PrefabUtility.LoadPrefabContents(path);
+                    gid = prefab ? GlobalObjectId.GetGlobalObjectIdSlow(prefab) : default;
+                    return gid.assetGUID != default; //we fail if we couldn't load it, treat that as "missing prefab"
+                }
+            }
+
+            //if we made it here, we are likely in a stage, lets look up that stage
+            var stage = UnityEditor.SceneManagement.PrefabStageUtility.GetPrefabStage(go);
+            if (stage == null)
+            {
+                gid = default;
+                return false;
+            }
+
+            prefab = PrefabUtility.LoadPrefabContents(stage.assetPath);
+            gid = prefab ? GlobalObjectId.GetGlobalObjectIdSlow(prefab) : default;
+            return gid.assetGUID != default;
+        }
+
+        #endregion
+
 
 
         #region State Cache

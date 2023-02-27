@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 
 using com.spacepuppy.Utils;
+using System.Runtime.CompilerServices;
 
 namespace com.spacepuppy.Mecanim
 {
@@ -162,23 +163,30 @@ namespace com.spacepuppy.Mecanim
 
         #region Animator AnimatorStateInfo Tests
 
-        public static bool GetCurrentAnimatorStateIs(this Animator animator, string name, int layerIndex)
+#pragma warning disable 0618
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool IsNameHash(this AnimatorStateInfo info, int hash) => info.fullPathHash == hash || info.shortNameHash == hash || info.nameHash == hash;
+#pragma warning restore 0618
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool GetCurrentAnimatorStateIs(this Animator animator, string name, int layerIndex) => GetCurrentAnimatorStateIs(animator, Animator.StringToHash(name), layerIndex);
+        public static bool GetCurrentAnimatorStateIs(this Animator animator, int namehash, int layerIndex)
         {
             int layerCount = animator.layerCount;
             if (layerIndex < 0)
             {
-                for(int i = 0; i < layerCount; i++)
+                for (int i = 0; i < layerCount; i++)
                 {
-                    if(animator.GetCurrentAnimatorStateInfo(i).IsName(name))
+                    if (animator.GetCurrentAnimatorStateInfo(i).IsNameHash(namehash))
                     {
                         return true;
                     }
                 }
                 return false;
             }
-            else if(layerIndex < layerCount)
+            else if (layerIndex < layerCount)
             {
-                return animator.GetCurrentAnimatorStateInfo(layerIndex).IsName(name);
+                return animator.GetCurrentAnimatorStateInfo(layerIndex).IsNameHash(namehash);
             }
             else
             {
@@ -186,7 +194,9 @@ namespace com.spacepuppy.Mecanim
             }
         }
 
-        public static bool GetCurrentAnimatorStateIs(this Animator animator, string name, ref int layerIndex, out AnimatorStateInfo info)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool GetCurrentAnimatorStateIs(this Animator animator, string name, ref int layerIndex, out AnimatorStateInfo info) => GetCurrentAnimatorStateIs(animator, Animator.StringToHash(name), ref layerIndex, out info);
+        public static bool GetCurrentAnimatorStateIs(this Animator animator, int namehash, ref int layerIndex, out AnimatorStateInfo info)
         {
             int layerCount = animator.layerCount;
             if (layerIndex < 0)
@@ -194,7 +204,7 @@ namespace com.spacepuppy.Mecanim
                 for (int i = 0; i < layerCount; i++)
                 {
                     info = animator.GetCurrentAnimatorStateInfo(i);
-                    if (info.IsName(name))
+                    if (info.IsNameHash(namehash))
                     {
                         layerIndex = i;
                         return true;
@@ -206,7 +216,7 @@ namespace com.spacepuppy.Mecanim
             else if (layerIndex < layerCount)
             {
                 info = animator.GetCurrentAnimatorStateInfo(layerIndex);
-                if (info.IsName(name)) return true;
+                if (info.IsNameHash(namehash)) return true;
 
                 info = default(AnimatorStateInfo);
                 return false;
@@ -218,14 +228,16 @@ namespace com.spacepuppy.Mecanim
             }
         }
 
-        public static bool GetNextAnimatorStateIs(this Animator animator, string name, int layerIndex)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool GetNextAnimatorStateIs(this Animator animator, string name, int layerIndex) => GetNextAnimatorStateIs(animator, Animator.StringToHash(name), layerIndex);
+        public static bool GetNextAnimatorStateIs(this Animator animator, int namehash, int layerIndex)
         {
             int layerCount = animator.layerCount;
             if (layerIndex < 0)
             {
                 for (int i = 0; i < layerCount; i++)
                 {
-                    if (animator.GetNextAnimatorStateInfo(i).IsName(name))
+                    if (animator.GetNextAnimatorStateInfo(i).IsNameHash(namehash))
                     {
                         return true;
                     }
@@ -234,7 +246,7 @@ namespace com.spacepuppy.Mecanim
             }
             else if (layerIndex < layerCount)
             {
-                return animator.GetNextAnimatorStateInfo(layerIndex).IsName(name);
+                return animator.GetNextAnimatorStateInfo(layerIndex).IsNameHash(namehash);
             }
             else
             {
@@ -242,7 +254,8 @@ namespace com.spacepuppy.Mecanim
             }
         }
 
-        public static bool GetNextAnimatorStateIs(this Animator animator, string name, ref int layerIndex, out AnimatorStateInfo info)
+        public static bool GetNextAnimatorStateIs(this Animator animator, string name, ref int layerIndex, out AnimatorStateInfo info) => GetNextAnimatorStateIs(animator, Animator.StringToHash(name), ref layerIndex, out info);
+        public static bool GetNextAnimatorStateIs(this Animator animator, int namehash, ref int layerIndex, out AnimatorStateInfo info)
         {
             int layerCount = animator.layerCount;
             if (layerIndex < 0)
@@ -250,7 +263,7 @@ namespace com.spacepuppy.Mecanim
                 for (int i = 0; i < layerCount; i++)
                 {
                     info = animator.GetNextAnimatorStateInfo(i);
-                    if (info.IsName(name))
+                    if (info.IsNameHash(namehash))
                     {
                         layerIndex = i;
                         return true;
@@ -262,7 +275,7 @@ namespace com.spacepuppy.Mecanim
             else if (layerIndex < layerCount)
             {
                 info = animator.GetNextAnimatorStateInfo(layerIndex);
-                if (info.IsName(name)) return true;
+                if (info.IsNameHash(namehash)) return true;
 
                 info = default(AnimatorStateInfo);
                 return false;

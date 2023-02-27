@@ -35,26 +35,21 @@ namespace com.spacepuppyeditor.Core
                 var attrib = this.fieldInfo.GetCustomAttribute<SerializableGuid.ConfigAttribute>();
                 bool resetOnZero = attrib == null || !attrib.AllowZero;
                 bool linkToAsset = attrib != null && attrib.LinkToAsset;
+                bool linkToGlobalObjectId = attrib != null && attrib.LinkToGlobalObjectId;
 
                 System.Guid guid = FromSerializedProperty(property);
-
-                if (linkToAsset)
+                System.Guid newguid;
+                if (TryGetLinkedGuid(property.serializedObject.targetObject, out newguid, linkToAsset, linkToGlobalObjectId))
                 {
-                    string gid;
-                    long lid;
-                    System.Guid assetguid;
-                    if (AssetDatabase.TryGetGUIDAndLocalFileIdentifier(property.serializedObject.targetObject, out gid, out lid) && System.Guid.TryParse(gid, out assetguid))
+                    if (newguid != guid)
                     {
-                        if (assetguid != guid)
-                        {
-                            guid = assetguid;
-                            ToSerializedProperty(property, guid);
-                        }
-
-                        EditorGUI.SelectableLabel(position, guid.ToString("D"), EditorStyles.textField);
-                        EditorGUI.EndProperty();
-                        return;
+                        guid = newguid;
+                        ToSerializedProperty(property, guid);
                     }
+
+                    EditorGUI.SelectableLabel(position, guid.ToString("D"), EditorStyles.textField);
+                    EditorGUI.EndProperty();
+                    return;
                 }
 
                 //if we made it here we want to draw default
@@ -75,6 +70,29 @@ namespace com.spacepuppyeditor.Core
             {
                 EditorHelper.ResumeIndentLevel();
             }
+        }
+
+        public static bool TryGetLinkedGuid(UnityEngine.Object obj, out System.Guid guid, bool linkToAsset, bool linkToGlobalObjectId)
+        {
+            GlobalObjectId gid;
+            if (linkToAsset && EditorHelper.TryGetNearestAssetGlobalObjectId(obj, out gid) && gid.assetGUID != default)
+            {
+                guid = gid.assetGUID.ToGuid();
+                return true;
+            }
+
+            if (linkToGlobalObjectId)
+            {
+                gid = GlobalObjectId.GetGlobalObjectIdSlow(obj);
+                if (gid.targetObjectId != 0UL)
+                {
+                    guid = (new SerializableGuid(gid.targetObjectId, gid.targetPrefabId)).ToGuid();
+                    return true;
+                }
+            }
+
+            guid = default;
+            return false;
         }
 
         public static System.Guid FromSerializedProperty(SerializedProperty prop)
@@ -119,7 +137,7 @@ namespace com.spacepuppyeditor.Core
                         if (field.FieldType != guidtp) continue;
 
                         var attrib = field.GetCustomAttribute<SerializableGuid.ConfigAttribute>();
-                        if (attrib != null && attrib.LinkToAsset)
+                        if (attrib != null && (attrib.LinkToAsset || attrib.LinkToGlobalObjectId))
                         {
                             if (TypeUtil.IsType(field.DeclaringType, sotp))
                             {
@@ -167,18 +185,18 @@ namespace com.spacepuppyeditor.Core
                     var c = go.GetComponent(field.DeclaringType);
                     if (c != null)
                     {
+                        var attrib = field.GetCustomAttribute<SerializableGuid.ConfigAttribute>();
+                        if (attrib == null) continue;
+
                         try
                         {
                             var guid = (SerializableGuid)field.GetValue(c);
-
-                            string gid;
-                            long lid;
-                            System.Guid assetguid;
-                            if (AssetDatabase.TryGetGUIDAndLocalFileIdentifier(c, out gid, out lid) && System.Guid.TryParse(gid, out assetguid))
+                            System.Guid newguid;
+                            if (SerializableGuidPropertyDrawer.TryGetLinkedGuid(c, out newguid, attrib.LinkToAsset, attrib.LinkToGlobalObjectId))
                             {
-                                if (assetguid != guid)
+                                if (newguid != guid)
                                 {
-                                    field.SetValue(c, new SerializableGuid(assetguid));
+                                    field.SetValue(c, (SerializableGuid)newguid);
                                     edited = true;
                                 }
                             }
@@ -204,20 +222,20 @@ namespace com.spacepuppyeditor.Core
                 {
                     if (TypeUtil.IsType(atp, field.DeclaringType))
                     {
+                        var attrib = field.GetCustomAttribute<SerializableGuid.ConfigAttribute>();
+                        if (attrib == null) continue;
+
                         if (object.ReferenceEquals(so, null)) so = AssetDatabase.LoadAssetAtPath<ScriptableObject>(path);
 
                         try
                         {
                             var guid = (SerializableGuid)field.GetValue(so);
-
-                            string gid;
-                            long lid;
-                            System.Guid assetguid;
-                            if (AssetDatabase.TryGetGUIDAndLocalFileIdentifier(so, out gid, out lid) && System.Guid.TryParse(gid, out assetguid))
+                            System.Guid newguid;
+                            if (SerializableGuidPropertyDrawer.TryGetLinkedGuid(so, out newguid, attrib.LinkToAsset, attrib.LinkToGlobalObjectId))
                             {
-                                if (assetguid != guid)
+                                if (newguid != guid)
                                 {
-                                    field.SetValue(so, new SerializableGuid(assetguid));
+                                    field.SetValue(so, (SerializableGuid)newguid);
                                     EditorUtility.SetDirty(so);
                                     AssetDatabase.SaveAssetIfDirty(so);
                                 }

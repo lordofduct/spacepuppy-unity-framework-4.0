@@ -6,6 +6,7 @@ using System.Linq;
 using com.spacepuppy;
 using com.spacepuppy.Utils;
 using com.spacepuppyeditor.Windows;
+using com.spacepuppy.Collections;
 
 namespace com.spacepuppyeditor.Core
 {
@@ -87,7 +88,7 @@ namespace com.spacepuppyeditor.Core
             System.Type inheritsFromType = (allInheritableTypes.Length == 1) ? allInheritableTypes[0] : fieldType;
             bool isNonStandardUnityType = allInheritableTypes.Any(o => o.IsInterface || o.IsGenericType); //is a type that unity's ObjectField doesn't support directly
 
-            if (attrib.HideTypeDropDown || !objIsSimpleComponentSource)
+            if (attrib.HideTypeDropDown || !objIsSimpleComponentSource || (attrib.HideTypeDropDownIfSingle && !SatisfiesMoreThanOneTarget(property.objectReferenceValue, allInheritableTypes)))
             {
                 //draw object field
                 UnityEngine.Object targ;
@@ -154,6 +155,27 @@ namespace com.spacepuppyeditor.Core
             }
 
             EditorGUI.EndProperty();
+        }
+
+        static bool SatisfiesMoreThanOneTarget(UnityEngine.Object source, System.Type[] allInheritableTypes)
+        {
+            var go = GameObjectUtil.GetGameObjectFromSource(source);
+            if (!go) return false;
+
+            using (var hash = TempCollection.GetSet<UnityEngine.Object>())
+            using (var components = TempCollection.GetList<Component>())
+            {
+                go.GetComponents(components);
+                foreach (var tp in allInheritableTypes)
+                {
+                    if (tp.IsInstanceOfType(go)) hash.Add(go);
+                    foreach (var c in components)
+                    {
+                        if (tp.IsInstanceOfType(c)) hash.Add(c);
+                    }
+                }
+                return hash.Count > 1;
+            }
         }
 
         #endregion

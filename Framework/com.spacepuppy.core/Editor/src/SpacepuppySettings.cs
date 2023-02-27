@@ -39,94 +39,36 @@ namespace com.spacepuppyeditor
          * EDITOR SETTINGS
          */
 
+        public static EditorProjectPrefs.ISettings ProjectPrefs => StoreSettingsLocal ? EditorProjectPrefs.Local : EditorProjectPrefs.Group;
+
         public static bool UseSPEditorAsDefaultEditor
         {
-            get
-            {
-                if (StoreSettingsLocal)
-                    return EditorProjectPrefs.Local.GetBool(SETTING_SPEDITOR_ISDEFAULT_ACTIVE, true);
-                else
-                    return EditorProjectPrefs.Group.GetBool(SETTING_SPEDITOR_ISDEFAULT_ACTIVE, true);
-            }
-            set
-            {
-                if (StoreSettingsLocal)
-                    EditorProjectPrefs.Local.SetBool(SETTING_SPEDITOR_ISDEFAULT_ACTIVE, value);
-                else
-                    EditorProjectPrefs.Group.SetBool(SETTING_SPEDITOR_ISDEFAULT_ACTIVE, value);
-            }
+            get => ProjectPrefs.GetBool(SETTING_SPEDITOR_ISDEFAULT_ACTIVE, true);
+            set => ProjectPrefs.SetBool(SETTING_SPEDITOR_ISDEFAULT_ACTIVE, value);
         }
 
         public static bool UseAdvancedAnimationInspector
         {
-            get
-            {
-                if (StoreSettingsLocal)
-                    return EditorProjectPrefs.Local.GetBool(SETTING_ADVANCEDANIMINSPECTOR_ACTIVE, true);
-                else
-                    return EditorProjectPrefs.Group.GetBool(SETTING_ADVANCEDANIMINSPECTOR_ACTIVE, true);
-            }
-            set
-            {
-                if (StoreSettingsLocal)
-                    EditorProjectPrefs.Local.SetBool(SETTING_ADVANCEDANIMINSPECTOR_ACTIVE, value);
-                else
-                    EditorProjectPrefs.Group.SetBool(SETTING_ADVANCEDANIMINSPECTOR_ACTIVE, value);
-            }
+            get => ProjectPrefs.GetBool(SETTING_ADVANCEDANIMINSPECTOR_ACTIVE, true);
+            set => ProjectPrefs.SetBool(SETTING_ADVANCEDANIMINSPECTOR_ACTIVE, value);
         }
 
         public static bool UseHierarchDrawer
         {
-            get
-            {
-                if (StoreSettingsLocal)
-                    return EditorProjectPrefs.Local.GetBool(SETTING_HIERARCHYDRAWER_ACTIVE, true);
-                else
-                    return EditorProjectPrefs.Group.GetBool(SETTING_HIERARCHYDRAWER_ACTIVE, true);
-            }
-            set
-            {
-                if (StoreSettingsLocal)
-                    EditorProjectPrefs.Local.SetBool(SETTING_HIERARCHYDRAWER_ACTIVE, value);
-                else
-                    EditorProjectPrefs.Group.SetBool(SETTING_HIERARCHYDRAWER_ACTIVE, value);
-            }
+            get => ProjectPrefs.GetBool(SETTING_HIERARCHYDRAWER_ACTIVE, true);
+            set => ProjectPrefs.SetBool(SETTING_HIERARCHYDRAWER_ACTIVE, value);
         }
 
         public static bool UseHierarchyAlternateContextMenu
         {
-            get
-            {
-                if (StoreSettingsLocal)
-                    return EditorProjectPrefs.Local.GetBool(SETTING_HIEARCHYALTERNATECONTEXTMENU_ACTIVE, true);
-                else
-                    return EditorProjectPrefs.Group.GetBool(SETTING_HIEARCHYALTERNATECONTEXTMENU_ACTIVE, true);
-            }
-            set
-            {
-                if (StoreSettingsLocal)
-                    EditorProjectPrefs.Local.SetBool(SETTING_HIEARCHYALTERNATECONTEXTMENU_ACTIVE, value);
-                else
-                    EditorProjectPrefs.Group.SetBool(SETTING_HIEARCHYALTERNATECONTEXTMENU_ACTIVE, value);
-            }
+            get => ProjectPrefs.GetBool(SETTING_HIEARCHYALTERNATECONTEXTMENU_ACTIVE, true);
+            set => ProjectPrefs.SetBool(SETTING_HIEARCHYALTERNATECONTEXTMENU_ACTIVE, value);
         }
 
         public static bool SignalValidateReceiver
         {
-            get
-            {
-                if (StoreSettingsLocal)
-                    return EditorProjectPrefs.Local.GetBool(SETTING_SIGNALIVALIDATERECEIVER_ACTIVE, true);
-                else
-                    return EditorProjectPrefs.Group.GetBool(SETTING_SIGNALIVALIDATERECEIVER_ACTIVE, true);
-            }
-            set
-            {
-                if (StoreSettingsLocal)
-                    EditorProjectPrefs.Local.SetBool(SETTING_SIGNALIVALIDATERECEIVER_ACTIVE, value);
-                else
-                    EditorProjectPrefs.Group.SetBool(SETTING_SIGNALIVALIDATERECEIVER_ACTIVE, value);
-            }
+            get => ProjectPrefs.GetBool(SETTING_SIGNALIVALIDATERECEIVER_ACTIVE, true);
+            set => ProjectPrefs.SetBool(SETTING_SIGNALIVALIDATERECEIVER_ACTIVE, value);
         }
 
         /*
@@ -137,76 +79,28 @@ namespace com.spacepuppyeditor
 
         public static bool SetMaterialSearchOnImport
         {
-            get
-            {
-                if (StoreSettingsLocal)
-                    return EditorProjectPrefs.Local.GetBool(SETTING_MODELIMPORT_SETMATERIALSEARCH, true);
-                else
-                    return EditorProjectPrefs.Group.GetBool(SETTING_MODELIMPORT_SETMATERIALSEARCH, true);
-            }
-            set
-            {
-                if (StoreSettingsLocal)
-                    EditorProjectPrefs.Local.SetBool(SETTING_MODELIMPORT_SETMATERIALSEARCH, value);
-                else
-                    EditorProjectPrefs.Group.SetBool(SETTING_MODELIMPORT_SETMATERIALSEARCH, value);
-            }
+            get => ProjectPrefs.GetBool(SETTING_MODELIMPORT_SETMATERIALSEARCH, true);
+            set => ProjectPrefs.SetBool(SETTING_MODELIMPORT_SETMATERIALSEARCH, value);
         }
 
         public static ModelImporterMaterialSearch MaterialSearch
         {
-            get
-            {
-                if (StoreSettingsLocal)
-                    return EditorProjectPrefs.Local.GetEnum(SETTING_MODELIMPORT_MATERIALSEARCH, ModelImporterMaterialSearch.Everywhere);
-                else
-                    return (ModelImporterMaterialSearch)EditorProjectPrefs.Group.GetInt(SETTING_MODELIMPORT_MATERIALSEARCH, (int)ModelImporterMaterialSearch.Everywhere);
-            }
-            set
-            {
-                if (StoreSettingsLocal)
-                    EditorProjectPrefs.Local.SetEnum(SETTING_MODELIMPORT_MATERIALSEARCH, value);
-                else
-                    EditorProjectPrefs.Group.SetInt(SETTING_MODELIMPORT_MATERIALSEARCH, (int)value);
-            }
+            get => ProjectPrefs.GetEnum(SETTING_MODELIMPORT_MATERIALSEARCH, ModelImporterMaterialSearch.Everywhere);
+            set => ProjectPrefs.SetEnum(SETTING_MODELIMPORT_MATERIALSEARCH, value);
         }
 
         //Animation Import Settings
 
         public static bool SetAnimationSettingsOnImport
         {
-            get
-            {
-                if (StoreSettingsLocal)
-                    return EditorProjectPrefs.Local.GetBool(SETTING_MODELIMPORT_SETANIMSETTINGS, true);
-                else
-                    return EditorProjectPrefs.Group.GetBool(SETTING_MODELIMPORT_SETANIMSETTINGS, true);
-            }
-            set
-            {
-                if (StoreSettingsLocal)
-                    EditorProjectPrefs.Local.SetBool(SETTING_MODELIMPORT_SETANIMSETTINGS, value);
-                else
-                    EditorProjectPrefs.Group.SetBool(SETTING_MODELIMPORT_SETANIMSETTINGS, value);
-            }
+            get => ProjectPrefs.GetBool(SETTING_MODELIMPORT_SETANIMSETTINGS, true);
+            set => ProjectPrefs.SetBool(SETTING_MODELIMPORT_SETANIMSETTINGS, value);
         }
 
         public static ModelImporterAnimationType ImportAnimRigType
         {
-            get
-            {
-                if (StoreSettingsLocal)
-                    return EditorProjectPrefs.Local.GetEnum(SETTING_MODELIMPORT_ANIMRIGTYPE, ModelImporterAnimationType.Legacy);
-                else
-                    return (ModelImporterAnimationType)EditorProjectPrefs.Group.GetInt(SETTING_MODELIMPORT_ANIMRIGTYPE, (int)ModelImporterAnimationType.Legacy);
-            }
-            set
-            {
-                if (StoreSettingsLocal)
-                    EditorProjectPrefs.Local.SetEnum(SETTING_MODELIMPORT_ANIMRIGTYPE, value);
-                else
-                    EditorProjectPrefs.Group.SetInt(SETTING_MODELIMPORT_ANIMRIGTYPE, (int)value);
-            }
+            get => ProjectPrefs.GetEnum(SETTING_MODELIMPORT_ANIMRIGTYPE, ModelImporterAnimationType.Legacy);
+            set => ProjectPrefs.SetInt(SETTING_MODELIMPORT_ANIMRIGTYPE, (int)value);
         }
 
     }

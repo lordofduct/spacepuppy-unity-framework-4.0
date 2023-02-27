@@ -94,6 +94,22 @@ namespace com.spacepuppy.SPInput
 
         #region Button Extensions
 
+        public static void ConsumeButtonState(this IInputDevice device, string buttonId)
+        {
+            if (device.GetSignature(buttonId) is IButtonInputSignature sig)
+            {
+                sig.Consume();
+            }
+        }
+
+        public static void ConsumeButtonState<T>(this IMappedInputDevice<T> device, T buttonId) where T : struct, System.IConvertible
+        {
+            if (device.GetSignature(buttonId) is IButtonInputSignature sig)
+            {
+                sig.Consume();
+            }
+        }
+
         public static ButtonState ConsumeButtonState(ButtonState current)
         {
             switch (current)

@@ -20,8 +20,8 @@ namespace com.spacepuppyeditor
 
         static EditorSceneEvents()
         {
-            SceneView.onSceneGUIDelegate -= OnSceneGUI;
-            SceneView.onSceneGUIDelegate += OnSceneGUI;
+            SceneView.duringSceneGui -= OnSceneGUI;
+            SceneView.duringSceneGui += OnSceneGUI;
         }
 
         #endregion

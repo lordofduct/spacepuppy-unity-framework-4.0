@@ -22,7 +22,7 @@ namespace com.spacepuppyeditor.Windows
         {
             if (_openWindow == null)
             {
-                EditorWindow.GetWindow<AssetSearchWindow>();
+                _openWindow = EditorWindow.GetWindow<AssetSearchWindow>();
             }
             else
             {

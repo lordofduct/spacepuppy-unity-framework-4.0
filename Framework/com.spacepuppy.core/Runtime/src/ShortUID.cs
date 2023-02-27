@@ -240,6 +240,7 @@ namespace com.spacepuppy
         {
             public bool ReadOnly;
             public bool AllowZero;
+            public bool LinkToGlobalId;
         }
 
         #endregion
@@ -557,11 +558,7 @@ namespace com.spacepuppy
 
         #region Special Types
 
-        public class ConfigAttribute : System.Attribute
-        {
-            public bool ReadOnly;
-            public bool AllowZero;
-        }
+        public class ConfigAttribute : ShortUid.ConfigAttribute { }
 
         #endregion
 

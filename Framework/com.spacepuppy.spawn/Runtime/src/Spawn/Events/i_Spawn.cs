@@ -5,6 +5,7 @@ using System.Collections.Generic;
 
 using com.spacepuppy.Events;
 using com.spacepuppy.Utils;
+using System.Runtime.CompilerServices;
 
 namespace com.spacepuppy.Spawn.Events
 {
@@ -26,9 +27,10 @@ namespace com.spacepuppy.Spawn.Events
         private UnityEngine.Object _spawnedObjectParent;
 
         [SerializeField()]
-        [WeightedValueCollection("Weight", "Prefab")]
+        //[WeightedValueCollection("Weight", "_prefab")]
+        [SpawnablePrefabEntryCollection]
         [Tooltip("Objects available for spawning. When spawn is called with no arguments a prefab is selected at random.")]
-        private List<PrefabEntry> _prefabs;
+        private List<SpawnablePrefabEntry> _prefabs;
 
         [SerializeField]
         private RandomRef _rng;
@@ -47,7 +49,7 @@ namespace com.spacepuppy.Spawn.Events
             set { _spawnPool.Value = value; }
         }
 
-        public List<PrefabEntry> Prefabs
+        public List<SpawnablePrefabEntry> Prefabs
         {
             get { return _prefabs; }
         }
@@ -69,53 +71,108 @@ namespace com.spacepuppy.Spawn.Events
 
         public GameObject Spawn()
         {
-            if (!this.CanTrigger) return null;
-
-            if (_prefabs == null || _prefabs.Count == 0) return null;
-
-            if(_prefabs.Count == 1)
+            GameObject instance;
+            this.Spawn(out instance, _rng.Value);
+            return instance;
+        }
+        public GameObject Spawn(IRandom rng, bool forceIncrementRng = false)
+        {
+            GameObject instance;
+            this.Spawn(out instance, rng, forceIncrementRng);
+            return instance;
+        }
+        public bool Spawn(out GameObject instance, IRandom rng, bool forceIncrementRng = false)
+        {
+            if (!this.CanTrigger || _prefabs == null || _prefabs.Count == 0)
             {
-                return this.Spawn(_prefabs[0].Prefab);
+                instance = null;
+                return false;
+            }
+
+            if (_prefabs.Count == 1)
+            {
+                if (forceIncrementRng) rng?.Next();
+                return this.Spawn(_prefabs[0], out instance);
             }
             else
             {
-                return this.Spawn(_prefabs.PickRandom((o) => o.Weight, _rng.Value).Prefab);
+                return this.Spawn(_prefabs.PickRandom((o) => o.Weight, rng), out instance);
             }
         }
+
 
         public GameObject Spawn(int index)
         {
-            if (!this.enabled) return null;
+            if (!this.enabled || _prefabs == null || index < 0 || index >= _prefabs.Count) return null;
 
-            if (_prefabs == null || index < 0 || index >= _prefabs.Count) return null;
-            return this.Spawn(_prefabs[index].Prefab);
+            GameObject instance;
+            this.Spawn(_prefabs[index], out instance);
+            return instance;
         }
+        public bool Spawn(out GameObject instance, int index)
+        {
+            if (!this.enabled || _prefabs == null || index < 0 || index >= _prefabs.Count)
+            {
+                instance = null;
+                return false;
+            }
+
+            return this.Spawn(_prefabs[index], out instance);
+        }
+
 
         public GameObject Spawn(string name)
         {
-            if (!this.enabled) return null;
+            if (!this.enabled || _prefabs == null || _prefabs.Count == 0) return null;
 
-            if (_prefabs == null) return null;
             for (int i = 0; i < _prefabs.Count; i++)
             {
-                if (_prefabs[i].Prefab != null && _prefabs[i].Prefab.CompareName(name)) return this.Spawn(_prefabs[i].Prefab);
+                if (_prefabs[i].Prefab != null && _prefabs[i].Prefab.CompareName(name))
+                {
+                    GameObject instance;
+                    this.Spawn(_prefabs[i], out instance);
+                    return instance;
+                }
             }
             return null;
         }
-
-        private GameObject Spawn(GameObject prefab)
+        public bool Spawn(out GameObject instance, string name)
         {
-            if (prefab == null) return null;
+            if (!this.enabled || _prefabs == null || _prefabs.Count == 0)
+            {
+                instance = null;
+                return false;
+            }
 
-            var pool = _spawnPool.Value.IsAlive() ? _spawnPool.Value : com.spacepuppy.Spawn.SpawnPool.DefaultPool;
-            var go = pool.Spawn(prefab, this.transform.position, this.transform.rotation, ObjUtil.GetAsFromSource<Transform>(_spawnedObjectParent, true));
+            for (int i = 0; i < _prefabs.Count; i++)
+            {
+                if (_prefabs[i].Prefab != null && _prefabs[i].Prefab.CompareName(name)) return this.Spawn(_prefabs[i], out instance);
+            }
+            instance = null;
+            return false;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool Spawn(SpawnablePrefabEntry entry, out GameObject instance)
+        {
+            if (entry.Prefab == null)
+            {
+                instance = null;
+                return false;
+            }
+
+            var pool = _spawnPool.ValueOrDefault;
+            if (!entry.Spawn(out instance, pool, this.transform.position, this.transform.rotation, ObjUtil.GetAsFromSource<Transform>(_spawnedObjectParent, true)))
+            {
+                instance = null;
+                return false;
+            }
 
             if (_onSpawnedObject?.HasReceivers ?? false)
             {
-                _onSpawnedObject.ActivateTrigger(this, go);
+                _onSpawnedObject.ActivateTrigger(this, instance);
             }
-
-            return go;
+            return true;
         }
 
         #endregion
@@ -134,15 +191,15 @@ namespace com.spacepuppy.Spawn.Events
 
             if (arg is string)
             {
-                return this.Spawn(arg as string) != null;
+                return this.Spawn(out _, arg as string);
             }
             else if (ConvertUtil.ValueIsNumericType(arg))
             {
-                return this.Spawn(ConvertUtil.ToInt(arg)) != null;
+                return this.Spawn(out _, ConvertUtil.ToInt(arg));
             }
             else
             {
-                return this.Spawn() != null;
+                return this.Spawn(out _, _rng.Value);
             }
         }
 
@@ -159,15 +216,9 @@ namespace com.spacepuppy.Spawn.Events
 
         #region ISpawnPoint Interface
 
-        BaseSPEvent ISpawnPoint.OnSpawned
-        {
-            get { return _onSpawnedObject; }
-        }
+        BaseSPEvent ISpawnPoint.OnSpawned => _onSpawnedObject;
 
-        void ISpawnPoint.Spawn()
-        {
-            this.Spawn();
-        }
+        void ISpawnPoint.Spawn() => this.Spawn(out _, _rng.Value);
 
         #endregion
 
@@ -180,13 +231,6 @@ namespace com.spacepuppy.Spawn.Events
             {
 
             }
-        }
-
-        [System.Serializable]
-        public struct PrefabEntry
-        {
-            public float Weight;
-            public GameObject Prefab;
         }
 
         #endregion

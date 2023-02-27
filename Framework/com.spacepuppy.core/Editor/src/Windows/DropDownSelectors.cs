@@ -442,6 +442,28 @@ namespace com.spacepuppyeditor.Windows
                             results = sceneresults.Union(results);
                         }
 
+                        if (filter != null)
+                        {
+                            if (typeof(T) == typeof(UnityEngine.Object))
+                            {
+                                results = results.Where(o => filter(o as T));
+                            }
+                            else
+                            {
+                                results = (from o in results
+                                           let x = ObjUtil.GetAsFromSource<T>(o)
+                                           where x != null && filter(x)
+                                           select x as UnityEngine.Object);
+                            }
+                        }
+                        else if (typeof(T) != typeof(UnityEngine.Object))
+                        {
+                            results = (from o in results
+                                       let x = ObjUtil.GetAsFromSource<T>(o)
+                                       where x != null
+                                       select x as UnityEngine.Object);
+                        }
+
                         return results;
                     };
 

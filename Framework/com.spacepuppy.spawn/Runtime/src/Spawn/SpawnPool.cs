@@ -5,6 +5,7 @@ using System.Linq;
 using com.spacepuppy.Collections;
 using com.spacepuppy.Utils;
 using com.spacepuppy.Project;
+using System.Runtime.CompilerServices;
 
 namespace com.spacepuppy.Spawn
 {
@@ -24,11 +25,13 @@ namespace com.spacepuppy.Spawn
     public static class SpawnPoolExtensions
     {
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static GameObject Spawn(this ISpawnPool pool, GameObject prefab, Transform par = null, System.Action<SpawnedObjectController> beforeSignalSpawnCallback = null)
         {
             return pool.SpawnAsController(prefab, par, beforeSignalSpawnCallback)?.gameObject;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static GameObject Spawn(this ISpawnPool pool, GameObject prefab, Vector3 position, Quaternion rotation, Transform par = null, System.Action<SpawnedObjectController> beforeSignalSpawnCallback = null)
         {
             return pool.SpawnAsController(prefab, position, rotation, par, beforeSignalSpawnCallback)?.gameObject;
@@ -37,7 +40,10 @@ namespace com.spacepuppy.Spawn
     }
 
     [System.Serializable]
-    public class SpawnPoolRef : SerializableInterfaceRef<ISpawnPool> { }
+    public class SpawnPoolRef : SerializableInterfaceRef<ISpawnPool>
+    {
+        public ISpawnPool ValueOrDefault => this.Value.IsAlive() ? this.Value : SpawnPool.DefaultPool;
+    }
 
     public class SpawnPool : SPComponent, ISpawnPool, ICollection<IPrefabCache>
     {

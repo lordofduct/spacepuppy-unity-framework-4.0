@@ -30,6 +30,14 @@ namespace com.spacepuppy.Utils
                 return *((ulong*)ptr);
             }
         }
+        static ushort ToUShort<T>(T e) where T : struct, Enum
+        {
+            unsafe
+            {
+                void* ptr = UnsafeUtility.AddressOf(ref e);
+                return *((ushort*)ptr);
+            }
+        }
         static byte ToByte<T>(T e) where T : struct, Enum
         {
             unsafe
@@ -52,6 +60,10 @@ namespace com.spacepuppy.Utils
                 {
                     return *((ulong*)ptr);
                 }
+                else if (size == s_UShortSize)
+                {
+                    return (ulong)(*((ushort*)ptr));
+                }
                 else if (size == s_ByteSize)
                 {
                     return (ulong)(*((byte*)ptr));
@@ -61,6 +73,7 @@ namespace com.spacepuppy.Utils
         }
         static int s_UIntSize = UnsafeUtility.SizeOf<uint>();
         static int s_ULongSize = UnsafeUtility.SizeOf<ulong>();
+        static int s_UShortSize = UnsafeUtility.SizeOf<ushort>();
         static int s_ByteSize = UnsafeUtility.SizeOf<byte>();
         #endregion
 

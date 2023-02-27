@@ -105,7 +105,7 @@ namespace com.spacepuppy.Spawn.Events
         {
             if (entry.Prefab == null) return null;
 
-            var pool = _spawnPool.Value.IsAlive() ? _spawnPool.Value : com.spacepuppy.Spawn.SpawnPool.DefaultPool;
+            var pool = _spawnPool.ValueOrDefault;
             var go = pool.Spawn(entry.Prefab.gameObject, this.transform.position, this.transform.rotation, _spawnedObjectParent);
 
             var dur = (entry.Duration > 0f) ? entry.Duration : entry.Prefab.main.duration;

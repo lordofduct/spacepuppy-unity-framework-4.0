@@ -2,9 +2,13 @@
 using UnityEditor;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+
+using com.spacepuppyeditor.Internal;
 
 using com.spacepuppy;
 using com.spacepuppy.Utils;
+using Unity.Netcode;
 
 namespace com.spacepuppyeditor.Core
 {
@@ -27,10 +31,6 @@ namespace com.spacepuppyeditor.Core
 
             try
             {
-                float w = Mathf.Min(position.width, 60f);
-                var r2 = new Rect(position.xMax - w, position.yMin, w, position.height);
-                var r1 = new Rect(position.xMin, position.yMin, Mathf.Max(position.width - w, 0f), position.height);
-
                 var lowProp = property.FindPropertyRelative("_low");
                 var highProp = property.FindPropertyRelative("_high");
                 ulong value = ((ulong)lowProp.longValue & uint.MaxValue) | ((ulong)highProp.longValue << 32);
@@ -39,32 +39,50 @@ namespace com.spacepuppyeditor.Core
                 bool resetOnZero = attrib == null || !attrib.AllowZero;
                 bool readWrite = attrib == null || !attrib.ReadOnly;
 
-                if (readWrite)
+                if (attrib?.LinkToGlobalId ?? false)
                 {
-                    //read-write
-                    EditorGUI.BeginChangeCheck();
-                    var sval = EditorGUI.DelayedTextField(r1, string.Format("0x{0:X16}", value));
-                    if (EditorGUI.EndChangeCheck())
+                    var gid = XXHash.Hash64(GlobalObjectId.GetGlobalObjectIdSlow(property.serializedObject.targetObject).ToString());
+                    if (value != gid)
                     {
-                        if (sval != null && sval.StartsWith("0x"))
-                        {
-                            ulong.TryParse(sval.Substring(2), System.Globalization.NumberStyles.HexNumber, null, out value);
-                            lowProp.longValue = (long)(value & uint.MaxValue);
-                            highProp.longValue = (long)(value >> 32);
-                        }
+                        value = gid;
+                        lowProp.longValue = (long)(value & uint.MaxValue);
+                        highProp.longValue = (long)(value >> 32);
                     }
+                    EditorGUI.SelectableLabel(position, string.Format("0x{0:X16}", value), EditorStyles.textField);
                 }
                 else
                 {
-                    //read-only
-                    EditorGUI.SelectableLabel(r1, string.Format("0x{0:X16}", value), EditorStyles.textField);
-                }
+                    float w = Mathf.Min(position.width, 60f);
+                    var r2 = new Rect(position.xMax - w, position.yMin, w, position.height);
+                    var r1 = new Rect(position.xMin, position.yMin, Mathf.Max(position.width - w, 0f), position.height);
 
-                if (GUI.Button(r2, "New Id") || (resetOnZero && value == 0))
-                {
-                    value = (ulong)ShortUid.NewId().Value;
-                    lowProp.longValue = (long)(value & uint.MaxValue);
-                    highProp.longValue = (long)(value >> 32);
+                    if (readWrite)
+                    {
+                        //read-write
+                        EditorGUI.BeginChangeCheck();
+                        var sval = EditorGUI.DelayedTextField(r1, string.Format("0x{0:X16}", value));
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            if (sval != null && sval.StartsWith("0x"))
+                            {
+                                ulong.TryParse(sval.Substring(2), System.Globalization.NumberStyles.HexNumber, null, out value);
+                                lowProp.longValue = (long)(value & uint.MaxValue);
+                                highProp.longValue = (long)(value >> 32);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        //read-only
+                        EditorGUI.SelectableLabel(r1, string.Format("0x{0:X16}", value), EditorStyles.textField);
+                    }
+
+                    if (GUI.Button(r2, "New Id") || (resetOnZero && value == 0))
+                    {
+                        value = (ulong)ShortUid.NewId().Value;
+                        lowProp.longValue = (long)(value & uint.MaxValue);
+                        highProp.longValue = (long)(value >> 32);
+                    }
                 }
 
                 EditorGUI.EndProperty();
@@ -96,10 +114,6 @@ namespace com.spacepuppyeditor.Core
 
             try
             {
-                float w = Mathf.Min(position.width, 60f);
-                var r2 = new Rect(position.xMax - w, position.yMin, w, position.height);
-                var r1 = new Rect(position.xMin, position.yMin, Mathf.Max(position.width - w, 0f), position.height);
-
                 var lowProp = property.FindPropertyRelative("_low");
                 var highProp = property.FindPropertyRelative("_high");
                 var idProp = property.FindPropertyRelative("_id");
@@ -111,47 +125,66 @@ namespace com.spacepuppyeditor.Core
                 bool resetOnZero = attrib == null || !attrib.AllowZero;
                 bool readWrite = attrib == null || !attrib.ReadOnly;
 
-                if (readWrite)
+                if (attrib?.LinkToGlobalId ?? false)
                 {
-                    //read-write
-                    EditorGUI.BeginChangeCheck();
-                    if (lval == 0)
-                        sval = EditorGUI.DelayedTextField(r1, sval);
-                    else
-                        sval = EditorGUI.DelayedTextField(r1, string.Format("0x{0:X16}", lval));
-
-                    if (EditorGUI.EndChangeCheck())
+                    var gid = XXHash.Hash64(GlobalObjectId.GetGlobalObjectIdSlow(property.serializedObject.targetObject).ToString());
+                    if (lval != gid)
                     {
-                        if (sval != null && sval.StartsWith("0x"))
-                        {
-                            ulong.TryParse(sval.Substring(2), System.Globalization.NumberStyles.HexNumber, null, out lval);
-                            lowProp.longValue = (long)(lval & uint.MaxValue);
-                            highProp.longValue = (long)(lval >> 32);
-                            idProp.stringValue = string.Empty;
-                        }
-                        else
-                        {
-                            idProp.stringValue = sval;
-                            lowProp.longValue = 0;
-                            highProp.longValue = 0;
-                        }
+                        lval = gid;
+                        lowProp.longValue = (long)(lval & uint.MaxValue);
+                        highProp.longValue = (long)(lval >> 32);
+                        idProp.stringValue = string.Empty;
                     }
+                    EditorGUI.SelectableLabel(position, string.Format("0x{0:X16}", lval), EditorStyles.textField);
                 }
                 else
                 {
-                    //read-only
-                    if (lval == 0)
-                        EditorGUI.SelectableLabel(r1, string.Format("0x{0:X16}", lval), EditorStyles.textField);
-                    else
-                        EditorGUI.SelectableLabel(r1, sval, EditorStyles.textField);
-                }
+                    float w = Mathf.Min(position.width, 60f);
+                    var r2 = new Rect(position.xMax - w, position.yMin, w, position.height);
+                    var r1 = new Rect(position.xMin, position.yMin, Mathf.Max(position.width - w, 0f), position.height);
 
-                if (GUI.Button(r2, "New Id") || (resetOnZero && lval == 0 && string.IsNullOrEmpty(sval)))
-                {
-                    ulong value = TokenId.NewId().LongValue;
-                    lowProp.longValue = (long)(value & uint.MaxValue);
-                    highProp.longValue = (long)(value >> 32);
-                    idProp.stringValue = string.Empty;
+                    if (readWrite)
+                    {
+                        //read-write
+                        EditorGUI.BeginChangeCheck();
+                        if (lval == 0)
+                            sval = EditorGUI.DelayedTextField(r1, sval);
+                        else
+                            sval = EditorGUI.DelayedTextField(r1, string.Format("0x{0:X16}", lval));
+
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            if (sval != null && sval.StartsWith("0x"))
+                            {
+                                ulong.TryParse(sval.Substring(2), System.Globalization.NumberStyles.HexNumber, null, out lval);
+                                lowProp.longValue = (long)(lval & uint.MaxValue);
+                                highProp.longValue = (long)(lval >> 32);
+                                idProp.stringValue = string.Empty;
+                            }
+                            else
+                            {
+                                idProp.stringValue = sval;
+                                lowProp.longValue = 0;
+                                highProp.longValue = 0;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        //read-only
+                        if (lval == 0)
+                            EditorGUI.SelectableLabel(r1, string.Format("0x{0:X16}", lval), EditorStyles.textField);
+                        else
+                            EditorGUI.SelectableLabel(r1, sval, EditorStyles.textField);
+                    }
+
+                    if (GUI.Button(r2, "New Id") || (resetOnZero && lval == 0 && string.IsNullOrEmpty(sval)))
+                    {
+                        ulong value = TokenId.NewId().LongValue;
+                        lowProp.longValue = (long)(value & uint.MaxValue);
+                        highProp.longValue = (long)(value >> 32);
+                        idProp.stringValue = string.Empty;
+                    }
                 }
 
                 EditorGUI.EndProperty();
@@ -164,5 +197,160 @@ namespace com.spacepuppyeditor.Core
 
 
     }
+
+
+
+    internal class ShortUidPostProcessor : AssetPostprocessor
+    {
+
+        private static readonly HashSet<System.Reflection.FieldInfo> _knownSOFields = new HashSet<System.Reflection.FieldInfo>();
+        private static readonly HashSet<System.Reflection.FieldInfo> _knownGOFields = new HashSet<System.Reflection.FieldInfo>();
+
+        static ShortUidPostProcessor()
+        {
+            var sidtp = typeof(ShortUid);
+            var tidtp = typeof(TokenId);
+            var sotp = typeof(ScriptableObject);
+            var ctp = typeof(MonoBehaviour);
+            foreach (var tp in TypeUtil.GetTypes(t => TypeUtil.IsType(t, sotp) || TypeUtil.IsType(t, ctp)))
+            {
+                foreach (var field in tp.GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance))
+                {
+                    if (field.DeclaringType != tp) continue;
+                    if (field.FieldType != sidtp && field.FieldType != tidtp) continue;
+
+                    var attrib = field.GetCustomAttribute<ShortUid.ConfigAttribute>();
+                    if (attrib != null && attrib.LinkToGlobalId)
+                    {
+                        if (TypeUtil.IsType(field.DeclaringType, sotp))
+                        {
+                            _knownSOFields.Add(field);
+                        }
+                        else if (TypeUtil.IsType(field.DeclaringType, ctp))
+                        {
+                            _knownGOFields.Add(field);
+                        }
+                    }
+                }
+            }
+        }
+
+        static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
+        {
+            if (_knownGOFields.Count == 0 && _knownSOFields.Count == 0) return;
+
+            var sotp = typeof(ScriptableObject);
+            var gotp = typeof(GameObject);
+            if (importedAssets != null && importedAssets.Length > 0)
+            {
+                foreach (var path in importedAssets)
+                {
+                    var atp = AssetDatabase.GetMainAssetTypeAtPath(path);
+                    if (_knownSOFields.Count > 0 && TypeUtil.IsType(atp, sotp))
+                    {
+                        HandleScriptableObject(path, atp);
+                    }
+                    else if (_knownGOFields.Count > 0 && TypeUtil.IsType(atp, gotp))
+                    {
+                        HandleGameObject(AssetDatabase.LoadAssetAtPath<GameObject>(path));
+                    }
+                }
+            }
+        }
+
+        static void HandleGameObject(GameObject go)
+        {
+            if (go == null) return;
+
+            bool edited = false;
+            foreach (var field in _knownGOFields)
+            {
+                var arr = go.GetComponentsInChildren(field.DeclaringType);
+                if (arr?.Length > 0)
+                {
+                    foreach (var c in arr)
+                    {
+                        try
+                        {
+                            if (field.FieldType == typeof(ShortUid))
+                            {
+                                var sid = (ShortUid)field.GetValue(c);
+                                var gid = XXHash.Hash64(GlobalObjectId.GetGlobalObjectIdSlow(c).ToString());
+                                if (gid != sid.Value)
+                                {
+                                    field.SetValue(c, new ShortUid(gid));
+                                    edited = true;
+                                }
+                            }
+                            else
+                            {
+                                var sid = (TokenId)field.GetValue(c);
+                                var gid = XXHash.Hash64(GlobalObjectId.GetGlobalObjectIdSlow(c).ToString());
+                                if (!sid.IsLong || gid != sid.LongValue)
+                                {
+                                    field.SetValue(c, new TokenId(gid));
+                                    edited = true;
+                                }
+                            }
+                        }
+                        catch (System.Exception ex)
+                        {
+                            Debug.LogException(ex);
+                        }
+                    }
+                }
+            }
+
+            if (edited)
+            {
+                PrefabUtility.SavePrefabAsset(go);
+            }
+        }
+
+        static void HandleScriptableObject(string path, System.Type atp)
+        {
+            ScriptableObject so = null;
+
+            foreach (var field in _knownSOFields)
+            {
+                if (TypeUtil.IsType(atp, field.DeclaringType))
+                {
+                    if (object.ReferenceEquals(so, null)) so = AssetDatabase.LoadAssetAtPath<ScriptableObject>(path);
+
+                    try
+                    {
+                        if (field.FieldType == typeof(ShortUid))
+                        {
+                            var sid = (ShortUid)field.GetValue(so);
+                            var gid = GlobalObjectId.GetGlobalObjectIdSlow(so);
+                            if (gid.targetObjectId != sid.Value)
+                            {
+                                field.SetValue(so, new ShortUid(gid.targetObjectId));
+                                EditorUtility.SetDirty(so);
+                                AssetDatabase.SaveAssetIfDirty(so);
+                            }
+                        }
+                        else
+                        {
+                            var sid = (TokenId)field.GetValue(so);
+                            var gid = GlobalObjectId.GetGlobalObjectIdSlow(so);
+                            if (!sid.IsLong || gid.targetObjectId != sid.LongValue)
+                            {
+                                field.SetValue(so, new TokenId(gid.targetObjectId));
+                                EditorUtility.SetDirty(so);
+                                AssetDatabase.SaveAssetIfDirty(so);
+                            }
+                        }
+                    }
+                    catch (System.Exception ex)
+                    {
+                        Debug.LogException(ex);
+                    }
+                }
+            }
+        }
+
+    }
+
 
 }

@@ -1,56 +1,43 @@
 using UnityEngine;
+using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 namespace com.spacepuppy
 {
 
     [System.Serializable]
+    [StructLayout(LayoutKind.Sequential)]
     public struct SerializableGuid
     {
 
         #region Fields
 
         [SerializeField]
-        private int a;
+        public int a;
         [SerializeField]
-        private short b;
+        public short b;
         [SerializeField]
-        private short c;
+        public short c;
         [SerializeField]
-        private byte d;
+        public byte d;
         [SerializeField]
-        private byte e;
+        public byte e;
         [SerializeField]
-        private byte f;
+        public byte f;
         [SerializeField]
-        private byte g;
+        public byte g;
         [SerializeField]
-        private byte h;
+        public byte h;
         [SerializeField]
-        private byte i;
+        public byte i;
         [SerializeField]
-        private byte j;
+        public byte j;
         [SerializeField]
-        private byte k;
+        public byte k;
 
         #endregion
 
         #region CONSTRUCTOR
-
-        public SerializableGuid(System.Guid guid)
-        {
-            var arr = guid.ToByteArray();
-            a = System.BitConverter.ToInt32(arr, 0);
-            b = System.BitConverter.ToInt16(arr, 4);
-            c = System.BitConverter.ToInt16(arr, 6);
-            d = arr[8];
-            e = arr[9];
-            f = arr[10];
-            g = arr[11];
-            h = arr[12];
-            i = arr[13];
-            j = arr[14];
-            k = arr[15];
-        }
 
         public SerializableGuid(int a, short b, short c, byte d, byte e, byte f, byte g, byte h, byte i, byte j, byte k)
         {
@@ -67,24 +54,41 @@ namespace com.spacepuppy
             this.k = k;
         }
 
+        public SerializableGuid(ulong high, ulong low)
+        {
+            a = (int)(high >> 32);
+            b = (short)(high >> 16);
+            c = (short)high;
+            d = (byte)(low >> 56);
+            e = (byte)(low >> 48);
+            f = (byte)(low >> 40);
+            g = (byte)(low >> 32);
+            h = (byte)(low >> 24);
+            i = (byte)(low >> 16);
+            j = (byte)(low >> 8);
+            k = (byte)low;
+        }
+
         #endregion
 
         #region Methods
 
-        public override string ToString()
-        {
-            return this.ToGuid().ToString();
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public byte[] ToByteArray() => this.ToGuid().ToByteArray();
 
-        public string ToString(string format)
-        {
-            return this.ToGuid().ToString(format);
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override string ToString() => this.ToGuid().ToString();
 
-        public System.Guid ToGuid()
-        {
-            return new System.Guid(a, b, c, d, e, f, g, h, i, j, k);
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public string ToString(string format) => this.ToGuid().ToString(format);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public System.Guid ToGuid() => new System.Guid(a, b, c, d, e, f, g, h, i, j, k);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool Equals(SerializableGuid guid) => guid.ToGuid().Equals(this.ToGuid());
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool Equals(System.Guid guid) => guid.Equals(this.ToGuid());
 
         public override bool Equals(object obj)
         {
@@ -102,10 +106,8 @@ namespace com.spacepuppy
             }
         }
 
-        public override int GetHashCode()
-        {
-            return this.ToGuid().GetHashCode();
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override int GetHashCode() => this.ToGuid().GetHashCode();
 
         #endregion
 
@@ -113,12 +115,12 @@ namespace com.spacepuppy
 
         public static SerializableGuid NewGuid()
         {
-            return new SerializableGuid(System.Guid.NewGuid());
+            return System.Guid.NewGuid();
         }
 
         public static SerializableGuid Parse(string input)
         {
-            return new SerializableGuid(System.Guid.Parse(input));
+            return System.Guid.Parse(input);
         }
 
         public static bool TryParse(string input, out SerializableGuid result)
@@ -126,7 +128,7 @@ namespace com.spacepuppy
             System.Guid output;
             if (System.Guid.TryParse(input, out output))
             {
-                result = new SerializableGuid(output);
+                result = output;
                 return true;
             }
             else
@@ -141,7 +143,7 @@ namespace com.spacepuppy
             System.Guid guid;
             if (CoerceGuid(input, out guid))
             {
-                result = new SerializableGuid(guid);
+                result = guid;
                 return true;
             }
             else
@@ -174,6 +176,11 @@ namespace com.spacepuppy
         public static implicit operator System.Guid(SerializableGuid guid)
         {
             return guid.ToGuid();
+        }
+
+        public unsafe static implicit operator SerializableGuid(System.Guid guid)
+        {
+            return *(SerializableGuid*)&guid;
         }
 
         public static bool operator ==(SerializableGuid a, SerializableGuid b)
@@ -224,6 +231,12 @@ namespace com.spacepuppy
             /// This is editor time only for assets on disk! 
             /// </summary>
             public bool LinkToAsset;
+
+            /// <summary>
+            /// Attempts to make the guid match the targetObjectId & targetPrefabId of the GlobalObjectId from the object 
+            /// for the upper and lower portions of the guid respectively. If LinkToAsset is true, that takes precedance to this. 
+            /// </summary>
+            public bool LinkToGlobalObjectId;
         }
 
         #endregion

@@ -37,14 +37,14 @@ namespace com.spacepuppy.Geom
             this.CustomMessage = null;
         }
 
-        public ExpectsCompoundTriggerAttribute(string customMessage) 
+        public ExpectsCompoundTriggerAttribute(string customMessage)
         {
             this.CustomMessage = customMessage;
         }
     }
 
     [Infobox("Colliders on or in this GameObject are grouped together and treated as a single collider signaling with the ICompoundTriggerXHandler message.")]
-    public class CompoundTrigger : SPComponent, IMStartOrEnableReceiver, ICompoundTrigger
+    public class CompoundTrigger : SPComponent, ICompoundTrigger
     {
 
         #region Fields
@@ -67,18 +67,30 @@ namespace com.spacepuppy.Geom
 
         #region CONSTRUCTOR
 
-        void IMStartOrEnableReceiver.OnStartOrEnable() => this.OnStartOrEnable();
-
-        protected virtual void OnStartOrEnable()
+        protected override void OnEnable()
         {
             this.SyncTriggers();
+            base.OnEnable();
+
+            if (this.started)
+            {
+                this.ResyncStateAndSignalMessageIfNecessary();
+            }
+        }
+
+        protected override void Start()
+        {
+            this.SyncTriggers();
+            base.Start();
+
+            this.ResyncStateAndSignalMessageIfNecessary();
         }
 
         protected override void OnDisable()
         {
             base.OnDisable();
 
-            this.PurgeActiveState();
+            _active.Clear();
         }
 
         #endregion
@@ -143,12 +155,19 @@ namespace com.spacepuppy.Geom
             }
         }
 
-        public bool ContainsActive(Collider c) => c != null && _active.Contains(c);
+        /// <summary>
+        /// The colliders that make up this compoundtrigger
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerable<Collider> GetMemberColliders() => _colliders.Keys;
 
-        public Collider[] GetActiveColliders()
-        {
-            return _active.Count > 0 ? _active.ToArray() : ArrayUtil.Empty<Collider>();
-        }
+        /// <summary>
+        /// The 'other' colliders that are currently inside this compoundtrigger
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerable<Collider> GetActiveColliders() => _active;
+
+        public bool ContainsActive(Collider c) => c != null && _active.Contains(c);
 
         public int GetActiveColliders(ICollection<Collider> output)
         {
@@ -163,21 +182,6 @@ namespace com.spacepuppy.Geom
             return cnt;
         }
 
-        /// <summary>
-        /// Dumps state of what member colliders are intersected currently. 
-        /// Caution using this, any member collider currently intersected will not refire OnTriggerEnter. 
-        /// This is usually reserved for OnDisable to revert state.
-        /// </summary>
-        public void PurgeActiveState()
-        {
-            _active.Clear();
-            var e = _colliders.GetEnumerator();
-            while (e.MoveNext())
-            {
-                e.Current.Value.Active.Clear();
-            }
-        }
-
         protected bool AnyRelatedColliderOverlaps(Collider c)
         {
             var e = _colliders.GetEnumerator();
@@ -190,7 +194,7 @@ namespace com.spacepuppy.Geom
 
         protected virtual void SignalTriggerEnter(CompoundTriggerMember member, Collider other)
         {
-            if (_active.Add(other))
+            if (this.isActiveAndEnabled && _active.Add(other))
             {
                 _messageSettings.Send(this.gameObject, (this, other), OnEnterFunctor);
             }
@@ -198,11 +202,28 @@ namespace com.spacepuppy.Geom
 
         protected virtual void SignalTriggerExit(CompoundTriggerMember member, Collider other)
         {
+            if (!this.isActiveAndEnabled) return;
             if (this.AnyRelatedColliderOverlaps(other)) return;
 
             if (_active.Remove(other))
             {
                 _messageSettings.Send(this.gameObject, (this, other), OnExitFunctor);
+            }
+        }
+
+        private void ResyncStateAndSignalMessageIfNecessary()
+        {
+            _active.Clear();
+            var ed = _colliders.GetEnumerator();
+            while (ed.MoveNext())
+            {
+                if (ed.Current.Value.Active.Count > 0)
+                {
+                    foreach (var a in ed.Current.Value.Active)
+                    {
+                        this.SignalTriggerEnter(ed.Current.Value, a);
+                    }
+                }
             }
         }
 
@@ -227,7 +248,7 @@ namespace com.spacepuppy.Geom
             [System.NonSerialized]
             private Collider _collider;
             [System.NonSerialized]
-            private HashSet<Collider> _active;
+            private HashSet<Collider> _active = new HashSet<Collider>();
 
             internal CompoundTrigger Owner
             {
@@ -248,7 +269,11 @@ namespace com.spacepuppy.Geom
             {
                 _owner = owner;
                 _collider = collider;
-                _active = new HashSet<Collider>();
+            }
+
+            private void OnDisable()
+            {
+                _active.Clear();
             }
 
             private void OnTriggerEnter(Collider other)

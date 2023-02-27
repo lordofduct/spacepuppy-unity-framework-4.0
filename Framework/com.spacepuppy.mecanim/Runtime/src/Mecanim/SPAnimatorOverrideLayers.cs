@@ -55,7 +55,7 @@ namespace com.spacepuppy.Mecanim
         {
             base.Start();
 
-            if(!_suspended)
+            if (!_suspended)
             {
                 this.Apply();
             }
@@ -64,7 +64,7 @@ namespace com.spacepuppy.Mecanim
         protected override void OnDestroy()
         {
             base.OnDestroy();
-            
+
             if (_animator != null && _baseRuntimeAnimatorController != null)
             {
                 _animator.runtimeAnimatorController = _baseRuntimeAnimatorController;
@@ -138,7 +138,7 @@ namespace com.spacepuppy.Mecanim
             {
                 this.ResetOverrides();
             }
-            else if (!_suspended)
+            else if (!_suspended && this.started)
             {
                 this.Apply();
             }
@@ -251,7 +251,7 @@ namespace com.spacepuppy.Mecanim
 
             _layers.Add(layer);
 
-            if (!_suspended)
+            if (!_suspended && this.started)
             {
                 this.Apply();
             }
@@ -261,7 +261,7 @@ namespace com.spacepuppy.Mecanim
         {
             if (source == null) return;
 
-            if(source is IOverrideList lst)
+            if (source is IOverrideList lst)
             {
                 this.Stack(lst, token);
             }
@@ -309,7 +309,7 @@ namespace com.spacepuppy.Mecanim
             layer.Overrides.AddRange(overrides);
             _layers.Add(layer);
 
-            if (!_suspended)
+            if (!_suspended && this.started)
             {
                 this.Apply();
             }
@@ -354,7 +354,7 @@ namespace com.spacepuppy.Mecanim
 
             _layers.Insert(Mathf.Clamp(index, 0, _layers.Count), layer);
 
-            if (!_suspended)
+            if (!_suspended && this.started)
             {
                 this.Apply();
             }
@@ -387,7 +387,7 @@ namespace com.spacepuppy.Mecanim
             layer.Overrides.AddRange(overrides);
             _layers.Insert(Mathf.Clamp(index, 0, _layers.Count), layer);
 
-            if (!_suspended)
+            if (!_suspended && this.started)
             {
                 this.Apply();
             }
@@ -404,7 +404,7 @@ namespace com.spacepuppy.Mecanim
                 _pool.Release(_layers[index].Overrides);
                 _layers.RemoveAt(index);
 
-                if (!_suspended)
+                if (!_suspended && this.started)
                 {
                     this.Apply();
                 }
@@ -416,7 +416,7 @@ namespace com.spacepuppy.Mecanim
             if (_layers == null) throw new System.IndexOutOfRangeException();
 
             _layers.RemoveAt(index);
-            if (!_suspended)
+            if (!_suspended && this.started)
             {
                 this.Apply();
             }
@@ -433,7 +433,7 @@ namespace com.spacepuppy.Mecanim
                 _pool.Release(_layers[index].Overrides);
                 _layers.RemoveAt(index);
 
-                if (!_suspended)
+                if (!_suspended && this.started)
                 {
                     this.Apply();
                 }

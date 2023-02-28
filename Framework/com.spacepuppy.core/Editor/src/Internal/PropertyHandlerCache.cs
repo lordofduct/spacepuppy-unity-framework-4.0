@@ -9,7 +9,7 @@ using com.spacepuppy.Dynamic;
 
 namespace com.spacepuppyeditor.Internal
 {
-    internal class PropertyHandlerCache
+    public class PropertyHandlerCache
     {
 
         private static TypeAccessWrapper _accessWrapper;

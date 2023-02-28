@@ -1780,7 +1780,7 @@ namespace com.spacepuppyeditor
 
         #region X Button
 
-        public const float X_BTN_WIDTH = 30f;
+        public const float X_BTN_WIDTH = 25f;
         public static bool XButton(Vector2 pos, string tooltip = null)
         {
             var r = new Rect(pos.x, pos.y, X_BTN_WIDTH, EditorGUIUtility.singleLineHeight);

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using com.spacepuppy.Collections;
 using com.spacepuppy.Dynamic;
 using System.Reflection;
+using com.spacepuppy.Project;
 
 namespace com.spacepuppy.Render
 {
@@ -20,6 +21,9 @@ namespace com.spacepuppy.Render
         Material GetUniqueMaterial();
 
     }
+
+    [System.Serializable]
+    public class MaterialSourceRef : SerializableInterfaceRef<IMaterialSource> { }
 
     public abstract class MaterialSource : SPComponent, IMaterialSource, IDynamic
     {

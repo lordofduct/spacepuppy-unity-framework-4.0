@@ -74,6 +74,7 @@ namespace com.spacepuppy.Render
 
         #region IIdentifiableComponent Interface
 
+        [System.NonSerialized]
         private string _id;
         string IIdentifiableComponent.Id => _id ?? (_id = string.Format("Material {0:0}", _materialIndex));
 

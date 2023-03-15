@@ -21,7 +21,7 @@ namespace com.spacepuppy.Render.Events
         #region Fields
 
         [SerializeField()]
-        private MaterialPropertyReference _target;
+        private MaterialPropertyReference _target = new MaterialPropertyReference();
         [SerializeField()]
         private VariantReference _value;
         [SerializeField()]

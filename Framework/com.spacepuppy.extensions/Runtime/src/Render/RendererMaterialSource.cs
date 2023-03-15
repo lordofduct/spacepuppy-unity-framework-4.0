@@ -67,7 +67,7 @@ namespace com.spacepuppy.Render
 
             if (_uniqueMaterials != null)
             {
-                for(int i = 0; i < _uniqueMaterials.Length; i++)
+                for (int i = 0; i < _uniqueMaterials.Length; i++)
                 {
                     if (_uniqueMaterials[i]) Destroy(_uniqueMaterials[i]);
                 }
@@ -232,7 +232,7 @@ namespace com.spacepuppy.Render
                         _renderer.materials = _uniqueMaterials;
                     }
                 }
-                else if(_sharedMaterials != null && _sharedMaterials.Length > 0)
+                else if (_sharedMaterials != null && _sharedMaterials.Length > 0)
                 {
                     _sharedMaterials[0] = material;
                     _renderer.sharedMaterials = _sharedMaterials;
@@ -243,18 +243,30 @@ namespace com.spacepuppy.Render
                     _renderer.sharedMaterial = material;
                 }
             }
-            else
+            else if (index > 0)
             {
-                if (_uniqueMaterials == null)
+                if (_uniqueMaterials != null)
                 {
-                    _uniqueMaterials = _renderer.materials;
                     _sharedMaterials = _uniqueMaterials;
+                    if (index < _uniqueMaterials.Length)
+                    {
+                        _uniqueMaterials[index] = material;
+                        _renderer.materials = _uniqueMaterials;
+                    }
                 }
-
-                if (index >= 0 && index < _uniqueMaterials.Length)
+                else if (_sharedMaterials != null && _sharedMaterials.Length > index)
                 {
-                    _uniqueMaterials[index] = material;
-                    _renderer.materials = _uniqueMaterials;
+                    _sharedMaterials[index] = material;
+                    _renderer.sharedMaterials = _sharedMaterials;
+                }
+                else
+                {
+                    _sharedMaterials = _renderer.sharedMaterials;
+                    if (index < _sharedMaterials.Length)
+                    {
+                        _sharedMaterials[index] = material;
+                        _renderer.sharedMaterials = _sharedMaterials;
+                    }
                 }
             }
         }

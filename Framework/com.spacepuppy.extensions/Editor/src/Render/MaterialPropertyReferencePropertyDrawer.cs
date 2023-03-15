@@ -46,19 +46,7 @@ namespace com.spacepuppyeditor.Render
             var memberProp = property.FindPropertyRelative(PROP_VALUEMEMBER);
             var propNameProp = property.FindPropertyRelative(PROP_PROPERTYNAME);
 
-
-            EditorGUI.BeginChangeCheck();
-            matProp.objectReferenceValue = EditorGUI.ObjectField(r1, matProp.objectReferenceValue, typeof(UnityEngine.Object), true);
-            if (EditorGUI.EndChangeCheck())
-            {
-                if (!MaterialUtil.IsMaterialSource(matProp.objectReferenceValue))
-                {
-                    var go = GameObjectUtil.GetGameObjectFromSource(matProp.objectReferenceValue);
-                    matProp.objectReferenceValue = (go != null) ?
-                                                   (go.GetComponent<MaterialSource>() ?? go.GetComponent<Renderer>() ?? (UnityEngine.Object)go.GetComponent<UnityEngine.UI.Graphic>()) 
-                                                   : (UnityEngine.Object)null;
-                }
-            }
+            SPEditorGUI.PropertyField(r1, matProp, GUIContent.none);
 
             var mat = MaterialUtil.GetMaterialFromSource(matProp.objectReferenceValue);
             if (mat != null && mat.shader != null)

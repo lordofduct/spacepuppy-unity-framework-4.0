@@ -49,7 +49,7 @@ namespace com.spacepuppy.Utils
                 if (!sender || !target) return false;
                 if (!IncludeInactiveObjects && !target.activeInHierarchy) return false;
 
-                switch(this.SendMethod)
+                switch (this.SendMethod)
                 {
                     case MessageSendMethod.Broadcast:
                         return target.transform.IsChildOf(sender.transform);

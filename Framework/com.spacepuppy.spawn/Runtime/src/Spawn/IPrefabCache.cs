@@ -9,7 +9,7 @@ namespace com.spacepuppy.Spawn
 
         string Name { get; }
         GameObject Prefab { get; }
-        int PrefabID { get; }
+        ulong PrefabID { get; }
         int CacheSize { get; set; }
         int ResizeBuffer { get; set; }
         int LimitAmount { get; set; }

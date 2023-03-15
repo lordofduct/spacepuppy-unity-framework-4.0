@@ -7,6 +7,12 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Spawn
 {
 
+    /// <summary>
+    /// Handle for managing spawnable/spawned prefabs. This will be automatically attached to prefab's registered/spawned by SpawnPool. 
+    /// This can be manually attached to prefabs at editor time to configure the entity priority OR for associating the PrefabId to the asset's globalid. 
+    /// This is latter option is very important for Addressables/AssetBundles since the bundle the asset comes from is in a different domain 
+    /// and can utilize the PrefabId to locate the prefab in the pool.
+    /// </summary>
     public class SpawnedObjectController : SPComponent, IKillableEntity, INameable
     {
 
@@ -17,6 +23,10 @@ namespace com.spacepuppy.Spawn
         public event System.EventHandler OnKilled;
 
         #region Fields
+
+        [SerializeField]
+        [ShortUid.Config(LinkToGlobalId = true, ReadOnly = true)]
+        private ShortUid _prefabId;
 
         [SerializeField]
         private float _killableEntityPriority = KILLABLEENTITYPRIORITY;
@@ -73,7 +83,7 @@ namespace com.spacepuppy.Spawn
             get { return _prefab; }
         }
 
-        public int PrefabID { get; private set; }
+        public ulong PrefabID => _prefabId.Value;
 
         public bool IsCached { get; private set; }
 
@@ -217,9 +227,19 @@ namespace com.spacepuppy.Spawn
 
             var controller = gameObject.AddOrGetComponent<SpawnedObjectController>();
             controller._pool = pool;
-            controller._prefab = prefab;
-            controller.PrefabID = prefab != null ? prefab.GetInstanceID() : 0;
             controller.IsCached = cached;
+
+            if (prefab)
+            {
+                var ctrl = prefab.GetComponent<SpawnedObjectController>();
+                controller._prefab = prefab;
+                controller._prefabId = ctrl ? ctrl._prefabId : new ShortUid(0, (uint)prefab.GetInstanceID());
+            }
+            else
+            {
+                controller._prefab = null;
+                controller._prefabId = default;
+            }
             return controller;
             
         }
@@ -230,8 +250,11 @@ namespace com.spacepuppy.Spawn
 
             var controller = prefab.AddOrGetComponent<SpawnedObjectController>();
             controller._prefab = prefab;
-            controller.PrefabID = prefab.GetInstanceID();
             controller.IsCached = false;
+            if (controller._prefabId.Value == 0UL)
+            {
+                controller._prefabId = new ShortUid(0, (uint)prefab.GetInstanceID());
+            }
             return controller;
         }
 

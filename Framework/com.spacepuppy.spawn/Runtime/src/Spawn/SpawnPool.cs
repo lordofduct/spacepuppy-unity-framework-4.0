@@ -133,8 +133,13 @@ namespace com.spacepuppy.Spawn
         [ReorderableArray(DrawElementAtBottom = true, ChildPropertyToDrawAsElementLabel = "ItemName", ChildPropertyToDrawAsElementEntry = "_prefab")]
         private List<PrefabCache> _registeredPrefabs = new List<PrefabCache>();
 
+        [Space(20f)]
+        [SerializeField]
+        [ReorderableArray(DrawElementAtBottom = true, ChildPropertyToDrawAsElementEntry = "_assetSet")]
+        private AssetSetCache[] _registeredAssetSets;
+
         [System.NonSerialized()]
-        private Dictionary<int, PrefabCache> _prefabToCache = new Dictionary<int, PrefabCache>();
+        private Dictionary<ulong, PrefabCache> _prefabToCache = new Dictionary<ulong, PrefabCache>();
 
         #endregion
 
@@ -163,6 +168,34 @@ namespace com.spacepuppy.Spawn
                 this.OnLoadingCache(e.Current);
                 e.Current.Load(this);
                 _prefabToCache[e.Current.PrefabID] = e.Current;
+            }
+
+            if (_registeredAssetSets?.Length > 0)
+            {
+                for (int i = 0; i < _registeredAssetSets.Length; i++)
+                {
+                    if (_registeredAssetSets[i].AssetSet == null) continue;
+
+                    foreach (var prefab in _registeredAssetSets[i].AssetSet.LoadAssets<GameObject>())
+                    {
+                        try
+                        {
+                            this.Register(prefab, string.Empty, _registeredAssetSets[i].CacheSize, _registeredAssetSets[i].ResizeBuffer, _registeredAssetSets[i].LimitAmount);
+                        }
+                        catch (System.ArgumentNullException)
+                        {
+                            //do nothing
+                        }
+                        catch (System.ArgumentException)
+                        {
+                            Debug.LogWarning("AssetSet contains prefab that was already registered.", prefab);
+                        }
+                        catch (System.Exception ex)
+                        {
+                            Debug.LogException(ex);
+                        }
+                    }
+                }
             }
         }
 
@@ -210,7 +243,9 @@ namespace com.spacepuppy.Spawn
         public IPrefabCache Register(GameObject prefab, string sname, int cacheSize = 0, int resizeBuffer = 1, int limitAmount = 1)
         {
             if (object.ReferenceEquals(prefab, null)) throw new System.ArgumentNullException("prefab");
-            if (_prefabToCache.ContainsKey(prefab.GetInstanceID())) throw new System.ArgumentException("Already manages prefab.", "prefab");
+
+            var ctrl = prefab.GetComponent<SpawnedObjectController>();
+            if (ctrl && _prefabToCache.ContainsKey(ctrl.PrefabID)) throw new System.ArgumentException("Already manages prefab.", "prefab");
 
             var cache = new PrefabCache(prefab, sname)
             {
@@ -228,13 +263,13 @@ namespace com.spacepuppy.Spawn
 
         public bool UnRegister(GameObject prefab)
         {
-            var cache = this.FindPrefabCache(prefab);
+            var cache = this.FindPrefabCacheInternal(prefab);
             if (cache == null) return false;
 
             return this.UnRegister(cache);
         }
 
-        public bool UnRegister(int prefabId)
+        public bool UnRegister(ulong prefabId)
         {
             PrefabCache cache;
             if (!_prefabToCache.TryGetValue(prefabId, out cache)) return false;
@@ -255,7 +290,7 @@ namespace com.spacepuppy.Spawn
             return true;
         }
 
-        public bool Contains(int prefabId)
+        public bool Contains(ulong prefabId)
         {
             return _prefabToCache.ContainsKey(prefabId);
         }
@@ -271,6 +306,18 @@ namespace com.spacepuppy.Spawn
                 }
             }
             return false;
+        }
+
+        public IPrefabCache FindPrefabCache(GameObject prefab)
+        {
+            return FindPrefabCacheInternal(prefab);
+        }
+
+        public IPrefabCache FindPrefabCache(ulong prefabId)
+        {
+            PrefabCache result;
+            if (_prefabToCache.TryGetValue(prefabId, out result)) return result;
+            return null;
         }
 
 
@@ -366,11 +413,11 @@ namespace com.spacepuppy.Spawn
             return (controller != null) ? controller.GetComponent<T>() : null;
         }
 
-        public SpawnedObjectController SpawnAsController(GameObject prefab, Transform par = null, System.Action<SpawnedObjectController> beforeSignalSpawnCallback = null)
+        public virtual SpawnedObjectController SpawnAsController(GameObject prefab, Transform par = null, System.Action<SpawnedObjectController> beforeSignalSpawnCallback = null)
         {
-            if (prefab == null) return null;
+            if (prefab == null || !this.PreSpawnValidation(prefab)) return null;
 
-            var cache = this.FindPrefabCache(prefab);
+            var cache = this.FindPrefabCacheInternal(prefab);
             var pos = (cache != null) ? cache.Prefab.transform.position : prefab.transform.position;
             var rot = (cache != null) ? cache.Prefab.transform.rotation : prefab.transform.rotation;
 
@@ -396,11 +443,11 @@ namespace com.spacepuppy.Spawn
             return null;
         }
 
-        public SpawnedObjectController SpawnAsController(GameObject prefab, Vector3 position, Quaternion rotation, Transform par = null, System.Action<SpawnedObjectController> beforeSignalSpawnCallback = null)
+        public virtual SpawnedObjectController SpawnAsController(GameObject prefab, Vector3 position, Quaternion rotation, Transform par = null, System.Action<SpawnedObjectController> beforeSignalSpawnCallback = null)
         {
-            if (prefab == null) return null;
+            if (prefab == null || !this.PreSpawnValidation(prefab)) return null;
 
-            var cache = this.FindPrefabCache(prefab);
+            var cache = this.FindPrefabCacheInternal(prefab);
             if (cache != null)
             {
                 var controller = cache.Spawn(position, rotation, par);
@@ -423,22 +470,22 @@ namespace com.spacepuppy.Spawn
             return null;
         }
 
-        public GameObject SpawnByPrefabId(int prefabId, Transform par = null, System.Action<SpawnedObjectController> beforeSignalSpawnCallback = null)
+        public GameObject SpawnByPrefabId(ulong prefabId, Transform par = null, System.Action<SpawnedObjectController> beforeSignalSpawnCallback = null)
         {
             var controller = SpawnAsControllerByPrefabId(prefabId, par, beforeSignalSpawnCallback);
             return (controller != null) ? controller.gameObject : null;
         }
 
-        public GameObject SpawnByPrefabId(int prefabId, Vector3 position, Quaternion rotation, Transform par = null, System.Action<SpawnedObjectController> beforeSignalSpawnCallback = null)
+        public GameObject SpawnByPrefabId(ulong prefabId, Vector3 position, Quaternion rotation, Transform par = null, System.Action<SpawnedObjectController> beforeSignalSpawnCallback = null)
         {
             var controller = SpawnAsControllerByPrefabId(prefabId, position, rotation, par, beforeSignalSpawnCallback);
             return (controller != null) ? controller.gameObject : null;
         }
 
-        public SpawnedObjectController SpawnAsControllerByPrefabId(int prefabId, Transform par = null, System.Action<SpawnedObjectController> beforeSignalSpawnCallback = null)
+        public virtual SpawnedObjectController SpawnAsControllerByPrefabId(ulong prefabId, Transform par = null, System.Action<SpawnedObjectController> beforeSignalSpawnCallback = null)
         {
             PrefabCache cache;
-            if (!_prefabToCache.TryGetValue(prefabId, out cache)) return null;
+            if (!_prefabToCache.TryGetValue(prefabId, out cache) || !this.PreSpawnValidation(cache.Prefab)) return null;
 
             var pos = (par != null) ? par.position : Vector3.zero;
             var rot = (par != null) ? par.rotation : Quaternion.identity;
@@ -448,13 +495,13 @@ namespace com.spacepuppy.Spawn
             return controller;
         }
 
-        public SpawnedObjectController SpawnAsControllerByPrefabId(int prefabId, Vector3 position, Quaternion rotation, Transform par = null, System.Action<SpawnedObjectController> beforeSignalSpawnCallback = null)
+        public virtual SpawnedObjectController SpawnAsControllerByPrefabId(ulong prefabId, Vector3 position, Quaternion rotation, Transform par = null, System.Action<SpawnedObjectController> beforeSignalSpawnCallback = null)
         {
             PrefabCache cache;
-            if (!_prefabToCache.TryGetValue(prefabId, out cache)) return null;
+            if (!_prefabToCache.TryGetValue(prefabId, out cache) || !this.PreSpawnValidation(cache.Prefab)) return null;
             var controller = cache.Spawn(position, rotation, par);
-            this.SignalSpawned(controller);
             beforeSignalSpawnCallback?.Invoke(controller);
+            this.SignalSpawned(controller);
             return controller;
         }
 
@@ -514,7 +561,7 @@ namespace com.spacepuppy.Spawn
         /// </summary>
         /// <param name="obj"></param>
         /// <returns></returns>
-        private PrefabCache FindPrefabCache(GameObject obj)
+        private PrefabCache FindPrefabCacheInternal(GameObject obj)
         {
             var controller = obj.GetComponent<SpawnedObjectController>();
             if (controller == null) return null;
@@ -525,6 +572,7 @@ namespace com.spacepuppy.Spawn
             return null;
         }
 
+        protected virtual bool PreSpawnValidation(GameObject prefab) => true;
         protected virtual void SignalSpawned(SpawnedObjectController cntrl)
         {
             this.gameObject.Broadcast<IOnSpawnHandler, SpawnedObjectController>(cntrl, (o, c) => o.OnSpawn(c));
@@ -672,7 +720,7 @@ namespace com.spacepuppy.Spawn
                 get { return _prefab; }
             }
 
-            public int PrefabID { get; private set; }
+            public ulong PrefabID { get; private set; }
 
             int IPrefabCache.CacheSize
             {
@@ -824,6 +872,24 @@ namespace com.spacepuppy.Spawn
             }
 
             #endregion
+
+        }
+
+        [System.Serializable]
+        private sealed class AssetSetCache
+        {
+            [SerializeField]
+            private AssetBundleRef _assetSet = new AssetBundleRef();
+            public IAssetSet AssetSet => _assetSet.Value;
+
+            [Tooltip("The starting CacheSize.")]
+            public int CacheSize = 0;
+            [Tooltip("How much should the cache resize by if an empty/used cache is spawned from.")]
+            [Min(1)]
+            public int ResizeBuffer = 1;
+            [Tooltip("The maximum number of instances allowed to be cached, 0 or less means infinite.")]
+            [NegativeIsInfinity(ZeroIsAlsoInfinity = true)]
+            public int LimitAmount = 0;
 
         }
 

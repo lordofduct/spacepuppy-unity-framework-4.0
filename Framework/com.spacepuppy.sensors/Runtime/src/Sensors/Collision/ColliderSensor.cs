@@ -7,6 +7,7 @@ using System.Linq;
 using com.spacepuppy;
 using com.spacepuppy.Geom;
 using com.spacepuppy.Utils;
+using com.spacepuppy.Collections;
 
 namespace com.spacepuppy.Sensors.Collision
 {
@@ -159,6 +160,16 @@ namespace com.spacepuppy.Sensors.Collision
             return true;
         }
 
+        private void CleanColliders()
+        {
+            if (_intersectingColliders.Count == 0) return;
+
+            using (var lst = TempCollection.GetList<Collider>())
+            {
+                _intersectingColliders.RemoveWhere(o => !ObjUtil.IsObjectAlive(o) || !o.IsActiveAndEnabled());
+            }
+        }
+
         #endregion
 
         #region Sensor Interface
@@ -189,18 +200,27 @@ namespace com.spacepuppy.Sensors.Collision
 
         public override bool SenseAny(System.Func<IAspect, bool> p = null)
         {
-            if(p == null && !_requiresLineOfSight)
+            if (_intersectingColliders.Count == 0) return false;
+
+            var e = _intersectingColliders.GetEnumerator();
+            bool doclean = false;
+            try
             {
-                return _intersectingColliders.Count > 0;
-            }
-            else
-            {
-                var e = _intersectingColliders.GetEnumerator();
-                while(e.MoveNext())
+                while (e.MoveNext())
                 {
+                    if (!ObjUtil.IsObjectAlive(e.Current))
+                    {
+                        doclean = true;
+                        continue;
+                    }
+
                     var a = ColliderAspect.GetAspect(e.Current);
                     if ((p == null || p(a)) && (!_requiresLineOfSight || this.IsLineOfSight(e.Current))) return true;
                 }
+            }
+            finally
+            {
+                if (doclean) this.CleanColliders();
             }
 
             return false;
@@ -218,18 +238,27 @@ namespace com.spacepuppy.Sensors.Collision
         {
             if (_intersectingColliders.Count == 0) return null;
 
-            if (p == null && !_requiresLineOfSight)
-                return ColliderAspect.GetAspect(_intersectingColliders.First());
-            else
+            var e = _intersectingColliders.GetEnumerator();
+            bool doclean = false;
+            try
             {
-                var e = _intersectingColliders.GetEnumerator();
                 while (e.MoveNext())
                 {
+                    if (!ObjUtil.IsObjectAlive(e.Current))
+                    {
+                        doclean = true;
+                        continue;
+                    }
+
                     var a = ColliderAspect.GetAspect(e.Current);
                     if ((p == null || p(a)) && (!_requiresLineOfSight || this.IsLineOfSight(e.Current))) return a;
                 }
-                return null;
             }
+            finally
+            {
+                if (doclean) this.CleanColliders();
+            }
+            return null;
         }
 
         public override int SenseAll(ICollection<IAspect> lst, System.Func<IAspect, bool> p = null)
@@ -238,21 +267,19 @@ namespace com.spacepuppy.Sensors.Collision
             if (lst.IsReadOnly) throw new System.ArgumentException("List to fill can not be read-only.", "lst");
             if (_intersectingColliders.Count == 0) return 0;
 
-            if (p == null && !_requiresLineOfSight)
+            var e = _intersectingColliders.GetEnumerator();
+            bool doclean = false;
+            int cnt = 0;
+            try
             {
-                var e = _intersectingColliders.GetEnumerator();
                 while (e.MoveNext())
                 {
-                    lst.Add(ColliderAspect.GetAspect(e.Current));
-                }
-                return _intersectingColliders.Count;
-            }
-            else
-            {
-                var e = _intersectingColliders.GetEnumerator();
-                int cnt = 0;
-                while (e.MoveNext())
-                {
+                    if (!ObjUtil.IsObjectAlive(e.Current))
+                    {
+                        doclean = true;
+                        continue;
+                    }
+
                     var a = ColliderAspect.GetAspect(e.Current);
                     if ((p == null || p(a)) && (!_requiresLineOfSight || this.IsLineOfSight(e.Current)))
                     {
@@ -260,19 +287,49 @@ namespace com.spacepuppy.Sensors.Collision
                         cnt++;
                     }
                 }
-                return cnt;
             }
+            finally
+            {
+                if (doclean) this.CleanColliders();
+            }
+            return cnt;
         }
         
         public override IEnumerable<IAspect> SenseAll(System.Func<IAspect, bool> p = null)
         {
-            if (p == null && !_requiresLineOfSight)
+            bool doclean = false;
+            try
             {
-                return (from c in _intersectingColliders select ColliderAspect.GetAspect(c)).ToArray();
+                if (p == null && !_requiresLineOfSight)
+                {
+                    return _intersectingColliders.Where(o =>
+                    {
+                        if (!ObjUtil.IsObjectAlive(o))
+                        {
+                            doclean = true;
+                            return false;
+                        }
+                        return true;
+                    }).Select(o => ColliderAspect.GetAspect(o)).ToArray();
+                }
+                else
+                {
+                    return _intersectingColliders.Where(o =>
+                    {
+                        if (!ObjUtil.IsObjectAlive(o))
+                        {
+                            doclean = true;
+                            return false;
+                        }
+                        return true;
+                    }).Select(o => ColliderAspect.GetAspect(o))
+                      .Where(a => (p == null || p(a)) && (!_requiresLineOfSight || this.IsLineOfSight(a.Collider)))
+                      .ToArray();
+                }
             }
-            else
+            finally
             {
-                return (from c in _intersectingColliders let a = ColliderAspect.GetAspect(c) where (p == null || p(a)) && (!_requiresLineOfSight || this.IsLineOfSight(c)) select a).ToArray();
+                if (doclean) this.CleanColliders();
             }
         }
 
@@ -282,38 +339,33 @@ namespace com.spacepuppy.Sensors.Collision
             if (lst.IsReadOnly) throw new System.ArgumentException("List to fill can not be read-only.", "lst");
             if (_intersectingColliders.Count == 0) return 0;
 
-            if (p == null && !_requiresLineOfSight)
+            var e = _intersectingColliders.GetEnumerator();
+            bool doclean = false;
+            int cnt = 0;
+            try
             {
-                int cnt = 0;
-                var e = _intersectingColliders.GetEnumerator();
                 while (e.MoveNext())
                 {
-                    var a = ColliderAspect.GetAspect(e.Current);
-                    var o = ObjUtil.GetAsFromSource<T>(a);
-                    if (o != null)
+                    if (!ObjUtil.IsObjectAlive(e.Current))
                     {
-                        lst.Add(o);
-                        cnt++;
+                        doclean = true;
+                        continue;
                     }
-                }
-                return cnt;
-            }
-            else
-            {
-                var e = _intersectingColliders.GetEnumerator();
-                int cnt = 0;
-                while (e.MoveNext())
-                {
+
                     var a = ColliderAspect.GetAspect(e.Current);
                     var o = ObjUtil.GetAsFromSource<T>(a);
-                    if ((p == null || p(o)) && (!_requiresLineOfSight || this.IsLineOfSight(e.Current)))
+                    if (o != null && (p == null || p(o)) && (!_requiresLineOfSight || this.IsLineOfSight(e.Current)))
                     {
                         lst.Add(e.Current as T);
                         cnt++;
                     }
                 }
-                return cnt;
             }
+            finally
+            {
+                if (doclean) this.CleanColliders();
+            }
+            return cnt;
         }
 
         #endregion

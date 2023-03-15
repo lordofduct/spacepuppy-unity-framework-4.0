@@ -165,19 +165,34 @@ namespace com.spacepuppy.Geom
         /// The 'other' colliders that are currently inside this compoundtrigger
         /// </summary>
         /// <returns></returns>
-        public IEnumerable<Collider> GetActiveColliders() => _active;
+        public IEnumerable<Collider> GetActiveColliders() => _active.Where(o => o != null);
 
         public bool ContainsActive(Collider c) => c != null && _active.Contains(c);
 
         public int GetActiveColliders(ICollection<Collider> output)
         {
-            int cnt = _active.Count;
-            if (cnt == 0) return 0;
+            if (_active.Count == 0) return 0;
 
             var e = _active.GetEnumerator();
-            while (e.MoveNext())
+            int cnt = 0;
+            bool doclean = false;
+            try
             {
-                output.Add(e.Current);
+                while (e.MoveNext())
+                {
+                    if (!ObjUtil.IsObjectAlive(e.Current))
+                    {
+                        doclean = true;
+                        continue;
+                    }
+
+                    cnt++;
+                    output.Add(e.Current);
+                }
+            }
+            finally
+            {
+                if (doclean) this.CleanActive();
             }
             return cnt;
         }
@@ -217,6 +232,7 @@ namespace com.spacepuppy.Geom
             var ed = _colliders.GetEnumerator();
             while (ed.MoveNext())
             {
+                ed.Current.Value.CleanActive();
                 if (ed.Current.Value.Active.Count > 0)
                 {
                     foreach (var a in ed.Current.Value.Active)
@@ -224,6 +240,19 @@ namespace com.spacepuppy.Geom
                         this.SignalTriggerEnter(ed.Current.Value, a);
                     }
                 }
+            }
+        }
+
+        protected virtual void CleanActive()
+        {
+            if (_active.Count > 0)
+            {
+                _active.RemoveWhere(o => !ObjUtil.IsObjectAlive(o) || !o.IsActiveAndEnabled());
+            }
+
+            foreach (var pair in _colliders)
+            {
+                pair.Value.CleanActive();
             }
         }
 
@@ -269,6 +298,14 @@ namespace com.spacepuppy.Geom
             {
                 _owner = owner;
                 _collider = collider;
+            }
+
+            public void CleanActive()
+            {
+                if (_active.Count > 0)
+                {
+                    _active.RemoveWhere(o => !ObjUtil.IsObjectAlive(o) || !o.IsActiveAndEnabled());
+                }
             }
 
             private void OnDisable()

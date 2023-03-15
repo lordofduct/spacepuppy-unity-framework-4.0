@@ -41,6 +41,15 @@ namespace com.spacepuppy.AI.Events
             this.TryStartRoutine();
         }
 
+        protected override void OnDisable()
+        {
+            base.OnDisable();
+
+            _nearColliders.Clear();
+            _routine?.Cancel();
+            _routine = null;
+        }
+
         #endregion
 
         #region Properties
@@ -69,6 +78,7 @@ namespace com.spacepuppy.AI.Events
 
         protected void OnTriggerEnter(Collider other)
         {
+            if (!this.isActiveAndEnabled) return;
             if (!_useProximityTrigger) return;
             if (_sensor == null) return;
             if (!_sensor.ConcernedWith(other.gameObject)) return;
@@ -81,12 +91,19 @@ namespace com.spacepuppy.AI.Events
 
         protected void OnTriggerExit(Collider other)
         {
+            if (!this.isActiveAndEnabled) return;
             if (!_useProximityTrigger || _nearColliders == null) return;
             if (_sensor == null) return;
 
             _nearColliders.Remove(other);
 
-            if (_nearColliders.Count == 0 && _routine.Active)
+            //clean up any potentially lost colliders since Unity doesn't signal OnTriggerExit if a collider is destroyed/disabled.
+            if (_nearColliders.Count > 0)
+            {
+                _nearColliders.RemoveWhere(o => !ObjUtil.IsValidObject(o) || !o.IsActiveAndEnabled());
+            }
+
+            if (_nearColliders.Count == 0 && (_routine?.Active ?? false))
             {
                 _routine.Stop();
             }

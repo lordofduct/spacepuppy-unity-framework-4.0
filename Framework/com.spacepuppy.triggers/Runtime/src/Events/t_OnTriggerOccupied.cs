@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 using com.spacepuppy.Geom;
 using com.spacepuppy.Utils;
+using System.Linq;
 
 namespace com.spacepuppy.Events
 {
@@ -78,7 +79,11 @@ namespace com.spacepuppy.Events
 
         public bool IsOccupied
         {
-            get { return _activeObjects.Count > 0; }
+            get
+            {
+                this.CleanActive();
+                return _activeObjects.Count > 0;
+            }
         }
 
         [ShowNonSerializedProperty("Uses Compound Trigger", ShowAtEditorTime = true, ShowOutsideRuntimeValuesFoldout = true)]
@@ -114,16 +119,24 @@ namespace com.spacepuppy.Events
             }
             else
             {
+                this.CleanActive();
                 _activeObjects.Add(obj);
             }
         }
 
         private void RemoveObject(GameObject obj)
         {
-            if (_activeObjects.Remove(obj) && _activeObjects.Count == 0)
+            if ((_activeObjects.Remove(obj) || this.CleanActive() > 0)
+                && _activeObjects.Count == 0)
             {
                 _onTriggerLastExited.ActivateTrigger(this, _reduceOccupantsToEntityRoot ? obj.FindRoot() : obj);
             }
+        }
+
+        //clean up any potentially lost colliders since Unity doesn't signal OnTriggerExit if a collider is destroyed/disabled.
+        private int CleanActive()
+        {
+            return _activeObjects.RemoveWhere(o => !ObjUtil.IsObjectAlive(o) || !o.activeInHierarchy);
         }
 
         #endregion

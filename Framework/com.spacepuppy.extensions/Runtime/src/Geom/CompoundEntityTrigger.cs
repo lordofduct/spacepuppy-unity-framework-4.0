@@ -25,18 +25,49 @@ namespace com.spacepuppy.Geom
 
         public SPEntity[] GetActiveEntities()
         {
-            return _activeEntities.Count > 0 ? _activeEntities.ToArray() : ArrayUtil.Empty<SPEntity>();
+            if (_activeEntities.Count == 0) return ArrayUtil.Empty<SPEntity>();
+
+            bool doclean = false;
+            try
+            {
+                return _activeEntities.Where(o =>
+                {
+                    if (!ObjUtil.IsObjectAlive(o))
+                    {
+                        doclean = true;
+                        return false;
+                    }
+                    return true;
+                }).ToArray();
+            }
+            finally
+            {
+                if (doclean) this.CleanActive();
+            }
         }
 
         public int GetActiveEntities<T>(ICollection<T> output) where T : SPEntity
         {
-            int cnt = _active.Count;
-            if (cnt == 0) return 0;
+            if (_active.Count == 0) return 0;
 
             var e = _active.GetEnumerator();
-            while (e.MoveNext())
+            bool doclean = false;
+            int cnt = 0;
+            try
             {
-                if (e.Current is T ent) output.Add(ent);
+                while (e.MoveNext())
+                {
+                    if (!ObjUtil.IsObjectAlive(e.Current))
+                    {
+                        doclean = true;
+                        continue;
+                    }
+                    if (e.Current is T ent) output.Add(ent);
+                }
+            }
+            finally
+            {
+                if (doclean) this.CleanActive();
             }
             return cnt;
         }
@@ -66,12 +97,22 @@ namespace com.spacepuppy.Geom
             var e = _active.GetEnumerator();
             while (e.MoveNext())
             {
-                if (e.Current != other && e.Current.transform.IsChildOf(entity.transform)) return;
+                if (e.Current && e.Current != other && e.Current.transform.IsChildOf(entity.transform)) return;
             }
 
             if (_activeEntities.Remove(entity))
             {
                 _messageSettings.Send(this.gameObject, (this, other), OnExitFunctor);
+            }
+        }
+
+        protected override void CleanActive()
+        {
+            base.CleanActive();
+
+            if (_activeEntities.Count > 0)
+            {
+                _activeEntities.RemoveWhere(o => !ObjUtil.IsObjectAlive(o) || !o.isActiveAndEnabled);
             }
         }
 

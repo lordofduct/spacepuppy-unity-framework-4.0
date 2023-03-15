@@ -12,9 +12,11 @@ namespace com.spacepuppy
     /// Place on the root of a GameObject hierarchy, or a prefab, to signify that it is a complete entity.
     /// </summary>
     [DisallowMultipleComponent()]
-    [DefaultExecutionOrder(31990)]
+    [DefaultExecutionOrder(SPEntity.DEFAULT_EXECUTION_ORDER)]
     public class SPEntity : SPComponent, INameable
     {
+        public const int DEFAULT_EXECUTION_ORDER = 31990;
+
         public static readonly System.Action<IEntityAwakeHandler, SPEntity> OnEntityAwakeFunctor = (o, d) => o.OnEntityAwake(d);
 
         #region Multiton Interface

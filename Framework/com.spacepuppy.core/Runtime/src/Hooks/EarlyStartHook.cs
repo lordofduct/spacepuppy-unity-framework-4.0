@@ -4,9 +4,10 @@ using System.Collections.Generic;
 namespace com.spacepuppy.Hooks
 {
 
-    [DefaultExecutionOrder(-31999)]
+    [DefaultExecutionOrder(EarlyStartHook.DEFAULT_EXECUTION_ORDER)]
     public sealed class EarlyStartHook : MonoBehaviour
     {
+        public const int DEFAULT_EXECUTION_ORDER = -31999;
 
         private System.Action _callback;
 

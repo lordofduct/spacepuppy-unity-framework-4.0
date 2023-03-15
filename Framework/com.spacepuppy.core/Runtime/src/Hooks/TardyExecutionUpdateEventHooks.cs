@@ -10,9 +10,10 @@ namespace com.spacepuppy.Hooks
     /// The project must flag this as later execution in Edit->Project Settings->Execution Order
     /// </remarks>
     [AddComponentMenu("SpacePuppy/Hooks/TardyExecutionUpdateEventHooks")]
-    [DefaultExecutionOrder(32000)]
+    [DefaultExecutionOrder(TardyExecutionUpdateEventHooks.DEFAULT_EXECUTION_ORDER)]
     public sealed class TardyExecutionUpdateEventHooks : UpdateEventHooks
     {
+        public const int DEFAULT_EXECUTION_ORDER = 32000;
 
 
 

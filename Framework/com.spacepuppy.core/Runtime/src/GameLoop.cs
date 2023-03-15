@@ -16,9 +16,10 @@ namespace com.spacepuppy
     /// Currently in 4.0 we're diverging from the classic 'GameLoop' of earlier SP versions. We may refactor this later.
     /// This includes hooking into the new "PlayerLoop" interface Unity released in 2019.3
     /// </remarks>
-    [DefaultExecutionOrder(-32000)]
+    [DefaultExecutionOrder(GameLoop.DEFAULT_EXECUTION_ORDER)]
     public class GameLoop : ServiceComponent<GameLoop>, IService
     {
+        public const int DEFAULT_EXECUTION_ORDER = -32000;
 
         #region Events
 

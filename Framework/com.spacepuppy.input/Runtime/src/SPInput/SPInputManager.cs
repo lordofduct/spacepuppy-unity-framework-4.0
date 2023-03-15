@@ -4,9 +4,10 @@ using System.Collections.Generic;
 namespace com.spacepuppy.SPInput
 {
 
-    [DefaultExecutionOrder(-31990)]
+    [DefaultExecutionOrder(SPInputManager.DEFAULT_EXECUTION_ORDER)]
     public class SPInputManager : ServiceComponent<IInputManager>, IInputManager
     {
+        public const int DEFAULT_EXECUTION_ORDER = -31990;
 
         #region Fields
 

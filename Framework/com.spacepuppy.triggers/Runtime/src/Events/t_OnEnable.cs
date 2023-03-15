@@ -4,9 +4,10 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Events
 {
 
-    [DefaultExecutionOrder(31901)]
+    [DefaultExecutionOrder(t_OnEnable.DEFAULT_EXECUTION_ORDER)]
     public sealed class t_OnEnable : TriggerComponent, IMStartOrEnableReceiver
     {
+        public const int DEFAULT_EXECUTION_ORDER = 31901;
 
         #region Fields
 

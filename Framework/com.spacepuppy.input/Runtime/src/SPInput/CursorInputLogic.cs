@@ -15,9 +15,10 @@ namespace com.spacepuppy.SPInput
     /// Just implement the ICursorLogicResolver within your project and it'll become available as a "mode" in the dropdown.
     /// </summary>
     [Infobox("This is a simple cursor implementation independent of the EventSystem. You only need this if the EventSystem isn't available or if you want to have a cursor indepdent of the EventSystem.")]
-    [DefaultExecutionOrder(-31989)]
+    [DefaultExecutionOrder(CursorInputLogic.DEFAULT_EXECUTION_ORDER)]
     public sealed class CursorInputLogic : SPComponent
     {
+        public const int DEFAULT_EXECUTION_ORDER = -31989;
 
         #region Multiton Interface
 

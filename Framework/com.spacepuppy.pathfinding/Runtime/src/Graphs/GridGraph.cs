@@ -120,6 +120,17 @@ namespace com.spacepuppy.Graphs
             get { return _comparer; }
         }
 
+        /// <summary>
+        /// This graph uses 'IndexOf(T node)' when calling 'GetNeighbours(T node)', 
+        /// this callback allows replacing that IndexOf call to significantly speed 
+        /// up the lookup of neighbours.
+        /// </summary>
+        public System.Func<T, UnityEngine.Vector2Int> FastPositionCallback
+        {
+            get;
+            set;
+        }
+
         #endregion
 
         #region Methods
@@ -603,20 +614,38 @@ namespace com.spacepuppy.Graphs
         {
             if (node == null) throw new ArgumentNullException("node");
 
-            int index = this.IndexOf(node);
-            if (index < 0) return Enumerable.Empty<T>();
+            if (this.FastPositionCallback != null)
+            {
+                var pos = this.FastPositionCallback(node);
+                if (pos.x < 0 || pos.y < 0 || pos.x >= _colCount || pos.y >= _rowCount) return Enumerable.Empty<T>();
+                return this.GetNeighbours(pos.x, pos.y);
+            }
+            else
+            {
+                int index = this.IndexOf(node);
+                if (index < 0) return Enumerable.Empty<T>();
 
-            return this.GetNeighbours(index % _colCount, index / _colCount);
+                return this.GetNeighbours(index % _colCount, index / _colCount);
+            }
         }
         
         public int GetNeighbours(T node, ICollection<T> buffer)
         {
             if (buffer == null) throw new ArgumentNullException("buffer");
 
-            int index = this.IndexOf(node);
-            if (index < 0) return 0;
+            if (this.FastPositionCallback != null)
+            {
+                var pos = this.FastPositionCallback(node);
+                if (pos.x < 0 || pos.y < 0 || pos.x >= _colCount || pos.y >= _rowCount) return 0;
+                return this.GetNeighbours(pos.x, pos.y, buffer);
+            }
+            else
+            {
+                int index = this.IndexOf(node);
+                if (index < 0) return 0;
 
-            return this.GetNeighbours(index % _colCount, index / _colCount, buffer);
+                return this.GetNeighbours(index % _colCount, index / _colCount, buffer);
+            }
         }
         
         #endregion

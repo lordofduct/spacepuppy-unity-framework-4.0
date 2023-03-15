@@ -224,7 +224,7 @@ namespace com.spacepuppyeditor.Internal
             }
             else if (string.IsNullOrEmpty(label.tooltip) && !string.IsNullOrEmpty(_customTooltip))
             {
-                label = EditorHelper.CloneContent(label);
+                label = label.Clone();
                 label.tooltip = _customTooltip;
             }
 
@@ -261,7 +261,7 @@ namespace com.spacepuppyeditor.Internal
             }
             else if (string.IsNullOrEmpty(label.tooltip) && !string.IsNullOrEmpty(_customTooltip))
             {
-                label = EditorHelper.CloneContent(label);
+                label = label.Clone();
                 label.tooltip = _customTooltip;
             }
 

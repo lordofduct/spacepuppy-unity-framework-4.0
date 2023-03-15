@@ -13,6 +13,14 @@ namespace com.spacepuppyeditor
     public static class SPEditorGUILayout
     {
 
+        public static void OnGUILayout(this PropertyDrawer drawer, SerializedProperty property) => OnGUILayout(drawer, property, EditorHelper.TempContent(property?.displayName ?? string.Empty, property?.tooltip ?? string.Empty));
+        public static void OnGUILayout(this PropertyDrawer drawer, SerializedProperty property, string label) => OnGUILayout(drawer, property, EditorHelper.TempContent(label));
+        public static void OnGUILayout(this PropertyDrawer drawer, SerializedProperty property, GUIContent label)
+        {
+            var rect = EditorGUILayout.GetControlRect(com.spacepuppyeditor.Internal.UnityInternalPropertyHandler.LabelHasContent(label), drawer.GetPropertyHeight(property, label ?? GUIContent.none));
+            drawer.OnGUI(rect, property, label ?? GUIContent.none);
+        }
+
         #region DefaultPropertyField
 
         public static bool DefaultPropertyField(SerializedProperty property)
@@ -389,10 +397,10 @@ namespace com.spacepuppyeditor
             return System.Enum.ToObject(enumType, i) as System.Enum;
         }
 
-        public static int EnumFlagField(System.Type enumType, int[] acceptedFlags, GUIContent label, int value)
+        public static int EnumFlagField(System.Type enumType, int[] acceptedFlags, GUIContent label, int value, bool allowNegativeOneAsEverything)
         {
             var position = EditorGUILayout.GetControlRect(true);
-            return SPEditorGUI.EnumFlagField(position, enumType, acceptedFlags, label, value);
+            return SPEditorGUI.EnumFlagField(position, enumType, acceptedFlags, label, value, allowNegativeOneAsEverything);
         }
 
         public static WrapMode WrapModeField(string label, WrapMode mode, bool allowDefault = false)

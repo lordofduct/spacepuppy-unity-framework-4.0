@@ -547,7 +547,7 @@ namespace com.spacepuppyeditor.Settings
                     {
                         Undo.RecordObject(obj, "Load Global InputSettings to InputSettings Asset");
                         obj.CopyFromGlobal(true);
-                        EditorUtility.SetDirty(obj);
+                        EditorHelper.CommitDirectChanges(obj, true);
                         AssetDatabase.SaveAssets();
                         Selection.activeObject = obj;
                         this.serializedObject.Update();

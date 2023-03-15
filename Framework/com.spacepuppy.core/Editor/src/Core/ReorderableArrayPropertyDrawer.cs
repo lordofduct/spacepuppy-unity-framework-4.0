@@ -155,6 +155,11 @@ namespace com.spacepuppyeditor.Core
 
         public SerializedProperty CurrentArrayProperty { get { return _lst != null ? _lst.serializedProperty : null; } }
 
+        /// <summary>
+        /// During the drawelement callback this is set to the currently drawn array index. A custom 'InternalDrawer' can read this property during its OnGUI event to get the index it's on.
+        /// </summary>
+        public int CurrentDrawingArrayElementIndex { get; private set; }
+
         /*
          * Configuration
          */
@@ -225,7 +230,7 @@ namespace com.spacepuppyeditor.Core
         public bool AllowDragAndDrop
         {
             get { return (this.attribute as ReorderableArrayAttribute)?.AllowDragAndDrop ?? _allowDragAndDrop; }
-            set { _allowDragAndDrop = false; }
+            set { _allowDragAndDrop = value; }
         }
 
         public bool ShowTooltipInHeader
@@ -248,6 +253,8 @@ namespace com.spacepuppyeditor.Core
             get;
             set;
         }
+
+        public System.Func<UnityEngine.Object, UnityEngine.Object> DragDropElementFilter { get; set; }
 
         #endregion
 
@@ -300,6 +307,7 @@ namespace com.spacepuppyeditor.Core
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            this.CurrentDrawingArrayElementIndex = -1;
             if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
 
             if (property.isArray)
@@ -310,7 +318,7 @@ namespace com.spacepuppyeditor.Core
                 }
                 else if (label != null)
                 {
-                    label = EditorHelper.CloneContent(label);
+                    label = label.Clone();
                     if (this.ShowTooltipInHeader)
                     {
                         label.text = string.Format("{0} [{1:0}] - {2}", label.text, property.arraySize, (string.IsNullOrEmpty(label.tooltip) ? property.tooltip : label.tooltip));
@@ -421,6 +429,8 @@ namespace com.spacepuppyeditor.Core
             {
                 SPEditorGUI.DefaultPropertyField(position, property, label, false);
             }
+
+            this.CurrentDrawingArrayElementIndex = -1;
         }
 
         #endregion
@@ -502,6 +512,7 @@ namespace com.spacepuppyeditor.Core
 
         protected virtual void DrawElement(Rect area, SerializedProperty element, GUIContent label, int elementIndex)
         {
+            this.CurrentDrawingArrayElementIndex = elementIndex;
             if (this.DrawElementAtBottom)
             {
                 SerializedProperty prop = string.IsNullOrEmpty(this.ChildPropertyAsEntry) ? null : element.FindPropertyRelative(this.ChildPropertyAsEntry);
@@ -577,7 +588,7 @@ namespace com.spacepuppyeditor.Core
 
         protected virtual void DoDragAndDrop(SerializedProperty property, Rect listArea)
         {
-            if (this.AllowDragAndDrop && this.DragDropElementType != null && Event.current != null)
+            if (this.AllowDragAndDrop && (this.DragDropElementType != null || this.DragDropElementFilter != null) && Event.current != null)
             {
                 var ev = Event.current;
                 switch (ev.type)
@@ -587,7 +598,16 @@ namespace com.spacepuppyeditor.Core
                         {
                             if (listArea.Contains(ev.mousePosition))
                             {
-                                var refs = (from o in DragAndDrop.objectReferences let obj = ObjUtil.GetAsFromSource(this.DragDropElementType, o, false) where obj != null select obj);
+                                IEnumerable<object> refs;
+                                if (this.DragDropElementFilter != null)
+                                {
+                                    refs = (from o in DragAndDrop.objectReferences let obj = this.DragDropElementFilter(o) where obj != null select obj);
+                                }
+                                else
+                                {
+                                    refs = (from o in DragAndDrop.objectReferences let obj = ObjUtil.GetAsFromSource(this.DragDropElementType, o, false) where obj != null select obj);
+                                }
+
                                 DragAndDrop.visualMode = refs.Any() ? DragAndDropVisualMode.Link : DragAndDropVisualMode.Rejected;
 
                                 if (ev.type == EventType.DragPerform && refs.Any())

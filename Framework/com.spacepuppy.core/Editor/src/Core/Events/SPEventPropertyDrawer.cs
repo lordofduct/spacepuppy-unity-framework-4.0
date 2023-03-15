@@ -422,7 +422,7 @@ namespace com.spacepuppyeditor.Events
                 var trigger = EditorHelper.GetTargetObjectOfProperty(triggerProperty) as BaseSPEvent;
                 if (trigger == null) return;
 
-                Undo.RecordObject(triggerProperty.serializedObject.targetObject, "Add Trigger Targets");
+                Undo.RecordObjects(triggerProperty.serializedObject.targetObjects, "Add Trigger Targets");
                 using (var set = TempCollection.GetSet<UnityEngine.Object>())
                 {
                     for (int i = 0; i < trigger.Targets.Count; i++)
@@ -444,6 +444,7 @@ namespace com.spacepuppyeditor.Events
                     }
                 }
 
+                triggerProperty.CommitDirectChanges(true);
                 triggerProperty.serializedObject.Update();
             }
             catch (System.Exception ex)

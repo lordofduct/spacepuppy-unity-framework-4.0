@@ -8,7 +8,6 @@ using com.spacepuppyeditor.Internal;
 
 using com.spacepuppy;
 using com.spacepuppy.Utils;
-using Unity.Netcode;
 
 namespace com.spacepuppyeditor.Core
 {
@@ -41,7 +40,7 @@ namespace com.spacepuppyeditor.Core
 
                 if (attrib?.LinkToGlobalId ?? false)
                 {
-                    var gid = XXHash.Hash64(GlobalObjectId.GetGlobalObjectIdSlow(property.serializedObject.targetObject).ToString());
+                    var gid = GetGlobalIdHash(property.serializedObject.targetObject);
                     if (value != gid)
                     {
                         value = gid;
@@ -93,6 +92,13 @@ namespace com.spacepuppyeditor.Core
             }
         }
 
+        public static ulong GetGlobalIdHash(UnityEngine.Object obj)
+        {
+            var hash = XXHash.Hash64(GlobalObjectId.GetGlobalObjectIdSlow(obj).ToString());
+            if ((hash >> 32) == 0) hash |= (1UL << 63); //ensure the high bits always have at least 1 bit flagged. This way shortuid's formed from the instanceId's could be used to distinguish globalhash's from instanceid's
+            return hash;
+        }
+
     }
 
     [CustomPropertyDrawer(typeof(TokenId))]
@@ -127,7 +133,7 @@ namespace com.spacepuppyeditor.Core
 
                 if (attrib?.LinkToGlobalId ?? false)
                 {
-                    var gid = XXHash.Hash64(GlobalObjectId.GetGlobalObjectIdSlow(property.serializedObject.targetObject).ToString());
+                    var gid = ShortUidPropertyDrawer.GetGlobalIdHash(property.serializedObject.targetObject);
                     if (lval != gid)
                     {
                         lval = gid;
@@ -275,7 +281,7 @@ namespace com.spacepuppyeditor.Core
                             if (field.FieldType == typeof(ShortUid))
                             {
                                 var sid = (ShortUid)field.GetValue(c);
-                                var gid = XXHash.Hash64(GlobalObjectId.GetGlobalObjectIdSlow(c).ToString());
+                                var gid = ShortUidPropertyDrawer.GetGlobalIdHash(c);
                                 if (gid != sid.Value)
                                 {
                                     field.SetValue(c, new ShortUid(gid));
@@ -285,7 +291,7 @@ namespace com.spacepuppyeditor.Core
                             else
                             {
                                 var sid = (TokenId)field.GetValue(c);
-                                var gid = XXHash.Hash64(GlobalObjectId.GetGlobalObjectIdSlow(c).ToString());
+                                var gid = ShortUidPropertyDrawer.GetGlobalIdHash(c);
                                 if (!sid.IsLong || gid != sid.LongValue)
                                 {
                                     field.SetValue(c, new TokenId(gid));
@@ -326,7 +332,7 @@ namespace com.spacepuppyeditor.Core
                             if (gid.targetObjectId != sid.Value)
                             {
                                 field.SetValue(so, new ShortUid(gid.targetObjectId));
-                                EditorUtility.SetDirty(so);
+                                EditorHelper.CommitDirectChanges(so, false);
                                 AssetDatabase.SaveAssetIfDirty(so);
                             }
                         }
@@ -337,7 +343,7 @@ namespace com.spacepuppyeditor.Core
                             if (!sid.IsLong || gid.targetObjectId != sid.LongValue)
                             {
                                 field.SetValue(so, new TokenId(gid.targetObjectId));
-                                EditorUtility.SetDirty(so);
+                                EditorHelper.CommitDirectChanges(so, false);
                                 AssetDatabase.SaveAssetIfDirty(so);
                             }
                         }

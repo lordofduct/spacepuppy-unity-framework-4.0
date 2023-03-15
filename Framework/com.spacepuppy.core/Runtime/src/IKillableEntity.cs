@@ -50,7 +50,9 @@ namespace com.spacepuppy
         bool IsDead { get; }
 
         /// <summary>
-        /// Called on all IKillableEntity components in reverse order to allow each component to attempt to cancel/override the kill behavior.
+        /// Called on all IKillableEntity components in reverse order to allow each component to attempt to cancel/override the kill behavior. 
+        /// This method is not guaranteed to be called, sometimes an object is going to be killed regardless and only 'OnKill' is called. 
+        /// So don't rely on this method being called and instead only handle canceling of kill OR electing to be kill candidate.
         /// </summary>
         /// <param name="token"></param>
         void OnPreKill(ref KillableEntityToken token, GameObject target);

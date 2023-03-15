@@ -91,6 +91,7 @@ namespace com.spacepuppyeditor.Core.Commands
                 _currentTrans.Value.SetToLocal(tr);
             else
                 _currentTrans.Value.SetToGlobal(tr, false);
+            EditorHelper.CommitDirectChanges(tr, true);
         }
 
         [MenuItem("GameObject/Transform/Paste Transform", validate = true)]
@@ -118,6 +119,7 @@ namespace com.spacepuppyeditor.Core.Commands
                 _currentTrans.Value.SetToLocal(tr);
             else
                 _currentTrans.Value.SetToGlobal(tr, false);
+            EditorHelper.CommitDirectChanges(tr, true);
         }
 
         [MenuItem("CONTEXT/Transform/Paste Transform", validate = true)]

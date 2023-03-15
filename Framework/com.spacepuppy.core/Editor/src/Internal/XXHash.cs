@@ -28,7 +28,7 @@ SOFTWARE.
 using System.Text;
 using System.Runtime.CompilerServices;
 
-namespace Unity.Netcode
+namespace com.spacepuppyeditor.Internal
 {
     /// <summary>
     /// XXHash implementation.

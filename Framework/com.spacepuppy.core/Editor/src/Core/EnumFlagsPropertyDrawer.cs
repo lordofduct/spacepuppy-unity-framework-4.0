@@ -21,8 +21,15 @@ namespace com.spacepuppyeditor.Core
             var tp = (attrib.EnumType != null && attrib.EnumType.IsEnum) ? attrib.EnumType : this.fieldInfo.FieldType;
             if (tp.IsEnum)
             {
-                property.intValue = SPEditorGUI.EnumFlagField(position, tp, label, property.intValue);
-                property.serializedObject.ApplyModifiedProperties();
+                if (attrib.excluded?.Length > 0)
+                {
+                    var accepted = (from e in EnumUtil.GetUniqueEnumFlags(tp) select System.Convert.ToInt32(e)).Except(attrib.excluded).ToArray();
+                    property.intValue = SPEditorGUI.EnumFlagField(position, tp, accepted, label, property.intValue, false);
+                }
+                else
+                {
+                    property.intValue = SPEditorGUI.EnumFlagField(position, tp, label, property.intValue);
+                }
             }
             else
             {
@@ -33,4 +40,5 @@ namespace com.spacepuppyeditor.Core
         }
 
     }
+
 }

@@ -148,6 +148,7 @@ namespace com.spacepuppy
     {
 
         public System.Type EnumType;
+        public int[] excluded;
 
         public EnumFlagsAttribute()
         {

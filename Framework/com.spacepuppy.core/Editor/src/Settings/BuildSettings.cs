@@ -212,7 +212,7 @@ namespace com.spacepuppyeditor.Settings
                 //set version
                 Undo.RecordObject(this, "Build - Version Increment");
                 this.Version.Build++;
-                EditorUtility.SetDirty(this);
+                EditorHelper.CommitDirectChanges(this, true);
                 PlayerSettings.bundleVersion = this.Version.ToString();
                 AssetDatabase.SaveAssets();
 

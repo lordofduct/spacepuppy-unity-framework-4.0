@@ -274,11 +274,11 @@ namespace com.spacepuppyeditor.Windows
             {
                 if (AssetDatabase.Contains(obj))
                 {
-                    return new GUIContent("asset: " + obj.name);
+                    return EditorGUIUtility.ObjectContent(obj, obj.GetType()).Clone();
                 }
                 else
                 {
-                    return new GUIContent(obj.name);
+                    return EditorGUIUtility.ObjectContent(obj, obj.GetType()).Clone();
                 }
             }
         }
@@ -400,6 +400,7 @@ namespace com.spacepuppyeditor.Windows
             var helper = new GenericSearchDropDownObjectFieldHelper<T>()
             {
                 ObjectType = objType,
+                Filter = filter,
                 AllowSceneObjects = allowSceneObjects,
                 AllowProxy = allowProxy,
                 ShowDropDownCallback = (controlId, p, a) =>
@@ -541,9 +542,9 @@ namespace com.spacepuppyeditor.Windows
             _target = base.DrawObjectField(position, label, _target);
             _targetGameObject = GameObjectUtil.GetGameObjectFromSource(_target);
 
-            if(_targetGameObject == null && _target != null)
+            if (_targetGameObject == null && _target != null)
             {
-                if(!this.AllowProxy || !(_target is IProxy))
+                if (!this.AllowProxy || !(_target is IProxy))
                 {
                     _target = null;
                 }
@@ -577,7 +578,7 @@ namespace com.spacepuppyeditor.Windows
 
             if (_targetGameObject == null)
             {
-                if(this.AllowProxy && _target is IProxy && _target is UnityEngine.Object uo)
+                if (this.AllowProxy && _target is IProxy && _target is UnityEngine.Object uo)
                 {
                     yield return new SearchDropDownElement()
                     {
@@ -593,7 +594,7 @@ namespace com.spacepuppyeditor.Windows
             }
 
             string sname = _targetGameObject.name;
-            if(this.IncludeGameObject)
+            if (this.IncludeGameObject)
             {
                 yield return new SearchDropDownElement()
                 {

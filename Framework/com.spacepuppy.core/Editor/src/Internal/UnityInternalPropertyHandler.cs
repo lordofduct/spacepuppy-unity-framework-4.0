@@ -238,7 +238,7 @@ namespace com.spacepuppyeditor.Internal
         }
 
         #endregion
-        static bool LabelHasContent(GUIContent label)
+        internal static bool LabelHasContent(GUIContent label)
         {
             if (label == null)
                 return true;

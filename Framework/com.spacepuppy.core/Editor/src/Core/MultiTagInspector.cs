@@ -28,7 +28,7 @@ namespace com.spacepuppyeditor.Core
             if (go != null && !go.CompareTag(SPConstants.TAG_MULTITAG))
             {
                 go.tag = SPConstants.TAG_MULTITAG;
-                EditorUtility.SetDirty(go);
+                EditorHelper.CommitDirectChanges(go, false);
             }
         }
 

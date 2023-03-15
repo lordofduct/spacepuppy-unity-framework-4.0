@@ -19,6 +19,7 @@ namespace com.spacepuppyeditor.Core.Project
 
         private CustomTimeLayersData.EditorHelper _timeLayersHelper;
         private SPReorderableList _timeLayersListDrawer;
+        private bool _calledUndo;
 
         protected override void OnEnable()
         {
@@ -39,11 +40,12 @@ namespace com.spacepuppyeditor.Core.Project
         {
             if (_timeLayersListDrawer == null) return;
 
+            _calledUndo = false;
             EditorGUI.BeginChangeCheck();
             _timeLayersListDrawer.DoLayoutList();
             if (EditorGUI.EndChangeCheck())
             {
-                EditorUtility.SetDirty(_timeLayersHelper.Data);
+                this.serializedObject.CommitDirectChanges(_calledUndo);
                 AssetDatabase.SaveAssets();
             }
         }
@@ -67,7 +69,14 @@ namespace com.spacepuppyeditor.Core.Project
             EditorGUI.BeginChangeCheck();
             layerName = EditorGUI.TextField(area, layerName);
             if (EditorGUI.EndChangeCheck())
+            {
+                if (!_calledUndo)
+                {
+                    Undo.RecordObjects(this.serializedObject.targetObjects, "Modified Custom Time Layers");
+                    _calledUndo = true;
+                }
                 _timeLayersHelper.Layers[index] = layerName;
+            }
 
             if (GUI.enabled) ReorderableListHelper.DrawDraggableElementDeleteContextMenu(_timeLayersListDrawer, area, index, isActive, isFocused);
         }

@@ -46,11 +46,11 @@ namespace com.spacepuppyeditor.Core
 
                 var go = GameObjectUtil.GetGameObjectFromSource(obj);
                 if (go != null)
-                    return go.GetComponentInParent<SPEntity>();
+                    return go.GetComponentInParent<SPEntity>(true);
                 else
                     return null;
             }
-
+            
             public override TSub GetFromSource<TSub>(object obj)
             {
                 //if (Application.isPlaying)
@@ -59,8 +59,10 @@ namespace com.spacepuppyeditor.Core
                 var go = GameObjectUtil.GetGameObjectFromSource(obj);
                 if (go != null)
                 {
-                    var e = go.GetComponentInParent<SPEntity>();
-                    if (e is TSub) return e as TSub;
+                    //var e = go.GetComponentInParent<SPEntity>();
+                    //if (e is TSub) return e as TSub;
+                    var e = go.GetComponentInParent<TSub>(true);
+                    if (e is SPEntity) return e;
                 }
 
                 return null;
@@ -74,8 +76,10 @@ namespace com.spacepuppyeditor.Core
                 var go = GameObjectUtil.GetGameObjectFromSource(obj);
                 if (go != null)
                 {
-                    var e = go.GetComponentInParent<SPEntity>();
-                    if (tp.IsInstanceOfType(e)) return e;
+                    //var e = go.GetComponentInParent<SPEntity>();
+                    //if (tp.IsInstanceOfType(e)) return e;
+                    var e = go.GetComponentInParent(tp, true);
+                    if (e is SPEntity spe) return spe;
                 }
 
                 return null;

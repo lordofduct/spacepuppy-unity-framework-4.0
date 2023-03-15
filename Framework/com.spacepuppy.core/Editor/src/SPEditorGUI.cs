@@ -1006,26 +1006,26 @@ namespace com.spacepuppyeditor
                 case System.TypeCode.Int32:
                     {
                         int[] acceptedValues = (from e in EnumUtil.GetUniqueEnumFlags(enumType) select System.Convert.ToInt32(e)).ToArray();
-                        return EnumFlagField(position, enumType, acceptedValues, label, value);
+                        return EnumFlagField(position, enumType, acceptedValues, label, value, true);
                     }
                 case System.TypeCode.Byte:
                 case System.TypeCode.UInt16:
                 case System.TypeCode.UInt32:
                     {
                         int[] acceptedValues = (from e in EnumUtil.GetUniqueEnumFlags(enumType) select (int)System.Convert.ToUInt32(e)).ToArray();
-                        return EnumFlagField(position, enumType, acceptedValues, label, value);
+                        return EnumFlagField(position, enumType, acceptedValues, label, value, true);
                     }
                 case System.TypeCode.Int64:
                     {
                         //unity MaskField only supports 'int', so we redact all values that are too large
                         int[] acceptedValues = (from e in EnumUtil.GetUniqueEnumFlags(enumType) let i = System.Convert.ToInt64(e) where i <= int.MaxValue && i >= int.MinValue select (int)i).ToArray();
-                        return EnumFlagField(position, enumType, acceptedValues, label, value);
+                        return EnumFlagField(position, enumType, acceptedValues, label, value, true);
                     }
                 case System.TypeCode.UInt64:
                     {
                         //unity MaskField only supports 'int', so we redact all values that are too large
                         int[] acceptedValues = (from e in EnumUtil.GetUniqueEnumFlags(enumType) let i = (long)System.Convert.ToUInt64(e) where i <= int.MaxValue && i >= int.MinValue select (int)i).ToArray();
-                        return EnumFlagField(position, enumType, acceptedValues, label, value);
+                        return EnumFlagField(position, enumType, acceptedValues, label, value, true);
                     }
                 default:
                     EditorGUI.LabelField(position, label, EditorHelper.TempContent("64-bit enum not supported..."));
@@ -1043,7 +1043,7 @@ namespace com.spacepuppyeditor
             return System.Enum.ToObject(enumType, i) as System.Enum;
         }
 
-        public static int EnumFlagField(Rect position, System.Type enumType, int[] acceptedFlags, GUIContent label, int value)
+        public static int EnumFlagField(Rect position, System.Type enumType, int[] acceptedFlags, GUIContent label, int value, bool allowNegativeOneAsEverything)
         {
             if (enumType == null) throw new System.ArgumentNullException("enumType");
             if (!enumType.IsEnum) throw new System.ArgumentException("Must be an enum type.", "enumType");
@@ -1088,7 +1088,7 @@ namespace com.spacepuppyeditor
                 {
                     return 0;
                 }
-                else if (normalizedValue == -1)
+                else if (normalizedValue == -1 && allowNegativeOneAsEverything)
                 {
                     return -1;
                 }

@@ -236,7 +236,7 @@ namespace com.spacepuppyeditor.Core
                                 if (newguid != guid)
                                 {
                                     field.SetValue(so, (SerializableGuid)newguid);
-                                    EditorUtility.SetDirty(so);
+                                    EditorHelper.CommitDirectChanges(so, false);
                                     AssetDatabase.SaveAssetIfDirty(so);
                                 }
                             }

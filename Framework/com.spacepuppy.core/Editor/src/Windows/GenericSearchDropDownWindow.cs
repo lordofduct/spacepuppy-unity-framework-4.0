@@ -28,6 +28,13 @@ namespace com.spacepuppyeditor.Windows
     public class GenericSearchDropDownWindow : EditorWindow
     {
 
+        private enum SearchStates
+        {
+            DelayedDirty = -1,
+            Dirty = 0,
+            Clean = 1,
+        }
+
         #region Fields
 
         private Styles _style;
@@ -40,7 +47,7 @@ namespace com.spacepuppyeditor.Windows
         private string _search = string.Empty;
         private string _lastSearch = string.Empty;
         private List<SearchDropDownElement> _searchElements = new List<SearchDropDownElement>();
-        private bool _searchIsDirty;
+        private SearchStates _searchState;
 
         private Vector2 _scrollPosition;
         private int _selectedIndex = -1;
@@ -116,13 +123,32 @@ namespace com.spacepuppyeditor.Windows
 
             GUI.SetNextControlName(_cntrl_name);
             _search = SPEditorGUI.SearchField(rect, _search);
-            if (_search != _lastSearch)
+            switch (Event.current.type)
             {
-                this.RebuildSearch();
-            }
-            else if (_searchIsDirty)
-            {
-                this.RebuildSearch();
+                case EventType.Layout:
+                    switch (_searchState)
+                    {
+                        case SearchStates.DelayedDirty:
+                            EditorHelper.Invoke(() =>
+                            {
+                                if (_searchState <= SearchStates.Dirty)
+                                {
+                                    this.RebuildSearch();
+                                    this.Repaint();
+                                }
+                            }, 0.1f);
+                            break;
+                        case SearchStates.Dirty:
+                            this.RebuildSearch();
+                            break;
+                        default:
+                            if (_search != _lastSearch)
+                            {
+                                this.RebuildSearch();
+                            }
+                            break;
+                    }
+                    break;
             }
 
 
@@ -136,65 +162,82 @@ namespace com.spacepuppyeditor.Windows
 
         private void DrawList()
         {
-            _scrollPosition = GUILayout.BeginScrollView(_scrollPosition);
-
-            Event current = Event.current;
-            Rect selectedRect = new Rect();
-            EditorGUI.indentLevel++;
-            for (int index = 0; index < _searchElements.Count; index++)
+            switch (_searchState)
             {
-                var e = _searchElements[index];
-                Rect rect = GUILayoutUtility.GetRect(16f, 20f, new GUILayoutOption[1]
-                {
-                    GUILayout.ExpandWidth(true)
-                });
-                rect.x += 2f;
-                rect.width -= 2f;
-
-                if ((current.type == EventType.MouseMove || current.type == EventType.MouseDown) && rect.Contains(current.mousePosition))
-                {
-                    _selectedIndex = index;
-                    this.Repaint();
-                }
-                bool selectedFlag = false;
-                if (index == _selectedIndex)
-                {
-                    selectedFlag = true;
-                    selectedRect = rect;
-                }
-                if (current.type == EventType.Repaint)
-                {
-                    _style.componentButton.Draw(rect, e.Content, false, false, selectedFlag, selectedFlag);
-                }
-                if (current.type == EventType.MouseUp && rect.Contains(current.mousePosition))
-                {
-                    current.Use();
-                    if (!_searchHasEllipsis || index < (_searchElements.Count - 1))
+                case SearchStates.DelayedDirty:
+                case SearchStates.Dirty:
                     {
-                        _selectedIndex = index;
-                        this.SelectElement(e);
+                        Rect rect = GUILayoutUtility.GetRect(16f, 80f, new GUILayoutOption[1]
+                        {
+                                GUILayout.ExpandWidth(true)
+                        });
+                        EditorGUI.LabelField(rect, "Processing...", _style.processingLabel);
                     }
-                }
+                    break;
+                default:
+                    {
+                        _scrollPosition = GUILayout.BeginScrollView(_scrollPosition);
+
+                        Event current = Event.current;
+                        Rect selectedRect = new Rect();
+                        EditorGUI.indentLevel++;
+                        for (int index = 0; index < _searchElements.Count; index++)
+                        {
+                            var e = _searchElements[index];
+                            Rect rect = GUILayoutUtility.GetRect(16f, 20f, new GUILayoutOption[1]
+                            {
+                                GUILayout.ExpandWidth(true)
+                            });
+                            rect.x += 2f;
+                            rect.width -= 2f;
+
+                            if ((current.type == EventType.MouseMove || current.type == EventType.MouseDown) && rect.Contains(current.mousePosition))
+                            {
+                                _selectedIndex = index;
+                                this.Repaint();
+                            }
+                            bool selectedFlag = false;
+                            if (index == _selectedIndex)
+                            {
+                                selectedFlag = true;
+                                selectedRect = rect;
+                            }
+                            if (current.type == EventType.Repaint)
+                            {
+                                _style.componentButton.Draw(rect, e.Content, false, false, selectedFlag, selectedFlag);
+                            }
+                            if (current.type == EventType.MouseUp && rect.Contains(current.mousePosition))
+                            {
+                                current.Use();
+                                if (!_searchHasEllipsis || index < (_searchElements.Count - 1))
+                                {
+                                    _selectedIndex = index;
+                                    this.SelectElement(e);
+                                }
+                            }
+                        }
+                        EditorGUI.indentLevel--;
+
+                        GUILayout.EndScrollView();
+
+
+
+                        if (!_scrollToSelected || Event.current.type != EventType.Repaint)
+                            return;
+                        _scrollToSelected = false;
+                        Rect lastRect = GUILayoutUtility.GetLastRect();
+                        if ((double)selectedRect.yMax - (double)lastRect.height > (double)_scrollPosition.y)
+                        {
+                            _scrollPosition.y = selectedRect.yMax - lastRect.height;
+                            this.Repaint();
+                        }
+                        if ((double)selectedRect.y >= (double)_scrollPosition.y)
+                            return;
+                        _scrollPosition.y = selectedRect.y;
+                        this.Repaint();
+                    }
+                    break;
             }
-            EditorGUI.indentLevel--;
-
-            GUILayout.EndScrollView();
-
-
-
-            if (!_scrollToSelected || Event.current.type != EventType.Repaint)
-                return;
-            _scrollToSelected = false;
-            Rect lastRect = GUILayoutUtility.GetLastRect();
-            if ((double)selectedRect.yMax - (double)lastRect.height > (double)_scrollPosition.y)
-            {
-                _scrollPosition.y = selectedRect.yMax - lastRect.height;
-                this.Repaint();
-            }
-            if ((double)selectedRect.y >= (double)_scrollPosition.y)
-                return;
-            _scrollPosition.y = selectedRect.y;
-            this.Repaint();
         }
 
         private void HandleKeyboard()
@@ -258,7 +301,7 @@ namespace com.spacepuppyeditor.Windows
         private void RebuildSearch()
         {
             _lastSearch = _search;
-            _searchIsDirty = false;
+            _searchState = SearchStates.Clean;
             _scrollPosition = Vector2.zero;
             _selectedIndex = -1;
             _searchHasEllipsis = false;
@@ -317,6 +360,7 @@ namespace com.spacepuppyeditor.Windows
             public GUIStyle rightArrow = (GUIStyle)"AC RightArrow";
             public GUIStyle leftArrow = (GUIStyle)"AC LeftArrow";
             public GUIStyle groupButton;
+            public GUIStyle processingLabel = new GUIStyle(EditorStyles.label);
 
             public Styles()
             {
@@ -333,6 +377,7 @@ namespace com.spacepuppyeditor.Windows
                 this.previewHeader.padding.right += 3;
                 this.previewHeader.padding.top += 3;
                 this.previewHeader.padding.bottom += 2;
+                this.processingLabel.alignment = TextAnchor.MiddleCenter;
             }
         }
 
@@ -434,7 +479,7 @@ namespace com.spacepuppyeditor.Windows
             _window._cntrl_name = selector.GetType().Name;
             _window._search = EditorPrefs.GetString(_window._searchCacheId);
             _window._selector = selector;
-            _window._searchIsDirty = true;
+            _window._searchState = SearchStates.DelayedDirty;
 
             _window.ShowAsDropDown(position, new Vector2(position.width, 320f));
             _window.Focus();
@@ -550,6 +595,8 @@ namespace com.spacepuppyeditor.Windows
         /// </summary>
         public virtual System.Type ObjectType { get; set; } = typeof(T);
 
+        public System.Predicate<T> Filter { get; set; }
+
         public virtual ShowDropDownCallbackDelegate ShowDropDownCallback { get; set; }
 
         public virtual bool AllowSceneObjects { get; set; }
@@ -640,7 +687,7 @@ namespace com.spacepuppyeditor.Windows
                 ShowDropDownCallback?.Invoke(controlId, position, asset);
             }
 
-            var newobj = HandleDragAndDrop(isDragging, isDropping, asset as UnityEngine.Object, objType, this.AllowSceneObjects, this.AllowProxy) as T;
+            var newobj = HandleDragAndDrop(isDragging, isDropping, asset as UnityEngine.Object, objType, this.Filter, this.AllowSceneObjects, this.AllowProxy) as T;
             if (newobj != asset)
             {
                 asset = newobj;
@@ -672,7 +719,7 @@ namespace com.spacepuppyeditor.Windows
 #endif
         }
 
-        private static UnityEngine.Object HandleDragAndDrop(bool isDragging, bool isDropping, UnityEngine.Object asset, System.Type objType, bool allowSceneObjects, bool allowProxy)
+        private static UnityEngine.Object HandleDragAndDrop(bool isDragging, bool isDropping, UnityEngine.Object asset, System.Type objType, System.Predicate<T> filter, bool allowSceneObjects, bool allowProxy)
         {
             if (!isDragging && !isDropping) return asset;
 
@@ -682,11 +729,13 @@ namespace com.spacepuppyeditor.Windows
                 bool validDrag;
                 if (allowSceneObjects)
                 {
-                    validDrag = DragAndDrop.objectReferences.Any(o => ObjUtil.GetAsFromSource(types, o) != null);
+                    validDrag = DragAndDrop.objectReferences.Any(o => ObjUtil.GetAsFromSource(types, o) != null &&
+                                                                      (filter == null || (o is T ot && filter(ot))));
                 }
                 else
                 {
-                    validDrag = DragAndDrop.objectReferences.Any(o => ObjUtil.GetAsFromSource(types, o) != null && !string.IsNullOrEmpty(AssetDatabase.GetAssetPath(o)));
+                    validDrag = DragAndDrop.objectReferences.Any(o => ObjUtil.GetAsFromSource(types, o) != null && !string.IsNullOrEmpty(AssetDatabase.GetAssetPath(o)) &&
+                                                                      (filter == null || (o is T ot && filter(ot))));
                 }
 
                 if (isDragging)
@@ -696,7 +745,20 @@ namespace com.spacepuppyeditor.Windows
 
                 if (validDrag && isDropping)
                 {
-                    var entry = DragAndDrop.objectReferences.Select(o => ObjUtil.GetAsFromSource(types, o) as UnityEngine.Object).FirstOrDefault(o => o != null);
+                    UnityEngine.Object entry;
+                    if (filter == null)
+                    {
+                        entry = DragAndDrop.objectReferences.Select(o => ObjUtil.GetAsFromSource(types, o) as UnityEngine.Object).FirstOrDefault(o => o != null);
+                    }
+                    else
+                    {
+                        entry = DragAndDrop.objectReferences.Select(o =>
+                        {
+                            o = ObjUtil.GetAsFromSource(types, o) as UnityEngine.Object;
+                            return (o is T ot && filter(ot)) ? o : null;
+                        }).FirstOrDefault(o => o != null);
+                    }
+
                     if (entry != null && !object.ReferenceEquals(asset, entry))
                     {
                         asset = entry;

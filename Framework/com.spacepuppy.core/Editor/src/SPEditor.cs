@@ -113,9 +113,9 @@ namespace com.spacepuppyeditor
                 PropertyHandlerValidationUtility.OnInspectorGUIComplete(this.serializedObject, false);
             }
 
-            if (_shownFields != null && _shownFields.Any(o => o.Attrib.ShowOutsideRuntimeValuesFoldout && o.Attrib.ShowAtEditorTime || UnityEngine.Application.isPlaying))
+            if (_shownFields != null && _shownFields.Any(o => o.Attrib.ShowOutsideRuntimeValuesFoldout && (o.Attrib.ShowAtEditorTime || UnityEngine.Application.isPlaying)))
             {
-                foreach (var info in _shownFields.Where(o => o.Attrib.ShowOutsideRuntimeValuesFoldout && o.Attrib.ShowAtEditorTime || UnityEngine.Application.isPlaying))
+                foreach (var info in _shownFields.Where(o => o.Attrib.ShowOutsideRuntimeValuesFoldout && (o.Attrib.ShowAtEditorTime || UnityEngine.Application.isPlaying)))
                 {
                     switch (DynamicUtil.GetMemberAccessLevel(info.MemberInfo))
                     {
@@ -149,7 +149,7 @@ namespace com.spacepuppyeditor
                 }
             }
 
-            if (_shownFields != null && _shownFields.Any(o => !o.Attrib.ShowOutsideRuntimeValuesFoldout && o.Attrib.ShowAtEditorTime || UnityEngine.Application.isPlaying))
+            if (_shownFields != null && _shownFields.Any(o => !o.Attrib.ShowOutsideRuntimeValuesFoldout && (o.Attrib.ShowAtEditorTime || UnityEngine.Application.isPlaying)))
             {
                 EditorGUILayout.BeginVertical("box");
                 var style = new GUIStyle(EditorStyles.boldLabel);
@@ -160,7 +160,7 @@ namespace com.spacepuppyeditor
                 _runtimeValuesFoldoutOpen = EditorGUI.Foldout(r, _runtimeValuesFoldoutOpen, GUIContent.none, true);
                 if (_runtimeValuesFoldoutOpen)
                 {
-                    foreach (var info in _shownFields.Where(o => !o.Attrib.ShowOutsideRuntimeValuesFoldout && o.Attrib.ShowAtEditorTime || UnityEngine.Application.isPlaying))
+                    foreach (var info in _shownFields.Where(o => !o.Attrib.ShowOutsideRuntimeValuesFoldout && (o.Attrib.ShowAtEditorTime || UnityEngine.Application.isPlaying)))
                     {
                         switch (DynamicUtil.GetMemberAccessLevel(info.MemberInfo))
                         {

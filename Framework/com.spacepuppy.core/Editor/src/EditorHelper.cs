@@ -98,6 +98,38 @@ namespace com.spacepuppyeditor
 
         #endregion
 
+        #region Dirty Helpers
+
+        public static void CommitDirectChanges(this SerializedProperty property, bool usedUndo) => CommitDirectChanges(property.serializedObject, usedUndo);
+        public static void CommitDirectChanges(this SerializedObject serializedObject, bool usedUndo)
+        {
+            foreach (var targ in serializedObject.targetObjects)
+            {
+                CommitDirectChanges(targ, usedUndo);
+            }
+        }
+
+        public static void CommitDirectChanges(UnityEngine.Object targ, bool usedUndo)
+        {
+            if (GameObjectUtil.IsGameObjectSource(targ))
+            {
+                if (PrefabUtility.IsPartOfAnyPrefab(targ))
+                {
+                    PrefabUtility.RecordPrefabInstancePropertyModifications(targ);
+                }
+                else if (!usedUndo)
+                {
+                    EditorUtility.SetDirty(targ);
+                }
+            }
+            else
+            {
+                EditorUtility.SetDirty(targ);
+            }
+        }
+
+        #endregion
+
         #region SerializedProperty Helpers
 
         public static IEnumerable<SerializedProperty> GetChildren(this SerializedProperty property)
@@ -153,6 +185,11 @@ namespace com.spacepuppyeditor
             switch (prop.propertyType)
             {
                 case SerializedPropertyType.Generic:
+                    {
+                        field = GetFieldOfProperty(prop);
+                        if (field != null) return field.FieldType;
+                        return TypeUtil.FindType(prop.type) ?? typeof(object);
+                    }
                     return TypeUtil.FindType(prop.type) ?? typeof(object);
                 case SerializedPropertyType.Integer:
                     return prop.type == "long" ? typeof(int) : typeof(long);
@@ -165,19 +202,23 @@ namespace com.spacepuppyeditor
                 case SerializedPropertyType.Color:
                     {
                         field = GetFieldOfProperty(prop);
-                        return field != null ? field.FieldType : typeof(Color);
+                        if (field != null) return field.FieldType;
+                        if (field != null) return field.FieldType;
+                        return TypeUtil.FindType(prop.type) ?? typeof(Color);
                     }
                 case SerializedPropertyType.ObjectReference:
                     {
                         field = GetFieldOfProperty(prop);
-                        return field != null ? field.FieldType : typeof(UnityEngine.Object);
+                        if (field != null) return field.FieldType;
+                        return TypeUtil.FindType(prop.type) ?? typeof(UnityEngine.Object);
                     }
                 case SerializedPropertyType.LayerMask:
                     return typeof(LayerMask);
                 case SerializedPropertyType.Enum:
                     {
                         field = GetFieldOfProperty(prop);
-                        return field != null ? field.FieldType : typeof(System.Enum);
+                        if (field != null) return field.FieldType;
+                        return TypeUtil.FindType(prop.type) ?? typeof(System.Enum);
                     }
                 case SerializedPropertyType.Vector2:
                     return typeof(Vector2);
@@ -202,7 +243,8 @@ namespace com.spacepuppyeditor
                 case SerializedPropertyType.ExposedReference:
                     {
                         field = GetFieldOfProperty(prop);
-                        return field != null ? field.FieldType : typeof(UnityEngine.Object);
+                        if (field != null) return field.FieldType;
+                        return TypeUtil.FindType(prop.type) ?? typeof(UnityEngine.Object);
                     }
                 case SerializedPropertyType.FixedBufferSize:
                     return typeof(int);
@@ -217,7 +259,8 @@ namespace com.spacepuppyeditor
                 default:
                     {
                         field = GetFieldOfProperty(prop);
-                        return field != null ? field.FieldType : typeof(object);
+                        if (field != null) return field.FieldType;
+                        return TypeUtil.FindType(prop.type) ?? typeof(object);
                     }
             }
         }
@@ -569,7 +612,7 @@ namespace com.spacepuppyeditor
                 case SerializedPropertyType.LayerMask:
                     return (LayerMask)prop.intValue;
                 case SerializedPropertyType.Enum:
-                    return prop.enumValueIndex;
+                    return prop.intValue;
                 case SerializedPropertyType.Vector2:
                     return prop.vector2Value;
                 case SerializedPropertyType.Vector3:
@@ -935,10 +978,14 @@ namespace com.spacepuppyeditor
 
         #endregion
 
-        #region Temp Content
+        #region GUIContent
 
         //private static TrackablObjectCachePool<GUIContent> _temp_text = new TrackablObjectCachePool<GUIContent>(50);
 
+        public static bool HasContent(this GUIContent label)
+        {
+            return label != null && (!string.IsNullOrEmpty(label.text) || label.image != null);
+        }
 
         /// <summary>
         /// Single immediate use GUIContent for a label. Should be used immediately and not stored/referenced for later use.
@@ -961,7 +1008,7 @@ namespace com.spacepuppyeditor
             return c;
         }
 
-        public static GUIContent CloneContent(GUIContent content)
+        public static GUIContent Clone(this GUIContent content)
         {
             var c = new GUIContent(); // _temp_text.GetInstance();
             c.text = content.text;

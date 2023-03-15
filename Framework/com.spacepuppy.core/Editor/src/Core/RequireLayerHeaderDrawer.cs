@@ -31,7 +31,7 @@ namespace com.spacepuppyeditor.Core
                 if(go.layer != attrib.Layer)
                 {
                     go.layer = attrib.Layer;
-                    EditorUtility.SetDirty(go);
+                    EditorHelper.CommitDirectChanges(go, false);
                 }
             }
 

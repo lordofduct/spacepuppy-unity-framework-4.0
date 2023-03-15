@@ -183,6 +183,7 @@ namespace com.spacepuppyeditor.Waypoints
                     {
                         Undo.RecordObject(obj, "Set Waypoint Path Node Owner");
                         obj = _targ.InitializeTransformAsControlPoint(obj.transform);
+                        EditorHelper.CommitDirectChanges(obj, true);
                     }
                 }
                 elementProp.objectReferenceValue = obj;
@@ -353,6 +354,7 @@ namespace com.spacepuppyeditor.Waypoints
                 {
                     Undo.RecordObject(trans, "Change Waypoint Path Control Point Strength");
                     trans.localScale = Vector3.one * scale;
+                    EditorHelper.CommitDirectChanges(trans, true);
                 }
             }
 

@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
+using com.spacepuppy.Async;
+using com.spacepuppy.Utils;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -53,6 +55,12 @@ namespace com.spacepuppy.Addressables
         public UnityEngine.Object DirectAssetReference => _directReference;
 
         public virtual System.Type ExpectedAssetType => typeof(UnityEngine.Object);
+
+        #endregion
+
+        #region Methods
+
+        public AsyncWaitHandle<T> LoadOrGetDynamicAssetAsync<T>() where T : class => this.IsDirectAssetReference ? new AsyncWaitHandle<T>(ObjUtil.GetAsFromSource<T>(_directReference, false)) : this.LoadAssetAsync<T>().AsAsyncWaitHandle();
 
         #endregion
 
@@ -117,13 +125,15 @@ namespace com.spacepuppy.Addressables
 
         #region Properties
 
-        public new TObject DirectAssetReference => base.DirectAssetReference as TObject;
+        public new TObject DirectAssetReference => ObjUtil.GetAsFromSource<TObject>(base.DirectAssetReference, false);
 
         public override System.Type ExpectedAssetType => typeof(TObject);
 
         #endregion
 
         #region AssetReference Overrides
+
+        public virtual AsyncWaitHandle<TObject> LoadOrGetDynamicAssetAsync() => this.IsDirectAssetReference ? new AsyncWaitHandle<TObject>(this.DirectAssetReference) : this.LoadAssetAsync<TObject>().AsAsyncWaitHandle();
 
         public virtual AsyncOperationHandle<TObject> LoadAssetAsync()
         {
@@ -192,13 +202,15 @@ namespace com.spacepuppy.Addressables
 
         #region Properties
 
-        public new TInterface DirectAssetReference => base.DirectAssetReference as TInterface;
+        public new TInterface DirectAssetReference => ObjUtil.GetAsFromSource<TInterface>(base.DirectAssetReference, false);
 
         public override System.Type ExpectedAssetType => typeof(TInterface);
 
         #endregion
 
         #region AssetRefeance Overrides
+
+        public virtual AsyncWaitHandle<TInterface> LoadOrGetDynamicAssetAsync() => this.IsDirectAssetReference ? new AsyncWaitHandle<TInterface>(this.DirectAssetReference) : this.LoadAssetAsync<TInterface>().AsAsyncWaitHandle();
 
         public virtual AsyncOperationHandle<TInterface> LoadAssetAsync()
         {
@@ -241,6 +253,9 @@ namespace com.spacepuppy.Addressables
         #endregion
 
     }
+
+    [System.Serializable]
+    public class DynamicAssetReferenceGameObject : DynamicAssetReferenceT<GameObject> { }
 
 }
 #endif

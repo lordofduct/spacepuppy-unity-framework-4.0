@@ -71,13 +71,23 @@ namespace com.spacepuppyeditor.Addressables
 
             const float DROPDOWN_WIDTH = 90f;
             var rect_property = SPEditorGUI.SafePrefixLabel(position, label);
-            var rect_dropdown = new Rect(rect_property.xMin - DROPDOWN_WIDTH - 1, rect_property.yMin, DROPDOWN_WIDTH, EditorGUIUtility.singleLineHeight);
+            Rect rect_dropdown;
+            if (label.HasContent())
+            {
+                rect_dropdown = new Rect(rect_property.xMin - DROPDOWN_WIDTH - 1, rect_property.yMin, DROPDOWN_WIDTH, EditorGUIUtility.singleLineHeight);
+            }
+            else
+            {
+                rect_dropdown = new Rect(rect_property.xMin, rect_property.yMin, DROPDOWN_WIDTH, EditorGUIUtility.singleLineHeight);
+                rect_property = new Rect(rect_dropdown.xMax + 1, rect_property.yMin, rect_property.width - DROPDOWN_WIDTH - 1, rect_property.height);
+            }
             if (SPEditorGUI.XButton(ref rect_property))
             {
                 if (assetref != null)
                 {
+                    Undo.RecordObject(property.serializedObject.targetObject, "Modified DynamicAssetReference");
                     assetref.SetEditorAsset(null);
-                    SetAssetRef(property, assetref);
+                    property.CommitDirectChanges(true);
                 }
                 else
                 {
@@ -100,8 +110,9 @@ namespace com.spacepuppyeditor.Addressables
 
                             if (assetref != null)
                             {
+                                Undo.RecordObject(property.serializedObject.targetObject, "Modified DynamicAssetReference");
                                 assetref.SetDirectReference(obj);
-                                SetAssetRef(property, assetref);
+                                property.CommitDirectChanges(true);
                             }
                             else
                             {
@@ -112,7 +123,9 @@ namespace com.spacepuppyeditor.Addressables
                         if (EditorGUI.Popup(rect_dropdown, 0, _dropdownOptions) != 0)
                         {
                             selection = 1;
+                            Undo.RecordObject(property.serializedObject.targetObject, "Modified DynamicAssetReference");
                             assetref.SetEditorAsset(obj);
+                            property.CommitDirectChanges(true);
                         }
                     }
                     break;
@@ -124,27 +137,15 @@ namespace com.spacepuppyeditor.Addressables
                             selection = 0;
                             if (assetref != null)
                             {
+                                Undo.RecordObject(property.serializedObject.targetObject, "Modified DynamicAssetReference");
                                 assetref.SetDirectReference(assetref.editorAsset);
-                                SetAssetRef(property, assetref);
+                                property.CommitDirectChanges(true);
                             }
                         }
                     }
                     break;
             }
             this.SetDropdownSelection(property, selection);
-        }
-
-        private void SetAssetRef(SerializedProperty property, DynamicAssetReference assetref)
-        {
-            try
-            {
-#if UNITY_2022_1_OR_NEWER
-            property.boxedValue = assetref;
-#else
-                property.SetPropertyValue(assetref, true);
-#endif
-            }
-            catch { }
         }
 
         private int? GetDropdownSelection(SerializedProperty property)

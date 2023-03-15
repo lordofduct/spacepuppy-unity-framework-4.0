@@ -1,0 +1,208 @@
+using UnityEngine;
+using UnityEditor;
+using System.Collections.Generic;
+using System.Linq;
+using com.spacepuppy.Project;
+using com.spacepuppy.Utils;
+using com.spacepuppy;
+using com.spacepuppy.Collections;
+using com.spacepuppyeditor.Windows;
+using System.IO;
+
+namespace com.spacepuppyeditor.Core.Project
+{
+
+    [CustomEditor(typeof(QueryableAssetSet), true)]
+    public class QueryableAssetSetInspector : SPEditor
+    {
+
+        #region Fields
+
+        private TypeReferencePropertyDrawer _typeRefDrawer = new TypeReferencePropertyDrawer();
+        private ReorderableArrayPropertyDrawer _reorderableArrayDrawer = new ReorderableArrayPropertyDrawer();
+        private bool _supportNestedAssetSet;
+        private System.Type _restrictedType;
+
+        #endregion
+
+        protected TypeReferencePropertyDrawer TypeRefDrawer => _typeRefDrawer;
+
+        protected ReorderableArrayPropertyDrawer AssetArrayDrawer => _reorderableArrayDrawer;
+
+        protected bool SupportNestedAssetSet => _supportNestedAssetSet;
+
+        protected System.Type RestrictedType => _restrictedType;
+
+        protected override void OnEnable()
+        {
+            base.OnEnable();
+
+            _supportNestedAssetSet = this.serializedObject.FindProperty(QueryableAssetSet.PROP_SUPPORTNESTEDGROUPS).boolValue;
+
+            _typeRefDrawer.DefaultType = typeof(UnityEngine.Object);
+            _typeRefDrawer.TypeEnumerator = TypeUtil.GetTypes(tp =>
+            {
+                return tp.IsInterface || (TypeUtil.IsType(tp, typeof(UnityEngine.Object))) || (_supportNestedAssetSet && TypeUtil.IsType(tp, typeof(IAssetSet)));
+            });
+
+            _reorderableArrayDrawer.AllowDragAndDrop = true;
+            _reorderableArrayDrawer.DragDropElementType = typeof(UnityEngine.Object);
+            _reorderableArrayDrawer.DragDropElementFilter = (o) =>
+            {
+                var obj = ObjUtil.GetAsFromSource(_restrictedType, o) as UnityEngine.Object;
+                if (obj == this.serializedObject.targetObject) return null;
+
+                if (obj != null) return obj;
+
+                if (_supportNestedAssetSet)
+                {
+                    return ObjUtil.GetAsFromSource<IAssetSet>(o) as UnityEngine.Object;
+                }
+
+                return null;
+            };
+            _reorderableArrayDrawer.InternalDrawer = new ReorderableArrayInternalDrawer(this);
+        }
+
+        protected override void OnSPInspectorGUI()
+        {
+            this.serializedObject.UpdateIfRequiredOrScript();
+
+            this.DrawDefaultInspectorExcept(QueryableAssetSet.PROP_ASSETTYPE, QueryableAssetSet.PROP_ASSETS);
+
+            this.DrawAssetTypeProperty();
+
+            this.DrawAssetsProperty();
+
+            this.serializedObject.ApplyModifiedProperties();
+
+            if (!this.serializedObject.isEditingMultipleObjects && !Application.isPlaying)
+            {
+                EditorGUILayout.Space(20f);
+                this.DrawQuickAddUtils();
+            }
+        }
+
+        protected virtual void DrawAssetTypeProperty()
+        {
+            var prop_assettype = this.serializedObject.FindProperty(QueryableAssetSet.PROP_ASSETTYPE);
+            var prop_assets = this.serializedObject.FindProperty(QueryableAssetSet.PROP_ASSETS);
+            _restrictedType = TypeReferencePropertyDrawer.GetTypeFromTypeReference(prop_assettype) ?? typeof(UnityEngine.Object);
+
+            EditorGUI.BeginChangeCheck();
+            _typeRefDrawer.OnGUILayout(prop_assettype);
+            if (EditorGUI.EndChangeCheck() && prop_assets.arraySize > 0)
+            {
+                _restrictedType = TypeReferencePropertyDrawer.GetTypeFromTypeReference(prop_assettype) ?? typeof(UnityEngine.Object);
+                using (var lst = TempCollection.GetList<UnityEngine.Object>())
+                {
+                    for (int i = 0; i < prop_assets.arraySize; i++)
+                    {
+                        var obj = ObjUtil.GetAsFromSource(_restrictedType, prop_assets.GetArrayElementAtIndex(i).objectReferenceValue) as UnityEngine.Object;
+                        if (obj) lst.Add(obj);
+                    }
+
+                    prop_assets.arraySize = lst.Count;
+                    for (int i = 0; i < prop_assets.arraySize; i++)
+                    {
+                        prop_assets.GetArrayElementAtIndex(i).objectReferenceValue = lst[i];
+                    }
+                }
+            }
+        }
+
+        protected virtual void DrawAssetsProperty()
+        {
+            _supportNestedAssetSet = this.serializedObject.FindProperty(QueryableAssetSet.PROP_SUPPORTNESTEDGROUPS).boolValue;
+            _reorderableArrayDrawer.DragDropElementType = _restrictedType;
+            _reorderableArrayDrawer.OnGUILayout(this.serializedObject.FindProperty(QueryableAssetSet.PROP_ASSETS));
+        }
+
+        protected virtual void DrawQuickAddUtils()
+        {
+
+            if (GUILayout.Button(EditorHelper.TempContent("Scan Project", "Scans the entire project and adds the matching assets to this AssetSet.")))
+            {
+                var targ = this.target as QueryableAssetSet;
+                if (!targ) return;
+
+                var assets = AssetDatabase.FindAssets(GetBestSearchStringForType(_restrictedType))
+                                        .Select(s => ObjUtil.GetAsFromSource(_restrictedType, AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(s), typeof(UnityEngine.Object))) as UnityEngine.Object)
+                                        .Where(o => o != null && o != targ);
+                targ.ResetAssets(assets);
+            }
+            EditorGUILayout.Space(2f);
+            if (GUILayout.Button(EditorHelper.TempContent("Scan Local Folder", "Scans the folder this asset is in, and sub folders, and adds the matching assets to this AssetSet.")))
+            {
+                var targ = this.target as QueryableAssetSet;
+                if (!targ) return;
+
+                var path = Path.GetDirectoryName(AssetDatabase.GetAssetPath(targ));
+                var assets = AssetDatabase.FindAssets(GetBestSearchStringForType(_restrictedType), new string[] { path })
+                                        .Select(s => ObjUtil.GetAsFromSource(_restrictedType, AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(s), typeof(UnityEngine.Object))) as UnityEngine.Object)
+                                        .Where(o => o != null && o != targ);
+                targ.ResetAssets(assets);
+            }
+        }
+
+        static string GetBestSearchStringForType(System.Type tp)
+        {
+            if (tp == typeof(GameObject) || TypeUtil.IsType(tp, typeof(Component)))
+                return $"t:GameObject";
+            if (TypeUtil.IsType(tp, typeof(ScriptableObject)))
+                return $"t:{tp.Name}";
+            if (TypeUtil.IsType(tp, typeof(Texture)))
+                return $"t:texture";
+
+            return "a:assets";
+        }
+
+
+        #region Special Types
+
+        private class ReorderableArrayInternalDrawer : PropertyDrawer
+        {
+
+            private QueryableAssetSetInspector _owner;
+
+            public ReorderableArrayInternalDrawer(QueryableAssetSetInspector owner)
+            {
+                _owner = owner;
+            }
+
+            public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+            {
+                return EditorGUIUtility.singleLineHeight;
+            }
+
+            public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+            {
+                if (_owner._supportNestedAssetSet || _owner._restrictedType.IsInterface)
+                {
+                    EditorGUI.BeginChangeCheck();
+                    var obj = UnityObjectDropDownWindowSelector.ObjectField(position,
+                        label,
+                        property.objectReferenceValue,
+                        typeof(UnityEngine.Object),
+                        false,
+                        true,
+                        (o) => _owner._reorderableArrayDrawer.DragDropElementFilter(o) != null);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        obj = _owner._reorderableArrayDrawer.DragDropElementFilter(obj);
+                        if (obj) property.objectReferenceValue = obj;
+                    }
+                }
+                else
+                {
+                    EditorGUI.ObjectField(position, property, _owner._restrictedType, label);
+                }
+            }
+
+        }
+
+        #endregion
+
+    }
+
+}

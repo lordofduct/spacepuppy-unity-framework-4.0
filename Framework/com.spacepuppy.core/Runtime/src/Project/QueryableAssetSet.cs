@@ -13,6 +13,12 @@ namespace com.spacepuppy.Project
     public class QueryableAssetSet : ScriptableObject, IAssetSet, IAssetGuidIdentifiable
     {
 
+#if UNITY_EDITOR
+        public const string PROP_SUPPORTNESTEDGROUPS = nameof(_supportNestedGroups);
+        public const string PROP_ASSETTYPE = nameof(_assetType);
+        public const string PROP_ASSETS = nameof(_assets);
+#endif
+
         #region Fields
 
         [SerializeField]
@@ -21,6 +27,9 @@ namespace com.spacepuppy.Project
 
         [SerializeField]
         private bool _supportNestedGroups;
+
+        [SerializeField]
+        private TypeReference _assetType = new TypeReference(typeof(UnityEngine.Object));
 
         [SerializeField]
         [ReorderableArray()]
@@ -48,6 +57,12 @@ namespace com.spacepuppy.Project
 
         #region Properties
 
+        public System.Type AssetType
+        {
+            get => _assetType.Type ?? typeof(UnityEngine.Object);
+            set => _assetType.Type = value;
+        }
+
         public bool SupportNestedGroups
         {
             get { return _supportNestedGroups; }
@@ -59,12 +74,23 @@ namespace com.spacepuppy.Project
             }
         }
 
+        /// <summary>
+        /// Internal access to the asset array. You should use this only for reading. 
+        /// If you need to manipulate the collection use the public methods to ensure 
+        /// lookup tables are synced correctly.
+        /// </summary>
+        protected UnityEngine.Object[] Assets
+        {
+            get => _assets;
+        }
+
         #endregion
 
         #region Methods
 
-        private void SetupTable()
+        private bool SetupTable()
         {
+            if (this.IsDestroyed()) return false;
             (_table ?? (_table = new Dictionary<string, Object>())).Clear();
             _guidTable?.Clear();
 
@@ -82,11 +108,12 @@ namespace com.spacepuppy.Project
                 }
             }
             _clean = true;
+            return true;
         }
 
         public IEnumerable<string> GetAllAssetNames(bool shallow = false)
         {
-            if (!_clean) this.SetupTable();
+            if (!_clean && !this.SetupTable()) return Enumerable.Empty<string>();
 
             if (!shallow && _nested)
             {
@@ -100,7 +127,11 @@ namespace com.spacepuppy.Project
 
         public bool TryGetAsset(string name, out UnityEngine.Object obj)
         {
-            if (!_clean) this.SetupTable();
+            if (!_clean && !this.SetupTable())
+            {
+                obj = null;
+                return false;
+            }
 
             if (_table.TryGetValue(name, out obj))
             {
@@ -128,7 +159,11 @@ namespace com.spacepuppy.Project
 
         public bool TryGetAsset(string name, System.Type tp, out UnityEngine.Object obj)
         {
-            if (!_clean) this.SetupTable();
+            if (!_clean && !this.SetupTable())
+            {
+                obj = null;
+                return false;
+            }
 
             if (_table.TryGetValue(name, out obj))
             {
@@ -158,7 +193,11 @@ namespace com.spacepuppy.Project
 
         public bool TryGetAsset<T>(string name, out T obj) where T : class
         {
-            if (!_clean) this.SetupTable();
+            if (!_clean && !this.SetupTable())
+            {
+                obj = null;
+                return false;
+            }
 
             UnityEngine.Object o;
             if (_table.TryGetValue(name, out o))
@@ -210,7 +249,7 @@ namespace com.spacepuppy.Project
 
         public IEnumerable<UnityEngine.Object> GetAllAssets(bool shallow = false)
         {
-            if (!_clean) this.SetupTable();
+            if (!_clean && !this.SetupTable()) return Enumerable.Empty<UnityEngine.Object>();
 
             if (!shallow && _nested)
             {
@@ -229,7 +268,7 @@ namespace com.spacepuppy.Project
 
         public IEnumerable<T> GetAllAssets<T>(bool shallow = false) where T : class
         {
-            if (!_clean) this.SetupTable();
+            if (!_clean && !this.SetupTable()) yield break;
 
             if (!shallow && _nested)
             {
@@ -256,8 +295,10 @@ namespace com.spacepuppy.Project
         /// Replaces the internal collection with a new set of assets.
         /// </summary>
         /// <param name="assets"></param>
-        public void ResetAssets(IEnumerable<UnityEngine.Object> assets)
+        public virtual void ResetAssets(IEnumerable<UnityEngine.Object> assets)
         {
+            if (this.IsDestroyed()) return;
+
             _assets = assets.ToArray();
             if (_table != null)
             {
@@ -269,7 +310,7 @@ namespace com.spacepuppy.Project
 
         public bool Contains(UnityEngine.Object asset)
         {
-            if (!_clean) this.SetupTable();
+            if (!_clean && !this.SetupTable()) return false;
 
             if (_table.Values.Contains(asset)) return true;
 
@@ -302,14 +343,18 @@ namespace com.spacepuppy.Project
         /// <returns></returns>
         public IEnumerable<System.Guid> GetAssetGuids()
         {
-            if (!_clean) this.SetupTable();
+            if (!_clean && !this.SetupTable()) return Enumerable.Empty<System.Guid>();
 
             return _guidTable?.Keys ?? Enumerable.Empty<System.Guid>();
         }
 
         public bool TryGetAsset(System.Guid guid, out UnityEngine.Object obj)
         {
-            if (!_clean) this.SetupTable();
+            if (!_clean && !this.SetupTable())
+            {
+                obj = null;
+                return false;
+            }
 
             obj = null;
             if (_guidTable?.TryGetValue(guid, out obj) ?? false)
@@ -323,7 +368,11 @@ namespace com.spacepuppy.Project
 
         public bool TryGetAsset(System.Guid guid, System.Type tp, out UnityEngine.Object obj)
         {
-            if (!_clean) this.SetupTable();
+            if (!_clean && !this.SetupTable())
+            {
+                obj = null;
+                return false;
+            }
 
             obj = null;
             if (_guidTable?.TryGetValue(guid, out obj) ?? false)
@@ -338,7 +387,11 @@ namespace com.spacepuppy.Project
 
         public bool TryGetAsset<T>(System.Guid guid, out T obj) where T : class
         {
-            if (!_clean) this.SetupTable();
+            if (!_clean && !this.SetupTable())
+            {
+                obj = null;
+                return false;
+            }
 
             UnityEngine.Object o = null;
             if (_guidTable?.TryGetValue(guid, out o) ?? false)
@@ -451,12 +504,18 @@ namespace com.spacepuppy.Project
         }
 
 
-
-        public void Dispose()
+        public void Dispose(bool unloadAllAssetsOnDispose = false)
         {
-            this.UnloadAllAssets();
-            Resources.UnloadAsset(this);
+            if (unloadAllAssetsOnDispose)
+            {
+                this.UnloadAllAssets();
+                Resources.UnloadAsset(this);
+            }
+            _table?.Clear();
+            _guidTable?.Clear();
+            Destroy(this);
         }
+        void System.IDisposable.Dispose() => this.Dispose(false);
 
         #endregion
 

@@ -80,6 +80,11 @@ namespace com.spacepuppy.Collections
             get { return _pool.Count; }
         }
 
+        public virtual void Clear()
+        {
+            _pool.Clear();
+        }
+
         public virtual void AddReference(T obj)
         {
             if (object.ReferenceEquals(obj, null)) throw new System.ArgumentNullException();
@@ -172,7 +177,40 @@ namespace com.spacepuppy.Collections
 
                 while (e.MoveNext())
                 {
-                    if (e.Current is TSub && predicate(e.Current as TSub)) return e.Current as TSub;
+                    if (e.Current is TSub ent && predicate(ent)) return ent;
+                }
+                return null;
+            }
+            finally
+            {
+                if (_queryCompleteAction != null)
+                {
+                    _queryCompleteAction();
+                    _queryCompleteAction = null;
+                }
+                _querying = false;
+            }
+        }
+
+        public TSub Find<TSub, TArg>(TArg arg, System.Func<TSub, TArg, bool> predicate) where TSub : class, T
+        {
+            if (_querying) throw new System.InvalidOperationException("MultitonPool is already in the process of a query.");
+            _querying = true;
+
+            try
+            {
+                var e = _pool.GetEnumerator();
+                if (predicate == null)
+                {
+                    while (e.MoveNext())
+                    {
+                        if (e.Current is TSub) return e.Current as TSub;
+                    }
+                }
+
+                while (e.MoveNext())
+                {
+                    if (e.Current is TSub ent && predicate(ent, arg)) return ent;
                 }
                 return null;
             }
@@ -341,7 +379,7 @@ namespace com.spacepuppy.Collections
         public IEnumerable<TSub> Enumerate<TSub>() where TSub : class, T
         {
             var e = _pool.GetEnumerator();
-            while(e.MoveNext())
+            while (e.MoveNext())
             {
                 if (e.Current is TSub) yield return e.Current as TSub;
             }

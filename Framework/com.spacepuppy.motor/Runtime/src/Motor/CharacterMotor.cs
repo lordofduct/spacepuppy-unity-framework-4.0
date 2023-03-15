@@ -24,6 +24,9 @@ namespace com.spacepuppy.Motor
         [SerializeField]
         private float _mass = 1f;
         [SerializeField]
+        [Tooltip("Automatically apply gravity when calling 'Move'.")]
+        private bool _useGravity;
+        [SerializeField]
         private bool _paused;
 
         [System.NonSerialized()]
@@ -75,6 +78,12 @@ namespace com.spacepuppy.Motor
         {
             get { return _controller; }
             set { _controller = value; }
+        }
+
+        public bool UseGravity
+        {
+            get => _useGravity;
+            set => _useGravity = value;
         }
 
         #endregion
@@ -174,11 +183,13 @@ namespace com.spacepuppy.Motor
         {
             get { return _lastVel; }
         }
-        
+
         public void Move(Vector3 mv)
         {
             if (object.ReferenceEquals(_controller, null)) throw new System.InvalidOperationException("CharacterMotor must be initialized with an appropriate CharacterController.");
             if (_paused) return;
+
+            if (_useGravity) mv += Physics.gravity * Time.deltaTime;
 
             if (_controller.detectCollisions)
             {
@@ -219,7 +230,7 @@ namespace com.spacepuppy.Motor
             if (_controller.detectCollisions)
             {
                 _controller.Move(pos - _controller.transform.position);
-                if(setVelocityByChangeInPosition)
+                if (setVelocityByChangeInPosition)
                 {
                     //update velocity
                     _talliedVel += _controller.velocity;
@@ -228,7 +239,7 @@ namespace com.spacepuppy.Motor
             }
             else
             {
-                if(setVelocityByChangeInPosition)
+                if (setVelocityByChangeInPosition)
                 {
                     var mv = pos - _controller.transform.position;
                     //update velocity
@@ -341,11 +352,11 @@ namespace com.spacepuppy.Motor
 
         private void _collisionHook_ControllerColliderHit(object sender, ControllerColliderHit hit)
         {
-            if(_onCollisionMessage.Count > 0)
+            if (_onCollisionMessage.Count > 0)
             {
                 _onCollisionMessage.Invoke(new MotorCollisionInfo(this, hit), MotorCollisionHandlerHelper.OnCollisionFunctor);
             }
-            else if(_collisionHook != null)
+            else if (_collisionHook != null)
             {
                 ObjUtil.SmartDestroy(_collisionHook);
                 _collisionHook = null;

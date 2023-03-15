@@ -13,4 +13,20 @@ namespace com.spacepuppy.Mecanim
 
     }
 
+    /// <summary>
+    /// This requires a SPAnimatorOverrideLayers attached with the Animator and overrides to always be funneled through it.
+    /// </summary>
+    public interface IAnimatorOverrideLayerHandler
+    {
+        void OnOverrideApplied(SPAnimatorOverrideLayers layers);
+    }
+
+    /// <summary>
+    /// This requires a SPAnimatorEventProcessor attached with the Animator.
+    /// </summary>
+    public interface IAnimationEventHandler
+    {
+        void OnAnimationEvent(AnimationEventMessage ev);
+    }
+
 }

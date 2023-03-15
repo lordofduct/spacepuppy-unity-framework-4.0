@@ -97,7 +97,7 @@ namespace com.spacepuppy.Mecanim
         {
             if (param == null) return;
 
-            switch(param.type)
+            switch (param.type)
             {
                 case AnimatorControllerParameterType.Float:
                     animator.SetFloat(param.nameHash, value);
@@ -310,7 +310,7 @@ namespace com.spacepuppy.Mecanim
             }
             ArrayUtil.ReleaseTemp(tps);
 
-            switch(overrides)
+            switch (overrides)
             {
                 case IAnimatorOverrideSource aos:
                     StackOverride(animator, aos, token);
@@ -330,29 +330,58 @@ namespace com.spacepuppy.Mecanim
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StackOverride(this Animator animator, AnimatorOverrideController controller, object token, bool treatUnconfiguredEntriesAsValidEntries = false)
         {
             animator.AddOrGetComponent<SPAnimatorOverrideLayers>().Stack(controller, token, treatUnconfiguredEntriesAsValidEntries);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StackOverride(this Animator animator, IAnimatorOverrideSource source, object token)
         {
             animator.AddOrGetComponent<SPAnimatorOverrideLayers>().Stack(source, token);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StackOverride(this Animator animator, IList<KeyValuePair<AnimationClip, AnimationClip>> overrides, object token)
         {
             animator.AddOrGetComponent<SPAnimatorOverrideLayers>().Stack(overrides, token);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StackOverride(this Animator animator, AnimatorOverrideCollection overrides, object token)
         {
             animator.AddOrGetComponent<SPAnimatorOverrideLayers>().Stack(overrides, token);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void InsertOverride(this Animator animator, int index, AnimatorOverrideController source, object token, bool treatUnconfiguredEntriesAsValidEntries = false)
+        {
+            animator.AddOrGetComponent<SPAnimatorOverrideLayers>().Insert(index, source, token, treatUnconfiguredEntriesAsValidEntries);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void InsertOverride(this Animator animator, int index, IAnimatorOverrideSource source, object token)
+        {
+            animator.AddOrGetComponent<SPAnimatorOverrideLayers>().Insert(index, source, token);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void InsertOverride(this Animator animator, int index, IList<KeyValuePair<AnimationClip, AnimationClip>> source, object token)
+        {
+            animator.AddOrGetComponent<SPAnimatorOverrideLayers>().Insert(index, source, token);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void RemoveOverride(this Animator animator, object token)
         {
             animator.AddOrGetComponent<SPAnimatorOverrideLayers>().Remove(token);
+        }
+
+        public static void PopOverride(this Animator animator)
+        {
+            SPAnimatorOverrideLayers layers;
+            if (animator.GetComponent(out layers)) layers.Pop();
         }
 
         #endregion

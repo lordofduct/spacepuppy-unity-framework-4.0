@@ -12,9 +12,17 @@ namespace com.spacepuppy.Mecanim
 
     [RequireComponent(typeof(Animator))]
     [DisallowMultipleComponent]
-    [DefaultExecutionOrder(-31951)]
+    [DefaultExecutionOrder(SPAnimatorOverrideLayers.DEFAULT_EXECUTION_ORDER)]
     public class SPAnimatorOverrideLayers : SPComponent, IIndexedEnumerable<SPAnimatorOverrideLayers.LayerInfo>
     {
+        public const int DEFAULT_EXECUTION_ORDER = -31951;
+
+        private enum SuspendedStates
+        {
+            Active = 0,
+            Suspended = 1,
+            Altered = 2,
+        }
 
         #region Fields
 
@@ -34,10 +42,16 @@ namespace com.spacepuppy.Mecanim
         [System.NonSerialized]
         private List<LayerInfo> _layers;
         [System.NonSerialized]
-        private bool _suspended;
+        private SuspendedStates _suspended;
 
         [System.NonSerialized]
         private ObjectCachePool<List<KeyValuePair<AnimationClip, AnimationClip>>> _pool;
+
+        [System.NonSerialized]
+        private IEqualityComparer<object> _tokenComparer = EqualityComparer<object>.Default;
+
+        [System.NonSerialized]
+        private Messaging.MessageToken<IAnimatorOverrideLayerHandler> _onOverridesAppliedMessageToken;
 
         #endregion
 
@@ -55,10 +69,18 @@ namespace com.spacepuppy.Mecanim
         {
             base.Start();
 
-            if (!_suspended)
+            _onOverridesAppliedMessageToken = Messaging.CreateSignalToken<IAnimatorOverrideLayerHandler>(this.gameObject).CacheFunctor(o => o.OnOverrideApplied(this));
+            if (!this.Suspended)
             {
                 this.Apply();
             }
+        }
+
+        protected override void OnEnable()
+        {
+            base.OnEnable();
+
+            _onOverridesAppliedMessageToken?.SetDirty();
         }
 
         protected override void OnDestroy()
@@ -75,18 +97,23 @@ namespace com.spacepuppy.Mecanim
                 Destroy(_overrideAnimatorController);
                 _overrideAnimatorController = null;
             }
+
+            _onOverridesAppliedMessageToken?.Dispose();
+            _onOverridesAppliedMessageToken = null;
         }
 
         #endregion
 
         #region Properties
 
+        public Animator Animator => _animator;
+
         public AnimatorOverrideController InitialRuntimeAnimatorController { get { return _initialRuntimeAnimatorController; } }
 
         /// <summary>
         /// True if Apply is automatically called when adding any overrides. If false, Apply must be called manually.
         /// </summary>
-        public bool Suspended => _suspended;
+        public bool Suspended => _suspended != SuspendedStates.Active;
 
         public int LayerCount { get { return _layers?.Count ?? 0; } }
 
@@ -117,16 +144,27 @@ namespace com.spacepuppy.Mecanim
 
                 for (int i = 0; i < _layers.Count; i++)
                 {
-                    if (EqualityComparer<object>.Default.Equals(_layers[i].Token, key)) return _layers[i];
+                    if (_tokenComparer.Equals(_layers[i].Token, key)) return _layers[i];
                 }
 
                 throw new System.Collections.Generic.KeyNotFoundException();
             }
         }
 
+        public IEqualityComparer<object> TokenComparer
+        {
+            get => _tokenComparer;
+            set => _tokenComparer = value ?? EqualityComparer<object>.Default;
+        }
+
         #endregion
 
         #region Methods
+
+        public void SetMessageTokenDirty()
+        {
+            _onOverridesAppliedMessageToken?.SetDirty();
+        }
 
         public void UpdateInitialRuntimeAnimatorController(AnimatorOverrideController controller, bool clearAllOverrides = false)
         {
@@ -138,9 +176,13 @@ namespace com.spacepuppy.Mecanim
             {
                 this.ResetOverrides();
             }
-            else if (!_suspended && this.started)
+            else if (!this.Suspended && this.started)
             {
                 this.Apply();
+            }
+            else if (this.started)
+            {
+                _suspended = SuspendedStates.Altered;
             }
         }
 
@@ -157,7 +199,7 @@ namespace com.spacepuppy.Mecanim
                 _layers.Clear();
             }
 
-            if (!_suspended)
+            if (!this.Suspended)
             {
                 if (_initialRuntimeAnimatorController != null)
                 {
@@ -167,6 +209,11 @@ namespace com.spacepuppy.Mecanim
                 {
                     _animator.runtimeAnimatorController = _baseRuntimeAnimatorController;
                 }
+                _onOverridesAppliedMessageToken.InvokeCachedFunctor();
+            }
+            else if (this.started)
+            {
+                _suspended = SuspendedStates.Altered;
             }
         }
 
@@ -192,6 +239,7 @@ namespace com.spacepuppy.Mecanim
                     _animator.runtimeAnimatorController = _baseRuntimeAnimatorController;
                 }
             }
+            _onOverridesAppliedMessageToken.InvokeCachedFunctor();
         }
 
         public bool TryGetLayer(object key, out LayerInfo info)
@@ -200,7 +248,7 @@ namespace com.spacepuppy.Mecanim
             {
                 for (int i = 0; i < _layers.Count; i++)
                 {
-                    if (EqualityComparer<object>.Default.Equals(_layers[i].Token, key))
+                    if (_tokenComparer.Equals(_layers[i].Token, key))
                     {
                         info = _layers[i];
                         return true;
@@ -251,9 +299,13 @@ namespace com.spacepuppy.Mecanim
 
             _layers.Add(layer);
 
-            if (!_suspended && this.started)
+            if (!this.Suspended && this.started)
             {
                 this.Apply();
+            }
+            else if (this.started)
+            {
+                _suspended = SuspendedStates.Altered;
             }
         }
 
@@ -309,9 +361,33 @@ namespace com.spacepuppy.Mecanim
             layer.Overrides.AddRange(overrides);
             _layers.Add(layer);
 
-            if (!_suspended && this.started)
+            if (!this.Suspended && this.started)
             {
                 this.Apply();
+            }
+            else if (this.started)
+            {
+                _suspended = SuspendedStates.Altered;
+            }
+        }
+
+        public void Insert(int index, IAnimatorOverrideSource source, object token)
+        {
+            if (source == null) return;
+
+            if (source is IOverrideList lst)
+            {
+                this.Insert(index, lst, token);
+            }
+            else
+            {
+                using (var tlst = AnimatorOverrideCollection.GetTemp())
+                {
+                    if (source.GetOverrides(_animator, tlst) > 0)
+                    {
+                        this.Insert(index, (IOverrideList)tlst, token);
+                    }
+                }
             }
         }
 
@@ -354,9 +430,13 @@ namespace com.spacepuppy.Mecanim
 
             _layers.Insert(Mathf.Clamp(index, 0, _layers.Count), layer);
 
-            if (!_suspended && this.started)
+            if (!this.Suspended && this.started)
             {
                 this.Apply();
+            }
+            else if (this.started)
+            {
+                _suspended = SuspendedStates.Altered;
             }
         }
 
@@ -387,9 +467,13 @@ namespace com.spacepuppy.Mecanim
             layer.Overrides.AddRange(overrides);
             _layers.Insert(Mathf.Clamp(index, 0, _layers.Count), layer);
 
-            if (!_suspended && this.started)
+            if (!this.Suspended && this.started)
             {
                 this.Apply();
+            }
+            else if (this.started)
+            {
+                _suspended = SuspendedStates.Altered;
             }
         }
 
@@ -404,9 +488,13 @@ namespace com.spacepuppy.Mecanim
                 _pool.Release(_layers[index].Overrides);
                 _layers.RemoveAt(index);
 
-                if (!_suspended && this.started)
+                if (!this.Suspended && this.started)
                 {
                     this.Apply();
+                }
+                else if (this.started)
+                {
+                    _suspended = SuspendedStates.Altered;
                 }
             }
         }
@@ -416,9 +504,13 @@ namespace com.spacepuppy.Mecanim
             if (_layers == null) throw new System.IndexOutOfRangeException();
 
             _layers.RemoveAt(index);
-            if (!_suspended && this.started)
+            if (!this.Suspended && this.started)
             {
                 this.Apply();
+            }
+            else if (this.started)
+            {
+                _suspended = SuspendedStates.Altered;
             }
         }
 
@@ -433,9 +525,13 @@ namespace com.spacepuppy.Mecanim
                 _pool.Release(_layers[index].Overrides);
                 _layers.RemoveAt(index);
 
-                if (!_suspended && this.started)
+                if (!this.Suspended && this.started)
                 {
                     this.Apply();
+                }
+                else if (this.started)
+                {
+                    _suspended = SuspendedStates.Altered;
                 }
             }
         }
@@ -604,19 +700,31 @@ namespace com.spacepuppy.Mecanim
         {
             for (int i = 0; i < _layers.Count; i++)
             {
-                if (EqualityComparer<object>.Default.Equals(_layers[i].Token, token)) return i;
+                if (_tokenComparer.Equals(_layers[i].Token, token)) return i;
             }
             return -1;
         }
 
         public void SuspendSync()
         {
-            _suspended = true;
+            if (_suspended == SuspendedStates.Active)
+            {
+                _suspended = SuspendedStates.Suspended;
+            }
         }
 
-        public void ResumeSync()
+        public void ResumeSync(bool donotApply = false)
         {
-            _suspended = false;
+            switch (_suspended)
+            {
+                case SuspendedStates.Suspended:
+                    _suspended = SuspendedStates.Active;
+                    break;
+                case SuspendedStates.Altered:
+                    _suspended = SuspendedStates.Active;
+                    if (!donotApply) this.Apply();
+                    break;
+            }
         }
 
         /// <summary>
@@ -710,7 +818,7 @@ namespace com.spacepuppy.Mecanim
 
             for (int i = 0; i < _layers.Count; i++)
             {
-                if (EqualityComparer<object>.Default.Equals(_layers[i].Token, item.Token)
+                if (_tokenComparer.Equals(_layers[i].Token, item.Token)
                     && object.ReferenceEquals(_layers[i].Overrides, item.Overrides))
                 {
                     return i;

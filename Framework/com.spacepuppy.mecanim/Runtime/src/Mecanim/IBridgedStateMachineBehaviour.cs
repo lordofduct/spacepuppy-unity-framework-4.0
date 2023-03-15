@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using com.spacepuppy.Utils;
 using System.Linq;
 using com.spacepuppy.Mecanim.Behaviours;
+using System.Runtime.CompilerServices;
 
 namespace com.spacepuppy.Mecanim
 {
@@ -28,9 +29,16 @@ namespace com.spacepuppy.Mecanim
         /// </summary>
         /// <param name="animator"></param>
         /// <param name="bridge"></param>
-        public static void InitializeBridge<T>(this T bridge) where T : IAnimatorStateMachineBridge
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void InitializeBridge<T>(this T bridge) where T : IAnimatorStateMachineBridge => InitializeBridge<T>(bridge, out _);
+        /// <summary>
+        /// Should be called during Start from the script acting as the IAnimatorStateMachineBridge.
+        /// </summary>
+        /// <param name="animator"></param>
+        /// <param name="bridge"></param>
+        public static void InitializeBridge<T>(this T bridge, out StateMachineBehaviour[] behaviours) where T : IAnimatorStateMachineBridge
         {
-            var behaviours = bridge.Animator.GetBehaviours<StateMachineBehaviour>();
+            behaviours = bridge.Animator.GetBehaviours<StateMachineBehaviour>();
 
             //initialize substate bridge container if necessary
             if (behaviours.OfType<a_SubStateBridge>().Any())

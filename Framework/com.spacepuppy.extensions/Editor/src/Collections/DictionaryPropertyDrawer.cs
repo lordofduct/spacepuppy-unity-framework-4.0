@@ -6,6 +6,8 @@ using System.Linq;
 
 using com.spacepuppy.Collections;
 using com.spacepuppy.Utils;
+using com.spacepuppyeditor.Internal;
+using System.Reflection;
 
 namespace com.spacepuppyeditor.Collections
 {
@@ -14,90 +16,124 @@ namespace com.spacepuppyeditor.Collections
     public class DictionaryPropertyDrawer : PropertyDrawer
     {
 
+        private ReorderableList _drawer;
+        private GUIContent _currentLabel;
+        private SerializedProperty _prop_keys;
+        private SerializedProperty _prop_values;
+        private object[] _existingKeys;
+        private System.Type _keyType;
+        private bool _isFlaggingEnum;
+
+        void Initialize(SerializedProperty property, GUIContent label, bool isdraw)
+        {
+            _currentLabel = label;
+            _prop_keys = property.FindPropertyRelative(DrawableDictionary.PROP_KEYS);
+            _prop_values = property.FindPropertyRelative(DrawableDictionary.PROP_VALUES);
+            _drawer = CachedReorderableList.GetListDrawer(_prop_keys,
+                                                          _drawer_DrawHeader,
+                                                          _drawer_DrawElement,
+                                                          _drawer_OnAdded,
+                                                          _drawer_OnRemoved);
+
+            if (!isdraw) return;
+
+            if (_prop_values.arraySize != _prop_keys.arraySize)
+            {
+                _prop_values.arraySize = _prop_keys.arraySize;
+            }
+
+            _keyType = TypeUtil.GetElementTypeOfListType(_prop_keys.GetPropertyValueType(true));
+            bool isEnum = _keyType?.IsEnum ?? false;
+            _isFlaggingEnum = isEnum && _keyType.GetCustomAttribute<System.FlagsAttribute>() != null;
+            using (var hash = TempCollection.GetSet<object>())
+            {
+                for (int i = 0; i < _prop_keys.arraySize; i++)
+                {
+                    var val = _prop_keys.GetArrayElementAtIndex(i).GetPropertyValue(true);
+                    if (val != null)
+                    {
+                        if (isEnum) val = ConvertUtil.ToEnumOfType(_keyType, val);
+                        hash.Add(val);
+                    }
+                }
+                _existingKeys = isEnum ? hash.Cast<System.Enum>().ToArray() : hash.ToArray();
+            }
+        }
+
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
-            if (property.isExpanded)
+            try
             {
-                var keysProp = property.FindPropertyRelative("_keys");
-                return (keysProp.arraySize + 2) * (EditorGUIUtility.singleLineHeight + 1f);
+                this.Initialize(property, label, false);
+                return _drawer.GetHeight();
             }
-            else
+            finally
             {
-                return EditorGUIUtility.singleLineHeight;
+                _drawer = null;
+                _currentLabel = null;
+                _prop_keys = null;
+                _prop_values = null;
+                _existingKeys = null;
+                _keyType = null;
             }
         }
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-            bool expanded = property.isExpanded;
-            var r = GetNextRect(ref position);
-            property.isExpanded = EditorGUI.Foldout(r, property.isExpanded, label);
-
-            if (expanded)
+            try
             {
-                int lvl = EditorGUI.indentLevel;
-                EditorGUI.indentLevel = lvl + 1;
-
-                var keysProp = property.FindPropertyRelative("_keys");
-                var valuesProp = property.FindPropertyRelative("_values");
-
-                int cnt = keysProp.arraySize;
-                if (valuesProp.arraySize != cnt) valuesProp.arraySize = cnt;
-
-                for (int i = 0; i < cnt; i++)
-                {
-                    r = GetNextRect(ref position);
-                    //r = EditorGUI.IndentedRect(r);
-                    var w0 = EditorGUIUtility.labelWidth; // r.width / 2f;
-                    var w1 = r.width - w0;
-                    var r0 = new Rect(r.xMin, r.yMin, w0, r.height);
-                    var r1 = new Rect(r0.xMax, r.yMin, w1, r.height);
-
-                    var keyProp = keysProp.GetArrayElementAtIndex(i);
-                    var valueProp = valuesProp.GetArrayElementAtIndex(i);
-
-                    this.DrawKey(r0, keyProp);
-                    this.DrawValue(r1, valueProp);
-                }
-
-                EditorGUI.indentLevel = lvl;
-
-                r = GetNextRect(ref position);
-                var pRect = new Rect(r.xMax - 60f, r.yMin, 30f, EditorGUIUtility.singleLineHeight);
-                var mRect = new Rect(r.xMax - 30f, r.yMin, 30f, EditorGUIUtility.singleLineHeight);
-
-                if (GUI.Button(pRect, "+"))
-                {
-                    AddKeyElement(keysProp);
-                    valuesProp.arraySize = keysProp.arraySize;
-                }
-                if (GUI.Button(mRect, "-"))
-                {
-                    keysProp.arraySize = Mathf.Max(keysProp.arraySize - 1, 0);
-                    valuesProp.arraySize = keysProp.arraySize;
-                }
+                this.Initialize(property, label, true);
+                _drawer.DoList(position);
+            }
+            finally
+            {
+                _drawer = null;
+                _currentLabel = null;
+                _prop_keys = null;
+                _prop_values = null;
+                _existingKeys = null;
+                _keyType = null;
             }
         }
 
-        protected virtual void DrawKey(Rect area, SerializedProperty keyProp)
+        private void _drawer_DrawHeader(Rect area)
         {
-            EditorGUI.PropertyField(area, keyProp, GUIContent.none, false);
+            EditorGUI.LabelField(area, _currentLabel);
         }
 
-        protected virtual void DrawValue(Rect area, SerializedProperty valueProp)
+        private void _drawer_DrawElement(Rect area, int index, bool isActive, bool isFocused)
         {
-            EditorGUI.PropertyField(area, valueProp, GUIContent.none, false);
+            var prop_key = _prop_keys.GetArrayElementAtIndex(index);
+            var prop_values = _prop_values.GetArrayElementAtIndex(index);
+
+            var r0 = new Rect(area.xMin, area.yMin, Mathf.FloorToInt(area.width * 0.3f) - 1, area.height);
+            var r1 = new Rect(r0.xMax + 1, area.yMin, area.width - r0.width - 1, area.height);
+
+            if ((_keyType?.IsEnum ?? false) && !_isFlaggingEnum)
+            {
+                var val = prop_key.GetEnumValue(_keyType);
+                SPEditorGUI.EnumPopupExcluding(r0, val, _existingKeys.Cast<System.Enum>().Except(val).ToArray());
+            }
+            else
+            {
+                SPEditorGUI.PropertyField(r0, prop_key, GUIContent.none, false);
+            }
+            SPEditorGUI.PropertyField(r1, prop_values, GUIContent.none, false);
         }
 
-
-
-
-        private Rect GetNextRect(ref Rect position)
+        private void _drawer_OnAdded(ReorderableList lst)
         {
-            var r = new Rect(position.xMin, position.yMin, position.width, EditorGUIUtility.singleLineHeight);
-            var h = EditorGUIUtility.singleLineHeight + 1f;
-            position = new Rect(position.xMin, position.yMin + h, position.width, position.height = h);
-            return r;
+            AddKeyElement(_prop_keys);
+            _prop_values.arraySize = _prop_keys.arraySize;
+        }
+
+        private void _drawer_OnRemoved(ReorderableList lst)
+        {
+            int index = lst.index;
+            if (index < 0 || index >= _prop_keys.arraySize) index = _prop_keys.arraySize;
+
+            _prop_keys.DeleteArrayElementAtIndex(index);
+            _prop_values.DeleteArrayElementAtIndex(index);
         }
 
 

@@ -7,6 +7,11 @@ namespace com.spacepuppy.Collections
     public abstract class DrawableDictionary
     {
 
+#if UNITY_EDITOR
+        public const string PROP_KEYS = "_keys";
+        public const string PROP_VALUES = "_values";
+#endif
+
     }
 
     [System.Serializable()]

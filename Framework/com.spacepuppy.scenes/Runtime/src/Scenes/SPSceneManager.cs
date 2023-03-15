@@ -116,7 +116,7 @@ namespace com.spacepuppy.Scenes
             }
         }
 
-        public virtual LoadSceneInternalResult LoadSceneInternal(string sceneName, LoadSceneParameters parameters, LoadSceneBehaviour behaviour) => SceneManagerUtils.LoadSceneInternal(sceneName, parameters, behaviour);
+        public virtual LoadSceneInternalResult LoadSceneInternal(SceneRef scene, LoadSceneParameters parameters, LoadSceneBehaviour behaviour) => SceneManagerUtils.LoadSceneInternal(scene, parameters, behaviour);
 
         #endregion
 

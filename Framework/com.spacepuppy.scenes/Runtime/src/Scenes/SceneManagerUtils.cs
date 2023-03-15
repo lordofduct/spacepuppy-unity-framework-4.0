@@ -37,10 +37,11 @@ namespace com.spacepuppy.Scenes
         public static LoadSceneWaitHandle LoadScene(string sceneName, LoadSceneMode mode, LoadSceneBehaviour behaviour, object persistentToken = null)
         {
             var manager = Services.Get<ISceneManager>();
-            if (manager != null) return manager.LoadScene(sceneName, mode, behaviour);
-
             var handle = new LoadSceneWaitHandle(sceneName, mode, behaviour, persistentToken);
-            handle.Begin(null);
+            if (manager != null)
+                manager.LoadScene(handle);
+            else
+                handle.Begin(null);
             return handle;
         }
 
@@ -55,20 +56,29 @@ namespace com.spacepuppy.Scenes
         /// <exception cref="System.IndexOutOfRangeException"></exception>
         public static LoadSceneWaitHandle LoadScene(int sceneBuildIndex, LoadSceneMode mode, LoadSceneBehaviour behaviour, object persistentToken = null)
         {
-            if (sceneBuildIndex < 0 || sceneBuildIndex >= SceneManager.sceneCountInBuildSettings) throw new System.IndexOutOfRangeException("sceneBuildIndex");
+            if (sceneBuildIndex < 0 || sceneBuildIndex >= SceneManager.sceneCountInBuildSettings) throw new System.IndexOutOfRangeException(nameof(sceneBuildIndex));
 
             var manager = Services.Get<ISceneManager>();
-            if (manager != null) return manager.LoadScene(sceneBuildIndex, mode, behaviour);
-
-            string sceneName = SceneUtility.GetScenePathByBuildIndex(sceneBuildIndex);
-
-            var handle = new LoadSceneWaitHandle(sceneName, mode, behaviour, persistentToken);
-            handle.Begin(null);
+            var handle = new LoadSceneWaitHandle(sceneBuildIndex, mode, behaviour, persistentToken);
+            if (manager != null)
+                manager.LoadScene(handle);
+            else
+                handle.Begin(null);
             return handle;
         }
 
 
 
+        public static LoadSceneInternalResult LoadSceneInternal(SceneRef sceneref, LoadSceneParameters parameters, LoadSceneBehaviour behaviour)
+        {
+            int bindex;
+            if (sceneref.IsBuildIndexReference(out bindex))
+            {
+                return bindex >= 0 && bindex < SceneManager.sceneCountInBuildSettings ? LoadSceneInternal(bindex, parameters, behaviour) : default;
+            }
+
+            return LoadSceneInternal(sceneref.SceneName, parameters, behaviour);
+        }
 
         public static LoadSceneInternalResult LoadSceneInternal(string sceneName, LoadSceneParameters parameters, LoadSceneBehaviour behaviour)
         {

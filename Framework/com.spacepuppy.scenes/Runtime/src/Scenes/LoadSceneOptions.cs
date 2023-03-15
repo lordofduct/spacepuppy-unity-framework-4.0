@@ -153,10 +153,21 @@ namespace com.spacepuppy.Scenes
             }
         }
 
+        protected LoadSceneInternalResult LoadScene(SceneRef scene, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async)
+        {
+            this.BeforeSceneLoadCalled?.Invoke(this, this);
+            var result = this.SceneManager?.LoadSceneInternal(scene, new LoadSceneParameters(mode), behaviour) ?? SceneManagerUtils.LoadSceneInternal(scene, new LoadSceneParameters(mode), behaviour);
+            if (result.IsValid)
+            {
+                this.RegisterHandlesScene(result);
+            }
+            return result;
+        }
+
         protected LoadSceneInternalResult LoadScene(string sceneName, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async)
         {
             this.BeforeSceneLoadCalled?.Invoke(this, this);
-            var result = this.SceneManager?.LoadSceneInternal(sceneName, new LoadSceneParameters(mode), behaviour) ?? SceneManagerUtils.LoadSceneInternal(sceneName, new LoadSceneParameters(mode), behaviour);
+            var result = this.SceneManager?.LoadSceneInternal(new SceneRef(sceneName), new LoadSceneParameters(mode), behaviour) ?? SceneManagerUtils.LoadSceneInternal(sceneName, new LoadSceneParameters(mode), behaviour);
             if (result.IsValid)
             {
                 this.RegisterHandlesScene(result);
@@ -167,7 +178,7 @@ namespace com.spacepuppy.Scenes
         protected LoadSceneInternalResult LoadScene(int index, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async)
         {
             this.BeforeSceneLoadCalled?.Invoke(this, this);
-            var result = this.SceneManager?.LoadSceneInternal(SceneUtility.GetScenePathByBuildIndex(index), new LoadSceneParameters(mode), behaviour) ?? SceneManagerUtils.LoadSceneInternal(index, new LoadSceneParameters(mode), behaviour);
+            var result = this.SceneManager?.LoadSceneInternal(new SceneRef(SceneUtility.GetScenePathByBuildIndex(index)), new LoadSceneParameters(mode), behaviour) ?? SceneManagerUtils.LoadSceneInternal(index, new LoadSceneParameters(mode), behaviour);
             if (result.IsValid)
             {
                 this.RegisterHandlesScene(result);

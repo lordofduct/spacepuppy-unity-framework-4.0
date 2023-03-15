@@ -6,6 +6,7 @@ using System.Linq;
 using com.spacepuppy;
 using com.spacepuppy.Scenes;
 using com.spacepuppy.Utils;
+using com.spacepuppyeditor.Core;
 
 namespace com.spacepuppyeditor.Scenes
 {
@@ -13,9 +14,10 @@ namespace com.spacepuppyeditor.Scenes
     [CustomPropertyDrawer(typeof(SceneRef))]
     public class SceneRefPropertyDrawer : PropertyDrawer
     {
+        public const float OBJFIELD_DOT_WIDTH = 18f;
 
-        public const string PROP_SCENEASSET = "_sceneAsset";
         public const string PROP_SCENENAME = "_sceneName";
+        public const string PROP_GUID = "_guid";
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
@@ -31,27 +33,46 @@ namespace com.spacepuppyeditor.Scenes
 
             try
             {
-                var assetProp = property.FindPropertyRelative(PROP_SCENEASSET);
                 var nameProp = property.FindPropertyRelative(PROP_SCENENAME);
+                var guidProp = property.FindPropertyRelative(PROP_GUID);
+                var guid = SerializableGuidPropertyDrawer.FromSerializedProperty(guidProp);
+
+                //try to find SceneAsset
+                SceneAsset scene = null;
+                string apath = null;
+                if (guid != System.Guid.Empty)
+                {
+                    apath = AssetDatabase.GUIDToAssetPath(guid.ToString("N"));
+                }
+                else if (!string.IsNullOrEmpty(nameProp.stringValue))
+                {
+                    var sguid = AssetDatabase.FindAssets($"{nameProp.stringValue} t:Scene").FirstOrDefault();
+                    apath = !string.IsNullOrEmpty(sguid) ? AssetDatabase.GUIDToAssetPath(sguid) : null;
+                }
+                if (!string.IsNullOrEmpty(apath)) scene = AssetDatabase.LoadAssetAtPath<SceneAsset>(apath);
 
                 const float TOGGLE_WIDTH = 30f;
                 Rect rObjField = new Rect(position.xMin, position.yMin, Mathf.Max(position.width - TOGGLE_WIDTH, 0f), EditorGUIUtility.singleLineHeight);
-                if (assetProp.objectReferenceValue is SceneAsset)
+                if (scene != null)
                 {
                     EditorGUI.BeginChangeCheck();
-                    assetProp.objectReferenceValue = EditorGUI.ObjectField(rObjField, GUIContent.none, assetProp.objectReferenceValue, typeof(SceneAsset), false);
-                    var scene = assetProp.objectReferenceValue as SceneAsset;
+                    scene = EditorGUI.ObjectField(rObjField, GUIContent.none, scene, typeof(SceneAsset), false) as SceneAsset;
                     if (EditorGUI.EndChangeCheck() || nameProp.stringValue != scene?.name)
                     {
-                        nameProp.stringValue = (scene != null) ? scene.name : string.Empty;
+                        SetProps(nameProp, guidProp, scene);
                     }
                 }
                 else
                 {
-                    var rText = new Rect(rObjField.xMin, rObjField.yMin, Mathf.Max(rObjField.width - EditorHelper.OBJFIELD_DOT_WIDTH, 0f), rObjField.height);
-                    var rDot = new Rect(rText.xMax, rObjField.yMin, Mathf.Min(rObjField.width - rText.width, EditorHelper.OBJFIELD_DOT_WIDTH), rObjField.height);
+                    var rText = new Rect(rObjField.xMin, rObjField.yMin, Mathf.Max(rObjField.width - OBJFIELD_DOT_WIDTH, 0f), rObjField.height);
+                    var rDot = new Rect(rText.xMax, rObjField.yMin, Mathf.Min(rObjField.width - rText.width, OBJFIELD_DOT_WIDTH), rObjField.height);
                     EditorGUI.BeginChangeCheck();
-                    assetProp.objectReferenceValue = EditorGUI.ObjectField(rDot, GUIContent.none, assetProp.objectReferenceValue, typeof(SceneAsset), false);
+                    scene = EditorGUI.ObjectField(rDot, GUIContent.none, scene, typeof(SceneAsset), false) as SceneAsset;
+                    if (scene != null)
+                    {
+                        SetProps(nameProp, guidProp, scene);
+                        return;
+                    }
                     nameProp.stringValue = EditorGUI.TextField(rText, nameProp.stringValue);
 
 
@@ -62,13 +83,12 @@ namespace com.spacepuppyeditor.Scenes
                         case EventType.DragPerform:
                             if (totalPos.Contains(ev.mousePosition))
                             {
-                                var scene = DragAndDrop.objectReferences.FirstOrDefault((o) => o is SceneAsset) as SceneAsset;
+                                scene = DragAndDrop.objectReferences.FirstOrDefault((o) => o is SceneAsset) as SceneAsset;
                                 DragAndDrop.visualMode = scene != null ? DragAndDropVisualMode.Link : DragAndDropVisualMode.Rejected;
 
                                 if (scene != null && ev.type == EventType.DragPerform)
                                 {
-                                    assetProp.objectReferenceValue = scene;
-                                    nameProp.stringValue = scene.name;
+                                    SetProps(nameProp, guidProp, scene);
                                 }
                             }
                             break;
@@ -78,8 +98,7 @@ namespace com.spacepuppyeditor.Scenes
                 var rBtn = new Rect(rObjField.xMax, position.yMin, Mathf.Min(TOGGLE_WIDTH, position.width - rObjField.width), EditorGUIUtility.singleLineHeight);
                 if (GUI.Button(rBtn, "X"))
                 {
-                    assetProp.objectReferenceValue = null;
-                    nameProp.stringValue = string.Empty;
+                    SetProps(nameProp, guidProp, null);
                 }
 
                 EditorGUI.EndProperty();
@@ -89,6 +108,20 @@ namespace com.spacepuppyeditor.Scenes
                 EditorHelper.ResumeIndentLevel();
             }
 
+        }
+
+        private void SetProps(SerializedProperty nameProp, SerializedProperty guidProp, SceneAsset scene)
+        {
+            string sguid;
+            nameProp.stringValue = (scene != null) ? scene.name : string.Empty;
+            if (scene != null && AssetDatabase.TryGetGUIDAndLocalFileIdentifier<SceneAsset>(scene, out sguid, out _))
+            {
+                SerializableGuidPropertyDrawer.ToSerializedProperty(guidProp, System.Guid.Parse(sguid));
+            }
+            else
+            {
+                SerializableGuidPropertyDrawer.ToSerializedProperty(guidProp, System.Guid.Empty);
+            }
         }
 
     }

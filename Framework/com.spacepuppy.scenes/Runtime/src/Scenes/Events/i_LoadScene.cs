@@ -68,24 +68,7 @@ namespace com.spacepuppy.Scenes.Events
 
             var persistentToken = IProxyExtensions.ReduceIfProxy(_persistentToken.Value);
 
-            IRadicalWaitHandle handle;
-            var nm = _scene.SceneName ?? string.Empty;
-            if (nm.StartsWith("#"))
-            {
-                nm = nm.Substring(1);
-                int index;
-                if (!int.TryParse(nm, out index))
-                    return false;
-                if (index < 0 || index >= SceneManager.sceneCountInBuildSettings)
-                    return false;
-
-                handle = SceneManagerUtils.LoadScene(index, _mode, _behaviour.RestrictAsyncAndAwait(), persistentToken);
-            }
-            else
-            {
-                handle = SceneManagerUtils.LoadScene(nm, _mode, _behaviour.RestrictAsyncAndAwait(), persistentToken);
-            }
-
+            IRadicalWaitHandle handle = _scene.LoadScene(_mode, _behaviour.RestrictAsyncAndAwait(), persistentToken);
             if(_onComplete.HasReceivers && handle != null)
             {
                 handle.OnComplete(o => _onComplete.ActivateTrigger(this, null));

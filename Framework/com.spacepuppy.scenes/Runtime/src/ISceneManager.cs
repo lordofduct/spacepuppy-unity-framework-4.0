@@ -64,12 +64,21 @@ namespace com.spacepuppy
         /// <remarks>This method is intended to allow a ISceneManager implementation to redirect through which unity api the scene is loaded other than 
         /// the default UnityEngine.SceneManagement.SceneManager. Examples include using Addressables to load scenes, or NetworkManager.Singleton.SceneManager.
         /// </remarks>
-        LoadSceneInternalResult LoadSceneInternal(string sceneName, LoadSceneParameters parameters, LoadSceneBehaviour behaviour);
+        LoadSceneInternalResult LoadSceneInternal(SceneRef sceneName, LoadSceneParameters parameters, LoadSceneBehaviour behaviour);
 
     }
 
     public static class ISceneManagerExtensions
     {
+
+        public static LoadSceneWaitHandle LoadScene(this ISceneManager sceneManager, SceneRef scene, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async, object persistentToken = null)
+        {
+            if (sceneManager == null) throw new System.InvalidOperationException(nameof(sceneManager));
+
+            var handle = new LoadSceneWaitHandle(scene, mode, behaviour, persistentToken);
+            sceneManager.LoadScene(handle);
+            return handle;
+        }
 
         public static LoadSceneWaitHandle LoadScene(this ISceneManager sceneManager, string sceneName, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async, object persistentToken = null)
         {

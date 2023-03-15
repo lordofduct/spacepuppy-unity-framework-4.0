@@ -22,7 +22,7 @@ namespace com.spacepuppy.Scenes
 
         #region Fields
 
-        private string _sceneName;
+        private SceneRef _scene;
         private LoadSceneMode _mode;
         private LoadSceneBehaviour _behaviour;
 
@@ -33,9 +33,18 @@ namespace com.spacepuppy.Scenes
 
         #region CONSTRUCTOR
 
+        public LoadSceneWaitHandle(SceneRef scene, LoadSceneMode mode, LoadSceneBehaviour behaviour, object persistentToken = null)
+        {
+            _scene = scene;
+            _mode = mode;
+            _behaviour = behaviour;
+            _loaded = false;
+            this.PersistentToken = persistentToken;
+        }
+
         public LoadSceneWaitHandle(string sceneName, LoadSceneMode mode, LoadSceneBehaviour behaviour, object persistentToken = null)
         {
-            _sceneName = sceneName;
+            _scene = new SceneRef(sceneName);
             _mode = mode;
             _behaviour = behaviour;
             _loaded = false;
@@ -44,7 +53,8 @@ namespace com.spacepuppy.Scenes
 
         public LoadSceneWaitHandle(int buildIndex, LoadSceneMode mode, LoadSceneBehaviour behaviour, object persistentToken = null)
         {
-            _sceneName = SceneUtility.GetScenePathByBuildIndex(buildIndex);
+            if (buildIndex < 0 || buildIndex >= UnityEngine.SceneManagement.SceneManager.sceneCountInBuildSettings) throw new System.IndexOutOfRangeException(nameof(buildIndex));
+            _scene = new SceneRef(SceneUtility.GetScenePathByBuildIndex(buildIndex));
             _mode = mode;
             _behaviour = behaviour;
             _loaded = false;
@@ -57,7 +67,7 @@ namespace com.spacepuppy.Scenes
 
         public string SceneName
         {
-            get { return _sceneName; }
+            get { return _scene.SceneName; }
         }
 
         public override LoadSceneMode Mode
@@ -106,7 +116,7 @@ namespace com.spacepuppy.Scenes
 #endif
             try
             {
-                var handle = this.LoadScene(_sceneName, _mode, _behaviour);
+                var handle = this.LoadScene(_scene, _mode, _behaviour);
 
 #if SP_UNITASK
                 switch (_behaviour)

@@ -151,23 +151,7 @@ namespace com.spacepuppy.Scenes.Events
                 {
                     this.PersistentToken = IProxyExtensions.ReduceIfProxy(_persistentToken.Value);
 
-                    var nm = _scene.SceneName ?? string.Empty;
-                    LoadSceneInternalResult handle;
-                    if (nm.StartsWith("#"))
-                    {
-                        nm = nm.Substring(1);
-                        int index;
-                        if (!int.TryParse(nm, out index))
-                            return;
-                        if (index < 0 || index >= UnitySceneManager.sceneCountInBuildSettings)
-                            return;
-
-                        handle = this.LoadScene(index, _mode, _behaviour.RestrictAsyncAndAwait());
-                    }
-                    else
-                    {
-                        handle = this.LoadScene(nm, _mode, _behaviour.RestrictAsyncAndAwait());
-                    }
+                    LoadSceneInternalResult handle = this.LoadScene(_scene, _mode, _behaviour.RestrictAsyncAndAwait());
 
 #if SP_UNITASK
                     await handle.AsUniTask();

@@ -8,8 +8,25 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Motor
 {
 
+    /*
+     * Set SP_MVSTYLECNTRL_RESPECTEXECORDER in your custom defines to make MovementStyleController respect execution order and use the 'Update'/'FixedUpdate' of the component. 
+     * This performs slower for large numbers of entities, but gives you the freedom of directly controlling the execution order if you so please.
+     */
+#if SP_MVSTYLECNTRL_RESPECTEXECORDER
     public class MovementStyleController : SPComponent, IMStartOrEnableReceiver
     {
+#else
+    public class MovementStyleController : SPComponent, IUpdateable, IMStartOrEnableReceiver
+    {
+
+        public enum UpdateOrder
+        {
+            Standard = 0,
+            Early = 1,
+            Tardy = 2,
+        }
+
+#endif
 
         #region Events
 
@@ -20,6 +37,13 @@ namespace com.spacepuppy.Motor
         #endregion
 
         #region Fields
+
+#if !SP_MVSTYLECNTRL_RESPECTEXECORDER
+        [SerializeField()]
+        private UpdateOrder _updateOrder;
+        [System.NonSerialized]
+        private UpdatePump _currentPump;
+#endif
 
         [SerializeField()]
         [TypeRestriction(typeof(IMovementStyle))]
@@ -76,6 +100,7 @@ namespace com.spacepuppy.Motor
             }
             else if (_current != null)
             {
+                this.ResolveUpdateLoopSequencing();
                 _current.OnActivate(null, ActivationReason.MotorPaused);
             }
         }
@@ -83,6 +108,11 @@ namespace com.spacepuppy.Motor
         protected override void OnDisable()
         {
             base.OnDisable();
+
+#if !SP_MVSTYLECNTRL_RESPECTEXECORDER
+            _currentPump?.Remove(this);
+            _currentPump = null;
+#endif
 
             if (_current != null)
             {
@@ -133,6 +163,7 @@ namespace com.spacepuppy.Motor
 
         #region Update Routine
 
+#if SP_MVSTYLECNTRL_RESPECTEXECORDER
         protected virtual void Update()
         {
             if (_current == null || _current.PrefersFixedUpdate) return;
@@ -178,6 +209,59 @@ namespace com.spacepuppy.Motor
                 _inUpdateSequence = false;
             }
         }
+
+        public void ResolveUpdateLoopSequencing() { }
+#else
+        void IUpdateable.Update()
+        {
+            try
+            {
+                _inUpdateSequence = true;
+                this.BeforeUpdateMovement?.Invoke(this, System.EventArgs.Empty);
+                if (_movementStyleModifierMessageToken.Count > 0) _movementStyleModifierMessageToken.Invoke(_onBeforeUpdateFunctor);
+
+                _current.UpdateMovement();
+
+                this.UpdateMovementComplete?.Invoke(this, System.EventArgs.Empty);
+                if (_movementStyleModifierMessageToken.Count > 0) _movementStyleModifierMessageToken.Invoke(_onUpdateCompleteFunctor);
+                _inUpdateSequence = false;
+                this.DoDelayedStyleChange();
+            }
+            finally
+            {
+                _inUpdateSequence = false;
+            }
+        }
+
+        public void ResolveUpdateLoopSequencing()
+        {
+            _currentPump?.Remove(this);
+
+            if (_current != null)
+            {
+                switch (_updateOrder)
+                {
+                    case UpdateOrder.Standard:
+                        _currentPump = _current.PrefersFixedUpdate ? GameLoop.FixedUpdatePump : GameLoop.UpdatePump;
+                        break;
+                    case UpdateOrder.Early:
+                        _currentPump = _current.PrefersFixedUpdate ? GameLoop.EarlyFixedUpdatePump : GameLoop.EarlyUpdatePump;
+                        break;
+                    case UpdateOrder.Tardy:
+                        _currentPump = _current.PrefersFixedUpdate ? GameLoop.TardyFixedUpdatePump : GameLoop.TardyUpdatePump;
+                        break;
+                    default:
+                        _currentPump = _current.PrefersFixedUpdate ? GameLoop.FixedUpdatePump : GameLoop.UpdatePump;
+                        break;
+                }
+                _currentPump.Add(this);
+            }
+            else
+            {
+                _currentPump = null;
+            }
+        }
+#endif
 
         #endregion
 
@@ -229,6 +313,7 @@ namespace com.spacepuppy.Motor
 
             var oldState = _current;
             _current = style;
+            this.ResolveUpdateLoopSequencing();
 
             if (oldState != null) oldState.OnDeactivate(style, _stackingState ? ActivationReason.Stacking : ActivationReason.Standard);
             if (style != null) style.OnActivate(oldState, _stackingState ? ActivationReason.Stacking : ActivationReason.Standard);

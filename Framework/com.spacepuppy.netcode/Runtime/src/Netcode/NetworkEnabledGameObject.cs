@@ -8,7 +8,7 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Netcode
 {
 
-    [Infobox("The 'active/enabled' state of this GameObject will be synced from server to client.")]
+    [Infobox("The 'active/enabled' state of this GameObject will be synced from server to client.\r\n\r\nNote that the component has to be enabled on start to initiate itself and receive messages.")]
     public sealed class NetworkEnabledGameObject : SPNetworkComponent, IMStartOrEnableReceiver
     {
 
@@ -24,7 +24,7 @@ namespace com.spacepuppy.Netcode
         {
             if (this.IsServer && this.enabled)
             {
-                this.SyncStateClientRpc(this.gameObject.activeSelf);
+                this.SyncState(this.gameObject.activeSelf);
             }
         }
 
@@ -34,7 +34,7 @@ namespace com.spacepuppy.Netcode
 
             if (this.IsServer && !this.IsDestroyed() && this.enabled)
             {
-                this.SyncStateClientRpc(this.gameObject.activeSelf);
+                this.SyncState(this.gameObject.activeSelf);
             }
         }
 
@@ -42,12 +42,28 @@ namespace com.spacepuppy.Netcode
 
         #region Methods
 
+        private void SyncState(bool state)
+        {
+            if (state)
+                this.SyncActiveClientRpc();
+            else
+                this.SyncInactiveClientRpc();
+        }
+
         [ClientRpc]
-        private void SyncStateClientRpc(bool active)
+        private void SyncActiveClientRpc()
         {
             if (this.IsServer) return;
 
-            this.gameObject.SetActive(active);
+            this.gameObject.SetActive(true);
+        }
+
+        [ClientRpc]
+        private void SyncInactiveClientRpc()
+        {
+            if (this.IsServer) return;
+
+            this.gameObject.SetActive(false);
         }
 
         #endregion

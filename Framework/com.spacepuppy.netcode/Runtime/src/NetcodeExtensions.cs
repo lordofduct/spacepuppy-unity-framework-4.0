@@ -23,6 +23,11 @@ namespace com.spacepuppy
     public static class NetcodeExtensions
     {
 
+        static System.Reflection.FieldInfo FIELD_NETWORKOBJ_GLOBALOBJID = typeof(NetworkObject).GetField("GlobalObjectIdHash", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
+
+        public static uint GetGlobalObjectIdHash(this NetworkObject no) => (uint)FIELD_NETWORKOBJ_GLOBALOBJID.GetValue(no);
+
+
         public static NetworkRelationship GetNetworkRelationship(this NetworkManager manager)
         {
             if (manager.IsServer)

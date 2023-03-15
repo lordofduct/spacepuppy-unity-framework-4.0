@@ -1,6 +1,8 @@
 ﻿using UnityEngine;
+using UnityEngine.Scripting;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 using com.spacepuppy.Collections;
 using com.spacepuppy.Utils;
@@ -661,15 +663,16 @@ namespace com.spacepuppy.Utils
             });
         }
 
-        public class MessageToken<T> where T : class
+        public class MessageToken<T> : ISPDisposable where T : class
         {
 
             private System.Func<T[]> _getTargets;
             private T[] _targets;
+            private System.Action<T> _paramterlessFunctorCache;
 
             internal MessageToken(System.Func<T[]> getTargets)
             {
-                if (getTargets == null) throw new System.ArgumentNullException("getTargets");
+                if (getTargets == null) throw new System.ArgumentNullException(nameof(getTargets));
                 _getTargets = getTargets;
             }
 
@@ -678,9 +681,23 @@ namespace com.spacepuppy.Utils
                 get { return GetTargets().Length; }
             }
 
+            public MessageToken<T> CacheFunctor(System.Action<T> functor)
+            {
+                if (this.IsDisposed) return this;
+                _paramterlessFunctorCache = functor;
+                return this;
+            }
+
+            public void InvokeCachedFunctor()
+            {
+                if (this.IsDisposed) return;
+                if (_paramterlessFunctorCache != null) this.Invoke(_paramterlessFunctorCache);
+            }
+
             public void Invoke(System.Action<T> functor)
             {
-                if (functor == null) throw new System.ArgumentNullException("functor");
+                if (functor == null) throw new System.ArgumentNullException(nameof(functor));
+                if (this.IsDisposed) return;
 
                 foreach (var t in GetTargets())
                 {
@@ -697,7 +714,8 @@ namespace com.spacepuppy.Utils
 
             public void Invoke<TArg>(TArg arg, System.Action<T, TArg> functor)
             {
-                if (functor == null) throw new System.ArgumentNullException("functor");
+                if (functor == null) throw new System.ArgumentNullException(nameof(functor));
+                if (this.IsDisposed) return;
 
                 foreach (var t in GetTargets())
                 {
@@ -721,15 +739,49 @@ namespace com.spacepuppy.Utils
 
             private T[] GetTargets()
             {
-                if (_targets == null) _targets = _getTargets();
+                if (_targets == null) _targets = _getTargets.Invoke();
                 return _targets;
             }
+
+            #region IDisposable Interface
+
+            public bool IsDisposed => _getTargets == null;
+
+            public void Dispose()
+            {
+                _targets = null;
+                _getTargets = null;
+                _paramterlessFunctorCache = null;
+            }
+
+            #endregion
 
         }
 
         #endregion
 
+        #region Subscribe
 
+        /// <summary>
+        /// Tries to find a concrete SubscribableMessageHook for the message type, if it exists, it'll subscribe for that message on that gameobject. 
+        /// You should create concrete SubscribableMessageHook<typeparamref name="T"/> types for each message you'd like to be able to subscribe to. 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="go"></param>
+        /// <param name="observer"></param>
+        /// <returns>Returns true if subscription was successful</returns>
+        public static bool Subscribe<T>(this GameObject go, T observer) where T : class => SubscribableMessageHook<T>.Subscribe(go, observer);
+
+        /// <summary>
+        /// Removes a subscription for a message on a gameobject.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="go"></param>
+        /// <param name="observer"></param>
+        /// <returns>Returns true if the subscription was removed.</returns>
+        public static bool Unsubscribe<T>(this GameObject go, T observer) where T : class => SubscribableMessageHook<T>.Unsubscribe(go, observer);
+
+        #endregion
 
 
         #region Internal Utils
@@ -943,6 +995,66 @@ namespace com.spacepuppy.Utils
                     _state = ExecutingState.None;
                 }
             }
+
+        }
+
+        #endregion
+
+        #region Special Types
+
+        public class SubscribableMessageConfigAttribute : System.Attribute
+        {
+            public int Precedence;
+        }
+
+        public abstract class SubscribableMessageHook<T> : MonoBehaviour where T : class
+        {
+
+            private HashSet<T> _observers = new HashSet<T>();
+
+            private void OnDisable()
+            {
+                _observers.Clear();
+            }
+
+            private void OnDestroy()
+            {
+                _observers = null;
+            }
+
+            [Preserve]
+            public bool Subscribe(T observer) => observer != null && ObjUtil.IsObjectAlive(this) && this.enabled && _observers.Add(observer);
+            [Preserve]
+            public bool Unsubscribe(T observer) => observer != null && ObjUtil.IsObjectAlive(this) && this.enabled && _observers.Remove(observer);
+
+            public void Signal(System.Action<T> functor)
+            {
+                if (_observers == null || _observers.Count == 0) return;
+                foreach (var o in _observers) functor(o);
+            }
+
+            public void Signal<TArg>(TArg arg, System.Action<T, TArg> functor)
+            {
+                if (_observers == null || _observers.Count == 0) return;
+                foreach (var o in _observers) functor(o, arg);
+            }
+
+            static readonly System.Type _hookType;
+            static SubscribableMessageHook()
+            {
+                _hookType = TypeUtil.GetTypesAssignableFrom(typeof(SubscribableMessageHook<T>)).Where(t => !t.IsGenericType && !t.IsAbstract).OrderByDescending(t => t.GetCustomAttribute<SubscribableMessageConfigAttribute>()?.Precedence ?? 0).FirstOrDefault();
+            }
+
+            internal static bool Subscribe(GameObject go, T observer)
+            {
+                if (_hookType == null)
+                {
+                    Debug.LogWarning($"Attempted to subscribe to message {typeof(T).Name} with no concrete SubscribableMessageHook in existence.");
+                    return false;
+                }
+                return go && ((go.AddOrGetComponent(_hookType) as SubscribableMessageHook<T>)?.Subscribe(observer) ?? false);
+            }
+            internal static bool Unsubscribe(GameObject go, T observer) => _hookType != null && go && ((go.GetComponent(_hookType) as SubscribableMessageHook<T>)?.Unsubscribe(observer) ?? false);
 
         }
 

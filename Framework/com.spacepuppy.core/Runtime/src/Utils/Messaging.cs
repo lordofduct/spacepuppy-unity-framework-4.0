@@ -770,7 +770,9 @@ namespace com.spacepuppy.Utils
         /// <param name="go"></param>
         /// <param name="observer"></param>
         /// <returns>Returns true if subscription was successful</returns>
-        public static bool Subscribe<T>(this GameObject go, T observer) where T : class => SubscribableMessageHook<T>.Subscribe(go, observer);
+        public static bool Subscribe<T>(this GameObject go, T observer) where T : class => SubscribableMessageHook<T>.Subscribe(go, observer, out _);
+
+        public static bool Subscribe<T>(this GameObject go, T observer, out ISubscribableMessageHook<T> hook) where T : class => SubscribableMessageHook<T>.Subscribe(go, observer, out hook);
 
         /// <summary>
         /// Removes a subscription for a message on a gameobject.
@@ -1007,25 +1009,49 @@ namespace com.spacepuppy.Utils
             public int Precedence;
         }
 
-        public abstract class SubscribableMessageHook<T> : MonoBehaviour where T : class
+        public interface ISubscribableMessageHook<T>
+        {
+            bool Subscribe(T observer);
+            bool Unsubscribe(T observer);
+        }
+
+        public abstract class SubscribableMessageHook<T> : MonoBehaviour, ISubscribableMessageHook<T> where T : class
         {
 
+            /// <summary>
+            /// Set true if you'd like this hook to not auto destroy when no subscribers.
+            /// </summary>
             private HashSet<T> _observers = new HashSet<T>();
 
-            private void OnDisable()
+            protected virtual void OnDisable()
             {
                 _observers.Clear();
             }
 
-            private void OnDestroy()
+            protected virtual void OnDestroy()
             {
                 _observers = null;
             }
 
+            /// <summary>
+            /// Override this to keep the hook from being destroyed when the last observer is unsubscribed.
+            /// </summary>
+            /// <returns></returns>
+            protected virtual bool PreserveOnUnsubscribe() => false;
+
+            public int SubscriberCount => _observers?.Count ?? 0;
+
             [Preserve]
             public bool Subscribe(T observer) => observer != null && ObjUtil.IsObjectAlive(this) && this.enabled && _observers.Add(observer);
             [Preserve]
-            public bool Unsubscribe(T observer) => observer != null && ObjUtil.IsObjectAlive(this) && this.enabled && _observers.Remove(observer);
+            public bool Unsubscribe(T observer)
+            {
+                if (!ObjUtil.IsObjectAlive(this)) return false;
+
+                bool result = observer != null && this.enabled && _observers.Remove(observer);
+                if (this.SubscriberCount == 0 && !this.PreserveOnUnsubscribe()) Destroy(this);
+                return result;
+            }
 
             public void Signal(System.Action<T> functor)
             {
@@ -1039,22 +1065,26 @@ namespace com.spacepuppy.Utils
                 foreach (var o in _observers) functor(o, arg);
             }
 
+            protected HashSet<T>.Enumerator GetSubscriberEnumerator() => _observers != null ? _observers.GetEnumerator() : default;
+
             static readonly System.Type _hookType;
             static SubscribableMessageHook()
             {
-                _hookType = TypeUtil.GetTypesAssignableFrom(typeof(SubscribableMessageHook<T>)).Where(t => !t.IsGenericType && !t.IsAbstract).OrderByDescending(t => t.GetCustomAttribute<SubscribableMessageConfigAttribute>()?.Precedence ?? 0).FirstOrDefault();
+                _hookType = TypeUtil.GetTypesAssignableFrom(typeof(ISubscribableMessageHook<T>)).Where(t => !t.IsGenericType && !t.IsAbstract).OrderByDescending(t => t.GetCustomAttribute<SubscribableMessageConfigAttribute>()?.Precedence ?? 0).FirstOrDefault();
             }
 
-            internal static bool Subscribe(GameObject go, T observer)
+            internal static bool Subscribe(GameObject go, T observer, out ISubscribableMessageHook<T> hook)
             {
                 if (_hookType == null)
                 {
                     Debug.LogWarning($"Attempted to subscribe to message {typeof(T).Name} with no concrete SubscribableMessageHook in existence.");
+                    hook = null;
                     return false;
                 }
-                return go && ((go.AddOrGetComponent(_hookType) as SubscribableMessageHook<T>)?.Subscribe(observer) ?? false);
+                hook = go ? (go.AddOrGetComponent(_hookType) as ISubscribableMessageHook<T>) : null;
+                return hook != null ? hook.Subscribe(observer) : false;
             }
-            internal static bool Unsubscribe(GameObject go, T observer) => _hookType != null && go && ((go.GetComponent(_hookType) as SubscribableMessageHook<T>)?.Unsubscribe(observer) ?? false);
+            internal static bool Unsubscribe(GameObject go, T observer) => _hookType != null && go && ((go.GetComponent(_hookType) as ISubscribableMessageHook<T>)?.Unsubscribe(observer) ?? false);
 
         }
 

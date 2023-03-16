@@ -4,6 +4,7 @@ using System.Linq;
 
 using com.spacepuppy.Collections;
 using com.spacepuppy.Utils;
+using UnityEngine.Scripting;
 
 namespace com.spacepuppy.Geom
 {
@@ -20,10 +21,20 @@ namespace com.spacepuppy.Geom
     {
         void OnCompoundTriggerEnter(ICompoundTrigger trigger, Collider other);
     }
+    [Preserve]
+    class CompoundTriggerEnterHandlerHook : Messaging.SubscribableMessageHook<ICompoundTriggerEnterHandler>, ICompoundTriggerEnterHandler
+    {
+        void ICompoundTriggerEnterHandler.OnCompoundTriggerEnter(ICompoundTrigger trigger, Collider other) => this.Signal((trigger, other), (o, a) => o.OnCompoundTriggerEnter(a.trigger, a.other));
+    }
 
     public interface ICompoundTriggerExitHandler
     {
         void OnCompoundTriggerExit(ICompoundTrigger trigger, Collider other);
+    }
+    [Preserve]
+    class CompoundTriggerExitHandlerHook : Messaging.SubscribableMessageHook<ICompoundTriggerExitHandler>, ICompoundTriggerExitHandler
+    {
+        void ICompoundTriggerExitHandler.OnCompoundTriggerExit(ICompoundTrigger trigger, Collider other) => this.Signal((trigger, other), (o, a) => o.OnCompoundTriggerExit(a.trigger, a.other));
     }
 
     [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = false, Inherited = true)]

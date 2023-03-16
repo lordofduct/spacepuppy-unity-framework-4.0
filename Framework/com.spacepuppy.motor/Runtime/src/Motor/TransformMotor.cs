@@ -5,6 +5,7 @@ using com.spacepuppy.Collections;
 using com.spacepuppy.Geom;
 using com.spacepuppy.Hooks;
 using com.spacepuppy.Utils;
+using System.Runtime.CompilerServices;
 
 namespace com.spacepuppy.Motor
 {
@@ -13,7 +14,7 @@ namespace com.spacepuppy.Motor
     /// IMotor interface that directly positions a Transform.
     /// </summary>
     [Infobox("A motor the directly translates the transform.position property. While this does not require a Rigidbody, one attached and configured as kinematic is useful for accurate collision events.")]
-    public class TransformMotor : SPComponent, IMotor, IUpdateable, ISignalEnabledMessageHandler
+    public class TransformMotor : SPComponent, IMotor, IUpdateable, ISignalEnabledMessageHandler, IOnCollisionStaySubscriber
     {
 
         #region Fields
@@ -50,7 +51,7 @@ namespace com.spacepuppy.Motor
         [System.NonSerialized]
         private Messaging.MessageToken<IMotorCollisionMessageHandler> _onCollisionMessage;
         [System.NonSerialized]
-        private CollisionHooks _collisionHook;
+        private Messaging.ISubscribableMessageHook<IOnCollisionStaySubscriber> _collisionHook;
 
         #endregion
 
@@ -65,6 +66,7 @@ namespace com.spacepuppy.Motor
                 _colliders = _rigidbody != null ? _rigidbody.GetComponentsInChildren<Collider>() : this.GetComponentsInChildren<Collider>();
             }
             _onCollisionMessage = Messaging.CreateBroadcastToken<IMotorCollisionMessageHandler>(this.gameObject);
+            this.ValidateCollisionHandler();
         }
 
         protected override void OnEnable()
@@ -381,24 +383,28 @@ namespace com.spacepuppy.Motor
 
         private void ValidateCollisionHandler()
         {
-            if (_collisionHook == null && _onCollisionMessage?.Count > 0)
+            if (_collisionHook == null && _rigidbody && _onCollisionMessage?.Count > 0)
             {
-                _collisionHook = this.AddComponent<CollisionHooks>();
-                _collisionHook.OnEnter += _collisionHook_ControllerColliderHit;
-                _collisionHook.OnStay += _collisionHook_ControllerColliderHit;
-                _collisionHook.OnExit += _collisionHook_ControllerColliderHit;
+                _rigidbody.gameObject.Subscribe(this, out _collisionHook);
             }
         }
 
-        private void _collisionHook_ControllerColliderHit(object sender, Collision hit)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        void IOnCollisionSubscriber.OnCollisionEnter(GameObject sender, Collision collision) => this.HandleCollision(sender, collision);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        void IOnCollisionStaySubscriber.OnCollisionStay(GameObject sender, Collision collision) => this.HandleCollision(sender, collision);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        void IOnCollisionSubscriber.OnCollisionExit(GameObject sender, Collision collision) => this.HandleCollision(sender, collision);
+        void HandleCollision(GameObject sender, Collision collision)
         {
             if (_onCollisionMessage.Count > 0)
             {
-                _onCollisionMessage.Invoke(new MotorCollisionInfo(this, hit), MotorCollisionHandlerHelper.OnCollisionFunctor);
+                if (_rigidbody && _rigidbody.gameObject == sender)
+                    _onCollisionMessage.Invoke(new MotorCollisionInfo(this, collision), MotorCollisionHandlerHelper.OnCollisionFunctor);
             }
             else if (_collisionHook != null)
             {
-                ObjUtil.SmartDestroy(_collisionHook);
+                _collisionHook.Unsubscribe(this);
                 _collisionHook = null;
             }
         }

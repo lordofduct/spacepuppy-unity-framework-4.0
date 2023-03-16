@@ -12,7 +12,7 @@ namespace com.spacepuppy.Motor
     /// Treats a CharacterController as an IMotor for a more uniform interface.
     /// </summary>
     [RequireComponentInEntity(typeof(CharacterController))]
-    public class CharacterMotor : SPComponent, IMotor, IUpdateable, ISignalEnabledMessageHandler
+    public class CharacterMotor : SPComponent, IMotor, IUpdateable, ISignalEnabledMessageHandler, IOnControllerColliderHitSubscriber
     {
 
         #region Fields
@@ -42,7 +42,7 @@ namespace com.spacepuppy.Motor
         [System.NonSerialized]
         private Messaging.MessageToken<IMotorCollisionMessageHandler> _onCollisionMessage;
         [System.NonSerialized]
-        private ControllerColliderHitEventHooks _collisionHook;
+        private Messaging.ISubscribableMessageHook<IOnControllerColliderHitSubscriber> _collisionHook;
 
         #endregion
 
@@ -55,6 +55,7 @@ namespace com.spacepuppy.Motor
             base.OnEnable();
 
             _onCollisionMessage = Messaging.CreateBroadcastToken<IMotorCollisionMessageHandler>(this.gameObject);
+            this.ValidateCollisionHandler();
 
             _lastPos = !object.ReferenceEquals(_controller, null) ? _controller.transform.position : Vector3.zero;
             _lastVel = Vector3.zero;
@@ -345,20 +346,20 @@ namespace com.spacepuppy.Motor
         {
             if (_collisionHook == null && _onCollisionMessage?.Count > 0)
             {
-                _collisionHook = this.AddComponent<ControllerColliderHitEventHooks>();
-                _collisionHook.ControllerColliderHit += _collisionHook_ControllerColliderHit;
+                this.gameObject.Subscribe<IOnControllerColliderHitSubscriber>(this, out _collisionHook);
             }
         }
 
-        private void _collisionHook_ControllerColliderHit(object sender, ControllerColliderHit hit)
+        void IOnControllerColliderHitSubscriber.OnControllerColliderHit(GameObject sender, ControllerColliderHit hit)
         {
             if (_onCollisionMessage.Count > 0)
             {
-                _onCollisionMessage.Invoke(new MotorCollisionInfo(this, hit), MotorCollisionHandlerHelper.OnCollisionFunctor);
+                if (this.gameObject == sender)
+                    _onCollisionMessage.Invoke(new MotorCollisionInfo(this, hit), MotorCollisionHandlerHelper.OnCollisionFunctor);
             }
             else if (_collisionHook != null)
             {
-                ObjUtil.SmartDestroy(_collisionHook);
+                _collisionHook.Unsubscribe(this);
                 _collisionHook = null;
             }
         }

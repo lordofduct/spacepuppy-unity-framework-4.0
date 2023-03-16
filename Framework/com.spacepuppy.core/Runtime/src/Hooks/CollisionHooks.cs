@@ -1,89 +1,48 @@
 ﻿using UnityEngine;
+using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.Hooks
 {
 
     public delegate void OnCollisionCallback(GameObject sender, Collision collision);
 
-    public delegate void OnTriggerCallback(GameObject sender, Collider otherCollider);
-
-    public delegate void OnStrikeCallback(GameObject sender, Collider otherCollider);
-
-    public class CollisionHooks : MonoBehaviour
+    public interface IOnCollisionSubscriber //subscriber denotes that this message is only invoked by a SubscribableMessageHook
     {
-        private OnCollisionCallback _onEnter;
-        private OnCollisionCallback _onExit;
-        private OnCollisionCallback _onStay;
+        void OnCollisionEnter(GameObject sender, Collision collision);
+        void OnCollisionExit(GameObject sender, Collision collision);
+    }
 
+    public class CollisionHooks : Messaging.SubscribableMessageHook<IOnCollisionSubscriber>
+    {
+        public event OnCollisionCallback OnEnter;
+        public event OnCollisionCallback OnExit;
 
-        public event OnCollisionCallback OnEnter
-        {
-            add
-            {
-                _onEnter += value;
-                if (!this.enabled) this.enabled = true;
-            }
-            remove
-            {
-                _onEnter -= value;
-                if (_onEnter == null && _onStay == null && _onExit == null) this.enabled = false;
-            }
-        }
-        public event OnCollisionCallback OnExit
-        {
-            add
-            {
-                _onExit += value;
-                if (!this.enabled) this.enabled = true;
-            }
-            remove
-            {
-                _onExit -= value;
-                if (_onEnter == null && _onStay == null && _onExit == null) this.enabled = false;
-            }
-        }
+        public bool Preserve { get; set; }
+        protected override bool PreserveOnUnsubscribe() => this.Preserve || this.OnEnter != null || this.OnExit != null;
 
-        public event OnCollisionCallback OnStay
-        {
-            add
-            {
-                _onStay += value;
-                if (!this.enabled) this.enabled = true;
-            }
-            remove
-            {
-                _onStay -= value;
-                if (_onEnter == null && _onStay == null && _onExit == null) this.enabled = false;
-            }
-        }
-
-        private void OnCollisionEnter(Collision collision)
+        protected virtual void OnCollisionEnter(Collision collision)
         {
             if (!this.isActiveAndEnabled) return;
 
-            if (_onEnter != null) _onEnter(this.gameObject, collision);
+            this.OnEnter?.Invoke(this.gameObject, collision);
+            if (this.SubscriberCount > 0) this.Signal((this.gameObject, collision), (o, a) => o.OnCollisionEnter(a.gameObject, a.collision));
         }
 
-        private void OnCollisionStay(Collision collision)
+        protected virtual void OnCollisionExit(Collision collision)
         {
             if (!this.isActiveAndEnabled) return;
 
-            if (_onStay != null) _onStay(this.gameObject, collision);
+            this.OnExit?.Invoke(this.gameObject, collision);
+            if (this.SubscriberCount > 0) this.Signal((this.gameObject, collision), (o, a) => o.OnCollisionExit(a.gameObject, a.collision));
         }
 
-        private void OnCollisionExit(Collision collision)
+        protected override void OnDestroy()
         {
-            if (!this.isActiveAndEnabled) return;
-
-            if (_onExit != null) _onExit(this.gameObject, collision);
+            base.OnDestroy();
+            this.OnEnter = null;
+            this.OnExit = null;
         }
 
-        private void OnDestroy()
-        {
-            _onEnter = null;
-            _onExit = null;
-            _onStay = null;
-        }
     }
 
 }

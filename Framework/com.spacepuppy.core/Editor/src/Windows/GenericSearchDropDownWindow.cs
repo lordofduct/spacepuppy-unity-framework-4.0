@@ -645,18 +645,10 @@ namespace com.spacepuppyeditor.Windows
                 float iconHeight = EditorGUIUtility.singleLineHeight - EditorGUIUtility.standardVerticalSpacing * 3;
                 Vector2 iconSize = EditorGUIUtility.GetIconSize();
                 EditorGUIUtility.SetIconSize(new Vector2(iconHeight, iconHeight));
-                Texture2D assetIcon = null;
-                if (AssetDatabase.Contains(oasset))
-                {
-                    assetIcon = AssetDatabase.GetCachedIcon(AssetDatabase.GetAssetPath(oasset)) as Texture2D;
-                }
-                else if (go = GameObjectUtil.GetGameObjectFromSource(oasset))
-                {
-                    assetIcon = PrefabUtility.GetIconForGameObject(go);
-                }
 
-                position = EditorGUI.PrefixLabel(position, controlId, label);
-                UnityEngine.GUI.Box(position, new GUIContent(labelFormatter(oasset, objType), assetIcon), EditorStyles.objectField);
+                var assetcontent = EditorHelper.ObjectContent(oasset, objType, true);
+                assetcontent.text = labelFormatter(oasset, objType);
+                UnityEngine.GUI.Box(position, assetcontent, EditorStyles.objectField);
 
                 EditorGUIUtility.SetIconSize(iconSize);
 

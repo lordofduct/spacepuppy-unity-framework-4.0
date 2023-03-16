@@ -1017,6 +1017,16 @@ namespace com.spacepuppyeditor
             return c;
         }
 
+        public static GUIContent ObjectContent(UnityEngine.Object obj, System.Type expectedType, bool useProxyIconIfRelevant)
+        {
+            var content = EditorGUIUtility.ObjectContent(obj, obj != null ? obj.GetType() : expectedType).Clone();
+            if (obj != null && expectedType != null && !expectedType.IsInstanceOfType(obj) && useProxyIconIfRelevant)
+            {
+                content.image = EditorGUIUtility.IconContent("_Help")?.image ?? IconHelper.GetIcon(IconHelper.Icon.DiamondPurple);
+            }
+            return content;
+        }
+
         #endregion
 
         #region Indent Helper

@@ -90,6 +90,10 @@ namespace com.spacepuppyeditor
 
         #region Methods
 
+        public static Texture GetIcon(LabelIcon icon) => IconHelper.LabelIcons[(int)icon].image;
+
+        public static Texture GetIcon(Icon icon) => IconHelper.Icons[(int)icon].image;
+
         public static bool HasIconForObject(GameObject obj)
         {
             return !object.ReferenceEquals(GetIconForObject(obj), null);

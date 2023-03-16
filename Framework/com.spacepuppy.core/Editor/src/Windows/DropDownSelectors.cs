@@ -240,11 +240,12 @@ namespace com.spacepuppyeditor.Windows
 
         public const int DEFAULT_MAXCOUNT = 100;
 
+        private System.Type _targetType;
         private System.Func<IEnumerable<UnityEngine.Object>> _retrieveObjectsCallback;
 
         #region Properties
 
-        public virtual System.Type TargetType => typeof(UnityEngine.Object);
+        public virtual System.Type TargetType => _targetType ?? typeof(UnityEngine.Object);
 
         #endregion
 
@@ -272,14 +273,7 @@ namespace com.spacepuppyeditor.Windows
             }
             else
             {
-                if (AssetDatabase.Contains(obj))
-                {
-                    return EditorGUIUtility.ObjectContent(obj, obj.GetType()).Clone();
-                }
-                else
-                {
-                    return EditorGUIUtility.ObjectContent(obj, obj.GetType()).Clone();
-                }
+                return EditorHelper.ObjectContent(obj, this.TargetType, true);
             }
         }
 
@@ -426,9 +420,9 @@ namespace com.spacepuppyeditor.Windows
                         IEnumerable<UnityEngine.Object> results;
                         if (allowProxy)
                         {
-
                             results = AssetDatabase.FindAssets("a:assets")
                                                    .Select(s => ObjUtil.GetAsFromSource(types, AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(s), typeof(UnityEngine.Object))) as UnityEngine.Object)
+                                                   .OrderBy(o => !(objType.IsInstanceOfType(o)))
                                                    .Where(o => o != null);
                         }
                         else
@@ -473,6 +467,7 @@ namespace com.spacepuppyeditor.Windows
                                                                         (dropdownselectedcallback != null) ? (o) => dropdownselectedcallback(o as T) : (System.Action<object>)null,
                                                                         new UnityObjectDropDownWindowSelector()
                                                                         {
+                                                                            _targetType = objType,
                                                                             _retrieveObjectsCallback = retrieveobjscallback,
                                                                             MaxCount = maxVisibleCount,
                                                                         });

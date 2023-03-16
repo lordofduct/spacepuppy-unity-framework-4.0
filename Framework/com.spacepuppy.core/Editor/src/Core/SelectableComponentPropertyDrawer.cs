@@ -5,6 +5,7 @@ using System.Linq;
 
 using com.spacepuppy;
 using com.spacepuppy.Utils;
+using com.spacepuppyeditor.Windows;
 
 namespace com.spacepuppyeditor.Core
 {
@@ -145,6 +146,11 @@ namespace com.spacepuppyeditor.Core
             {
                 if (targGo == null)
                 {
+                    if (this.ShowXButton && SPEditorGUI.XButton(ref position, "Clear Selected Object", this.XButtonOnRightSide))
+                    {
+                        property.objectReferenceValue = null;
+                    }
+                    position = this.DrawDotDotButton(position, property);
                     this.DrawObjectRefField(position, property);
                 }
                 else
@@ -235,6 +241,7 @@ namespace com.spacepuppyeditor.Core
         {
             UnityEngine.Object nextobj; //object returned from ObjectField.
 
+            /*
             if (ComponentUtil.IsAcceptableComponentType(this.RestrictionType))
             {
                 //var fieldObjType = (!this.SearchChildren && !this.AllowProxy && TypeUtil.IsType(this.RestrictionType, typeof(UnityEngine.Component))) ? this.RestrictionType : typeof(UnityEngine.GameObject);
@@ -252,6 +259,23 @@ namespace com.spacepuppyeditor.Core
             {
                 var fieldObjType = (!this.AllowProxy && TypeUtil.IsType(this.RestrictionType, typeof(UnityEngine.Object))) ? this.RestrictionType : typeof(UnityEngine.Object);
                 nextobj = EditorGUI.ObjectField(position, property.objectReferenceValue, fieldObjType, this.AllowSceneObjects);
+            }
+            else
+            {
+                var ogo = GameObjectUtil.GetGameObjectFromSource(property.objectReferenceValue);
+                nextobj = EditorGUI.ObjectField(position, ogo, typeof(GameObject), this.AllowSceneObjects) as GameObject;
+            }
+            */
+            if (this.AllowNonComponents || ComponentUtil.IsAcceptableComponentType(this.RestrictionType))
+            {
+                if (this.AllowProxy || (this.RestrictionType != null && !TypeUtil.IsType(this.RestrictionType, typeof(UnityEngine.Object))))
+                {
+                    nextobj = UnityObjectDropDownWindowSelector.ObjectField(position, GUIContent.none, property.objectReferenceValue, this.RestrictionType, this.AllowSceneObjects, this.AllowProxy);
+                }
+                else
+                {
+                    nextobj = EditorGUI.ObjectField(position, property.objectReferenceValue, this.RestrictionType ?? typeof(UnityEngine.Object), this.AllowSceneObjects);
+                }
             }
             else
             {

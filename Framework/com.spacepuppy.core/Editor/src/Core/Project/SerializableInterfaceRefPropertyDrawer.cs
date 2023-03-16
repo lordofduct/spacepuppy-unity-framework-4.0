@@ -25,6 +25,9 @@ namespace com.spacepuppyeditor.Core.Project
         {
             RestrictionType = typeof(UnityEngine.Object),
             AllowNonComponents = true,
+            AllowProxy = true,
+            ShowXButton = true,
+            XButtonOnRightSide = true,
         };
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)

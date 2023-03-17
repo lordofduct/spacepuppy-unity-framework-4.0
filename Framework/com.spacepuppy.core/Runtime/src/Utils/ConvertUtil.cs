@@ -1274,6 +1274,10 @@ namespace com.spacepuppy.Utils
             {
                 return false;
             }
+            else if (value is string str)
+            {
+                return ToBool(str);
+            }
             else if (value is System.IConvertible)
             {
                 try

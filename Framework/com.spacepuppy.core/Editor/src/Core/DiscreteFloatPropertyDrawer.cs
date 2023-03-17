@@ -15,7 +15,7 @@ namespace com.spacepuppyeditor.Core
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-            const float WIDTH_INFTOGGLE = 50f;
+            const float WIDTH_INFTOGGLE = 55f;
 
             var valueProp = property.FindPropertyRelative("_value");
             float value;

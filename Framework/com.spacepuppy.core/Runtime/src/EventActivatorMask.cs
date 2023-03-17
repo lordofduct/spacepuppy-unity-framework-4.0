@@ -6,6 +6,19 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy
 {
 
+    public interface IEventActivatorMask
+    {
+
+        bool Intersects(UnityEngine.Object obj);
+
+    }
+
+    [System.Serializable]
+    public sealed class EventActivatorMaskRef : Project.SerializableInterfaceRef<IEventActivatorMask>
+    {
+
+    }
+
     [CreateAssetMenu(fileName = "EventActivatorMask", menuName = "Spacepuppy/EventActivatorMask")]
     public class EventActivatorMask : ScriptableObject, IEventActivatorMask
     {

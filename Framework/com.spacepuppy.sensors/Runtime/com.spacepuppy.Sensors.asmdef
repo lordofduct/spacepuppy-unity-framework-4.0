@@ -3,8 +3,7 @@
     "rootNamespace": "com.spacepuppy",
     "references": [
         "GUID:ddd0eb9fc8f414a4d9750a013f135d36",
-        "GUID:18b35bcc13357ab4ebabf6cf62f8b6ac",
-        "GUID:4dd151f1c8c7a9848b52a75012e7f580"
+        "GUID:18b35bcc13357ab4ebabf6cf62f8b6ac"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

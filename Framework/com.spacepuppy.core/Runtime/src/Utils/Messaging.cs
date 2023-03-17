@@ -774,6 +774,8 @@ namespace com.spacepuppy.Utils
 
         public static bool Subscribe<T>(this GameObject go, T observer, out ISubscribableMessageHook<T> hook) where T : class => SubscribableMessageHook<T>.Subscribe(go, observer, out hook);
 
+        public static bool Subscribe<T, THook>(this GameObject go, T observer, out THook hook) where T : class where THook : Component, ISubscribableMessageHook<T> => SubscribableMessageHook<T>.Subscribe<THook>(go, observer, out hook);
+
         /// <summary>
         /// Removes a subscription for a message on a gameobject.
         /// </summary>
@@ -1081,8 +1083,31 @@ namespace com.spacepuppy.Utils
                     hook = null;
                     return false;
                 }
-                hook = go ? (go.AddOrGetComponent(_hookType) as ISubscribableMessageHook<T>) : null;
-                return hook != null ? hook.Subscribe(observer) : false;
+                if (go)
+                {
+                    hook = go.GetComponent<ISubscribableMessageHook<T>>();
+                    if (hook == null && _hookType != null) hook = go.AddComponent(_hookType) as ISubscribableMessageHook<T>;
+                    return hook != null ? hook.Subscribe(observer) : false;
+                }
+                else
+                {
+                    hook = null;
+                    return false;
+                }
+            }
+            internal static bool Subscribe<THook>(GameObject go, T observer, out THook hook) where THook : Component, ISubscribableMessageHook<T>
+            {
+                if (go)
+                {
+                    hook = go.GetComponent<THook>();
+                    if (hook == null) hook = go.AddComponent<THook>();
+                    return hook != null ? hook.Subscribe(observer) : false;
+                }
+                else
+                {
+                    hook = null;
+                    return false;
+                }
             }
             internal static bool Unsubscribe(GameObject go, T observer) => _hookType != null && go && ((go.GetComponent(_hookType) as ISubscribableMessageHook<T>)?.Unsubscribe(observer) ?? false);
 

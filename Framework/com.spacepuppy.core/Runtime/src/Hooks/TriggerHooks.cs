@@ -33,7 +33,7 @@ namespace com.spacepuppy.Hooks
             if (!this.isActiveAndEnabled) return;
 
             this.OnExit?.Invoke(this.gameObject, otherCollider);
-            if (this.SubscriberCount > 0) this.Signal((this.gameObject, otherCollider), (o, a) => o.OnTriggerEnter(a.gameObject, a.otherCollider));
+            if (this.SubscriberCount > 0) this.Signal((this.gameObject, otherCollider), (o, a) => o.OnTriggerExit(a.gameObject, a.otherCollider));
         }
 
         protected override void OnDestroy()

@@ -11,7 +11,6 @@
   "dependencies": {
     "com.spacepuppy.core": "4.0.0",
     "com.spacepuppy.geom": "4.0.0",
-    "com.spacepuppy.triggers": "4.0.0"
   },
   "author": {
     "name": "Jupiter Lighthouse",

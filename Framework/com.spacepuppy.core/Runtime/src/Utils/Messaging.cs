@@ -132,6 +132,21 @@ namespace com.spacepuppy.Utils
                 }
             }
 
+            /// <summary>
+            /// If target is not in the message path of sender, then it'll subscribe to sender for the message if a subscription hook exists.
+            /// </summary>
+            /// <typeparam name="T"></typeparam>
+            /// <param name="sender"></param>
+            /// <param name="target"></param>
+            /// <returns></returns>
+            public bool SubscribeIfNecessary<T>(GameObject sender, T target) where T : class
+            {
+                var go_target = GameObjectUtil.GetGameObjectFromSource(target);
+                if (go_target && this.IsInMessagePath(sender, go_target)) return false;
+
+                return sender.Subscribe<T>(target);
+            }
+
         }
 
         #endregion

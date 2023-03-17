@@ -76,7 +76,7 @@ namespace com.spacepuppy.Geom
         protected override void SignalTriggerEnter(CompoundTriggerMember member, Collider other)
         {
             var entity = SPEntity.Pool.GetFromSource(other);
-            if (!entity) return;
+            if (!entity || !(this.Mask?.Intersects(other) ?? true)) return;
 
             if (_active.Add(other) && _activeEntities.Add(entity))
             {

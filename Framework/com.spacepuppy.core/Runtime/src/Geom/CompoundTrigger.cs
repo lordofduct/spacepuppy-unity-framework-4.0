@@ -60,6 +60,9 @@ namespace com.spacepuppy.Geom
 
         #region Fields
 
+        [SerializeField]
+        private EventActivatorMaskRef _mask = new EventActivatorMaskRef();
+
         private Dictionary<Collider, CompoundTriggerMember> _colliders = new Dictionary<Collider, CompoundTriggerMember>();
         protected readonly HashSet<Collider> _active = new HashSet<Collider>();
 
@@ -107,6 +110,12 @@ namespace com.spacepuppy.Geom
         #endregion
 
         #region Properties
+
+        public IEventActivatorMask Mask
+        {
+            get => _mask.Value;
+            set => _mask.Value = value;
+        }
 
         public Messaging.MessageSendCommand MessageSettings
         {
@@ -220,7 +229,7 @@ namespace com.spacepuppy.Geom
 
         protected virtual void SignalTriggerEnter(CompoundTriggerMember member, Collider other)
         {
-            if (this.isActiveAndEnabled && _active.Add(other))
+            if (this.isActiveAndEnabled && (_mask.Value?.Intersects(other) ?? true) && _active.Add(other))
             {
                 _messageSettings.Send(this.gameObject, (this, other), OnEnterFunctor);
             }
@@ -326,6 +335,7 @@ namespace com.spacepuppy.Geom
 
             private void OnTriggerEnter(Collider other)
             {
+                if (!this.isActiveAndEnabled) return;
                 if (_active.Add(other))
                 {
                     if (_owner != null) _owner.SignalTriggerEnter(this, other);
@@ -334,6 +344,7 @@ namespace com.spacepuppy.Geom
 
             private void OnTriggerExit(Collider other)
             {
+                if (!this.isActiveAndEnabled) return;
                 if (_active.Remove(other))
                 {
                     if (_owner != null) _owner.SignalTriggerExit(this, other);

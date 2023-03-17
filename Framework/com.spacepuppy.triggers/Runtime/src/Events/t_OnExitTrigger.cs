@@ -95,8 +95,6 @@ namespace com.spacepuppy.Events
 
         private void DoTestTriggerExit(Collider other)
         {
-            if (_coolingDown) return;
-
             if (_mask.Value == null || _mask.Value.Intersects(other))
             {
                 if (_includeColliderAsTriggerArg)
@@ -121,13 +119,13 @@ namespace com.spacepuppy.Events
 
         void OnTriggerExit(Collider other)
         {
-            if (_coolingDown || _usesCompoundTrigger) return;
-
+            if (!this.isActiveAndEnabled || _coolingDown || _usesCompoundTrigger) return;
             this.DoTestTriggerExit(other);
         }
 
         void ICompoundTriggerExitHandler.OnCompoundTriggerExit(ICompoundTrigger trigger, Collider other)
         {
+            if (!this.isActiveAndEnabled || _coolingDown) return;
             this.DoTestTriggerExit(other);
         }
 

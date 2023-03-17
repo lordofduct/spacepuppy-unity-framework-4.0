@@ -50,7 +50,7 @@ namespace com.spacepuppy.Events
 
         private void OnCollisionEnter(Collision c)
         {
-            if (_coolingDown) return;
+            if (!this.isActiveAndEnabled || _coolingDown) return;
 
             if (_mask.Value == null || _mask.Value.Intersects(c.collider))
             {

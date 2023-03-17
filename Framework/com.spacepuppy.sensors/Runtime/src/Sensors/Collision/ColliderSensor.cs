@@ -94,6 +94,7 @@ namespace com.spacepuppy.Sensors.Collision
 
         protected void OnTriggerEnter(Collider coll)
         {
+            if (!this.isActiveAndEnabled) return;
             if (!this.ConcernedWith(coll)) return;
 
             bool none = _intersectingColliders.Count == 0;
@@ -112,6 +113,7 @@ namespace com.spacepuppy.Sensors.Collision
 
         protected void OnTriggerExit(Collider coll)
         {
+            if (!this.isActiveAndEnabled) return;
             if (_intersectingColliders.Remove(coll) && _intersectingColliders.Count == 0)
             {
                 this.OnSensorSleep();

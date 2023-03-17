@@ -209,27 +209,27 @@ namespace com.spacepuppy.Events
 
         void OnTriggerEnter(Collider other)
         {
-            if (_usesCompoundTrigger || other == null) return;
+            if (!this.isActiveAndEnabled || _usesCompoundTrigger || other == null) return;
 
             this.AddObject(other.gameObject);
         }
 
         void OnTriggerExit(Collider other)
         {
-            if (_usesCompoundTrigger || other == null) return;
+            if (!this.isActiveAndEnabled || _usesCompoundTrigger || other == null) return;
 
             this.RemoveObject(other.gameObject);
         }
 
         void ICompoundTriggerEnterHandler.OnCompoundTriggerEnter(ICompoundTrigger trigger, Collider other)
         {
-            if (other == null) return;
+            if (!this.isActiveAndEnabled || other == null) return;
             this.AddObject(other.gameObject);
         }
 
         void ICompoundTriggerExitHandler.OnCompoundTriggerExit(ICompoundTrigger trigger, Collider other)
         {
-            if (other == null) return;
+            if (!this.isActiveAndEnabled || other == null) return;
             this.RemoveObject(other.gameObject);
         }
 

@@ -120,20 +120,12 @@ namespace com.spacepuppy.Sensors
 
         protected void OnSensorAlert()
         {
-            var d = this.SensorAlert;
-            if (d != null)
-            {
-                d(this, System.EventArgs.Empty);
-            }
+            this.SensorAlert?.Invoke(this, System.EventArgs.Empty);
         }
 
         protected void OnSensorSleep()
         {
-            var d = this.SensorSleep;
-            if (d != null)
-            {
-                d(this, System.EventArgs.Empty);
-            }
+            this.SensorSleep?.Invoke(this, System.EventArgs.Empty);
         }
 
     }

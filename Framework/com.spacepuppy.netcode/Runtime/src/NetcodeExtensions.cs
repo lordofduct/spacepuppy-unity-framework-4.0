@@ -1,6 +1,11 @@
 using UnityEngine;
 using System.Collections.Generic;
 using Unity.Netcode;
+#if SP_UNITASK
+using Cysharp.Threading.Tasks;
+#else
+using System.Threading.Tasks;
+#endif
 
 namespace com.spacepuppy
 {
@@ -63,6 +68,30 @@ namespace com.spacepuppy
             else
                 return NetworkRelationship.Offline;
         }
+
+        #region NetworkManager Async Extensions
+
+#if SP_UNITASK
+        public async static UniTask ShutdownAsync(this NetworkManager manager, bool discardMessageQueue = false)
+        {
+            manager.Shutdown(discardMessageQueue);
+            while (manager.ShutdownInProgress)
+            {
+                await UniTask.Yield();
+            }
+        }
+#else
+        public async static UniTask ShutdownAsync_Task(this NetworkManager manager, bool discardMessageQueue = false)
+        {
+            manager.Shutdown(discardMessageQueue);
+            while (manager.ShutdownInProgress)
+            {
+                await Task.Yield();
+            }
+        }
+#endif
+
+        #endregion
 
 
         /// <summary>

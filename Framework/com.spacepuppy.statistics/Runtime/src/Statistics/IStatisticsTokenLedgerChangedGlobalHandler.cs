@@ -6,6 +6,6 @@ namespace com.spacepuppy.Statistics
 {
     public interface IStatisticsTokenLedgerChangedGlobalHandler
     {
-        void OnChanged(IStatisticsTokenLedger ledger, LedgerChangedEventArgs ev);
+        void OnChanged(IStatisticsTokenLedgerService ledger, LedgerChangedEventArgs ev);
     }
 }

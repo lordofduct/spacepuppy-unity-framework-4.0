@@ -25,7 +25,7 @@ namespace com.spacepuppy.Statistics
         public bool SetValue(string sMemberName, object value, params object[] index)
         {
             if (string.IsNullOrEmpty(sMemberName)) return false;
-            Services.Get<IStatisticsTokenLedger>()?.SetStat(_category, ConvertUtil.ToDouble(value), sMemberName);
+            Services.Get<IStatisticsTokenLedgerService>()?.SetStat(_category, ConvertUtil.ToDouble(value), sMemberName);
             return true;
         }
 
@@ -34,7 +34,7 @@ namespace com.spacepuppy.Statistics
             result = null;
             if (string.IsNullOrEmpty(sMemberName)) return false;
 
-            var ledger = Services.Get<IStatisticsTokenLedger>();
+            var ledger = Services.Get<IStatisticsTokenLedgerService>();
             if (ledger == null) return false;
 
             result = ledger.GetStat(_category, sMemberName);

@@ -6,7 +6,7 @@ namespace com.spacepuppy.Statistics
     public static class ExtensionMethods
     {
 
-        public static double GetStatOrDefault(this IStatisticsTokenLedger ledger, string stat, string token = null) => ledger?.GetStat(stat, token) ?? 0d;
+        public static double GetStatOrDefault(this IStatisticsTokenLedgerService ledger, string stat, string token = null) => ledger?.GetStat(stat, token) ?? 0d;
 
     }
 }

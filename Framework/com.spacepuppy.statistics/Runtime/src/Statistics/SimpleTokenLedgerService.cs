@@ -8,7 +8,7 @@ namespace com.spacepuppy.Statistics
 {
 
     [System.Serializable]
-    public class SimpleTokenLedger : ServiceComponent<IStatisticsTokenLedger>, IStatisticsTokenLedger
+    public class SimpleTokenLedgerService : ServiceComponent<IStatisticsTokenLedgerService>, IStatisticsTokenLedgerService
     {
 
         #region Fields
@@ -20,13 +20,13 @@ namespace com.spacepuppy.Statistics
 
         #region CONSTRUCTOR
 
-        public SimpleTokenLedger()
+        public SimpleTokenLedgerService()
             : base(Services.AutoRegisterOption.Register, Services.MultipleServiceResolutionOption.UnregisterSelf, Services.UnregisterResolutionOption.DestroySelf)
         {
 
         }
 
-        public SimpleTokenLedger(Services.AutoRegisterOption autoRegister, Services.MultipleServiceResolutionOption multipleServiceResolution, Services.UnregisterResolutionOption unregisterResolution)
+        public SimpleTokenLedgerService(Services.AutoRegisterOption autoRegister, Services.MultipleServiceResolutionOption multipleServiceResolution, Services.UnregisterResolutionOption unregisterResolution)
             : base(autoRegister, multipleServiceResolution, unregisterResolution)
         {
 

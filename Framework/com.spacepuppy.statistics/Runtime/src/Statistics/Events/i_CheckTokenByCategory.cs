@@ -52,7 +52,7 @@ namespace com.spacepuppy.Statistics.Events
         {
             get
             {
-                return base.CanTrigger && !string.IsNullOrEmpty(_category) && Services.Get<IStatisticsTokenLedger>() != null;
+                return base.CanTrigger && !string.IsNullOrEmpty(_category) && Services.Get<IStatisticsTokenLedgerService>() != null;
             }
         }
 
@@ -60,7 +60,7 @@ namespace com.spacepuppy.Statistics.Events
         {
             if (!this.CanTrigger) return false;
 
-            var service = Services.Get<IStatisticsTokenLedger>();
+            var service = Services.Get<IStatisticsTokenLedgerService>();
             if (service == null) return false;
 
             bool result = false;

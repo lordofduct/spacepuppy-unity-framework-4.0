@@ -6,7 +6,7 @@ using com.spacepuppy.Statistics;
 
 namespace com.spacepuppy
 {
-    public interface IStatisticsTokenLedger : IService
+    public interface IStatisticsTokenLedger
     {
         double? GetStat(string stat, string token = null);
         void SetStat(string stat, double amount, string token = null);
@@ -15,4 +15,10 @@ namespace com.spacepuppy
 
         IEnumerable<LedgerStatData> EnumerateStats(string filterstat = null);
     }
+
+    public interface IStatisticsTokenLedgerService : IStatisticsTokenLedger, IService
+    {
+
+    }
+
 }

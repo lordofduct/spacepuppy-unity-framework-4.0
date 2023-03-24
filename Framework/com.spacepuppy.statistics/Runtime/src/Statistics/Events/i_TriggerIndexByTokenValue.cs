@@ -55,7 +55,7 @@ namespace com.spacepuppy.Statistics.Events
         {
             if (!this.CanTrigger) return false;
 
-            var service = Services.Get<IStatisticsTokenLedger>();
+            var service = Services.Get<IStatisticsTokenLedgerService>();
             if (service == null) return false;
 
             if (_onEvalByIndex.HasReceivers)

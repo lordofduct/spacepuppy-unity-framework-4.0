@@ -85,7 +85,7 @@ namespace com.spacepuppy.Statistics.Events
 
         #region ITokenLedgerChangedGlobalHandler Interface
 
-        void IStatisticsTokenLedgerChangedGlobalHandler.OnChanged(IStatisticsTokenLedger ledger, LedgerChangedEventArgs ev)
+        void IStatisticsTokenLedgerChangedGlobalHandler.OnChanged(IStatisticsTokenLedgerService ledger, LedgerChangedEventArgs ev)
         {
             if (!_onChanged.HasReceivers) return;
 

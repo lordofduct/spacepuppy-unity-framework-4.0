@@ -64,7 +64,7 @@ namespace com.spacepuppy.Statistics.Events
 
             if (_bids == null || _bids.Count == 0) return false;
 
-            var service = Services.Get<IStatisticsTokenLedger>();
+            var service = Services.Get<IStatisticsTokenLedgerService>();
             if (service == null) return false;
 
             if (!_bidsClean)

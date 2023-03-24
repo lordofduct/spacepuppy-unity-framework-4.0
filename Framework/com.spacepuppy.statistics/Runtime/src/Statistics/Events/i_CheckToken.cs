@@ -47,7 +47,7 @@ namespace com.spacepuppy.Statistics.Events
         {
             get
             {
-                return base.CanTrigger && !string.IsNullOrEmpty(_token) && Services.Get<IStatisticsTokenLedger>() != null;
+                return base.CanTrigger && !string.IsNullOrEmpty(_token) && Services.Get<IStatisticsTokenLedgerService>() != null;
             }
         }
 
@@ -55,7 +55,7 @@ namespace com.spacepuppy.Statistics.Events
         {
             if (!this.CanTrigger) return false;
 
-            var service = Services.Get<IStatisticsTokenLedger>();
+            var service = Services.Get<IStatisticsTokenLedgerService>();
             if (service == null) return false;
 
             var val = service.GetStatOrDefault(_category, _token);

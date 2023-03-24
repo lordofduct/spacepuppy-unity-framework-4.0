@@ -125,7 +125,7 @@ namespace com.spacepuppy
         public static void Register<T>(T service, bool donotSignalRegister = false) where T : class, IService
         {
             var other = Entry<T>.Instance;
-            if(!other.IsNullOrDestroyed())
+            if (!other.IsNullOrDestroyed())
             {
                 if (object.ReferenceEquals(other, service)) return;
                 throw new System.InvalidOperationException("You must first unregister a service before registering a new one.");
@@ -166,7 +166,7 @@ namespace com.spacepuppy
         public static bool TryUnregister<T>(T service, bool donotSignalUnregister = false) where T : class, IService
         {
             var inst = Entry<T>.Instance;
-            if(object.ReferenceEquals(inst, service) && !object.ReferenceEquals(inst, null))
+            if (object.ReferenceEquals(inst, service) && !object.ReferenceEquals(inst, null))
             {
                 Entry<T>.Instance = null;
                 _services.Remove(inst);
@@ -642,6 +642,58 @@ namespace com.spacepuppy
             return service;
         }
 
+
+
+        public static bool ValidateService<T>(T service, Services.AutoRegisterOption autoRegisterService, Services.MultipleServiceResolutionOption multipleServiceResolution) where T : class, IService
+        {
+            var inst = Services.Get<T>();
+            if (inst == null)
+            {
+                if (autoRegisterService > Services.AutoRegisterOption.DoNothing)
+                {
+                    if (Services.TryRegister<T>(service))
+                    {
+                        if (autoRegisterService == Services.AutoRegisterOption.RegisterAndPersist && service is Component c)
+                        {
+                            UnityEngine.Object.DontDestroyOnLoad(c);
+                        }
+                    }
+                }
+
+                return true;
+            }
+            else if (object.ReferenceEquals(service, inst))
+            {
+                return true;
+            }
+            else
+            {
+                switch (multipleServiceResolution)
+                {
+                    case Services.MultipleServiceResolutionOption.DoNothing:
+                        return false;
+                    case Services.MultipleServiceResolutionOption.UnregisterSelf:
+                        service.OnServiceUnregistered();
+                        return false;
+                    case Services.MultipleServiceResolutionOption.UnregisterOther:
+                        Services.Unregister<T>();
+                        if (autoRegisterService > Services.AutoRegisterOption.DoNothing)
+                        {
+                            if (Services.TryRegister<T>(service))
+                            {
+                                if (autoRegisterService == Services.AutoRegisterOption.RegisterAndPersist && service is Component c)
+                                {
+                                    UnityEngine.Object.DontDestroyOnLoad(c);
+                                }
+                            }
+                        }
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
         #endregion
 
         #region Special Types
@@ -707,55 +759,7 @@ namespace com.spacepuppy
             }
         }
 
-        private bool ValidateService()
-        {
-            var inst = Services.Get<T>();
-            if (inst == null)
-            {
-                if (_serviceRegistrationOptions.AutoRegisterService > Services.AutoRegisterOption.DoNothing)
-                {
-                    if (Services.TryRegister<T>(this as T))
-                    {
-                        if (_serviceRegistrationOptions.AutoRegisterService == Services.AutoRegisterOption.RegisterAndPersist)
-                        {
-                            DontDestroyOnLoad(this);
-                        }
-                    }
-                }
-
-                return true;
-            }
-            else if (object.ReferenceEquals(this, inst))
-            {
-                return true;
-            }
-            else
-            {
-                switch (_serviceRegistrationOptions.MultipleServiceResolution)
-                {
-                    case Services.MultipleServiceResolutionOption.DoNothing:
-                        return false;
-                    case Services.MultipleServiceResolutionOption.UnregisterSelf:
-                        (this as IService).OnServiceUnregistered();
-                        return false;
-                    case Services.MultipleServiceResolutionOption.UnregisterOther:
-                        Services.Unregister<T>();
-                        if (_serviceRegistrationOptions.AutoRegisterService > Services.AutoRegisterOption.DoNothing)
-                        {
-                            if (Services.TryRegister<T>(this as T))
-                            {
-                                if (_serviceRegistrationOptions.AutoRegisterService == Services.AutoRegisterOption.RegisterAndPersist)
-                                {
-                                    DontDestroyOnLoad(this);
-                                }
-                            }
-                        }
-                        return true;
-                }
-            }
-
-            return false;
-        }
+        private bool ValidateService() => Services.ValidateService<T>(this as T, _serviceRegistrationOptions.AutoRegisterService, _serviceRegistrationOptions.MultipleServiceResolution);
 
         protected virtual void OnValidAwake()
         {
@@ -1007,36 +1011,10 @@ namespace com.spacepuppy
                 return;
             }
 
-            var inst = Services.Get<T>();
-            if (inst == null)
+            if (Services.ValidateService<T>(this as T, _serviceRegistrationOptions.AutoRegisterService ? Services.AutoRegisterOption.Register : Services.AutoRegisterOption.DoNothing, _serviceRegistrationOptions.MultipleServiceResolution))
             {
-                if (_serviceRegistrationOptions.AutoRegisterService)
-                {
-                    Services.TryRegister<T>(this as T);
-                }
+                this.OnValidAwake();
             }
-            else if (object.ReferenceEquals(this, inst))
-            {
-                //do nothing
-            }
-            else
-            {
-                switch (_serviceRegistrationOptions.MultipleServiceResolution)
-                {
-                    case Services.MultipleServiceResolutionOption.UnregisterSelf:
-                        (this as IService).OnServiceUnregistered();
-                        return;
-                    case Services.MultipleServiceResolutionOption.UnregisterOther:
-                        Services.Unregister<T>();
-                        if (_serviceRegistrationOptions.AutoRegisterService)
-                        {
-                            Services.TryRegister<T>(this as T);
-                        }
-                        break;
-                }
-            }
-
-            this.OnValidAwake();
         }
 
         protected virtual void OnValidAwake()

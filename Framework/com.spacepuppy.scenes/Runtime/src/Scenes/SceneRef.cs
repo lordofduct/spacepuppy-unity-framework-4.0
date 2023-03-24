@@ -59,9 +59,16 @@ namespace com.spacepuppy.Scenes
 
         #region Methods
 
+        public bool IsScenePath() => !string.IsNullOrEmpty(_sceneName) && _sceneName.EndsWith(".unity");
+
         public bool SceneNameIsValidInBuildSettings()
         {
-            return SceneUtility.GetBuildIndexByScenePath(_sceneName) >= 0;
+            int buildIndex;
+            if (this.IsBuildIndexReference(out buildIndex))
+            {
+                return buildIndex >= 0 && buildIndex < SceneManager.sceneCountInBuildSettings;
+            }
+            return !string.IsNullOrEmpty(_sceneName) && SceneUtility.GetBuildIndexByScenePath(_sceneName) >= 0;
         }
 
         /// <summary>
@@ -108,14 +115,28 @@ namespace com.spacepuppy.Scenes
             return false;
         }
 
+        /// <summary>
+        /// This will unravel whatever data is in 'SceneName' into its true SceneName. 
+        /// If it's a buildIndex formatted as #0 it will lookup the scene name from the SceneUtility. 
+        /// If it's a Scene Path in format Assets/folder/name.unity it'll strip everything but the name. 
+        /// Otherwise it'll return the contents of SceneName. 
+        /// </summary>
+        /// <returns></returns>
         public string ResolveSceneName()
         {
             int bindex;
             if (this.IsBuildIndexReference(out bindex))
             {
-                return bindex >= 0 && bindex < SceneManager.sceneCountInBuildSettings ? SceneUtility.GetScenePathByBuildIndex(bindex) : string.Empty;
+                return bindex >= 0 && bindex < SceneManager.sceneCountInBuildSettings ? System.IO.Path.GetFileNameWithoutExtension(SceneUtility.GetScenePathByBuildIndex(bindex)) : string.Empty;
             }
-            return _sceneName ?? string.Empty;
+            else if (!string.IsNullOrEmpty(_sceneName))
+            {
+                if (_sceneName.EndsWith(".unity"))
+                    return System.IO.Path.GetFileNameWithoutExtension(_sceneName);
+                else
+                    return _sceneName;
+            }
+            return string.Empty;
         }
 
         public LoadSceneWaitHandle LoadScene(LoadSceneMode mode, LoadSceneBehaviour behaviour, object persistentToken = null)

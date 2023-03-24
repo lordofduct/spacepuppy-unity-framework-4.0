@@ -64,7 +64,7 @@ namespace com.spacepuppy.Scenes
         {
             if (options == null) throw new System.ArgumentNullException(nameof(options));
 
-            if(GameLoop.InvokeRequired)
+            if (GameLoop.InvokeRequired)
             {
                 GameLoop.UpdateHandle.Invoke(() => this.LoadScene(options));
             }
@@ -92,28 +92,10 @@ namespace com.spacepuppy.Scenes
             }
         }
 
-        public virtual AsyncOperation UnloadScene(Scene scene)
+        public virtual AsyncWaitHandle UnloadScene(Scene scene)
         {
             this.OnBeforeSceneUnloaded(scene);
-            return SceneManager.UnloadSceneAsync(scene);
-        }
-
-        public virtual Scene GetActiveScene()
-        {
-            return SceneManager.GetActiveScene();
-        }
-
-        public virtual bool SceneExists(string sceneName, bool excludeInactive = false)
-        {
-            if (excludeInactive)
-            {
-                var sc = SceneManager.GetSceneByName(sceneName);
-                return sc.IsValid();
-            }
-            else
-            {
-                return SceneUtility.GetBuildIndexByScenePath(sceneName) >= 0;
-            }
+            return SceneManager.UnloadSceneAsync(scene).AsAsyncWaitHandle();
         }
 
         public virtual LoadSceneInternalResult LoadSceneInternal(SceneRef scene, LoadSceneParameters parameters, LoadSceneBehaviour behaviour) => SceneManagerUtils.LoadSceneInternal(scene, parameters, behaviour);

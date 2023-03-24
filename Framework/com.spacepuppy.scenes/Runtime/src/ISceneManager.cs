@@ -1,7 +1,8 @@
 ﻿using UnityEngine;
 using UnityEngine.SceneManagement;
-using com.spacepuppy.Scenes;
+using System.Collections.Generic;
 using com.spacepuppy.Async;
+using com.spacepuppy.Scenes;
 
 namespace com.spacepuppy
 {
@@ -44,15 +45,7 @@ namespace com.spacepuppy
 
         void LoadScene(LoadSceneOptions options);
 
-        AsyncOperation UnloadScene(Scene scene);
-        Scene GetActiveScene();
-
-        /// <summary>
-        /// Test if a scene by the name exists.
-        /// </summary>
-        /// <param name="excludeInactive">False to test if the scene exists as a loadable scene, True if to test if the scene exists and is actively loaded.</param>
-        /// <returns></returns>
-        bool SceneExists(string sceneName, bool excludeInactive = false);
+        AsyncWaitHandle UnloadScene(Scene scene);
 
         /// <summary>
         /// Calls directly through to the SceneManager to load a scene, this should never be called directly.
@@ -65,6 +58,33 @@ namespace com.spacepuppy
         /// the default UnityEngine.SceneManagement.SceneManager. Examples include using Addressables to load scenes, or NetworkManager.Singleton.SceneManager.
         /// </remarks>
         LoadSceneInternalResult LoadSceneInternal(SceneRef sceneName, LoadSceneParameters parameters, LoadSceneBehaviour behaviour);
+
+    }
+
+    /// <summary>
+    /// ISceneManager extension methods for retrieving Scene's at runtime assume that UnityEngine.SceneManagement.SceneManager is being used. 
+    /// If you need to create a SceneManager that gets even more granular, use this interface to force calls into your cusom scene manager 
+    /// for handling methods that retrieve the current active scenes.
+    /// </summary>
+    public interface IOverridingSceneManager : ISceneManager
+    {
+
+        int ActiveSceneCount { get; }
+
+        Scene GetActiveScene();
+        Scene GetSceneByPath(string scenePath);
+        Scene GetSceneByName(string sceneName);
+        Scene GetSceneByBuildIndex(int buildIndex);
+        Scene GetSceneAt(int index);
+        Scene CreateScene(string sceneName, CreateSceneParameters parameters);
+        IEnumerable<Scene> GetAllScenes();
+
+        /// <summary>
+        /// Test if a scene by the name exists.
+        /// </summary>
+        /// <param name="excludeInactive">False to test if the scene exists as a loadable scene, True if to test if the scene exists and is actively loaded.</param>
+        /// <returns></returns>
+        bool SceneExists(string sceneName, bool excludeInactive = false);
 
     }
 
@@ -98,6 +118,110 @@ namespace com.spacepuppy
             sceneManager.LoadScene(handle);
             return handle;
         }
+
+        #region IOverridingSceneManager Interface
+
+        public static int GetActiveSceneCount(this ISceneManager manager)
+        {
+            if (manager is IOverridingSceneManager osm)
+            {
+                return osm.ActiveSceneCount;
+            }
+            else
+            {
+                return SceneManager.sceneCount;
+            }
+        }
+
+        public static bool SceneExists(this ISceneManager manager, string sceneName, bool excludeInactive = false)
+        {
+            if (manager is IOverridingSceneManager osm)
+            {
+                return osm.SceneExists(sceneName, excludeInactive);
+            }
+            else
+            {
+                if (excludeInactive)
+                {
+                    var sc = SceneManager.GetSceneByName(sceneName);
+                    return sc.IsValid();
+                }
+                else
+                {
+                    return SceneUtility.GetBuildIndexByScenePath(sceneName) >= 0;
+                }
+            }
+        }
+
+        public static Scene GetActiveScene(this ISceneManager manager)
+        {
+            if (manager is IOverridingSceneManager osm)
+                return osm.GetActiveScene();
+            else
+                return SceneManager.GetActiveScene();
+        }
+
+        public static Scene GetSceneByPath(this ISceneManager manager, string scenePath)
+        {
+            if (manager is IOverridingSceneManager osm)
+                return osm.GetSceneByPath(scenePath);
+            else
+                return SceneManager.GetSceneByPath(scenePath);
+        }
+
+        public static Scene GetSceneByName(this ISceneManager manager, string sceneName)
+        {
+            if (manager is IOverridingSceneManager osm)
+                return osm.GetSceneByName(sceneName);
+            else
+                return SceneManager.GetSceneByName(sceneName);
+        }
+
+        public static Scene GetSceneByBuildIndex(this ISceneManager manager, int buildIndex)
+        {
+            if (manager is IOverridingSceneManager osm)
+                return osm.GetSceneByBuildIndex(buildIndex);
+            else
+                return SceneManager.GetSceneByBuildIndex(buildIndex);
+        }
+
+        public static Scene GetSceneAt(this ISceneManager manager, int index)
+        {
+            if (manager is IOverridingSceneManager osm)
+                return osm.GetSceneAt(index);
+            else
+                return SceneManager.GetSceneAt(index);
+        }
+
+        public static Scene CreateScene(this ISceneManager manager, string sceneName) => CreateScene(manager, sceneName, new CreateSceneParameters(LocalPhysicsMode.None));
+        public static Scene CreateScene(this ISceneManager manager, string sceneName, CreateSceneParameters parameters)
+        {
+            if (manager is IOverridingSceneManager osm)
+                return osm.CreateScene(sceneName, parameters);
+            else
+                return SceneManager.CreateScene(sceneName, parameters);
+        }
+
+        public static IEnumerable<Scene> GetAllScenes(this ISceneManager manager)
+        {
+            if (manager is IOverridingSceneManager osm)
+            {
+                return osm.GetAllScenes();
+            }
+            else
+            {
+                return GetAllScenesIterator();
+            }
+        }
+        private static IEnumerable<Scene> GetAllScenesIterator()
+        {
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
+                yield return SceneManager.GetSceneAt(i);
+            }
+        }
+
+        #endregion
 
     }
 

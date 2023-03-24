@@ -1038,12 +1038,8 @@ namespace com.spacepuppy.Utils
             /// <summary>
             /// Set true if you'd like this hook to not auto destroy when no subscribers.
             /// </summary>
+            [System.NonSerialized]
             private HashSet<T> _observers = new HashSet<T>();
-
-            protected virtual void OnDisable()
-            {
-                _observers.Clear();
-            }
 
             protected virtual void OnDestroy()
             {

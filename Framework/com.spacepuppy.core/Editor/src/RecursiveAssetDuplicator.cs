@@ -31,7 +31,7 @@ namespace com.spacepuppyeditor.Windows
         {
             if (asset == null) return string.Empty;
             var path = AssetDatabase.GetAssetPath(asset);
-            if (string.IsNullOrEmpty(path) && !path.StartsWith("Assets/")) return string.Empty;
+            if (string.IsNullOrEmpty(path) || !path.StartsWith("Assets/")) return string.Empty;
             return Path.Combine(Application.dataPath, path.Substring(7));
         }
 

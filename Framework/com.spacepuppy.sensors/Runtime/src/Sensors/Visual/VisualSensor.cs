@@ -21,7 +21,7 @@ namespace com.spacepuppy.Sensors.Visual
         private bool _canDetectSelf;
         [SerializeField]
         [Tooltip("A mask for things we can sense, leave blank to sense all possible aspects.")]
-        private EventActivatorMaskRef _mask;
+        private EventActivatorMaskRef _mask = new EventActivatorMaskRef();
         
         [SerializeField()]
         [Tooltip("Leave as 'Nothing' to not calculate line of sight.")]

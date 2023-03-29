@@ -537,6 +537,25 @@ namespace com.spacepuppy.Utils
             }
         }
 
+        public static T RemoveRandom<T>(this ICollection<T> coll, IRandom rng = null)
+        {
+            if (coll is IList<T> lst)
+            {
+                if (lst.Count == 0) return default;
+                if (rng == null) rng = RandomUtil.Standard;
+                int index = rng.Range(lst.Count);
+                var result = lst[index];
+                lst.RemoveAt(index);
+                return result;
+            }
+            else
+            {
+                var result = coll.Shuffled(rng).Take(1).FirstOrDefault();
+                coll.Remove(result);
+                return result;
+            }
+        }
+
         #endregion
 
         #region Array Methods

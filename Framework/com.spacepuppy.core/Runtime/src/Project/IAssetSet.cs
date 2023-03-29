@@ -29,6 +29,18 @@ namespace com.spacepuppy.Project
 
     }
 
+    public interface IGuidAssetSet : IAssetSet
+    {
+
+        IEnumerable<System.Guid> GetAssetGuids();
+
+        bool Contains(System.Guid guid);
+
+        UnityEngine.Object LoadAsset(System.Guid guid);
+        UnityEngine.Object LoadAsset(System.Guid guid, System.Type tp);
+        T LoadAsset<T>(System.Guid guid) where T : class;
+    }
+
     [System.Serializable]
     public class AssetBundleRef : SerializableInterfaceRef<IAssetSet>
     {

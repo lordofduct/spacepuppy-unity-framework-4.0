@@ -5,12 +5,13 @@ using System.Collections.Generic;
 using System.Linq;
 
 using com.spacepuppy.Utils;
+using com.spacepuppy.Collections;
 
 namespace com.spacepuppy.Project
 {
 
     [CreateAssetMenu(fileName = "AssetSet", menuName = "Spacepuppy/Asset Set")]
-    public class QueryableAssetSet : ScriptableObject, IAssetSet, IAssetGuidIdentifiable
+    public class QueryableAssetSet : ScriptableObject, IAssetSet, IGuidAssetSet, IAssetGuidIdentifiable, IReadOnlyDictionary<string, UnityEngine.Object>, IReadOnlyDictionary<System.Guid, UnityEngine.Object>, IEnumerable<UnityEngine.Object>
     {
 
 #if UNITY_EDITOR
@@ -341,11 +342,18 @@ namespace com.spacepuppy.Project
         /// Get the available shallow asset guids. Not all assets have associated guids.
         /// </summary>
         /// <returns></returns>
-        public IEnumerable<System.Guid> GetAssetGuids()
+        public IEnumerable<System.Guid> GetAssetGuids(bool shallow = false)
         {
             if (!_clean && !this.SetupTable()) return Enumerable.Empty<System.Guid>();
 
-            return _guidTable?.Keys ?? Enumerable.Empty<System.Guid>();
+            if (!shallow && _nested)
+            {
+                return _guidTable.Keys.Union(_assets.OfType<IGuidAssetSet>().SelectMany(o => o.GetAssetGuids()));
+            }
+            else
+            {
+                return _guidTable.Keys;
+            }
         }
 
         public bool TryGetAsset(System.Guid guid, out UnityEngine.Object obj)
@@ -360,6 +368,21 @@ namespace com.spacepuppy.Project
             if (_guidTable?.TryGetValue(guid, out obj) ?? false)
             {
                 return true;
+            }
+            else if (_nested)
+            {
+                for (int i = 0; i < _assets.Length; i++)
+                {
+                    if (_assets[i] is QueryableAssetSet assetset)
+                    {
+                        if (assetset.TryGetAsset(guid, out obj)) return true;
+                    }
+                    else if (_assets[i] is IGuidAssetSet nestedassets)
+                    {
+                        obj = nestedassets.LoadAsset(guid);
+                        if (!object.ReferenceEquals(obj, null)) return true;
+                    }
+                }
             }
 
             obj = null;
@@ -380,6 +403,21 @@ namespace com.spacepuppy.Project
                 obj = ObjUtil.GetAsFromSource(tp, obj) as UnityEngine.Object;
                 if (!object.ReferenceEquals(obj, null)) return true;
             }
+            else if (_nested)
+            {
+                for (int i = 0; i < _assets.Length; i++)
+                {
+                    if (_assets[i] is QueryableAssetSet assetset)
+                    {
+                        if (assetset.TryGetAsset(guid, tp, out obj)) return true;
+                    }
+                    else if (_assets[i] is IGuidAssetSet nestedassets)
+                    {
+                        obj = nestedassets.LoadAsset(guid, tp);
+                        if (!object.ReferenceEquals(obj, null)) return true;
+                    }
+                }
+            }
 
             obj = null;
             return false;
@@ -398,6 +436,21 @@ namespace com.spacepuppy.Project
             {
                 obj = ObjUtil.GetAsFromSource<T>(o);
                 if (!object.ReferenceEquals(obj, null)) return true;
+            }
+            else if (_nested)
+            {
+                for (int i = 0; i < _assets.Length; i++)
+                {
+                    if (_assets[i] is QueryableAssetSet assetset)
+                    {
+                        if (assetset.TryGetAsset(guid, out obj)) return true;
+                    }
+                    else if (_assets[i] is IGuidAssetSet nestedassets)
+                    {
+                        obj = nestedassets.LoadAsset<T>(guid);
+                        if (!object.ReferenceEquals(obj, null)) return true;
+                    }
+                }
             }
 
             obj = null;
@@ -433,7 +486,7 @@ namespace com.spacepuppy.Project
 
         public bool Contains(string name)
         {
-            if (!_clean) this.SetupTable();
+            if (!_clean && !this.SetupTable()) return false;
 
             if (_table.ContainsKey(name)) return true;
 
@@ -519,6 +572,38 @@ namespace com.spacepuppy.Project
 
         #endregion
 
+        #region IGuidAssetSet Interface
+
+        IEnumerable<System.Guid> IGuidAssetSet.GetAssetGuids() => this.GetAssetGuids();
+
+        public bool Contains(System.Guid guid)
+        {
+            if (!_clean && !this.SetupTable()) return false;
+
+            if (_guidTable.ContainsKey(guid)) return true;
+
+            if (_nested)
+            {
+                for (int i = 0; i < _assets.Length; i++)
+                {
+                    if (_assets[i] is IGuidAssetSet nestedassets && nestedassets.Contains(guid))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        UnityEngine.Object IGuidAssetSet.LoadAsset(System.Guid guid) => this.GetAsset(guid);
+
+        UnityEngine.Object IGuidAssetSet.LoadAsset(System.Guid guid, System.Type tp) => this.GetAsset(guid, tp);
+
+        T IGuidAssetSet.LoadAsset<T>(System.Guid guid) => this.GetAsset<T>(guid);
+
+        #endregion
+
         #region INameable Interface
 
         private NameCache.UnityObjectNameCache _nameCache;
@@ -546,6 +631,96 @@ namespace com.spacepuppy.Project
         #region IAssetGuidIdentifiable Interface
 
         public System.Guid AssetId => _assetId;
+
+        #endregion
+
+        #region IReadOnlyDictionary<string, UnityEngine.Object> Interface
+
+        IEnumerable<string> IReadOnlyDictionary<string, UnityEngine.Object>.Keys => this.GetAllAssetNames();
+
+        IEnumerable<UnityEngine.Object> IReadOnlyDictionary<string, UnityEngine.Object>.Values => this.GetAllAssets();
+
+        int IReadOnlyCollection<KeyValuePair<string, UnityEngine.Object>>.Count
+        {
+            get
+            {
+                if (!_clean && !this.SetupTable()) return 0;
+
+                return _nested ? this.GetAllAssetNames().Count() : _table.Count;
+            }
+        }
+
+        UnityEngine.Object IReadOnlyDictionary<string, UnityEngine.Object>.this[string key] => this.GetAsset(key);
+
+        bool IReadOnlyDictionary<string, Object>.ContainsKey(string key) => this.Contains(key);
+
+        bool IReadOnlyDictionary<string, Object>.TryGetValue(string key, out Object value) => this.TryGetAsset(key, out value);
+
+        IEnumerator<KeyValuePair<string, Object>> IEnumerable<KeyValuePair<string, UnityEngine.Object>>.GetEnumerator()
+        {
+            if (!_clean && !this.SetupTable()) return Enumerable.Empty<KeyValuePair<string, UnityEngine.Object>>().GetEnumerator();
+            
+            if (_nested)
+            {
+                return this.GetAllAssetNames().Select(o => new KeyValuePair<string, UnityEngine.Object>(o, this.GetAsset(o))).GetEnumerator();
+            }
+            else
+            {
+                return _table.GetEnumerator();
+            }
+        }
+
+        #endregion
+
+        #region IReadOnlyDictionary<System.Guid, UnityEngine.Object> Interface
+
+        IEnumerable<System.Guid> IReadOnlyDictionary<System.Guid, UnityEngine.Object>.Keys => this.GetAssetGuids();
+
+        IEnumerable<UnityEngine.Object> IReadOnlyDictionary<System.Guid, UnityEngine.Object>.Values
+        {
+            get
+            {
+                if (!_clean && !this.SetupTable()) return Enumerable.Empty<UnityEngine.Object>();
+
+                return _nested ? this.GetAssetGuids().Select(o => this.GetAsset(o)) : _guidTable.Values;
+            }
+        }
+
+        int IReadOnlyCollection<KeyValuePair<System.Guid, UnityEngine.Object>>.Count
+        {
+            get
+            {
+                if (!_clean && !this.SetupTable()) return 0;
+
+                return _nested ? this.GetAssetGuids().Count() : _guidTable.Count;
+            }
+        }
+
+        UnityEngine.Object IReadOnlyDictionary<System.Guid, UnityEngine.Object>.this[System.Guid key] => this.GetAsset(key);
+
+        bool IReadOnlyDictionary<System.Guid, Object>.ContainsKey(System.Guid key) => this.Contains(key);
+
+        bool IReadOnlyDictionary<System.Guid, Object>.TryGetValue(System.Guid key, out Object value) => this.TryGetAsset(key, out value);
+
+        IEnumerator<KeyValuePair<System.Guid, Object>> IEnumerable<KeyValuePair<System.Guid, UnityEngine.Object>>.GetEnumerator()
+        {
+            if (!_clean && !this.SetupTable()) return Enumerable.Empty<KeyValuePair<System.Guid, UnityEngine.Object>>().GetEnumerator();
+            return _guidTable.GetEnumerator();
+        }
+
+        #endregion
+
+        #region IEnumerable Interface
+
+        public IEnumerator<UnityEngine.Object> GetEnumerator()
+        {
+            return this.GetAllAssets().GetEnumerator();
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return this.GetAllAssets().GetEnumerator();
+        }
 
         #endregion
 

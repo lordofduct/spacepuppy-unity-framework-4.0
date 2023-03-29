@@ -113,6 +113,8 @@ namespace com.spacepuppy
 
         #region Static Utils
 
+        public static readonly SerializableGuid Empty = default;
+
         public static SerializableGuid NewGuid()
         {
             return System.Guid.NewGuid();

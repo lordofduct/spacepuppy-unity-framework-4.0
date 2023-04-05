@@ -4,6 +4,9 @@ using UnityEngine.UI;
 namespace com.spacepuppy
 {
 
+    /// <remarks>
+    /// This code is based on code generated using ChatGPT.
+    /// </remarks>
     [ExecuteAlways]
     [RequireComponent(typeof(RectTransform))]
     public class FlexibleGridLayoutGroup : GridLayoutGroup

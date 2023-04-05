@@ -1,0 +1,86 @@
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace com.spacepuppy
+{
+
+    [ExecuteAlways]
+    [RequireComponent(typeof(RectTransform))]
+    public class FlexibleGridLayoutGroup : GridLayoutGroup
+    {
+
+        public override void CalculateLayoutInputHorizontal()
+        {
+            base.CalculateLayoutInputHorizontal();
+            FitToContainer();
+        }
+
+        public override void CalculateLayoutInputVertical()
+        {
+            base.CalculateLayoutInputVertical();
+            FitToContainer();
+        }
+
+        private void FitToContainer()
+        {
+            float containerWidth = rectTransform.rect.width;
+            float containerHeight = rectTransform.rect.height;
+            int itemCount = rectChildren.Count;
+
+            // Get the aspect ratio of the container from its AspectRatioFitter component
+            float aspectRatio = 1f;
+            AspectRatioFitter arf = GetComponentInParent<AspectRatioFitter>();
+            if (arf != null && arf.aspectRatio != 0f)
+            {
+                aspectRatio = arf.aspectRatio;
+            }
+
+            // Calculate the optimal number of columns and rows for the given aspect ratio
+            int rowCount, columnCount;
+            if (aspectRatio > 1f)
+            {
+                columnCount = Mathf.CeilToInt(Mathf.Sqrt(itemCount * aspectRatio));
+                rowCount = Mathf.CeilToInt(itemCount / (float)columnCount);
+            }
+            else
+            {
+                rowCount = Mathf.CeilToInt(Mathf.Sqrt(itemCount / aspectRatio));
+                columnCount = Mathf.CeilToInt(itemCount / (float)rowCount);
+            }
+
+            // Ensure the column count is even, unless there's only one column
+            if (columnCount > 1 && columnCount % 2 != 0)
+            {
+                columnCount++;
+                rowCount = Mathf.CeilToInt(itemCount / (float)columnCount);
+            }
+
+            // Calculate the item size based on the optimal number of columns and rows
+            float itemWidth = (containerWidth - padding.left - padding.right - spacing.x * (columnCount - 1)) / columnCount;
+            float itemHeight = (containerHeight - padding.top - padding.bottom - spacing.y * (rowCount - 1)) / rowCount;
+            float itemSize = Mathf.Min(itemWidth, itemHeight);
+
+            // Calculate the total size of the grid based on the item size, number of rows and columns, and spacing
+            float totalWidth = itemSize * columnCount + spacing.x * (columnCount - 1) + padding.left + padding.right;
+            float totalHeight = itemSize * rowCount + spacing.y * (rowCount - 1) + padding.top + padding.bottom;
+
+            // If the total size of the grid is smaller than the container size, increase the item size
+            if (totalWidth < containerWidth || totalHeight < containerHeight)
+            {
+                float maxItemWidth = (containerWidth - padding.left - padding.right - spacing.x * (columnCount - 1)) / columnCount;
+                float maxItemHeight = (containerHeight - padding.top - padding.bottom - spacing.y * (rowCount - 1)) / rowCount;
+                float maxItemSize = Mathf.Min(maxItemWidth, maxItemHeight);
+                float sizeIncrement = Mathf.Max((maxItemSize - itemSize) / 2f, 0f);
+                itemSize += sizeIncrement;
+            }
+
+            // Set the cell size of the GridLayoutGroup to the calculated item size
+            cellSize = new Vector2(itemSize, itemSize);
+
+            // Set the constraint count to the optimal number of columns
+            constraintCount = columnCount;
+        }
+
+    }
+
+}

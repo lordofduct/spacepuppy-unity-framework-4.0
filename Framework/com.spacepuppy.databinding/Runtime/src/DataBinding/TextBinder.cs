@@ -3,12 +3,19 @@ using System.Collections.Generic;
 
 using com.spacepuppy;
 using com.spacepuppy.Utils;
+using com.spacepuppy.Dynamic;
 
 namespace com.spacepuppy.DataBinding
 {
 
     public class TextBinder : ContentBinder
     {
+
+        public enum FormattingModes
+        {
+            Format = 0,
+            Eval = 1,
+        }
 
         #region Fields
 
@@ -26,6 +33,8 @@ namespace com.spacepuppy.DataBinding
 #endif
         private UnityEngine.Object _target;
 
+        [SerializeField]
+        private FormattingModes _mode;
         [SerializeField]
         private string _formatting;
 
@@ -67,8 +76,27 @@ namespace com.spacepuppy.DataBinding
         public override void Bind(DataBindingContext context, object source)
         {
             var value = context.GetBoundValue(source, this.Key);
-            string stxt = string.IsNullOrEmpty(_formatting) ? value?.ToString() ?? string.Empty : string.Format(_formatting, value);
-            TrySetText(_target, stxt);
+            if (string.IsNullOrEmpty(_formatting))
+            {
+                TrySetText(_target, value is string s ? s : value?.ToString() ?? string.Empty);
+            }
+            else
+            {
+                string stxt;
+                switch (_mode)
+                {
+                    case FormattingModes.Format:
+                        stxt = string.Format(_formatting, value);
+                        break;
+                    case FormattingModes.Eval:
+                        stxt = Evaluator.EvalString(_formatting, value);
+                        break;
+                    default:
+                        stxt = value is string s ? s : value?.ToString() ?? string.Empty;
+                        break;
+                }
+                TrySetText(_target, stxt);
+            }
         }
 
         #endregion

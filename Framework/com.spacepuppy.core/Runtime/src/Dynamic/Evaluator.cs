@@ -51,6 +51,8 @@ namespace com.spacepuppy.Dynamic
     /// vec(x,y,z)
     /// vec(x,y,z,w)
     /// rot(x,y,z)
+    /// format(s,...)
+    /// iif(x,t,f)
     /// 
     /// These function names are not case sensitive
     /// 
@@ -924,7 +926,8 @@ namespace com.spacepuppy.Dynamic
                 state.Value = DynamicUtil.GetValue(target, sprop);
                 return;
             }
-            else if (char.IsLetterOrDigit(_current) || _current == '_' || _current == '-')
+            else if (char.IsLetterOrDigit(_current) || _current == '_' || 
+                     (_current == '-' && _reader.Peek() >= 0 && char.ToLower((char)_reader.Peek()) == 'i')) //the only $- that is allowed is $-inf, so rule test for i
             {
                 //global
                 _strBuilder.Append(char.ToLower(_current));
@@ -1359,6 +1362,26 @@ namespace com.spacepuppy.Dynamic
                                 ArrayUtil.ReleaseTemp(arr);
                             }
 
+                            return;
+                        }
+                    case "iif":
+                        {
+                            reachedEnd = this.EvalStatement(temp, true);
+                            if (reachedEnd)
+                                throw new System.InvalidOperationException("Failed to parse the command: Parameter count mismatch.");
+                            bool input = temp.BoolValue;
+
+                            reachedEnd = EvalStatement(temp, true);
+                            if (reachedEnd)
+                                throw new System.InvalidOperationException("Failed to parse the command: Parameter count mismatch.");
+                            object result_true = temp.Value;
+
+                            reachedEnd = EvalStatement(temp, true);
+                            if (!reachedEnd)
+                                throw new System.InvalidOperationException("Failed to parse the command: Parameter count mismatch.");
+                            object result_false = temp.Value;
+
+                            state.Value = input ? result_true : result_false;
                             return;
                         }
                     default:
@@ -1857,6 +1880,7 @@ namespace com.spacepuppy.Dynamic
                     return false;
             }
         }
+
 
 
 

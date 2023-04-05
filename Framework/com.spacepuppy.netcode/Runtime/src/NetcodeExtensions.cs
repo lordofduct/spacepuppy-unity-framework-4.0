@@ -100,7 +100,7 @@ namespace com.spacepuppy
         /// </summary>
         /// <param name="obj"></param>
         /// <returns></returns>
-        public static bool IsOffline(this NetworkManager obj) => !(obj.IsServer || !obj.IsClient);
+        public static bool IsOffline(this NetworkManager obj) => !(obj.IsServer || obj.IsClient);
 
         public static bool IsOffline(this NetworkObject obj) => !((obj.NetworkManager?.IsServer ?? false) || (obj.NetworkManager?.IsClient ?? false));
 
@@ -112,17 +112,48 @@ namespace com.spacepuppy
         public static bool IsServer(this NetworkBehaviour behaviour) => behaviour.NetworkManager?.IsServer ?? false;
 
 
-        public static bool IsServerOrOffline(this NetworkManager obj) => obj.IsServer || !obj.IsConnectedClient;
+        public static bool IsServerOrOffline(this NetworkManager obj) => obj.IsServer || !obj.IsClient;
 
-        public static bool IsServerOrOffline(this NetworkObject obj) => object.ReferenceEquals(obj.NetworkManager, null) || obj.NetworkManager.IsServer || !obj.NetworkManager.IsConnectedClient;
+        public static bool IsServerOrOffline(this NetworkObject obj) => object.ReferenceEquals(obj.NetworkManager, null) || obj.NetworkManager.IsServer || !obj.NetworkManager.IsClient;
 
-        public static bool IsServerOrOffline(this NetworkBehaviour obj) => object.ReferenceEquals(obj.NetworkManager, null) || obj.NetworkManager.IsServer || !obj.NetworkManager.IsConnectedClient;
+        public static bool IsServerOrOffline(this NetworkBehaviour obj) => object.ReferenceEquals(obj.NetworkManager, null) || obj.NetworkManager.IsServer || !obj.NetworkManager.IsClient;
 
 
 
-        public static bool IsOwnerOrOffline(this NetworkObject obj) => obj.IsOwner || object.ReferenceEquals(obj.NetworkManager, null) || !(obj.NetworkManager.IsServer || obj.NetworkManager.IsConnectedClient);
+        public static bool IsOwnerOrOffline(this NetworkObject obj) => obj.IsOwner || object.ReferenceEquals(obj.NetworkManager, null) || !(obj.NetworkManager.IsServer || obj.NetworkManager.IsClient);
 
-        public static bool IsOwnerOrOffline(this NetworkBehaviour obj) => obj.IsOwner || object.ReferenceEquals(obj.NetworkManager, null) || !(obj.NetworkManager.IsServer || obj.NetworkManager.IsConnectedClient);
+        public static bool IsOwnerOrOffline(this NetworkBehaviour obj) => obj.IsOwner || object.ReferenceEquals(obj.NetworkManager, null) || !(obj.NetworkManager.IsServer || obj.NetworkManager.IsClient);
+
+
+        #region NetworkList
+
+        public static IEnumerable<T> AsEnumerable<T>(this NetworkList<T> nlst) where T : unmanaged, System.IEquatable<T>
+        {
+            var e = nlst.GetEnumerator();
+            while (e.MoveNext())
+            {
+                yield return e.Current;
+            }
+        }
+
+        public static void AddRange<T>(this NetworkList<T> nlst, IEnumerable<T> e) where T : unmanaged, System.IEquatable<T>
+        {
+            foreach (var v in e)
+            {
+                nlst.Add(v);
+            }
+        }
+
+        public static void Reset<T>(this NetworkList<T> nlst, IEnumerable<T> e) where T : unmanaged, System.IEquatable<T>
+        {
+            nlst.Clear();
+            foreach (var v in e)
+            {
+                nlst.Add(v);
+            }
+        }
+
+        #endregion
 
     }
 }

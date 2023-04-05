@@ -197,6 +197,7 @@ namespace com.spacepuppyeditor.Events
                 var argProp = argArrayProp.GetArrayElementAtIndex(0);
                 //EditorGUI.PropertyField(argRect, argProp, _defaultArgLabel);
                 _variantDrawer.RestrictVariantType = false;
+                _variantDrawer.TypeRestrictedTo = null;
                 _variantDrawer.ForcedObjectType = null;
                 _variantDrawer.CurrentTriggerArgIndex = 0;
                 _variantDrawer.OnGUI(argRect, argProp, _defaultArgLabel);
@@ -230,6 +231,7 @@ namespace com.spacepuppyeditor.Events
                 var argProp = argArrayProp.GetArrayElementAtIndex(0);
                 //EditorGUI.PropertyField(argRect, argProp, _defaultArgLabel);
                 _variantDrawer.RestrictVariantType = false;
+                _variantDrawer.TypeRestrictedTo = null;
                 _variantDrawer.ForcedObjectType = null;
                 _variantDrawer.CurrentTriggerArgIndex = 0;
                 _variantDrawer.OnGUI(argRect, argProp, _defaultArgLabel);
@@ -263,6 +265,7 @@ namespace com.spacepuppyeditor.Events
                 var argProp = argArrayProp.GetArrayElementAtIndex(0);
                 //EditorGUI.PropertyField(argRect, argProp, _messageArgLabel);
                 _variantDrawer.RestrictVariantType = false;
+                _variantDrawer.TypeRestrictedTo = null;
                 _variantDrawer.ForcedObjectType = null;
                 _variantDrawer.CurrentTriggerArgIndex = 0;
                 _variantDrawer.OnGUI(argRect, argProp, _messageArgLabel);
@@ -328,6 +331,7 @@ namespace com.spacepuppyeditor.Events
                     {
                         //draw the default variant as the method accepts anything
                         _variantDrawer.RestrictVariantType = false;
+                        _variantDrawer.TypeRestrictedTo = null;
                         _variantDrawer.ForcedObjectType = null;
                         _variantDrawer.CurrentTriggerArgIndex = i;
 

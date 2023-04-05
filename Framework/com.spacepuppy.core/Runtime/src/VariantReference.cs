@@ -2,6 +2,7 @@
 
 using com.spacepuppy.Dynamic;
 using com.spacepuppy.Utils;
+using UnityEditor.Build;
 
 namespace com.spacepuppy
 {
@@ -100,6 +101,24 @@ namespace com.spacepuppy
         #endregion
 
         #region Properties
+
+        public bool IsConfiguredProxy
+        {
+            get
+            {
+                switch (_type)
+                {
+                    case VariantType.Object:
+                    case VariantType.GameObject:
+                    case VariantType.Component:
+                        return _unityObjectReference is IProxy && !string.IsNullOrEmpty(_string);
+                    case VariantType.Ref:
+                        return _objref is IProxy && !string.IsNullOrEmpty(_string);
+                    default:
+                        return false;
+                }
+            }
+        }
 
         public object Value
         {
@@ -1001,7 +1020,14 @@ namespace com.spacepuppy
                 switch (_mode)
                 {
                     case RefMode.Value:
-                        return _unityObjectReference as GameObject;
+                        if (this.IsConfiguredProxy)
+                        {
+                            return GameObjectUtil.GetGameObjectFromSource(ObjUtil.GetAsFromSource(TypeUtil.UnHashType(_string), _unityObjectReference, true));
+                        }
+                        else
+                        {
+                            return GameObjectUtil.GetGameObjectFromSource(_unityObjectReference);
+                        }
                     case RefMode.Property:
                         return GameObjectUtil.GetGameObjectFromSource(this.EvaluateProperty());
                 }
@@ -1027,7 +1053,14 @@ namespace com.spacepuppy
                 switch (_mode)
                 {
                     case RefMode.Value:
-                        return _unityObjectReference as Component;
+                        if (this.IsConfiguredProxy)
+                        {
+                            return ObjUtil.GetAsFromSource(TypeUtil.UnHashType(_string), _unityObjectReference, true) as Component;
+                        }
+                        else
+                        {
+                            return _unityObjectReference as Component;
+                        }
                     case RefMode.Property:
                         var obj = this.EvaluateProperty();
                         if (obj is Component)
@@ -1059,7 +1092,14 @@ namespace com.spacepuppy
                 switch (_mode)
                 {
                     case RefMode.Value:
-                        return _unityObjectReference == null ? null : _unityObjectReference;
+                        if (this.IsConfiguredProxy)
+                        {
+                            return ObjUtil.GetAsFromSource(TypeUtil.UnHashType(_string), _unityObjectReference, true) as UnityEngine.Object;
+                        }
+                        else
+                        {
+                            return _unityObjectReference;
+                        }
                     case RefMode.Property:
                         var obj = this.EvaluateProperty();
                         if (obj is UnityEngine.Object)
@@ -1347,7 +1387,14 @@ namespace com.spacepuppy
                             case VariantType.Numeric:
                                 return this.NumericValue;
                             case VariantType.Ref:
-                                return _objref;
+                                if (this.IsConfiguredProxy)
+                                {
+                                    return ObjUtil.GetAsFromSource(TypeUtil.UnHashType(_string), _objref, true);
+                                }
+                                else
+                                {
+                                    return _objref;
+                                }
                         }
                         break;
                     case RefMode.Property:
@@ -1497,6 +1544,47 @@ namespace com.spacepuppy
             return DynamicUtil.GetValue(IProxyExtensions.ReduceIfProxy(_unityObjectReference), _string);
         }
 
+
+        public void SetToProxyRef(IProxy proxy, System.Type expectedType)
+        {
+
+            if (proxy is UnityEngine.Object uproxy)
+            {
+                var vtp = VariantReference.GetVariantType(expectedType);
+                switch (vtp)
+                {
+                    case VariantType.Object:
+                    case VariantType.GameObject:
+                    case VariantType.Component:
+                        break;
+                    default:
+                        vtp = VariantType.Object;
+                        break;
+                }
+
+                _mode = RefMode.Value;
+                _type = vtp;
+                _x = 0f;
+                _y = 0f;
+                _z = 0f;
+                _w = 0d;
+                _string = TypeUtil.HashType(expectedType);
+                _unityObjectReference = uproxy;
+                _objref = null;
+            }
+            else
+            {
+                _mode = RefMode.Value;
+                _type = VariantType.Ref;
+                _x = 0f;
+                _y = 0f;
+                _z = 0f;
+                _w = 0d;
+                _string = TypeUtil.HashType(expectedType);
+                _unityObjectReference = null;
+                _objref = proxy;
+            }
+        }
 
 
         public void SetToNumeric(INumeric value)

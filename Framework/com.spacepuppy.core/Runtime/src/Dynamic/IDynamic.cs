@@ -348,7 +348,7 @@ namespace com.spacepuppy.Dynamic
                 if (vtp != null)
                 {
                     member = GetValueSetterMemberFromType(obj.GetType(), sprop, null, true);
-                    if (member != null)
+                    if (member != null && member.MemberType != MemberTypes.Method)
                     {
                         var rtp = GetReturnType(member);
                         object cobj = null;

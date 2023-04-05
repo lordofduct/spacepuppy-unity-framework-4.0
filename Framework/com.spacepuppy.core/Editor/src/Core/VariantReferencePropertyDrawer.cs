@@ -237,7 +237,29 @@ namespace com.spacepuppyeditor.Core
                             _selectObjectPropertyDrawer.OnGUI(r1, targProp, GUIContent.none);
                             if (EditorGUI.EndChangeCheck())
                             {
-                                variant.ObjectValue = targProp.objectReferenceValue;
+                                if (_forcedObjectType != null && targProp.objectReferenceValue != null)
+                                {
+                                    if (_forcedObjectType.IsInstanceOfType(targProp.objectReferenceValue))
+                                    {
+                                        variant.ObjectValue = targProp.objectReferenceValue;
+                                    }
+                                    else if(ObjUtil.GetAsFromSource(_forcedObjectType, targProp.objectReferenceValue, out object obj))
+                                    {
+                                        variant.ObjectValue = obj as UnityEngine.Object;
+                                    }
+                                    else if (ObjUtil.GetAsFromSource<IProxy>(targProp.objectReferenceValue, out IProxy proxy))
+                                    {
+                                        variant.SetToProxyRef(proxy, _forcedObjectType);
+                                    }
+                                    else
+                                    {
+                                        variant.ObjectValue = null;
+                                    }
+                                }
+                                else
+                                {
+                                    variant.ObjectValue = targProp.objectReferenceValue;
+                                }
                             }
                         }
                         break;
@@ -614,7 +636,7 @@ namespace com.spacepuppyeditor.Core
                         base._unityObjectReference = GameObjectUtil.GetGameObjectFromSource(base._unityObjectReference);
                         break;
                     case VariantType.Component:
-                        base._unityObjectReference = base._unityObjectReference as Component;
+                        base._unityObjectReference = base._unityObjectReference is Component || base._unityObjectReference is IProxy ? base._unityObjectReference : null;
                         break;
                     case VariantType.Numeric:
                         base._unityObjectReference = null;

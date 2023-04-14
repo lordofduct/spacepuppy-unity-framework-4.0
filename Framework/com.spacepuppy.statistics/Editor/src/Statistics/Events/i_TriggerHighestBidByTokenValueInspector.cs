@@ -4,6 +4,8 @@ using UnityEditorInternal;
 using System.Collections.Generic;
 using System.Linq;
 
+using com.spacepuppyeditor.Internal;
+
 using com.spacepuppy;
 using com.spacepuppy.Utils;
 using com.spacepuppyeditor;
@@ -24,7 +26,7 @@ namespace com.spacepuppyeditor.Statistics.Events
             {
                 if (_lstDrawer == null)
                 {
-                    _lstDrawer = new ReorderableList(this.serializedObject, this.serializedObject.FindProperty(i_TriggerHighestBidByTokenValue.PROP_BIDS))
+                    _lstDrawer = new SPReorderableList(this.serializedObject, this.serializedObject.FindProperty(i_TriggerHighestBidByTokenValue.PROP_BIDS))
                     {
                         draggable = true,
                         elementHeight = EditorGUIUtility.singleLineHeight,

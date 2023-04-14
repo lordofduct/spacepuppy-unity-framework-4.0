@@ -3,6 +3,8 @@ using UnityEditor;
 using UnityEditorInternal;
 using System.Collections.Generic;
 
+using com.spacepuppyeditor.Internal;
+
 using com.spacepuppy.Events;
 
 namespace com.spacepuppyeditor.Events
@@ -25,7 +27,7 @@ namespace com.spacepuppyeditor.Events
             {
                 if (_lstDrawer == null)
                 {
-                    _lstDrawer = new ReorderableList(this.serializedObject, this.serializedObject.FindProperty(PROP_PHASES))
+                    _lstDrawer = new SPReorderableList(this.serializedObject, this.serializedObject.FindProperty(PROP_PHASES))
                     {
                         draggable = true,
                         elementHeight = EditorGUIUtility.singleLineHeight,

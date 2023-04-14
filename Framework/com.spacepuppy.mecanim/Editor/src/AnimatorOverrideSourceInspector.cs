@@ -3,12 +3,12 @@ using UnityEditor;
 using System.Collections.Generic;
 using System.Linq;
 
+using com.spacepuppyeditor.Internal;
+
 using com.spacepuppy.Mecanim;
 using com.spacepuppy.Utils;
 using com.spacepuppy.Collections;
 using UnityEditorInternal;
-using com.spacepuppy.Mecanim.Behaviours;
-using Codice.Client.BaseCommands.Merge;
 
 namespace com.spacepuppyeditor.Mecanim
 {
@@ -32,7 +32,7 @@ namespace com.spacepuppyeditor.Mecanim
         {
             base.OnEnable();
 
-            _lstDrawer = new ReorderableList(this.serializedObject, this.serializedObject.FindProperty(PROP_OVERRIDES))
+            _lstDrawer = new SPReorderableList(this.serializedObject, this.serializedObject.FindProperty(PROP_OVERRIDES))
             {
                 draggable = true,
                 displayAdd = true,

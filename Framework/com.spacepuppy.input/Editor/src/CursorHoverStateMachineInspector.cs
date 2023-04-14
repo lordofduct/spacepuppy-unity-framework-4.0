@@ -2,11 +2,12 @@ using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
 
+using com.spacepuppyeditor.Internal;
+
 using com.spacepuppy;
 using com.spacepuppy.Utils;
 using com.spacepuppy.SPInput;
 using UnityEditorInternal;
-using GluonGui.WorkspaceWindow.Views.WorkspaceExplorer;
 
 namespace com.spacepuppyeditor.SPInput
 {
@@ -21,7 +22,7 @@ namespace com.spacepuppyeditor.SPInput
         {
             base.OnEnable();
 
-            _lstDrawer = new ReorderableList(this.serializedObject, this.serializedObject.FindProperty(CursorHoverStateMachine.PROP_ACTIVESTATES))
+            _lstDrawer = new SPReorderableList(this.serializedObject, this.serializedObject.FindProperty(CursorHoverStateMachine.PROP_ACTIVESTATES))
             {
                 draggable = true,
                 elementHeight = EditorGUIUtility.singleLineHeight,

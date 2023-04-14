@@ -2,7 +2,6 @@ using UnityEngine;
 using System.Collections.Generic;
 
 using com.spacepuppy.Utils;
-using System.ComponentModel;
 
 namespace com.spacepuppy.Events
 {
@@ -417,10 +416,7 @@ namespace com.spacepuppy.Events
 
             #region Methods
 
-            public override string ToString()
-            {
-                return _id;
-            }
+            public override string ToString() => _id;
 
             #endregion
 

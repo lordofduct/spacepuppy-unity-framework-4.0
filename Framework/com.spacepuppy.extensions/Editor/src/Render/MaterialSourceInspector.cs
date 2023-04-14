@@ -4,6 +4,8 @@ using UnityEditorInternal;
 using System.Collections.Generic;
 using System.Linq;
 
+using com.spacepuppyeditor.Internal;
+
 using com.spacepuppy.Collections;
 using com.spacepuppy.Render;
 using com.spacepuppy.Utils;
@@ -27,7 +29,7 @@ namespace com.spacepuppyeditor.Render
         {
             base.OnEnable();
 
-            _lstDrawer = new ReorderableList(this.serializedObject, this.serializedObject.FindProperty(PROP_FORWARDEDMATPROPS))
+            _lstDrawer = new SPReorderableList(this.serializedObject, this.serializedObject.FindProperty(PROP_FORWARDEDMATPROPS))
             {
                 draggable = true,
                 elementHeight = EditorGUIUtility.singleLineHeight,

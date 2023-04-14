@@ -2,7 +2,8 @@
 using UnityEditor;
 using UnityEditorInternal;
 using System.Collections.Generic;
-using System.Linq;
+
+using com.spacepuppyeditor.Internal;
 
 using com.spacepuppy;
 using com.spacepuppy.Anim.Legacy;
@@ -32,7 +33,7 @@ namespace com.spacepuppyeditor.Anim.Legacy
         {
             base.OnEnable();
 
-            _lstDrawer = new ReorderableList(this.serializedObject, this.serializedObject.FindProperty(PROP_MASKS))
+            _lstDrawer = new SPReorderableList(this.serializedObject, this.serializedObject.FindProperty(PROP_MASKS))
             {
                 draggable = true,
                 elementHeight = EditorGUIUtility.singleLineHeight,

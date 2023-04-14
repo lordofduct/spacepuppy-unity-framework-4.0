@@ -130,7 +130,7 @@ namespace com.spacepuppy.Spawn
         #region Fields
 
         [SerializeField()]
-        [ReorderableArray(DrawElementAtBottom = true, ChildPropertyToDrawAsElementLabel = "ItemName", ChildPropertyToDrawAsElementEntry = "_prefab")]
+        [ReorderableArray(DrawElementAtBottom = true, ChildPropertyToDrawAsElementLabel = "Name", ChildPropertyToDrawAsElementEntry = "_prefab")]
         private List<PrefabCache> _registeredPrefabs = new List<PrefabCache>();
 
         [Space(20f)]

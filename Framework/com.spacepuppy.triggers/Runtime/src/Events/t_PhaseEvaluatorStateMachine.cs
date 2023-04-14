@@ -43,9 +43,14 @@ namespace com.spacepuppy.Events
                     }
                 }
 
+                //first disable, then enable, this way you can use the OnDisable and OnEnable of the states to perform actions predictably
+                foreach (var pair in dict)
+                {
+                    if (!pair.Value) pair.Key.SetActive(false);
+                }
                 foreach(var pair in dict)
                 {
-                    pair.Key.SetActive(pair.Value);
+                    if (pair.Value) pair.Key.SetActive(true);
                 }
             }
         }

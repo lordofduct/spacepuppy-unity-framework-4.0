@@ -260,13 +260,15 @@ namespace com.spacepuppy.Events
                     this.ExitingState?.Invoke(this, System.EventArgs.Empty);
                 }
 
+                //first disable, then enable, this way you can use the OnDisable and OnEnable of the states to perform actions predictably
                 _currentState = index;
                 var currentGo = index >= 0 && index < _states.Count ? GameObjectUtil.GetGameObjectFromSource(_states[index].Target) : null;
                 for (int i = 0; i < _states.Count; i++)
                 {
                     var go = GameObjectUtil.GetGameObjectFromSource(_states[i].Target, true);
-                    if (go) go.SetActive(i == _currentState || go == currentGo);
+                    if (go && i != _currentState && go != currentGo) go.SetActive(false);
                 }
+                if (currentGo) currentGo.SetActive(true);
 
                 if (signal)
                 {

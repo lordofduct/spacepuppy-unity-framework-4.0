@@ -68,9 +68,18 @@ namespace com.spacepuppy.IAP.Events
 
         public void Sync()
         {
+            //first disable, then enable, this way you can use the OnDisable and OnEnable of the states to perform actions predictably
             bool hasreceipt = Services.Get<IIAPManager>()?.FindProduct(_productId)?.hasReceipt ?? false;
-            if (_validState) _validState.SetActive(hasreceipt);
-            if (_invalidState) _invalidState.SetActive(!hasreceipt);
+            if (hasreceipt)
+            {
+                if (_invalidState) _invalidState.SetActive(false);
+                if (_validState) _validState.SetActive(true);
+            }
+            else
+            {
+                if (_validState) _validState.SetActive(false);
+                if (_invalidState) _invalidState.SetActive(true);
+            }
         }
 
         #endregion

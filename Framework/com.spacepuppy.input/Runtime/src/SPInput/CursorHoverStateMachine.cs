@@ -66,6 +66,7 @@ namespace com.spacepuppy.SPInput
 
         private void SetState(States state)
         {
+            //first disable, then enable, this way you can use the OnDisable and OnEnable of the states to perform actions predictably
             switch (this.CurrentState = state)
             {
                 case States.Inactive:
@@ -84,8 +85,8 @@ namespace com.spacepuppy.SPInput
                         {
                             if (info.State && info.State != _hoverInactiveState) info.State.SetActive(false);
                         }
-                        if (_hoverActiveButMismatchState) _hoverActiveButMismatchState.SetActive(true);
                         if (_hoverInactiveState && _hoverInactiveState != _hoverActiveButMismatchState) _hoverInactiveState.SetActive(false);
+                        if (_hoverActiveButMismatchState) _hoverActiveButMismatchState.SetActive(true);
                     }
                     break;
                 case States.ActiveMatch:

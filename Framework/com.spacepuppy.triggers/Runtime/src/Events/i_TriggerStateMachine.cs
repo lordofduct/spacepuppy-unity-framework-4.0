@@ -262,7 +262,7 @@ namespace com.spacepuppy.Events
 
                 //first disable, then enable, this way you can use the OnDisable and OnEnable of the states to perform actions predictably
                 _currentState = index;
-                var currentGo = index >= 0 && index < _states.Count ? GameObjectUtil.GetGameObjectFromSource(_states[index].Target) : null;
+                var currentGo = index >= 0 && index < _states.Count ? GameObjectUtil.GetGameObjectFromSource(_states[index].Target, true) : null;
                 for (int i = 0; i < _states.Count; i++)
                 {
                     var go = GameObjectUtil.GetGameObjectFromSource(_states[i].Target, true);

@@ -255,6 +255,11 @@ namespace com.spacepuppyeditor.Internal
 
         public override bool OnGUILayout(SerializedProperty property, GUIContent label, bool includeChildren, GUILayoutOption[] options)
         {
+            if (this.InternalDrawer is IArrayHandlingPropertyDrawer)
+            {
+                return base.OnGUILayout(property, label, includeChildren, options);
+            }
+
             if (label == null)
             {
                 label = EditorHelper.TempContent(_customDisplayName ?? property.displayName, _customTooltip ?? property.tooltip);

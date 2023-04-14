@@ -29,8 +29,9 @@ namespace com.spacepuppy.Tween.Events
         private SPEvent _onTick = new SPEvent("OnTick");
 
         [SerializeField()]
+        [UnityEngine.Serialization.FormerlySerializedAs("_tweenToken")]
         [Tooltip("Leave blank for tweens to be unique to this component.")]
-        private string _tweenToken;
+        private string _killToken;
 
         #endregion
 
@@ -40,7 +41,7 @@ namespace com.spacepuppy.Tween.Events
         {
             base.Awake();
 
-            if (string.IsNullOrEmpty(_tweenToken)) _tweenToken = "i_Tween*" + this.GetInstanceID().ToString();
+            if (string.IsNullOrEmpty(_killToken)) _killToken = "i_Tween*" + this.GetInstanceID().ToString();
         }
 
         /*
@@ -91,7 +92,7 @@ namespace com.spacepuppy.Tween.Events
             if (_onTick?.HasReceivers ?? false)
                 twn.OnStep((t) => _onTick.ActivateTrigger(this, null));
 
-            twn.Play(true, _tweenToken);
+            twn.Play(true, _killToken);
             return true;
         }
 

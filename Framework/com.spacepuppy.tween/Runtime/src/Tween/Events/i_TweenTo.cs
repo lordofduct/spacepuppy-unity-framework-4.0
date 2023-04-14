@@ -40,8 +40,9 @@ namespace com.spacepuppy.Tween.Events
         private SPEvent _onTick = new SPEvent("OnTick");
 
         [SerializeField()]
+        [UnityEngine.Serialization.FormerlySerializedAs("_tweenToken")]
         [Tooltip("Leave blank for tweens to be unique to this component.")]
-        private string _tweenToken;
+        private string _killToken;
 
         #endregion
 
@@ -51,14 +52,14 @@ namespace com.spacepuppy.Tween.Events
         {
             base.Awake();
 
-            if (string.IsNullOrEmpty(_tweenToken)) _tweenToken = "i_Tween*" + this.GetInstanceID().ToString();
+            if (string.IsNullOrEmpty(_killToken)) _killToken = "i_Tween*" + this.GetInstanceID().ToString();
         }
 
         protected override void OnDisable()
         {
             base.OnDisable();
 
-            SPTween.KillAll(_target, _tweenToken);
+            SPTween.KillAll(_target, _killToken);
         }
 
         #endregion
@@ -109,10 +110,10 @@ namespace com.spacepuppy.Tween.Events
             get { return _onTick; }
         }
 
-        public string TweenToken
+        public string KillToken
         {
-            get { return _tweenToken; }
-            set { _tweenToken = value; }
+            get => _killToken;
+            set => _killToken = value;
         }
 
         #endregion
@@ -143,7 +144,7 @@ namespace com.spacepuppy.Tween.Events
             if (_onTick?.HasReceivers ?? false)
                 twn.OnStep((t) => _onTick.ActivateTrigger(this, null));
 
-            twn.Play(true, _tweenToken);
+            twn.Play(true, _killToken);
 
             return true;
         }

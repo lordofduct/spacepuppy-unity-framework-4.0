@@ -18,8 +18,9 @@ namespace com.spacepuppy.Tween.Events
         private UnityEngine.Object _target;
 
         [SerializeField()]
+        [UnityEngine.Serialization.FormerlySerializedAs("_tweenToken")]
         [Tooltip("Leave blank to kill all associated with target.")]
-        private string _tweenToken;
+        private string _killToken;
 
         #endregion
 
@@ -29,10 +30,10 @@ namespace com.spacepuppy.Tween.Events
         {
             if (!this.CanTrigger) return false;
 
-            if (string.IsNullOrEmpty(_tweenToken))
+            if (string.IsNullOrEmpty(_killToken))
                 SPTween.KillAll(_target);
             else
-                SPTween.KillAll(_target, _tweenToken);
+                SPTween.KillAll(_target, _killToken);
 
             return true;
         }

@@ -724,6 +724,7 @@ namespace com.spacepuppy
                 catch (System.Exception ex)
                 {
                     this.OnFinish(true, ex);
+                    Debug.LogException(ex);
                     throw ex;
                 }
 

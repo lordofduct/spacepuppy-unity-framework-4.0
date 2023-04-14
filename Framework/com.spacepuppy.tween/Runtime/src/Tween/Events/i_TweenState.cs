@@ -24,7 +24,7 @@ namespace com.spacepuppy.Tween.Events
         public const string PROP_ANIMMODE = nameof(_mode);
         public const string PROP_EASE = nameof(_ease);
         public const string PROP_DURATION = nameof(_duration);
-        public const string PROP_TWEENTOKEN = nameof(_tweenToken);
+        public const string PROP_TWEENTOKEN = nameof(_killToken);
 
         #region Fields
 
@@ -48,8 +48,9 @@ namespace com.spacepuppy.Tween.Events
         public SPTimePeriod _duration;
 
         [SerializeField()]
+        [UnityEngine.Serialization.FormerlySerializedAs("_tweenToken")]
         [Tooltip("Leave blank for tweens to be unique to this component.")]
-        private string _tweenToken;
+        private string _killToken;
 
         [SerializeField()]
         private SPEvent _onComplete = new SPEvent("OnComplete");
@@ -65,7 +66,7 @@ namespace com.spacepuppy.Tween.Events
         {
             base.Awake();
 
-            if (string.IsNullOrEmpty(_tweenToken)) _tweenToken = "i_Tween*" + this.GetInstanceID().ToString();
+            if (string.IsNullOrEmpty(_killToken)) _killToken = "i_Tween*" + this.GetInstanceID().ToString();
         }
 
         /*
@@ -116,10 +117,10 @@ namespace com.spacepuppy.Tween.Events
             set { _duration = value; }
         }
 
-        public string TweenToken
+        public string KillToken
         {
-            get { return _tweenToken; }
-            set { _tweenToken = value; }
+            get => _killToken;
+            set => _killToken = value;
         }
 
         public SPEvent OnComplete
@@ -153,7 +154,7 @@ namespace com.spacepuppy.Tween.Events
             if (_onTick?.HasReceivers ?? false)
                 twn.OnStep((t) => _onTick.ActivateTrigger(this, null));
 
-            twn.Play(true, _tweenToken);
+            twn.Play(true, _killToken);
             return true;
         }
 

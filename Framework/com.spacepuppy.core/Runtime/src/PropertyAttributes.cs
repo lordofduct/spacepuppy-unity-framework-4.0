@@ -472,6 +472,11 @@ namespace com.spacepuppy
 
     }
 
+    public class LayerSelectorAttribute : SPPropertyAttribute
+    {
+
+    }
+
     #endregion
 
     #region ModifierDrawer Attributes

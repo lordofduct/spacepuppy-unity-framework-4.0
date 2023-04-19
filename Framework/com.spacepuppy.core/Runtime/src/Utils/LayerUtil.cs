@@ -40,11 +40,25 @@ namespace com.spacepuppy.Utils
             }
         }
 
-        public static string[] GetLayerNames()
+        public static IEnumerable<LayerInfo> GetLayers()
         {
             TestUpdateLayers();
 
-            return layerNames.ToArray();
+            for (int i = 0; i < layerNumbers.Count; i++)
+            {
+                yield return new LayerInfo()
+                {
+                    Name = layerNames[i],
+                    Layer = layerNumbers[i],
+                };
+            }
+        }
+
+        public static IEnumerable<string> GetLayerNames()
+        {
+            TestUpdateLayers();
+
+            return layerNames;
         }
 
         public static string[] GetAllLayerNames()
@@ -95,6 +109,14 @@ namespace com.spacepuppy.Utils
                     }
                 }
             }
+        }
+
+
+
+        public struct LayerInfo
+        {
+            public string Name;
+            public int Layer;
         }
 
     }

@@ -226,9 +226,10 @@ namespace com.spacepuppy.Tween
                     {
                         e.Current.Update();
                     }
-                    catch
+                    catch (System.Exception ex)
                     {
                         _runningTweens.StageRemove(e.Current);
+                        Debug.LogException(ex);
                     }
                 }
             }

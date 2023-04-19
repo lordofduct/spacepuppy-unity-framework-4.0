@@ -117,6 +117,10 @@ namespace com.spacepuppy.Waypoints
 
         #region Methods
 
+        public TransformControlPoint GetControlPoint(int index) => _controlPoints[index];
+
+        public IEnumerable<TransformControlPoint> GetControlPoints() => _controlPoints;
+
         public IConfigurableIndexedWaypointPath GetPathClone()
         {
             return GetPath(this, true);

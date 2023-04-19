@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 
 using com.spacepuppy.Geom;
+using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.Waypoints
 {
@@ -108,6 +109,111 @@ namespace com.spacepuppy.Waypoints
                 coll.Add(path.GetPositionAt((float)i / (float)detail));
             }
             return detail + 1;
+        }
+
+        /// <summary>
+        /// Get the value of t that can be passed to GetPositionAt(float t) that would match GetPositionAfter(int index, float tprime) for values index and tprime.
+        /// </summary>
+        /// <param name="path"></param>
+        /// <param name="index"></param>
+        /// <param name="tprime"></param>
+        /// <returns></returns>
+        /// <exception cref="System.ArgumentNullException"></exception>
+        public static float EstimatePositionTAfter(this IIndexedWaypointPath path, int index, float tprime)
+        {
+            if (path == null) throw new System.ArgumentNullException(nameof(path));
+
+            var len = path.GetArcLengthAtIndex(index) + path.GetArcLengthAfter(index, tprime);
+            return len / path.GetArcLength();
+        }
+
+        /// <summary>
+        /// This is an extremely slow attempt at finding the nearest position on a curve, use sparingly.
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public static Waypoint EstimateNearestWaypoint(this IWaypointPath path, Vector3 pos, float segmentLength, out float t)
+        {
+            if (path == null) throw new System.ArgumentNullException(nameof(path));
+
+            float len = path.GetArcLength();
+            if (len < MathUtil.EPSILON)
+            {
+                t = 0f;
+                return path.GetWaypointAt(0f);
+            }
+
+            int segcnt = Mathf.RoundToInt(len / segmentLength);
+            float dist = float.PositiveInfinity;
+            t = 0f;
+            for (int i = 0; i <= segcnt; i++)
+            {
+                float dt = (float)i / len;
+                float d = (pos - path.GetPositionAt(dt)).sqrMagnitude;
+                if (d < dist)
+                {
+                    t = dt;
+                    dist = d;
+                }
+            }
+
+            if (t > 0.999f)
+            {
+                t = 1f;
+                return path.GetWaypointAt(t);
+            }
+
+            var p0 = path.GetPositionAt(t);
+            var p1 = path.GetPositionAt(t + (segmentLength / len));
+            var vrail = p1 - p0;
+            var v = pos - p0;
+            float dot = Vector3.Dot(v, vrail.normalized);
+            t = Mathf.Clamp01(t + dot / len);
+            return path.GetWaypointAt(t);
+        }
+
+        /// <summary>
+        /// This is an extremely slow attempt at finding the nearest position on a curve, use sparingly.
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public static Waypoint EstimateNearestWaypoint(this IIndexedWaypointPath path, Vector3 pos, float segmentLength)
+        {
+            if (path == null) throw new System.ArgumentNullException(nameof(path));
+
+            float len = path.GetArcLength();
+            if (len < MathUtil.EPSILON)
+            {
+                return path.GetWaypointAt(0f);
+            }
+
+            int segcnt = Mathf.RoundToInt(len / segmentLength);
+            float dist = float.PositiveInfinity;
+            float t = 0f;
+            for (int i = 0; i <= segcnt; i++)
+            {
+                float dt = (float)i / len;
+                float d = (pos - path.GetPositionAt(dt)).sqrMagnitude;
+                if (d < dist)
+                {
+                    t = dt;
+                    dist = d;
+                }
+            }
+
+            if (t > 0.999f)
+            {
+                t = 1f;
+                return path.GetWaypointAt(t);
+            }
+
+            var p0 = path.GetPositionAt(t);
+            var p1 = path.GetPositionAt(t + (segmentLength / len));
+            var vrail = p1 - p0;
+            var v = pos - p0;
+            float dot = Vector3.Dot(v, vrail.normalized);
+            t = Mathf.Clamp01(t + dot / len);
+            return path.GetWaypointAt(t);
         }
 
         /// <summary>

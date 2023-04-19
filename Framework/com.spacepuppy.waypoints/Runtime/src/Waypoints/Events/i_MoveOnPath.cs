@@ -173,15 +173,14 @@ namespace com.spacepuppy.Waypoints.Events
 
         #region Methods
 
-        private void OnFinishHandler(object sender, System.EventArgs e)
+        private void OnStoppedHandler(object sender, System.EventArgs e)
         {
-            _onFinish.ActivateTrigger(this, null);
-
             var tween = sender as Tweener;
             if (tween != null)
             {
-                tween.OnFinish -= this.OnFinishHandler;
+                tween.OnStopped -= this.OnStoppedHandler;
                 if (_activeTweens != null) _activeTweens.Remove(tween);
+                if (tween.IsComplete) _onFinish.ActivateTrigger(this, null);
             }
         }
 
@@ -218,7 +217,7 @@ namespace com.spacepuppy.Waypoints.Events
                                .Use(this._updateType)
                                .Use(_timeSupplier.TimeSupplier)
                                .Reverse(this._reverse)
-                               .OnFinish(this.OnFinishHandler)
+                               .OnStopped(this.OnStoppedHandler)
                                .Play(false);
             if (this._stopMovementOnDisable)
             {

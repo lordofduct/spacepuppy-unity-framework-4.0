@@ -111,7 +111,8 @@ namespace com.spacepuppy.Waypoints
             float len = _lengths[0];
             float tot = len;
             int i = 0;
-            while (tot / _totalArcLength < t && i < _lengths.Length)
+            int maxi = _lengths.Length - 1;
+            while (tot / _totalArcLength < t && i < maxi)
             {
                 i++;
                 len = _lengths[i];

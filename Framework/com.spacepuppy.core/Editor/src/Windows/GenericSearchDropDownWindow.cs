@@ -640,7 +640,6 @@ namespace com.spacepuppyeditor.Windows
             if (asset != null)
             {
                 var oasset = asset as UnityEngine.Object;
-                GameObject go;
 
                 float iconHeight = EditorGUIUtility.singleLineHeight - EditorGUIUtility.standardVerticalSpacing * 3;
                 Vector2 iconSize = EditorGUIUtility.GetIconSize();
@@ -688,26 +687,10 @@ namespace com.spacepuppyeditor.Windows
             return asset;
         }
 
-        private static Texture2D m_CaretTexture;
         private static void DrawCaret(Rect pickerRect)
         {
 #if UNITY_2019_1_OR_NEWER
-            if (m_CaretTexture == null)
-            {
-                string caretIconPath = EditorGUIUtility.isProSkin
-                    ? @"Packages\com.unity.addressables\Editor\Icons\PickerDropArrow-Pro.png"
-                    : @"Packages\com.unity.addressables\Editor\Icons\PickerDropArrow-Personal.png";
-
-                if (System.IO.File.Exists(caretIconPath))
-                {
-                    m_CaretTexture = (Texture2D)AssetDatabase.LoadAssetAtPath(caretIconPath, typeof(Texture2D));
-                }
-            }
-
-            if (m_CaretTexture != null)
-            {
-                UnityEngine.GUI.DrawTexture(pickerRect, m_CaretTexture, ScaleMode.ScaleToFit);
-            }
+            UnityEngine.GUI.DrawTexture(pickerRect, EditorGUIUtility.IconContent("Dropdown").image, ScaleMode.ScaleToFit);
 #endif
         }
 

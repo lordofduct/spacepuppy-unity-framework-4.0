@@ -190,7 +190,6 @@ namespace com.spacepuppyeditor
                         if (field != null) return field.FieldType;
                         return TypeUtil.FindType(prop.type) ?? typeof(object);
                     }
-                    return TypeUtil.FindType(prop.type) ?? typeof(object);
                 case SerializedPropertyType.Integer:
                     return prop.type == "long" ? typeof(int) : typeof(long);
                 case SerializedPropertyType.Boolean:

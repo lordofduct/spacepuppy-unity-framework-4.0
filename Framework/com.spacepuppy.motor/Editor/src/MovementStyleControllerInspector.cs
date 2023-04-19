@@ -54,7 +54,7 @@ namespace com.spacepuppyeditor.Motor
                     target.DefaultMovementStyle = (from c in this.target.GetComponents<IMovementStyle>() where c.GetType().Name == id select c).FirstOrDefault();
                 }
 
-                this.serializedObject.Update();
+                this.serializedObject.CommitDirectChanges(false);
             }
 
 

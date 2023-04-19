@@ -63,6 +63,9 @@ namespace com.spacepuppy.Geom
         [SerializeField]
         private EventActivatorMaskRef _mask = new EventActivatorMaskRef();
 
+        [SerializeField]
+        private bool _sendMessageToOtherCollider;
+
         private Dictionary<Collider, CompoundTriggerMember> _colliders = new Dictionary<Collider, CompoundTriggerMember>();
         protected readonly HashSet<Collider> _active = new HashSet<Collider>();
 
@@ -71,6 +74,17 @@ namespace com.spacepuppy.Geom
         [DisplayFlat(DisplayBox = true)]
         [UnityEngine.Serialization.FormerlySerializedAs("_onEnterMessageSetting")]
         protected Messaging.MessageSendCommand _messageSettings = new Messaging.MessageSendCommand()
+        {
+            SendMethod = Messaging.MessageSendMethod.Signal,
+            IncludeDisabledComponents = false,
+            IncludeInactiveObjects = false,
+        };
+
+        [SerializeField]
+        [DisplayIf(nameof(SendMessageToOtherCollider))]
+        [DisableOnPlay]
+        [DisplayFlat(DisplayBox = true)]
+        protected Messaging.MessageSendCommand _otherColliderMessageSettings = new Messaging.MessageSendCommand()
         {
             SendMethod = Messaging.MessageSendMethod.Signal,
             IncludeDisabledComponents = false,
@@ -117,10 +131,22 @@ namespace com.spacepuppy.Geom
             set => _mask.Value = value;
         }
 
+        public bool SendMessageToOtherCollider
+        {
+            get => _sendMessageToOtherCollider;
+            set => _sendMessageToOtherCollider = value;
+        }
+
         public Messaging.MessageSendCommand MessageSettings
         {
             get => _messageSettings;
             set => _messageSettings = value;
+        }
+
+        public Messaging.MessageSendCommand OtherColliderMessageSettings
+        {
+            get => _otherColliderMessageSettings;
+            set => _otherColliderMessageSettings = value;
         }
 
         #endregion
@@ -232,6 +258,7 @@ namespace com.spacepuppy.Geom
             if (this.isActiveAndEnabled && (_mask.Value?.Intersects(other) ?? true) && _active.Add(other))
             {
                 _messageSettings.Send(this.gameObject, (this, other), OnEnterFunctor);
+                _otherColliderMessageSettings.Send(other.gameObject, (this, member.Collider), OnEnterFunctor);
             }
         }
 
@@ -243,6 +270,7 @@ namespace com.spacepuppy.Geom
             if (_active.Remove(other))
             {
                 _messageSettings.Send(this.gameObject, (this, other), OnExitFunctor);
+                _otherColliderMessageSettings.Send(other.gameObject, (this, member.Collider), OnExitFunctor);
             }
         }
 

@@ -13,10 +13,8 @@ namespace com.spacepuppy.Spawn
     public struct SpawnablePrefabEntry
     {
 
-#if UNITY_EDITOR
         public const string PROP_WEIGHT = nameof(_weight);
         public const string PROP_PREFAB = nameof(_prefab);
-#endif
 
         [SerializeField]
         [UnityEngine.Serialization.FormerlySerializedAs("Weight")]

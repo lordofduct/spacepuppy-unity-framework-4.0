@@ -74,7 +74,6 @@ namespace com.spacepuppyeditor.Core
             var valueProp = property.FindPropertyRelative(PROP_VALUE);
 
             object innerval;
-            SlimVariant.IValue ivalue;
 
             switch (vtype)
             {

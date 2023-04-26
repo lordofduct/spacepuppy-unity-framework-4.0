@@ -46,7 +46,6 @@ namespace com.spacepuppy.Spawn
             {
                 var prefab = this.Assets[i];
                 float w = _weights.Length > i ? _weights[i] : 0f;
-                SpawnablePrefabEntry entry;
                 switch (prefab)
                 {
                     case null:

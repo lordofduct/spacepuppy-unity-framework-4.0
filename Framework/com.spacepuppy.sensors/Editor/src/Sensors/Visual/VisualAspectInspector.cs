@@ -18,8 +18,8 @@ namespace com.spacepuppyeditor.Sensors.Visual
         
         static VisualAspectInspector()
         {
-            SceneView.onSceneGUIDelegate -= OnGlobalSceneGUI;
-            SceneView.onSceneGUIDelegate += OnGlobalSceneGUI;
+            SceneView.duringSceneGui -= OnGlobalSceneGUI;
+            SceneView.duringSceneGui += OnGlobalSceneGUI;
         }
         private static void OnGlobalSceneGUI(SceneView view)
         {

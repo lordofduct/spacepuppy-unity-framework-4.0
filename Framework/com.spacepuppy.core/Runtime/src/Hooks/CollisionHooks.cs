@@ -17,7 +17,7 @@ namespace com.spacepuppy.Hooks
         public event OnCollisionCallback OnEnter;
         public event OnCollisionCallback OnExit;
 
-        public bool Preserve { get; set; }
+        public virtual bool Preserve { get; set; }
         protected override bool PreserveOnUnsubscribe() => this.Preserve || this.OnEnter != null || this.OnExit != null;
 
         protected virtual void OnCollisionEnter(Collision collision)

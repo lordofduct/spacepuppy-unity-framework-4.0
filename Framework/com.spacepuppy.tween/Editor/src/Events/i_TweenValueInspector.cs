@@ -18,7 +18,9 @@ using com.spacepuppyeditor.Internal;
 namespace com.spacepuppyeditor.Tween.Events
 {
 
+#pragma warning disable 618
     [CustomEditor(typeof(i_TweenValue))]
+#pragma warning restore 618
     public class i_TweenValueInspector : SPEditor
     {
         public const string PROP_ORDER = "_order";

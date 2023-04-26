@@ -42,7 +42,7 @@ namespace com.spacepuppy.Dynamic.Accessors
     
     public interface IMemberAccessor<T> : IMemberAccessor
     {
-        T Get(object target);
+        new T Get(object target);
         void Set(object target, T value);
     }
 

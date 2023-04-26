@@ -17,7 +17,7 @@ namespace com.spacepuppy.Hooks
         public event OnTriggerCallback OnEnter;
         public event OnTriggerCallback OnExit;
 
-        public bool Preserve { get; set; }
+        public virtual bool Preserve { get; set; }
         protected override bool PreserveOnUnsubscribe() => this.Preserve || this.OnEnter != null || this.OnExit != null;
 
         protected virtual void OnTriggerEnter(Collider otherCollider)

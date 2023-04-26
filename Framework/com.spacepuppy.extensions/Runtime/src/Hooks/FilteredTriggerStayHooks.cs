@@ -20,7 +20,7 @@ namespace com.spacepuppy.Hooks
 
         #region Properties
 
-        public bool Preserve
+        public override bool Preserve
         {
             get => !_donotPreserve;
             set => _donotPreserve = !value;

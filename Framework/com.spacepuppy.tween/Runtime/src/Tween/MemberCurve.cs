@@ -119,7 +119,7 @@ namespace com.spacepuppy.Tween
 
         #region ISupportBoxedConfigurableTweenCurve Interface
 
-        void ISupportBoxedConfigurableTweenCurve.Configure(Ease ease, float dur, object start, object end, int option = 0)
+        void ISupportBoxedConfigurableTweenCurve.Configure(Ease ease, float dur, object start, object end, int option)
         {
             this.ConfigureBoxed(ease, dur, start, end, option);
         }
@@ -129,7 +129,7 @@ namespace com.spacepuppy.Tween
             this.Configure(ease, dur, ConvertUtil.Coerce<TProp>(start), ConvertUtil.Coerce<TProp>(end), option);
         }
 
-        void ISupportBoxedConfigurableTweenCurve.ConfigureAsRedirectTo(Ease ease, float dur, object current, object start, object end, int option = 0)
+        void ISupportBoxedConfigurableTweenCurve.ConfigureAsRedirectTo(Ease ease, float dur, object current, object start, object end, int option)
         {
             this.ConfigureAsRedirectToBoxed(ease, dur, current, start, end, option);
         }

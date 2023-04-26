@@ -2,7 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 using com.spacepuppy.Events;
-using com.spacepuppy.Utils;
+using com.spacepuppy.Project;
 
 namespace com.spacepuppy
 {
@@ -22,7 +22,7 @@ namespace com.spacepuppy
     /// Basically think of this as like 'string' where even though 2 strings may not be the same reference object, they are treated as == if the value of the string is the same. String also fails == operator if you cast it to object.
     /// </summary>
     [CreateAssetMenu(fileName = "ProxyMediator", menuName = "Spacepuppy/Proxy/ProxyMediator", order = int.MinValue)]
-    public class ProxyMediator : ScriptableObject, ITriggerable, System.IEquatable<ProxyMediator>, IProxy
+    public class ProxyMediator : ScriptableObject, IAssetGuidIdentifiable, System.IEquatable<ProxyMediator>, ITriggerable, IProxy
     {
 
         #region Cross-Domain Lookup
@@ -36,7 +36,7 @@ namespace com.spacepuppy
 
         private static bool FindHook(ProxyMediator proxy, out CrossDomainHook hook, bool ignorePropogateIfNotInitialized = false)
         {
-            if (_crossDomainLookupTable.TryGetValue(proxy.Guid, out hook))
+            if (_crossDomainLookupTable.TryGetValue(proxy.AssetId, out hook))
             {
                 return true;
             }
@@ -44,7 +44,7 @@ namespace com.spacepuppy
             {
                 //this state is if someone attempts to register before 'Awake' is called due to out of order initilization. Allow the hook to propogate, but Awake will tick the RefCount later.
                 hook = new CrossDomainHook();
-                _crossDomainLookupTable[proxy.Guid] = hook;
+                _crossDomainLookupTable[proxy.AssetId] = hook;
                 return true;
             }
             else
@@ -120,8 +120,9 @@ namespace com.spacepuppy
         #region Fields
 
         [SerializeField]
+        [UnityEngine.Serialization.FormerlySerializedAs("_guid")]
         [SerializableGuid.Config(LinkToAsset = true, AllowZero = false)]
-        private SerializableGuid _guid;
+        private SerializableGuid _assetId;
 
         [SerializeField]
         private bool _triggerSyncedTargetWhenTriggered = false;
@@ -153,7 +154,7 @@ namespace com.spacepuppy
                 hook.RefCount--;
                 if (hook.RefCount <= 0)
                 {
-                    _crossDomainLookupTable.Remove(this.Guid);
+                    _crossDomainLookupTable.Remove(this.AssetId);
                 }
             }
         }
@@ -162,7 +163,7 @@ namespace com.spacepuppy
 
         #region Properties
 
-        public System.Guid Guid => _guid.ToGuid();
+        public System.Guid AssetId => _assetId.ToGuid();
 
         public bool HasTarget => this.GetTarget() != null;
 
@@ -315,26 +316,7 @@ namespace com.spacepuppy
             public int RefCount;
         }
 
-        public static readonly Comparer DefaultComparer = new Comparer();
-
-        public class Comparer : IEqualityComparer<ProxyMediator>
-        {
-            public bool Equals(ProxyMediator x, ProxyMediator y)
-            {
-                bool xnull = object.ReferenceEquals(x, null);
-                bool ynull = object.ReferenceEquals(y, null);
-                if (xnull && ynull) return true;
-                if (xnull) return !ObjUtil.IsObjectAlive(y);
-                if (ynull) return !ObjUtil.IsObjectAlive(x);
-
-                return x.Guid == y.Guid;
-            }
-
-            public int GetHashCode(ProxyMediator obj)
-            {
-                return obj?.Guid.GetHashCode() ?? 0;
-            }
-        }
+        public static IEqualityComparer<ProxyMediator> DefaultComparer => AssetGuidIdentifiableEqualityComparer<ProxyMediator>.Default;
 
         public struct ProxyInfo
         {

@@ -37,6 +37,16 @@ namespace com.spacepuppy.Geom
         void ICompoundTriggerExitHandler.OnCompoundTriggerExit(ICompoundTrigger trigger, Collider other) => this.Signal((trigger, other), (o, a) => o.OnCompoundTriggerExit(a.trigger, a.other));
     }
 
+    public interface ICompoundTriggerStayHandler
+    {
+        void OnCompoundTriggerStay(ICompoundTrigger trigger, Collider other);
+    }
+    [Preserve]
+    public class CompoundTriggerStayHandlerHook : Messaging.SubscribableMessageHook<ICompoundTriggerStayHandler>, ICompoundTriggerStayHandler
+    {
+        void ICompoundTriggerStayHandler.OnCompoundTriggerStay(ICompoundTrigger trigger, Collider other) => this.Signal((trigger, other), (o, a) => o.OnCompoundTriggerStay(a.trigger, a.other));
+    }
+
     [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
     public class ExpectsCompoundTriggerAttribute : ComponentHeaderAttribute
     {
@@ -66,8 +76,14 @@ namespace com.spacepuppy.Geom
         [SerializeField]
         private bool _sendMessageToOtherCollider;
 
+        [SerializeField]
+        private bool _handleColliderStayEvent;
+
         private Dictionary<Collider, CompoundTriggerMember> _colliders = new Dictionary<Collider, CompoundTriggerMember>();
         protected readonly HashSet<Collider> _active = new HashSet<Collider>();
+
+        private int _lastStayFrame = -1;
+        private HashSet<Collider> _signaled;
 
         [SerializeField]
         [DisableOnPlay]
@@ -137,6 +153,24 @@ namespace com.spacepuppy.Geom
             set => _sendMessageToOtherCollider = value;
         }
 
+        /// <summary>
+        /// Flag if the stay event should also be raised. 
+        /// </summary>
+        /// <remarks>
+        /// Do not toggle this frequently as it causes the creation/destruction 
+        /// of MonoBehaviours which can lead to poor performance.
+        /// </remarks>
+        public bool HandleColliderStayEvent
+        {
+            get => _handleColliderStayEvent;
+            set
+            {
+                if (_handleColliderStayEvent == value) return;
+                _handleColliderStayEvent = value;
+                if (this.isActiveAndEnabled) this.SyncTriggers();
+            }
+        }
+
         public Messaging.MessageSendCommand MessageSettings
         {
             get => _messageSettings;
@@ -167,7 +201,9 @@ namespace com.spacepuppy.Geom
                         var ed = _colliders.GetEnumerator();
                         while (ed.MoveNext())
                         {
-                            if (!ObjUtil.IsObjectAlive(ed.Current.Key) || ed.Current.Value == null || !lst.Contains(ed.Current.Key))
+                            if (!ObjUtil.IsObjectAlive(ed.Current.Key) || ed.Current.Value == null || !lst.Contains(ed.Current.Key)
+                                || (_handleColliderStayEvent && !(ed.Current.Value is CompoundTriggerStayMember))
+                                || (!_handleColliderStayEvent && (ed.Current.Value is CompoundTriggerStayMember)))
                             {
                                 purge.Add(ed.Current.Key);
                                 ObjUtil.SmartDestroy(ed.Current.Value);
@@ -192,7 +228,7 @@ namespace com.spacepuppy.Geom
                     {
                         if (!_colliders.ContainsKey(e.Current))
                         {
-                            var m = e.Current.AddComponent<CompoundTriggerMember>();
+                            CompoundTriggerMember m = _handleColliderStayEvent ? e.Current.AddComponent<CompoundTriggerStayMember>() : e.Current.AddComponent<CompoundTriggerMember>();
                             m.Init(this, e.Current);
                             _colliders.Add(e.Current, m);
                         }
@@ -274,6 +310,25 @@ namespace com.spacepuppy.Geom
             }
         }
 
+        protected virtual void SignalTriggerStay(CompoundTriggerStayMember member, Collider other)
+        {
+            if (!this.isActiveAndEnabled || !_active.Contains(other)) return;
+
+            if (_signaled == null) _signaled = new HashSet<Collider>();
+
+            if (GameLoop.FixedFrameCount != _lastStayFrame)
+            {
+                _lastStayFrame = GameLoop.FixedFrameCount;
+                _signaled.Clear();
+            }
+
+            if (_signaled.Add(other))
+            {
+                _messageSettings.Send(this.gameObject, (this, other), OnStayFunctor);
+                _otherColliderMessageSettings.Send(other.gameObject, (this, member.Collider), OnStayFunctor);
+            }
+        }
+
         private void ResyncStateAndSignalMessageIfNecessary()
         {
             _active.Clear();
@@ -321,11 +376,11 @@ namespace com.spacepuppy.Geom
         {
 
             [System.NonSerialized]
-            private CompoundTrigger _owner;
+            private protected CompoundTrigger _owner;
             [System.NonSerialized]
-            private Collider _collider;
+            private protected Collider _collider;
             [System.NonSerialized]
-            private HashSet<Collider> _active = new HashSet<Collider>();
+            private protected HashSet<Collider> _active = new HashSet<Collider>();
 
             internal CompoundTrigger Owner
             {
@@ -376,6 +431,21 @@ namespace com.spacepuppy.Geom
                 if (_active.Remove(other))
                 {
                     if (_owner != null) _owner.SignalTriggerExit(this, other);
+                }
+            }
+
+        }
+
+        protected class CompoundTriggerStayMember : CompoundTriggerMember
+        {
+
+            private void OnTriggerStay(Collider other)
+            {
+                if (!this.isActiveAndEnabled) return;
+
+                if (_active.Contains(other))
+                {
+                    if (_owner != null) _owner.SignalTriggerStay(this, other);
                 }
             }
 
@@ -488,6 +558,7 @@ namespace com.spacepuppy.Geom
 
         public static readonly System.Action<ICompoundTriggerEnterHandler, (ICompoundTrigger, Collider)> OnEnterFunctor = (x, y) => x.OnCompoundTriggerEnter(y.Item1, y.Item2);
         public static readonly System.Action<ICompoundTriggerExitHandler, (ICompoundTrigger, Collider)> OnExitFunctor = (x, y) => x.OnCompoundTriggerExit(y.Item1, y.Item2);
+        public static readonly System.Action<ICompoundTriggerStayHandler, (ICompoundTrigger, Collider)> OnStayFunctor = (x, y) => x.OnCompoundTriggerStay(y.Item1, y.Item2);
 
         #endregion
 

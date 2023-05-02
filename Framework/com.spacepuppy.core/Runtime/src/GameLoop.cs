@@ -51,6 +51,8 @@ namespace com.spacepuppy
         private static QuitState _quitState;
         private static System.Action<bool> _internalEarlyUpdate;
 
+        private ulong _frameCount = 0;
+        private ulong _fixedFrameCount = 0;
         private UpdateEventHooks _updateHook;
         private TardyExecutionUpdateEventHooks _tardyUpdateHook;
 
@@ -155,6 +157,19 @@ namespace com.spacepuppy
         /// This will return false if GameLoop is not initialized.
         /// </summary>
         public static bool IsMainThread => !(_updateInvokeHandle?.InvokeRequired ?? true);
+
+        /// <summary>
+        /// The number of frames since this GameLoop was started. This doesn't necessarily 
+        /// match the Time.frameCount since GameLoop can be initialized late. 
+        /// </summary>
+        public static int FrameCount => _instance ? (int)(_instance._frameCount & 0x7FFFFFFF) : 0;
+        public static ulong FrameCountLong => _instance ? _instance._frameCount : 0;
+
+        /// <summary>
+        /// The number of FixedUpdate call since the GameLoop was started. 
+        /// </summary>
+        public static int FixedFrameCount => _instance ? (int)(_instance._fixedFrameCount & 0x7FFFFFFF) : 0;
+        public static ulong FixedFrameCountLong => _instance ? _instance._fixedFrameCount : 0;
 
         /// <summary>
         /// Returns which event sequence that code is currently operating as. 
@@ -346,6 +361,7 @@ namespace com.spacepuppy
         {
             //Track entry into update loop
             _currentSequence = UpdateSequence.Update;
+            _frameCount++;
 
             _internalEarlyUpdate?.Invoke(false);
 
@@ -374,6 +390,7 @@ namespace com.spacepuppy
         {
             //Track entry into fixedupdate loop
             _currentSequence = UpdateSequence.FixedUpdate;
+            _fixedFrameCount++;
 
             _internalEarlyUpdate?.Invoke(true);
 

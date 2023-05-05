@@ -9,13 +9,17 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.SPInput.Events
 {
 
-    public class t_OnCursorDoubleClick : TriggerComponent, CursorInputLogic.IDoubleClickHandler, UnityEngine.EventSystems.IPointerClickHandler
+    public class t_OnCursorDoubleClick : SPComponent, IObservableTrigger, CursorInputLogic.IDoubleClickHandler, UnityEngine.EventSystems.IPointerClickHandler
     {
 
         #region Fields
 
         [SerializeField]
         private PointerFilter _pointerFilter;
+
+        [SerializeField()]
+        [UnityEngine.Serialization.FormerlySerializedAs("_trigger")]
+        private SPEvent _onCursorDoubleClick = new SPEvent("OnCursorDoubleClick");
 
         #endregion
 
@@ -27,6 +31,8 @@ namespace com.spacepuppy.SPInput.Events
             set => _pointerFilter = value;
         }
 
+        public SPEvent OnCursorDoubleClick => _onCursorDoubleClick;
+
         #endregion
 
         #region IClickHandler Interface
@@ -35,7 +41,7 @@ namespace com.spacepuppy.SPInput.Events
         {
             if (_pointerFilter != null && !_pointerFilter.IsValid(cursor)) return;
 
-            this.ActivateTrigger();
+            _onCursorDoubleClick.ActivateTrigger(this, null);
         }
 
         void UnityEngine.EventSystems.IPointerClickHandler.OnPointerClick(UnityEngine.EventSystems.PointerEventData eventData)
@@ -43,7 +49,16 @@ namespace com.spacepuppy.SPInput.Events
             if (eventData.clickCount != 2) return;
             if (_pointerFilter != null && !_pointerFilter.IsValid(eventData)) return;
 
-            this.ActivateTrigger();
+            _onCursorDoubleClick.ActivateTrigger(this, null);
+        }
+
+        #endregion
+
+        #region IObservableTrigger Interface
+
+        BaseSPEvent[] IObservableTrigger.GetEvents()
+        {
+            return new BaseSPEvent[] { _onCursorDoubleClick };
         }
 
         #endregion

@@ -4,7 +4,7 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Events
 {
 
-    public sealed class t_OnChildrenEmpty : TriggerComponent, IMStartOrEnableReceiver
+    public sealed class t_OnChildrenEmpty : SPComponent, IObservableTrigger, IMStartOrEnableReceiver
     {
 
         #region Fields
@@ -13,6 +13,9 @@ namespace com.spacepuppy.Events
         [DefaultFromSelf()]
         [TypeRestriction(typeof(Transform), AllowProxy = true)]
         private UnityEngine.Object _target;
+
+        [SerializeField()]
+        private SPEvent _trigger = new SPEvent();
 
         [System.NonSerialized]
         private MonitorForEmpty _current;
@@ -46,11 +49,26 @@ namespace com.spacepuppy.Events
 
         #endregion
 
+        #region Properties
+
+        public SPEvent Trigger => _trigger;
+
+        #endregion
+
         #region Methods
 
         private void _current_SignalEmpty(object sender, System.EventArgs e)
         {
-            this.ActivateTrigger();
+            _trigger.ActivateTrigger(this, null);
+        }
+
+        #endregion
+
+        #region IObservableTrigger Interface
+
+        BaseSPEvent[] IObservableTrigger.GetEvents()
+        {
+            return new BaseSPEvent[] { _trigger };
         }
 
         #endregion

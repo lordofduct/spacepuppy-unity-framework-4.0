@@ -4,6 +4,7 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Events
 {
 
+    [System.Obsolete("DO NOT USE - Just implement SPEvent as a member yourself.")]
     public abstract class TriggerComponent : SPComponent, IObservableTrigger
     {
 

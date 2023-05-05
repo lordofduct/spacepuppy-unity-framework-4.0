@@ -10,6 +10,7 @@ using com.spacepuppy.Utils;
 using com.spacepuppyeditor.Internal;
 using UnityEditor.Graphs;
 using System.Reflection;
+using com.spacepuppy.Collections;
 
 namespace com.spacepuppyeditor
 {
@@ -414,6 +415,8 @@ namespace com.spacepuppyeditor
             {
                 if (propsNotToDraw == null || !propsNotToDraw.Contains(iterator.propertyPath))
                 {
+
+
                     //using (new EditorGUI.DisabledScope(EditorHelper.PROP_SCRIPT == iterator.propertyPath))
                     {
                         //EditorGUILayout.PropertyField(iterator, true);

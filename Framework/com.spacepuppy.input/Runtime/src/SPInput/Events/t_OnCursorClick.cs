@@ -9,7 +9,7 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.SPInput.Events
 {
 
-    public class t_OnCursorClick : TriggerComponent, CursorInputLogic.IClickHandler, UnityEngine.EventSystems.IPointerClickHandler
+    public class t_OnCursorClick : SPComponent, IObservableTrigger, CursorInputLogic.IClickHandler, UnityEngine.EventSystems.IPointerClickHandler
     {
 
         #region Fields
@@ -20,6 +20,10 @@ namespace com.spacepuppy.SPInput.Events
         [SerializeField]
         [Tooltip("If CursorInputLogic is configure to dispatch OnClick always, this allows you to ignore it if it was a double click.")]
         private bool _ignoreDoubleClick;
+
+        [SerializeField()]
+        [UnityEngine.Serialization.FormerlySerializedAs("_trigger")]
+        private SPEvent _onCursorClick = new SPEvent("OnCursorClick");
 
         #endregion
 
@@ -37,6 +41,8 @@ namespace com.spacepuppy.SPInput.Events
             set => _ignoreDoubleClick = value;
         }
 
+        public SPEvent OnCursorClick => _onCursorClick;
+
         #endregion
 
         #region IClickHandler Interface
@@ -46,7 +52,7 @@ namespace com.spacepuppy.SPInput.Events
             if (_ignoreDoubleClick && (cursor?.LastClickWasDoubleClick ?? false)) return;
             if (_pointerFilter != null && !_pointerFilter.IsValid(cursor)) return;
 
-            this.ActivateTrigger();
+            _onCursorClick.ActivateTrigger(this, null);
         }
 
         void UnityEngine.EventSystems.IPointerClickHandler.OnPointerClick(UnityEngine.EventSystems.PointerEventData eventData)
@@ -54,7 +60,16 @@ namespace com.spacepuppy.SPInput.Events
             if (_ignoreDoubleClick && eventData.clickCount == 2) return;
             if (_pointerFilter != null && !_pointerFilter.IsValid(eventData)) return;
 
-            this.ActivateTrigger();
+            _onCursorClick.ActivateTrigger(this, null);
+        }
+
+        #endregion
+
+        #region IObservableTrigger Interface
+
+        BaseSPEvent[] IObservableTrigger.GetEvents()
+        {
+            return new BaseSPEvent[] { _onCursorClick };
         }
 
         #endregion

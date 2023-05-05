@@ -5,7 +5,7 @@ namespace com.spacepuppy.Events
 {
 
     [DefaultExecutionOrder(t_OnStart.DEFAULT_EXECUTION_ORDER)]
-    public class t_OnStart : TriggerComponent
+    public class t_OnStart : SPComponent, IObservableTrigger
     {
         public const int DEFAULT_EXECUTION_ORDER = 31900;
 
@@ -13,6 +13,9 @@ namespace com.spacepuppy.Events
 
         [SerializeField()]
         private SPTimePeriod _delay;
+
+        [SerializeField()]
+        private SPEvent _trigger = new SPEvent();
 
         #endregion
 
@@ -23,6 +26,8 @@ namespace com.spacepuppy.Events
             get { return _delay; }
             set { _delay = value; }
         }
+
+        public SPEvent Trigger => _trigger;
 
         #endregion
 
@@ -36,13 +41,22 @@ namespace com.spacepuppy.Events
             {
                 this.InvokeGuaranteed(() =>
                 {
-                    this.ActivateTrigger(this);
+                    _trigger.ActivateTrigger(this, null);
                 }, _delay.Seconds, _delay.TimeSupplier);
             }
             else
             {
-                this.ActivateTrigger(this);
+                _trigger.ActivateTrigger(this, null);
             }
+        }
+
+        #endregion
+
+        #region IObservableTrigger Interface
+
+        BaseSPEvent[] IObservableTrigger.GetEvents()
+        {
+            return new BaseSPEvent[] { _trigger };
         }
 
         #endregion

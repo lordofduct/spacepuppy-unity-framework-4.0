@@ -7,7 +7,7 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Events
 {
 
-    public class t_OnCollisionEnter : TriggerComponent
+    public class t_OnCollisionEnter : SPComponent, IObservableTrigger
     {
 
         #region Fields
@@ -18,6 +18,9 @@ namespace com.spacepuppy.Events
         private float _cooldownInterval = 1.0f;
         [SerializeField]
         private bool _includeColliderAsTriggerArg = true;
+
+        [SerializeField()]
+        private SPEvent _trigger = new SPEvent();
 
         [System.NonSerialized()]
         private bool _coolingDown;
@@ -44,6 +47,8 @@ namespace com.spacepuppy.Events
             set { _includeColliderAsTriggerArg = value; }
         }
 
+        public SPEvent Trigger => _trigger;
+
         #endregion
 
         #region Methods
@@ -56,11 +61,11 @@ namespace com.spacepuppy.Events
             {
                 if (_includeColliderAsTriggerArg)
                 {
-                    this.ActivateTrigger(c.collider);
+                    _trigger.ActivateTrigger(this, c.collider);
                 }
                 else
                 {
-                    this.ActivateTrigger();
+                    _trigger.ActivateTrigger(this, null);
                 }
 
                 _coolingDown = true;
@@ -70,6 +75,15 @@ namespace com.spacepuppy.Events
                     _coolingDown = false;
                 }, _cooldownInterval);
             }
+        }
+
+        #endregion
+
+        #region IObservableTrigger Interface
+
+        BaseSPEvent[] IObservableTrigger.GetEvents()
+        {
+            return new BaseSPEvent[] { _trigger };
         }
 
         #endregion

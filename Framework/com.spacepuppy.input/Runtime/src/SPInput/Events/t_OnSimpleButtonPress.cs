@@ -7,7 +7,7 @@ using com.spacepuppy.Events;
 namespace com.spacepuppy.SPInput.Events
 {
 
-    public sealed class t_OnSimpleButtonPress : TriggerComponent
+    public sealed class t_OnSimpleButtonPress : SPComponent, IObservableTrigger
     {
 
         #region Fields
@@ -20,11 +20,15 @@ namespace com.spacepuppy.SPInput.Events
         [DisableOnPlay]
         [InputID]
         private string _inputId;
-        
+
+        [SerializeField()]
+        [UnityEngine.Serialization.FormerlySerializedAs("_trigger")]
+        private SPEvent _onSimpleButtonPress = new SPEvent("OnSimpleButtonPress");
+
         #endregion
 
         #region CONSTRUCTOR
-            
+
         #endregion
 
         #region Properties
@@ -53,6 +57,8 @@ namespace com.spacepuppy.SPInput.Events
             }
         }
 
+        public SPEvent OnSimpleButtonPress => _onSimpleButtonPress;
+
         #endregion
 
         #region Methods
@@ -67,16 +73,25 @@ namespace com.spacepuppy.SPInput.Events
 
                 if (input.GetButtonState(_inputId) == ButtonState.Down)
                 {
-                    this.ActivateTrigger(null);
+                    _onSimpleButtonPress.ActivateTrigger(this, null);
                 }
             }
             else
             {
                 if (Input.GetButtonDown(_inputId))
                 {
-                    this.ActivateTrigger(null);
+                    _onSimpleButtonPress.ActivateTrigger(this, null);
                 }
             }
+        }
+
+        #endregion
+
+        #region IObservableTrigger Interface
+
+        BaseSPEvent[] IObservableTrigger.GetEvents()
+        {
+            return new BaseSPEvent[] { _onSimpleButtonPress };
         }
 
         #endregion

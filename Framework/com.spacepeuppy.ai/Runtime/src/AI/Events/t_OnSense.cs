@@ -11,7 +11,7 @@ namespace com.spacepuppy.AI.Events
 {
 
     [Infobox("Setting 'UseProximityTrigger' false will make this tick constantly, multiple t_OnSense configured this way can be very expensive.", MessageType =InfoBoxMessageType.Warning)]
-    public class t_OnSense : TriggerComponent
+    public class t_OnSense : SPComponent, IObservableTrigger
     {
 
         #region Fields
@@ -23,6 +23,10 @@ namespace com.spacepuppy.AI.Events
         private float _interval = 1f;
         [SerializeField]
         private bool _useProximityTrigger = true;
+
+        [SerializeField()]
+        [UnityEngine.Serialization.FormerlySerializedAs("_trigger")]
+        private SPEvent _onSense = new SPEvent("OnSense");
 
 
         [System.NonSerialized]
@@ -71,6 +75,8 @@ namespace com.spacepuppy.AI.Events
             get { return _useProximityTrigger; }
             set { _useProximityTrigger = value; }
         }
+
+        public SPEvent OnSense => _onSense;
 
         #endregion
 
@@ -137,11 +143,20 @@ namespace com.spacepuppy.AI.Events
 
                 if (_sensor.SenseAny())
                 {
-                    this.ActivateTrigger();
+                    _onSense.ActivateTrigger(this, null);
                 }
 
                 yield return WaitForDuration.Seconds(_interval);
             }
+        }
+
+        #endregion
+
+        #region IObservableTrigger Interface
+
+        BaseSPEvent[] IObservableTrigger.GetEvents()
+        {
+            return new BaseSPEvent[] { _onSense };
         }
 
         #endregion

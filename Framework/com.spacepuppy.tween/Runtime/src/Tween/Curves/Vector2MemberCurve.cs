@@ -48,7 +48,7 @@ namespace com.spacepuppy.Tween.Curves
 
             c -= e;
             s -= e;
-            if (VectorUtil.NearZeroVector(s))
+            if (VectorUtil.NearZeroVector(c) || VectorUtil.NearZeroVector(s))
             {
                 this.Duration = 0f;
             }

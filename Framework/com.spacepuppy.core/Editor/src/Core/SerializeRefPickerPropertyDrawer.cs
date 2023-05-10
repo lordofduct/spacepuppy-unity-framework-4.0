@@ -1,12 +1,11 @@
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Linq;
 
 using com.spacepuppy;
 using com.spacepuppy.Utils;
-using System.Runtime.CompilerServices;
-using System.Reflection;
 
 namespace com.spacepuppyeditor.Core
 {

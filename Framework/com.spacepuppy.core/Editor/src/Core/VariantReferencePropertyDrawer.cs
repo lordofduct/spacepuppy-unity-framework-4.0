@@ -71,11 +71,8 @@ namespace com.spacepuppyeditor.Core
         /// </summary>
         public System.Type ForcedObjectType
         {
-            get { return _forcedObjectType; }
-            set
-            {
-                _forcedObjectType = value ?? typeof(object);
-            }
+            get => _forcedObjectType;
+            set => _forcedObjectType = value ?? typeof(UnityEngine.Object);
         }
 
         #endregion

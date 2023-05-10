@@ -37,6 +37,18 @@ namespace com.spacepuppy.Spawn
             return pool.SpawnAsController(prefab, position, rotation, par, beforeSignalSpawnCallback)?.gameObject;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T Spawn<T>(this ISpawnPool pool, T prefab, Transform par = null, System.Action<SpawnedObjectController> beforeSignalSpawnCallback = null) where T : Component
+        {
+            return pool.SpawnAsController(prefab.gameObject, par, beforeSignalSpawnCallback)?.GetComponent<T>();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T Spawn<T>(this ISpawnPool pool, T prefab, Vector3 position, Quaternion rotation, Transform par = null, System.Action<SpawnedObjectController> beforeSignalSpawnCallback = null) where T : Component
+        {
+            return pool.SpawnAsController(prefab.gameObject, position, rotation, par, beforeSignalSpawnCallback)?.GetComponent<T>();
+        }
+
     }
 
     [System.Serializable]

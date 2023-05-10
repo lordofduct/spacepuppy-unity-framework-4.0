@@ -31,7 +31,7 @@ namespace com.spacepuppy.Audio
         {
             base.OnValidAwake();
 
-            _masterVolume = _audioMixer.GetVolume01(_masterVolumeLabel);
+            _masterVolume = this.UseAudioListenerInterfaceAsMasterVolume ? AudioListener.volume : _audioMixer.GetVolume01(_masterVolumeLabel);
             _fadeVolume = 1f;
         }
 
@@ -92,7 +92,6 @@ namespace com.spacepuppy.Audio
         }
 
         #endregion
-
 
     }
 

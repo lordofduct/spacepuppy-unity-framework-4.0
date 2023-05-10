@@ -16,11 +16,11 @@ namespace com.spacepuppy.Events
         private EventActivatorMaskRef _mask = new EventActivatorMaskRef();
         [SerializeField]
         private float _cooldownInterval = 0f;
-        [SerializeField]
-        private bool _includeColliderAsTriggerArg = true;
 
         [SerializeField()]
-        private SPEvent _trigger = new SPEvent();
+        [UnityEngine.Serialization.FormerlySerializedAs("_trigger")]
+        [SPEvent.Config("othercollider (Collider)")]
+        private SPEvent _onEnterTrigger = new SPEvent("OnEnterTrigger");
 
         [System.NonSerialized()]
         private bool _coolingDown;
@@ -68,12 +68,6 @@ namespace com.spacepuppy.Events
             set { _cooldownInterval = value; }
         }
 
-        public bool IncludeCollidersAsTriggerArg
-        {
-            get { return _includeColliderAsTriggerArg; }
-            set { _includeColliderAsTriggerArg = value; }
-        }
-
         [ShowNonSerializedProperty("Uses Compound Trigger", ShowAtEditorTime = true, ShowOutsideRuntimeValuesFoldout = true)]
         public bool UsesCompoundTrigger
         {
@@ -86,7 +80,7 @@ namespace com.spacepuppy.Events
             }
         }
 
-        public SPEvent Trigger => _trigger;
+        public SPEvent OnEnterTrigger => _onEnterTrigger;
 
         #endregion
 
@@ -102,14 +96,7 @@ namespace com.spacepuppy.Events
         {
             if (_mask.Value == null || _mask.Value.Intersects(other))
             {
-                if (_includeColliderAsTriggerArg)
-                {
-                    _trigger.ActivateTrigger(this, other);
-                }
-                else
-                {
-                    _trigger.ActivateTrigger(this, null);
-                }
+                _onEnterTrigger.ActivateTrigger(this, other);
 
                 if (_cooldownInterval > 0f)
                 {
@@ -142,7 +129,7 @@ namespace com.spacepuppy.Events
 
         BaseSPEvent[] IObservableTrigger.GetEvents()
         {
-            return new BaseSPEvent[] { _trigger };
+            return new BaseSPEvent[] { _onEnterTrigger };
         }
 
         #endregion

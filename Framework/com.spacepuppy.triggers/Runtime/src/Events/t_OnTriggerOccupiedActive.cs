@@ -24,6 +24,9 @@ namespace com.spacepuppy.Events
         private bool _reduceOccupantsToEntityRoot = false;
 
         [SerializeField]
+        private bool _preserveOccupiedTargetsOnDisable = false;
+
+        [SerializeField]
         [Tooltip("If true, when an object is intersected we'll habitually retest the object in case its state changes for any reason.")]
         private bool _activelyScanning = true;
         [SerializeField]
@@ -77,6 +80,7 @@ namespace com.spacepuppy.Events
         {
             base.OnDisable();
 
+            if (!_preserveOccupiedTargetsOnDisable) _activeObjects.Clear();
             this.StopUpdate();
         }
 
@@ -94,6 +98,12 @@ namespace com.spacepuppy.Events
         {
             get => _reduceOccupantsToEntityRoot;
             set => _reduceOccupantsToEntityRoot = value;
+        }
+
+        public bool PreserveOccupiedTargetsOnDisable
+        {
+            get => _preserveOccupiedTargetsOnDisable;
+            set => _preserveOccupiedTargetsOnDisable = value;
         }
 
         public bool ActivelyScanning

@@ -24,6 +24,9 @@ namespace com.spacepuppy.Motor.Events
         [SerializeField()]
         private bool _targetEntireEntity = true;
 
+        [SerializeField]
+        private SPTimePeriod _delay;
+
         #endregion
 
         #region Properties
@@ -46,6 +49,25 @@ namespace com.spacepuppy.Motor.Events
 
         #endregion
 
+        #region Methods
+
+        private void DoApplyForce(GameObject targ)
+        {
+            IMotor controller;
+            if (targ.GetComponentInChildren<IMotor>(out controller))
+            {
+                //controller.AddForce(this.Force.GetForce(this.transform), this.Force.ForceMode);
+                this.Force.ApplyForce(this.transform, controller);
+            }
+            Rigidbody body;
+            if (targ.GetComponentInChildren<Rigidbody>(out body))
+            {
+                this.Force.ApplyForce(this.transform, body);
+            }
+        }
+
+        #endregion
+
         #region TriggerableMechanism Interface
 
         public override bool Trigger(object sender, object arg)
@@ -57,21 +79,18 @@ namespace com.spacepuppy.Motor.Events
             if (_targetEntireEntity) targ = GameObjectUtil.FindRoot(targ);
 
 
-            IMotor controller;
-            if (targ.GetComponentInChildren<IMotor>(out controller))
+            if (_delay.Seconds > 0f)
             {
-                //controller.AddForce(this.Force.GetForce(this.transform), this.Force.ForceMode);
-                this.Force.ApplyForce(this.transform, controller);
-                return true;
+                this.InvokeGuaranteed(() =>
+                {
+                    this.DoApplyForce(targ);
+                }, _delay.Seconds, _delay.TimeSupplier);
             }
-            Rigidbody body;
-            if (targ.GetComponentInChildren<Rigidbody>(out body))
+            else
             {
-                this.Force.ApplyForce(this.transform, body);
-                return true;
+                this.DoApplyForce(targ);
             }
-
-            return false;
+            return true;
         }
 
         #endregion

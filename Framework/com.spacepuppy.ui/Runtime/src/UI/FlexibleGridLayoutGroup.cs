@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace com.spacepuppy
+namespace com.spacepuppy.UI
 {
 
     /// <remarks>
@@ -11,6 +11,23 @@ namespace com.spacepuppy
     [RequireComponent(typeof(RectTransform))]
     public class FlexibleGridLayoutGroup : GridLayoutGroup
     {
+
+        public enum Modes
+        {
+            AnyColumnCount = 0,
+            EvenColumnCount = 1,
+            OddColumnCount = 2,
+        }
+
+        [SerializeField]
+        private Modes _mode = Modes.EvenColumnCount;
+
+        public Modes Mode
+        {
+            get => _mode;
+            set => _mode = value;
+        }
+
 
         public override void CalculateLayoutInputHorizontal()
         {
@@ -44,18 +61,34 @@ namespace com.spacepuppy
             {
                 columnCount = Mathf.CeilToInt(Mathf.Sqrt(itemCount * aspectRatio));
                 rowCount = Mathf.CeilToInt(itemCount / (float)columnCount);
+                columnCount = Mathf.CeilToInt(itemCount / (float)rowCount);
             }
             else
             {
                 rowCount = Mathf.CeilToInt(Mathf.Sqrt(itemCount / aspectRatio));
                 columnCount = Mathf.CeilToInt(itemCount / (float)rowCount);
+                rowCount = Mathf.CeilToInt(itemCount / (float)columnCount);
             }
 
-            // Ensure the column count is even, unless there's only one column
-            if (columnCount > 1 && columnCount % 2 != 0)
+            switch (_mode)
             {
-                columnCount++;
-                rowCount = Mathf.CeilToInt(itemCount / (float)columnCount);
+                case Modes.AnyColumnCount:
+                    //all good
+                    break;
+                case Modes.EvenColumnCount:
+                    if (columnCount > 1 && columnCount % 2 != 0)
+                    {
+                        columnCount++;
+                        rowCount = Mathf.CeilToInt(itemCount / (float)columnCount);
+                    }
+                    break;
+                case Modes.OddColumnCount:
+                    if (columnCount > 1 && columnCount % 2 == 0)
+                    {
+                        columnCount++;
+                        rowCount = Mathf.CeilToInt(itemCount / (float)columnCount);
+                    }
+                    break;
             }
 
             // Calculate the item size based on the optimal number of columns and rows

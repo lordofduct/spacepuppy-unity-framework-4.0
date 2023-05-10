@@ -329,17 +329,17 @@ namespace com.spacepuppy.Dynamic
                 var member = GetValueSetterMemberFromType(obj.GetType(), sprop, vtp, true);
                 if (member != null)
                 {
-                    switch (member.MemberType)
+                    switch (member)
                     {
-                        case MemberTypes.Field:
-                            (member as FieldInfo).SetValue(obj, value);
+                        case FieldInfo fi:
+                            fi.SetValue(obj, value);
                             return true;
-                        case MemberTypes.Property:
-                            (member as PropertyInfo).SetValue(obj, value, index);
+                        case PropertyInfo pi:
+                            pi.SetValue(obj, value, index);
                             return true;
-                        case MemberTypes.Method:
+                        case MethodInfo mi:
                             var arr = ArrayUtil.Temp(value);
-                            (member as MethodInfo).Invoke(obj, arr);
+                            mi.Invoke(obj, arr);
                             ArrayUtil.ReleaseTemp(arr);
                             return true;
                     }
@@ -348,26 +348,41 @@ namespace com.spacepuppy.Dynamic
                 if (vtp != null)
                 {
                     member = GetValueSetterMemberFromType(obj.GetType(), sprop, null, true);
-                    if (member != null && member.MemberType != MemberTypes.Method)
+                    System.Type rtp;
+                    object cobj = null;
+                    if (member != null)
                     {
-                        var rtp = GetReturnType(member);
-                        object cobj = null;
-                        if (ConvertUtil.TryToPrim(value, rtp, out cobj))
-                            value = cobj;
-
-                        switch (member.MemberType)
+                        switch (member)
                         {
-                            case MemberTypes.Field:
-                                (member as FieldInfo).SetValue(obj, value);
-                                return true;
-                            case MemberTypes.Property:
-                                (member as PropertyInfo).SetValue(obj, value, index);
-                                return true;
-                            case MemberTypes.Method:
-                                var arr = ArrayUtil.Temp(value);
-                                (member as MethodInfo).Invoke(obj, arr);
-                                ArrayUtil.ReleaseTemp(arr);
-                                return true;
+                            case FieldInfo fi:
+                                {
+                                    rtp = GetReturnType(member);
+                                    if (ConvertUtil.TryToPrim(value, rtp, out cobj))
+                                        value = cobj;
+
+                                    fi.SetValue(obj, value);
+                                }
+                                break;
+                            case PropertyInfo pi:
+                                {
+                                    rtp = GetReturnType(member);
+                                    if (ConvertUtil.TryToPrim(value, rtp, out cobj))
+                                        value = cobj;
+
+                                    pi.SetValue(obj, value, index);
+                                }
+                                break;
+                            case MethodInfo mi:
+                                {
+                                    rtp = mi.GetParameters().FirstOrDefault()?.ParameterType;
+                                    if (rtp != null && ConvertUtil.TryToPrim(value, rtp, out cobj))
+                                        value = cobj;
+
+                                    var arr = ArrayUtil.Temp(value);
+                                    (member as MethodInfo).Invoke(obj, arr);
+                                    ArrayUtil.ReleaseTemp(arr);
+                                }
+                                break;
                         }
                     }
                 }

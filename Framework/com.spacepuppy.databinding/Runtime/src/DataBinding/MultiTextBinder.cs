@@ -14,12 +14,6 @@ namespace com.spacepuppy.DataBinding
 
         #region Fields
 
-#if SP_TMPRO
-        private static readonly System.Type[] _availableTargTypes = new System.Type[] { typeof(UnityEngine.UI.Text), typeof(TMPro.TMP_Text), typeof(IProxy) };
-#else
-        private static readonly System.Type[] _availableTargTypes = new System.Type[] { typeof(UnityEngine.UI.Text), typeof(IProxy) };
-#endif
-
         [SerializeField]
         [ReorderableArray]
         [ContentBinderKey]
@@ -27,9 +21,9 @@ namespace com.spacepuppy.DataBinding
 
         [SerializeField]
 #if SP_TMPRO
-        [TypeRestriction(typeof(UnityEngine.UI.Text), typeof(TMPro.TMP_Text), typeof(IProxy), AllowProxy = true)]
+        [TypeRestriction(typeof(UnityEngine.UI.Text), typeof(UnityEngine.UI.InputField), typeof(TMPro.TMP_Text), typeof(TMPro.TMP_InputField), typeof(IProxy), AllowProxy = true)]
 #else
-        [TypeRestriction(typeof(UnityEngine.UI.Text), typeof(IProxy), AllowProxy = true)]
+        [TypeRestriction(typeof(UnityEngine.UI.Text), typeof(UnityEngine.UI.InputField), typeof(IProxy), AllowProxy = true)]
 #endif
         private UnityEngine.Object _target;
 
@@ -52,7 +46,7 @@ namespace com.spacepuppy.DataBinding
         public UnityEngine.Object Target
         {
             get => _target;
-            set => _target = ObjUtil.GetAsFromSource(_availableTargTypes, value) as UnityEngine.Object;
+            set => _target = StringUtil.GetAsTextBindingTarget(value, true);
         }
 
         /// <summary>
@@ -69,8 +63,8 @@ namespace com.spacepuppy.DataBinding
         /// </summary>
         public string text
         {
-            get => TextBinder.TryGetText(_target);
-            set => TextBinder.TrySetText(_target, value);
+            get => StringUtil.TryGetText(_target);
+            set => StringUtil.TrySetText(_target, value);
         }
 
         #endregion
@@ -127,7 +121,7 @@ namespace com.spacepuppy.DataBinding
                 ArrayUtil.ReleaseTemp(arr);
             }
 
-            TextBinder.TrySetText(_target, stxt);
+            StringUtil.TrySetText(_target, stxt);
         }
 
         #endregion

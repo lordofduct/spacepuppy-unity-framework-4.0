@@ -451,6 +451,82 @@ namespace com.spacepuppy.Utils
 
         #endregion
 
+        #region Text Binders
+
+#if SP_TMPRO
+        private static readonly System.Type[] _availableTextTargTypes = new System.Type[] { typeof(UnityEngine.UI.Text), typeof(UnityEngine.UI.InputField), typeof(TMPro.TMP_Text), typeof(TMPro.TMP_InputField) };
+        private static readonly System.Type[] _availableTextInputTargTypes = new System.Type[] { typeof(UnityEngine.UI.InputField), typeof(TMPro.TMP_InputField) };
+#else
+        private static readonly System.Type[] _availableTextTargTypes = new System.Type[] { typeof(UnityEngine.UI.Text), typeof(UnityEngine.UI.InputField) };
+        private static readonly System.Type[] _availableTextInputTargTypes = new System.Type[] { typeof(UnityEngine.UI.InputField) };
+#endif
+
+#if SP_TMPRO
+        private static readonly System.Type[] _availableTextTargTypes_WithProxy = new System.Type[] { typeof(UnityEngine.UI.Text), typeof(UnityEngine.UI.InputField), typeof(TMPro.TMP_Text), typeof(TMPro.TMP_InputField), typeof(IProxy) };
+        private static readonly System.Type[] _availableTextInputTargTypes_WithProxy = new System.Type[] { typeof(UnityEngine.UI.InputField), typeof(TMPro.TMP_InputField), typeof(IProxy) };
+#else
+        private static readonly System.Type[] _availableTextTargTypes_WithProxy  = new System.Type[] { typeof(UnityEngine.UI.Text), typeof(UnityEngine.UI.InputField), typeof(IProxy) };
+        private static readonly System.Type[] _availableTextInputTargTypes_WithProxy  = new System.Type[] { typeof(UnityEngine.UI.InputField), typeof(IProxy) };
+#endif
+
+        public static UnityEngine.Object GetAsTextBindingTarget(object obj, bool preserveProxy = false) => preserveProxy ? ObjUtil.GetAsFromSource(_availableTextTargTypes_WithProxy, obj) as UnityEngine.Object : ObjUtil.GetAsFromSource(_availableTextTargTypes, obj, true) as UnityEngine.Object;
+
+        public static UnityEngine.Object GetAsTextInputFieldBindingTarget(object obj, bool preserveProxy = false) => preserveProxy ? ObjUtil.GetAsFromSource(_availableTextInputTargTypes_WithProxy, obj) as UnityEngine.Object : ObjUtil.GetAsFromSource(_availableTextInputTargTypes, obj, true) as UnityEngine.Object;
+
+        /// <summary>
+        /// Supports unity.ui.Text, unity.ui.InputField, TMPro.TMP_Text, TMPro.TMP_InputField, and IProxy's of them.
+        /// </summary>
+        /// <param name="target"></param>
+        /// <returns></returns>
+        public static string TryGetText(object target)
+        {
+            switch (GetAsTextBindingTarget(target, false))
+            {
+                case UnityEngine.UI.Text utxt:
+                    return utxt.text;
+                case UnityEngine.UI.InputField uifld:
+                    return uifld.text;
+#if SP_TMPRO
+                case TMPro.TMP_Text tmp:
+                    return tmp.text;
+                case TMPro.TMP_InputField tmp_i:
+                    return tmp_i.text;
+#endif
+            }
+
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// Supports unity.ui.Text, TMPro.TMP_Text, and IProxy's of them.
+        /// </summary>
+        /// <param name="target"></param>
+        /// <returns></returns>
+        public static bool TrySetText(object target, string stxt)
+        {
+            switch (GetAsTextBindingTarget(target, false))
+            {
+                case UnityEngine.UI.Text utxt:
+                    utxt.text = stxt;
+                    return true;
+                case UnityEngine.UI.InputField uifld:
+                    uifld.text = stxt;
+                    return true;
+#if SP_TMPRO
+                case TMPro.TMP_Text tmp:
+                    tmp.text = stxt;
+                    return true;
+                case TMPro.TMP_InputField tmp_i:
+                    tmp_i.text = stxt;
+                    return true;
+#endif
+            }
+
+            return false;
+        }
+
+        #endregion
+
     }
 
 }

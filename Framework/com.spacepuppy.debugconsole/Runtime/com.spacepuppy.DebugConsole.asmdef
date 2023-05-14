@@ -1,10 +1,9 @@
 {
-    "name": "com.spacepuppy.UI",
+    "name": "com.spacepuppy.DebugConsole",
     "rootNamespace": "com.spacepuppy",
     "references": [
         "GUID:ddd0eb9fc8f414a4d9750a013f135d36",
-        "GUID:ad6239a0379b2de43a4d9e723d51db80",
-        "GUID:6055be8ebefd69e48b49212b09b47b2f"
+        "GUID:1504d8b5d14ee4540a06b9a7c3aac4a6"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -13,12 +12,6 @@
     "precompiledReferences": [],
     "autoReferenced": true,
     "defineConstraints": [],
-    "versionDefines": [
-        {
-            "name": "com.unity.textmeshpro",
-            "expression": "",
-            "define": "SP_TMPRO"
-        }
-    ],
+    "versionDefines": [],
     "noEngineReferences": false
 }

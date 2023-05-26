@@ -329,61 +329,15 @@ namespace com.spacepuppy.Dynamic
                 var member = GetValueSetterMemberFromType(obj.GetType(), sprop, vtp, true);
                 if (member != null)
                 {
-                    switch (member)
-                    {
-                        case FieldInfo fi:
-                            fi.SetValue(obj, value);
-                            return true;
-                        case PropertyInfo pi:
-                            pi.SetValue(obj, value, index);
-                            return true;
-                        case MethodInfo mi:
-                            var arr = ArrayUtil.Temp(value);
-                            mi.Invoke(obj, arr);
-                            ArrayUtil.ReleaseTemp(arr);
-                            return true;
-                    }
+                    return SetValueDirect(obj, member, value, index);
                 }
 
                 if (vtp != null)
                 {
                     member = GetValueSetterMemberFromType(obj.GetType(), sprop, null, true);
-                    System.Type rtp;
-                    object cobj = null;
                     if (member != null)
                     {
-                        switch (member)
-                        {
-                            case FieldInfo fi:
-                                {
-                                    rtp = GetReturnType(member);
-                                    if (ConvertUtil.TryToPrim(value, rtp, out cobj))
-                                        value = cobj;
-
-                                    fi.SetValue(obj, value);
-                                }
-                                break;
-                            case PropertyInfo pi:
-                                {
-                                    rtp = GetReturnType(member);
-                                    if (ConvertUtil.TryToPrim(value, rtp, out cobj))
-                                        value = cobj;
-
-                                    pi.SetValue(obj, value, index);
-                                }
-                                break;
-                            case MethodInfo mi:
-                                {
-                                    rtp = mi.GetParameters().FirstOrDefault()?.ParameterType;
-                                    if (rtp != null && ConvertUtil.TryToPrim(value, rtp, out cobj))
-                                        value = cobj;
-
-                                    var arr = ArrayUtil.Temp(value);
-                                    (member as MethodInfo).Invoke(obj, arr);
-                                    ArrayUtil.ReleaseTemp(arr);
-                                }
-                                break;
-                        }
+                        return SetValueDirect(obj, member, value, index);
                     }
                 }
             }
@@ -408,23 +362,40 @@ namespace com.spacepuppy.Dynamic
 
             try
             {
-                switch (member.MemberType)
+                System.Type rtp;
+                object cobj = null;
+
+                switch (member)
                 {
-                    case MemberTypes.Field:
-                        (member as FieldInfo).SetValue(obj, value);
-                        return true;
-                    case MemberTypes.Property:
-                        if ((member as PropertyInfo).CanWrite)
+                    case FieldInfo fi:
                         {
-                            (member as PropertyInfo).SetValue(obj, value, index);
-                            return true;
+                            rtp = GetReturnType(member);
+                            if (!rtp.IsInstanceOfType(value) && ConvertUtil.TryToPrim(value, rtp, out cobj))
+                                value = cobj;
+
+                            fi.SetValue(obj, value);
                         }
-                        else
-                            return false;
-                    case MemberTypes.Method:
-                        var arr = ArrayUtil.Temp(value);
-                        (member as MethodInfo).Invoke(obj, arr);
-                        ArrayUtil.ReleaseTemp(arr);
+                        return true;
+                    case PropertyInfo pi:
+                        if (pi.CanWrite)
+                        {
+                            rtp = GetReturnType(member);
+                            if (!rtp.IsInstanceOfType(value) && ConvertUtil.TryToPrim(value, rtp, out cobj))
+                                value = cobj;
+
+                            pi.SetValue(obj, value, index);
+                        }
+                        return true;
+                    case MethodInfo mi:
+                        {
+                            rtp = mi.GetParameters().FirstOrDefault()?.ParameterType;
+                            if (rtp != null && !rtp.IsInstanceOfType(value) && ConvertUtil.TryToPrim(value, rtp, out cobj))
+                                value = cobj;
+
+                            var arr = ArrayUtil.Temp(value);
+                            mi.Invoke(obj, arr);
+                            ArrayUtil.ReleaseTemp(arr);
+                        }
                         return true;
                 }
             }

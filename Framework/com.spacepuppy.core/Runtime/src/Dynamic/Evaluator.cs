@@ -52,6 +52,10 @@ namespace com.spacepuppy.Dynamic
     /// vec(x,y,z,w)
     /// rot(x,y,z)
     /// format(s,...)
+    /// lerp(a,b,t)
+    /// clerp(a,b,t) [clamped lerp]
+    /// invlerp(a,b,v)
+    /// invclerp(a,b,v) [clamped inverse lerp]
     /// iif(x,t,f)
     /// 
     /// These function names are not case sensitive
@@ -926,7 +930,7 @@ namespace com.spacepuppy.Dynamic
                 state.Value = DynamicUtil.GetValue(target, sprop);
                 return;
             }
-            else if (char.IsLetterOrDigit(_current) || _current == '_' || 
+            else if (char.IsLetterOrDigit(_current) || _current == '_' ||
                      (_current == '-' && _reader.Peek() >= 0 && char.ToLower((char)_reader.Peek()) == 'i')) //the only $- that is allowed is $-inf, so rule test for i
             {
                 //global
@@ -1351,7 +1355,7 @@ namespace com.spacepuppy.Dynamic
 
                             using (var lst = TempCollection.GetList<object>())
                             {
-                                while(!reachedEnd)
+                                while (!reachedEnd)
                                 {
                                     reachedEnd = EvalStatement(temp, true);
                                     lst.Add(temp.Value);
@@ -1362,6 +1366,43 @@ namespace com.spacepuppy.Dynamic
                                 ArrayUtil.ReleaseTemp(arr);
                             }
 
+                            return;
+                        }
+                    case "lerp":
+                    case "clerp":
+                    case "invlerp":
+                    case "invclerp":
+                        {
+                            reachedEnd = this.EvalStatement(temp, true);
+                            if (reachedEnd)
+                                throw new System.InvalidOperationException("Failed to parse the command: Parameter count mismatch.");
+                            double a = temp.DoubleValue;
+
+                            reachedEnd = EvalStatement(temp, true);
+                            if (reachedEnd)
+                                throw new System.InvalidOperationException("Failed to parse the command: Parameter count mismatch.");
+                            double b = temp.DoubleValue;
+
+                            reachedEnd = EvalStatement(temp, true);
+                            if (!reachedEnd)
+                                throw new System.InvalidOperationException("Failed to parse the command: Parameter count mismatch.");
+                            double t = temp.DoubleValue;
+
+                            switch (name)
+                            {
+                                case "lerp":
+                                    state.DoubleValue = MathUtil.Lerp(a, b, t);
+                                    break;
+                                case "clerp":
+                                    state.DoubleValue = Math.Clamp(MathUtil.Lerp(a, b, t), a, b);
+                                    break;
+                                case "invlerp":
+                                    state.DoubleValue = MathUtil.PercentageMinMax(t, b, a);
+                                    break;
+                                case "invclerp":
+                                    state.DoubleValue = Math.Clamp(MathUtil.PercentageMinMax(t, b, a), 0d, 1d);
+                                    break;
+                            }
                             return;
                         }
                     case "iif":

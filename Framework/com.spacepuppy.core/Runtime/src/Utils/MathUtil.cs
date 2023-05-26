@@ -545,6 +545,26 @@ namespace com.spacepuppy.Utils
             return PercentageMinMax(value, max, 0);
         }
 
+        public static double PercentageMinMax(double value, double max, double min)
+        {
+            value -= min;
+            max -= min;
+
+            if (max == 0f)
+            {
+                return 0f;
+            }
+            else
+            {
+                return value / max;
+            }
+        }
+
+        public static double PercentageMinMax(double value, double max)
+        {
+            return PercentageMinMax(value, max, 0);
+        }
+
         /// <summary>
         /// The percentage a value is from max to min
         /// 

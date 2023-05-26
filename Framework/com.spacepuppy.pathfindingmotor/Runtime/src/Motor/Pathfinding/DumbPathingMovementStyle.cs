@@ -18,16 +18,30 @@ namespace com.spacepuppy.Motor.Pathfinding
             Complete = 2
         }
 
+        public enum GravitySolving
+        {
+            IgnoreGravity = 0,
+            [System.ComponentModel.Description("Conserve 3D")]
+            Conserve3D = 1,
+            [System.ComponentModel.Description("Conserve 2D")]
+            Conserve2D = 2,
+        }
+
         #region Fields
 
         [SerializeField()]
         private float _speed = 1.0f;
+        [SerializeField]
+        [NegativeIsInfinity(ZeroIsAlsoInfinity = true)]
+        private float _acceleration = 0f;
         [SerializeField]
         [MinRange(0f)]
         private float _waypointTolerance = 0.1f;
         [SerializeField]
         [Tooltip("If motion is truly 3d set this true, otherwise motion is calculated on a plane with y-up.")]
         private bool _motion3D = false;
+        [SerializeField]
+        private GravitySolving _gravityResolution;
         [SerializeField]
         private bool _faceDirectionOfMotion;
         [SerializeField]
@@ -43,6 +57,8 @@ namespace com.spacepuppy.Motor.Pathfinding
         [System.NonSerialized]
         private bool _paused;
 
+        [System.NonSerialized]
+        private float _lastSpeed;
 
         #endregion
 
@@ -58,6 +74,12 @@ namespace com.spacepuppy.Motor.Pathfinding
             set { _speed = value; }
         }
 
+        public float Acceleration
+        {
+            get => _acceleration;
+            set => _acceleration = value;
+        }
+
         public float WaypointTolerance
         {
             get { return _waypointTolerance; }
@@ -68,6 +90,12 @@ namespace com.spacepuppy.Motor.Pathfinding
         {
             get { return _motion3D; }
             set { _motion3D = value; }
+        }
+
+        public GravitySolving GravityResolution
+        {
+            get => _gravityResolution;
+            set => _gravityResolution = value;
         }
 
         public bool FaceDirectionOfMotion
@@ -144,7 +172,7 @@ namespace com.spacepuppy.Motor.Pathfinding
 
         public virtual void SetPath(IPath path)
         {
-            if(_currentPath != null) this.ResetPath();
+            if (_currentPath != null) this.ResetPath();
             _currentPath = path;
             _currentIndex = -1;
             _paused = _currentPath == null;
@@ -175,17 +203,30 @@ namespace com.spacepuppy.Motor.Pathfinding
 
         #region IMovementStyle Interface
 
+        protected override void OnDeactivate(IMovementStyle nextStyle, ActivationReason reason)
+        {
+            base.OnDeactivate(nextStyle, reason);
+
+            _lastSpeed = 0f;
+        }
+
         protected override void UpdateMovement()
         {
-            if (_paused || _currentPath == null) return;
-            Start:
+            if (_paused || _currentPath == null)
+            {
+                _lastSpeed = _acceleration > 0f && _acceleration < float.PositiveInfinity ? Mathf.Clamp(_lastSpeed - _acceleration * _timeSupplier.Delta, 0f, _speed) : 0f;
+                return;
+            }
+
+        Start:
             switch (this.Status)
             {
                 case PathingStatus.Invalid:
                 case PathingStatus.Complete:
+                    _lastSpeed = _acceleration > 0f && _acceleration < float.PositiveInfinity ? Mathf.Clamp(_lastSpeed - _acceleration * _timeSupplier.Delta, 0f, _speed) : 0f;
                     break;
                 case PathingStatus.Pathing:
-                    if(_currentPath.Status > PathCalculateStatus.Calculating)
+                    if (_currentPath.Status > PathCalculateStatus.Calculating)
                     {
                         Vector3 pos = this.Position;
                         var target = _currentPath.GetNextTarget(pos, ref _currentIndex);
@@ -199,17 +240,38 @@ namespace com.spacepuppy.Motor.Pathfinding
                         }
                         dir.Normalize();
 
-                        Vector3 mv = dir * _speed * _timeSupplier.Delta;
+                        float speed = _speed;
+                        if (_acceleration > 0 && _acceleration < float.PositiveInfinity)
+                        {
+                            speed = Mathf.Clamp(_lastSpeed + (_acceleration * _timeSupplier.Delta), 0f, _speed);
+                        }
+                        _lastSpeed = speed;
+                        Vector3 mv = dir * speed * _timeSupplier.Delta;
                         if (mv.sqrMagnitude > dist)
                         {
                             _currentIndex++;
                         }
 
+                        switch (_gravityResolution)
+                        {
+                            case GravitySolving.Conserve3D:
+                                {
+                                    var grav = Physics.gravity.normalized;
+                                    mv += Vector3.Dot(this.Velocity, grav) * grav * _timeSupplier.Delta;
+                                }
+                                break;
+                            case GravitySolving.Conserve2D:
+                                {
+                                    var grav = (Vector3)Physics2D.gravity.normalized;
+                                    mv += Vector3.Dot(this.Velocity, grav) * grav * _timeSupplier.Delta;
+                                }
+                                break;
+                        }
                         this.Move(mv);
 
-                        if (_faceDirectionOfMotion && !VectorUtil.NearZeroVector(dir))
+                        if (_faceDirectionOfMotion && !VectorUtil.NearZeroVector(dir.SetY(0f)))
                         {
-                            this.entityRoot.transform.rotation = Quaternion.Slerp(this.entityRoot.transform.rotation, Quaternion.LookRotation(dir), _faceDirectionSlerpSpeed);
+                            this.entityRoot.transform.rotation = Quaternion.Slerp(this.entityRoot.transform.rotation, Quaternion.LookRotation(dir.SetY(0f)), _faceDirectionSlerpSpeed);
                         }
                     }
                     break;

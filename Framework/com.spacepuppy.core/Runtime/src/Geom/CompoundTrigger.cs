@@ -68,16 +68,22 @@ namespace com.spacepuppy.Geom
     public class CompoundTrigger : SPComponent, ICompoundTrigger
     {
 
+        [System.Flags]
+        public enum ConfigurationOptions
+        {
+            SendMessageToOtherCollider = 1,
+            HandleColliderStayEvent = 2,
+            ForceTriggerExitOnDisable = 4
+        }
+
         #region Fields
 
         [SerializeField]
         private EventActivatorMaskRef _mask = new EventActivatorMaskRef();
 
         [SerializeField]
-        private bool _sendMessageToOtherCollider;
-
-        [SerializeField]
-        private bool _handleColliderStayEvent;
+        [EnumFlags]
+        private ConfigurationOptions _configuration;
 
         private Dictionary<Collider, CompoundTriggerMember> _colliders = new Dictionary<Collider, CompoundTriggerMember>();
         protected readonly HashSet<Collider> _active = new HashSet<Collider>();
@@ -97,7 +103,9 @@ namespace com.spacepuppy.Geom
         };
 
         [SerializeField]
+#if UNITY_EDITOR
         [DisplayIf(nameof(SendMessageToOtherCollider))]
+#endif
         [DisableOnPlay]
         [DisplayFlat(DisplayBox = true)]
         protected Messaging.MessageSendCommand _otherColliderMessageSettings = new Messaging.MessageSendCommand()
@@ -134,7 +142,24 @@ namespace com.spacepuppy.Geom
         {
             base.OnDisable();
 
+            if (_active.Count > 0 && (_configuration & ConfigurationOptions.ForceTriggerExitOnDisable) != 0 && !GameLoop.ApplicationClosing)
+            {
+                foreach (var other in _active)
+                {
+                    if (!other) continue;
+                    _messageSettings.Send(this.gameObject, (this, other), OnExitFunctor);
+                    if ((_configuration & ConfigurationOptions.SendMessageToOtherCollider) != 0)
+                    {
+                        CompoundTriggerMember member;
+                        Collider membercoll;
+                        if (this.AnyRelatedColliderOverlaps(other, out member)) membercoll = member.Collider;
+                        else membercoll = _colliders.Keys.FirstOrDefault();
+                        _otherColliderMessageSettings.Send(other.gameObject, (this, membercoll), OnExitFunctor);
+                    }
+                }
+            }
             _active.Clear();
+            _signaled?.Clear();
         }
 
         #endregion
@@ -147,28 +172,15 @@ namespace com.spacepuppy.Geom
             set => _mask.Value = value;
         }
 
-        public bool SendMessageToOtherCollider
-        {
-            get => _sendMessageToOtherCollider;
-            set => _sendMessageToOtherCollider = value;
-        }
-
         /// <summary>
-        /// Flag if the stay event should also be raised. 
+        /// Set the configuration of the trigger. 
+        /// Modifying this after the component has started and is active 
+        /// may require a call to 'SyncTriggers' or toggling the 'enabled' property. 
         /// </summary>
-        /// <remarks>
-        /// Do not toggle this frequently as it causes the creation/destruction 
-        /// of MonoBehaviours which can lead to poor performance.
-        /// </remarks>
-        public bool HandleColliderStayEvent
+        public ConfigurationOptions Configuration
         {
-            get => _handleColliderStayEvent;
-            set
-            {
-                if (_handleColliderStayEvent == value) return;
-                _handleColliderStayEvent = value;
-                if (this.isActiveAndEnabled) this.SyncTriggers();
-            }
+            get => _configuration;
+            set => _configuration = value;
         }
 
         public Messaging.MessageSendCommand MessageSettings
@@ -189,6 +201,7 @@ namespace com.spacepuppy.Geom
 
         public void SyncTriggers()
         {
+            bool handleColliderStayEvent = (_configuration & ConfigurationOptions.HandleColliderStayEvent) != 0;
             using (var lst = TempCollection.GetList<Collider>())
             {
                 this.GetComponentsInChildren<Collider>(true, lst);
@@ -202,8 +215,8 @@ namespace com.spacepuppy.Geom
                         while (ed.MoveNext())
                         {
                             if (!ObjUtil.IsObjectAlive(ed.Current.Key) || ed.Current.Value == null || !lst.Contains(ed.Current.Key)
-                                || (_handleColliderStayEvent && !(ed.Current.Value is CompoundTriggerStayMember))
-                                || (!_handleColliderStayEvent && (ed.Current.Value is CompoundTriggerStayMember)))
+                                || (handleColliderStayEvent && !(ed.Current.Value is CompoundTriggerStayMember))
+                                || (!handleColliderStayEvent && (ed.Current.Value is CompoundTriggerStayMember)))
                             {
                                 purge.Add(ed.Current.Key);
                                 ObjUtil.SmartDestroy(ed.Current.Value);
@@ -228,7 +241,7 @@ namespace com.spacepuppy.Geom
                     {
                         if (!_colliders.ContainsKey(e.Current))
                         {
-                            CompoundTriggerMember m = _handleColliderStayEvent ? e.Current.AddComponent<CompoundTriggerStayMember>() : e.Current.AddComponent<CompoundTriggerMember>();
+                            CompoundTriggerMember m = handleColliderStayEvent ? e.Current.AddComponent<CompoundTriggerStayMember>() : e.Current.AddComponent<CompoundTriggerMember>();
                             m.Init(this, e.Current);
                             _colliders.Add(e.Current, m);
                         }
@@ -279,13 +292,18 @@ namespace com.spacepuppy.Geom
             return cnt;
         }
 
-        protected bool AnyRelatedColliderOverlaps(Collider c)
+        protected bool AnyRelatedColliderOverlaps(Collider c, out CompoundTriggerMember member)
         {
             var e = _colliders.GetEnumerator();
             while (e.MoveNext())
             {
-                if (e.Current.Value.Active.Contains(c)) return true;
+                if (e.Current.Value.Active.Contains(c))
+                {
+                    member = e.Current.Value;
+                    return true;
+                }
             }
+            member = null;
             return false;
         }
 
@@ -294,19 +312,19 @@ namespace com.spacepuppy.Geom
             if (this.isActiveAndEnabled && (_mask.Value?.Intersects(other) ?? true) && _active.Add(other))
             {
                 _messageSettings.Send(this.gameObject, (this, other), OnEnterFunctor);
-                _otherColliderMessageSettings.Send(other.gameObject, (this, member.Collider), OnEnterFunctor);
+                if ((_configuration & ConfigurationOptions.SendMessageToOtherCollider) != 0) _otherColliderMessageSettings.Send(other.gameObject, (this, member.Collider), OnEnterFunctor);
             }
         }
 
         protected virtual void SignalTriggerExit(CompoundTriggerMember member, Collider other)
         {
             if (!this.isActiveAndEnabled) return;
-            if (this.AnyRelatedColliderOverlaps(other)) return;
+            if (this.AnyRelatedColliderOverlaps(other, out _)) return;
 
             if (_active.Remove(other))
             {
                 _messageSettings.Send(this.gameObject, (this, other), OnExitFunctor);
-                _otherColliderMessageSettings.Send(other.gameObject, (this, member.Collider), OnExitFunctor);
+                if ((_configuration & ConfigurationOptions.SendMessageToOtherCollider) != 0) _otherColliderMessageSettings.Send(other.gameObject, (this, member.Collider), OnExitFunctor);
             }
         }
 
@@ -325,7 +343,7 @@ namespace com.spacepuppy.Geom
             if (_signaled.Add(other))
             {
                 _messageSettings.Send(this.gameObject, (this, other), OnStayFunctor);
-                _otherColliderMessageSettings.Send(other.gameObject, (this, member.Collider), OnStayFunctor);
+                if ((_configuration & ConfigurationOptions.SendMessageToOtherCollider) != 0) _otherColliderMessageSettings.Send(other.gameObject, (this, member.Collider), OnStayFunctor);
             }
         }
 
@@ -561,6 +579,10 @@ namespace com.spacepuppy.Geom
         public static readonly System.Action<ICompoundTriggerStayHandler, (ICompoundTrigger, Collider)> OnStayFunctor = (x, y) => x.OnCompoundTriggerStay(y.Item1, y.Item2);
 
         #endregion
+
+#if UNITY_EDITOR
+        private bool SendMessageToOtherCollider => (_configuration & ConfigurationOptions.SendMessageToOtherCollider) != 0;
+#endif
 
     }
 

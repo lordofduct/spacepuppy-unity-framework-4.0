@@ -30,8 +30,9 @@ namespace com.spacepuppy
 
         public const string TAG_MULTITAG = "MultiTag";
         public const string TAG_ROOT = "Root";
-        
+
         public static readonly Quaternion ROT_3DSMAX_TO_UNITY = Quaternion.LookRotation(Vector3.down, Vector3.forward);
+        public static readonly Quaternion ROT_UNITY_TO_3DSMAX = Quaternion.Inverse(ROT_3DSMAX_TO_UNITY);
 
     }
 

@@ -89,7 +89,7 @@ namespace com.spacepuppy.Geom
             var entity = SPEntity.Pool.GetFromSource(other);
             if (!entity) return;
 
-            if (this.AnyRelatedColliderOverlaps(other)) return;
+            if (this.AnyRelatedColliderOverlaps(other, out _)) return;
 
             if (!_active.Remove(other)) return;
 

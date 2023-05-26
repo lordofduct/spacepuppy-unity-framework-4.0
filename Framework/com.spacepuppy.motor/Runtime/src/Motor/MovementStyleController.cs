@@ -441,7 +441,6 @@ namespace com.spacepuppy.Motor
             {
                 if (this.Current == style) return style;
                 _styleStack.Push(this.Current);
-                _styleStack.Push(style);
                 _stackingState = true;
                 this.ChangeState_Imp(style, precedence, false);
                 _stackingState = false;

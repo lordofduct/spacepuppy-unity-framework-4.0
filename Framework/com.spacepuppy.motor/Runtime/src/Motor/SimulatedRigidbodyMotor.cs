@@ -34,6 +34,7 @@ namespace com.spacepuppy.Motor
         [SerializeField()]
         private float _stepOffset;
         [SerializeField()]
+        [Min(0f)]
         private float _skinWidth;
         [SerializeField()]
         [Tooltip("When false Velocity is reset to 0 if Move is not called in FixedUpdate.")]
@@ -83,7 +84,7 @@ namespace com.spacepuppy.Motor
             _lastVel = Vector3.zero;
             _talliedMove = Vector3.zero;
             _moveCalled = false;
-            
+
             GameLoop.TardyFixedUpdatePump.Add(this);
         }
 
@@ -296,7 +297,7 @@ namespace com.spacepuppy.Motor
 
         public bool TestOverlap(int layerMask, QueryTriggerInteraction query)
         {
-            foreach(var c in _colliders)
+            foreach (var c in _colliders)
             {
                 if (GeomUtil.GetGeom(c).TestOverlap(layerMask, query)) return true;
             }
@@ -315,10 +316,10 @@ namespace com.spacepuppy.Motor
                     GeomUtil.GetGeom(c).Overlap(set, layerMask, query);
                 }
 
-                if(set.Count > 0)
+                if (set.Count > 0)
                 {
                     var e = set.GetEnumerator();
-                    while(e.MoveNext())
+                    while (e.MoveNext())
                     {
                         results.Add(e.Current);
                     }
@@ -331,9 +332,16 @@ namespace com.spacepuppy.Motor
 
         public bool Cast(Vector3 direction, out RaycastHit hitinfo, float distance, int layerMask, QueryTriggerInteraction query)
         {
-            foreach (var c in _colliders)
+            if (_colliders.Length > 0)
             {
-                if (GeomUtil.GetGeom(c).Cast(direction, out hitinfo, distance, layerMask, query)) return true;
+                direction.Normalize();
+                distance += _skinWidth;
+                foreach (var c in _colliders)
+                {
+                    var geom = GeomUtil.GetGeom(c);
+                    if (_skinWidth > 0f) geom.Move(-direction * _skinWidth);
+                    if (geom.Cast(direction, out hitinfo, distance, layerMask, query)) return true;
+                }
             }
 
             hitinfo = default(RaycastHit);
@@ -342,19 +350,24 @@ namespace com.spacepuppy.Motor
 
         public int CastAll(Vector3 direction, ICollection<RaycastHit> results, float distance, int layerMask, QueryTriggerInteraction query)
         {
-            if (results == null) throw new System.ArgumentNullException("results");
+            if (results == null) throw new System.ArgumentNullException(nameof(results));
+            if (_colliders.Length == 0) return 0;
 
             using (var set = TempCollection.GetSet<RaycastHit>())
             {
+                direction.Normalize();
+                distance += _skinWidth;
                 foreach (var c in _colliders)
                 {
-                    GeomUtil.GetGeom(c).CastAll(direction, set, distance, layerMask, query);
+                    var geom = GeomUtil.GetGeom(c);
+                    if (_skinWidth > 0f) geom.Move(-direction * _skinWidth);
+                    geom.CastAll(direction, set, distance, layerMask, query);
                 }
 
-                if(set.Count > 0)
+                if (set.Count > 0)
                 {
                     var e = set.GetEnumerator();
-                    while(e.MoveNext())
+                    while (e.MoveNext())
                     {
                         results.Add(e.Current);
                     }

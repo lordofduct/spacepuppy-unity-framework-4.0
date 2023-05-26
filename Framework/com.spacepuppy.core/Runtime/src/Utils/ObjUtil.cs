@@ -896,6 +896,15 @@ namespace com.spacepuppy.Utils
 
         #region Destruction Methods
 
+        /// <summary>
+        /// Calls DestroyImmediate if in editor and NOT playing, otherwise attempts to call 'Kill', and if all else fails it calls Destroy.
+        /// </summary>
+        /// <remarks>
+        /// This is intended for destroying an object in a context you're unsure of when it'll be called (editor vs runtime). 
+        /// Say you have a level generator that clears out its contents on generation that runs in both the editor and at runtime, 
+        /// this will resolve if you're destroying in the editor or not... and if it's not it'll attempt to call 'Kill' if applicable. 
+        /// </remarks>
+        /// <param name="obj"></param>
         public static void SmartDestroy(UnityEngine.Object obj)
         {
             if (obj.IsNullOrDestroyed()) return;

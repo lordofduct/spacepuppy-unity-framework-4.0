@@ -31,6 +31,7 @@ namespace com.spacepuppy.Motor
         [SerializeField()]
         private float _stepOffset;
         [SerializeField()]
+        [Min(0f)]
         private float _skinWidth;
         [SerializeField]
         [Tooltip("The velocity of the Rigidbody is locked to (0,0,0) so that it can't be moved around. The motor's velocity still reflects its motion applied to it.")]
@@ -326,9 +327,16 @@ namespace com.spacepuppy.Motor
 
         public bool Cast(Vector3 direction, out RaycastHit hitinfo, float distance, int layerMask, QueryTriggerInteraction query)
         {
-            foreach (var c in _colliders)
+            if (_colliders.Length > 0)
             {
-                if (GeomUtil.GetGeom(c).Cast(direction, out hitinfo, distance, layerMask, query)) return true;
+                direction.Normalize();
+                distance += _skinWidth;
+                foreach (var c in _colliders)
+                {
+                    var geom = GeomUtil.GetGeom(c);
+                    if (_skinWidth > 0f) geom.Move(-direction * _skinWidth);
+                    if (geom.Cast(direction, out hitinfo, distance, layerMask, query)) return true;
+                }
             }
 
             hitinfo = default(RaycastHit);
@@ -337,13 +345,18 @@ namespace com.spacepuppy.Motor
 
         public int CastAll(Vector3 direction, ICollection<RaycastHit> results, float distance, int layerMask, QueryTriggerInteraction query)
         {
-            if (results == null) throw new System.ArgumentNullException("results");
+            if (results == null) throw new System.ArgumentNullException(nameof(results));
+            if (_colliders.Length == 0) return 0;
 
             using (var set = TempCollection.GetSet<RaycastHit>())
             {
+                direction.Normalize();
+                distance += _skinWidth;
                 foreach (var c in _colliders)
                 {
-                    GeomUtil.GetGeom(c).CastAll(direction, set, distance, layerMask, query);
+                    var geom = GeomUtil.GetGeom(c);
+                    if (_skinWidth > 0f) geom.Move(-direction * _skinWidth);
+                    geom.CastAll(direction, set, distance, layerMask, query);
                 }
 
                 if (set.Count > 0)

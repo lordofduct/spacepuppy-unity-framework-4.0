@@ -11,6 +11,7 @@ namespace com.spacepuppyeditor.Sensors.Visual
 {
 
     [CustomEditor(typeof(TunnelVisionVisualSensor))]
+    [CanEditMultipleObjects]
     public class TunnelVisionVisualSensorInspector : SPEditor
     {
 

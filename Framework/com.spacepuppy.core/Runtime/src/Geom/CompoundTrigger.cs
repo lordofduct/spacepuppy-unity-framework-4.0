@@ -260,7 +260,7 @@ namespace com.spacepuppy.Geom
         /// The 'other' colliders that are currently inside this compoundtrigger
         /// </summary>
         /// <returns></returns>
-        public IEnumerable<Collider> GetActiveColliders() => _active.Where(o => o != null);
+        public IEnumerable<Collider> GetActiveColliders() => _active.Where(o => ObjUtil.IsObjectAlive(o));
 
         public bool ContainsActive(Collider c) => c != null && _active.Contains(c);
 
@@ -283,6 +283,143 @@ namespace com.spacepuppy.Geom
 
                     cnt++;
                     output.Add(e.Current);
+                }
+            }
+            finally
+            {
+                if (doclean) this.CleanActive();
+            }
+            return cnt;
+        }
+
+        public IEnumerable<T> FilterActiveColliders<T>() where T : class
+        {
+            if (_active.Count == 0) yield break;
+
+            var e = _active.GetEnumerator();
+            while (e.MoveNext())
+            {
+                if (ObjUtil.GetAsFromSource(e.Current, out T o)) yield return o;
+            }
+        }
+
+        public IEnumerable<T> FilterActiveColliders<T>(System.Func<T, bool> filter) where T : class
+        {
+            if (_active.Count == 0) yield break;
+
+            var e = _active.GetEnumerator();
+            while (e.MoveNext())
+            {
+                if (ObjUtil.GetAsFromSource(e.Current, out T o) && (filter?.Invoke(o) ?? true)) yield return o;
+            }
+        }
+
+        public IEnumerable<T> FilterActiveColliders<T>(System.Func<T, bool> filter, System.Func<Collider, T> cast) where T : class
+        {
+            if (_active.Count == 0) yield break;
+
+            var e = _active.GetEnumerator();
+            if (cast != null)
+            {
+                while (e.MoveNext())
+                {
+                    if (!ObjUtil.IsObjectAlive(e.Current)) continue;
+                    var o = cast(e.Current);
+                    if (o != null && (filter?.Invoke(o) ?? true)) yield return o;
+                }
+            }
+            else
+            {
+                while (e.MoveNext())
+                {
+                    if (ObjUtil.GetAsFromSource(e.Current, out T o) && (filter?.Invoke(o) ?? true)) yield return o;
+                }
+            }
+        }
+
+        public int FilterActiveColliders<T>(ICollection<T> output) where T : class
+        {
+            if (_active.Count == 0) return 0;
+
+            var e = _active.GetEnumerator();
+            int cnt = 0;
+            bool doclean = false;
+            try
+            {
+                while (e.MoveNext())
+                {
+                    if (!ObjUtil.IsObjectAlive(e.Current))
+                    {
+                        doclean = true;
+                        continue;
+                    }
+                    else if (ObjUtil.GetAsFromSource(e.Current, out T o))
+                    {
+                        cnt++;
+                        output.Add(o);
+                    }
+                }
+            }
+            finally
+            {
+                if (doclean) this.CleanActive();
+            }
+            return cnt;
+        }
+
+        public int FilterActiveColliders<T>(ICollection<T> output, System.Func<T, bool> filter) where T : class
+        {
+            if (_active.Count == 0) return 0;
+
+            var e = _active.GetEnumerator();
+            int cnt = 0;
+            bool doclean = false;
+            try
+            {
+                while (e.MoveNext())
+                {
+                    if (!ObjUtil.IsObjectAlive(e.Current))
+                    {
+                        doclean = true;
+                        continue;
+                    }
+                    else if (ObjUtil.GetAsFromSource(e.Current, out T o) && (filter?.Invoke(o) ?? true))
+                    {
+                        cnt++;
+                        output.Add(o);
+                    }
+                }
+            }
+            finally
+            {
+                if (doclean) this.CleanActive();
+            }
+            return cnt;
+        }
+
+        public int FilterActiveColliders<T>(ICollection<T> output, System.Func<T, bool> filter, System.Func<Collider, T> cast) where T : class
+        {
+            if (_active.Count == 0) return 0;
+
+            var e = _active.GetEnumerator();
+            int cnt = 0;
+            bool doclean = false;
+            try
+            {
+                while (e.MoveNext())
+                {
+                    if (!ObjUtil.IsObjectAlive(e.Current))
+                    {
+                        doclean = true;
+                        continue;
+                    }
+
+                    var o = cast != null ? cast(e.Current) : ObjUtil.GetAsFromSource<T>(e.Current);
+                    if (o != null && (filter?.Invoke(o) ?? true))
+                    {
+                        cnt++;
+                        output.Add(o);
+                    }
                 }
             }
             finally

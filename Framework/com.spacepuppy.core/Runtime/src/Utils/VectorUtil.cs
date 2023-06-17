@@ -436,6 +436,11 @@ namespace com.spacepuppy.Utils
 
         #region Vector2 Mod
 
+        public static Vector2 Absolute(this Vector2 v)
+        {
+            return new Vector2(Mathf.Abs(v.x), Mathf.Abs(v.y));
+        }
+
         public static Vector2 Normalize(this Vector2 v)
         {
             return v.normalized;
@@ -500,6 +505,11 @@ namespace com.spacepuppy.Utils
         #endregion
 
         #region Vector3 Mod
+
+        public static Vector3 Absolute(this Vector3 v)
+        {
+            return new Vector3(Mathf.Abs(v.x), Mathf.Abs(v.y), Mathf.Abs(v.z));
+        }
 
         public static Vector3 Normalize(float x, float y, float z)
         {

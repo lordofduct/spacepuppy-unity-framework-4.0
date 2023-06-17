@@ -79,6 +79,8 @@ namespace com.spacepuppy.Utils
         public const float LOG2E = 1.44269504088896f;
         // sqrt( 1 / 2 )
         public const float SQRT1_2 = 0.707106781186548f;
+        // sqrt( 3 )
+        public const float SQRT3 = 1.7320508075688773f;
         // sqrt( 2 )
         public const float SQRT2 = 1.4142135623731f;
         // PI / 180

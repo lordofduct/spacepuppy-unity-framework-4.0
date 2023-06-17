@@ -12,6 +12,10 @@ namespace com.spacepuppy.SPInput.Unity
     public static class SPInputFactory
     {
 
+        public static ButtonDelegate OrDefault(this ButtonDelegate d) => d != null ? d : () => false;
+        public static AxisDelegate OrDefault(this AxisDelegate d) => d != null ? d : () => 0f;
+        public static DualAxisDelegate OrDefault(this DualAxisDelegate d) => d != null ? d : () => default(UnityEngine.Vector2);
+
         #region Delegate Factory
 
         /*

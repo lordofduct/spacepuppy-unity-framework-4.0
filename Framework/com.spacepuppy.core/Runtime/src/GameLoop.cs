@@ -72,11 +72,11 @@ namespace com.spacepuppy
         private static UpdatePump _tardyFixedUpdatePump = new UpdatePump();
 
         [System.NonSerialized]
-        private static com.spacepuppy.Async.InvokePump _updateInvokeHandle = new com.spacepuppy.Async.InvokePump();
+        private static com.spacepuppy.Async.InvokePump _updateInvokeHandle;
         [System.NonSerialized]
-        private static com.spacepuppy.Async.InvokePump _lateUpdateInvokeHandle = new com.spacepuppy.Async.InvokePump();
+        private static com.spacepuppy.Async.InvokePump _lateUpdateInvokeHandle;
         [System.NonSerialized]
-        private static com.spacepuppy.Async.InvokePump _fixedUpdateInvokeHandle = new com.spacepuppy.Async.InvokePump();
+        private static com.spacepuppy.Async.InvokePump _fixedUpdateInvokeHandle;
 
         private static int _currentFrame;
         private static int _currentLateFrame;
@@ -111,6 +111,10 @@ namespace com.spacepuppy
         protected override void OnValidAwake()
         {
             _instance = this;
+
+            _updateInvokeHandle = new Async.InvokePump();
+            _lateUpdateInvokeHandle = new Async.InvokePump();
+            _fixedUpdateInvokeHandle = new Async.InvokePump();
 
             _currentSequence = UpdateSequence.None;
             _updateHook = this.gameObject.AddComponent<UpdateEventHooks>();

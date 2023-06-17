@@ -7,6 +7,17 @@ using com.spacepuppy.Collections;
 namespace com.spacepuppy.Graphs
 {
 
+    /// <summary>
+    /// Implementation of A* algorithm that can act on an IGraph<typeparamref name="T"/>.
+    /// 
+    /// When reducing the algorithm walks backwards from goal to start. This means calls to 
+    /// IGraph.GetNeighbours for graphs that have 1-way connections should return the 
+    /// neighbours that can be traversed from towards the node, not from the node to the neighbour.
+    /// 
+    /// If you'd like to invert this, just invert start and goal. The resulting path with also be inverted 
+    /// and should be traversed backwards.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     public class AStarPathResolver<T> : ISteppingPathResolver<T> where T : class
     {
 
@@ -23,7 +34,7 @@ namespace com.spacepuppy.Graphs
         private T _start;
         private T _goal;
 
-        private bool _calculating;
+        private StepPathingResult _calculating;
 
         #endregion
 
@@ -33,16 +44,30 @@ namespace com.spacepuppy.Graphs
         {
             _graph = graph;
             _heuristic = heuristic;
-            _open = new BinaryHeap<VertexInfo>(graph.Count, VertexComparer.Default);
+            _open = new BinaryHeap<VertexInfo>(graph?.Count ?? 4, VertexComparer.Default);
         }
-        
+
         #endregion
 
         #region Properties
 
-        public bool IsWorking
+        public IGraph<T> Graph => _graph;
+
+        public IHeuristic<T> Heuristic => _heuristic;
+
+        public bool IsCalculating => _calculating != StepPathingResult.Idle;
+
+        #endregion
+
+        #region Methods
+
+        public void Configure(IGraph<T> graph, IHeuristic<T> heuristic)
         {
-            get { return _calculating; }
+            if (this.IsCalculating) throw new System.InvalidOperationException("Can not configure AStarPathResolver while its in the middle of a calculation.");
+
+            _graph = graph;
+            _heuristic = heuristic;
+            this.Reset();
         }
 
         #endregion
@@ -51,27 +76,27 @@ namespace com.spacepuppy.Graphs
 
         public T Start
         {
-            get { return _goal; }
+            get { return _start; }
             set
             {
-                if (_calculating) throw new InvalidOperationException("Cannot update start node when calculating.");
-                _goal = value;
+                if (this.IsCalculating) throw new InvalidOperationException("Cannot update start node when calculating.");
+                _start = value;
             }
         }
 
         public T Goal
         {
-            get { return _start; }
+            get { return _goal; }
             set
             {
-                if (_calculating) throw new InvalidOperationException("Cannot update goal node when calculating.");
-                _start = value;
+                if (this.IsCalculating) throw new InvalidOperationException("Cannot update goal node when calculating.");
+                _goal = value;
             }
         }
 
         public IList<T> Reduce()
         {
-            if (_calculating) throw new InvalidOperationException("PathResolver is already running.");
+            if (this.IsCalculating) throw new InvalidOperationException("PathResolver is already running.");
             if (_graph == null || _heuristic == null || _start == null || _goal == null) throw new InvalidOperationException("PathResolver is not initialized.");
 
             var lst = new List<T>();
@@ -81,38 +106,31 @@ namespace com.spacepuppy.Graphs
 
         public int Reduce(IList<T> path)
         {
-            if (_calculating) throw new InvalidOperationException("PathResolver is already running.");
+            if (this.IsCalculating) throw new InvalidOperationException("PathResolver is already running.");
             if (_graph == null || _heuristic == null || _start == null || _goal == null) throw new InvalidOperationException("PathResolver is not initialized.");
 
             this.Reset();
-            _calculating = true;
-            
+            _calculating = StepPathingResult.Calculating;
+
             try
             {
-                _open.Add(this.CreateInfo(_start, _heuristic.Weight(_start), _goal));
+                //we solve this backwards so reconstructing the path is done forwards, also its consistent with how GetNeighbours is expected to work
+                _open.Add(this.CreateInfo(_goal, _heuristic.Weight(_goal), _start));
 
                 while (_open.Count > 0)
                 {
                     var u = _open.Pop();
 
-                    if (u.Node == _goal)
+                    if (u.Node == _start)
                     {
-                        int cnt = 0;
-                        while (u.Next != null)
-                        {
-                            path.Add(u.Node);
-                            u = u.Next;
-                            cnt++;
-                        }
-                        path.Add(u.Node);
-                        return cnt + 1;
+                        return this.ReconstructPath(path, u);
                     }
 
                     _closed.Add(u.Node);
 
                     _graph.GetNeighbours(u.Node, _neighbours);
                     var e = _neighbours.GetEnumerator();
-                    while(e.MoveNext())
+                    while (e.MoveNext())
                     {
                         var n = e.Current;
                         if (_closed.Contains(n)) continue;
@@ -122,7 +140,7 @@ namespace com.spacepuppy.Graphs
                         int i = GetInfo(_open, n);
                         if (i < 0)
                         {
-                            var v = this.CreateInfo(n, g, _goal);
+                            var v = this.CreateInfo(n, g, _start);
                             v.Next = u;
                             _open.Add(v);
                         }
@@ -146,7 +164,7 @@ namespace com.spacepuppy.Graphs
 
             return 0;
         }
-        
+
         private VertexInfo CreateInfo(T node, float g, T goal)
         {
             var v = _pool.GetInstance();
@@ -168,6 +186,19 @@ namespace com.spacepuppy.Graphs
             return -1;
         }
 
+        private int ReconstructPath(IList<T> path, VertexInfo node)
+        {
+            int cnt = 0;
+            while (node.Next != null)
+            {
+                path.Add(node.Node);
+                node = node.Next;
+                cnt++;
+            }
+            path.Add(node.Node);
+            return cnt + 1;
+        }
+
         #endregion
 
         #region ISteppingPathResolver Interface
@@ -179,69 +210,80 @@ namespace com.spacepuppy.Graphs
         /// </summary>
         public void BeginSteppedReduce()
         {
-            if (_calculating) throw new InvalidOperationException("PathResolver is already running.");
+            if (_calculating != StepPathingResult.Idle) throw new InvalidOperationException("PathResolver is already running.");
             if (_graph == null || _heuristic == null || _start == null || _goal == null) throw new InvalidOperationException("PathResolver is not initialized.");
 
-            _calculating = true;
+            _calculating = StepPathingResult.Calculating;
 
             _open.Clear();
             _closed.Clear();
             _tracked.Clear();
             _neighbours.Clear();
 
-            _open.Add(this.CreateInfo(_start, _heuristic.Weight(_start), _goal));
+            //we solve this backwards so reconstructing the path is done forwards, also its consistent with how GetNeighbours is expected to work
+            _open.Add(this.CreateInfo(_goal, _heuristic.Weight(_goal), _start));
         }
 
         /// <summary>
         /// Take a step at reducing the path resolver.
         /// </summary>
         /// <returns>Returns true if reached goal.</returns>
-        public bool Step()
+        public StepPathingResult Step()
         {
-            if (!_calculating) throw new InvalidOperationException("You must begin a SteppingResolver before stepping through it.");
-            if (_steppedCompletedParentNode != null) return true;
-
-            if (_open.Count > 0)
+            switch (_calculating)
             {
-                var u = _open.Pop();
-
-                if (u.Node == _goal)
-                {
-                    _steppedCompletedParentNode = u;
-                    return true;
-                }
-
-                _closed.Add(u.Node);
-
-                _graph.GetNeighbours(u.Node, _neighbours);
-                var e = _neighbours.GetEnumerator();
-                while (e.MoveNext())
-                {
-                    var n = e.Current;
-                    if (_closed.Contains(n)) continue;
-
-                    float g = u.g + _heuristic.Distance(u.Node, n) + _heuristic.Weight(n);
-
-                    int i = GetInfo(_open, n);
-                    if (i < 0)
+                case StepPathingResult.Failed:
+                    return _calculating;
+                case StepPathingResult.Idle:
+                    throw new InvalidOperationException("You must begin a SteppingResolver before stepping through it.");
+                case StepPathingResult.Calculating:
+                    if (_open.Count > 0)
                     {
-                        var v = this.CreateInfo(n, g, _goal);
-                        v.Next = u;
-                        _open.Add(v);
+                        var u = _open.Pop();
+
+                        if (u.Node == _start)
+                        {
+                            _steppedCompletedParentNode = u;
+                            _calculating = StepPathingResult.Complete;
+                            return _calculating;
+                        }
+
+                        _closed.Add(u.Node);
+
+                        _graph.GetNeighbours(u.Node, _neighbours);
+                        var e = _neighbours.GetEnumerator();
+                        while (e.MoveNext())
+                        {
+                            var n = e.Current;
+                            if (_closed.Contains(n)) continue;
+
+                            float g = u.g + _heuristic.Distance(u.Node, n) + _heuristic.Weight(n);
+
+                            int i = GetInfo(_open, n);
+                            if (i < 0)
+                            {
+                                var v = this.CreateInfo(n, g, _start);
+                                v.Next = u;
+                                _open.Add(v);
+                            }
+                            else if (g < _open[i].g)
+                            {
+                                var v = _open[i];
+                                v.Next = u;
+                                v.g = g;
+                                v.f = g + v.h;
+                                _open.Update(i);
+                            }
+                        }
+                        _neighbours.Clear();
                     }
-                    else if (g < _open[i].g)
-                    {
-                        var v = _open[i];
-                        v.Next = u;
-                        v.g = g;
-                        v.f = g + v.h;
-                        _open.Update(i);
-                    }
-                }
-                _neighbours.Clear();
+                    _calculating = _open.Count > 0 ? StepPathingResult.Calculating : StepPathingResult.Failed;
+                    return _calculating;
+                case StepPathingResult.Complete:
+                    return _calculating;
+                default:
+                    throw new System.InvalidOperationException("AStarPathResolver entered an unknonwn state.");
             }
-
-            return false;
         }
 
         /// <summary>
@@ -250,24 +292,16 @@ namespace com.spacepuppy.Graphs
         /// <param name="path"></param>
         public int EndSteppedReduce(IList<T> path)
         {
-            if (!_calculating) throw new InvalidOperationException("You must begin a SteppingResolver before ending it.");
-            if (_steppedCompletedParentNode == null) throw new InvalidOperationException("Path has not completed resolving.");
-
-            int cnt = 0;
-            var u = _steppedCompletedParentNode;
-            while (u.Next != null)
+            switch (_calculating)
             {
-                path.Add(u.Node);
-                u = u.Next;
-                cnt++;
+                case StepPathingResult.Complete:
+                    int cnt = this.ReconstructPath(path, _steppedCompletedParentNode);
+                    this.Reset();
+                    return cnt;
+                default:
+                    this.Reset();
+                    return 0;
             }
-            path.Add(u.Node);
-            cnt++;
-
-            //reset
-            this.Reset();
-
-            return cnt;
         }
 
         /// <summary>
@@ -277,7 +311,7 @@ namespace com.spacepuppy.Graphs
         {
             _steppedCompletedParentNode = null;
 
-            if(_tracked.Count > 0)
+            if (_tracked.Count > 0)
             {
                 var e = _tracked.GetEnumerator();
                 while (e.MoveNext())
@@ -288,7 +322,7 @@ namespace com.spacepuppy.Graphs
             _open.Clear();
             _closed.Clear();
             _tracked.Clear();
-            _calculating = false;
+            _calculating = StepPathingResult.Idle;
         }
 
         #endregion
@@ -319,6 +353,7 @@ namespace com.spacepuppy.Graphs
 
             public int Compare(VertexInfo x, VertexInfo y)
             {
+                //sort inverted so our 'open' heap pops min
                 return y.f.CompareTo(x.f);
             }
         }
@@ -326,4 +361,5 @@ namespace com.spacepuppy.Graphs
         #endregion
 
     }
+
 }

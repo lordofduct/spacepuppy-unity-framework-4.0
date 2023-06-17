@@ -7,6 +7,17 @@ using com.spacepuppy.Collections;
 namespace com.spacepuppy.Graphs
 {
 
+    /// <summary>
+    /// Implementation of Dijkstra algorithm that can act on an IGraph<typeparamref name="T"/>.
+    /// 
+    /// When reducing the algorithm walks backwards from goal to start. This means calls to 
+    /// IGraph.GetNeighbours for graphs that have 1-way connections should return the 
+    /// neighbours that can be traversed from towards the node, not from the node to the neighbour.
+    /// 
+    /// If you'd like to invert this, just invert start and goal. The resulting path with also be inverted 
+    /// and should be traversed backwards.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     public class DijkstraPathResolver<T> : IPathResolver<T> where T : class
     {
 
@@ -37,14 +48,11 @@ namespace com.spacepuppy.Graphs
 
         #region Properties
 
-        public bool IsWorking
-        {
-            get { return _calculating; }
-        }
+        public IGraph<T> Graph => _graph;
 
-        #endregion
+        public IHeuristic<T> Heuristic => _heuristic;
 
-        #region Methods
+        public bool IsCalculating => _calculating;
 
         public T Start
         {
@@ -64,6 +72,20 @@ namespace com.spacepuppy.Graphs
                 if (_calculating) throw new InvalidOperationException("Cannot update start node when calculating.");
                 _goal = value;
             }
+        }
+
+        #endregion
+
+        #region Methods
+
+        public void Configure(IGraph<T> graph, IHeuristic<T> heuristic)
+        {
+            if (_calculating) throw new System.InvalidOperationException("Can not configure DijkstraPathResolver while its in the middle of a calculation.");
+
+            _graph = graph;
+            _heuristic = heuristic;
+            _open.Clear();
+            _neighbours.Clear();
         }
 
         public IList<T> Reduce()

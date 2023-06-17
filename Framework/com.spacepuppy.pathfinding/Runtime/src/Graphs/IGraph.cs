@@ -16,4 +16,5 @@ namespace com.spacepuppy.Graphs
         bool Contains(T node);
 
     }
+
 }

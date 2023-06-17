@@ -4,10 +4,8 @@ using System.Linq;
 
 using com.spacepuppy;
 using com.spacepuppy.Pathfinding;
-using com.spacepuppy.Sensors;
 using com.spacepuppy.Geom;
 using com.spacepuppy.Utils;
-using System;
 
 namespace com.spacepuppy.AI
 {
@@ -85,7 +83,7 @@ namespace com.spacepuppy.AI
 
         public ComplexTarget(IPath path)
         {
-            if (path == null) throw new ArgumentNullException(nameof(path));
+            if (path == null) throw new System.ArgumentNullException(nameof(path));
             TargetType = ComplexTargetType.Vector3;
             _target = null;
             _vector = path.Waypoints.LastOrDefault();
@@ -250,13 +248,13 @@ namespace com.spacepuppy.AI
 
         public static implicit operator ComplexTarget(GameObject go)
         {
-            if (go == null) return new ComplexTarget();
+            if (go == null) return default;
             else return new ComplexTarget(go.transform);
         }
 
         public static implicit operator ComplexTarget(Component c)
         {
-            if (c == null) return new ComplexTarget();
+            if (c == null) return default;
             if (c is IGameObjectSource)
                 return new ComplexTarget(c as IGameObjectSource);
             else if (c is Transform)
@@ -266,6 +264,27 @@ namespace com.spacepuppy.AI
         }
 
         #endregion
+
+    }
+
+    public static class ComplexTargetExtensions
+    {
+
+        public static ComplexTarget AsComplexTarget(this Transform o) => new ComplexTarget(o);
+        public static ComplexTarget AsComplexTarget(this Vector2 v) => new ComplexTarget(v);
+        public static ComplexTarget AsComplexTarget(this Vector3 v) => new ComplexTarget(v);
+        public static ComplexTarget AsComplexTarget(this GameObject o) => o ? new ComplexTarget(o.transform) : default;
+        public static ComplexTarget AsComplexTarget(this Component c)
+        {
+            if (c == null) return default;
+            if (c is IGameObjectSource)
+                return new ComplexTarget(c as IGameObjectSource);
+            else if (c is Transform)
+                return new ComplexTarget(c as Transform);
+            else
+                return new ComplexTarget(c.transform);
+        }
+        public static ComplexTarget AsComplexTarget(this IGameObjectSource src) => new ComplexTarget(src);
 
     }
 

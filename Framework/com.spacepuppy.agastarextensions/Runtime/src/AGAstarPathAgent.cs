@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 
 using com.spacepuppy;
-using com.spacepuppy.Motor;
 using com.spacepuppy.Motor.Pathfinding;
 using com.spacepuppy.Utils;
 

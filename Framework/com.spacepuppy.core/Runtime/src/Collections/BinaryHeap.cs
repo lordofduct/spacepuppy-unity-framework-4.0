@@ -5,6 +5,7 @@ using System.Linq;
 
 namespace com.spacepuppy.Collections
 {
+
     public class BinaryHeap<T> : ICollection<T>
     {
 
@@ -99,6 +100,19 @@ namespace com.spacepuppy.Collections
                 {
                     this.Update(index);
                 }
+            }
+        }
+
+        public int Capacity
+        {
+            get => _heap.Length;
+            set
+            {
+                if (value < _tail) throw new System.ArgumentOutOfRangeException(nameof(value), "Capacity is set to a value that is less than Count.");
+
+                var arr = new T[value];
+                System.Array.Copy(_heap, 0, arr, 0, _tail);
+                _heap = arr;
             }
         }
 

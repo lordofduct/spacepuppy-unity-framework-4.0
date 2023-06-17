@@ -7,6 +7,7 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Spawn.Events
 {
 
+    [Infobox("This is only called if the object it is attached to is pooled and is getting returned to said pool.")]
     public class t_OnDespawned : SPComponent, IObservableTrigger, IOnDespawnHandler
     {
 

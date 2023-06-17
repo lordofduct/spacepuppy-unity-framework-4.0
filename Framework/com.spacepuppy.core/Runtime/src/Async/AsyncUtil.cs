@@ -10,6 +10,7 @@ using UnityEngine;
 #endif
 namespace com.spacepuppy.Async
 {
+
     public static class AsyncUtil
     {
 
@@ -590,4 +591,5 @@ namespace com.spacepuppy.Async
 #endif
 
     }
+
 }

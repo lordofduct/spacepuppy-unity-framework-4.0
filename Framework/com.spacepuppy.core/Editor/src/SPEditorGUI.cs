@@ -1219,7 +1219,7 @@ namespace com.spacepuppyeditor
 
         public static System.Type TypeDropDown(Rect position, GUIContent label,
                                                System.Type selectedType,
-                                               System.Predicate<System.Type> enumeratePredicate,
+                                               System.Func<System.Type, bool> enumeratePredicate,
                                                System.Type baseType = null, System.Type defaultType = null,
                                                TypeDropDownListingStyle listType = TypeDropDownListingStyle.Flat,
                                                System.Func<System.Type, string, bool> searchFilter = null,

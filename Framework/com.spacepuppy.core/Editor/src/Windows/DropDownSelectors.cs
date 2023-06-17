@@ -161,7 +161,7 @@ namespace com.spacepuppyeditor.Windows
 
         public static System.Type Popup(Rect position, GUIContent label,
                                         System.Type selectedType,
-                                        System.Predicate<System.Type> enumeratePredicate,
+                                        System.Func<System.Type, bool> enumeratePredicate,
                                         System.Type baseType = null,
                                         System.Type defaultType = null,
                                         TypeDropDownListingStyle listType = TypeDropDownListingStyle.Flat,
@@ -180,7 +180,7 @@ namespace com.spacepuppyeditor.Windows
         }
 
         public static void ShowAndCallbackOnSelect(int controlId, Rect positionUnder, System.Type selectedType,
-                                                   System.Predicate<System.Type> enumeratePredicate,
+                                                   System.Func<System.Type, bool> enumeratePredicate,
                                                    System.Action<System.Type> callback,
                                                    System.Type baseType = null,
                                                    System.Type defaultType = null,

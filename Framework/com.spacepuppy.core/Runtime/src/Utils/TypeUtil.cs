@@ -106,7 +106,7 @@ namespace com.spacepuppy.Utils
             }
         }
 
-        public static IEnumerable<Type> GetTypes(System.Predicate<System.Type> predicate)
+        public static IEnumerable<Type> GetTypes(System.Func<System.Type, bool> predicate)
         {
             foreach(var tp in GetTypes())
             {
@@ -116,14 +116,14 @@ namespace com.spacepuppy.Utils
 
         public static IEnumerable<Type> GetTypesAssignableFrom(System.Type rootType)
         {
-            return GetTypes(t => rootType.IsAssignableFrom(t));
+            return GetTypes(t => IsType(t, rootType));
         }
 
         public static IEnumerable<Type> GetTypesAssignableFrom(System.Reflection.Assembly assemb, System.Type rootType)
         {
             foreach (var tp in assemb.DefinedTypes)
             {
-                if (rootType.IsAssignableFrom(tp) && rootType != tp) yield return tp;
+                if (IsType(tp, rootType) && rootType != tp) yield return tp;
             }
         }
 

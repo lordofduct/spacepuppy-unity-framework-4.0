@@ -62,7 +62,7 @@ namespace com.spacepuppy.SPInput.Unity
             }
         }
 
-        public InputProfileLookupEntry Find(System.Predicate<InputProfileLookupEntry> predicate)
+        public InputProfileLookupEntry Find(System.Func<InputProfileLookupEntry, bool> predicate)
         {
             if (predicate == null) throw new System.ArgumentNullException("predicate");
 

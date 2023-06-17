@@ -395,5 +395,14 @@ namespace com.spacepuppy.Geom
 
         #endregion
 
+
+        #region Operators
+
+        public static implicit operator BoundingSphere(Sphere s) => new BoundingSphere(s.Center, s.Radius);
+
+        public static implicit operator Sphere(BoundingSphere s) => new Sphere(s.position, s.radius);
+
+        #endregion
+
     }
 }

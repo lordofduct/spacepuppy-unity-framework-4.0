@@ -679,7 +679,7 @@ namespace com.spacepuppy.Tween
             }
 
 
-            public string[] GetCustomAccessorIds(System.Type tp, System.Predicate<SpecialNameAccessorInfo> predicate = null)
+            public string[] GetCustomAccessorIds(System.Type tp, System.Func<SpecialNameAccessorInfo, bool> predicate = null)
             {
                 if (tp == null) throw new System.ArgumentNullException(nameof(tp));
 

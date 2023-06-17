@@ -50,7 +50,10 @@ namespace com.spacepuppy.Utils
                     _isObjectAlive = (a) => !object.ReferenceEquals(a, null) && d(a);
                 }
                 else
+                {
                     _isObjectAlive = (a) => a != null;
+                    UnityEngine.Debug.LogWarning("This version of Spacepuppy Framework does not support the version of Unity it's being used with. (ObjUtil)");
+                }
             }
             catch
             {
@@ -409,16 +412,12 @@ namespace com.spacepuppy.Utils
         {
             obj = obj.SanitizeRef();
             if (obj == null) return null;
-            if (obj is T) return obj as T;
-            if (obj is IComponent)
-            {
-                var c = (obj as IComponent).component;
-                if (c is T) return c as T;
-            }
-            var go = GameObjectUtil.GetGameObjectFromSource(obj);
-            if (go is T) return go as T;
+            if (obj is T o1) return o1;
+            if (obj is IComponent ic && ic.component is T o2) return o2;
 
-            //if (go != null && ComponentUtil.IsAcceptableComponentType(typeof(T))) return go.GetComponentAlt<T>();
+            var go = GameObjectUtil.GetGameObjectFromSource(obj);
+            if (go is T g) return g;
+
             if (go != null)
             {
                 var tp = typeof(T);
@@ -436,16 +435,12 @@ namespace com.spacepuppy.Utils
             obj = respectProxy ? obj.ReduceIfProxyAs(typeof(T)) : obj.SanitizeRef();
             if (obj == null) return null;
 
-            if (obj is T) return obj as T;
-            if (obj is IComponent)
-            {
-                var c = (obj as IComponent).component;
-                if (c is T) return c as T;
-            }
-            var go = GameObjectUtil.GetGameObjectFromSource(obj);
-            if (go is T) return go as T;
+            if (obj is T o1) return o1;
+            if (obj is IComponent ic && ic.component is T o2) return o2;
 
-            //if (go != null && ComponentUtil.IsAcceptableComponentType(typeof(T))) return go.GetComponentAlt<T>();
+            var go = GameObjectUtil.GetGameObjectFromSource(obj);
+            if (go is T g) return g;
+
             if (go != null)
             {
                 var tp = typeof(T);
@@ -465,28 +460,24 @@ namespace com.spacepuppy.Utils
             obj = respectProxy ? obj.ReduceIfProxyAs(typeof(T)) : obj.SanitizeRef();
             if (obj == null) return false;
 
-            if (obj is T)
+            if (obj is T o1)
             {
-                result = obj as T;
+                result = o1;
                 return true;
             }
-            if (obj is IComponent)
+            if (obj is IComponent ic && ic.component is T o2)
             {
-                var c = (obj as IComponent).component;
-                if (c is T)
-                {
-                    result = c as T;
-                    return true;
-                }
-            }
-            var go = GameObjectUtil.GetGameObjectFromSource(obj);
-            if (go is T)
-            {
-                result = go as T;
+                result = o2;
                 return true;
             }
 
-            //if (go != null && ComponentUtil.IsAcceptableComponentType(typeof(T))) return go.GetComponentAlt<T>();
+            var go = GameObjectUtil.GetGameObjectFromSource(obj);
+            if (go is T g)
+            {
+                result = g;
+                return true;
+            }
+
             if (go != null)
             {
                 var tp = typeof(T);

@@ -16,7 +16,7 @@ namespace com.spacepuppy.Events
         private TriggerableTargetObject _targetAudioSource = new TriggerableTargetObject();
 
         [SerializeField()]
-        [WeightedValueCollection("Weight", "Clip", ElementLabelFormatString = "Clip {0:00}")]
+        [WeightedValueCollection("Weight", "_clip", ElementLabelFormatString = "Clip {0:00}")]
         [Tooltip("One or Many, if many they will be randomly selected by the weights supplied.")]
         private AudioClipEntry[] _clips = ArrayUtil.Empty<AudioClipEntry>();
 
@@ -131,13 +131,18 @@ namespace com.spacepuppy.Events
 
             AudioClip clip;
             if (_clips.Length == 0)
+            {
                 return false;
+            }
             else if (_clips.Length == 1)
-                clip = _clips[0].Clip;
+            {
+                clip = ObjUtil.GetAsFromSource<AudioClip>(_clips[0].Clip, true);
+            }
             else
             {
-                clip = _clips.PickRandom((e) => e.Weight, _rng.Value).Clip;
+                clip = ObjUtil.GetAsFromSource<AudioClip>(_clips.PickRandom((e) => e.Weight, _rng.Value).Clip, true);
             }
+            if (!clip) return false;
 
 
             if (clip != null)
@@ -177,7 +182,20 @@ namespace com.spacepuppy.Events
         public struct AudioClipEntry
         {
             public float Weight;
-            public AudioClip Clip;
+            [UnityEngine.Serialization.FormerlySerializedAs("Clip")]
+            [SerializeField]
+            [TypeRestriction(typeof(AudioClip), AllowProxy = true)]
+            private UnityEngine.Object _clip;
+
+            public UnityEngine.Object Clip
+            {
+                get => _clip;
+                set
+                {
+                    _clip = IProxyExtensions.FilterAsProxyOrType<AudioClip>(value) as UnityEngine.Object;
+                }
+            }
+
         }
 
         #endregion

@@ -14,8 +14,11 @@ namespace com.spacepuppy.Spawn.Events
     {
 
         public const string TRG_ONSPAWNED = "OnSpawned";
-        
+
         #region Fields
+
+        [SerializeField]
+        private bool _signalSpawnedMessageOnSelf;
 
         [SerializeField()]
         [Tooltip("If left empty the default SpawnPool will be used instead.")]
@@ -30,7 +33,7 @@ namespace com.spacepuppy.Spawn.Events
         //[WeightedValueCollection("Weight", "_prefab")]
         [SpawnablePrefabEntryCollection]
         [Tooltip("Objects available for spawning. When spawn is called with no arguments a prefab is selected at random.")]
-        private List<SpawnablePrefabEntry> _prefabs;
+        private List<SpawnablePrefabEntry> _prefabs = new List<SpawnablePrefabEntry>();
 
         [SerializeField]
         private RandomRef _rng;
@@ -53,7 +56,7 @@ namespace com.spacepuppy.Spawn.Events
         {
             get { return _prefabs; }
         }
-        
+
         public OnSpawnEvent OnSpawnedObject
         {
             get { return _onSpawnedObject; }
@@ -166,6 +169,11 @@ namespace com.spacepuppy.Spawn.Events
             {
                 instance = null;
                 return false;
+            }
+
+            if (_signalSpawnedMessageOnSelf && instance.GetComponent(out SpawnedObjectController ctrl))
+            {
+                this.gameObject.Signal<IOnSpawnHandler, SpawnedObjectController>(ctrl, (o, c) => o.OnSpawn(c));
             }
 
             if (_onSpawnedObject?.HasReceivers ?? false)

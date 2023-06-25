@@ -341,6 +341,7 @@ namespace com.spacepuppy
         public bool HideTypeDropDown;
         public bool HideTypeDropDownIfSingle;
         public bool AllowProxy;
+        public bool RestrictProxyResolvedType; //if IProxy is allowed, should we test if the type returned by IProxy.GetReturnedType matches the accepted types
         public bool AllowSceneObjects = true;
 
         public TypeRestrictionAttribute()

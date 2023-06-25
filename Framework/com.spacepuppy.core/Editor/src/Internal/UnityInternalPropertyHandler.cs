@@ -57,7 +57,7 @@ namespace com.spacepuppyeditor.Internal
 
 #if UNITY_2021_1_OR_NEWER
         private PropertyDrawer _internalDrawer;
-        protected PropertyDrawer InternalDrawer
+        internal PropertyDrawer InternalDrawer
         {
             get
             {
@@ -67,7 +67,7 @@ namespace com.spacepuppyeditor.Internal
                 return lst != null ? lst.LastOrDefault() : null;
             }
 #else
-        protected PropertyDrawer InternalDrawer
+        internal PropertyDrawer InternalDrawer
         {
             get
             {

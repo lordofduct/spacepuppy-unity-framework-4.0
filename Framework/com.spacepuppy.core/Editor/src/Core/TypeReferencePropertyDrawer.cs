@@ -42,7 +42,7 @@ namespace com.spacepuppyeditor.Core
             this.TypeEnumerator = TypeDropDownWindowSelector.CreateTypeEnumerator(inheritsFromType, allowAbstract, allowInterfaces, allowGeneric, excludedTypes);
         }
 
-        public void ConfigureSimple(System.Type inheritsFromType, System.Predicate<System.Type> typePredicate = null)
+        public void ConfigureSimple(System.Type inheritsFromType, System.Func<System.Type, bool> typePredicate = null)
         {
             this.InheritsFromTypes = new System.Type[] { inheritsFromType ?? typeof(object) };
             if (typePredicate != null)

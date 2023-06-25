@@ -38,18 +38,27 @@ namespace com.spacepuppyeditor.Core
                 bool linkToGlobalObjectId = attrib != null && attrib.LinkToGlobalObjectId;
 
                 System.Guid guid = FromSerializedProperty(property);
-                System.Guid newguid;
-                if (TryGetLinkedGuid(property.serializedObject.targetObject, out newguid, linkToAsset, linkToGlobalObjectId))
+                if (Application.isPlaying)
                 {
-                    if (newguid != guid)
-                    {
-                        guid = newguid;
-                        ToSerializedProperty(property, guid);
-                    }
-
                     EditorGUI.SelectableLabel(position, guid.ToString("D"), EditorStyles.textField);
                     EditorGUI.EndProperty();
                     return;
+                }
+                else
+                {
+                    System.Guid newguid;
+                    if (TryGetLinkedGuid(property.serializedObject.targetObject, out newguid, linkToAsset, linkToGlobalObjectId))
+                    {
+                        if (newguid != guid)
+                        {
+                            guid = newguid;
+                            ToSerializedProperty(property, guid);
+                        }
+
+                        EditorGUI.SelectableLabel(position, guid.ToString("D"), EditorStyles.textField);
+                        EditorGUI.EndProperty();
+                        return;
+                    }
                 }
 
                 //if we made it here we want to draw default
@@ -74,16 +83,14 @@ namespace com.spacepuppyeditor.Core
 
         public static bool TryGetLinkedGuid(UnityEngine.Object obj, out System.Guid guid, bool linkToAsset, bool linkToGlobalObjectId)
         {
-            GlobalObjectId gid;
-            if (linkToAsset && EditorHelper.TryGetNearestAssetGlobalObjectId(obj, out gid) && gid.assetGUID != default)
+            if (linkToAsset && EditorHelper.TryGetNearestAssetGuid(obj, out guid) && guid != default)
             {
-                guid = gid.assetGUID.ToGuid();
                 return true;
             }
 
             if (linkToGlobalObjectId)
             {
-                gid = GlobalObjectId.GetGlobalObjectIdSlow(obj);
+                var gid = GlobalObjectId.GetGlobalObjectIdSlow(obj);
                 if (gid.targetObjectId != 0UL)
                 {
                     guid = (new SerializableGuid(gid.targetObjectId, gid.targetPrefabId)).ToGuid();

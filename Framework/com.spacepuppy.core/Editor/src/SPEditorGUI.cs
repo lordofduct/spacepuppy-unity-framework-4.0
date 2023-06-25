@@ -734,7 +734,7 @@ namespace com.spacepuppyeditor
             return obj;
         }
 
-        public static UnityEngine.Object ObjectFieldX(Rect position, UnityEngine.Object obj, System.Predicate<UnityEngine.Object> objFilter, bool allowSceneObjects)
+        public static UnityEngine.Object ObjectFieldX(Rect position, UnityEngine.Object obj, System.Func<UnityEngine.Object, bool> objFilter, bool allowSceneObjects)
         {
             if (SPEditorGUI.XButton(ref position, "Clear Selected Object", true))
             {
@@ -749,7 +749,7 @@ namespace com.spacepuppyeditor
             return obj;
         }
 
-        public static void ObjectFieldX(Rect position, SerializedProperty property, System.Predicate<UnityEngine.Object> objFilter, GUIContent label, bool allowSceneObjects)
+        public static void ObjectFieldX(Rect position, SerializedProperty property, System.Func<UnityEngine.Object, bool> objFilter, GUIContent label, bool allowSceneObjects)
         {
             if (SPEditorGUI.XButton(ref position, "Clear Selected Object", true))
             {
@@ -763,7 +763,7 @@ namespace com.spacepuppyeditor
             }
         }
 
-        public static UnityEngine.Object ObjectFieldX(Rect position, GUIContent label, UnityEngine.Object obj, System.Predicate<UnityEngine.Object> objFilter, bool allowSceneObjects)
+        public static UnityEngine.Object ObjectFieldX(Rect position, GUIContent label, UnityEngine.Object obj, System.Func<UnityEngine.Object, bool> objFilter, bool allowSceneObjects)
         {
             if (SPEditorGUI.XButton(ref position, "Clear Selected Object", true))
             {
@@ -778,7 +778,7 @@ namespace com.spacepuppyeditor
             return obj;
         }
 
-        public static UnityEngine.Object ObjectFieldX(Rect position, string label, UnityEngine.Object obj, System.Predicate<UnityEngine.Object> objFilter, bool allowSceneObjects)
+        public static UnityEngine.Object ObjectFieldX(Rect position, string label, UnityEngine.Object obj, System.Func<UnityEngine.Object, bool> objFilter, bool allowSceneObjects)
         {
             if (SPEditorGUI.XButton(ref position, "Clear Selected Object", true))
             {
@@ -1423,7 +1423,7 @@ namespace com.spacepuppyeditor
 
         #region Property Name Selector
 
-        public static string PropertyNameSelector(Rect position, GUIContent label, string name, System.Type type, bool allowCustom = false, System.Predicate<System.Reflection.MemberInfo> filter = null)
+        public static string PropertyNameSelector(Rect position, GUIContent label, string name, System.Type type, bool allowCustom = false, System.Func<System.Reflection.MemberInfo, bool> filter = null)
         {
             var tmp = ArrayUtil.Temp<System.Type>(type);
             try
@@ -1436,7 +1436,7 @@ namespace com.spacepuppyeditor
             }
         }
 
-        public static string PropertyNameSelector(Rect position, GUIContent label, string name, IEnumerable<System.Type> types, bool allowCustom = false, System.Predicate<System.Reflection.MemberInfo> filter = null)
+        public static string PropertyNameSelector(Rect position, GUIContent label, string name, IEnumerable<System.Type> types, bool allowCustom = false, System.Func<System.Reflection.MemberInfo, bool> filter = null)
         {
             var names = types.SelectMany(tp => DynamicUtil.GetMembersFromType(tp, false, System.Reflection.MemberTypes.Field | System.Reflection.MemberTypes.Property));
             if (filter != null) names = names.Where((m) => filter(m));
@@ -1461,12 +1461,12 @@ namespace com.spacepuppyeditor
 
         #region Component Selection From Source
 
-        public static Component SelectComponentFromSourceField(Rect position, string label, GameObject source, Component selectedComp, System.Predicate<Component> filter = null)
+        public static Component SelectComponentFromSourceField(Rect position, string label, GameObject source, Component selectedComp, System.Func<Component, bool> filter = null)
         {
             return SelectComponentFromSourceField(position, EditorHelper.TempContent(label), source, selectedComp, filter);
         }
 
-        public static Component SelectComponentFromSourceField(Rect position, GUIContent label, GameObject source, Component selectedComp, System.Predicate<Component> filter = null)
+        public static Component SelectComponentFromSourceField(Rect position, GUIContent label, GameObject source, Component selectedComp, System.Func<Component, bool> filter = null)
         {
             //var selectedType = (selectedComp != null) ? selectedComp.GetType() : null;
             //System.Type[] availableMechanismTypes;

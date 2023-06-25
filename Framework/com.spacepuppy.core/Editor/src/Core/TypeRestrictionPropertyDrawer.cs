@@ -94,20 +94,30 @@ namespace com.spacepuppyeditor.Core
                 UnityEngine.Object targ;
                 if (allInheritableTypes.Length > 1 || isNonStandardUnityType || (attrib?.AllowProxy ?? false))
                 {
+                    System.Func<UnityEngine.Object, bool> filter = null;
+                    if (attrib?.AllowProxy ?? false)
+                    {
+                        if (attrib?.RestrictProxyResolvedType ?? false)
+                        {
+                            filter = o => o && ((TypeUtil.IsType(o.GetType(), allInheritableTypes) || ObjUtil.GetAsFromSource(allInheritableTypes, o) != null)) || (o is IProxy p && TypeUtil.IsType(p.GetTargetType(), allInheritableTypes));
+                        }
+                        else
+                        {
+                            filter = o => o && ((TypeUtil.IsType(o.GetType(), allInheritableTypes) || ObjUtil.GetAsFromSource(allInheritableTypes, o) != null)) || (o is IProxy);
+                        }
+                    }
+                    else
+                    {
+                        filter = o => o && (TypeUtil.IsType(o.GetType(), allInheritableTypes) || ObjUtil.GetAsFromSource(allInheritableTypes, o) != null);
+                    }
+
                     targ = UnityObjectDropDownWindowSelector.ObjectField(position,
                         label,
                         property.objectReferenceValue,
                         (allInheritableTypes.Length == 1) ? allInheritableTypes[0] : fieldType,
                         attrib?.AllowSceneObjects ?? true,
                         attrib?.AllowProxy ?? false,
-                        (attrib?.AllowProxy ?? false) ? (o) =>
-                            {
-                                return o && ((TypeUtil.IsType(o.GetType(), allInheritableTypes) || ObjUtil.GetAsFromSource(allInheritableTypes, o) != null)) || (o is IProxy p && TypeUtil.IsType(p.GetTargetType(), allInheritableTypes));
-                            } :
-                            (o) =>
-                            {
-                                return o && (TypeUtil.IsType(o.GetType(), allInheritableTypes) || ObjUtil.GetAsFromSource(allInheritableTypes, o) != null);
-                            });
+                        filter);
                 }
                 else if (fieldIsComponentType)
                 {

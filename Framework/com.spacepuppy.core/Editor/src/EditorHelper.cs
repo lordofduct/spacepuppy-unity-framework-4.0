@@ -132,6 +132,12 @@ namespace com.spacepuppyeditor
 
         #region SerializedProperty Helpers
 
+        public static bool TryFindPropertyRelative(this SerializedProperty property, string relativePropertyPath, out SerializedProperty result)
+        {
+            result = property.FindPropertyRelative(relativePropertyPath);
+            return result != null;
+        }
+
         public static IEnumerable<SerializedProperty> GetChildren(this SerializedProperty property)
         {
             property = property.Copy();
@@ -568,19 +574,9 @@ namespace com.spacepuppyeditor
                     {
                         if (!ignoreSpecialWrappers)
                         {
-                            var fieldType = prop.GetTargetType();
-                            if (fieldType != null)
+                            if (com.spacepuppyeditor.Internal.ScriptAttributeUtility.TryGetInternalPropertyDrawer(prop, out PropertyDrawer drawer) && drawer is ISerializedWrapperHelper ish)
                             {
-                                if (TypeUtil.IsType(fieldType, typeof(VariantReference)))
-                                {
-                                    com.spacepuppyeditor.Core.VariantReferencePropertyDrawer.SetSerializedProperty(prop, value);
-                                    return;
-                                }
-                                else if (TypeUtil.IsType(fieldType, typeof(com.spacepuppy.Project.BaseSerializableInterfaceRef)))
-                                {
-                                    com.spacepuppyeditor.Core.Project.SerializableInterfaceRefPropertyDrawer.SetSerializedProperty(prop, value as UnityEngine.Object);
-                                    return;
-                                }
+                                if (ish.SetValue(prop, value)) return;
                             }
 
                             SetTargetObjectOfProperty(prop, value);
@@ -632,17 +628,9 @@ namespace com.spacepuppyeditor
                     {
                         if (!ignoreSpecialWrappers)
                         {
-                            var fieldType = prop.GetTargetType();
-                            if (fieldType != null)
+                            if (com.spacepuppyeditor.Internal.ScriptAttributeUtility.TryGetInternalPropertyDrawer(prop, out PropertyDrawer drawer) && drawer is ISerializedWrapperHelper ish)
                             {
-                                if (TypeUtil.IsType(fieldType, typeof(VariantReference)))
-                                {
-                                    return com.spacepuppyeditor.Core.VariantReferencePropertyDrawer.GetFromSerializedProperty(prop);
-                                }
-                                else if (TypeUtil.IsType(fieldType, typeof(com.spacepuppy.Project.BaseSerializableInterfaceRef)))
-                                {
-                                    return com.spacepuppyeditor.Core.Project.SerializableInterfaceRefPropertyDrawer.GetFromSerializedProperty(prop);
-                                }
+                                return ish.GetValue(prop);
                             }
                         }
 
@@ -682,9 +670,9 @@ namespace com.spacepuppyeditor
             var fieldType = prop.GetTargetType();
             if (fieldType != null && !ignoreSpecialWrappers)
             {
-                if (TypeUtil.IsType(fieldType, typeof(com.spacepuppy.Project.BaseSerializableInterfaceRef)))
+                if (com.spacepuppyeditor.Internal.ScriptAttributeUtility.TryGetInternalPropertyDrawer(prop, out PropertyDrawer drawer) && drawer is ISerializedWrapperHelper ish)
                 {
-                    fieldType = com.spacepuppyeditor.Core.Project.SerializableInterfaceRefPropertyDrawer.GetRefTypeFromSerializedProperty(prop);
+                    fieldType = ish.GetValueType(prop);
                 }
             }
 
@@ -1177,26 +1165,89 @@ namespace com.spacepuppyeditor
             var prefab = PrefabUtility.GetNearestPrefabInstanceRoot(go);
             if (prefab)
             {
-                var path = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(prefab);
+                gid = GlobalObjectId.GetGlobalObjectIdSlow(prefab);
+                if (gid.assetGUID != default) return true;
+
+                //if we made it here, we are likely in a stage, lets look up that stage
+                var stage = UnityEditor.SceneManagement.PrefabStageUtility.GetCurrentPrefabStage();
+                if (stage != null && stage.prefabContentsRoot == prefab)
+                {
+                    prefab = AssetDatabase.LoadAssetAtPath(stage.assetPath, typeof(GameObject)) as GameObject;
+                    gid = prefab ? GlobalObjectId.GetGlobalObjectIdSlow(prefab) : default;
+                    return gid.assetGUID != default;
+                }
+
+                //not sure how we got here, but last ditch effort
+                var path = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(go);
                 if (!string.IsNullOrEmpty(path))
                 {
-                    prefab = PrefabUtility.LoadPrefabContents(path);
+                    prefab = AssetDatabase.LoadAssetAtPath(path, typeof(GameObject)) as GameObject;
                     gid = prefab ? GlobalObjectId.GetGlobalObjectIdSlow(prefab) : default;
                     return gid.assetGUID != default; //we fail if we couldn't load it, treat that as "missing prefab"
                 }
             }
 
-            //if we made it here, we are likely in a stage, lets look up that stage
-            var stage = UnityEditor.SceneManagement.PrefabStageUtility.GetPrefabStage(go);
-            if (stage == null)
+            //can't determine gid
+            gid = default;
+            return false;
+        }
+
+        public static bool TryGetNearestAssetGuid(UnityEngine.Object obj, out System.Guid guid)
+        {
+            if (obj == null)
             {
-                gid = default;
+                guid = default;
                 return false;
             }
 
-            prefab = PrefabUtility.LoadPrefabContents(stage.assetPath);
-            gid = prefab ? GlobalObjectId.GetGlobalObjectIdSlow(prefab) : default;
-            return gid.assetGUID != default;
+            //first attempt to just find the globalid
+            var gid = GlobalObjectId.GetGlobalObjectIdSlow(obj);
+            if (gid.assetGUID != default)
+            {
+                guid = gid.assetGUID.ToGuid();
+                return true;
+            }
+
+            //now lets determine if this is a potential gameobject
+            var go = GameObjectUtil.GetGameObjectFromSource(obj);
+            if (!go)
+            {
+                guid = default;
+                return false;
+            }
+
+            //if it's a potential gameobject, lets try to load that prefab and get its globalid
+            var prefab = PrefabUtility.GetNearestPrefabInstanceRoot(go);
+            if (prefab)
+            {
+                gid = GlobalObjectId.GetGlobalObjectIdSlow(prefab);
+                if (gid.assetGUID != default)
+                {
+                    guid = gid.assetGUID.ToGuid();
+                    return true;
+                }
+
+                //if we made it here, we are likely in a stage, lets look up that stage
+                var stage = UnityEditor.SceneManagement.PrefabStageUtility.GetCurrentPrefabStage();
+                if (stage != null && 
+                    stage.prefabContentsRoot == prefab && 
+                    System.Guid.TryParse(AssetDatabase.AssetPathToGUID(stage.assetPath), out guid))
+                {
+                    return true;
+                }
+
+                //not sure how we got here, but last ditch effort
+                var path = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(go);
+                if (!string.IsNullOrEmpty(path) &&
+                    System.Guid.TryParse(AssetDatabase.AssetPathToGUID(path), out guid))
+                {
+                    return true;
+                }
+            }
+
+            //can't determine guid
+            guid = default;
+            return false;
         }
 
         #endregion
@@ -1304,6 +1355,17 @@ namespace com.spacepuppyeditor
             public System.Action callback;
             public float duration;
             public System.DateTime timestamp;
+        }
+
+        #endregion
+
+        #region Special Types
+
+        public interface ISerializedWrapperHelper
+        {
+            public object GetValue(SerializedProperty property);
+            public bool SetValue(SerializedProperty property, object value);
+            public System.Type GetValueType(SerializedProperty property);
         }
 
         #endregion

@@ -595,7 +595,7 @@ namespace com.spacepuppyeditor.Windows
         /// </summary>
         public virtual System.Type ObjectType { get; set; } = typeof(T);
 
-        public System.Predicate<T> Filter { get; set; }
+        public System.Func<T, bool> Filter { get; set; }
 
         public virtual ShowDropDownCallbackDelegate ShowDropDownCallback { get; set; }
 
@@ -647,7 +647,10 @@ namespace com.spacepuppyeditor.Windows
 
                 var assetcontent = EditorHelper.ObjectContent(oasset, objType, true);
                 assetcontent.text = labelFormatter(oasset, objType);
+
+                position = EditorGUI.PrefixLabel(position, controlId, label);
                 UnityEngine.GUI.Box(position, assetcontent, EditorStyles.objectField);
+
 
                 EditorGUIUtility.SetIconSize(iconSize);
 
@@ -694,7 +697,7 @@ namespace com.spacepuppyeditor.Windows
 #endif
         }
 
-        private static UnityEngine.Object HandleDragAndDrop(bool isDragging, bool isDropping, UnityEngine.Object asset, System.Type objType, System.Predicate<T> filter, bool allowSceneObjects, bool allowProxy)
+        private static UnityEngine.Object HandleDragAndDrop(bool isDragging, bool isDropping, UnityEngine.Object asset, System.Type objType, System.Func<T, bool> filter, bool allowSceneObjects, bool allowProxy)
         {
             if (!isDragging && !isDropping) return asset;
 

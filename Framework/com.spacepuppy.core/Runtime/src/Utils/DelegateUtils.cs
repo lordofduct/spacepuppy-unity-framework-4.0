@@ -39,5 +39,37 @@ namespace com.spacepuppy.Utils
             }
         }
 
+        public static Func<T, bool> ChainOr<T>(this Func<T, bool> pred, Func<T, bool> next)
+        {
+            if (pred == null)
+            {
+                return next;
+            }
+            else if (next == null)
+            {
+                return pred;
+            }
+            else
+            {
+                return (o) => pred(o) || next(o);
+            }
+        }
+
+        public static Func<T, bool> ChainAnd<T>(this Func<T, bool> pred, Func<T, bool> next)
+        {
+            if (pred == null)
+            {
+                return next;
+            }
+            else if (next == null)
+            {
+                return pred;
+            }
+            else
+            {
+                return (o) => pred(o) && next(o);
+            }
+        }
+
     }
 }

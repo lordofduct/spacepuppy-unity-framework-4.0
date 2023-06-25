@@ -16,7 +16,7 @@ namespace com.spacepuppyeditor.Core
 {
 
     [CustomPropertyDrawer(typeof(VariantReference))]
-    public class VariantReferencePropertyDrawer : PropertyDrawer
+    public class VariantReferencePropertyDrawer : PropertyDrawer, EditorHelper.ISerializedWrapperHelper
     {
 
         public const string PROP_MODE = "_mode";
@@ -500,6 +500,26 @@ namespace com.spacepuppyeditor.Core
             }
         }
 
+
+        #endregion
+
+        #region EditorHelper.ISerializedWrapperHelper Interface
+
+        object EditorHelper.ISerializedWrapperHelper.GetValue(SerializedProperty property)
+        {
+            return GetFromSerializedProperty(property);
+        }
+
+        bool EditorHelper.ISerializedWrapperHelper.SetValue(SerializedProperty property, object value)
+        {
+            SetSerializedProperty(property, value);
+            return true;
+        }
+
+        System.Type EditorHelper.ISerializedWrapperHelper.GetValueType(SerializedProperty property)
+        {
+            return typeof(object);
+        }
 
         #endregion
 

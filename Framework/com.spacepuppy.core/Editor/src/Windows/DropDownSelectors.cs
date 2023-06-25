@@ -366,7 +366,7 @@ namespace com.spacepuppyeditor.Windows
 
         #region Special Object Field
 
-        public static UnityEngine.Object ObjectField(Rect position, GUIContent label, UnityEngine.Object asset, System.Type objType, bool allowSceneObjects, bool allowProxy, System.Predicate<UnityEngine.Object> filter = null, int maxVisibleCount = DEFAULT_MAXCOUNT)
+        public static UnityEngine.Object ObjectField(Rect position, GUIContent label, UnityEngine.Object asset, System.Type objType, bool allowSceneObjects, bool allowProxy, System.Func<UnityEngine.Object, bool> filter = null, int maxVisibleCount = DEFAULT_MAXCOUNT)
         {
             if (objType == null) throw new System.ArgumentNullException(nameof(objType));
             if (!objType.IsInterface && !TypeUtil.IsType(objType, typeof(UnityEngine.Object))) throw new System.ArgumentException("Type must be an interface or UnityEngine.Object", nameof(objType));
@@ -374,7 +374,7 @@ namespace com.spacepuppyeditor.Windows
             return DoObjectField<UnityEngine.Object>(position, label, asset, objType, allowSceneObjects, allowProxy, null, filter, maxVisibleCount);
         }
 
-        public static T ObjectField<T>(Rect position, GUIContent label, SerializedProperty property, bool allowSceneObjects, System.Predicate<T> filter = null, int maxVisibleCount = DEFAULT_MAXCOUNT) where T : class
+        public static T ObjectField<T>(Rect position, GUIContent label, SerializedProperty property, bool allowSceneObjects, System.Func<T, bool> filter = null, int maxVisibleCount = DEFAULT_MAXCOUNT) where T : class
         {
             return DoObjectField<T>(position, label, property.objectReferenceValue as T, typeof(T), allowSceneObjects, false, (o) =>
             {
@@ -384,12 +384,12 @@ namespace com.spacepuppyeditor.Windows
             }, filter, maxVisibleCount);
         }
 
-        public static T ObjectField<T>(Rect position, GUIContent label, T asset, bool allowSceneObjects, System.Predicate<T> filter = null, int maxVisibleCount = DEFAULT_MAXCOUNT) where T : class
+        public static T ObjectField<T>(Rect position, GUIContent label, T asset, bool allowSceneObjects, System.Func<T, bool> filter = null, int maxVisibleCount = DEFAULT_MAXCOUNT) where T : class
         {
             return DoObjectField<T>(position, label, asset, typeof(T), allowSceneObjects, false, null, filter, maxVisibleCount);
         }
 
-        private static T DoObjectField<T>(Rect position, GUIContent label, T asset, System.Type objType, bool allowSceneObjects, bool allowProxy, System.Action<T> dropdownselectedcallback, System.Predicate<T> filter = null, int maxVisibleCount = DEFAULT_MAXCOUNT) where T : class
+        private static T DoObjectField<T>(Rect position, GUIContent label, T asset, System.Type objType, bool allowSceneObjects, bool allowProxy, System.Action<T> dropdownselectedcallback, System.Func<T, bool> filter = null, int maxVisibleCount = DEFAULT_MAXCOUNT) where T : class
         {
             var helper = new GenericSearchDropDownObjectFieldHelper<T>()
             {

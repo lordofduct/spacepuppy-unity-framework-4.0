@@ -35,7 +35,7 @@ namespace com.spacepuppyeditor.Core
                 return;
             }
 
-            System.Predicate<MemberInfo> pred = null;
+            System.Func<MemberInfo, bool> pred = null;
             if (!attrib.AllowReadOnly)
             {
                 pred = (m) =>
@@ -61,11 +61,11 @@ namespace com.spacepuppyeditor.Core
                     {
                         if (method.IsStatic)
                         {
-                            pred = pred.ChainAnd(method.CreateDelegate(typeof(System.Predicate<MemberInfo>)) as System.Predicate<MemberInfo>);
+                            pred = pred.ChainAnd(method.CreateDelegate(typeof(System.Func<MemberInfo, bool>)) as System.Func<MemberInfo, bool>);
                         }
                         else
                         {
-                            pred = pred.ChainAnd(method.CreateDelegate(typeof(System.Predicate<MemberInfo>), property.serializedObject.targetObject) as System.Predicate<MemberInfo>);
+                            pred = pred.ChainAnd(method.CreateDelegate(typeof(System.Func<MemberInfo, bool>), property.serializedObject.targetObject) as System.Func<MemberInfo, bool>);
                         }
                     }
                 }

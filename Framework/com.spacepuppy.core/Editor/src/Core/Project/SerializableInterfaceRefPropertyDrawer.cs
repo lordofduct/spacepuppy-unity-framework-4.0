@@ -16,7 +16,7 @@ namespace com.spacepuppyeditor.Core.Project
     /// Deals with both SerializableInterfaceRef and SelfReducingEntityConfigRef.
     /// </summary>
     [CustomPropertyDrawer(typeof(BaseSerializableInterfaceRef), true)]
-    public class SerializableInterfaceRefPropertyDrawer : PropertyDrawer
+    public class SerializableInterfaceRefPropertyDrawer : PropertyDrawer, EditorHelper.ISerializedWrapperHelper
     {
 
         public const string PROP_OBJ = "_obj";
@@ -140,6 +140,28 @@ namespace com.spacepuppyeditor.Core.Project
 
             return typeof(UnityEngine.Object);
         }
+
+
+
+        #region EditorHelper.ISerializedWrapperHelper Interface
+
+        object EditorHelper.ISerializedWrapperHelper.GetValue(SerializedProperty property)
+        {
+            return GetFromSerializedProperty(property);
+        }
+
+        bool EditorHelper.ISerializedWrapperHelper.SetValue(SerializedProperty property, object value)
+        {
+            SetSerializedProperty(property, ObjUtil.GetAsFromSource<UnityEngine.Object>(value));
+            return true;
+        }
+
+        System.Type EditorHelper.ISerializedWrapperHelper.GetValueType(SerializedProperty property)
+        {
+            return GetRefTypeFromSerializedProperty(property);
+        }
+
+        #endregion
 
     }
 

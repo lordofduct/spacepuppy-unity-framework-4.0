@@ -227,25 +227,25 @@ namespace com.spacepuppyeditor
             return SPEditorGUI.ObjectFieldX(position, label, obj, objType, allowSceneObjects);
         }
 
-        public static UnityEngine.Object ObjectFieldX(UnityEngine.Object obj, System.Predicate<UnityEngine.Object> objFilter, bool allowSceneObjects)
+        public static UnityEngine.Object ObjectFieldX(UnityEngine.Object obj, System.Func<UnityEngine.Object, bool> objFilter, bool allowSceneObjects)
         {
             var position = EditorGUILayout.GetControlRect(false);
             return SPEditorGUI.ObjectFieldX(position, obj, objFilter, allowSceneObjects);
         }
 
-        public static void ObjectFieldX(SerializedProperty property, System.Predicate<UnityEngine.Object> objFilter, GUIContent label, bool allowSceneObjects)
+        public static void ObjectFieldX(SerializedProperty property, System.Func<UnityEngine.Object, bool> objFilter, GUIContent label, bool allowSceneObjects)
         {
             var position = EditorGUILayout.GetControlRect(true);
             SPEditorGUI.ObjectFieldX(position, property, objFilter, label, allowSceneObjects);
         }
 
-        public static UnityEngine.Object ObjectFieldX(GUIContent label, UnityEngine.Object obj, System.Predicate<UnityEngine.Object> objFilter, bool allowSceneObjects)
+        public static UnityEngine.Object ObjectFieldX(GUIContent label, UnityEngine.Object obj, System.Func<UnityEngine.Object, bool> objFilter, bool allowSceneObjects)
         {
             var position = EditorGUILayout.GetControlRect(true);
             return SPEditorGUI.ObjectFieldX(position, label, obj, objFilter, allowSceneObjects);
         }
 
-        public static UnityEngine.Object ObjectFieldX(string label, UnityEngine.Object obj, System.Predicate<UnityEngine.Object> objFilter, bool allowSceneObjects)
+        public static UnityEngine.Object ObjectFieldX(string label, UnityEngine.Object obj, System.Func<UnityEngine.Object, bool> objFilter, bool allowSceneObjects)
         {
             var position = EditorGUILayout.GetControlRect(true);
             return SPEditorGUI.ObjectFieldX(position, label, obj, objFilter, allowSceneObjects);
@@ -480,13 +480,13 @@ namespace com.spacepuppyeditor
 
         #region Component Selection From Source
 
-        public static Component SelectComponentFromSourceField(string label, GameObject source, Component selectedComp, System.Predicate<Component> filter = null)
+        public static Component SelectComponentFromSourceField(string label, GameObject source, Component selectedComp, System.Func<Component, bool> filter = null)
         {
             var position = EditorGUILayout.GetControlRect(true);
             return SPEditorGUI.SelectComponentFromSourceField(position, EditorHelper.TempContent(label), source, selectedComp, filter);
         }
 
-        public static Component SelectComponentFromSourceField(GUIContent label, GameObject source, Component selectedComp, System.Predicate<Component> filter = null)
+        public static Component SelectComponentFromSourceField(GUIContent label, GameObject source, Component selectedComp, System.Func<Component, bool> filter = null)
         {
             var position = EditorGUILayout.GetControlRect(true);
             return SPEditorGUI.SelectComponentFromSourceField(position, label, source, selectedComp, filter);

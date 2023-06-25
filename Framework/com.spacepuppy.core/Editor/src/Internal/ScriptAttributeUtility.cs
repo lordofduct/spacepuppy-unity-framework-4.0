@@ -130,7 +130,23 @@ namespace com.spacepuppyeditor.Internal
             var ihandler = _imp_getHandler(property);
             var handler = ihandler != null ? new UnityInternalPropertyHandler(ihandler) : ScriptAttributeUtility.SharedNullPropertyHandler;
             return handler;
+        }
 
+        public static bool TryGetInternalPropertyDrawer(SerializedProperty property, out PropertyDrawer drawer)
+        {
+            if (property == null) throw new System.ArgumentNullException(nameof(property));
+
+            var handler = GetHandler(property);
+            if (handler is UnityInternalPropertyHandler uiph)
+            {
+                drawer = uiph.InternalDrawer;
+                return true;
+            }
+            else
+            {
+                drawer = null;
+                return false;
+            }
         }
 
         //#######################

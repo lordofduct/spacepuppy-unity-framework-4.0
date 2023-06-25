@@ -126,18 +126,34 @@ namespace com.spacepuppy.Utils
 
         public static T Find<T>(SearchBy search, string query) where T : class
         {
-            switch (search)
+
+            if (typeof(T) == typeof(GameObject) || typeof(T) == typeof(Transform))
             {
-                case SearchBy.Nothing:
-                    return null;
-                case SearchBy.Tag:
-                    return ObjUtil.GetAsFromSource<T>(GameObjectUtil.FindWithMultiTag(query));
-                case SearchBy.Name:
-                    return ObjUtil.GetAsFromSource<T>(UnityEngine.GameObject.Find(query));
-                case SearchBy.Type:
-                    return ObjUtil.GetAsFromSource<T>(ObjUtil.FindObjectOfType(TypeUtil.FindType(query)));
-                default:
-                    return null;
+                switch (search)
+                {
+                    case SearchBy.Tag:
+                        return ObjUtil.GetAsFromSource<T>(GameObjectUtil.FindWithMultiTag(query));
+                    case SearchBy.Name:
+                        return ObjUtil.GetAsFromSource<T>(UnityEngine.GameObject.Find(query));
+                    case SearchBy.Type:
+                        return ObjUtil.GetAsFromSource<T>(ObjUtil.FindObjectOfType(TypeUtil.FindType(query)));
+                    default:
+                        return null;
+                }
+            }
+            else
+            {
+                using (var lst = TempCollection.GetList<T>())
+                {
+                    if (FindAll<T>(search, query, lst) > 0)
+                    {
+                        return lst[0];
+                    }
+                    else
+                    {
+                        return default;
+                    }
+                }
             }
         }
 
@@ -220,54 +236,74 @@ namespace com.spacepuppy.Utils
 
         public static T[] FindAll<T>(SearchBy search, string query) where T : class
         {
+            using (var results = com.spacepuppy.Collections.TempCollection.GetList<T>())
+            {
+                int cnt = FindAll<T>(search, query, results);
+                return cnt > 0 ? results.ToArray() : ArrayUtil.Empty<T>();
+            }
+        }
+
+        public static int FindAll<T>(SearchBy search, string query, ICollection<T> results) where T : class
+        {
+            int cnt;
             switch (search)
             {
                 case SearchBy.Nothing:
-                    return ArrayUtil.Empty<T>();
+                    return 0;
                 case SearchBy.Tag:
                     {
                         using (var tmp = com.spacepuppy.Collections.TempCollection.GetList<UnityEngine.GameObject>())
-                        using (var results = com.spacepuppy.Collections.TempCollection.GetList<T>())
                         {
                             GameObjectUtil.FindGameObjectsWithMultiTag(query, tmp);
                             var e = tmp.GetEnumerator();
+                            cnt = 0;
                             while (e.MoveNext())
                             {
                                 var o = ObjUtil.GetAsFromSource<T>(e.Current);
-                                if (o != null) results.Add(o);
+                                if (o != null)
+                                {
+                                    cnt++;
+                                    results.Add(o);
+                                }
                             }
-                            return results.ToArray();
+                            return cnt;
                         }
                     }
                 case SearchBy.Name:
                     {
                         using (var tmp = com.spacepuppy.Collections.TempCollection.GetList<UnityEngine.GameObject>())
-                        using (var results = com.spacepuppy.Collections.TempCollection.GetList<T>())
                         {
                             GameObjectUtil.FindAllByName(query, tmp);
                             var e = tmp.GetEnumerator();
+                            cnt = 0;
                             while (e.MoveNext())
                             {
                                 var o = ObjUtil.GetAsFromSource<T>(e.Current);
-                                if (o != null) results.Add(o);
+                                if (o != null)
+                                {
+                                    cnt++;
+                                    results.Add(o);
+                                }
                             }
-                            return results.ToArray();
+                            return cnt;
                         }
                     }
                 case SearchBy.Type:
                     {
-                        using (var results = com.spacepuppy.Collections.TempCollection.GetList<T>())
+                        cnt = 0;
+                        foreach (var o in ObjUtil.FindObjectsOfType(TypeUtil.FindType(query)))
                         {
-                            foreach (var o in ObjUtil.FindObjectsOfType(TypeUtil.FindType(query)))
+                            var o2 = ObjUtil.GetAsFromSource<T>(o);
+                            if (o2 != null)
                             {
-                                var o2 = ObjUtil.GetAsFromSource<T>(o);
-                                if (o2 != null) results.Add(o2);
+                                cnt++;
+                                results.Add(o2);
                             }
-                            return results.ToArray();
                         }
+                        return cnt;
                     }
                 default:
-                    return null;
+                    return 0;
             }
         }
 
@@ -345,6 +381,19 @@ namespace com.spacepuppy.Utils
         }
 
 
+        public static bool TryFindObjectOfType<T>(out T result) where T : UnityEngine.Object
+        {
+            result = UnityEngine.Object.FindObjectOfType<T>();
+            return result != null;
+        }
+
+        public static bool TryFindObjectOfType(System.Type tp, out UnityEngine.Object result)
+        {
+            result = FindObjectOfType(tp);
+            return result != null;
+        }
+
+
         public static T FindObjectOfInterface<T>() where T : class
         {
             var tp = typeof(T);
@@ -392,6 +441,12 @@ namespace com.spacepuppy.Utils
                 }
             }
             return cnt;
+        }
+
+        public static bool TryFindObjectOfInterface<T>(out T result) where T : class
+        {
+            result = FindObjectOfInterface<T>();
+            return result != null;
         }
 
         #endregion

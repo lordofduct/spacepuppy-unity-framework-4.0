@@ -517,4 +517,32 @@ namespace com.spacepuppy.Scenes
         }
     }
 
+    [System.Serializable]
+    public class ReloadCurrentScene : LoadSceneOptions
+    {
+
+        #region Fields
+
+        #endregion
+
+        #region Methods
+
+        protected override void DoBegin(ISceneManager manager)
+        {
+            string sname = manager.GetActiveScene().name;
+            if (manager.SceneExists(sname))
+            {
+                var options = this.LoadScene(sname, LoadSceneMode.Single, LoadSceneBehaviour.Async);
+                options.OnComplete(o => this.SignalComplete());
+            }
+            else
+            {
+                this.SignalError();
+            }
+        }
+
+        #endregion
+
+    }
+
 }

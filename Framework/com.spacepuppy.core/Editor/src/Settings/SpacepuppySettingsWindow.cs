@@ -165,8 +165,8 @@ namespace com.spacepuppyeditor.Settings
             EditorGUILayout.Space();
             EditorGUILayout.Space();
 
-            var currentBuildTarget = BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget);
-#if UNITY_2022_1_OR_NEWER
+#if UNITY_2021_2_OR_NEWER
+            var currentBuildTarget = UnityEditor.Build.NamedBuildTarget.FromBuildTargetGroup(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget));
             string defines = PlayerSettings.GetScriptingDefineSymbols(currentBuildTarget);
             EditorGUI.BeginChangeCheck();
             defines = EditorGUILayout.DelayedTextField(defines);
@@ -175,6 +175,7 @@ namespace com.spacepuppyeditor.Settings
                 PlayerSettings.SetScriptingDefineSymbols(currentBuildTarget, defines);
             }
 #else
+            var currentBuildTarget = BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget);
             string defines = PlayerSettings.GetScriptingDefineSymbolsForGroup(currentBuildTarget);
             EditorGUI.BeginChangeCheck();
             defines = EditorGUILayout.DelayedTextField(defines);

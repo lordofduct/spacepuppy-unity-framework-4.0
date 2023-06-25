@@ -93,7 +93,7 @@ namespace com.spacepuppyeditor.Settings
             get { return _buildOptions; }
             set { _buildOptions = value; }
         }
-        
+
         public InputSettings InputSettings
         {
             get { return _inputSettings; }
@@ -235,16 +235,16 @@ namespace com.spacepuppyeditor.Settings
                     }
                     if (this.DefineSymbols)
                     {
-#if UNITY_2022_1_OR_NEWER
-                        cacheSymbols = PlayerSettings.GetScriptingDefineSymbols(buildGroup) ?? string.Empty;
+#if UNITY_2021_2_OR_NEWER
+                        cacheSymbols = PlayerSettings.GetScriptingDefineSymbols(UnityEditor.Build.NamedBuildTarget.FromBuildTargetGroup(buildGroup)) ?? string.Empty;
 #else
                         cacheSymbols = PlayerSettings.GetScriptingDefineSymbolsForGroup(buildGroup) ?? string.Empty;
 #endif
 
                         if (cacheSymbols != this.Symbols)
                         {
-#if UNITY_2022_1_OR_NEWER
-                            PlayerSettings.SetScriptingDefineSymbols(buildGroup, this.Symbols);
+#if UNITY_2021_2_OR_NEWER
+                            PlayerSettings.SetScriptingDefineSymbols(UnityEditor.Build.NamedBuildTarget.FromBuildTargetGroup(buildGroup), this.Symbols);
 #else
                             PlayerSettings.SetScriptingDefineSymbolsForGroup(buildGroup, this.Symbols);
 #endif
@@ -257,7 +257,7 @@ namespace com.spacepuppyeditor.Settings
                         {
                             cacheSymbols = null;
                         }
-                        
+
                     }
 
                     if (_playerSettingOverrides.Count > 0)
@@ -286,8 +286,8 @@ namespace com.spacepuppyeditor.Settings
                     }
                     if (cacheSymbols != null)
                     {
-#if UNITY_2022_1_OR_NEWER
-                        PlayerSettings.SetScriptingDefineSymbols(buildGroup, cacheSymbols);
+#if UNITY_2021_2_OR_NEWER
+                        PlayerSettings.SetScriptingDefineSymbols(UnityEditor.Build.NamedBuildTarget.FromBuildTargetGroup(buildGroup), cacheSymbols);
 #else
                         PlayerSettings.SetScriptingDefineSymbolsForGroup(buildGroup, cacheSymbols);
 #endif
@@ -341,9 +341,9 @@ namespace com.spacepuppyeditor.Settings
             return false;
         }
 
-#endregion
+        #endregion
 
-#region Special Utils
+        #region Special Utils
 
         [System.Serializable]
         public class PlayerSettingOverride : ISerializationCallbackReceiver
@@ -365,7 +365,7 @@ namespace com.spacepuppyeditor.Settings
             [System.NonSerialized]
             public object SettingValue;
 
-#region Serialization Interface
+            #region Serialization Interface
 
             [SerializeField]
             private string _propertyName;
@@ -419,7 +419,7 @@ namespace com.spacepuppyeditor.Settings
                 }
             }
 
-#endregion
+            #endregion
 
         }
 
@@ -472,14 +472,14 @@ namespace com.spacepuppyeditor.Settings
             }
         }
 
-#endregion
+        #endregion
 
     }
 
     [CustomEditor(typeof(BuildSettings), true)]
     public class BuildSettingsEditor : SPEditor
     {
-        
+
         public const string PROP_BUILDFILENAME = "BuildFileName";
         public const string PROP_BUILDDIR = "BuildDirectory";
         public const string PROP_VERSION = "Version";
@@ -492,22 +492,22 @@ namespace com.spacepuppyeditor.Settings
         public const string PROP_SYMBOLS = "_symbols";
         public const string PROP_PLAYERSETTINGSOVERRIDES = "_playerSettingOverrides";
 
-#region Fields
+        #region Fields
 
         private com.spacepuppyeditor.Core.ReorderableArrayPropertyDrawer _scenesDrawer = new com.spacepuppyeditor.Core.ReorderableArrayPropertyDrawer(typeof(SceneAsset));
 
-#endregion
+        #endregion
 
-#region Properties
+        #region Properties
 
         public com.spacepuppyeditor.Core.ReorderableArrayPropertyDrawer ScenesDrawer
         {
             get { return _scenesDrawer; }
         }
 
-#endregion
+        #endregion
 
-#region Methods
+        #region Methods
 
         protected override void OnEnable()
         {
@@ -543,10 +543,10 @@ namespace com.spacepuppyeditor.Settings
             this.DrawPlayerSettingOverrides();
 
             this.serializedObject.ApplyModifiedProperties();
-            
+
             //build button
             if (this.serializedObject.isEditingMultipleObjects) return;
-            
+
             EditorGUILayout.Space();
 
             this.DrawBuildButtons();
@@ -628,10 +628,11 @@ namespace com.spacepuppyeditor.Settings
 
             if (settings.DefineSymbols)
             {
-                var currentBuildTarget = BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget);
-#if UNITY_2022_1_OR_NEWER
+#if UNITY_2021_2_OR_NEWER
+                var currentBuildTarget = UnityEditor.Build.NamedBuildTarget.FromBuildTargetGroup(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget));
                 PlayerSettings.SetScriptingDefineSymbols(currentBuildTarget, settings.Symbols);
 #else
+                var currentBuildTarget = BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget);
                 PlayerSettings.SetScriptingDefineSymbolsForGroup(currentBuildTarget, settings.Symbols);
 #endif
             }
@@ -648,8 +649,8 @@ namespace com.spacepuppyeditor.Settings
             }
             EditorBuildSettings.scenes = lst.ToArray();
         }
-        
-#endregion
+
+        #endregion
 
     }
 

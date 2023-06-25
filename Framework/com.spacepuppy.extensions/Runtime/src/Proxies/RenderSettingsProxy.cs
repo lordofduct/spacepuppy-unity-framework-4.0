@@ -145,7 +145,13 @@ namespace com.spacepuppy.Render
             get { return RenderSettings.fog; }
             set { RenderSettings.fog = value; }
         }
-#if UNITY_2021_2_OR_NEWER
+#if UNITY_2022_1_OR_NEWER
+        public Texture CustomReflection
+        {
+            get { return RenderSettings.customReflectionTexture; }
+            set { RenderSettings.customReflectionTexture = value; }
+        }
+#elif UNITY_2021_2_OR_NEWER
         public Texture CustomReflection
         {
             get { return RenderSettings.customReflection; }

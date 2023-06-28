@@ -6,6 +6,7 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Project
 {
 
+    [System.Obsolete("This was written in error based on a misunderstanding of LazyReference.")]
     public class LazyLoadProxy<T> : ScriptableObject, IProxy where T : UnityEngine.Object
     {
 

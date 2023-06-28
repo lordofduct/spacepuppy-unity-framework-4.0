@@ -1,4 +1,4 @@
-﻿
+﻿using com.spacepuppy.Utils;
 
 namespace com.spacepuppy
 {
@@ -19,6 +19,8 @@ namespace com.spacepuppy
     [System.Serializable]
     public class RandomRef : com.spacepuppy.Project.SerializableInterfaceRef<IRandom>
     {
+
+        public IRandom ValueOrDefault => this.Value ?? RandomUtil.Standard;
 
     }
 

@@ -5,6 +5,7 @@ using System.Reflection;
 
 using com.spacepuppy;
 using com.spacepuppy.Utils;
+using System.Linq;
 
 namespace com.spacepuppyeditor.Core
 {
@@ -40,14 +41,13 @@ namespace com.spacepuppyeditor.Core
                 System.Guid guid = FromSerializedProperty(property);
                 if (Application.isPlaying)
                 {
-                    EditorGUI.SelectableLabel(position, guid.ToString("D"), EditorStyles.textField);
+                    DrawGuidField(position, guid, attrib);
                     EditorGUI.EndProperty();
                     return;
                 }
                 else
                 {
-                    System.Guid newguid;
-                    if (TryGetLinkedGuid(property.serializedObject.targetObject, out newguid, linkToAsset, linkToGlobalObjectId))
+                    if (TryGetLinkedGuid(property.serializedObject.targetObject, out System.Guid newguid, linkToAsset, linkToGlobalObjectId))
                     {
                         if (newguid != guid)
                         {
@@ -55,10 +55,21 @@ namespace com.spacepuppyeditor.Core
                             ToSerializedProperty(property, guid);
                         }
 
-                        EditorGUI.SelectableLabel(position, guid.ToString("D"), EditorStyles.textField);
+                        DrawGuidField(position, guid, attrib);
                         EditorGUI.EndProperty();
                         return;
                     }
+                }
+                
+                if(attrib?.ObjectRefField ?? false)
+                {
+                    var newguid = DrawGuidField(position, guid, attrib);
+                    if (newguid != guid)
+                    {
+                        ToSerializedProperty(property, newguid);
+                    }
+                    EditorGUI.EndProperty();
+                    return;
                 }
 
                 //if we made it here we want to draw default
@@ -66,7 +77,7 @@ namespace com.spacepuppyeditor.Core
                 var r2 = new Rect(position.xMax - w, position.yMin, w, position.height);
                 var r1 = new Rect(position.xMin, position.yMin, Mathf.Max(position.width - w, 0f), position.height);
 
-                EditorGUI.SelectableLabel(r1, guid.ToString("D"), EditorStyles.textField);
+                DrawGuidField(r1, guid, null);
 
                 if (GUI.Button(r2, "New Id") || (resetOnZero && guid == System.Guid.Empty))
                 {
@@ -78,6 +89,72 @@ namespace com.spacepuppyeditor.Core
             finally
             {
                 EditorHelper.ResumeIndentLevel();
+            }
+        }
+
+        private System.Guid DrawGuidField(Rect position, System.Guid guid, SerializableGuid.ConfigAttribute attrib)
+        {
+            if (attrib?.ObjectRefField ?? false)
+            {
+                var r0 = new Rect(position.xMin, position.yMin, 30f, position.height);
+                var r1 = new Rect(position.xMin + r0.width + 1, position.yMin, position.width - r0.width - 1, position.height);
+                EditorGUI.LabelField(r0, "Ref:");
+
+                var path = AssetDatabase.GUIDToAssetPath(guid.ToString("N"));
+                var obj = string.IsNullOrEmpty(path) ? null : AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path);
+                if (obj || guid == System.Guid.Empty)
+                {
+                    var newobj = EditorGUI.ObjectField(r1, obj, typeof(UnityEngine.Object), false);
+                    if (!newobj)
+                    {
+                        return System.Guid.Empty;
+                    }
+                    else if (newobj != obj && TryGetLinkedGuid(newobj, out System.Guid newguid, true, false))
+                    {
+                        return newguid;
+                    }
+                    else
+                    {
+                        return guid;
+                    }
+                }
+                else
+                {
+                    //couldn't find asset
+                    if (SPEditorGUI.XButton(ref r1))
+                    {
+                        EditorGUI.SelectableLabel(r1, "Missing: " + guid.ToString("D"), EditorStyles.textField);
+                        return System.Guid.Empty;
+                    }
+
+                    EditorGUI.SelectableLabel(r1, "Missing: " + guid.ToString("D"), EditorStyles.textField);
+                    var ev = Event.current;
+                    switch (ev.type)
+                    {
+                        case EventType.DragUpdated:
+                        case EventType.DragPerform:
+                            if (position.Contains(ev.mousePosition))
+                            {
+                                DragAndDrop.visualMode = DragAndDrop.objectReferences.Count() > 0 ? DragAndDropVisualMode.Link : DragAndDropVisualMode.Rejected;
+                                if (DragAndDrop.objectReferences.Count() > 0 && ev.type == EventType.DragPerform)
+                                {
+                                    var newobj = DragAndDrop.objectReferences.FirstOrDefault();
+                                    if (newobj && TryGetLinkedGuid(newobj, out System.Guid newguid, true, false))
+                                    {
+                                        return newguid;
+                                    }
+                                }
+                            }
+                            break;
+                    }
+
+                    return guid;
+                }
+            }
+            else
+            {
+                EditorGUI.SelectableLabel(position, guid.ToString("D"), EditorStyles.textField);
+                return guid;
             }
         }
 

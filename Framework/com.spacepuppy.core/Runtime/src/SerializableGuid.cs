@@ -239,6 +239,12 @@ namespace com.spacepuppy
             /// for the upper and lower portions of the guid respectively. If LinkToAsset is true, that takes precedance to this. 
             /// </summary>
             public bool LinkToGlobalObjectId;
+
+            /// <summary>
+            /// The guid will be displayed as an object reference field showing the asset related to the guid. 
+            /// Dragging an object onto said field will update its value unless any LinkTo* is true.
+            /// </summary>
+            public bool ObjectRefField;
         }
 
         #endregion

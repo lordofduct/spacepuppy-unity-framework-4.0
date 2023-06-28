@@ -151,7 +151,8 @@ namespace com.spacepuppyeditor.Core
                     _selectComponentDrawer = new SelectableComponentPropertyDrawer();
                 }
 
-                _selectComponentDrawer.RestrictionType = inheritsFromType ?? typeof(UnityEngine.Object);
+                //_selectComponentDrawer.RestrictionType = inheritsFromType ?? typeof(UnityEngine.Object);
+                _selectComponentDrawer.RestrictionType = (allInheritableTypes.Length == 1) ? allInheritableTypes[0] : inheritsFromType ?? typeof(UnityEngine.Object);
                 _selectComponentDrawer.AllowProxy = attrib.AllowProxy;
                 _selectComponentDrawer.ShowXButton = true;
                 _selectComponentDrawer.AllowNonComponents = true;

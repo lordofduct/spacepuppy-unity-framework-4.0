@@ -707,13 +707,17 @@ namespace com.spacepuppyeditor.Windows
                 bool validDrag;
                 if (allowSceneObjects)
                 {
-                    validDrag = DragAndDrop.objectReferences.Any(o => ObjUtil.GetAsFromSource(types, o) != null &&
-                                                                      (filter == null || (o is T ot && filter(ot))));
+                    validDrag = DragAndDrop.objectReferences.Any(o => {
+                        var ot = ObjUtil.GetAsFromSource(types, o);
+                        return ot != null && (filter == null || (ot is T ott && filter(ott)));
+                    });
                 }
                 else
                 {
-                    validDrag = DragAndDrop.objectReferences.Any(o => ObjUtil.GetAsFromSource(types, o) != null && !string.IsNullOrEmpty(AssetDatabase.GetAssetPath(o)) &&
-                                                                      (filter == null || (o is T ot && filter(ot))));
+                    validDrag = DragAndDrop.objectReferences.Any(o => {
+                        var ot = ObjUtil.GetAsFromSource(types, o);
+                        return ot != null && !string.IsNullOrEmpty(AssetDatabase.GetAssetPath(o)) && (filter == null || (ot is T ott && filter(ott)));
+                    });
                 }
 
                 if (isDragging)

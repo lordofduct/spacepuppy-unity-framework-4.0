@@ -175,7 +175,7 @@ namespace com.spacepuppy.Pathfinding
             {
                 if (_onPathCallback == null) _onPathCallback = new OnPathDelegate((Path p) =>
                 {
-                    if (p.CompleteState == PathCompleteState.Complete &&
+                    if (p.CompleteState >= PathCompleteState.Complete &&
                         p is ABPath &&
                         (p.vectorPath.Count == 0 || !VectorUtil.FuzzyEquals(p.vectorPath[p.vectorPath.Count - 1], (p as ABPath).endPoint)))
                     {

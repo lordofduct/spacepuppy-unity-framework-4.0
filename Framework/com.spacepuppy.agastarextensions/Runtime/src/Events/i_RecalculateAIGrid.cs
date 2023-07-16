@@ -11,7 +11,7 @@ using com.spacepuppy.Pathfinding;
 namespace com.spacepuppy.Events
 {
 
-    public class i_RecalculateAIGrid : Triggerable
+    public class i_RecalculateAIGrid : AutoTriggerable
     {
 
         public enum RecalculateMode

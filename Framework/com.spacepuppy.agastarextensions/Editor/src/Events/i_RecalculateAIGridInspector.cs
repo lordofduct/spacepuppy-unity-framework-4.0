@@ -22,6 +22,7 @@ namespace com.spacepuppyeditor.Events
 
             this.DrawPropertyField(EditorHelper.PROP_SCRIPT);
             this.DrawPropertyField(EditorHelper.PROP_ORDER);
+            this.DrawPropertyField(EditorHelper.PROP_ACTIVATEON);
 
             var modeProp = this.serializedObject.FindProperty(PROP_MODE);
             SPEditorGUILayout.PropertyField(modeProp);
@@ -39,7 +40,7 @@ namespace com.spacepuppyeditor.Events
                     break;
             }
 
-            this.DrawDefaultInspectorExcept(EditorHelper.PROP_SCRIPT, EditorHelper.PROP_ORDER, PROP_MODE, PROP_OBJREF);
+            this.DrawDefaultInspectorExcept(EditorHelper.PROP_SCRIPT, EditorHelper.PROP_ORDER, EditorHelper.PROP_ACTIVATEON, PROP_MODE, PROP_OBJREF);
 
             this.serializedObject.ApplyModifiedProperties();
         }

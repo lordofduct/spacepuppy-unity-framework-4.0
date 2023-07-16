@@ -53,12 +53,12 @@ namespace com.spacepuppy.Motor.Pathfinding
         [System.NonSerialized]
         private IPath _currentPath;
         [System.NonSerialized]
-        private int _currentIndex;
+        protected int _currentIndex;
         [System.NonSerialized]
         private bool _paused;
 
         [System.NonSerialized]
-        private float _lastSpeed;
+        protected float _lastSpeed;
 
         #endregion
 

@@ -42,7 +42,7 @@ namespace com.spacepuppyeditor.Events
             var restrictType = TypeReferencePropertyDrawer.GetTypeFromTypeReference(restrictTypeProp);
 
             if (restrictType == null && !targetRef.TargetsTriggerArg && targetRef.Target != null &&
-                targetRef.Find == TriggerableTargetObject.FindCommand.Direct && targetRef.ResolveBy != TriggerableTargetObject.ResolveByCommand.WithType &&
+                targetRef.Find == TriggerableTargetObject.FindCommand.Direct && targetRef.ResolveBy != SearchBy.Type &&
                 targetRef.Target.GetType() != restrictType)
             {
                 memberProp.stringValue = SPEditorGUILayout.ReflectedPropertyField(EditorHelper.TempContent("Property", "The property on the target to set."),
@@ -56,7 +56,7 @@ namespace com.spacepuppyeditor.Events
             {
                 if (restrictType == null)
                 {
-                    if (targetRef.ResolveBy == TriggerableTargetObject.ResolveByCommand.WithType) restrictType = TypeUtil.FindType(targetRef.ResolveByQuery);
+                    if (targetRef.ResolveBy == SearchBy.Type) restrictType = TypeUtil.FindType(targetRef.ResolveByQuery);
                     if (restrictType == null)
                         restrictType = typeof(object);
                     else

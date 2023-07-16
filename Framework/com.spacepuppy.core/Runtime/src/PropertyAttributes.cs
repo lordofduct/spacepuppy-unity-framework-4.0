@@ -273,6 +273,8 @@ namespace com.spacepuppy
         /// </summary>
         public bool AllowDragAndDrop = true;
 
+        public bool AllowDragAndDropSceneObjects = true;
+
         public ReorderableArrayAttribute()
         {
 

@@ -11,7 +11,7 @@ namespace com.spacepuppy.Events
     {
 
         #region Fields
-        
+
         [SerializeField()]
         [SPEvent.Config("daisy chained arg (object)")]
         private SPEvent _trigger = new SPEvent("Trigger");
@@ -25,11 +25,11 @@ namespace com.spacepuppy.Events
         #endregion
 
         #region CONSTRUCTOR
-        
+
         #endregion
 
         #region Properties
-        
+
         public SPEvent TriggerEvent
         {
             get
@@ -56,7 +56,7 @@ namespace com.spacepuppy.Events
 
         private void DoTriggerNext(object arg)
         {
-            if (this._passAlongTriggerArg)
+            if (_passAlongTriggerArg)
                 _trigger.ActivateTrigger(this, arg);
             else
                 _trigger.ActivateTrigger(this, null);
@@ -65,7 +65,7 @@ namespace com.spacepuppy.Events
         #endregion
 
         #region ITriggerableMechanism Interface
-        
+
         public override bool Trigger(object sender, object arg)
         {
             if (!this.CanTrigger) return false;

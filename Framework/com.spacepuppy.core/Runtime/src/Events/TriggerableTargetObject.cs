@@ -4,6 +4,7 @@ using System.Linq;
 
 using com.spacepuppy.Collections;
 using com.spacepuppy.Utils;
+using com.spacepuppy.Dynamic;
 
 namespace com.spacepuppy.Events
 {
@@ -22,14 +23,6 @@ namespace com.spacepuppy.Events
             FindEntityInScene = 5
         }
 
-        public enum ResolveByCommand
-        {
-            Nothing = SearchBy.Nothing,
-            WithTag = SearchBy.Tag,
-            WithName = SearchBy.Name,
-            WithType = SearchBy.Type
-        }
-
         #region Fields
 
         [SerializeField()]
@@ -40,7 +33,7 @@ namespace com.spacepuppy.Events
         [SerializeField()]
         private FindCommand _find;
         [SerializeField()]
-        private ResolveByCommand _resolveBy;
+        private SearchBy _resolveBy;
         [SerializeField()]
         private string _queryString;
 
@@ -62,12 +55,17 @@ namespace com.spacepuppy.Events
             this.Configure(target);
         }
 
-        public TriggerableTargetObject(UnityEngine.Object target, FindCommand find, ResolveByCommand resolveBy = ResolveByCommand.Nothing, string resolveQuery = null)
+        public TriggerableTargetObject(UnityEngine.Object target, string sprop)
+        {
+            this.Configure(target, sprop);
+        }
+
+        public TriggerableTargetObject(UnityEngine.Object target, FindCommand find, SearchBy resolveBy = SearchBy.Nothing, string resolveQuery = null)
         {
             this.Configure(target, find, resolveBy, resolveQuery);
         }
 
-        public TriggerableTargetObject(FindCommand find, ResolveByCommand resolveBy, string resolveQuery)
+        public TriggerableTargetObject(FindCommand find, SearchBy resolveBy, string resolveQuery)
         {
             this.Configure(find, resolveBy, resolveQuery);
         }
@@ -117,7 +115,7 @@ namespace com.spacepuppy.Events
             set { _find = value; }
         }
 
-        public ResolveByCommand ResolveBy
+        public SearchBy ResolveBy
         {
             get { return _resolveBy; }
             set { _resolveBy = value; }
@@ -129,6 +127,8 @@ namespace com.spacepuppy.Events
             set { _queryString = value; }
         }
 
+        public bool IsPropertyQuery => _find == FindCommand.Direct && !string.IsNullOrEmpty(_queryString);
+
         #endregion
 
         #region Methods
@@ -138,25 +138,39 @@ namespace com.spacepuppy.Events
             _configured = true;
             _target = target;
             _find = FindCommand.Direct;
-            _resolveBy = ResolveByCommand.Nothing;
+            _resolveBy = SearchBy.Nothing;
             _queryString = null;
         }
 
-        public void Configure(UnityEngine.Object target, FindCommand find, ResolveByCommand resolveBy = ResolveByCommand.Nothing, string resolveQuery = null)
+        /// <summary>
+        /// Configures the target as direct, by uses the query string as a property of the direct target.
+        /// </summary>
+        /// <param name="target"></param>
+        /// <param name="sprop"></param>
+        public void Configure(UnityEngine.Object target, string sprop)
+        {
+            _configured = true;
+            _target = target;
+            _find = FindCommand.Direct;
+            _resolveBy = SearchBy.Nothing;
+            _queryString = sprop;
+        }
+
+        public void Configure(UnityEngine.Object target, FindCommand find, SearchBy resolveBy = SearchBy.Nothing, string resolveQuery = null)
         {
             _configured = true;
             _target = target;
             _find = find;
-            _resolveBy = resolveBy;
+            _resolveBy = (SearchBy)resolveBy;
             _queryString = resolveQuery;
         }
 
-        public void Configure(FindCommand find, ResolveByCommand resolveBy, string resolveQuery)
+        public void Configure(FindCommand find, SearchBy resolveBy, string resolveQuery)
         {
             _configured = false;
             _target = null;
             _find = find;
-            _resolveBy = resolveBy;
+            _resolveBy = (SearchBy)resolveBy;
             _queryString = resolveQuery;
         }
 
@@ -244,13 +258,20 @@ namespace com.spacepuppy.Events
                         if (ObjUtil.IsNullOrDestroyed(obj)) return null;
                         switch (_resolveBy)
                         {
-                            case ResolveByCommand.Nothing:
-                                return obj;
-                            case ResolveByCommand.WithTag:
+                            case SearchBy.Nothing:
+                                if (string.IsNullOrEmpty(_queryString))
+                                {
+                                    return obj;
+                                }
+                                else
+                                {
+                                    return DynamicUtil.GetValue(obj, _queryString);
+                                }
+                            case SearchBy.Tag:
                                 return GameObjectUtil.GetGameObjectFromSource(obj).HasTag(_queryString) ? obj : null;
-                            case ResolveByCommand.WithName:
+                            case SearchBy.Name:
                                 return GameObjectUtil.GetGameObjectFromSource(obj).CompareName(_queryString) ? obj : null;
-                            case ResolveByCommand.WithType:
+                            case SearchBy.Type:
                                 return ObjUtil.GetAsFromSource(TypeUtil.FindType(_queryString), GameObjectUtil.GetGameObjectFromSource(obj)) != null ? obj : null;
                         }
                     }
@@ -261,13 +282,13 @@ namespace com.spacepuppy.Events
                         if (trans == null) return null;
                         switch (_resolveBy)
                         {
-                            case ResolveByCommand.Nothing:
+                            case SearchBy.Nothing:
                                 return trans.parent;
-                            case ResolveByCommand.WithTag:
+                            case SearchBy.Tag:
                                 return trans.FindParentWithTag(_queryString);
-                            case ResolveByCommand.WithName:
+                            case SearchBy.Name:
                                 return trans.FindParentWithName(_queryString);
-                            case ResolveByCommand.WithType:
+                            case SearchBy.Type:
                                 {
                                     var tp = TypeUtil.FindType(_queryString);
                                     foreach (var p in GameObjectUtil.GetParents(trans))
@@ -286,9 +307,9 @@ namespace com.spacepuppy.Events
                         if (trans == null) return null;
                         switch (_resolveBy)
                         {
-                            case ResolveByCommand.Nothing:
+                            case SearchBy.Nothing:
                                 return (trans.childCount > 0) ? trans.GetChild(0) : null;
-                            case ResolveByCommand.WithTag:
+                            case SearchBy.Tag:
                                 if (trans.childCount > 0)
                                 {
                                     using (var lst = TempCollection.GetList<Transform>())
@@ -301,13 +322,13 @@ namespace com.spacepuppy.Events
                                     }
                                 }
                                 break;
-                            case ResolveByCommand.WithName:
+                            case SearchBy.Name:
                                 if (trans.childCount > 0)
                                 {
                                     return trans.FindByName(_queryString);
                                 }
                                 break;
-                            case ResolveByCommand.WithType:
+                            case SearchBy.Type:
                                 if (trans.childCount > 0)
                                 {
                                     var tp = TypeUtil.FindType(_queryString);
@@ -332,13 +353,13 @@ namespace com.spacepuppy.Events
 
                         switch (_resolveBy)
                         {
-                            case ResolveByCommand.Nothing:
+                            case SearchBy.Nothing:
                                 return entity;
-                            case ResolveByCommand.WithTag:
+                            case SearchBy.Tag:
                                 return entity.FindWithMultiTag(_queryString);
-                            case ResolveByCommand.WithName:
+                            case SearchBy.Name:
                                 return entity.FindByName(_queryString);
-                            case ResolveByCommand.WithType:
+                            case SearchBy.Type:
                                 {
                                     var tp = TypeUtil.FindType(_queryString);
                                     foreach (var t in GameObjectUtil.GetAllChildrenAndSelf(entity))
@@ -355,13 +376,13 @@ namespace com.spacepuppy.Events
                     {
                         switch (_resolveBy)
                         {
-                            case ResolveByCommand.Nothing:
+                            case SearchBy.Nothing:
                                 return GameObjectUtil.GetGameObjectFromSource((_configured) ? targ : triggerArg);
-                            case ResolveByCommand.WithTag:
+                            case SearchBy.Tag:
                                 return GameObjectUtil.FindWithMultiTag(_queryString);
-                            case ResolveByCommand.WithName:
+                            case SearchBy.Name:
                                 return GameObject.Find(_queryString);
-                            case ResolveByCommand.WithType:
+                            case SearchBy.Type:
                                 return ObjUtil.Find(SearchBy.Type, _queryString);
                         }
                     }
@@ -370,9 +391,9 @@ namespace com.spacepuppy.Events
                     {
                         switch (_resolveBy)
                         {
-                            case ResolveByCommand.Nothing:
+                            case SearchBy.Nothing:
                                 return GameObjectUtil.GetGameObjectFromSource((_configured) ? targ : triggerArg);
-                            case ResolveByCommand.WithTag:
+                            case SearchBy.Tag:
                                 {
                                     var e = SPEntity.Pool.GetEnumerator();
                                     while (e.MoveNext())
@@ -381,7 +402,7 @@ namespace com.spacepuppy.Events
                                     }
                                 }
                                 break;
-                            case ResolveByCommand.WithName:
+                            case SearchBy.Name:
                                 {
                                     var e = SPEntity.Pool.GetEnumerator();
                                     while (e.MoveNext())
@@ -390,7 +411,7 @@ namespace com.spacepuppy.Events
                                     }
                                 }
                                 break;
-                            case ResolveByCommand.WithType:
+                            case SearchBy.Type:
                                 {
                                     var e = SPEntity.Pool.GetEnumerator();
                                     var tp = TypeUtil.FindType(_queryString);
@@ -419,22 +440,29 @@ namespace com.spacepuppy.Events
                         if (ObjUtil.IsNullOrDestroyed(obj)) yield break;
                         switch (_resolveBy)
                         {
-                            case ResolveByCommand.Nothing:
-                                yield return obj;
+                            case SearchBy.Nothing:
+                                if (string.IsNullOrEmpty(_queryString))
+                                {
+                                    yield return obj;
+                                }
+                                else
+                                {
+                                    yield return DynamicUtil.GetValue(obj, _queryString);
+                                }
                                 break;
-                            case ResolveByCommand.WithTag:
+                            case SearchBy.Tag:
                                 {
                                     var go = GameObjectUtil.GetGameObjectFromSource(obj);
                                     if (go.HasTag(_queryString)) yield return obj;
                                 }
                                 break;
-                            case ResolveByCommand.WithName:
+                            case SearchBy.Name:
                                 {
                                     var go = GameObjectUtil.GetGameObjectFromSource(obj);
                                     if (go.CompareName(_queryString)) yield return obj;
                                 }
                                 break;
-                            case ResolveByCommand.WithType:
+                            case SearchBy.Type:
                                 {
                                     var o = ObjUtil.GetAsFromSource(TypeUtil.FindType(_queryString), GameObjectUtil.GetGameObjectFromSource(obj));
                                     if (o != null) yield return o;
@@ -449,13 +477,13 @@ namespace com.spacepuppy.Events
                         if (trans == null) yield break;
                         switch (_resolveBy)
                         {
-                            case ResolveByCommand.Nothing:
+                            case SearchBy.Nothing:
                                 {
                                     var t = trans.parent;
                                     if (t != null) yield return t;
                                 }
                                 break;
-                            case ResolveByCommand.WithTag:
+                            case SearchBy.Tag:
                                 {
                                     foreach (var p in GameObjectUtil.GetParents(trans))
                                     {
@@ -463,7 +491,7 @@ namespace com.spacepuppy.Events
                                     }
                                 }
                                 break;
-                            case ResolveByCommand.WithName:
+                            case SearchBy.Name:
                                 {
                                     foreach (var p in GameObjectUtil.GetParents(trans))
                                     {
@@ -471,7 +499,7 @@ namespace com.spacepuppy.Events
                                     }
                                 }
                                 break;
-                            case ResolveByCommand.WithType:
+                            case SearchBy.Type:
                                 {
                                     var tp = TypeUtil.FindType(_queryString);
                                     foreach (var p in GameObjectUtil.GetParents(trans))
@@ -490,10 +518,10 @@ namespace com.spacepuppy.Events
                         if (trans == null) yield break;
                         switch (_resolveBy)
                         {
-                            case ResolveByCommand.Nothing:
+                            case SearchBy.Nothing:
                                 if (trans.childCount > 0) yield return trans.GetChild(0);
                                 break;
-                            case ResolveByCommand.WithTag:
+                            case SearchBy.Tag:
                                 if (trans.childCount > 0)
                                 {
                                     using (var lst = TempCollection.GetList<Transform>())
@@ -506,7 +534,7 @@ namespace com.spacepuppy.Events
                                     }
                                 }
                                 break;
-                            case ResolveByCommand.WithName:
+                            case SearchBy.Name:
                                 if (trans.childCount > 0)
                                 {
                                     using (var lst = TempCollection.GetList<Transform>())
@@ -519,7 +547,7 @@ namespace com.spacepuppy.Events
                                     }
                                 }
                                 break;
-                            case ResolveByCommand.WithType:
+                            case SearchBy.Type:
                                 if (trans.childCount > 0)
                                 {
                                     var tp = TypeUtil.FindType(_queryString);
@@ -544,10 +572,10 @@ namespace com.spacepuppy.Events
 
                         switch (_resolveBy)
                         {
-                            case ResolveByCommand.Nothing:
+                            case SearchBy.Nothing:
                                 yield return entity;
                                 break;
-                            case ResolveByCommand.WithTag:
+                            case SearchBy.Tag:
                                 {
                                     foreach (var o in entity.FindAllWithMultiTag(_queryString))
                                     {
@@ -555,7 +583,7 @@ namespace com.spacepuppy.Events
                                     }
                                 }
                                 break;
-                            case ResolveByCommand.WithName:
+                            case SearchBy.Name:
                                 {
                                     foreach (var o in GameObjectUtil.FindAllByName(entity.transform, _queryString))
                                     {
@@ -563,7 +591,7 @@ namespace com.spacepuppy.Events
                                     }
                                 }
                                 break;
-                            case ResolveByCommand.WithType:
+                            case SearchBy.Type:
                                 {
                                     var tp = TypeUtil.FindType(_queryString);
                                     using (var lst = TempCollection.GetList<Transform>())
@@ -584,13 +612,13 @@ namespace com.spacepuppy.Events
                     {
                         switch (_resolveBy)
                         {
-                            case ResolveByCommand.Nothing:
+                            case SearchBy.Nothing:
                                 {
                                     var go = GameObjectUtil.GetGameObjectFromSource((_configured) ? _target : triggerArg);
                                     if (go != null) yield return go;
                                 }
                                 break;
-                            case ResolveByCommand.WithTag:
+                            case SearchBy.Tag:
                                 {
                                     foreach (var o in GameObjectUtil.FindGameObjectsWithMultiTag(_queryString))
                                     {
@@ -598,7 +626,7 @@ namespace com.spacepuppy.Events
                                     }
                                 }
                                 break;
-                            case ResolveByCommand.WithName:
+                            case SearchBy.Name:
                                 {
                                     foreach (var o in GameObjectUtil.FindAllByName(_queryString))
                                     {
@@ -606,7 +634,7 @@ namespace com.spacepuppy.Events
                                     }
                                 }
                                 break;
-                            case ResolveByCommand.WithType:
+                            case SearchBy.Type:
                                 {
                                     foreach (var o in ObjUtil.FindAll(SearchBy.Type, _queryString))
                                     {
@@ -621,13 +649,13 @@ namespace com.spacepuppy.Events
                     {
                         switch (_resolveBy)
                         {
-                            case ResolveByCommand.Nothing:
+                            case SearchBy.Nothing:
                                 {
                                     var go = GameObjectUtil.GetGameObjectFromSource((_configured) ? _target : triggerArg);
                                     if (go != null) yield return go;
                                 }
                                 break;
-                            case ResolveByCommand.WithTag:
+                            case SearchBy.Tag:
                                 {
                                     var e = SPEntity.Pool.GetEnumerator();
                                     while (e.MoveNext())
@@ -636,7 +664,7 @@ namespace com.spacepuppy.Events
                                     }
                                 }
                                 break;
-                            case ResolveByCommand.WithName:
+                            case SearchBy.Name:
                                 {
                                     var e = SPEntity.Pool.GetEnumerator();
                                     while (e.MoveNext())
@@ -645,7 +673,7 @@ namespace com.spacepuppy.Events
                                     }
                                 }
                                 break;
-                            case ResolveByCommand.WithType:
+                            case SearchBy.Type:
                                 {
                                     var e = SPEntity.Pool.GetEnumerator();
                                     var tp = TypeUtil.FindType(_queryString);
@@ -670,10 +698,10 @@ namespace com.spacepuppy.Events
         /// <returns></returns>
         public System.Type GetTargetType()
         {
-            if (_configured && _target != null && _find == FindCommand.Direct && _resolveBy != ResolveByCommand.WithType)
+            if (_configured && _target != null && _find == FindCommand.Direct && _resolveBy != SearchBy.Type)
                 return _target.GetType();
 
-            if (_resolveBy == ResolveByCommand.WithType)
+            if (_resolveBy == SearchBy.Type)
                 return TypeUtil.FindType(_queryString) ?? typeof(UnityEngine.Object);
 
             return typeof(UnityEngine.Object);
@@ -690,7 +718,7 @@ namespace com.spacepuppy.Events
             public bool SearchChildren;
             public bool DefaultFromSelf;
             public bool AlwaysExpanded;
-            
+
             public ConfigAttribute(System.Type targetType)
             {
                 //if (targetType == null || 

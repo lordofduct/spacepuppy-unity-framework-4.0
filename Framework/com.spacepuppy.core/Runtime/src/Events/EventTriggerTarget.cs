@@ -235,7 +235,25 @@ namespace com.spacepuppy.Events
                         break;
                     case TriggerActivationType.EnableTarget:
                         {
-                            EventTriggerEvaluator.Current.EnableTarget(_triggerable, incomingArg, ConvertUtil.ToEnum<EnableMode>(_methodName));
+                            //switch statement is faster than parse
+                            switch (_methodName)
+                            {
+                                case "Enable":
+                                case "enable":
+                                    EventTriggerEvaluator.Current.EnableTarget(_triggerable, incomingArg, EnableMode.Enable);
+                                    break;
+                                case "Disable":
+                                case "disable":
+                                    EventTriggerEvaluator.Current.EnableTarget(_triggerable, incomingArg, EnableMode.Disable);
+                                    break;
+                                case "Toggle":
+                                case "toggle":
+                                    EventTriggerEvaluator.Current.EnableTarget(_triggerable, incomingArg, EnableMode.Toggle);
+                                    break;
+                                default:
+                                    EventTriggerEvaluator.Current.EnableTarget(_triggerable, incomingArg, ConvertUtil.ToEnum<EnableMode>(_methodName));
+                                    break;
+                            }
                         }
                         break;
                     case TriggerActivationType.DestroyTarget:

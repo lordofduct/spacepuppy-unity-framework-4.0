@@ -183,7 +183,7 @@ namespace com.spacepuppy
         #region Fields
 
         [SerializeField]
-        private TriggerableTargetObject _target = new TriggerableTargetObject(TriggerableTargetObject.FindCommand.FindInScene, TriggerableTargetObject.ResolveByCommand.Nothing, string.Empty);
+        private TriggerableTargetObject _target = new TriggerableTargetObject(TriggerableTargetObject.FindCommand.FindInScene, SearchBy.Nothing, string.Empty);
         [SerializeField]
         [TypeReference.Config(typeof(Component), allowAbstractClasses = true, allowInterfaces = true)]
         private TypeReference _componentTypeOnTarget;

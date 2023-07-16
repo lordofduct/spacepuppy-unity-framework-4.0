@@ -18,7 +18,7 @@ namespace com.spacepuppyeditor.Core
         #region Fields
 
         private SelectableComponentPropertyDrawer _selectComponentDrawer;
-        private static MultiTypeComponentChoiceSelector _multiSelector = new MultiTypeComponentChoiceSelector();
+        private static TypeRestrictionComponentChoiceSelector _multiSelector = new TypeRestrictionComponentChoiceSelector();
 
         #endregion
 
@@ -88,7 +88,8 @@ namespace com.spacepuppyeditor.Core
             System.Type inheritsFromType = (allInheritableTypes.Length == 1 && TypeUtil.IsType(allInheritableTypes[0], typeof(UnityEngine.Object))) ? allInheritableTypes[0] : fieldType;
             bool isNonStandardUnityType = allInheritableTypes.Any(o => o.IsInterface || o.IsGenericType || !TypeUtil.IsType(o, typeof(UnityEngine.Object))); //is a type that unity's ObjectField doesn't support directly
 
-            if (attrib.HideTypeDropDown || !objIsSimpleComponentSource || (attrib.HideTypeDropDownIfSingle && !SatisfiesMoreThanOneTarget(property.objectReferenceValue, allInheritableTypes)))
+            if (!objIsSimpleComponentSource || (attrib?.HideTypeDropDown ?? false) ||
+                (attrib.HideTypeDropDownIfSingle && !SatisfiesMoreThanOneTarget(property.objectReferenceValue, allInheritableTypes)))
             {
                 //draw object field
                 UnityEngine.Object targ;
@@ -153,12 +154,13 @@ namespace com.spacepuppyeditor.Core
 
                 //_selectComponentDrawer.RestrictionType = inheritsFromType ?? typeof(UnityEngine.Object);
                 _selectComponentDrawer.RestrictionType = (allInheritableTypes.Length == 1) ? allInheritableTypes[0] : inheritsFromType ?? typeof(UnityEngine.Object);
-                _selectComponentDrawer.AllowProxy = attrib.AllowProxy;
+                _selectComponentDrawer.AllowProxy = (attrib?.AllowProxy ?? false);
                 _selectComponentDrawer.ShowXButton = true;
                 _selectComponentDrawer.AllowNonComponents = true;
-                if (allInheritableTypes.Length > 1)
+                if (allInheritableTypes.Length > 1 || (attrib?.AllowProxy ?? false))
                 {
                     _multiSelector.AllowedTypes = allInheritableTypes;
+                    _multiSelector.RestrictProxyResolvedType = (attrib?.RestrictProxyResolvedType ?? false);
                     _selectComponentDrawer.ChoiceSelector = _multiSelector;
                 }
                 else
@@ -195,6 +197,65 @@ namespace com.spacepuppyeditor.Core
 
         #endregion
 
+        #region Special Types
+
+        private class TypeRestrictionComponentChoiceSelector : DefaultComponentChoiceSelector
+        {
+
+            public System.Type[] AllowedTypes;
+            public bool RestrictProxyResolvedType;
+
+            protected override Component[] DoGetComponents()
+            {
+                return GetComponentsFromSerializedProperty(this.Property, this.AllowedTypes, this.RestrictionType, this.Drawer.ForceOnlySelf, this.Drawer.SearchChildren, this.AllowProxy, this.RestrictProxyResolvedType);
+            }
+
+            public static Component[] GetComponentsFromSerializedProperty(SerializedProperty property, System.Type[] allowedTypes, System.Type restrictionType, bool forceSelfOnly, bool searchChildren, bool allowProxy, bool restrictProxyResolvedType)
+            {
+                if (allowedTypes == null || allowedTypes.Length == 0) return ArrayUtil.Empty<Component>();
+
+                var go = DefaultComponentChoiceSelector.GetGameObjectFromSource(property, forceSelfOnly);
+                if (go == null) return ArrayUtil.Empty<Component>();
+
+                using (var set = com.spacepuppy.Collections.TempCollection.GetSet<Component>())
+                {
+                    if (searchChildren)
+                    {
+                        foreach (var c in go.GetComponentsInChildren<Component>())
+                        {
+                            if (!IsTypeLocal(c, restrictionType, allowProxy, restrictProxyResolvedType)) continue;
+                            foreach (var tp in allowedTypes)
+                            {
+                                if (IsTypeLocal(c, tp, allowProxy, restrictProxyResolvedType)) set.Add(c);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        foreach (var c in go.GetComponents<Component>())
+                        {
+                            if (!IsTypeLocal(c, restrictionType, allowProxy, restrictProxyResolvedType)) continue;
+                            foreach (var tp in allowedTypes)
+                            {
+                                if (IsTypeLocal(c, tp, allowProxy, restrictProxyResolvedType)) set.Add(c);
+                            }
+                        }
+                    }
+
+                    return (from c in set orderby c.GetType().Name select c).ToArray();
+                }
+            }
+
+            static bool IsTypeLocal(object obj, System.Type tp, bool respectProxy, bool restrictProxyResolvedType)
+            {
+                if (respectProxy && !restrictProxyResolvedType && obj is IProxy) return true;
+
+                return ObjUtil.IsType(obj, tp, respectProxy);
+            }
+
+        }
+
+        #endregion
 
     }
 

@@ -107,7 +107,7 @@ namespace com.spacepuppy.Utils
 
         public static InvokeHandle Begin(UpdatePump pump, System.Action callback, float duration, ITimeSupplier time)
         {
-            if (pump == null) throw new System.ArgumentNullException("pump");
+            if (pump == null) throw new System.ArgumentNullException(nameof(pump));
 
             var handle = _pool.GetInstance();
             handle._callback = callback;
@@ -121,7 +121,7 @@ namespace com.spacepuppy.Utils
 
         public static InvokeHandle Begin(UpdatePump pump, System.Action callback, System.Collections.IEnumerator e)
         {
-            if (pump == null) throw new System.ArgumentNullException("pump");
+            if (pump == null) throw new System.ArgumentNullException(nameof(pump));
 
             var handle = _pool.GetInstance();
             handle._callback = callback;

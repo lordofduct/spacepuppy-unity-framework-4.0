@@ -490,6 +490,7 @@ namespace com.spacepuppy.Scenes
         internal UnmanagedSceneLoadedEventArgs(Scene scene, LoadSceneMode mode)
         {
             _scene = scene;
+            _mode = mode;
         }
 
         public override Scene Scene { get { return _scene; } }

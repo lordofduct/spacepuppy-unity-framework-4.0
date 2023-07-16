@@ -41,6 +41,7 @@ namespace com.spacepuppyeditor.Core
         private string _elementLabelFormatString;
         private float _elementPadding;
         private bool _allowDragAndDrop = true;
+        private bool _allowDragAndDropSceneObjects = true;
         private bool _showTooltipInHeader;
         private bool _hideLengthField;
 
@@ -231,6 +232,12 @@ namespace com.spacepuppyeditor.Core
         {
             get { return (this.attribute as ReorderableArrayAttribute)?.AllowDragAndDrop ?? _allowDragAndDrop; }
             set { _allowDragAndDrop = value; }
+        }
+
+        public bool AllowDragAndDropSceneObjects
+        {
+            get { return (this.attribute as ReorderableArrayAttribute)?.AllowDragAndDropSceneObjects ?? _allowDragAndDropSceneObjects; }
+            set { _allowDragAndDropSceneObjects = value; }
         }
 
         public bool ShowTooltipInHeader
@@ -598,14 +605,24 @@ namespace com.spacepuppyeditor.Core
                         {
                             if (listArea.Contains(ev.mousePosition))
                             {
-                                IEnumerable<object> refs;
-                                if (this.DragDropElementFilter != null)
+                                IEnumerable<UnityEngine.Object> refsource;
+                                if (this.AllowDragAndDropSceneObjects)
                                 {
-                                    refs = (from o in DragAndDrop.objectReferences let obj = this.DragDropElementFilter(o) where obj != null select obj);
+                                    refsource = DragAndDrop.objectReferences;
                                 }
                                 else
                                 {
-                                    refs = (from o in DragAndDrop.objectReferences let obj = ObjUtil.GetAsFromSource(this.DragDropElementType, o, false) where obj != null select obj);
+                                    refsource = DragAndDrop.objectReferences.Where(o => !string.IsNullOrEmpty(AssetDatabase.GetAssetPath(o)));
+                                }
+
+                                IEnumerable<object> refs;
+                                if (this.DragDropElementFilter != null)
+                                {
+                                    refs = (from o in refsource let obj = this.DragDropElementFilter(o) where obj != null select obj);
+                                }
+                                else
+                                {
+                                    refs = (from o in refsource let obj = ObjUtil.GetAsFromSource(this.DragDropElementType, o, false) where obj != null select obj);
                                 }
 
                                 DragAndDrop.visualMode = refs.Any() ? DragAndDropVisualMode.Link : DragAndDropVisualMode.Rejected;

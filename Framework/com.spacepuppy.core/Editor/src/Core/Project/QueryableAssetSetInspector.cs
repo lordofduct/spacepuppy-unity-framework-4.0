@@ -46,6 +46,7 @@ namespace com.spacepuppyeditor.Core.Project
             });
 
             _reorderableArrayDrawer.AllowDragAndDrop = true;
+            _reorderableArrayDrawer.AllowDragAndDropSceneObjects = false;
             _reorderableArrayDrawer.DragDropElementType = typeof(UnityEngine.Object);
             _reorderableArrayDrawer.DragDropElementFilter = (o) =>
             {
@@ -60,6 +61,28 @@ namespace com.spacepuppyeditor.Core.Project
                 }
 
                 return null;
+            };
+            _reorderableArrayDrawer.FormatElementLabel = (p, i, _, _) =>
+            {
+                var objref = p.objectReferenceValue;
+                if (objref != null)
+                {
+                    var sguid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(objref));
+                    if (EditorGUIUtility.currentViewWidth < 375f)
+                    {
+                        sguid = sguid.Substring(0, 11) + "...";
+                    }
+                    else if (EditorGUIUtility.currentViewWidth < 640f)
+                    {
+                        int cnt = Mathf.Clamp(Mathf.FloorToInt((EditorGUIUtility.currentViewWidth - 390) / 14) + 11, 0, sguid.Length);
+                        sguid = sguid.Substring(0, cnt) + "...";
+                    }
+                    return $"{i:00} - {sguid}";
+                }
+                else
+                {
+                    return $"{i:00} - None";
+                }
             };
             _reorderableArrayDrawer.InternalDrawer = new ReorderableArrayInternalDrawer(this);
         }
@@ -138,10 +161,17 @@ namespace com.spacepuppyeditor.Core.Project
                 if (!targ) return;
 
                 var path = Path.GetDirectoryName(AssetDatabase.GetAssetPath(targ));
-                var assets = AssetDatabase.FindAssets(GetBestSearchStringForType(_restrictedType), new string[] { path })
-                                        .Select(s => ObjUtil.GetAsFromSource(_restrictedType, AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(s), typeof(UnityEngine.Object))) as UnityEngine.Object)
-                                        .Where(o => o != null && o != targ);
-                targ.ResetAssets(assets);
+                var assetguids = AssetDatabase.FindAssets(GetBestSearchStringForType(_restrictedType), new string[] { path });
+                IEnumerable<UnityEngine.Object> assets;
+                if (TypeUtil.IsType(_restrictedType, typeof(UnityEngine.Object)))
+                {
+                    assets = assetguids.Select(s => AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(s), _restrictedType));
+                }
+                else
+                {
+                    assets = assetguids.Select(s => ObjUtil.GetAsFromSource(_restrictedType, AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(s), typeof(UnityEngine.Object))) as UnityEngine.Object);
+                }
+                targ.ResetAssets(assets.Where(o => o != null && o != targ));
             }
         }
 
@@ -153,6 +183,8 @@ namespace com.spacepuppyeditor.Core.Project
                 return $"t:{tp.Name}";
             if (TypeUtil.IsType(tp, typeof(Texture)))
                 return $"t:texture";
+            if (TypeUtil.IsType(tp, typeof(Sprite)))
+                return $"t:sprite";
 
             return "a:assets";
         }
@@ -195,6 +227,7 @@ namespace com.spacepuppyeditor.Core.Project
                 }
                 else
                 {
+                    if (position.height > EditorGUIUtility.singleLineHeight) position = new Rect(position.xMin, position.yMin + (position.height - EditorGUIUtility.singleLineHeight) / 2, position.width, EditorGUIUtility.singleLineHeight);
                     EditorGUI.ObjectField(position, property, _owner._restrictedType, label);
                 }
             }

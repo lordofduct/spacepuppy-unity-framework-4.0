@@ -47,6 +47,12 @@ namespace com.spacepuppy.Motor.Events
             set { _targetEntireEntity = value; }
         }
 
+        public SPTimePeriod Delay
+        {
+            get => _delay;
+            set => _delay = value;
+        }
+
         #endregion
 
         #region Methods
@@ -58,11 +64,13 @@ namespace com.spacepuppy.Motor.Events
             {
                 //controller.AddForce(this.Force.GetForce(this.transform), this.Force.ForceMode);
                 this.Force.ApplyForce(this.transform, controller);
+                return;
             }
             Rigidbody body;
             if (targ.GetComponentInChildren<Rigidbody>(out body))
             {
                 this.Force.ApplyForce(this.transform, body);
+                return;
             }
         }
 

@@ -15,7 +15,7 @@ namespace com.spacepuppy.Mecanim
 
         public AnimatorStateTargetObject()
         {
-            this.Configure(FindCommand.FindInChildren, ResolveByCommand.WithName, string.Empty);
+            this.Configure(FindCommand.FindInChildren, SearchBy.Name, string.Empty);
         }
 
         public AnimatorStateTargetObject(UnityEngine.Object target)
@@ -23,12 +23,17 @@ namespace com.spacepuppy.Mecanim
             this.Configure(target);
         }
 
-        public AnimatorStateTargetObject(UnityEngine.Object target, FindCommand find, ResolveByCommand resolveBy = ResolveByCommand.Nothing, string resolveQuery = null)
+        public AnimatorStateTargetObject(UnityEngine.Object target, string sprop)
+        {
+            this.Configure(target, sprop);
+        }
+
+        public AnimatorStateTargetObject(UnityEngine.Object target, FindCommand find, SearchBy resolveBy = SearchBy.Nothing, string resolveQuery = null)
         {
             this.Configure(target, find, resolveBy, resolveQuery);
         }
 
-        public AnimatorStateTargetObject(FindCommand find, ResolveByCommand resolveBy, string resolveQuery)
+        public AnimatorStateTargetObject(FindCommand find, SearchBy resolveBy, string resolveQuery)
         {
             this.Configure(find, resolveBy, resolveQuery);
         }

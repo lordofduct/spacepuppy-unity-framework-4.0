@@ -2,11 +2,12 @@
 using UnityEditor;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 using com.spacepuppy;
+using com.spacepuppy.Dynamic;
 using com.spacepuppy.Events;
 using com.spacepuppy.Utils;
-using UnityEditor.Graphs;
 
 namespace com.spacepuppyeditor.Core.Events
 {
@@ -14,6 +15,14 @@ namespace com.spacepuppyeditor.Core.Events
     [CustomPropertyDrawer(typeof(TriggerableTargetObject), true)]
     public class TriggerableTargetObjectPropertyDrawer : PropertyDrawer
     {
+
+        private enum PrettyResolveByCommand
+        {
+            Nothing = SearchBy.Nothing,
+            WithTag = SearchBy.Tag,
+            WithName = SearchBy.Name,
+            WithType = SearchBy.Type
+        }
 
         protected const float LEN_TARGETSOURCE = 60f;
         protected const float LEN_FINDCOMMAND = 140f;
@@ -196,33 +205,48 @@ namespace com.spacepuppyeditor.Core.Events
                         break;
                 }
 
-                var e1 = resolveProp.GetEnumValue<TriggerableTargetObject.ResolveByCommand>();
+                var e1 = resolveProp.GetEnumValue<PrettyResolveByCommand>();
                 EditorGUI.BeginChangeCheck();
-                e1 = (TriggerableTargetObject.ResolveByCommand)EditorGUI.EnumPopup(r1, e1);
+                e1 = (PrettyResolveByCommand)EditorGUI.EnumPopup(r1, e1);
                 if (EditorGUI.EndChangeCheck())
                     resolveProp.SetEnumValue(e1);
 
                 switch (e1)
                 {
-                    case TriggerableTargetObject.ResolveByCommand.Nothing:
+                    case PrettyResolveByCommand.Nothing:
+                        if (e0 != TriggerableTargetObject.FindCommand.Direct || targetProp.objectReferenceValue == null)
                         {
                             var cache = SPGUI.Disable();
                             EditorGUI.TextField(r2, string.Empty);
                             queryProp.stringValue = string.Empty;
                             cache.Reset();
                         }
+                        else
+                        {
+                            var members = GetMembersFromTarget(targetProp.objectReferenceValue);
+                            var names = members.Select(m => m.Name).Prepend(string.Empty).ToArray();
+                            var guicontents = names.Select(o => string.IsNullOrEmpty(o) ? EditorHelper.TempContent("--Direct--") : EditorHelper.TempContent(o)).ToArray();
+
+                            int index = names.IndexOf(queryProp.stringValue);
+                            EditorGUI.BeginChangeCheck();
+                            index = EditorGUI.Popup(r2, index, guicontents);
+                            if (EditorGUI.EndChangeCheck())
+                            {
+                                queryProp.stringValue = index > 0 ? names[index] : string.Empty;
+                            }
+                        }
                         break;
-                    case TriggerableTargetObject.ResolveByCommand.WithTag:
+                    case PrettyResolveByCommand.WithTag:
                         {
                             queryProp.stringValue = EditorGUI.TagField(r2, queryProp.stringValue);
                         }
                         break;
-                    case TriggerableTargetObject.ResolveByCommand.WithName:
+                    case PrettyResolveByCommand.WithName:
                         {
                             queryProp.stringValue = EditorGUI.TextField(r2, queryProp.stringValue);
                         }
                         break;
-                    case TriggerableTargetObject.ResolveByCommand.WithType:
+                    case PrettyResolveByCommand.WithType:
                         {
                             var tp = TypeUtil.FindType(queryProp.stringValue);
                             if (!TypeUtil.IsType(tp, typeof(UnityEngine.Object))) tp = null;
@@ -231,7 +255,6 @@ namespace com.spacepuppyeditor.Core.Events
                         }
                         break;
                 }
-
             }
 
             EditorGUI.EndProperty();
@@ -359,6 +382,32 @@ namespace com.spacepuppyeditor.Core.Events
 
         #region Static Utils
 
+        static IEnumerable<MemberInfo> GetMembersFromTarget(object o)
+        {
+            const System.Reflection.MemberTypes MASK = System.Reflection.MemberTypes.Field | System.Reflection.MemberTypes.Property | System.Reflection.MemberTypes.Method;
+            const DynamicMemberAccess ACCESS = DynamicMemberAccess.Read;
+
+            var e = o is IDynamic ? DynamicUtil.GetMembers(o, false, MASK) : DynamicUtil.GetMembersFromType((o.IsProxy_ParamsRespecting() ? (o as IProxy).GetTargetType() : o.GetType()), false, MASK);
+            return e.Where(m =>
+            {
+                if (m.IsObsolete()) return false;
+                if (!DynamicUtil.GetMemberAccessLevel(m).HasFlagT(ACCESS)) return false;
+
+                switch (m)
+                {
+                    case FieldInfo fi:
+                        return true;
+                    case PropertyInfo pi:
+                        return pi.GetIndexParameters().Length == 0;
+                    case MethodInfo mi:
+                        return !mi.IsSpecialName && !mi.IsGenericMethod && mi.GetParameters().Length == 0;
+                    default:
+                        return false;
+                }
+            });
+            //return o is IDynamic ? DynamicUtil.GetEasilySerializedMembers(o) : DynamicUtil.GetEasilySerializedMembersFromType((o.IsProxy_ParamsRespecting() ? (o as IProxy).GetTargetType() : o.GetType()));
+        }
+
         public static void ResetTriggerableTargetObjectTarget(SerializedProperty prop)
         {
             if (prop == null) return;
@@ -368,7 +417,7 @@ namespace com.spacepuppyeditor.Core.Events
                 prop.FindPropertyRelative(PROP_CONFIGURED).boolValue = true;
                 prop.FindPropertyRelative(PROP_TARGET).objectReferenceValue = null;
                 prop.FindPropertyRelative(PROP_FIND).SetEnumValue(TriggerableTargetObject.FindCommand.Direct);
-                prop.FindPropertyRelative(PROP_RESOLVEBY).SetEnumValue(TriggerableTargetObject.ResolveByCommand.Nothing);
+                prop.FindPropertyRelative(PROP_RESOLVEBY).SetEnumValue(SearchBy.Nothing);
                 prop.FindPropertyRelative(PROP_QUERY).stringValue = string.Empty;
             }
             catch

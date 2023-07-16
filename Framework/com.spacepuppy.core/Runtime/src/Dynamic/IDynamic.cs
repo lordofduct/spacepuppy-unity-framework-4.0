@@ -417,67 +417,15 @@ namespace com.spacepuppy.Dynamic
             try
             {
                 var tp = obj.GetType();
-                foreach (var member in GetMembersFromType(tp, sprop, true))
+                var member = FindBestMatchingGetterMember(tp, sprop, true, args);
+                switch (FindBestMatchingGetterMember(tp, sprop, true, args))
                 {
-                    switch (member.MemberType)
-                    {
-                        case System.Reflection.MemberTypes.Field:
-                            var field = member as System.Reflection.FieldInfo;
-                            return field.GetValue(obj);
-
-                        case System.Reflection.MemberTypes.Property:
-                            {
-                                var prop = member as System.Reflection.PropertyInfo;
-                                var paramInfos = prop.GetIndexParameters();
-                                if (prop.CanRead && DynamicUtil.ParameterSignatureMatches(args, paramInfos, false))
-                                {
-                                    return prop.GetValue(obj, args);
-                                }
-                                break;
-                            }
-                        case System.Reflection.MemberTypes.Method:
-                            {
-                                var meth = member as System.Reflection.MethodInfo;
-                                var paramInfos = meth.GetParameters();
-                                if (DynamicUtil.ParameterSignatureMatches(args, paramInfos, false))
-                                {
-                                    return meth.Invoke(obj, args);
-                                }
-                                break;
-                            }
-                    }
-                }
-
-                //unstrict
-                foreach (var member in GetMembersFromType(tp, sprop, true))
-                {
-                    switch (member.MemberType)
-                    {
-                        case System.Reflection.MemberTypes.Field:
-                            var field = member as System.Reflection.FieldInfo;
-                            return field.GetValue(obj);
-
-                        case System.Reflection.MemberTypes.Property:
-                            {
-                                var prop = member as System.Reflection.PropertyInfo;
-                                var paramInfos = prop.GetIndexParameters();
-                                if (prop.CanRead && DynamicUtil.ParameterSignatureMatchesNumericallyUnstrict(args, paramInfos, false, true))
-                                {
-                                    return prop.GetValue(obj, args);
-                                }
-                                break;
-                            }
-                        case System.Reflection.MemberTypes.Method:
-                            {
-                                var meth = member as System.Reflection.MethodInfo;
-                                var paramInfos = meth.GetParameters();
-                                if (DynamicUtil.ParameterSignatureMatchesNumericallyUnstrict(args, paramInfos, false, true))
-                                {
-                                    return meth.Invoke(obj, args);
-                                }
-                                break;
-                            }
-                    }
+                    case FieldInfo fi:
+                        return fi.GetValue(obj);
+                    case PropertyInfo prop:
+                        return prop.GetValue(obj, args);
+                    case MethodInfo meth:
+                        return meth.Invoke(obj, args);
                 }
             }
             catch
@@ -561,71 +509,18 @@ namespace com.spacepuppy.Dynamic
             try
             {
                 var tp = obj.GetType();
-                foreach (var member in GetMembersFromType(tp, sprop, true))
+                var member = FindBestMatchingGetterMember(tp, sprop, true, args);
+                switch (FindBestMatchingGetterMember(tp, sprop, true, args))
                 {
-                    switch (member.MemberType)
-                    {
-                        case System.Reflection.MemberTypes.Field:
-                            var field = member as System.Reflection.FieldInfo;
-                            result = field.GetValue(obj);
-                            return true;
-                        case System.Reflection.MemberTypes.Property:
-                            {
-                                var prop = member as System.Reflection.PropertyInfo;
-                                var paramInfos = prop.GetIndexParameters();
-                                if (prop.CanRead && DynamicUtil.ParameterSignatureMatches(args, paramInfos, false))
-                                {
-                                    result = prop.GetValue(obj, args);
-                                    return true;
-                                }
-                                break;
-                            }
-                        case System.Reflection.MemberTypes.Method:
-                            {
-                                var meth = member as System.Reflection.MethodInfo;
-                                var paramInfos = meth.GetParameters();
-                                if (DynamicUtil.ParameterSignatureMatches(args, paramInfos, false))
-                                {
-                                    result = meth.Invoke(obj, args);
-                                    return true;
-                                }
-                                break;
-                            }
-                    }
-                }
-
-                //unstrict
-                foreach (var member in GetMembersFromType(tp, sprop, true))
-                {
-                    switch (member.MemberType)
-                    {
-                        case System.Reflection.MemberTypes.Field:
-                            var field = member as System.Reflection.FieldInfo;
-                            result = field.GetValue(obj);
-                            return true;
-                        case System.Reflection.MemberTypes.Property:
-                            {
-                                var prop = member as System.Reflection.PropertyInfo;
-                                var paramInfos = prop.GetIndexParameters();
-                                if (prop.CanRead && DynamicUtil.ParameterSignatureMatchesNumericallyUnstrict(args, paramInfos, false, true))
-                                {
-                                    result = prop.GetValue(obj, args);
-                                    return true;
-                                }
-                                break;
-                            }
-                        case System.Reflection.MemberTypes.Method:
-                            {
-                                var meth = member as System.Reflection.MethodInfo;
-                                var paramInfos = meth.GetParameters();
-                                if (DynamicUtil.ParameterSignatureMatchesNumericallyUnstrict(args, paramInfos, false, true))
-                                {
-                                    result = meth.Invoke(obj, args);
-                                    return true;
-                                }
-                                break;
-                            }
-                    }
+                    case FieldInfo fi:
+                        result = fi.GetValue(obj);
+                        return true;
+                    case PropertyInfo prop:
+                        result = prop.GetValue(obj, args);
+                        return true;
+                    case MethodInfo meth:
+                        result = meth.Invoke(obj, args);
+                        return true;
                 }
             }
             catch
@@ -700,7 +595,6 @@ namespace com.spacepuppy.Dynamic
 
             return GetMemberFromType(obj.GetType(), sMemberName, includeNonPublic);
         }
-
 
 
 
@@ -828,7 +722,6 @@ namespace com.spacepuppy.Dynamic
                 }
             }
 
-
             if (tp.IsInterface)
             {
                 foreach (var itp in tp.GetInterfaces())
@@ -899,6 +792,151 @@ namespace com.spacepuppy.Dynamic
                     tp = tp.BaseType;
                 }
             }
+        }
+
+        private static MemberInfo FindBestMatchingGetterMember(System.Type tp, string name, bool includeNonPublic, object[] args, MemberTypes mask = MemberTypes.Field | MemberTypes.Property | MemberTypes.Method)
+        {
+            const BindingFlags BINDING = BindingFlags.Public | BindingFlags.Instance;
+            const BindingFlags PRIV_BINDING = BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
+            if (tp == null) return null;
+
+            int argcnt = args?.Length ?? 0;
+            MemberInfo mi;
+
+            if (argcnt == 0)
+            {
+                if ((mask & MemberTypes.Field) != 0)
+                {
+                    mi = tp.GetField(name, BINDING);
+                    if (mi != null) return mi;
+                }
+                if ((mask & MemberTypes.Property) != 0)
+                {
+                    mi = tp.GetProperty(name, BINDING);
+                    if (mi != null) return mi;
+                }
+                if ((mask & MemberTypes.Method) != 0)
+                {
+                    mi = tp.GetMethod(name, BINDING, null, System.Type.EmptyTypes, null);
+                    if (mi != null) return mi;
+                }
+
+                if (tp.IsInterface)
+                {
+                    foreach (var itp in tp.GetInterfaces())
+                    {
+                        if ((mask & MemberTypes.Field) != 0)
+                        {
+                            mi = itp.GetField(name, BINDING);
+                            if (mi != null) return mi;
+                        }
+                        if ((mask & MemberTypes.Property) != 0)
+                        {
+                            mi = itp.GetProperty(name, BINDING);
+                            if (mi != null) return mi;
+                        }
+                        if ((mask & MemberTypes.Method) != 0)
+                        {
+                            mi = itp.GetMethod(name, BINDING, null, System.Type.EmptyTypes, null);
+                            if (mi != null) return mi;
+                        }
+                    }
+                }
+                else if (includeNonPublic)
+                {
+                    while (tp != null)
+                    {
+                        if ((mask & MemberTypes.Field) != 0)
+                        {
+                            mi = tp.GetField(name, PRIV_BINDING);
+                            if (mi != null) return mi;
+                        }
+                        if ((mask & MemberTypes.Property) != 0)
+                        {
+                            mi = tp.GetProperty(name, PRIV_BINDING);
+                            if (mi != null) return mi;
+                        }
+                        if ((mask & MemberTypes.Method) != 0)
+                        {
+                            mi = tp.GetMethod(name, PRIV_BINDING, null, System.Type.EmptyTypes, null);
+                            if (mi != null) return mi;
+                        }
+                        tp = tp.BaseType;
+                    }
+                }
+            }
+            else
+            {
+                ParameterInfo[] paramInfos;
+                mask = mask & (MemberTypes.Property | MemberTypes.Method);
+                IEnumerable<MemberInfo> members = tp.GetMember(name, BINDING);
+                if (tp.IsInterface)
+                {
+                    foreach (var itp in tp.GetInterfaces())
+                    {
+                        members = members.Union(itp.GetMember(name, BINDING));
+                    }
+                }
+                else if (includeNonPublic)
+                {
+                    while (tp != null)
+                    {
+                        members = members.Union(tp.GetMember(name, PRIV_BINDING));
+                        tp = tp.BaseType;
+                    }
+                }
+                if (!(members is MemberInfo[])) members = members.ToArray();
+
+                foreach (var m in members)
+                {
+                    if ((m.MemberType & mask) != 0)
+                    {
+                        switch (m)
+                        {
+                            case PropertyInfo prop:
+                                paramInfos = prop.GetIndexParameters();
+                                if (prop.CanRead && DynamicUtil.ParameterSignatureMatches(args, paramInfos, false))
+                                {
+                                    return prop;
+                                }
+                                break;
+                            case MethodInfo meth:
+                                paramInfos = meth.GetParameters();
+                                if (DynamicUtil.ParameterSignatureMatches(args, paramInfos, false))
+                                {
+                                    return meth;
+                                }
+                                break;
+                        }
+                    }
+                }
+
+                foreach (var m in members)
+                {
+                    if ((m.MemberType & mask) != 0)
+                    {
+                        switch (m)
+                        {
+                            case PropertyInfo prop:
+                                paramInfos = prop.GetIndexParameters();
+                                if (prop.CanRead && DynamicUtil.ParameterSignatureMatchesNumericallyUnstrict(args, paramInfos, false, true))
+                                {
+                                    return prop;
+                                }
+                                break;
+                            case MethodInfo meth:
+                                paramInfos = meth.GetParameters();
+                                if (DynamicUtil.ParameterSignatureMatchesNumericallyUnstrict(args, paramInfos, false, true))
+                                {
+                                    return meth;
+                                }
+                                break;
+                        }
+                    }
+                }
+            }
+
+            return null;
         }
 
 
@@ -1015,7 +1053,7 @@ namespace com.spacepuppy.Dynamic
 
         public static MemberInfo GetValueSetterMemberFromType(Type tp, string sprop, Type valueType, bool includeNonPublic)
         {
-            const BindingFlags BINDING_PUBLIC = BindingFlags.Public | BindingFlags.Instance;
+            const BindingFlags BINDING = BindingFlags.Public | BindingFlags.Instance;
             const BindingFlags PRIV_BINDING = BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
             if (tp == null) throw new ArgumentNullException("tp");
 
@@ -1025,46 +1063,54 @@ namespace com.spacepuppy.Dynamic
             //    if (tp == null) return null;
             //}
 
+            var methodArgs = ArrayUtil.Temp(valueType);
             try
             {
-                MemberInfo[] members;
+                MemberInfo mi;
 
                 //first strict test
-                members = tp.GetMember(sprop, BINDING_PUBLIC);
-                foreach (var member in members)
-                {
-                    if (IsValidValueSetterMember(member, valueType)) return member;
-                }
+                mi = tp.GetField(sprop, BINDING);
+                if (mi != null && IsValidValueSetterMember(mi, valueType)) return mi;
+                mi = tp.GetProperty(sprop, BINDING, DynamicSetterBinder.Default, valueType, System.Type.EmptyTypes, null);
+                if (mi != null) return mi;
+                mi = tp.GetMethod(sprop, BINDING, DynamicSetterBinder.Default, methodArgs, null);
+                if (mi != null && IsValidValueSetterMember(mi, valueType)) return mi;
+
 
                 if (tp.IsInterface)
                 {
                     foreach (var itp in tp.GetInterfaces())
                     {
-                        members = tp.GetMember(sprop, BINDING_PUBLIC);
-                        foreach (var member in members)
-                        {
-                            if (IsValidValueSetterMember(member, valueType)) return member;
-                        }
+                        mi = itp.GetField(sprop, BINDING);
+                        if (mi != null && IsValidValueSetterMember(mi, valueType)) return mi;
+                        mi = itp.GetProperty(sprop, BINDING, DynamicSetterBinder.Default, valueType, System.Type.EmptyTypes, null);
+                        if (mi != null) return mi;
+                        mi = itp.GetMethod(sprop, BINDING, DynamicSetterBinder.Default, methodArgs, null);
+                        if (mi != null && IsValidValueSetterMember(mi, valueType)) return mi;
                     }
                 }
                 else if (includeNonPublic)
                 {
                     while (tp != null)
                     {
-                        members = tp.GetMember(sprop, PRIV_BINDING);
-                        tp = tp.BaseType;
-                        if (members == null || members.Length == 0) continue;
+                        mi = tp.GetField(sprop, PRIV_BINDING);
+                        if (mi != null && IsValidValueSetterMember(mi, valueType)) return mi;
+                        mi = tp.GetProperty(sprop, PRIV_BINDING, DynamicSetterBinder.Default, valueType, System.Type.EmptyTypes, null);
+                        if (mi != null) return mi;
+                        mi = tp.GetMethod(sprop, PRIV_BINDING, DynamicSetterBinder.Default, methodArgs, null);
+                        if (mi != null && IsValidValueSetterMember(mi, valueType)) return mi;
 
-                        foreach (var member in members)
-                        {
-                            if (IsValidValueSetterMember(member, valueType)) return member;
-                        }
+                        tp = tp.BaseType;
                     }
                 }
             }
             catch
             {
 
+            }
+            finally
+            {
+                ArrayUtil.ReleaseTemp(methodArgs);
             }
 
             return null;
@@ -1092,7 +1138,7 @@ namespace com.spacepuppy.Dynamic
                         return arr;
                     }
                 default:
-                    return ArrayUtil.Empty<System.Type>();
+                    return System.Type.EmptyTypes;
             }
         }
 
@@ -1603,7 +1649,6 @@ namespace com.spacepuppy.Dynamic
 
             public static readonly DynamicBinder Default = new DynamicBinder();
 
-
             public override FieldInfo BindToField(BindingFlags bindingAttr, FieldInfo[] match, object value, CultureInfo culture)
             {
                 return Type.DefaultBinder.BindToField(bindingAttr, match, value, culture);
@@ -1650,6 +1695,58 @@ namespace com.spacepuppy.Dynamic
                 Type.DefaultBinder.ReorderArgumentArray(ref args, state);
             }
 
+        }
+
+        private class DynamicSetterBinder : Binder
+        {
+
+            public static readonly DynamicSetterBinder Default = new DynamicSetterBinder();
+
+            public override FieldInfo BindToField(BindingFlags bindingAttr, FieldInfo[] match, object value, CultureInfo culture)
+            {
+                return Type.DefaultBinder.BindToField(bindingAttr, match, value, culture);
+            }
+
+            public override PropertyInfo SelectProperty(BindingFlags bindingAttr, PropertyInfo[] match, Type returnType, Type[] indexes, ParameterModifier[] modifiers)
+            {
+                if (indexes.Length == 0)
+                {
+                    foreach (var p in match)
+                    {
+                        if (IsValidValueSetterMember(p, returnType)) return p;
+                    }
+                }
+
+                return Type.DefaultBinder.SelectProperty(bindingAttr, match, returnType, indexes, modifiers);
+            }
+
+            public override MethodBase BindToMethod(BindingFlags bindingAttr, MethodBase[] match, ref object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] names, out object state)
+            {
+                return Type.DefaultBinder.BindToMethod(bindingAttr, match, ref args, modifiers, culture, names, out state);
+            }
+
+            public override MethodBase SelectMethod(BindingFlags bindingAttr, MethodBase[] match, Type[] types, ParameterModifier[] modifiers)
+            {
+                if (types?.Length == 1)
+                {
+                    foreach (var m in match)
+                    {
+                        if (IsValidValueSetterMember(m, types[0])) return m;
+                    }
+                }
+
+                return Type.DefaultBinder.SelectMethod(bindingAttr, match, types, modifiers);
+            }
+
+            public override object ChangeType(object value, Type type, CultureInfo culture)
+            {
+                return Type.DefaultBinder.ChangeType(value, type, culture);
+            }
+
+            public override void ReorderArgumentArray(ref object[] args, object state)
+            {
+                Type.DefaultBinder.ReorderArgumentArray(ref args, state);
+            }
         }
 
         #endregion

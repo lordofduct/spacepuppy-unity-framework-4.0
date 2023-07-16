@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 
 using com.spacepuppy.Utils;
 using System.Threading;
+using System.Text.RegularExpressions;
 
 namespace com.spacepuppyeditor.Windows
 {
@@ -38,6 +39,8 @@ namespace com.spacepuppyeditor.Windows
         private static string _dataPath;
 
         private UnityEngine.Object _target;
+        private string _codePath = "Code";
+
         private StringBuilder _statusOutput = new StringBuilder();
         private StringBuilder _output = new StringBuilder();
         private List<(string, UnityEngine.Object)> _outputRefs = new List<(string, UnityEngine.Object)>();
@@ -65,11 +68,16 @@ namespace com.spacepuppyeditor.Windows
             var cache = GUI.enabled;
             GUI.enabled = _cancellationTokenSource == null;
             _target = EditorGUILayout.ObjectField("Target", _target, typeof(UnityEngine.Object), false);
+            _codePath = EditorGUILayout.TextField("Code Folder", _codePath);
 
             EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button("Search for unreferenced scripts", GUILayout.Width(200f)))
             {
-                _ = this.SearchForUnusedScripts();
+                _ = this.SearchForScripts(false);
+            }
+            if (GUILayout.Button("Search for referenced scripts", GUILayout.Width(200f)))
+            {
+                _ = this.SearchForScripts(true);
             }
 
             if (_target != null)
@@ -134,7 +142,7 @@ namespace com.spacepuppyeditor.Windows
             _statusOutput.Append(msg);
         }
 
-        private async Task SearchForUnusedScripts()
+        private async Task SearchForScripts(bool inuse)
         {
             if (_cancellationTokenSource != null) return;
 
@@ -144,7 +152,7 @@ namespace com.spacepuppyeditor.Windows
                 _output.Clear();
                 _outputRefs.Clear();
 
-                string[] guids = AssetDatabase.FindAssets("t:script", new string[] { "Assets/Code" });
+                string[] guids = AssetDatabase.FindAssets("t:script", new string[] { "Assets/" + _codePath });
                 foreach (var guid in guids)
                 {
                     if (_cancellationTokenSource.Token.IsCancellationRequested) return;
@@ -161,7 +169,7 @@ namespace com.spacepuppyeditor.Windows
                             return;
                         }
 
-                        if (!FindRefs(guid).Any())
+                        if (FindRefs(guid).Any() == inuse)
                         {
                             _output.AppendLine(path);
                             _outputRefs.Add((path, AssetDatabase.LoadAssetAtPath(path, typeof(MonoBehaviour))));

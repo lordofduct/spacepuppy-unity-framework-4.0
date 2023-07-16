@@ -5,6 +5,7 @@ using System.Linq;
 using com.spacepuppy.Collections;
 using com.spacepuppy.Utils;
 using UnityEngine.Scripting;
+using com.spacepuppy.Project;
 
 namespace com.spacepuppy.Geom
 {
@@ -14,8 +15,13 @@ namespace com.spacepuppy.Geom
     /// </summary>
     public interface ICompoundTrigger : IComponent
     {
+        bool ContainsActive();
+        bool ContainsActive(Collider c);
         bool InMessagePath(GameObject go);
     }
+
+    [System.Serializable]
+    public class ICompoundTriggerRef : SerializableInterfaceRef<ICompoundTrigger> { }
 
     public interface ICompoundTriggerEnterHandler
     {
@@ -261,6 +267,8 @@ namespace com.spacepuppy.Geom
         /// </summary>
         /// <returns></returns>
         public IEnumerable<Collider> GetActiveColliders() => _active.Where(o => ObjUtil.IsObjectAlive(o));
+
+        public bool ContainsActive() => _active.Count > 0 && _active.Count(o => ObjUtil.IsObjectAlive(o)) > 0;
 
         public bool ContainsActive(Collider c) => c != null && _active.Contains(c);
 

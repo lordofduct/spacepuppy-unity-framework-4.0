@@ -1149,45 +1149,50 @@ namespace com.spacepuppyeditor
                 return false;
             }
 
-            //first attempt to just find the globalid
-            gid = GlobalObjectId.GetGlobalObjectIdSlow(obj);
-            if (gid.assetGUID != default) return true;
+            var go = obj as GameObject;
+            if (!go) go = obj is Component c ? c.gameObject : null;
 
-            //now lets determine if this is a potential gameobject
-            var go = GameObjectUtil.GetGameObjectFromSource(obj);
-            if (!go)
+            if (go)
             {
-                gid = default;
-                return false;
-            }
+                var root = PrefabUtility.GetNearestPrefabInstanceRoot(go);
+                if (root == null) root = go;
 
-            //if it's a potential gameobject, lets try to load that prefab and get its globalid
-            var prefab = PrefabUtility.GetNearestPrefabInstanceRoot(go);
-            if (prefab)
-            {
-                gid = GlobalObjectId.GetGlobalObjectIdSlow(prefab);
-                if (gid.assetGUID != default) return true;
-
-                //if we made it here, we are likely in a stage, lets look up that stage
+                //first check if we're on a stage
                 var stage = UnityEditor.SceneManagement.PrefabStageUtility.GetCurrentPrefabStage();
-                if (stage != null && stage.prefabContentsRoot == prefab)
+                if (stage != null && stage.prefabContentsRoot == root)
                 {
-                    prefab = AssetDatabase.LoadAssetAtPath(stage.assetPath, typeof(GameObject)) as GameObject;
-                    gid = prefab ? GlobalObjectId.GetGlobalObjectIdSlow(prefab) : default;
-                    return gid.assetGUID != default;
+                    gid = GlobalObjectId.GetGlobalObjectIdSlow(AssetDatabase.LoadAssetAtPath(stage.assetPath, typeof(UnityEngine.Object)));
+                    if (gid.assetGUID != default)
+                    {
+                        return true;
+                    }
                 }
 
-                //not sure how we got here, but last ditch effort
-                var path = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(go);
+                var path = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(root);
                 if (!string.IsNullOrEmpty(path))
                 {
-                    prefab = AssetDatabase.LoadAssetAtPath(path, typeof(GameObject)) as GameObject;
-                    gid = prefab ? GlobalObjectId.GetGlobalObjectIdSlow(prefab) : default;
-                    return gid.assetGUID != default; //we fail if we couldn't load it, treat that as "missing prefab"
+                    gid = GlobalObjectId.GetGlobalObjectIdSlow(AssetDatabase.LoadAssetAtPath(stage.assetPath, typeof(UnityEngine.Object)));
+                    if (gid.assetGUID != default)
+                    {
+                        return true;
+                    }
+                }
+
+                gid = GlobalObjectId.GetGlobalObjectIdSlow(obj);
+                if (gid.assetGUID != default)
+                {
+                    return true;
+                }
+            }
+            else
+            {
+                gid = GlobalObjectId.GetGlobalObjectIdSlow(obj);
+                if (gid.assetGUID != default)
+                {
+                    return true;
                 }
             }
 
-            //can't determine gid
             gid = default;
             return false;
         }
@@ -1200,52 +1205,49 @@ namespace com.spacepuppyeditor
                 return false;
             }
 
-            //first attempt to just find the globalid
-            var gid = GlobalObjectId.GetGlobalObjectIdSlow(obj);
-            if (gid.assetGUID != default)
-            {
-                guid = gid.assetGUID.ToGuid();
-                return true;
-            }
+            var go = obj as GameObject;
+            if (!go) go = obj is Component c ? c.gameObject : null;
 
-            //now lets determine if this is a potential gameobject
-            var go = GameObjectUtil.GetGameObjectFromSource(obj);
-            if (!go)
+            if (go)
             {
-                guid = default;
-                return false;
-            }
+                var root = PrefabUtility.GetNearestPrefabInstanceRoot(go);
+                if (root == null) root = go;
 
-            //if it's a potential gameobject, lets try to load that prefab and get its globalid
-            var prefab = PrefabUtility.GetNearestPrefabInstanceRoot(go);
-            if (prefab)
-            {
-                gid = GlobalObjectId.GetGlobalObjectIdSlow(prefab);
+                //first check if we're on a stage
+                var stage = UnityEditor.SceneManagement.PrefabStageUtility.GetCurrentPrefabStage();
+                if (stage != null && stage.prefabContentsRoot == root &&
+                    System.Guid.TryParse(AssetDatabase.AssetPathToGUID(stage.assetPath), out guid) &&
+                    guid != default)
+                {
+                    return true;
+                }
+
+                var path = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(root);
+                if (!string.IsNullOrEmpty(path))
+                {
+                    if (System.Guid.TryParse(AssetDatabase.AssetPathToGUID(path), out guid))
+                    {
+                        return true;
+                    }
+                }
+
+                var gid = GlobalObjectId.GetGlobalObjectIdSlow(obj);
                 if (gid.assetGUID != default)
                 {
                     guid = gid.assetGUID.ToGuid();
                     return true;
                 }
-
-                //if we made it here, we are likely in a stage, lets look up that stage
-                var stage = UnityEditor.SceneManagement.PrefabStageUtility.GetCurrentPrefabStage();
-                if (stage != null && 
-                    stage.prefabContentsRoot == prefab && 
-                    System.Guid.TryParse(AssetDatabase.AssetPathToGUID(stage.assetPath), out guid))
+            }
+            else
+            {
+                var gid = GlobalObjectId.GetGlobalObjectIdSlow(obj);
+                if (gid.assetGUID != default)
                 {
-                    return true;
-                }
-
-                //not sure how we got here, but last ditch effort
-                var path = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(go);
-                if (!string.IsNullOrEmpty(path) &&
-                    System.Guid.TryParse(AssetDatabase.AssetPathToGUID(path), out guid))
-                {
+                    guid = gid.assetGUID.ToGuid();
                     return true;
                 }
             }
 
-            //can't determine guid
             guid = default;
             return false;
         }

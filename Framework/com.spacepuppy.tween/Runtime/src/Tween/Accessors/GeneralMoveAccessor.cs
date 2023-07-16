@@ -10,7 +10,7 @@ namespace com.spacepuppy.Tween.Accessors
     [CustomTweenMemberAccessor(typeof(Component), typeof(Vector3), "*Move")]
     [CustomTweenMemberAccessor(typeof(IGameObjectSource), typeof(Vector3), "*Move")]
     [CustomTweenMemberAccessor(typeof(Rigidbody), typeof(Vector3), "*Move")]
-    public class GeneralMoveAccessor : ITweenMemberAccessor, IMemberAccessor<Vector3>
+    public class GeneralMoveAccessor : ITweenMemberAccessorProvider, IMemberAccessor<Vector3>
     {
 
 
@@ -23,9 +23,9 @@ namespace com.spacepuppy.Tween.Accessors
             return typeof(Vector3);
         }
 
-        public System.Type Init(object target, string propName, string args)
+        public IMemberAccessor GetAccessor(object target, string propName, string args)
         {
-            return typeof(Vector3);
+            return this;
         }
 
         object IMemberAccessor.Get(object target)

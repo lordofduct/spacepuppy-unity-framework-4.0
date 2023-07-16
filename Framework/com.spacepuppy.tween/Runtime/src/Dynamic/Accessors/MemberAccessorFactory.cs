@@ -43,7 +43,6 @@ namespace com.spacepuppy.Dynamic.Accessors
             _pool.Clear();
         }
 
-
         public virtual IMemberAccessor GetAccessor(object target, string memberName)
         {
             if (target == null) throw new ArgumentNullException(nameof(target));

@@ -212,7 +212,7 @@ namespace com.spacepuppy.Tween
                 RegisterTweenCurveGenerator(typeof(object), FollowTargetPositionAccessor.PROP_NAME, new TweenCurveGenerator(CreateUninitializeFollowTargetPositionCurve, typeof(Transform)));
 
                 //register special prop name associated accessors
-                var groups = CustomTweenMemberAccessorAttribute.FindCustomTweenMemberAccessorTypes()
+                var groups = CustomTweenMemberAccessorAttribute.FindCustomTweenMemberAccessorProviderTypes()
                                                                .GroupBy(o => new { o.HandledPropName, o.HandledTargetType });
                 foreach (var grp in groups)
                 {
@@ -220,10 +220,10 @@ namespace com.spacepuppy.Tween
                     {
                         try
                         {
-                            var acc = System.Activator.CreateInstance(attrib.DeclaringType) as IMemberAccessor;
+                            var acc = System.Activator.CreateInstance(attrib.DeclaringType) as ITweenMemberAccessorProvider;
                             if (acc != null)
                             {
-                                _accessorFactory.RegisterPerminentlyCachedAccessor(attrib.HandledTargetType, attrib.HandledPropName, acc);
+                                _accessorFactory.RegisterMemberAccessorProvider(attrib.HandledTargetType, attrib.HandledPropName, acc);
                                 break;
                             }
                         }
@@ -356,7 +356,7 @@ namespace com.spacepuppy.Tween
                 }
             }
 
-            return _accessorFactory.GetAccessor(target, propName);
+            return _accessorFactory.GetAccessor(target, propName, args);
         }
 
         #endregion
@@ -569,7 +569,7 @@ namespace com.spacepuppy.Tween
         {
             public System.Type TargetType;
             public string MemberName;
-            public IMemberAccessor Accessor;
+            public ITweenMemberAccessorProvider Provider;
         }
 
         public class TweenMemberAccessorFactory : MemberAccessorFactory
@@ -583,25 +583,17 @@ namespace com.spacepuppy.Tween
                 base.Purge();
             }
 
-            public void RegisterPerminentlyCachedAccessor(System.Type targetType, string memberName, IMemberAccessor accessor)
+            public void RegisterMemberAccessorProvider(System.Type targetType, string memberName, ITweenMemberAccessorProvider provider)
             {
                 if (memberName == null) throw new System.ArgumentNullException(nameof(memberName)); //can't be null, that's reserved for the 'general' type registering
-                if (accessor == null) throw new System.ArgumentNullException(nameof(accessor));
+                if (provider == null) throw new System.ArgumentNullException(nameof(provider));
 
                 var info = new SpecialNameAccessorInfo()
                 {
                     TargetType = targetType ?? typeof(object),
                     MemberName = memberName,
-                    Accessor = accessor
+                    Provider = provider
                 };
-
-                //if this is a direct public member of the type, just register that
-                var memberInfo = DynamicUtil.GetMemberFromType(info.TargetType, memberName, false, System.Reflection.MemberTypes.Field | System.Reflection.MemberTypes.Property);
-                if(memberInfo != null)
-                {
-                    this.RegisterPerminentlyCachedAccessor(memberInfo, accessor);
-                    return;
-                }
 
                 //the memberName is not present on the type, so we're going to register it as a special name
                 IList<SpecialNameAccessorInfo> lst;
@@ -630,25 +622,36 @@ namespace com.spacepuppy.Tween
                 }
             }
 
-            public override IMemberAccessor GetAccessor(System.Type targetType, string memberName)
+            public IMemberAccessor GetAccessor(object target, string memberName, string args)
             {
                 IList<SpecialNameAccessorInfo> lst;
-                if(_specialMemberNameTable.Lists.TryGetList(memberName, out lst))
+                if (_specialMemberNameTable.Lists.TryGetList(memberName, out lst))
                 {
-                    for(int i = 0; i < lst.Count; i++)
+                    for (int i = 0; i < lst.Count; i++)
                     {
-                        if(TypeUtil.IsType(targetType, lst[i].TargetType))
+                        if (lst[i].TargetType.IsInstanceOfType(target))
                         {
-                            return lst[i].Accessor;
+                            return lst[i].Provider.GetAccessor(target, memberName, args);
                         }
                     }
                 }
-
-                return base.GetAccessor(targetType, memberName);
+                return base.GetAccessor(target, memberName);
             }
-
-
-
+            public override IMemberAccessor GetAccessor(object target, string memberName)
+            {
+                IList<SpecialNameAccessorInfo> lst;
+                if (_specialMemberNameTable.Lists.TryGetList(memberName, out lst))
+                {
+                    for (int i = 0; i < lst.Count; i++)
+                    {
+                        if (lst[i].TargetType.IsInstanceOfType(target))
+                        {
+                            return lst[i].Provider.GetAccessor(target, memberName, null);
+                        }
+                    }
+                }
+                return base.GetAccessor(target, memberName);
+            }
 
             public bool TryGetMemberAccessorInfoByType(System.Type tp, string name, out SpecialNameAccessorInfo data)
             {

@@ -6,7 +6,7 @@ namespace com.spacepuppy.Tween.Accessors
 {
 
     [CustomTweenMemberAccessor(typeof(ITimeSupplier), typeof(float), "Scale")]
-    public class TimeScaleMemberAccessor : ITweenMemberAccessor, IMemberAccessor<float>
+    public class TimeScaleMemberAccessor : ITweenMemberAccessorProvider, IMemberAccessor<float>
     {
 
         public const string DEFAULT_TIMESCALE_ID = "SPTween.TimeScale";
@@ -29,11 +29,19 @@ namespace com.spacepuppy.Tween.Accessors
             return typeof(float);
         }
 
-        public System.Type Init(object target, string propName, string args)
+        public IMemberAccessor GetAccessor(object target, string propName, string args)
         {
-            _id = (string.IsNullOrEmpty(args)) ? DEFAULT_TIMESCALE_ID : args;
-
-            return typeof(float);
+            if (string.IsNullOrEmpty(args) || args == DEFAULT_TIMESCALE_ID)
+            {
+                return this;
+            }
+            else
+            {
+                return new TimeScaleMemberAccessor()
+                {
+                    _id = args
+                };
+            }
         }
 
         object IMemberAccessor.Get(object target)

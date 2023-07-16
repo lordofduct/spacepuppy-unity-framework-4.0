@@ -10,9 +10,9 @@ namespace com.spacepuppy.Tween
     public class CustomTweenMemberAccessorAttribute : System.Attribute
     {
 
-        public static IEnumerable<CustomTweenMemberAccessorAttribute> FindCustomTweenMemberAccessorTypes()
+        public static IEnumerable<CustomTweenMemberAccessorAttribute> FindCustomTweenMemberAccessorProviderTypes()
         {
-            foreach (var tp in TypeUtil.GetTypesAssignableFrom(typeof(ITweenMemberAccessor)))
+            foreach (var tp in TypeUtil.GetTypesAssignableFrom(typeof(ITweenMemberAccessorProvider)))
             {
                 foreach(var attrib in tp.GetCustomAttributes<CustomTweenMemberAccessorAttribute>())
                 {

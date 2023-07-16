@@ -10,7 +10,7 @@ namespace com.spacepuppy.Tween.Accessors
     [CustomTweenMemberAccessor(typeof(Component), typeof(Quaternion), "*Rotate")]
     [CustomTweenMemberAccessor(typeof(IGameObjectSource), typeof(Quaternion), "*Rotate")]
     [CustomTweenMemberAccessor(typeof(Rigidbody), typeof(Quaternion), "*Rotate")]
-    public class GeneralRotateAccessor : ITweenMemberAccessor, IMemberAccessor<Quaternion>
+    public class GeneralRotateAccessor : ITweenMemberAccessorProvider, IMemberAccessor<Quaternion>
     {
 
         #region ImplicitCurve Interface
@@ -25,9 +25,9 @@ namespace com.spacepuppy.Tween.Accessors
             return typeof(Quaternion);
         }
 
-        public System.Type Init(object target, string propName, string args)
+        public IMemberAccessor GetAccessor(object target, string propName, string args)
         {
-            return typeof(Quaternion);
+            return this;
         }
 
         object IMemberAccessor.Get(object target)

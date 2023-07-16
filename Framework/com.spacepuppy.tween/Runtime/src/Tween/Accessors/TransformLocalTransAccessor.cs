@@ -10,8 +10,9 @@ namespace com.spacepuppy.Tween.Accessors
     [CustomTweenMemberAccessor(typeof(GameObject), typeof(Trans), "*LocalTrans")]
     [CustomTweenMemberAccessor(typeof(Component), typeof(Trans), "*LocalTrans")]
     [CustomTweenMemberAccessor(typeof(IGameObjectSource), typeof(Trans), "*LocalTrans")]
-    public class TransformLocalTransAccessor : ITweenMemberAccessor, IMemberAccessor<Trans>
+    public class TransformLocalTransAccessor : ITweenMemberAccessorProvider, IMemberAccessor<Trans>
     {
+        private static readonly TransformLocalTransAccessor IncludeScaleAccessor = new TransformLocalTransAccessor() { _includeScale = true };
 
         private bool _includeScale;
 
@@ -27,11 +28,16 @@ namespace com.spacepuppy.Tween.Accessors
             return typeof(Trans);
         }
 
-        public System.Type Init(object target, string propName, string args)
+        public IMemberAccessor GetAccessor(object target, string propName, string args)
         {
-            _includeScale = ConvertUtil.ToBool(args);
-
-            return typeof(Trans);
+            if (ConvertUtil.ToBool(args))
+            {
+                return IncludeScaleAccessor;
+            }
+            else
+            {
+                return this;
+            }
         }
 
         object IMemberAccessor.Get(object target)

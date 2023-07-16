@@ -10,10 +10,10 @@ namespace com.spacepuppy.Tween.Accessors
     [CustomTweenMemberAccessor(typeof(GameObject), typeof(Vector3), "*relativePosition")]
     [CustomTweenMemberAccessor(typeof(Transform), typeof(Vector3), "*relativePosition")]
     [CustomTweenMemberAccessor(typeof(IGameObjectSource), typeof(Vector3), "*relativePosition")]
-    public class TransformRelativePositionAccessor : ITweenMemberAccessor, IMemberAccessor<Vector3>
+    public class TransformRelativePositionAccessor : ITweenMemberAccessorProvider, IMemberAccessor<Vector3>
     {
 
-        private Trans _initialTrans;
+        private Trans _initialTrans = Trans.Identity;
 
         #region ITweenMemberAccessor Interface
 
@@ -27,19 +27,20 @@ namespace com.spacepuppy.Tween.Accessors
             return typeof(Vector3);
         }
 
-        public System.Type Init(object target, string propName, string args)
+        public IMemberAccessor GetAccessor(object target, string propName, string args)
         {
             var trans = GameObjectUtil.GetTransformFromSource(target);
             if (trans != null)
             {
-                _initialTrans = Trans.GetGlobal(trans);
+                return new TransformRelativePositionAccessor()
+                {
+                    _initialTrans = Trans.GetGlobal(trans)
+                };
             }
             else
             {
-                _initialTrans = Trans.Identity;
+                return this;
             }
-
-            return typeof(Vector3);
         }
 
         object IMemberAccessor.Get(object target)

@@ -1,18 +1,25 @@
 ﻿using UnityEngine;
-using UnityEngine.Animations;
 using System.Collections.Generic;
+using System.Linq;
 
 using com.spacepuppy.Collections;
 using com.spacepuppy.Events;
 using com.spacepuppy.Utils;
-using System.Linq;
 
 namespace com.spacepuppy.Mecanim
 {
 
-    [Infobox("State Id must match the state name exactly including case.\r\n\r\nYou can target specific layers and sub states by formatting the name as:\r\nLayerName.StateName\r\nLayerName.SubStateMachineName.StateName\r\nOr even further nesting.\r\n\r\nNote - if any changes are made to StateId at runtime; SyncSubStateBridges must be called to take effect.")]
+    [Infobox("State Id must match the state name exactly including case.\r\n\r\nYou can target specific layers and sub states by formatting the name as:\r\nLayerName.StateName\r\nLayerName.SubStateMachineName.StateName\r\nOr even further nesting.\r\n\r\nNote - enter/exit events are fired by the Mecanim anim system and therefore relies on the transition times meaning there is overlap between when one state enters and the exiting state actually exits.\r\n\r\nNote - if any changes are made to StateId at runtime; SyncSubStateBridges must be called to take effect.")]
     public class AnimatorSubStateBridge : SPComponent
     {
+
+        [System.Flags]
+        public enum Modes
+        {
+            TriggerEventOnly = 0,
+            TriggerEventEvenIfDisabled = 1,
+            GameObjectEnabledMirrorsState = 2,
+        }
 
         #region Fields
 
@@ -20,8 +27,7 @@ namespace com.spacepuppy.Mecanim
         private string _stateId;
 
         [SerializeField]
-        [Tooltip("Enter/Exit events with trigger even if this is disabled.")]
-        private bool _triggerEventsWhenDisabled;
+        private Modes _mode;
 
         [SerializeField]
         [SPEvent.Config("animator (Animator)")]
@@ -58,6 +64,7 @@ namespace com.spacepuppy.Mecanim
             base.Awake();
 
             this.Sync();
+            if (_mode == Modes.GameObjectEnabledMirrorsState) this.gameObject.SetActive(false);
         }
 
         #endregion
@@ -66,9 +73,9 @@ namespace com.spacepuppy.Mecanim
 
         public string StateId => _stateId;
 
-        public bool TriggerEventsWhenDisabled => _triggerEventsWhenDisabled;
+        public Modes Mode => _mode;
 
-        public SPEvent OnStateEnter {  get { return _onStateEnter; } }
+        public SPEvent OnStateEnter { get { return _onStateEnter; } }
 
         public SPEvent OnStateExit { get { return _onStateExit; } }
 
@@ -90,31 +97,91 @@ namespace com.spacepuppy.Mecanim
 
         protected internal virtual void SignalStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
         {
-            if (!_triggerEventsWhenDisabled && !this.isActiveAndEnabled) return;
-
             _animator = animator;
             _stateInfo = stateInfo;
             _layerIndex = layerIndex;
 
-            if (_onStateEnter.HasReceivers) _onStateEnter.ActivateTrigger(this, _animator);
-
-            if(_messageToken.Count > 0)
+            switch (_mode)
             {
-                if (_onStateEnterCallback == null) _onStateEnterCallback = (o) => o.OnStateEnter(_animator, _stateInfo, _layerIndex);
-                _messageToken.Invoke(_onStateEnterCallback);
+                case Modes.TriggerEventOnly:
+                    if (this.isActiveAndEnabled)
+                    {
+                        if (_onStateEnter.HasReceivers) _onStateEnter.ActivateTrigger(this, _animator);
+
+                        if (_messageToken.Count > 0)
+                        {
+                            if (_onStateEnterCallback == null) _onStateEnterCallback = (o) => o.OnStateEnter(_animator, _stateInfo, _layerIndex);
+                            _messageToken.Invoke(_onStateEnterCallback);
+                        }
+                    }
+                    break;
+                case Modes.TriggerEventEvenIfDisabled:
+                    {
+                        if (_onStateEnter.HasReceivers) _onStateEnter.ActivateTrigger(this, _animator);
+
+                        if (_messageToken.Count > 0)
+                        {
+                            if (_onStateEnterCallback == null) _onStateEnterCallback = (o) => o.OnStateEnter(_animator, _stateInfo, _layerIndex);
+                            _messageToken.Invoke(_onStateEnterCallback);
+                        }
+                    }
+                    break;
+                case Modes.GameObjectEnabledMirrorsState:
+                    {
+                        if (_onStateEnter.HasReceivers) _onStateEnter.ActivateTrigger(this, _animator);
+
+                        if (_messageToken.Count > 0)
+                        {
+                            if (_onStateEnterCallback == null) _onStateEnterCallback = (o) => o.OnStateEnter(_animator, _stateInfo, _layerIndex);
+                            _messageToken.Invoke(_onStateEnterCallback);
+                        }
+
+                        this.gameObject.SetActive(true);
+                    }
+                    break;
             }
         }
 
         protected internal virtual void SignalStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
         {
-            if (!_triggerEventsWhenDisabled && !this.isActiveAndEnabled) return;
-
-            if (_onStateExit.HasReceivers) _onStateExit.ActivateTrigger(this, _animator);
-
-            if (_messageToken.Count > 0)
+            switch (_mode)
             {
-                if (_onStateExitCallback == null) _onStateExitCallback = (o) => o.OnStateExit(_animator, _stateInfo, _layerIndex);
-                _messageToken.Invoke(_onStateExitCallback);
+                case Modes.TriggerEventOnly:
+                    if (this.isActiveAndEnabled)
+                    {
+                        if (_onStateExit.HasReceivers) _onStateExit.ActivateTrigger(this, _animator);
+
+                        if (_messageToken.Count > 0)
+                        {
+                            if (_onStateExitCallback == null) _onStateExitCallback = (o) => o.OnStateExit(_animator, _stateInfo, _layerIndex);
+                            _messageToken.Invoke(_onStateExitCallback);
+                        }
+                    }
+                    break;
+                case Modes.TriggerEventEvenIfDisabled:
+                    {
+                        if (_onStateExit.HasReceivers) _onStateExit.ActivateTrigger(this, _animator);
+
+                        if (_messageToken.Count > 0)
+                        {
+                            if (_onStateExitCallback == null) _onStateExitCallback = (o) => o.OnStateExit(_animator, _stateInfo, _layerIndex);
+                            _messageToken.Invoke(_onStateExitCallback);
+                        }
+                    }
+                    break;
+                case Modes.GameObjectEnabledMirrorsState:
+                    {
+                        if (_onStateExit.HasReceivers) _onStateExit.ActivateTrigger(this, _animator);
+
+                        if (_messageToken.Count > 0)
+                        {
+                            if (_onStateExitCallback == null) _onStateExitCallback = (o) => o.OnStateExit(_animator, _stateInfo, _layerIndex);
+                            _messageToken.Invoke(_onStateExitCallback);
+                        }
+
+                        this.gameObject.SetActive(false);
+                    }
+                    break;
             }
         }
 
@@ -168,11 +235,11 @@ namespace com.spacepuppy.Mecanim
             System.Array.Sort(_bridges, AnimatorSubStateBridgeHashComparer.Default);
 
             _hashToStartIndex.Clear();
-            if(_bridges.Length > 0)
+            if (_bridges.Length > 0)
             {
                 int hash = _bridges[0].StateIdHash;
                 _hashToStartIndex[hash] = 0;
-                for(int i = 1; i < _bridges.Length; i++)
+                for (int i = 1; i < _bridges.Length; i++)
                 {
                     if (_bridges[i].StateIdHash != hash)
                     {
@@ -243,7 +310,7 @@ namespace com.spacepuppy.Mecanim
             finally
             {
                 _signaling = false;
-                if(_attemptedSync)
+                if (_attemptedSync)
                 {
                     this.SyncSubStateBridges();
                 }

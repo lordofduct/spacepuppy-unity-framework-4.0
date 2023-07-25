@@ -213,7 +213,7 @@ namespace com.spacepuppy
 
         public static System.Type GetType(this object obj, bool respectProxy)
         {
-            if (respectProxy && obj is IProxy p)
+            if (respectProxy && obj is IProxy p && (p.Params & ProxyParams.PrioritizeAsTargetFirst) == 0)
             {
                 return p.GetTargetType() ?? typeof(object);
             }

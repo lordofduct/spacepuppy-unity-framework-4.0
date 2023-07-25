@@ -9,6 +9,7 @@ using com.spacepuppy.Events;
 
 namespace com.spacepuppy.UI
 {
+
     public sealed class SPUIOnSelected : MonoBehaviour, ISelectHandler, IDeselectHandler, IObservableTrigger
     {
 
@@ -57,4 +58,5 @@ namespace com.spacepuppy.UI
         #endregion
 
     }
+
 }

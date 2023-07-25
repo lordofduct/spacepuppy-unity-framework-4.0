@@ -29,13 +29,14 @@ namespace com.spacepuppy.Tween.Events
 
         #region Methods
 
-        private ObjectTweener GetCachedTweener()
+        private ObjectTweener GetCachedTweener(object arg)
         {
             if (!_target) return null;
-            if (_cachedTweener != null && object.ReferenceEquals(_cachedTweener.Target, _target)) return _cachedTweener;
 
+            var targ = _target.IsProxy_ParamsRespecting() ? (_target as IProxy).GetTarget_ParamsRespecting(arg) : _target;
+            if (_cachedTweener != null && object.ReferenceEquals(_cachedTweener.Target, targ)) return _cachedTweener;
 
-            var twn = SPTween.Tween(_target);
+            var twn = SPTween.Tween(targ);
             for (int i = 0; i < _data.Length; i++)
             {
                 if (_data[i] != null) _data[i].Apply(twn);
@@ -52,7 +53,7 @@ namespace com.spacepuppy.Tween.Events
         {
             if (!this.CanTrigger) return false;
 
-            var twn = this.GetCachedTweener();
+            var twn = this.GetCachedTweener(arg);
             twn?.Reset();
             twn?.Scrub(_scrubTime.FloatValue);
             return true;

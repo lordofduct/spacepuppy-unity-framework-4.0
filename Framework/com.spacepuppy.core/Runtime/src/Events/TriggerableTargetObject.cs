@@ -699,7 +699,7 @@ namespace com.spacepuppy.Events
         public System.Type GetTargetType()
         {
             if (_configured && _target != null && _find == FindCommand.Direct && _resolveBy != SearchBy.Type)
-                return _target.GetType();
+                return _target.GetType(true);
 
             if (_resolveBy == SearchBy.Type)
                 return TypeUtil.FindType(_queryString) ?? typeof(UnityEngine.Object);

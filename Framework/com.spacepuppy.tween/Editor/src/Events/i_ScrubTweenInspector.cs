@@ -94,13 +94,15 @@ namespace com.spacepuppyeditor.Tween.Events
             position = CalcNextRect(ref area);
             var memberProp = el.FindPropertyRelative(PROP_DATA_MEMBER);
             object targObj = _targetProp.objectReferenceValue;
+            var targTp = targObj?.GetType(true);
+
             System.Type propType;
-            memberProp.stringValue = i_TweenValueInspector.ReflectedPropertyAndCustomTweenAccessorField(position,
-                                                                                                        EditorHelper.TempContent("Property", "The property on the target to set."),
-                                                                                                        targObj,
-                                                                                                        memberProp.stringValue,
-                                                                                                        com.spacepuppy.Dynamic.DynamicMemberAccess.ReadWrite,
-                                                                                                        out propType);
+            memberProp.stringValue = i_TweenInspector.ReflectedPropertyAndCustomTweenAccessorField(position,
+                                                                                                   EditorHelper.TempContent("Property", "The property on the target to set."),
+                                                                                                   targTp, targObj,
+                                                                                                   memberProp.stringValue,
+                                                                                                   com.spacepuppy.Dynamic.DynamicMemberAccess.ReadWrite,
+                                                                                                   out propType);
             var curveGenerator = SPTween.CurveFactory.LookupTweenCurveGenerator(targObj?.GetType(), memberProp.stringValue, propType);
 
             position = CalcNextRect(ref area);

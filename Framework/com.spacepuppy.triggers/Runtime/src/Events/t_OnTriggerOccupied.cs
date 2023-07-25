@@ -4,7 +4,6 @@ using System.Collections.Generic;
 
 using com.spacepuppy.Geom;
 using com.spacepuppy.Utils;
-using System.Linq;
 
 namespace com.spacepuppy.Events
 {

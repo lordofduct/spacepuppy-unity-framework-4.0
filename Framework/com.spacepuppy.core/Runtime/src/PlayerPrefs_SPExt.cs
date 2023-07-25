@@ -5,7 +5,18 @@ namespace com.spacepuppy
 {
     public class PlayerPrefs_SPExt : PlayerPrefs
     {
-        
+
+        public static bool GetBool(string key, bool defaultValue = false)
+        {
+            if (!PlayerPrefs.HasKey(key)) return defaultValue;
+            return PlayerPrefs.GetInt(key) != 0;
+        }
+
+        public static void SetBool(string key, bool value)
+        {
+            PlayerPrefs.SetInt(key, value ? 1 : 0);
+        }
+
         /// <summary>
         /// Returns a datetime (based on a stored string) for a given key, or returns a default value if it doesn't exist or can't be parsed to a date.
         /// </summary>

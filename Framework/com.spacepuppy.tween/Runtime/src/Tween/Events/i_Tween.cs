@@ -16,7 +16,6 @@ namespace com.spacepuppy.Tween.Events
         private SPTime _timeSupplier;
 
         [SerializeField()]
-        [TriggerableTargetObject.Config(typeof(UnityEngine.Object))]
         private TriggerableTargetObject _target = new TriggerableTargetObject();
 
         [SerializeField]

@@ -99,13 +99,15 @@ namespace com.spacepuppyeditor.Tween.Events
             var memberProp = el.FindPropertyRelative(PROP_DATA_MEMBER);
             System.Type targType = com.spacepuppyeditor.Core.Events.TriggerableTargetObjectPropertyDrawer.GetTargetType(_targetProp);
             object targObj = com.spacepuppyeditor.Core.Events.TriggerableTargetObjectPropertyDrawer.GetTarget(_targetProp, targType);
+            if (targObj?.GetType() != null && TypeUtil.IsType(targObj.GetType(), targType)) targType = targObj.GetType();
+
             System.Type propType;
-            memberProp.stringValue = i_TweenValueInspector.ReflectedPropertyAndCustomTweenAccessorField(position,
-                                                                                                        EditorHelper.TempContent("Property", "The property on the target to set."),
-                                                                                                        targObj,
-                                                                                                        memberProp.stringValue,
-                                                                                                        com.spacepuppy.Dynamic.DynamicMemberAccess.ReadWrite,
-                                                                                                        out propType);
+            memberProp.stringValue = i_TweenInspector.ReflectedPropertyAndCustomTweenAccessorField(position,
+                                                                                                   EditorHelper.TempContent("Property", "The property on the target to set."),
+                                                                                                   targType, targObj,
+                                                                                                   memberProp.stringValue,
+                                                                                                   com.spacepuppy.Dynamic.DynamicMemberAccess.ReadWrite,
+                                                                                                   out propType);
             var curveGenerator = SPTween.CurveFactory.LookupTweenCurveGenerator(targObj?.GetType(), memberProp.stringValue, propType);
 
             position = CalcNextRect(ref area);
@@ -196,7 +198,7 @@ namespace com.spacepuppyeditor.Tween.Events
         private void DrawOption(Rect position, ITweenCurveGenerator generator, SerializedProperty optionProp)
         {
             var etp = generator?.GetOptionEnumType();
-            if(etp != null)
+            if (etp != null)
             {
                 System.Enum evalue = null;
                 if (!System.Enum.IsDefined(etp, optionProp.intValue))
@@ -222,90 +224,6 @@ namespace com.spacepuppyeditor.Tween.Events
         }
 
         #endregion
-
-
-        #region Custom Reflected PropertyField
-
-        public static string ReflectedPropertyAndCustomTweenAccessorField(Rect position, GUIContent label, object targObj, string selectedMemberName, DynamicMemberAccess access, out System.Type propType)
-        {
-            if (targObj != null)
-            {
-                var targTp = targObj.GetType();
-                //var members = DynamicUtil.GetEasilySerializedMembersFromType(targTp, System.Reflection.MemberTypes.Field | System.Reflection.MemberTypes.Property, access).ToArray();
-                var members = DynamicUtil.GetEasilySerializedMembers(targObj, System.Reflection.MemberTypes.Field | System.Reflection.MemberTypes.Property, access).ToArray();
-                var accessors = SPTween.CurveFactory.AccessorFactory.GetCustomAccessorIds(targTp, (d) => VariantReference.AcceptableSerializableType(d.Provider.GetMemberType()));
-                System.Array.Sort(accessors);
-
-                using (var entries = TempCollection.GetList<GUIContent>(members.Length))
-                {
-                    int index = -1;
-                    for (int i = 0; i < members.Length; i++)
-                    {
-                        var m = members[i];
-                        if ((DynamicUtil.GetMemberAccessLevel(m) & DynamicMemberAccess.Write) != 0)
-                            entries.Add(EditorHelper.TempContent(string.Format("{0} ({1}) -> {2}", m.Name, DynamicUtil.GetReturnType(m).Name, DynamicUtil.GetValueWithMember(m, targObj))));
-                        else
-                            entries.Add(EditorHelper.TempContent(string.Format("{0} (readonly - {1}) -> {2}", m.Name, DynamicUtil.GetReturnType(m).Name, DynamicUtil.GetValueWithMember(m, targObj))));
-
-                        if (index < 0 && m.Name == selectedMemberName)
-                        {
-                            //index = i;
-                            index = entries.Count - 1;
-                        }
-                    }
-
-                    for (int i = 0; i < accessors.Length; i++)
-                    {
-                        entries.Add(EditorHelper.TempContent(accessors[i]));
-                        if (index < 0 && accessors[i] == selectedMemberName)
-                        {
-                            index = entries.Count - 1;
-                        }
-                    }
-
-
-                    index = EditorGUI.Popup(position, label, index, entries.ToArray());
-                    //selectedMember = (index >= 0) ? members[index] : null;
-                    //return (selectedMember != null) ? selectedMember.Name : null;
-
-                    if (index < 0)
-                    {
-                        propType = null;
-                        return null;
-                    }
-                    else if (index < members.Length)
-                    {
-                        propType = DynamicUtil.GetReturnType(members[index]);
-                        return members[index].Name;
-                    }
-                    else
-                    {
-                        var nm = accessors[index - members.Length];
-                        TweenCurveFactory.SpecialNameAccessorInfo info;
-                        if (SPTween.CurveFactory.AccessorFactory.TryGetMemberAccessorInfoByType(targTp, nm, out info))
-                        {
-                            propType = info.Provider.GetMemberType();
-                            if (VariantReference.AcceptableSerializableType(propType))
-                            {
-                                return nm;
-                            }
-                        }
-                    }
-
-                    propType = null;
-                    return null;
-                }
-            }
-            else
-            {
-                propType = null;
-                EditorGUI.Popup(position, label, -1, new GUIContent[0]);
-                return null;
-            }
-        }
-
-        #endregion
-
 
     }
 

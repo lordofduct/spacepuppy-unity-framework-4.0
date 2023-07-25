@@ -45,6 +45,9 @@ namespace com.spacepuppy.Project
 
         #region Methods
 
+#if !MANUALLY_REGISTER_SPGAMELOOP
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSplashScreen)]
+#endif
         public static void RegisterTimeLayers()
         {
             foreach (var str in Layers)

@@ -11,6 +11,7 @@ using com.spacepuppy.Utils;
 
 using com.spacepuppyeditor.Core;
 using com.spacepuppyeditor.Internal;
+using static UnityEngine.GraphicsBuffer;
 
 namespace com.spacepuppyeditor.Tween.Events
 {
@@ -92,13 +93,13 @@ namespace com.spacepuppyeditor.Tween.Events
             Rect position;
             var el = _dataList.serializedProperty.GetArrayElementAtIndex(index);
             var mtp = el.GetManagedReferenceType();
-            if(mtp == null)
+            if (mtp == null)
             {
                 el.managedReferenceValue = new i_Tween.GenericTweenData();
                 GUI.changed = true;
                 return;
             }
-            else if(mtp != typeof(i_Tween.GenericTweenData))
+            else if (mtp != typeof(i_Tween.GenericTweenData))
             {
                 EditorGUI.LabelField(area, "Unsupported ITweenData Type '" + mtp.Name + "' in editor.");
                 return;
@@ -112,13 +113,15 @@ namespace com.spacepuppyeditor.Tween.Events
             var memberProp = el.FindPropertyRelative(PROP_DATA_MEMBER);
             System.Type targType = com.spacepuppyeditor.Core.Events.TriggerableTargetObjectPropertyDrawer.GetTargetType(_targetProp);
             object targObj = com.spacepuppyeditor.Core.Events.TriggerableTargetObjectPropertyDrawer.GetTarget(_targetProp, targType);
+            if (targObj?.GetType() != null && TypeUtil.IsType(targObj.GetType(), targType)) targType = targObj.GetType();
+
             System.Type propType;
-            memberProp.stringValue = i_TweenValueInspector.ReflectedPropertyAndCustomTweenAccessorField(position,
-                                                                                                        EditorHelper.TempContent("Property", "The property on the target to set."),
-                                                                                                        targObj,
-                                                                                                        memberProp.stringValue,
-                                                                                                        com.spacepuppy.Dynamic.DynamicMemberAccess.ReadWrite,
-                                                                                                        out propType);
+            memberProp.stringValue = i_TweenInspector.ReflectedPropertyAndCustomTweenAccessorField(position,
+                                                                                                   EditorHelper.TempContent("Property", "The property on the target to set."),
+                                                                                                   targType, targObj,
+                                                                                                   memberProp.stringValue,
+                                                                                                   com.spacepuppy.Dynamic.DynamicMemberAccess.ReadWrite,
+                                                                                                   out propType);
             var curveGenerator = SPTween.CurveFactory.LookupTweenCurveGenerator(targObj?.GetType(), memberProp.stringValue, propType);
 
             position = CalcNextRect(ref area);
@@ -239,12 +242,10 @@ namespace com.spacepuppyeditor.Tween.Events
 
         #region Custom Reflected PropertyField
 
-        public static string ReflectedPropertyAndCustomTweenAccessorField(Rect position, GUIContent label, object targObj, string selectedMemberName, DynamicMemberAccess access, out System.Type propType)
+        public static string ReflectedPropertyAndCustomTweenAccessorField(Rect position, GUIContent label, System.Type targTp, object targObj, string selectedMemberName, DynamicMemberAccess access, out System.Type propType)
         {
-            if (targObj != null)
+            if (targTp != null)
             {
-                //var members = DynamicUtil.GetEasilySerializedMembers(targObj, System.Reflection.MemberTypes.Field | System.Reflection.MemberTypes.Property, access).ToArray();
-                var targTp = targObj.GetType();
                 var members = DynamicUtil.GetEasilySerializedMembersFromType(targTp, System.Reflection.MemberTypes.Field | System.Reflection.MemberTypes.Property, access).ToArray();
                 var accessors = SPTween.CurveFactory.AccessorFactory.GetCustomAccessorIds(targTp, (d) => VariantReference.AcceptableSerializableType(d.Provider.GetMemberType()));
                 System.Array.Sort(accessors);

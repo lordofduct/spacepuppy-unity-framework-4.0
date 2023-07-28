@@ -10,6 +10,9 @@ namespace com.spacepuppy
         #region Fields
 
         [SerializeField]
+        private bool _inverted;
+
+        [SerializeField]
         [ReorderableArray]
         private GameObject[] _targets;
 
@@ -49,7 +52,7 @@ namespace com.spacepuppy
 
             foreach (var targ in _targets)
             {
-                if (targ) targ.SetActive(this.isActiveAndEnabled);
+                if (targ) targ.SetActive(_inverted ? !this.isActiveAndEnabled : this.isActiveAndEnabled);
             }
         }
 

@@ -1,11 +1,13 @@
 ﻿#pragma warning disable 0649 // variable declared but not used.
 
+using com.spacepuppy.Utils;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
 namespace com.spacepuppy.Events
 {
 
+    [System.Obsolete("Use i_SetSelectedUIElement")]
     public class i_SetActiveUIElement : AutoTriggerable
     {
 
@@ -20,14 +22,7 @@ namespace com.spacepuppy.Events
         {
             if (!this.CanTrigger) return false;
 
-
-            if (_element != null && EventSystem.current != null)
-            {
-                EventSystem.current.SetSelectedGameObject(_element);
-                return true;
-            }
-
-            return false;
+            return UIEventUtil.SetSelectedGameObject(_element);
         }
 
     }

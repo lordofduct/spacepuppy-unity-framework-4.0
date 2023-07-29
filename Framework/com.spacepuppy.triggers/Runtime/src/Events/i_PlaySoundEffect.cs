@@ -6,6 +6,7 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Events
 {
 
+    [Infobox("Interrupt modes other than 'StopIfPlaying' can cause unpredictable 'OnAudioComplete' event callbacks or even doubling up of them. Avoid using the 'OnAudioComplete' if you're using any other mode than 'StopIfPlaying'.")]
     public class i_PlaySoundEffect : AutoTriggerable
     {
 
@@ -32,13 +33,6 @@ namespace com.spacepuppy.Events
         [Tooltip("Trigger something at the end of the sound effect. This is NOT perfectly accurate and really just starts a timer for the duration of the sound being played.")]
         [SerializeField()]
         private SPEvent _onAudioComplete = new SPEvent("OnAudioComplete");
-
-        [System.NonSerialized()]
-        private System.IDisposable _completeRoutine;
-
-        #endregion
-
-        #region CONSTRUCTOR
 
         #endregion
 
@@ -80,18 +74,6 @@ namespace com.spacepuppy.Events
 
         #endregion
 
-        #region Methods
-
-        System.Collections.IEnumerator WaitForComplete(AudioSource src)
-        {
-            while (src.isPlaying) yield return null;
-
-            _completeRoutine = null;
-            _onAudioComplete.ActivateTrigger(this, null);
-        }
-
-        #endregion
-
         #region ITriggerableMechanism Interface
 
         public override bool CanTrigger
@@ -112,22 +94,6 @@ namespace com.spacepuppy.Events
                 Debug.LogWarning("Failed to play audio due to a lack of AudioSource on the target.", this);
                 return false;
             }
-            if (src.isPlaying)
-            {
-                switch (this.Interrupt)
-                {
-                    case AudioInterruptMode.StopIfPlaying:
-                        if (_completeRoutine != null) _completeRoutine.Dispose();
-                        _completeRoutine = null;
-                        src.Stop();
-                        break;
-                    case AudioInterruptMode.DoNotPlayIfPlaying:
-                        return false;
-                    case AudioInterruptMode.PlayOverExisting:
-                        //play one shot over existing audio
-                        break;
-                }
-            }
 
             AudioClip clip;
             if (_clips.Length == 0)
@@ -144,33 +110,41 @@ namespace com.spacepuppy.Events
             }
             if (!clip) return false;
 
-
-            if (clip != null)
+            if (_delay.Seconds > 0)
             {
-                if (_delay.Seconds > 0)
+                this.InvokeGuaranteed(() =>
                 {
-                    this.InvokeGuaranteed(() =>
+                    if (src != null)
                     {
-                        if (src != null)
+                        if (this && this.isActiveAndEnabled && _onAudioComplete.HasReceivers)
                         {
-                            src.PlayOneShot(clip);
-                            if (_onAudioComplete.HasReceivers) _completeRoutine = GameLoop.Hook.StartRadicalCoroutine(this.WaitForComplete(src));
-                            //_completeRoutine = this.InvokeGuaranteed(this.OnAudioCompleteHandler, clip.length, SPTime.Real);
+                            src.PlayOneShot(clip, _interrupt, () =>
+                            {
+                                if (this && this.isActiveAndEnabled) _onAudioComplete.ActivateTrigger(this, null);
+                            });
                         }
-                    }, _delay.Seconds, _delay.TimeSupplier);
-                }
-                else
-                {
-                    src.PlayOneShot(clip);
-                    if (_onAudioComplete.HasReceivers) _completeRoutine = GameLoop.Hook.StartRadicalCoroutine(this.WaitForComplete(src));
-                    //_completeRoutine = this.InvokeGuaranteed(this.OnAudioCompleteHandler, clip.length, SPTime.Real);
-                }
-
+                        else
+                        {
+                            src.PlayOneShot(clip, _interrupt);
+                        }
+                    }
+                }, _delay.Seconds, _delay.TimeSupplier);
                 return true;
             }
             else
             {
-                return false;
+                if (_onAudioComplete.HasReceivers)
+                {
+                    src.PlayOneShot(clip, _interrupt, () =>
+                    {
+                        if (this && this.isActiveAndEnabled) _onAudioComplete.ActivateTrigger(this, null);
+                    });
+                }
+                else
+                {
+                    src.PlayOneShot(clip, _interrupt);
+                }
+                return true;
             }
         }
 

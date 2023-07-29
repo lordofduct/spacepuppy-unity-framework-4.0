@@ -92,7 +92,8 @@
     {
         StopIfPlaying = 0,
         DoNotPlayIfPlaying = 1,
-        PlayOverExisting = 2
+        PlayOverExisting = 2,
+        QueueOnce = 3,
     }
 
     /// <summary>

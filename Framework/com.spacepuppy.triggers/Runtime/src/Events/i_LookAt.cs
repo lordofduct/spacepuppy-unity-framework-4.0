@@ -3,8 +3,6 @@
 using UnityEngine;
 using com.spacepuppy.Utils;
 
-using com.spacepuppy.Tween;
-
 namespace com.spacepuppy.Events
 {
     public class i_LookAt : AutoTriggerable
@@ -41,6 +39,7 @@ namespace com.spacepuppy.Events
         [SerializeField()]
         [Tooltip("If greater than 0, then it will slerp.")]
         private float _slerpValue;
+        private SPTime _timeSupplier;
 
         [SerializeField]
         [Tooltip("Only fires if slerp'd")]
@@ -133,16 +132,12 @@ namespace com.spacepuppy.Events
                     case SlerpStyle.Speed:
                         {
                             var dur = a / _slerpValue;
-                            var twn = com.spacepuppy.Tween.SPTween.Tween(observer).To("rotation", dur, q);
-                            if (_onSlerpComplete?.HasReceivers ?? false) twn.OnFinish((s, e) => _onSlerpComplete.ActivateTrigger(this, null));
-                            twn.Play(true);
+                            GameLoop.Hook.StartCoroutine(this.TweenRotation(observer, dur, q));
                         }
                         break;
                     case SlerpStyle.Time:
                         {
-                            var twn = com.spacepuppy.Tween.SPTween.Tween(observer).To("rotation", _slerpValue, q);
-                            if (_onSlerpComplete?.HasReceivers ?? false) twn.OnFinish((s, e) => _onSlerpComplete.ActivateTrigger(this, null));
-                            twn.Play(true);
+                            GameLoop.Hook.StartCoroutine(this.TweenRotation(observer, _slerpValue, q));
                         }
                         break;
                 }
@@ -153,6 +148,25 @@ namespace com.spacepuppy.Events
                 if (_onSlerpComplete?.HasReceivers ?? false) _onSlerpComplete.ActivateTrigger(this, null);
             }
             return true;
+        }
+
+        private System.Collections.IEnumerator TweenRotation(Transform observer, float dur, Quaternion end)
+        {
+            float t = 0f;
+            Quaternion start = observer.rotation;
+            while (t < dur && observer)
+            {
+                observer.rotation = Quaternion.Slerp(start, end, t / dur);
+                yield return null;
+                t += _timeSupplier.Delta;
+            }
+
+            if (observer) observer.rotation = end;
+
+            if (this && this.isActiveAndEnabled)
+            {
+                _onSlerpComplete.ActivateTrigger(this, null);
+            }
         }
 
         #endregion

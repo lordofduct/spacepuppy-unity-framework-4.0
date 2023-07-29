@@ -2,8 +2,6 @@
 
 using UnityEngine;
 
-using com.spacepuppy.Tween;
-
 namespace com.spacepuppy.Events
 {
 
@@ -45,6 +43,7 @@ namespace com.spacepuppy.Events
 
         #endregion
 
+        #region Triggerable Interface
 
         public override bool Trigger(object sender, object arg)
         {
@@ -56,25 +55,7 @@ namespace com.spacepuppy.Events
 
             if (_fadeOutDur.Seconds > 0f)
             {
-                float cache = targ.volume;
-                SPTween.Tween(targ)
-                       .To("volume", _fadeOutDur.Seconds, 0f)
-                       .Use(_fadeOutDur.TimeSupplier)
-                       .OnFinish((s, e) =>
-                       {
-                           targ.Stop();
-                           targ.volume = cache;
-                           switch (_disableAudioSource)
-                           {
-                               case DisableMode.DisableComponent:
-                                   targ.enabled = false;
-                                   break;
-                               case DisableMode.DisableGameObject:
-                                   targ.gameObject.SetActive(false);
-                                   break;
-                           }
-                       })
-                       .Play(true);
+                GameLoop.Hook.StartCoroutine(TweenOutVolume(targ, _fadeOutDur, _disableAudioSource));
             }
             else
             {
@@ -92,6 +73,36 @@ namespace com.spacepuppy.Events
 
             return true;
         }
+
+        private static System.Collections.IEnumerator TweenOutVolume(AudioSource targ, SPTimePeriod duration, DisableMode disableMode)
+        {
+            float t = 0f;
+            float cache = targ.volume;
+            while (t < duration.Seconds && targ)
+            {
+                targ.volume = Mathf.Lerp(cache, 0f, t / duration.Seconds);
+                yield return null;
+                t += duration.TimeSupplierOrDefault.Delta;
+            }
+
+            if (targ)
+            {
+                targ.Stop();
+                targ.volume = cache;
+                switch (disableMode)
+                {
+                    case DisableMode.DisableComponent:
+                        targ.enabled = false;
+                        break;
+                    case DisableMode.DisableGameObject:
+                        targ.gameObject.SetActive(false);
+                        break;
+                }
+            }
+        }
+
+        #endregion
+
     }
 
 }

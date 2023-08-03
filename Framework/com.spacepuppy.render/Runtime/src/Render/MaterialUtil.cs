@@ -243,7 +243,7 @@ namespace com.spacepuppy.Render
 
         public static System.Type GetPropertyType(this MaterialPropertyValueType valueType)
         {
-            switch(valueType)
+            switch (valueType)
             {
                 case MaterialPropertyValueType.Float:
                     return typeof(float);
@@ -268,6 +268,36 @@ namespace com.spacepuppy.Render
                    || obj is Renderer
                    || obj is UnityEngine.UI.Graphic
                    || obj is MaterialSource;
+        }
+
+        public static void SetMaterialBySource(object obj, Material material)
+        {
+            switch (obj)
+            {
+                case IMaterialSource src:
+                    src.Material = material;
+                    break;
+                case Renderer rend:
+                    {
+                        var src = RendererMaterialSource.GetMaterialSource(rend, true);
+                        if (src)
+                            src.Material = material;
+                        else
+                            rend.sharedMaterial = material;
+                    }
+                    break;
+                case UnityEngine.UI.Graphic gr:
+                    {
+                        var src = GraphicMaterialSource.GetMaterialSource(gr, true);
+                        if (src)
+                            src.Material = material;
+                        else
+                            gr.material = material;
+                    }
+                    break;
+                default:
+                    break;
+            }
         }
 
         /// <summary>

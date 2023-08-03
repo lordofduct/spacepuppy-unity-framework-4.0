@@ -1,0 +1,17 @@
+{
+    "name": "com.spacepuppy.Render",
+    "rootNamespace": "com.spacepuppy",
+    "references": [
+        "GUID:ddd0eb9fc8f414a4d9750a013f135d36",
+        "GUID:6b6e5e70273576149b37a2bac053e1d6"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

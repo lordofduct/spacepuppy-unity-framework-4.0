@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using com.spacepuppy;
 using com.spacepuppy.Utils;
 using com.spacepuppy.Project;
+using UnityEngine.UI;
 
 namespace com.spacepuppy.UI
 {
@@ -41,13 +42,13 @@ namespace com.spacepuppy.UI
 
         [SerializeField]
         [TypeRestriction(new System.Type[] { typeof(UnityEngine.UI.Button), typeof(SPUIButton) })]
-        private Component _value;
+        private Selectable _value;
 
         #endregion
 
         #region Properties
 
-        public Component Button
+        public Selectable Button
         {
             get => _value;
             set
@@ -58,7 +59,7 @@ namespace com.spacepuppy.UI
                 {
                     RemoveEventHandlerHook();
                 }
-                _value = ObjUtil.GetAsFromSource(_supportedTypes, value) as Component;
+                _value = ObjUtil.GetAsFromSource(_supportedTypes, value) as Selectable;
                 if (_onClick != null)
                 {
                     AddEventHandlerHook();

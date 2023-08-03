@@ -10,12 +10,11 @@
   "licensesUrl": "https://github.com/lordofduct/spacepuppy-unity-framework-4.0/blob/master/LICENSE",
   "dependencies": {
     "com.spacepuppy.core": "4.0.0",
-	"com.spacepuppy.radicalcoroutine": "4.0.0",
-	"com.spacepuppy.cameras": "4.0.0",
-	"com.spacepuppy.geom": "4.0.0",
-	"com.spacepuppy.motor": "4.0.0",
-	"com.spacepuppy.pathfinding": "4.0.0",
-	"com.spacepuppy.tween": "4.0.0"
+	  "com.spacepuppy.radicalcoroutine": "4.0.0",
+	  "com.spacepuppy.geom": "4.0.0",
+	  "com.spacepuppy.motor": "4.0.0",
+	  "com.spacepuppy.pathfinding": "4.0.0",
+	  "com.spacepuppy.tween": "4.0.0"
   },
   "author": {
     "name": "Jupiter Lighthouse",

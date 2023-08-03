@@ -7,7 +7,7 @@ using com.spacepuppy.Audio;
 namespace com.spacepuppyeditor.Audio
 {
 
-    [CustomEditor(typeof(SPAudioManager))]
+    [CustomEditor(typeof(SPAudioManager), true)]
     public class SPAudioManagerInspector : SPEditor
     {
 

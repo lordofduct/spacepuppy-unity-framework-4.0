@@ -114,6 +114,8 @@ namespace com.spacepuppyeditor.Events
             set;
         }
 
+        public bool DoNotDrawParensOnLabel { get; set; }
+
         #endregion
 
         #region Draw Methods
@@ -147,7 +149,7 @@ namespace com.spacepuppyeditor.Events
         {
             if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
 
-            label.text += " ( )";
+            if (!this.DoNotDrawParensOnLabel) label.text += " ( )";
 
             this.Init(property, label);
 

@@ -277,6 +277,15 @@ namespace com.spacepuppyeditor
         /// <returns></returns>
         public static object GetTargetObjectOfProperty(SerializedProperty prop)
         {
+#if UNITY_2021_2_OR_NEWER
+            if (prop.propertyType == SerializedPropertyType.ManagedReference)
+            {
+                return prop.managedReferenceValue;
+            }
+#elif UNITY_2022_1_OR_NEWER
+            return prop.boxedValue;
+#endif
+
             var path = prop.propertyPath.Replace(".Array.data[", "[");
             object obj = prop.serializedObject.targetObject;
             var elements = path.Split('.');

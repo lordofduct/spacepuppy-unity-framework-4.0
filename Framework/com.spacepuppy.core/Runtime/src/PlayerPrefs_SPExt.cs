@@ -69,5 +69,40 @@ namespace com.spacepuppy
 
             PlayerPrefs.SetInt(key, (int)((uint)seconds));
         }
+
+
+        public static Resolution? GetResolution(string key, Resolution? defaultValue = null)
+        {
+            var s = PlayerPrefs.GetString(key, null);
+            if (string.IsNullOrEmpty(s) || !s.Contains('|')) return defaultValue;
+
+            var arr = s.Split('|');
+            if (arr.Length != 3) return defaultValue;
+
+            int w, h, r;
+            if (!int.TryParse(arr[0], out w)) return defaultValue;
+            if (!int.TryParse(arr[1], out h)) return defaultValue;
+            if (!int.TryParse(arr[2], out r)) return defaultValue;
+            return new Resolution()
+            {
+                width = w,
+                height = h,
+                refreshRate = r
+            };
+        }
+
+        public static void SetResolution(string key, Resolution? resolution)
+        {
+            if (resolution == null)
+            {
+                PlayerPrefs.SetString(key, null);
+            }
+            else
+            {
+                var res = resolution.Value;
+                PlayerPrefs.SetString(key, $"{res.width}|{res.height}|{res.refreshRate}");
+            }
+        }
+
     }
 }

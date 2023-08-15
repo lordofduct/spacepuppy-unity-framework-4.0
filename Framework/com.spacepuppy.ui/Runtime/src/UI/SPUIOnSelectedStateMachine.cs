@@ -10,10 +10,13 @@ using com.spacepuppy.Events;
 namespace com.spacepuppy.UI
 {
 
-    public sealed class SPUIOnSelectedStateMachine : SPComponent, ISelectHandler, IDeselectHandler, IMStartOrEnableReceiver
+    public sealed class SPUIOnSelectedStateMachine : SPComponent, ISelectHandler, IDeselectHandler, ISelectedUIElementChangedGlobalHandler, IMStartOrEnableReceiver
     {
 
         #region Fields
+
+        [SerializeField]
+        private bool _treatAsSelectedIfChildSelected;
 
         [SerializeField]
         private GameObject _unselectedState;
@@ -26,12 +29,37 @@ namespace com.spacepuppy.UI
 
         void IMStartOrEnableReceiver.OnStartOrEnable()
         {
+            this.SyncMessageHandler();
             this.SyncState();
+        }
+
+        protected override void OnDisable()
+        {
+            base.OnDisable();
+
+            Messaging.UnregisterGlobal<ISelectedUIElementChangedGlobalHandler>(this);
         }
 
         #endregion
 
         #region Properties
+
+        public bool TreatAsSelectedIfChildSelected
+        {
+            get => _treatAsSelectedIfChildSelected;
+            set
+            {
+                _treatAsSelectedIfChildSelected = value;
+#if UNITY_EDITOR
+                if (Application.isPlaying && this.isActiveAndEnabled)
+#else
+                if (this.isActiveAndEnabled)
+#endif
+                {
+                    this.SyncMessageHandler();
+                }
+            }
+        }
 
         public GameObject UnselectedState
         {
@@ -68,6 +96,18 @@ namespace com.spacepuppy.UI
             }
         }
 
+        void SyncMessageHandler()
+        {
+            if (_treatAsSelectedIfChildSelected)
+            {
+                Messaging.RegisterGlobal<ISelectedUIElementChangedGlobalHandler>(this);
+            }
+            else
+            {
+                Messaging.UnregisterGlobal<ISelectedUIElementChangedGlobalHandler>(this);
+            }
+        }
+
         #endregion
 
         #region ISelect/DeselectHandler Interface
@@ -86,7 +126,26 @@ namespace com.spacepuppy.UI
             this.SyncState(false);
         }
 
+        void ISelectedUIElementChangedGlobalHandler.OnSelectedUIElementChanged()
+        {
+            var cur = EventSystem.current.currentSelectedGameObject;
+            if (cur && cur != this.gameObject)
+            {
+                this.SyncState(_treatAsSelectedIfChildSelected && cur.transform.IsChildOf(this.transform));
+            }
+        }
+
         #endregion
+
+#if UNITY_EDITOR
+        void OnValidate()
+        {
+            if (Application.isPlaying)
+            {
+                this.SyncMessageHandler();
+            }
+        }
+#endif
 
     }
 

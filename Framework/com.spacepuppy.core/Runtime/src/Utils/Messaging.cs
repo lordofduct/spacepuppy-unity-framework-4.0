@@ -433,6 +433,16 @@ namespace com.spacepuppy.Utils
 
         #region Global Execute
 
+        public static void AddHasRegisteredGlobalListenerChangedCallback<T>(System.Action callback) where T : class
+        {
+            GlobalMessagePool<T>.HasReceiversChanged += callback;
+        }
+
+        public static void RemoveHasRegisteredGlobalListenerChangedCallback<T>(System.Action callback) where T : class
+        {
+            GlobalMessagePool<T>.HasReceiversChanged -= callback;
+        }
+
         public static bool HasRegisteredGlobalListener<T>() where T : class => GlobalMessagePool<T>.Count > 0;
 
         /// <summary>
@@ -825,6 +835,7 @@ namespace com.spacepuppy.Utils
                 CleaningUp
             }
 
+            public static event System.Action HasReceiversChanged;
             private static HashSet<T> _receivers;
             private static ExecutingState _state;
             private static TempHashSet<T> _toAdd;
@@ -842,14 +853,20 @@ namespace com.spacepuppy.Utils
                 switch (_state)
                 {
                     case ExecutingState.None:
-                        _receivers.Add(listener);
+                        if (_receivers.Add(listener) && _receivers.Count == 1)
+                        {
+                            HasReceiversChanged?.Invoke();
+                        }
                         break;
                     case ExecutingState.Executing:
                         if (_toAdd == null) _toAdd = TempCollection.GetSet<T>();
                         _toAdd.Add(listener);
                         break;
                     case ExecutingState.CleaningUp:
-                        _receivers.Add(listener);
+                        if (_receivers.Add(listener) && _receivers.Count == 1)
+                        {
+                            HasReceiversChanged?.Invoke();
+                        }
                         break;
                 }
             }
@@ -861,14 +878,20 @@ namespace com.spacepuppy.Utils
                 switch (_state)
                 {
                     case ExecutingState.None:
-                        _receivers.Remove(listener);
+                        if (_receivers.Remove(listener) && _receivers.Count == 0)
+                        {
+                            HasReceiversChanged?.Invoke();
+                        }
                         break;
                     case ExecutingState.Executing:
                         if (_toRemove == null) _toRemove = TempCollection.GetSet<T>();
                         _toRemove.Add(listener);
                         break;
                     case ExecutingState.CleaningUp:
-                        _receivers.Remove(listener);
+                        if (_receivers.Remove(listener) && _receivers.Count == 0)
+                        {
+                            HasReceiversChanged?.Invoke();
+                        }
                         break;
                 }
             }
@@ -930,6 +953,7 @@ namespace com.spacepuppy.Utils
                 {
                     _state = ExecutingState.CleaningUp;
 
+                    int cnt = _receivers.Count;
                     if (_toRemove != null)
                     {
                         var e = _toRemove.GetEnumerator();
@@ -953,6 +977,10 @@ namespace com.spacepuppy.Utils
                     }
 
                     _state = ExecutingState.None;
+                    if ((cnt > 0 && _receivers.Count == 0) || (cnt == 0 && _receivers.Count > 0))
+                    {
+                        HasReceiversChanged?.Invoke();
+                    }
                 }
             }
 
@@ -989,6 +1017,7 @@ namespace com.spacepuppy.Utils
                 {
                     _state = ExecutingState.CleaningUp;
 
+                    int cnt = _receivers.Count;
                     if (_toRemove != null)
                     {
                         var e = _toRemove.GetEnumerator();
@@ -1012,6 +1041,10 @@ namespace com.spacepuppy.Utils
                     }
 
                     _state = ExecutingState.None;
+                    if ((cnt > 0 && _receivers.Count == 0) || (cnt == 0 && _receivers.Count > 0))
+                    {
+                        HasReceiversChanged?.Invoke();
+                    }
                 }
             }
 

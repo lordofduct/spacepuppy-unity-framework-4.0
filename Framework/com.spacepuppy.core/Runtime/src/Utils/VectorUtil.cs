@@ -837,13 +837,27 @@ namespace com.spacepuppy.Utils
 
         #region Setters/Getters
 
+        public static Vector3 OnlyX(this Vector3 v) => new Vector3(v.x, 0f, 0f);
+
+        public static Vector3 OnlyY(this Vector3 v) => new Vector3(0f, v.y, 0f);
+
+        public static Vector3 OnlyZ(this Vector3 v) => new Vector3(0f, 0f, v.z);
+
         public static Vector2 ToXZ(this Vector3 v) => new Vector2(v.x, v.z);
 
         public static Vector2 ToXY(this Vector3 v) => new Vector2(v.x, v.y);
 
+        public static Vector2 ToYZ(this Vector3 v) => new Vector2(v.y, v.z);
+
+        public static Vector2 ToZY(this Vector3 v) => new Vector2(v.z, v.y);
+
         public static Vector3 FromXZ(this Vector2 v) => new Vector3(v.x, 0f, v.y);
 
         public static Vector3 FromXY(this Vector2 v) => new Vector3(v.x, v.y, 0f);
+
+        public static Vector3 FromYZ(this Vector2 v) => new Vector3(0f, v.x, v.y);
+
+        public static Vector3 FromZY(this Vector2 v) => new Vector3(0f, v.y, v.x);
 
         public static Vector2 SetX(this Vector2 v, float x)
         {

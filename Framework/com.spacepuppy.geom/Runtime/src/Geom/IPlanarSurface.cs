@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using com.spacepuppy.Project;
+using UnityEngine;
 
 namespace com.spacepuppy.Geom
 {
@@ -63,6 +64,9 @@ namespace com.spacepuppy.Geom
 
     }
 
+    [System.Serializable]
+    public class PlanarSurfaceRef : SerializableInterfaceRef<IPlanarSurface> { }
+
     public static class PlanarSurfaceExtensions
     {
 
@@ -89,6 +93,12 @@ namespace com.spacepuppy.Geom
             forw = surface.MirrorDirection(pos, forw);
             up = surface.MirrorDirection(pos, up);
             return Quaternion.LookRotation(forw, up);
+        }
+
+        public static Vector3 FlattenDirection(this IPlanarSurface surface, Vector3 pos, Vector3 dir)
+        {
+            var n = surface.GetSurfaceNormal(pos);
+            return dir - (n * Vector3.Dot(dir, n));
         }
 
     }

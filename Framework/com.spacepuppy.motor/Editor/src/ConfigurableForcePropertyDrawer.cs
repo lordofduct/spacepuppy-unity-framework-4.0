@@ -12,6 +12,10 @@ namespace com.spacepuppyeditor.Motor
     public class ConfigurableForcePropertyDrawer : PropertyDrawer
     {
 
+        public const string PROP_DIR = "_direction";
+        public const string PROP_STRENGTH = "_strength";
+        public const string PROP_FORCEMODE = "_forceMode";
+
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
             return EditorGUI.GetPropertyHeight(property, label, property.isExpanded);
@@ -25,9 +29,9 @@ namespace com.spacepuppyeditor.Motor
             }
             else
             {
-                var dirProp = property.FindPropertyRelative("_direction");
-                var strProp = property.FindPropertyRelative("_strength");
-                var modeProp = property.FindPropertyRelative("_forceMode");
+                var dirProp = property.FindPropertyRelative(PROP_DIR);
+                var strProp = property.FindPropertyRelative(PROP_STRENGTH);
+                var modeProp = property.FindPropertyRelative(PROP_FORCEMODE);
                 //var content = string.Format("[Dir:{0}, Str:{1:0.00}, Mode:{2}]", (ConfigurableForce.ForceDirection)dirProp.enumValueIndex, strProp.floatValue, (ForceMode)modeProp.enumValueIndex);
                 var content = string.Format("[Dir:{0}, Str:{1:0.00}, Mode:{2}]", dirProp.GetEnumValue<ConfigurableForce.ForceDirection>(), strProp.floatValue, modeProp.GetEnumValue<ForceMode>());
 

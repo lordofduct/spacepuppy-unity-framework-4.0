@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using com.spacepuppy.Collections;
 using com.spacepuppy.Utils;
+using com.spacepuppy.Events;
 using System.Linq;
 
 namespace com.spacepuppy.Mecanim
@@ -86,7 +87,7 @@ namespace com.spacepuppy.Mecanim
     /// </summary>
     [Infobox("This processes Animation Events fired by an Animator and forwards them on to a IAnimatorOverrideLayerHandler message handler agnostically rather than via SendMessage.")]
     [RequireComponent(typeof(Animator))]
-    public class SPAnimatorEventProcessor : SPComponent, IAnimatorOverrideLayerHandler
+    public sealed class SPAnimatorEventProcessor : SPComponent, IAnimatorOverrideLayerHandler
     {
 
         #region Fields
@@ -98,6 +99,9 @@ namespace com.spacepuppy.Mecanim
         [SerializeField]
         private bool _automaticallySignalStateMachineBehaviours = true;
 
+        [SerializeField]
+        private EventCallback[] _eventCallbacks;
+
         [System.NonSerialized]
         private Animator _animator;
         [System.NonSerialized]
@@ -105,6 +109,9 @@ namespace com.spacepuppy.Mecanim
 
         [System.NonSerialized]
         private Messaging.MessageToken<IAnimationEventHandler> _onAnimationEventMessageToken;
+
+        [System.NonSerialized]
+        private Dictionary<string, EventCallback> _eventCallbacksTable = new Dictionary<string, EventCallback>();
 
         #endregion
 
@@ -115,6 +122,12 @@ namespace com.spacepuppy.Mecanim
             base.Awake();
 
             _animator = this.GetComponent<Animator>();
+
+            _eventCallbacksTable.Clear();
+            foreach (var o in _eventCallbacks)
+            {
+                _eventCallbacksTable.TryAdd(o.Name ?? string.Empty, o);
+            }
         }
 
         protected override void Start()
@@ -241,7 +254,8 @@ namespace com.spacepuppy.Mecanim
                 msg.animatorStateInfo = ev.animatorStateInfo;
                 msg.animatorClipInfo = ev.animatorClipInfo;
                 if (_automaticallySignalStateMachineBehaviours) msg.SignalStateMachineBehavioursOfAnimationEvent();
-                if (_onAnimationEventMessageToken.Count > 0) _onAnimationEventMessageToken.Invoke(ev, (o, e) => o.OnAnimationEvent(msg));
+                if (_onAnimationEventMessageToken.Count > 0) _onAnimationEventMessageToken.Invoke(msg, (o, e) => o.OnAnimationEvent(e));
+                if (_eventCallbacksTable.TryGetValue(token.functionName, out EventCallback callback)) callback.Event.ActivateTrigger(this, null);
             }
         }
 
@@ -283,6 +297,26 @@ namespace com.spacepuppy.Mecanim
             {
                 return ((obj.animName.GetHashCode() + obj.functionName.GetHashCode()) << 6) + obj.time;
             }
+        }
+
+        #endregion
+
+        #region Special Types
+
+        [System.Serializable]
+        private class EventCallback
+        {
+            [SerializeField] private string _name;
+            [SerializeField] private SPEvent _event = new SPEvent("Event");
+
+            public string Name
+            {
+                get => _name;
+                set => _name = value ?? string.Empty;
+            }
+
+            public SPEvent Event => _event;
+
         }
 
         #endregion

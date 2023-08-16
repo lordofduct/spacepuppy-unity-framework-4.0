@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Linq;
 
 using com.spacepuppy.Utils;
+using System.Diagnostics;
 
 namespace com.spacepuppy.Dynamic
 {
@@ -370,20 +371,14 @@ namespace com.spacepuppy.Dynamic
                     case FieldInfo fi:
                         {
                             rtp = GetReturnType(member);
-                            if (!rtp.IsInstanceOfType(value) && ConvertUtil.TryToPrim(value, rtp, out cobj))
-                                value = cobj;
-
-                            fi.SetValue(obj, value);
+                            fi.SetValue(obj, value, BindingFlags.SetField, DynamicSetterBinder.Default, null);
                         }
                         return true;
                     case PropertyInfo pi:
                         if (pi.CanWrite)
                         {
                             rtp = GetReturnType(member);
-                            if (!rtp.IsInstanceOfType(value) && ConvertUtil.TryToPrim(value, rtp, out cobj))
-                                value = cobj;
-
-                            pi.SetValue(obj, value, index);
+                            pi.SetValue(obj, value, BindingFlags.SetProperty, DynamicSetterBinder.Default, index, null);
                         }
                         return true;
                     case MethodInfo mi:
@@ -393,7 +388,7 @@ namespace com.spacepuppy.Dynamic
                                 value = cobj;
 
                             var arr = ArrayUtil.Temp(value);
-                            mi.Invoke(obj, arr);
+                            mi.Invoke(obj, BindingFlags.InvokeMethod, DynamicSetterBinder.Default, arr, null);
                             ArrayUtil.ReleaseTemp(arr);
                         }
                         return true;
@@ -1063,7 +1058,7 @@ namespace com.spacepuppy.Dynamic
             //    if (tp == null) return null;
             //}
 
-            var methodArgs = ArrayUtil.Temp(valueType);
+            var methodArgs = ArrayUtil.Temp(valueType ?? typeof(object));
             try
             {
                 MemberInfo mi;
@@ -1740,7 +1735,14 @@ namespace com.spacepuppy.Dynamic
 
             public override object ChangeType(object value, Type type, CultureInfo culture)
             {
-                return Type.DefaultBinder.ChangeType(value, type, culture);
+                if (ConvertUtil.IsSupportedType(type) && ConvertUtil.TryToPrim(value, type, out object output))
+                {
+                    return output;
+                }
+                else
+                {
+                    return Type.DefaultBinder.ChangeType(value, type, culture);
+                }
             }
 
             public override void ReorderArgumentArray(ref object[] args, object state)

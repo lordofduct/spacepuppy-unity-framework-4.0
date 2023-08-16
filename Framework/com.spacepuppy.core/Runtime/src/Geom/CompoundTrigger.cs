@@ -91,7 +91,7 @@ namespace com.spacepuppy.Geom
         [EnumFlags]
         private ConfigurationOptions _configuration;
 
-        private Dictionary<Collider, CompoundTriggerMember> _colliders = new Dictionary<Collider, CompoundTriggerMember>();
+        protected readonly Dictionary<Collider, CompoundTriggerMember> _colliders = new Dictionary<Collider, CompoundTriggerMember>();
         protected readonly HashSet<Collider> _active = new HashSet<Collider>();
 
         private int _lastStayFrame = -1;
@@ -150,19 +150,7 @@ namespace com.spacepuppy.Geom
 
             if (_active.Count > 0 && (_configuration & ConfigurationOptions.ForceTriggerExitOnDisable) != 0 && !GameLoop.ApplicationClosing)
             {
-                foreach (var other in _active)
-                {
-                    if (!other) continue;
-                    _messageSettings.Send(this.gameObject, (this, other), OnExitFunctor);
-                    if ((_configuration & ConfigurationOptions.SendMessageToOtherCollider) != 0)
-                    {
-                        CompoundTriggerMember member;
-                        Collider membercoll;
-                        if (this.AnyRelatedColliderOverlaps(other, out member)) membercoll = member.Collider;
-                        else membercoll = _colliders.Keys.FirstOrDefault();
-                        _otherColliderMessageSettings.Send(other.gameObject, (this, membercoll), OnExitFunctor);
-                    }
-                }
+                this.HandleSignalingExitOnDisable();
             }
             _active.Clear();
             _signaled?.Clear();
@@ -473,6 +461,23 @@ namespace com.spacepuppy.Geom
             }
         }
 
+        protected virtual void HandleSignalingExitOnDisable()
+        {
+            foreach (var other in _active)
+            {
+                if (!other) continue;
+                _messageSettings.Send(this.gameObject, (this, other), OnExitFunctor);
+                if ((_configuration & ConfigurationOptions.SendMessageToOtherCollider) != 0)
+                {
+                    CompoundTriggerMember member;
+                    Collider membercoll;
+                    if (this.AnyRelatedColliderOverlaps(other, out member)) membercoll = member.Collider;
+                    else membercoll = _colliders.Keys.FirstOrDefault();
+                    _otherColliderMessageSettings.Send(other.gameObject, (this, membercoll), OnExitFunctor);
+                }
+            }
+        }
+
         protected virtual void SignalTriggerStay(CompoundTriggerStayMember member, Collider other)
         {
             if (!this.isActiveAndEnabled || !_active.Contains(other)) return;
@@ -545,17 +550,17 @@ namespace com.spacepuppy.Geom
             [System.NonSerialized]
             private protected HashSet<Collider> _active = new HashSet<Collider>();
 
-            internal CompoundTrigger Owner
+            public CompoundTrigger Owner
             {
                 get { return _owner; }
             }
 
-            internal Collider Collider
+            public Collider Collider
             {
                 get { return _collider; }
             }
 
-            internal HashSet<Collider> Active
+            public HashSet<Collider> Active
             {
                 get { return _active; }
             }

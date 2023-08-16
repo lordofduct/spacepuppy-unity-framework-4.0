@@ -15,6 +15,13 @@ namespace com.spacepuppy.Geom
 
         private HashSet<SPEntity> _activeEntities = new HashSet<SPEntity>();
 
+        protected override void OnDisable()
+        {
+            base.OnDisable();
+
+            _activeEntities.Clear();
+        }
+
 
         public bool ContainsActive(SPEntity entity)
         {
@@ -103,6 +110,30 @@ namespace com.spacepuppy.Geom
             if (_activeEntities.Remove(entity))
             {
                 _messageSettings.Send(this.gameObject, (this, other), OnExitFunctor);
+            }
+        }
+
+        protected override void HandleSignalingExitOnDisable()
+        {
+            foreach (var other in _active)
+            {
+                if (!other) continue;
+
+                var entity = SPEntity.Pool.GetFromSource(other);
+                if (!entity) continue;
+
+                if (_activeEntities.Remove(entity))
+                {
+                    _messageSettings.Send(this.gameObject, (this, other), OnExitFunctor);
+                    if ((this.Configuration & ConfigurationOptions.SendMessageToOtherCollider) != 0)
+                    {
+                        CompoundTriggerMember member;
+                        Collider membercoll;
+                        if (this.AnyRelatedColliderOverlaps(other, out member)) membercoll = member.Collider;
+                        else membercoll = _colliders.Keys.FirstOrDefault();
+                        _otherColliderMessageSettings.Send(other.gameObject, (this, membercoll), OnExitFunctor);
+                    }
+                }
             }
         }
 

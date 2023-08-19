@@ -592,4 +592,89 @@ namespace com.spacepuppy.Async
 
     }
 
+
+#if SP_UNITASK
+    
+    public static class SPUniTaskFactory
+    {
+
+        public static UniTask Delay(int millisecondsDelay, DeltaTimeType type, PlayerLoopTiming delayTiming = PlayerLoopTiming.Update, CancellationToken cancellationToken = default)
+        {
+            switch (type)
+            {
+                case DeltaTimeType.Normal:
+                    return UniTask.Delay(millisecondsDelay, false, delayTiming, cancellationToken);
+                case DeltaTimeType.Real:
+                    return UniTask.Delay(millisecondsDelay, true, delayTiming, cancellationToken);
+                case DeltaTimeType.Smooth:
+                    return PerformDelay(SPTime.Smooth, (double)millisecondsDelay / 1000d, delayTiming, cancellationToken);
+                case DeltaTimeType.Custom:
+                default:
+                    return UniTask.Delay(millisecondsDelay, false, delayTiming, cancellationToken);
+            }
+        }
+
+        public static UniTask Delay(int millisecondsDelay, ITimeSupplier supplier, PlayerLoopTiming delayTiming = PlayerLoopTiming.Update, CancellationToken cancellationToken = default)
+        {
+            switch (supplier != null ? SPTime.GetDeltaType(supplier) : DeltaTimeType.Normal)
+            {
+                case DeltaTimeType.Normal:
+                    return UniTask.Delay(millisecondsDelay, false, delayTiming, cancellationToken);
+                case DeltaTimeType.Real:
+                    return UniTask.Delay(millisecondsDelay, true, delayTiming, cancellationToken);
+                case DeltaTimeType.Smooth:
+                case DeltaTimeType.Custom:
+                    return PerformDelay(supplier, (double)millisecondsDelay / 1000d, delayTiming, cancellationToken);
+                default:
+                    return UniTask.Delay(millisecondsDelay, false, delayTiming, cancellationToken);
+            }
+        }
+
+        public static UniTask Delay(System.TimeSpan delay, DeltaTimeType type, PlayerLoopTiming delayTiming = PlayerLoopTiming.Update, CancellationToken cancellationToken = default)
+        {
+            switch (type)
+            {
+                case DeltaTimeType.Normal:
+                    return UniTask.Delay(delay, false, delayTiming, cancellationToken);
+                case DeltaTimeType.Real:
+                    return UniTask.Delay(delay, true, delayTiming, cancellationToken);
+                case DeltaTimeType.Smooth:
+                    return PerformDelay(SPTime.Smooth, delay.TotalSeconds, delayTiming, cancellationToken);
+                case DeltaTimeType.Custom:
+                default:
+                    return UniTask.Delay(delay, false, delayTiming, cancellationToken);
+            }
+        }
+
+        public static UniTask Delay(System.TimeSpan delay, ITimeSupplier supplier, PlayerLoopTiming delayTiming = PlayerLoopTiming.Update, CancellationToken cancellationToken = default)
+        {
+            switch (supplier != null ? SPTime.GetDeltaType(supplier) : DeltaTimeType.Normal)
+            {
+                case DeltaTimeType.Normal:
+                    return UniTask.Delay(delay, false, delayTiming, cancellationToken);
+                case DeltaTimeType.Real:
+                    return UniTask.Delay(delay, true, delayTiming, cancellationToken);
+                case DeltaTimeType.Smooth:
+                case DeltaTimeType.Custom:
+                    return PerformDelay(supplier, delay.TotalSeconds, delayTiming, cancellationToken);
+                default:
+                    return UniTask.Delay(delay, false, delayTiming, cancellationToken);
+            }
+        }
+
+        static async UniTask PerformDelay(ITimeSupplier supplier, double dur, PlayerLoopTiming delayTiming, CancellationToken cancellationToken)
+        {
+            double start = supplier.TotalPrecise;
+            while (supplier.TotalPrecise - start < dur)
+            {
+                if (cancellationToken.IsCancellationRequested) return;
+                await UniTask.Yield(delayTiming, cancellationToken);
+            }
+        }
+
+    }
+
+#endif
+
+
 }

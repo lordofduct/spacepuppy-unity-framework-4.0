@@ -79,7 +79,7 @@ namespace com.spacepuppy.UI
 
         public void SyncState()
         {
-            this.SyncState(EventSystem.current && EventSystem.current.currentSelectedGameObject == this.gameObject);
+            this.SyncState(this.EvaluateIfSelected());
         }
 
         private void SyncState(bool selected)
@@ -108,6 +108,22 @@ namespace com.spacepuppy.UI
             }
         }
 
+        bool EvaluateIfSelected()
+        {
+            var evsys = EventSystem.current;
+            if (!evsys) return false;
+
+            var cur = evsys.currentSelectedGameObject;
+            if (_treatAsSelectedIfChildSelected)
+            {
+                return cur && (cur == this.gameObject || cur.transform.IsChildOf(this.transform));
+            }
+            else
+            {
+                return cur == this.gameObject;
+            }
+        }
+
         #endregion
 
         #region ISelect/DeselectHandler Interface
@@ -116,23 +132,22 @@ namespace com.spacepuppy.UI
         {
             if (!this.IsActiveAndEnabled()) return;
 
-            this.SyncState(true);
+            this.SyncState(this.EvaluateIfSelected());
         }
 
         void IDeselectHandler.OnDeselect(BaseEventData eventData)
         {
             if (!this.IsActiveAndEnabled()) return;
 
-            this.SyncState(false);
+            if (!_treatAsSelectedIfChildSelected)
+            {
+                this.SyncState(false);
+            }
         }
 
         void ISelectedUIElementChangedGlobalHandler.OnSelectedUIElementChanged()
         {
-            var cur = EventSystem.current.currentSelectedGameObject;
-            if (cur && cur != this.gameObject)
-            {
-                this.SyncState(_treatAsSelectedIfChildSelected && cur.transform.IsChildOf(this.transform));
-            }
+            this.SyncState(this.EvaluateIfSelected());
         }
 
         #endregion

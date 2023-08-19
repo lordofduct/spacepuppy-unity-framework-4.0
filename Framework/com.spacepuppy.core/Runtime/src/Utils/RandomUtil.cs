@@ -359,7 +359,7 @@ namespace com.spacepuppy.Utils
 
             float IRandom.Next()
             {
-                return (float)this.NextDouble();
+                return (float)this.Next(MAX_SINGLE_DENOMINATOR) / (float)MAX_SINGLE_DENOMINATOR;
             }
 
             double IRandom.NextDouble()

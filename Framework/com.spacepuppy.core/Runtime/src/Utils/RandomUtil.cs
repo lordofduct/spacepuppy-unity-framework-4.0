@@ -15,7 +15,9 @@ namespace com.spacepuppy.Utils
         const int MAX_SINGLE_NUMERATOR = 0x7FFFFF;
         const int MAX_SINGLE_DENOMINATOR = 0x800000;
         const float MAX_SINGLE_RATIO = (float)MAX_SINGLE_NUMERATOR / (float)MAX_SINGLE_DENOMINATOR;
-        const double MAX_DOUBLE_RATIO = (double)0x1FFFFFFFFFFFFFu / (double)0x20000000000000u;
+        const ulong MAX_DOUBLE_NUMERATOR = 0x1FFFFFFFFFFFFFu;
+        const ulong MAX_DOUBLE_DENOMINATOR = 0x20000000000000u;
+        const double MAX_DOUBLE_RATIO = MAX_DOUBLE_NUMERATOR / MAX_DOUBLE_DENOMINATOR;
 
         #region Static Fields
 
@@ -425,16 +427,16 @@ namespace com.spacepuppy.Utils
                     _getNext = () =>
                     {
                         _seed = _mult * _seed + _incr;
-                        return (double)((decimal)_seed / 18446744073709551616m); //use decimal for larger sig range
+                        return (double)(_seed % MAX_DOUBLE_DENOMINATOR) / (double)MAX_DOUBLE_DENOMINATOR;
                     };
                 }
-                else if (_mode > 0x10000000000000)
+                else if (_mode > MAX_DOUBLE_DENOMINATOR)
                 {
-                    //double doesn't have the sig range to handle these, so we'll use decimal
+                    //double doesn't have the sig range to handle these
                     _getNext = () =>
                     {
                         _seed = (_mult * _seed + _incr) % _mode;
-                        return (double)((decimal)_seed / 18446744073709551616m); //use decimal for larger sig range
+                        return (double)(_seed % MAX_DOUBLE_DENOMINATOR) / (double)MAX_DOUBLE_DENOMINATOR;
                     };
                 }
                 else
@@ -465,7 +467,7 @@ namespace com.spacepuppy.Utils
 
             public int Next(int low, int high)
             {
-                return (int)((high - low) * _getNext() + low);
+                return (int)((high - low) * _getNext()) + low;
             }
 
             #endregion

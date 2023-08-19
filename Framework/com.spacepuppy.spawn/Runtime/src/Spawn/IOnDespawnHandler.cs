@@ -11,9 +11,12 @@ namespace com.spacepuppy.Spawn
     /// </summary>
     public interface IOnDespawnHandler
     {
-
         void OnDespawn(SpawnedObjectController cntrl);
+    }
 
+    public interface IOnDespawnGlobalHandler
+    {
+        void OnDespawn(SpawnedObjectController cntrl);
     }
 
 }

@@ -531,6 +531,7 @@ namespace com.spacepuppy.Spawn
 
             this.gameObject.Broadcast<IOnDespawnHandler, SpawnedObjectController>(cntrl, (o, c) => o.OnDespawn(c));
             cntrl.gameObject.Broadcast<IOnDespawnHandler, SpawnedObjectController>(cntrl, (o, c) => o.OnDespawn(c));
+            Messaging.Broadcast<IOnDespawnGlobalHandler, SpawnedObjectController>(cntrl, (o, c) => o.OnDespawn(c));
             return cache.Despawn(cntrl);
         }
 
@@ -589,6 +590,7 @@ namespace com.spacepuppy.Spawn
         {
             this.gameObject.Broadcast<IOnSpawnHandler, SpawnedObjectController>(cntrl, (o, c) => o.OnSpawn(c));
             cntrl.gameObject.Broadcast<IOnSpawnHandler, SpawnedObjectController>(cntrl, (o, c) => o.OnSpawn(c));
+            Messaging.Broadcast<IOnSpawnGlobalHandler, SpawnedObjectController>(cntrl, (o, c) => o.OnSpawn(c));
         }
 
         protected virtual void OnLoadingCache(IPrefabCache cache) { }

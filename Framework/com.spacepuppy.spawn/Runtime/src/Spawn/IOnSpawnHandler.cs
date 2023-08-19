@@ -8,9 +8,12 @@ namespace com.spacepuppy.Spawn
 
     public interface IOnSpawnHandler
     {
-
         void OnSpawn(SpawnedObjectController cntrl);
+    }
 
+    public interface IOnSpawnGlobalHandler
+    {
+        void OnSpawn(SpawnedObjectController cntrl);
     }
 
 }

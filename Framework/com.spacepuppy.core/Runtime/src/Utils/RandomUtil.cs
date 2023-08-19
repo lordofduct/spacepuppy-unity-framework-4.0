@@ -12,6 +12,11 @@ namespace com.spacepuppy.Utils
     public static class RandomUtil
     {
 
+        const int MAX_SINGLE_NUMERATOR = 0x7FFFFF;
+        const int MAX_SINGLE_DENOMINATOR = 0x1000000;
+        const float MAX_SINGLE_RATIO = (float)MAX_SINGLE_NUMERATOR / (float)MAX_SINGLE_DENOMINATOR;
+        const double MAX_DOUBLE_RATIO = (double)0xFFFFFFFFFFFFu / (double)0x1000000000000u;
+
         #region Static Fields
 
         private static UnityRNG _unityRNG = new UnityRNG();
@@ -308,7 +313,7 @@ namespace com.spacepuppy.Utils
                 //return Random.value;
                 //because unity's Random returns in range 0->1, which is dumb
                 //why you might say? Well it means that the 1 is the least likely value to generate, so for generating indices you get uneven results
-                return Random.value * 0.9999f;
+                return Random.value * MAX_SINGLE_RATIO;
             }
 
             public double NextDouble()
@@ -316,7 +321,7 @@ namespace com.spacepuppy.Utils
                 //return (double)Random.value;
                 //because unity's Random returns in range 0->1, which is dumb
                 //why you might say? Well it means that the 1 is the least likely value to generate, so for generating indices you get uneven results
-                return (double)Random.value * 0.99999999d;
+                return (double)Random.value * MAX_DOUBLE_RATIO;
             }
 
             public int Next(int size)
@@ -450,7 +455,7 @@ namespace com.spacepuppy.Utils
 
             public float Next()
             {
-                return (float)_getNext();
+                return Next(MAX_SINGLE_DENOMINATOR) / (float)MAX_SINGLE_DENOMINATOR;
             }
 
             public int Next(int size)
@@ -545,7 +550,7 @@ namespace com.spacepuppy.Utils
 
             public float Next()
             {
-                return (float)((double)this.GetNext() / (double)(0x100000000u));
+                return Next(MAX_SINGLE_DENOMINATOR) / (float)MAX_SINGLE_DENOMINATOR;
             }
 
             public int Next(int size)

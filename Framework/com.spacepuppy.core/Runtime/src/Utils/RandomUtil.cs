@@ -396,6 +396,7 @@ namespace com.spacepuppy.Utils
             private ulong _seed;
 
             private System.Func<double> _getNext;
+            private System.Func<ulong> _getNextUlong;
 
             #endregion
 
@@ -419,30 +420,35 @@ namespace com.spacepuppy.Utils
                 {
                     seed = System.DateTime.Now.Ticks;
                 }
-                _seed = (ulong)seed % _mode;
 
                 if (_mode == 0)
                 {
                     //this counts as using 2^64 as the mode
+                    _seed = (ulong)seed;
                     _getNext = () =>
                     {
                         _seed = _mult * _seed + _incr;
                         return (double)(_seed % MAX_DOUBLE_DENOMINATOR) / (double)MAX_DOUBLE_DENOMINATOR;
                     };
+                    _getNextUlong = () => (_seed = _mult * _seed + _incr);
                 }
                 else if (_mode > MAX_DOUBLE_DENOMINATOR)
                 {
                     //double doesn't have the sig range to handle these
+                    _seed = (ulong)seed % _mode;
                     _getNext = () =>
                     {
                         _seed = (_mult * _seed + _incr) % _mode;
                         return (double)(_seed % MAX_DOUBLE_DENOMINATOR) / (double)MAX_DOUBLE_DENOMINATOR;
                     };
+                    _getNextUlong = () => (_seed = (_mult * _seed + _incr) % _mode);
                 }
                 else
                 {
                     //just do the maths
+                    _seed = (ulong)seed % _mode;
                     _getNext = () => (double)(_seed = (_mult * _seed + _incr) % _mode) / (double)(_mode);
+                    _getNextUlong = () => (_seed = (_mult * _seed + _incr) % _mode);
                 }
             }
 
@@ -462,12 +468,24 @@ namespace com.spacepuppy.Utils
 
             public int Next(int size)
             {
-                return (int)(size * _getNext());
+                ulong l = _getNextUlong();
+                if (size > 0)
+                {
+                    return (int)(l % (ulong)size);
+                }
+                else if (size < 0)
+                {
+                    return -(int)(l % (ulong)(-size));
+                }
+                else
+                {
+                    return 0;
+                }
             }
 
             public int Next(int low, int high)
             {
-                return (int)((high - low) * _getNext()) + low;
+                return Next(high - low) + low;
             }
 
             #endregion

@@ -422,7 +422,7 @@ namespace com.spacepuppy.Async
 
             public Task GetTask(AsyncWaitHandle handle)
             {
-                if(GameLoop.InvokeRequired)
+                if (GameLoop.InvokeRequired)
                 {
                     Task result = Task.CompletedTask;
                     UniTask task = _task;
@@ -439,7 +439,7 @@ namespace com.spacepuppy.Async
             {
                 if (callback == null) return;
 
-                if(GameLoop.InvokeRequired)
+                if (GameLoop.InvokeRequired)
                 {
                     UniTask task = _task;
                     GameLoop.UpdateHandle.BeginInvoke(() => task.GetAwaiter().OnCompleted(() => callback(this.AsAsyncWaitHandle())));
@@ -571,7 +571,7 @@ namespace com.spacepuppy.Async
 
             public T GetResult(AsyncWaitHandle<T> handle)
             {
-                if(GameLoop.InvokeRequired)
+                if (GameLoop.InvokeRequired)
                 {
                     T result = default(T);
                     UniTask<T> task = _task;
@@ -594,7 +594,7 @@ namespace com.spacepuppy.Async
 
 
 #if SP_UNITASK
-    
+
     public static class SPUniTaskFactory
     {
 

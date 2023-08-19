@@ -15,7 +15,7 @@ namespace com.spacepuppy.Utils
         const int MAX_SINGLE_NUMERATOR = 0x7FFFFF;
         const int MAX_SINGLE_DENOMINATOR = 0x1000000;
         const float MAX_SINGLE_RATIO = (float)MAX_SINGLE_NUMERATOR / (float)MAX_SINGLE_DENOMINATOR;
-        const double MAX_DOUBLE_RATIO = (double)0xFFFFFFFFFFFFu / (double)0x1000000000000u;
+        const double MAX_DOUBLE_RATIO = (double)0x1FFFFFFFFFFFFFu / (double)0x20000000000000u;
 
         #region Static Fields
 

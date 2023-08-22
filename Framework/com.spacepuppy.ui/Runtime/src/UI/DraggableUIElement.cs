@@ -11,7 +11,8 @@ using com.spacepuppy.Collections;
 namespace com.spacepuppy.UI
 {
 
-    public class DraggableUIElement : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragHandler
+    [RequireComponent(typeof(RectTransform))]
+    public class DraggableUIElement : MonoBehaviour, IUIComponent, IDragHandler, IBeginDragHandler, IEndDragHandler
     {
 
         public static readonly MultitonPool<DraggableUIElement> ActivelyDraggedElements = new MultitonPool<DraggableUIElement>();
@@ -207,6 +208,16 @@ namespace com.spacepuppy.UI
 
             SetPositionInParent(eventData);
         }
+
+        #endregion
+
+        #region IUIComponent Interface
+
+        public new RectTransform transform => base.transform as RectTransform;
+
+        RectTransform IUIComponent.transform => base.transform as RectTransform;
+
+        Component IComponent.component => this;
 
         #endregion
 

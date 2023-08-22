@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine.EventSystems;
 using com.spacepuppy.Utils;
 
-namespace com.spacepuppy
+namespace com.spacepuppy.UI
 {
 
     public sealed class SPUIRememberSelectedChildElement : SPComponent, IMStartOrEnableReceiver

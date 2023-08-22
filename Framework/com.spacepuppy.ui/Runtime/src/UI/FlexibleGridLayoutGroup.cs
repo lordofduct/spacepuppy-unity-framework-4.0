@@ -9,7 +9,7 @@ namespace com.spacepuppy.UI
     /// </remarks>
     [ExecuteAlways]
     [RequireComponent(typeof(RectTransform))]
-    public class FlexibleGridLayoutGroup : GridLayoutGroup
+    public class FlexibleGridLayoutGroup : GridLayoutGroup, IUIComponent
     {
 
         public enum Modes
@@ -19,8 +19,14 @@ namespace com.spacepuppy.UI
             OddColumnCount = 2,
         }
 
+        #region Fields
+
         [SerializeField]
         private Modes _mode = Modes.EvenColumnCount;
+
+        #endregion
+
+        #region Properties
 
         public Modes Mode
         {
@@ -28,6 +34,9 @@ namespace com.spacepuppy.UI
             set => _mode = value;
         }
 
+        #endregion
+
+        #region Methods
 
         public override void CalculateLayoutInputHorizontal()
         {
@@ -116,6 +125,18 @@ namespace com.spacepuppy.UI
             // Set the constraint count to the optimal number of columns
             constraintCount = columnCount;
         }
+
+        #endregion
+
+        #region IUIComponent Interface
+
+        public new RectTransform transform => base.transform as RectTransform;
+
+        RectTransform IUIComponent.transform => base.transform as RectTransform;
+
+        Component IComponent.component => this;
+
+        #endregion
 
     }
 

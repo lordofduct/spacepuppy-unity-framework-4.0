@@ -10,7 +10,8 @@ using com.spacepuppy.Events;
 namespace com.spacepuppy.UI
 {
 
-    public sealed class SPUIOnSelectedStateMachine : SPComponent, ISelectHandler, IDeselectHandler, ISelectedUIElementChangedGlobalHandler, IMStartOrEnableReceiver
+    [RequireComponent(typeof(RectTransform))]
+    public sealed class SPUIOnSelectedStateMachine : SPComponent, IUIComponent, ISelectHandler, IDeselectHandler, ISelectedUIElementChangedGlobalHandler, IMStartOrEnableReceiver
     {
 
         #region Fields
@@ -149,6 +150,14 @@ namespace com.spacepuppy.UI
         {
             this.SyncState(this.EvaluateIfSelected());
         }
+
+        #endregion
+
+        #region IUIComponent Interface
+
+        public new RectTransform transform => base.transform as RectTransform;
+
+        RectTransform IUIComponent.transform => base.transform as RectTransform;
 
         #endregion
 

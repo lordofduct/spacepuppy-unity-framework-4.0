@@ -9,7 +9,9 @@ using com.spacepuppy.Events;
 
 namespace com.spacepuppy.UI
 {
-    public class SPUIButton : Selectable, IPointerClickHandler, ISubmitHandler, IObservableTrigger
+
+    [RequireComponent(typeof(RectTransform))]
+    public class SPUIButton : Selectable, IUIComponent, IPointerClickHandler, ISubmitHandler, IObservableTrigger
     {
 
         #region Fields
@@ -42,6 +44,8 @@ namespace com.spacepuppy.UI
         public SPEvent OnClick => _onClick;
 
         #endregion
+
+        #region Methods
 
         private void SignalOnClick()
         {
@@ -79,6 +83,18 @@ namespace com.spacepuppy.UI
                 DoStateTransition(currentSelectionState, false);
             }, colors.fadeDuration, SPTime.Real);
         }
+
+        #endregion
+
+        #region IUIComponent Interface
+
+        public new RectTransform transform => base.transform as RectTransform;
+
+        RectTransform IUIComponent.transform => base.transform as RectTransform;
+
+        Component IComponent.component => this;
+
+        #endregion
 
         #region IObservableTrigger Interface
 

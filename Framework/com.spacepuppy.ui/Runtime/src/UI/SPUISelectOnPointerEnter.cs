@@ -3,10 +3,11 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using System.Collections.Generic;
 
-namespace com.spacepuppy
+namespace com.spacepuppy.UI
 {
 
-    public sealed class SPUISelectOnPointerEnter : MonoBehaviour, IPointerEnterHandler
+    [RequireComponent(typeof(RectTransform))]
+    public sealed class SPUISelectOnPointerEnter : MonoBehaviour, IUIComponent, IPointerEnterHandler
     {
 
         #region Fields
@@ -42,6 +43,16 @@ namespace com.spacepuppy
         {
             if (_selectable && _selectable.isActiveAndEnabled && _selectable.interactable) _selectable.Select();
         }
+
+        #endregion
+
+        #region IUIComponent Interface
+
+        public new RectTransform transform => base.transform as RectTransform;
+
+        RectTransform IUIComponent.transform => base.transform as RectTransform;
+
+        Component IComponent.component => this;
 
         #endregion
 

@@ -10,7 +10,8 @@ using com.spacepuppy.Events;
 namespace com.spacepuppy.UI
 {
 
-    public sealed class SPUIOnSelected : MonoBehaviour, ISelectHandler, IDeselectHandler, ISelectedUIElementChangedGlobalHandler, IObservableTrigger
+    [RequireComponent(typeof(RectTransform))]
+    public sealed class SPUIOnSelected : MonoBehaviour, IUIComponent, ISelectHandler, IDeselectHandler, ISelectedUIElementChangedGlobalHandler, IObservableTrigger
     {
 
         #region Fields
@@ -139,6 +140,16 @@ namespace com.spacepuppy.UI
 
             this.SyncState(this.EvaluateIfSelected());
         }
+
+        #endregion
+
+        #region IUIComponent Interface
+
+        public new RectTransform transform => base.transform as RectTransform;
+
+        RectTransform IUIComponent.transform => base.transform as RectTransform;
+
+        Component IComponent.component => this;
 
         #endregion
 

@@ -35,7 +35,7 @@ namespace com.spacepuppy
 
         protected virtual void Awake()
         {
-            if (this is IAutoMixinDecorator) this.RegisterMixins(MixinUtil.CreateAutoMixins(this as IAutoMixinDecorator));
+            if (this is IAutoMixinDecorator amxd) this.RegisterMixins(MixinUtil.CreateAutoMixins(amxd));
         }
 
         protected virtual void Start()
@@ -128,7 +128,7 @@ namespace com.spacepuppy
             {
                 for (int i = 0; i < _mixins.Count; i++)
                 {
-                    if (_mixins[i] is T) return _mixins[i] as T;
+                    if (_mixins[i] is T mixin) return mixin;
                 }
             }
             return null;

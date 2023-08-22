@@ -146,7 +146,7 @@ namespace com.spacepuppy.UI
             }
         }
 
-        void ISelectedUIElementChangedGlobalHandler.OnSelectedUIElementChanged()
+        void ISelectedUIElementChangedGlobalHandler.OnSelectedUIElementChanged(GameObject deselected, GameObject selected)
         {
             this.SyncState(this.EvaluateIfSelected());
         }

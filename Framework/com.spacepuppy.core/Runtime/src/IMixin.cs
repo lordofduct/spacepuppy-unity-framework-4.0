@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Reflection;
 using com.spacepuppy.Utils;
+using System;
+using static UnityEngine.UI.GridLayoutGroup;
 
 namespace com.spacepuppy
 {
@@ -61,6 +63,16 @@ namespace com.spacepuppy
         }
     }
 
+    public abstract class StatelessAutoMixinConfigAttribute : AutoMixinConfigAttribute
+    {
+
+        public StatelessAutoMixinConfigAttribute() : base(typeof(StatelessAutoMixinConfigAttribute)) { }
+
+        internal protected abstract void OnAutoCreated(object obj, System.Type mixinType);
+
+    }
+
+
     /// <summary>
     /// Static class for initializing mixins.
     /// </summary>
@@ -81,7 +93,13 @@ namespace com.spacepuppy
             foreach (var mixinType in mixinTypes)
             {
                 var configAttrib = mixinType.GetCustomAttribute<AutoMixinConfigAttribute>(false);
-                if (configAttrib != null && TypeUtil.IsType(configAttrib.ConcreteMixinType, typeof(IMixin)))
+                if (configAttrib == null) continue;
+
+                if (configAttrib is StatelessAutoMixinConfigAttribute stateless)
+                {
+                    stateless.OnAutoCreated(obj, mixinType);
+                }
+                else if (TypeUtil.IsType(configAttrib.ConcreteMixinType, typeof(IMixin)))
                 {
                     var mixin = (IMixin)System.Activator.CreateInstance(configAttrib.ConcreteMixinType);
                     (mixin as IAutoMixin)?.OnAutoCreated(obj, mixinType);
@@ -101,21 +119,19 @@ namespace com.spacepuppy
     /// In earlier versions of Spacepuppy Framework this was implemented directly on SPComponent. I've since moved it to here to match our new IMixin interface, and so that only those components 
     /// that need OnStartOrEnable actually have it implemented. No need for empty method calls on ALL components.
     /// </remarks>
-    [AutoMixinConfig(typeof(MStartOrEnableReceiver))]
+    [MStartOrEnableReceiver]
     public interface IMStartOrEnableReceiver : IAutoMixinDecorator, IEventfulComponent
     {
 
         void OnStartOrEnable();
 
     }
-
-    internal class MStartOrEnableReceiver : IMixin
+    internal class MStartOrEnableReceiverAttribute : StatelessAutoMixinConfigAttribute
     {
-
-        bool IMixin.Awake(object owner)
+        protected internal override void OnAutoCreated(object obj, Type mixinType)
         {
-            var c = owner as IMStartOrEnableReceiver;
-            if (c == null) return false; 
+            var c = obj as IMStartOrEnableReceiver;
+            if (c == null) return;
 
             c.OnStarted += (s, e) =>
             {
@@ -128,32 +144,24 @@ namespace com.spacepuppy
                     c.OnStartOrEnable();
                 }
             };
-
-            return false;
         }
-
     }
 
     /// <summary>
     /// Sometimes you want to run Start late, to allow Start to be called on all other scripts. Basically adding a final ordering for Start similar to LateUpdate.
     /// </summary>
-    [AutoMixinConfig(typeof(MLateStartReceiver))]
+    [MLateStartReceiver]
     public interface IMLateStartReceiver : IAutoMixinDecorator, IEventfulComponent
     {
         void OnLateStart();
     }
 
-    internal class MLateStartReceiver : IAutoMixin
+    internal class MLateStartReceiverAttribute : StatelessAutoMixinConfigAttribute
     {
 
-        bool IMixin.Awake(object owner)
+        protected internal override void OnAutoCreated(object obj, Type mixinType)
         {
-            return false;
-        }
-
-        void IAutoMixin.OnAutoCreated(IAutoMixinDecorator owner, System.Type autoMixinType)
-        {
-            var c = owner as IMLateStartReceiver;
+            var c = obj as IMLateStartReceiver;
             if (c != null)
             {
                 c.OnStarted += (s, e) =>
@@ -165,12 +173,13 @@ namespace com.spacepuppy
                 };
             }
         }
+
     }
 
     /// <summary>
     /// Sometimes you want to run StartOrEnable late, to allow Start to be called on all other scripts. Basically adding a final ordering point for Start similar to LateUpdate.
     /// </summary>
-    [AutoMixinConfig(typeof(MLateStartOrEnableReceiver))]
+    [MLateStartOrEnableReceiver]
     public interface IMLateStartOrEnableReceiver : IAutoMixinDecorator, IEventfulComponent
     {
 
@@ -178,17 +187,12 @@ namespace com.spacepuppy
 
     }
 
-    internal class MLateStartOrEnableReceiver : IAutoMixin
+    internal class MLateStartOrEnableReceiverAttribute : StatelessAutoMixinConfigAttribute
     {
 
-        bool IMixin.Awake(object owner)
+        protected internal override void OnAutoCreated(object obj, Type mixinType)
         {
-            return false;
-        }
-
-        void IAutoMixin.OnAutoCreated(IAutoMixinDecorator owner, System.Type autoMixinType)
-        {
-            var c = owner as IMLateStartOrEnableReceiver;
+            var c = obj as IMLateStartOrEnableReceiver;
             if (c != null)
             {
                 c.OnEnabled += (s, e) =>

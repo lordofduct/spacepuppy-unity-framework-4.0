@@ -17,7 +17,8 @@ namespace com.spacepuppy
     /// This includes hooking into the new "PlayerLoop" interface Unity released in 2019.3
     /// </remarks>
     [DefaultExecutionOrder(GameLoop.DEFAULT_EXECUTION_ORDER)]
-    public class GameLoop : ServiceComponent<GameLoop>, IService
+    [AddComponentMenu("")] //do not show in the 'Add Component' list
+    public sealed class GameLoop : ServiceComponent<GameLoop>, IService
     {
         public const int DEFAULT_EXECUTION_ORDER = -32000;
 
@@ -85,6 +86,8 @@ namespace com.spacepuppy
 
         #region CONSTRUCTOR
 
+        private GameLoop() : base(Services.AutoRegisterOption.Register, Services.MultipleServiceResolutionOption.UnregisterSelf, Services.UnregisterResolutionOption.DestroySelf) { }
+
 #if !MANUALLY_REGISTER_SPGAMELOOP
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSplashScreen)]
 #endif
@@ -128,6 +131,16 @@ namespace com.spacepuppy
 
             _updateHook.LateUpdateHook += _updateHook_LateUpdate;
             _tardyUpdateHook.LateUpdateHook += _tardyUpdateHook_LateUpdate;
+        }
+
+        protected override void Start()
+        {
+            base.Start();
+
+            if (!object.ReferenceEquals(_instance, this))
+            {
+                Destroy(this);
+            }
         }
 
         #endregion
@@ -423,12 +436,16 @@ namespace com.spacepuppy
 
         private void LateUpdate()
         {
+            if (!object.ReferenceEquals(_instance, this)) return;
+
             _currentSequence = UpdateSequence.LateUpdate;
             EarlyLateUpdate?.Invoke(this, System.EventArgs.Empty);
         }
 
         private void _updateHook_LateUpdate(object sender, System.EventArgs e)
         {
+            if (!object.ReferenceEquals(_instance, this)) return;
+
             _lateUpdatePump.Update();
             OnLateUpdate?.Invoke(this, e);
             _currentLateFrame = UnityEngine.Time.frameCount;
@@ -436,6 +453,8 @@ namespace com.spacepuppy
 
         private void _tardyUpdateHook_LateUpdate(object sender, System.EventArgs e)
         {
+            if (!object.ReferenceEquals(_instance, this)) return;
+
             _lateUpdateInvokeHandle.Update();
             TardyLateUpdate?.Invoke(this, e);
 

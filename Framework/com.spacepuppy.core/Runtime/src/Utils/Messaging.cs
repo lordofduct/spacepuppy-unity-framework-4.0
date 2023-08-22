@@ -433,11 +433,21 @@ namespace com.spacepuppy.Utils
 
         #region Global Execute
 
+        /// <summary>
+        /// Register a callback that will fire if the result of 'HasRegisteredGlobalListener<typeparamref name="T"/>' has changed.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="callback"></param>
         public static void AddHasRegisteredGlobalListenerChangedCallback<T>(System.Action callback) where T : class
         {
             GlobalMessagePool<T>.HasReceiversChanged += callback;
         }
 
+        /// <summary>
+        /// Remove a callback that would have fired if the result of 'HasRegisteredGlobalListener<typeparamref name="T"/>' has changed.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="callback"></param>
         public static void RemoveHasRegisteredGlobalListenerChangedCallback<T>(System.Action callback) where T : class
         {
             GlobalMessagePool<T>.HasReceiversChanged -= callback;

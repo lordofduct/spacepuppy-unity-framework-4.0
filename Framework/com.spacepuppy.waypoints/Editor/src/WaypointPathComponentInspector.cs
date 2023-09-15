@@ -16,6 +16,7 @@ namespace com.spacepuppyeditor.Waypoints
 {
 
     [CustomEditor(typeof(WaypointPathComponent), true)]
+    [CanEditMultipleObjects]
     public class WaypointPathComponentInspector : SPEditor
     {
 
@@ -73,68 +74,75 @@ namespace com.spacepuppyeditor.Waypoints
             this.DrawPropertyField(PROP_TRANSFORMRELATIVETO);
             this.DrawPropertyField(PROP_CONTROLPOINTSANIMATE);
 
-            //clean nodes
-            for (int i = 0; i < _nodesProp.arraySize; i++)
+            if (this.serializedObject.isEditingMultipleObjects)
             {
-                if (_nodesProp.GetArrayElementAtIndex(i).objectReferenceValue == null)
-                {
-                    _nodesProp.DeleteArrayElementAtIndex(i);
-                    i--;
-                }
+                EditorGUILayout.LabelField("Waypoints", "Multi-object editing of waypoints not supported.");
             }
-
-            var currentNodes = this.GetCurrentNodes().ToArray();
-            if (_nodesProp.arraySize != _lastNodeCache.Count || !_lastNodeCache.SequenceEqual(currentNodes))
+            else
             {
-                //delete any nodes that are no longer in the collection
-                for (int i = 0; i < _lastNodeCache.Count; i++)
+                //clean nodes
+                for (int i = 0; i < _nodesProp.arraySize; i++)
                 {
-                    if (_lastNodeCache[i] != null && !currentNodes.Contains(_lastNodeCache[i]) && _lastNodeCache[i].transform.parent == _targ.transform)
+                    if (_nodesProp.GetArrayElementAtIndex(i).objectReferenceValue == null)
                     {
-                        ObjUtil.SmartDestroy(_lastNodeCache[i].gameObject);
+                        _nodesProp.DeleteArrayElementAtIndex(i);
+                        i--;
                     }
                 }
 
-                //update cache
-                _lastNodeCache.Clear();
-                _lastNodeCache.AddRange(currentNodes);
-
-                //update names
-                var rx = new Regex(@"^Node\d+$");
-                for (int i = 0; i < _lastNodeCache.Count; i++)
+                var currentNodes = this.GetCurrentNodes().ToArray();
+                if (_nodesProp.arraySize != _lastNodeCache.Count || !_lastNodeCache.SequenceEqual(currentNodes))
                 {
-                    var node = _lastNodeCache[i];
-                    var nm = "Node" + i.ToString("000");
-                    if (node != null && node.transform.parent == _targ.transform && node.name != nm && rx.IsMatch(node.name))
+                    //delete any nodes that are no longer in the collection
+                    for (int i = 0; i < _lastNodeCache.Count; i++)
                     {
-                        node.name = nm;
+                        if (_lastNodeCache[i] != null && !currentNodes.Contains(_lastNodeCache[i]) && _lastNodeCache[i].transform.parent == _targ.transform)
+                        {
+                            ObjUtil.SmartDestroy(_lastNodeCache[i].gameObject);
+                        }
+                    }
+
+                    //update cache
+                    _lastNodeCache.Clear();
+                    _lastNodeCache.AddRange(currentNodes);
+
+                    //update names
+                    var rx = new Regex(@"^Node\d+$");
+                    for (int i = 0; i < _lastNodeCache.Count; i++)
+                    {
+                        var node = _lastNodeCache[i];
+                        var nm = "Node" + i.ToString("000");
+                        if (node != null && node.transform.parent == _targ.transform && node.name != nm && rx.IsMatch(node.name))
+                        {
+                            node.name = nm;
+                        }
                     }
                 }
-            }
 
 
-            _nodeList.DoLayoutList();
+                _nodeList.DoLayoutList();
 
 
-            GUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-            if (GUILayout.Button(EditorHelper.TempContent("Scan", "Scans all child Transforms and makes a path out of them in the order they were found. All strengths will be set to 0.5f. Any objects named 'Visual' will be ignored."), GUILayout.MaxWidth(75f)))
-            {
-                var go = GameObjectUtil.GetGameObjectFromSource(this.serializedObject.targetObject);
-                if (go != null)
+                GUILayout.BeginHorizontal();
+                GUILayout.FlexibleSpace();
+                if (GUILayout.Button(EditorHelper.TempContent("Scan", "Scans all child Transforms and makes a path out of them in the order they were found. All strengths will be set to 0.5f. Any objects named 'Visual' will be ignored."), GUILayout.MaxWidth(75f)))
                 {
-                    var arr = go.transform.OfType<Transform>().Where(t => t.name != "Visual").ToArray();
-                    _nodesProp.arraySize = arr.Length;
-                    for (int i = 0; i < arr.Length; i++)
+                    var go = GameObjectUtil.GetGameObjectFromSource(this.serializedObject.targetObject);
+                    if (go != null)
                     {
-                        var c = _targ.InitializeTransformAsControlPoint(arr[i]);
-                        c.Strength = 0.5f;
-                        Undo.RegisterCreatedObjectUndo(go, "Associate Node With Waypoint Path");
-                        _nodesProp.GetArrayElementAtIndex(i).objectReferenceValue = c;
+                        var arr = go.transform.OfType<Transform>().Where(t => t.name != "Visual").ToArray();
+                        _nodesProp.arraySize = arr.Length;
+                        for (int i = 0; i < arr.Length; i++)
+                        {
+                            var c = _targ.InitializeTransformAsControlPoint(arr[i]);
+                            c.Strength = 0.5f;
+                            Undo.RegisterCreatedObjectUndo(go, "Associate Node With Waypoint Path");
+                            _nodesProp.GetArrayElementAtIndex(i).objectReferenceValue = c;
+                        }
                     }
                 }
+                GUILayout.EndHorizontal();
             }
-            GUILayout.EndHorizontal();
 
             this.DrawDefaultInspectorExcept(EditorHelper.PROP_SCRIPT, PROP_PATHTYPE, PROP_CLOSED, PROP_TRANSFORMRELATIVETO, PROP_CONTROLPOINTSANIMATE, PROP_CONTROLPOINTS);
 

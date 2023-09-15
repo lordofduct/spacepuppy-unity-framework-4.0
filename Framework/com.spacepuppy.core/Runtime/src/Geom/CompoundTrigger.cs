@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 
 using com.spacepuppy.Collections;
-using com.spacepuppy.Utils;
-using UnityEngine.Scripting;
 using com.spacepuppy.Project;
+using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.Geom
 {
@@ -27,7 +26,7 @@ namespace com.spacepuppy.Geom
     {
         void OnCompoundTriggerEnter(ICompoundTrigger trigger, Collider other);
     }
-    [Preserve]
+    [UnityEngine.Scripting.Preserve]
     class CompoundTriggerEnterHandlerHook : Messaging.SubscribableMessageHook<ICompoundTriggerEnterHandler>, ICompoundTriggerEnterHandler
     {
         void ICompoundTriggerEnterHandler.OnCompoundTriggerEnter(ICompoundTrigger trigger, Collider other) => this.Signal((trigger, other), (o, a) => o.OnCompoundTriggerEnter(a.trigger, a.other));
@@ -37,7 +36,7 @@ namespace com.spacepuppy.Geom
     {
         void OnCompoundTriggerExit(ICompoundTrigger trigger, Collider other);
     }
-    [Preserve]
+    [UnityEngine.Scripting.Preserve]
     class CompoundTriggerExitHandlerHook : Messaging.SubscribableMessageHook<ICompoundTriggerExitHandler>, ICompoundTriggerExitHandler
     {
         void ICompoundTriggerExitHandler.OnCompoundTriggerExit(ICompoundTrigger trigger, Collider other) => this.Signal((trigger, other), (o, a) => o.OnCompoundTriggerExit(a.trigger, a.other));
@@ -47,7 +46,7 @@ namespace com.spacepuppy.Geom
     {
         void OnCompoundTriggerStay(ICompoundTrigger trigger, Collider other);
     }
-    [Preserve]
+    [UnityEngine.Scripting.Preserve]
     public class CompoundTriggerStayHandlerHook : Messaging.SubscribableMessageHook<ICompoundTriggerStayHandler>, ICompoundTriggerStayHandler
     {
         void ICompoundTriggerStayHandler.OnCompoundTriggerStay(ICompoundTrigger trigger, Collider other) => this.Signal((trigger, other), (o, a) => o.OnCompoundTriggerStay(a.trigger, a.other));
@@ -255,6 +254,18 @@ namespace com.spacepuppy.Geom
         /// </summary>
         /// <returns></returns>
         public IEnumerable<Collider> GetActiveColliders() => _active.Where(o => ObjUtil.IsObjectAlive(o));
+
+        public bool Contains(Vector3 position)
+        {
+            Vector3 p;
+            foreach (var c in _colliders.Keys)
+            {
+                p = c.ClosestPoint(position);
+                if (Vector3.SqrMagnitude(p - position) < MathUtil.EPSILON_SQR) return true;
+            }
+
+            return false;
+        }
 
         public bool ContainsActive() => _active.Count > 0 && _active.Count(o => ObjUtil.IsObjectAlive(o)) > 0;
 

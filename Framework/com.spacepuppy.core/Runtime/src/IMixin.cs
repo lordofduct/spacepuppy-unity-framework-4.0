@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Reflection;
 using com.spacepuppy.Utils;
-using System;
-using static UnityEngine.UI.GridLayoutGroup;
 
 namespace com.spacepuppy
 {
@@ -128,7 +126,7 @@ namespace com.spacepuppy
     }
     internal class MStartOrEnableReceiverAttribute : StatelessAutoMixinConfigAttribute
     {
-        protected internal override void OnAutoCreated(object obj, Type mixinType)
+        protected internal override void OnAutoCreated(object obj, System.Type mixinType)
         {
             var c = obj as IMStartOrEnableReceiver;
             if (c == null) return;
@@ -159,7 +157,7 @@ namespace com.spacepuppy
     internal class MLateStartReceiverAttribute : StatelessAutoMixinConfigAttribute
     {
 
-        protected internal override void OnAutoCreated(object obj, Type mixinType)
+        protected internal override void OnAutoCreated(object obj, System.Type mixinType)
         {
             var c = obj as IMLateStartReceiver;
             if (c != null)
@@ -190,7 +188,7 @@ namespace com.spacepuppy
     internal class MLateStartOrEnableReceiverAttribute : StatelessAutoMixinConfigAttribute
     {
 
-        protected internal override void OnAutoCreated(object obj, Type mixinType)
+        protected internal override void OnAutoCreated(object obj, System.Type mixinType)
         {
             var c = obj as IMLateStartOrEnableReceiver;
             if (c != null)

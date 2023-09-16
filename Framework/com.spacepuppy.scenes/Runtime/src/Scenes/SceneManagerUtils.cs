@@ -26,6 +26,12 @@ namespace com.spacepuppy.Scenes
             return value == LoadSceneBehaviour.AsyncAndWait ? LoadSceneBehaviour.Async : value;
         }
 
+        public static void LoadScene(LoadSceneOptions options)
+        {
+            var manager = Services.Get<ISceneManager>() ?? InternalSceneManager.Instance;
+            manager.LoadScene(options);
+        }
+
         /// <summary>
         /// Attempts to load the scene from the registered ISceneManager if it exists, if it doesn't, it falls back on the default UnityEngine.SceneManager.SceneManager.
         /// </summary>
@@ -36,12 +42,9 @@ namespace com.spacepuppy.Scenes
         /// <returns></returns>
         public static LoadSceneWaitHandle LoadScene(string sceneName, LoadSceneMode mode, LoadSceneBehaviour behaviour, object persistentToken = null)
         {
-            var manager = Services.Get<ISceneManager>();
+            var manager = Services.Get<ISceneManager>() ?? InternalSceneManager.Instance;
             var handle = new LoadSceneWaitHandle(sceneName, mode, behaviour, persistentToken);
-            if (manager != null)
-                manager.LoadScene(handle);
-            else
-                handle.Begin(null);
+            manager.LoadScene(handle);
             return handle;
         }
 
@@ -58,12 +61,9 @@ namespace com.spacepuppy.Scenes
         {
             if (sceneBuildIndex < 0 || sceneBuildIndex >= SceneManager.sceneCountInBuildSettings) throw new System.IndexOutOfRangeException(nameof(sceneBuildIndex));
 
-            var manager = Services.Get<ISceneManager>();
+            var manager = Services.Get<ISceneManager>() ?? InternalSceneManager.Instance;
             var handle = new LoadSceneWaitHandle(sceneBuildIndex, mode, behaviour, persistentToken);
-            if (manager != null)
-                manager.LoadScene(handle);
-            else
-                handle.Begin(null);
+            manager.LoadScene(handle);
             return handle;
         }
 

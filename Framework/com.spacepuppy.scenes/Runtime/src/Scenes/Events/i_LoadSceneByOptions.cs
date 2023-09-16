@@ -53,20 +53,8 @@ namespace com.spacepuppy.Scenes.Events
 #endif
             if (_options == null) return false;
 
-            var manager = Services.Get<ISceneManager>();
-            if (manager == null)
-            {
-
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                Debug.Log("i_LoadSceneByOptions: no SceneManager present");
-#endif
-                return false;
-            }
-
             var handle = _options.Clone();
             if (handle == null) return false;
-
-            manager.LoadScene(handle);
 
             if (_onComplete.HasReceivers && handle != null)
             {
@@ -75,6 +63,7 @@ namespace com.spacepuppy.Scenes.Events
                     _onComplete.ActivateTrigger(this, null);
                 };
             };
+            SceneManagerUtils.LoadScene(handle);
 
             return true;
         }

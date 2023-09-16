@@ -136,20 +136,20 @@ namespace com.spacepuppy.Scenes
                 throw new System.InvalidOperationException("LoadSceneOptions should be ran only once. Clone if you need a copy.");
             }
 
-            this.SceneManager = manager;
+            this.SceneManager = manager ?? InternalSceneManager.Instance;
             this.Status = LoadSceneOptionsStatus.Running;
             if (GameLoop.InvokeRequired)
             {
                 GameLoop.UpdateHandle.Invoke(() =>
                 {
                     this.OnBeforeLoadBegins();
-                    this.DoBegin(manager);
+                    this.DoBegin(this.SceneManager);
                 });
             }
             else
             {
                 this.OnBeforeLoadBegins();
-                this.DoBegin(manager);
+                this.DoBegin(this.SceneManager);
             }
         }
 

@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-
+using System.Reflection;
 using com.spacepuppy.Collections;
+using com.spacepuppy.Dynamic;
 using com.spacepuppy.Utils;
+using static System.Net.WebRequestMethods;
 
 namespace com.spacepuppyeditor
 {
@@ -36,20 +38,27 @@ namespace com.spacepuppyeditor
 
         private UnityEditor.SerializedObject _serializedObject;
         private bool _isFooter;
+        private System.Type _associatedType;
+        private System.Attribute _attribute;
 
         #endregion
 
         #region Properties
 
-        public bool IsFooter
+        public virtual bool IsFooter
         {
             get { return _isFooter; }
+            protected set { _isFooter = value; }
         }
 
         public UnityEditor.SerializedObject SerializedObject
         {
             get { return _serializedObject; }
         }
+
+        public System.Type AssociatedType => _associatedType;
+
+        public System.Attribute Attribute => _attribute;
 
         #endregion
 
@@ -150,13 +159,13 @@ namespace com.spacepuppyeditor
                         {
                             foreach(var info in (v as List<DrawerInfo>))
                             {
-                                var d = info.CreateDrawer(target);
+                                var d = info.CreateDrawer(target, tp, null);
                                 if (d != null) lst.Add(d);
                             }
                         }
                         else if (v is DrawerInfo)
                         {
-                            var d = (v as DrawerInfo).CreateDrawer(target);
+                            var d = (v as DrawerInfo).CreateDrawer(target, tp, null);
                             if (d != null) lst.Add(d);
                         }
                     }
@@ -173,13 +182,34 @@ namespace com.spacepuppyeditor
                         {
                             foreach (var info in (v as List<DrawerInfo>))
                             {
-                                var d = info.CreateDrawer(target);
+                                var d = info.CreateDrawer(target, tp, null);
                                 if (d != null) lst.Add(d);
                             }
                         }
                         else if (v is DrawerInfo)
                         {
-                            var d = (v as DrawerInfo).CreateDrawer(target);
+                            var d = (v as DrawerInfo).CreateDrawer(target, tp, null);
+                            if (d != null) lst.Add(d);
+                        }
+                    }
+                }
+
+                foreach (System.Attribute attrib in targType.GetCustomAttributes(typeof(System.Attribute), true))
+                {
+                    object v;
+                    if (_inspectedTypeToAddonDrawerType.TryGetValue(attrib.GetType(), out v))
+                    {
+                        if (v is List<DrawerInfo>)
+                        {
+                            foreach (var info in (v as List<DrawerInfo>))
+                            {
+                                var d = info.CreateDrawer(target, null, attrib);
+                                if (d != null) lst.Add(d);
+                            }
+                        }
+                        else if (v is DrawerInfo)
+                        {
+                            var d = (v as DrawerInfo).CreateDrawer(target, null, attrib);
                             if (d != null) lst.Add(d);
                         }
                     }
@@ -200,7 +230,7 @@ namespace com.spacepuppyeditor
 
 
 
-            public SPEditorAddonDrawer CreateDrawer(UnityEditor.SerializedObject target)
+            public SPEditorAddonDrawer CreateDrawer(UnityEditor.SerializedObject target, System.Type associatedType, System.Attribute attribute)
             {
                 if (target.isEditingMultipleObjects && !this.SupportsMultiObject) return null;
 
@@ -209,6 +239,8 @@ namespace com.spacepuppyeditor
                     var drawer = Activator.CreateInstance(DrawerType) as SPEditorAddonDrawer;
                     drawer._serializedObject = target;
                     drawer._isFooter = this.IsFooter;
+                    drawer._associatedType = associatedType;
+                    drawer._attribute = attribute;
                     drawer.OnEnable();
                     return drawer;
                 }

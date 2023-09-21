@@ -389,6 +389,37 @@ namespace com.spacepuppyeditor
             return obj;
         }
 
+        public static object[] GetTargetObjectsWithProperty(SerializedProperty prop)
+        {
+            if (prop == null) return null;
+
+            object[] arr = prop.serializedObject.targetObjects;
+            if (arr.Length == 0) return arr;
+
+            var path = prop.propertyPath.Replace(".Array.data[", "[");
+            var elements = path.Split('.');
+            foreach (var element in elements.Take(elements.Length - 1))
+            {
+                if (element.Contains("["))
+                {
+                    var elementName = element.Substring(0, element.IndexOf("["));
+                    var index = System.Convert.ToInt32(element.Substring(element.IndexOf("[")).Replace("[", "").Replace("]", ""));
+                    for(int i = 0; i < arr.Length; i++)
+                    {
+                        arr[i] = GetValue_Imp(arr[i], elementName, index);
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < arr.Length; i++)
+                    {
+                        arr[i] = GetValue_Imp(arr[i], element);
+                    }
+                }
+            }
+            return arr;
+        }
+
         private static object GetValue_Imp(object source, string name)
         {
             if (source == null)
@@ -546,7 +577,7 @@ namespace com.spacepuppyeditor
                     prop.colorValue = ConvertUtil.ToColor(value);
                     break;
                 case SerializedPropertyType.ObjectReference:
-                    prop.objectReferenceValue = value as Object;
+                    prop.objectReferenceValue = value as UnityEngine.Object;
                     break;
                 case SerializedPropertyType.LayerMask:
                     prop.intValue = (value is LayerMask) ? ((LayerMask)value).value : ConvertUtil.ToInt(value);

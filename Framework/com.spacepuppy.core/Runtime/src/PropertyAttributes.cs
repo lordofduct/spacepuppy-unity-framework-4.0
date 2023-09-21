@@ -605,7 +605,7 @@ namespace com.spacepuppy
 
     #region DecoratorDrawer Attributes
 
-    [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = true)]
+    [System.AttributeUsage(System.AttributeTargets.Field | System.AttributeTargets.Class, AllowMultiple = true)]
     public class InsertButtonAttribute : SPPropertyAttribute
     {
 
@@ -613,6 +613,7 @@ namespace com.spacepuppy
         public string OnClick;
         public bool PrecedeProperty;
         public bool RuntimeOnly;
+        public bool SupportsMultiObjectEditing;
 
         public InsertButtonAttribute(string label, string onClick)
         {

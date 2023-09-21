@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
+
 using com.spacepuppy.Collections;
-using com.spacepuppy.Dynamic;
 using com.spacepuppy.Utils;
-using static System.Net.WebRequestMethods;
 
 namespace com.spacepuppyeditor
 {

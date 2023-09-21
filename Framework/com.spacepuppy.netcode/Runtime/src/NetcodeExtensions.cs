@@ -81,7 +81,7 @@ namespace com.spacepuppy
             }
         }
 #else
-        public async static UniTask ShutdownAsync_Task(this NetworkManager manager, bool discardMessageQueue = false)
+        public async static Task ShutdownAsync_Task(this NetworkManager manager, bool discardMessageQueue = false)
         {
             manager.Shutdown(discardMessageQueue);
             while (manager.ShutdownInProgress)

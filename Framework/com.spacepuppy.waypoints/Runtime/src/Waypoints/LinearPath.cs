@@ -14,7 +14,7 @@ namespace com.spacepuppy.Waypoints
         private List<IControlPoint> _controlPoints = new List<IControlPoint>();
 
         private Vector3[] _points; //null if dirty
-        private float[] _lengths;
+        private float[] _lengthMarkers;
         private float _totalArcLength = float.NaN;
 
         #endregion
@@ -65,13 +65,12 @@ namespace com.spacepuppy.Waypoints
                 for (int i = 0; i < _controlPoints.Count; i++) _points[i] = _controlPoints[i].Position;
                 if (_isClosed) _points[_points.Length - 1] = _points[0];
 
-                _lengths = new float[_points.Length];
+                _lengthMarkers = new float[_points.Length];
                 _totalArcLength = 0f;
                 for (int i = 1; i < _points.Length; i++)
                 {
-                    float l = Vector3.Distance(_points[i], _points[i - 1]);
-                    _lengths[i - 1] = l;
-                    _totalArcLength += l;
+                    _totalArcLength += Vector3.Distance(_points[i], _points[i - 1]);
+                    _lengthMarkers[i] = _totalArcLength;
                 }
             }
         }
@@ -108,21 +107,28 @@ namespace com.spacepuppy.Waypoints
             if (_points == null) this.Clean_Imp();
             if (_points.Length < 2) return (_points.Length == 0) ? VectorUtil.NaNVector3 : _points[0];
 
-            float len = _lengths[0];
-            float tot = len;
-            int i = 0;
-            int maxi = _lengths.Length - 1;
-            while (tot / _totalArcLength < t && i < maxi)
+            int index = 0;
+            float dist = t * _totalArcLength;
+            for (int i = 1; i < _lengthMarkers.Length; i++)
             {
-                i++;
-                len = _lengths[i];
-                tot += len;
+                if (dist < _lengthMarkers[i])
+                {
+                    break;
+                }
+                else
+                {
+                    index++;
+                }
             }
 
-            float lt = (tot - len) / _totalArcLength;
-            float ht = tot / _totalArcLength;
-            float dt = com.spacepuppy.Utils.MathUtil.PercentageMinMax(t, ht, lt);
-            return this.GetPositionAfter(i, dt);
+            float dt = 1f;
+            if (index < _lengthMarkers.Length - 1)
+            {
+                float ld = _lengthMarkers[index];
+                float hd = _lengthMarkers[index + 1];
+                dt = (dist - ld) / (hd - ld);
+            }
+            return this.GetPositionAfter(index, dt);
         }
 
         public Waypoint GetWaypointAt(float t)
@@ -130,20 +136,28 @@ namespace com.spacepuppy.Waypoints
             if (_points == null) this.Clean_Imp();
             if (_points.Length < 2) return (_points.Length == 0) ? Waypoint.Invalid : new Waypoint(_points[0], Vector3.zero);
 
-            float len = _lengths[0];
-            float tot = len;
-            int i = 0;
-            while (tot / _totalArcLength < t && i < _lengths.Length)
+            int index = 0;
+            float dist = t * _totalArcLength;
+            for (int i = 1; i < _lengthMarkers.Length; i++)
             {
-                i++;
-                len = _lengths[i];
-                tot += len;
+                if (dist < _lengthMarkers[i])
+                {
+                    break;
+                }
+                else
+                {
+                    index++;
+                }
             }
 
-            float lt = (tot - len) / _totalArcLength;
-            float ht = tot / _totalArcLength;
-            float dt = MathUtil.PercentageMinMax(t, ht, lt);
-            return this.GetWaypointAfter(i, dt);
+            float dt = 1f;
+            if (index < _lengthMarkers.Length - 1)
+            {
+                float ld = _lengthMarkers[index];
+                float hd = _lengthMarkers[index + 1];
+                dt = (dist - ld) / (hd - ld);
+            }
+            return this.GetWaypointAfter(index, dt);
         }
 
         #endregion
@@ -167,8 +181,8 @@ namespace com.spacepuppy.Waypoints
 
         public Vector3 GetPositionAfter(int index, float tprime)
         {
-            if (index < 0 || index >= _controlPoints.Count) throw new System.IndexOutOfRangeException();
             if (_points == null) this.Clean_Imp();
+            if (index < 0 || index >= _points.Length) throw new System.IndexOutOfRangeException();
             if (_points.Length < 2) return (_points.Length == 0) ? VectorUtil.NaNVector3 : _points[0];
 
             if (index == _points.Length - 1)
@@ -193,8 +207,8 @@ namespace com.spacepuppy.Waypoints
 
         public Waypoint GetWaypointAfter(int index, float tprime)
         {
-            if (index < 0 || index >= _controlPoints.Count) throw new System.IndexOutOfRangeException();
             if (_points == null) this.Clean_Imp();
+            if (index < 0 || index >= _points.Length) throw new System.IndexOutOfRangeException();
             if (_points.Length < 2) return (_points.Length == 0) ? Waypoint.Invalid : new Waypoint(_points[0], Vector3.zero);
 
             if (index == _points.Length - 1)
@@ -225,29 +239,17 @@ namespace com.spacepuppy.Waypoints
 
         public float GetArcLengthAtIndex(int index)
         {
-            if (index < 0 || index >= _controlPoints.Count) throw new System.IndexOutOfRangeException();
             if (_points == null) this.Clean_Imp();
+            if (index < 0 || index >= _points.Length) throw new System.IndexOutOfRangeException();
             if (_points.Length < 2) return 0f;
 
-            if (index == _points.Length - 1)
-            {
-                return this.GetArcLength();
-            }
-            else
-            {
-                float len = 0f;
-                for (int i = 0; i < index; i++)
-                {
-                    len += _lengths[i];
-                }
-                return len;
-            }
+            return _lengthMarkers[index];
         }
 
         public float GetArcLengthAfter(int index)
         {
-            if (index < 0 || index >= _controlPoints.Count) throw new System.IndexOutOfRangeException();
             if (_points == null) this.Clean_Imp();
+            if (index < 0 || index >= _points.Length) throw new System.IndexOutOfRangeException();
             if (_points.Length < 2) return 0f;
 
             if (index == _points.Length - 1)
@@ -274,7 +276,9 @@ namespace com.spacepuppy.Waypoints
 
         public RelativePositionData GetRelativePositionData(float t)
         {
-            var cnt = _controlPoints.Count;
+            if (_points == null) this.Clean_Imp();
+            var cnt = _points.Length;
+
             switch (cnt)
             {
                 case 0:
@@ -285,23 +289,28 @@ namespace com.spacepuppy.Waypoints
                     return new RelativePositionData(0, t);
                 default:
                     {
-                        if (_points == null) this.Clean_Imp();
-
-                        float len = _lengths[0];
-                        float tot = len;
-                        int i = 0;
-                        while (tot / _totalArcLength < t && i < _lengths.Length)
+                        int index = 0;
+                        float dist = t * _totalArcLength;
+                        for (int i = 1; i < _lengthMarkers.Length; i++)
                         {
-                            i++;
-                            len = _lengths[i];
-                            tot += len;
+                            if (dist < _lengthMarkers[i])
+                            {
+                                break;
+                            }
+                            else
+                            {
+                                index++;
+                            }
                         }
 
-                        float lt = (tot - len) / _totalArcLength;
-                        float ht = tot / _totalArcLength;
-                        float dt = MathUtil.PercentageMinMax(t, ht, lt);
-
-                        return new RelativePositionData(i % cnt, dt);
+                        float dt = 1f;
+                        if (index < _lengthMarkers.Length - 1)
+                        {
+                            float ld = _lengthMarkers[index];
+                            float hd = _lengthMarkers[index + 1];
+                            dt = (dist - ld) / (hd - ld);
+                        }
+                        return new RelativePositionData(index % cnt, dt);
                     }
             }
         }

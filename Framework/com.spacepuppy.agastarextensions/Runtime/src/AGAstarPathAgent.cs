@@ -152,6 +152,18 @@ namespace com.spacepuppy.Pathfinding
             }
         }
 
+        void IPathSeeker.CancelPaths()
+        {
+            if (_seeker is IPathSeeker seeker)
+            {
+                seeker.CancelPaths();
+            }
+            else if (_seeker)
+            {
+                _seeker.CancelCurrentPathRequest();
+            }
+        }
+
         public IPath PathTo(Vector3 target)
         {
             var seeker = (_seeker as IPathSeeker);

@@ -45,6 +45,12 @@ namespace com.spacepuppy.Motor.Pathfinding.Unity
             }
         }
 
+        void IPathSeeker.CancelPaths()
+        {
+            //not supported
+            Debug.LogWarning($"{nameof(UnityPathAgentMovementStyle)} does not support canceling path calculations vis {nameof(IPathSeeker.CancelPaths)}.");
+        }
+
         public IPath PathTo(Vector3 target)
         {
             if (_path == null) _path = new UnityFromToPath(Vector3.zero, Vector3.zero);

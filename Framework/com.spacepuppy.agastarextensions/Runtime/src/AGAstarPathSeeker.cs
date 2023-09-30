@@ -72,6 +72,11 @@ namespace com.spacepuppy.Pathfinding
             }
         }
 
+        void IPathSeeker.CancelPaths()
+        {
+            this.CancelCurrentPathRequest();
+        }
+
         #endregion
 
         #region IComponent Interface

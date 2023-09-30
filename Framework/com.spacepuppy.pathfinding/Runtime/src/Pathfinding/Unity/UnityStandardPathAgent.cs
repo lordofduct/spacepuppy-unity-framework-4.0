@@ -81,7 +81,13 @@ namespace com.spacepuppy.Pathfinding.Unity
                 throw new PathArgumentException();
             }
         }
-        
+
+        void IPathSeeker.CancelPaths()
+        {
+            //not supported
+            Debug.LogWarning($"{nameof(UnityStandardPathAgent)} does not support canceling path calculations vis {nameof(IPathSeeker.CancelPaths)}.");
+        }
+
         public void SetPath(IPath path)
         {
             if (object.ReferenceEquals(_agent, null)) throw new System.InvalidOperationException("UnityPathAgent was not configured correctly.");

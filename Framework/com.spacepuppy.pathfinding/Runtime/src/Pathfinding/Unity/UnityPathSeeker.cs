@@ -41,7 +41,13 @@ namespace com.spacepuppy.Pathfinding.Unity
                 throw new PathArgumentException();
             }
         }
-        
+
+        void IPathSeeker.CancelPaths()
+        {
+            //not supported
+            Debug.LogWarning($"{nameof(UnityPathSeeker)} does not support canceling path calculations vis {nameof(IPathSeeker.CancelPaths)}.");
+        }
+
         #endregion
 
     }

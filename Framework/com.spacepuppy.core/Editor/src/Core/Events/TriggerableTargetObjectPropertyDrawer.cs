@@ -132,6 +132,7 @@ namespace com.spacepuppyeditor.Core.Events
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
+            if (EditorHelper.AssertMultiObjectEditingNotSupportedHeight(property, label, out float h)) return h;
             this.Init(property);
 
             if (this.AlwaysExpanded || property.isExpanded)
@@ -146,6 +147,7 @@ namespace com.spacepuppyeditor.Core.Events
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
             this.Init(property);
 
 

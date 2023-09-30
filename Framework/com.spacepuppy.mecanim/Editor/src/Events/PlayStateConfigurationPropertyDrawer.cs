@@ -26,9 +26,12 @@ namespace com.spacepuppyeditor.Mecanim
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
-            if(property.isExpanded)
+            float h;
+            if (EditorHelper.AssertMultiObjectEditingNotSupportedHeight(property, label, out h)) return h;
+
+            if (property.isExpanded)
             {
-                float h = EditorGUIUtility.singleLineHeight * 6f;
+                h = EditorGUIUtility.singleLineHeight * 6f;
                 if (!string.IsNullOrEmpty(property.FindPropertyRelative(PROP_FINALSTATE)?.stringValue)) h += EditorGUIUtility.singleLineHeight;
                 return h;
             }
@@ -40,6 +43,8 @@ namespace com.spacepuppyeditor.Mecanim
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
+
             var rline = new Rect(position.xMin, position.yMin, position.width, EditorGUIUtility.singleLineHeight);
             Rect r, r0, r1;
 

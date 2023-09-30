@@ -6,8 +6,7 @@ using System.Linq;
 using com.spacepuppy.Collections;
 using com.spacepuppy.Events;
 using com.spacepuppy.Utils;
-
-using com.spacepuppyeditor.Core;
+using UnityEngine.UIElements;
 
 namespace com.spacepuppyeditor.Events
 {
@@ -29,11 +28,14 @@ namespace com.spacepuppyeditor.Events
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
+            if (EditorHelper.AssertMultiObjectEditingNotSupportedHeight(property, label, out float h)) return h;
             return EditorGUIUtility.singleLineHeight * 2f + 2f;
         }
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
+
             GUI.Box(new Rect(position.xMin + BOX_MARGIN_H, position.yMin + BOX_MARGIN_V, position.width - BOX_MARGIN_H * 2f, position.height - BOX_MARGIN_V * 2f), GUIContent.none);
 
             var r0 = new Rect(position.xMin + MARGIN_H, position.yMin + MARGIN_V, position.width - MARGIN_H * 2f, EditorGUIUtility.singleLineHeight);
@@ -54,7 +56,10 @@ namespace com.spacepuppyeditor.Events
 
                 int i = 0;
                 var events = (from e in targ.GetEvents() select GetTriggerTargsId(owner, e, ++i)).ToArray();
-                indexProp.intValue = EditorGUI.Popup(r1, "Trigger Event", indexProp.intValue, events);
+                EditorGUI.BeginChangeCheck();
+                int newValue = EditorGUI.Popup(r1, "Trigger Event", indexProp.intValue, events);
+                if (EditorGUI.EndChangeCheck())
+                    indexProp.intValue = newValue;
             }
             else
             {

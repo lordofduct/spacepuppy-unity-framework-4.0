@@ -55,6 +55,9 @@ namespace com.spacepuppyeditor.Mecanim
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
+            float h;
+            if (EditorHelper.AssertMultiObjectEditingNotSupportedHeight(property, label, out h)) return h;
+
             this.Init(property, label);
 
             if (property.isExpanded)
@@ -69,6 +72,8 @@ namespace com.spacepuppyeditor.Mecanim
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
+
             this.Init(property, label);
 
             property.isExpanded = EditorGUI.Foldout(new Rect(position.xMin, position.yMin, position.width, EditorGUIUtility.singleLineHeight), property.isExpanded, GUIContent.none, true);

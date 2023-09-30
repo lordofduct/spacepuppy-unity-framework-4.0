@@ -168,12 +168,12 @@ namespace com.spacepuppyeditor.Project
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
+            float h = 0f;
+            if (EditorHelper.AssertMultiObjectEditingNotSupportedHeight(property, label, out h)) return h;
             this.ConfigureSettings();
 
             if (_disallowFoldout || property.isExpanded)
             {
-                float h = 0f;
-
                 var objProp = property.FindPropertyRelative(PROP_OBJ);
                 var textProp = property.FindPropertyRelative(PROP_TEXT);
                 var lst = CachedReorderableList.GetListDrawer(textProp, _maskList_DrawHeader, _maskList_DrawElement);
@@ -218,6 +218,7 @@ namespace com.spacepuppyeditor.Project
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
             this.ConfigureSettings();
 
             if (_disallowFoldout)

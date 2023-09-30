@@ -19,9 +19,20 @@ namespace com.spacepuppyeditor.Core
                 return;
             }
 
-            System.Enum e = property.GetEnumValue(tp);
-            e = SPEditorGUI.EnumPopup(position, label, e);
-            property.SetEnumValue(e);
+            if (property.hasMultipleDifferentValues)
+            {
+                SPEditorGUI.DefaultPropertyField(position, property, label);
+            }
+            else
+            {
+                System.Enum e = property.GetEnumValue(tp);
+                EditorGUI.BeginChangeCheck();
+                e = SPEditorGUI.EnumPopup(position, label, e);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    property.SetEnumValue(e);
+                }
+            }
         }
 
     }

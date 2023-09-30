@@ -216,6 +216,15 @@ namespace com.spacepuppy.SPInput.Unity
             }
         }
 
+        public static bool GetAnyAxis(float deadzone, Joystick joystick = Joystick.All)
+        {
+            for (int i = 1; i <= (int)SPInputId.Axis28; i++)
+            {
+                if (Mathf.Abs(GetAxis((SPInputId)i, joystick)) > deadzone) return true;
+            }
+            return false;
+        }
+
         #endregion
 
         #region Polling

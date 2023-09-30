@@ -15,6 +15,7 @@ namespace com.spacepuppy.SPInput
         #region Fields
 
         private ButtonDelegate _delegate;
+        private ButtonDelegate _fixedDelegate;
         private ButtonState _current;
         private ButtonState _currentFixed;
         private double _lastDown = double.NegativeInfinity;
@@ -28,6 +29,14 @@ namespace com.spacepuppy.SPInput
             : base(id)
         {
             this.Delegate = del;
+            this.FixedDelegate = del;
+        }
+
+        public DelegatedButtonInputSignature(string id, ButtonDelegate del, ButtonDelegate fixedDel)
+            : base(id)
+        {
+            this.Delegate = del;
+            this.FixedDelegate = fixedDel;
         }
 
         #endregion
@@ -38,6 +47,12 @@ namespace com.spacepuppy.SPInput
         {
             get { return _delegate; }
             set { _delegate = value ?? (() => false); }
+        }
+
+        public ButtonDelegate FixedDelegate
+        {
+            get { return _fixedDelegate; }
+            set { _fixedDelegate = value ?? (() => false); }
         }
 
         #endregion
@@ -88,7 +103,7 @@ namespace com.spacepuppy.SPInput
         {
             //determine based on history
             _current = InputUtil.GetNextButtonState(_current, _delegate());
-            switch(_current)
+            switch (_current)
             {
                 case ButtonState.Down:
                     _lastDown = Time.unscaledTimeAsDouble;
@@ -102,7 +117,7 @@ namespace com.spacepuppy.SPInput
         public override void FixedUpdate()
         {
             //determine based on history
-            _currentFixed = InputUtil.GetNextButtonState(_currentFixed, _delegate());
+            _currentFixed = InputUtil.GetNextButtonState(_currentFixed, _fixedDelegate());
         }
 
         public override void Reset()

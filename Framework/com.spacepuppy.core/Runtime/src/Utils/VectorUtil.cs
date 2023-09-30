@@ -837,6 +837,58 @@ namespace com.spacepuppy.Utils
 
         #region Setters/Getters
 
+        public static Vector3 UnitVectorOrDefault(this Vector3 v)
+        {
+            float mag = v.magnitude;
+            if (mag > 0f)
+            {
+                return v / mag;
+            }
+            else
+            {
+                return Vector3.forward;
+            }
+        }
+
+        public static Vector3 UnitVectorOrDefault(this Vector3 v, Vector3 defaultValue)
+        {
+            float mag = v.magnitude;
+            if (mag > 0f)
+            {
+                return v / mag;
+            }
+            else
+            {
+                return defaultValue;
+            }
+        }
+
+        public static Vector2 UnitVectorOrDefault(this Vector2 v)
+        {
+            float mag = v.magnitude;
+            if (mag > 0f)
+            {
+                return v / mag;
+            }
+            else
+            {
+                return Vector2.right;
+            }
+        }
+
+        public static Vector2 UnitVectorOrDefault(this Vector2 v, Vector2 defaultValue)
+        {
+            float mag = v.magnitude;
+            if (mag > 0f)
+            {
+                return v / mag;
+            }
+            else
+            {
+                return defaultValue;
+            }
+        }
+
         public static Vector3 OnlyX(this Vector3 v) => new Vector3(v.x, 0f, 0f);
 
         public static Vector3 OnlyY(this Vector3 v) => new Vector3(0f, v.y, 0f);
@@ -971,7 +1023,7 @@ namespace com.spacepuppy.Utils
                 case CartesianAxis.Yneg:
                     return Vector3.down;
                 case CartesianAxis.Xneg:
-                    return Vector3.right;
+                    return Vector3.left;
                 case CartesianAxis.X:
                     return Vector3.right;
                 case CartesianAxis.Y:

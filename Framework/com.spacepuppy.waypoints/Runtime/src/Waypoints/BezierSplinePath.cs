@@ -95,7 +95,7 @@ namespace com.spacepuppy.Waypoints
             {
                 for (int i = 1; i < c; i++)
                 {
-                    arr[i - 1] = Vector3.Lerp(arr[i - 1], arr[i], t);
+                    arr[i - 1] = Vector3.LerpUnclamped(arr[i - 1], arr[i], t);
                 }
 
                 c--;

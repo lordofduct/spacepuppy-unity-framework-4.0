@@ -17,7 +17,7 @@ namespace com.spacepuppy.Utils
         const float MAX_SINGLE_RATIO = (float)MAX_SINGLE_NUMERATOR / (float)MAX_SINGLE_DENOMINATOR;
         const ulong MAX_DOUBLE_NUMERATOR = 0x1FFFFFFFFFFFFFu;
         const ulong MAX_DOUBLE_DENOMINATOR = 0x20000000000000u;
-        const double MAX_DOUBLE_RATIO = MAX_DOUBLE_NUMERATOR / MAX_DOUBLE_DENOMINATOR;
+        const double MAX_DOUBLE_RATIO = (double)MAX_DOUBLE_NUMERATOR / (double)MAX_DOUBLE_DENOMINATOR; //this technically prints as 1, but it's actually the largest possible value < 1 represented as a float. It's binary representation is: 0x3FEFFFFFFFFFFFFF
 
         #region Static Fields
 

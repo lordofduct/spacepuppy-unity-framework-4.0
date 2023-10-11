@@ -172,7 +172,7 @@ namespace com.spacepuppy.Utils
         /// <returns></returns>
         public static float Range(this IRandom rng, float max, float min = 0.0f)
         {
-            return (float)(rng.NextDouble() * (max - min)) + min;
+            return rng.Next() * (max - min) + min;
         }
 
         /// <summary>
@@ -207,7 +207,7 @@ namespace com.spacepuppy.Utils
         /// <returns></returns>
         public static float Range(this IRandom rng, com.spacepuppy.Geom.Interval interval)
         {
-            return (float)(rng.NextDouble() * (interval.Max - interval.Min) + interval.Min);
+            return rng.Next() * (interval.Max - interval.Min) + interval.Min;
         }
 
         /// <summary>

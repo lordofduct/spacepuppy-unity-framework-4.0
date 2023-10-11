@@ -1190,7 +1190,7 @@ namespace com.spacepuppy.Dynamic
                             {
                                 if (reachedEnd)
                                 {
-                                    DoProductInterlerp(temp, RandomUtil.Standard.NextDouble());
+                                    DoProductInterlerp(temp, RandomUtil.Standard.Next());
                                     state.CopyValue(temp);
                                     return;
                                 }

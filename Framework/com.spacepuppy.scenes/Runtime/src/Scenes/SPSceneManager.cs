@@ -3,7 +3,6 @@ using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 using com.spacepuppy.Async;
 using com.spacepuppy.Utils;
-using static UnityEngine.UI.GridLayoutGroup;
 
 namespace com.spacepuppy.Scenes
 {

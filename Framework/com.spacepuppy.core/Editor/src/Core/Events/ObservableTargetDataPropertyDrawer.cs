@@ -6,7 +6,6 @@ using System.Linq;
 using com.spacepuppy.Collections;
 using com.spacepuppy.Events;
 using com.spacepuppy.Utils;
-using UnityEngine.UIElements;
 
 namespace com.spacepuppyeditor.Events
 {

@@ -12,8 +12,8 @@ namespace com.spacepuppy.Utils
     public static class RandomUtil
     {
 
-        const int MAX_SINGLE_NUMERATOR = 0x7FFFFF;
-        const int MAX_SINGLE_DENOMINATOR = 0x800000;
+        const int MAX_SINGLE_NUMERATOR = 0xFFFFFF;
+        const int MAX_SINGLE_DENOMINATOR = 0x1000000;
         const float MAX_SINGLE_RATIO = (float)MAX_SINGLE_NUMERATOR / (float)MAX_SINGLE_DENOMINATOR;
         const ulong MAX_DOUBLE_NUMERATOR = 0x1FFFFFFFFFFFFFu;
         const ulong MAX_DOUBLE_DENOMINATOR = 0x20000000000000u;

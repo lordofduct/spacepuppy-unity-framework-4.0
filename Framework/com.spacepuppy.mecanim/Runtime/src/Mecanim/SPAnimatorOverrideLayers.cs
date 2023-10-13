@@ -760,6 +760,8 @@ namespace com.spacepuppy.Mecanim
         /// <returns></returns>
         public AnimationClip FindBaseAnimation(string name)
         {
+            if (_baseAnimations == null) this.InitializeBaseAnimLookup();
+
             AnimationClip clip;
             _baseAnimations.TryGetValue(name, out clip);
             return clip;

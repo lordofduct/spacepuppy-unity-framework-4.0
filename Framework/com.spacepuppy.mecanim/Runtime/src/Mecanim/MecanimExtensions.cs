@@ -384,6 +384,12 @@ namespace com.spacepuppy.Mecanim
             if (animator.GetComponent(out layers)) layers.Pop();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static AnimationClip FindBaseAnimation(this Animator animator, string name)
+        {
+            return animator.AddOrGetComponent<SPAnimatorOverrideLayers>().FindBaseAnimation(name);
+        }
+
         #endregion
 
     }

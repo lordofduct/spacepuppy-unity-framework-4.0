@@ -118,6 +118,25 @@ namespace com.spacepuppyeditor.Core
                             }
                         }
                         break;
+                    case EntityRelativity.SelfAndParents:
+                        {
+                            if (ObjUtil.IsRelatedTo(targ, variant.ObjectValue)) return;
+
+                            var obj = ObjUtil.GetAsFromSource(restrictionType, targ);
+                            if (obj == null && ComponentUtil.IsAcceptableComponentType(restrictionType)) obj = targ.GetComponentsInParent(restrictionType);
+                            if (obj != null)
+                            {
+                                variant.Value = obj;
+                                property.serializedObject.Update();
+                            }
+                            else if (variant.Value != null)
+                            {
+                                variant.Value = null;
+                                property.serializedObject.Update();
+                                GUI.changed = true;
+                            }
+                        }
+                        break;
                 }
             }
             else if (property.propertyType == SerializedPropertyType.ObjectReference)
@@ -173,6 +192,24 @@ namespace com.spacepuppyeditor.Core
 
                             var obj = ObjUtil.GetAsFromSource(restrictionType, targ) as UnityEngine.Object;
                             if (obj == null && ComponentUtil.IsAcceptableComponentType(restrictionType)) obj = targ.GetComponentInChildren(restrictionType);
+                            if (obj != null)
+                            {
+                                property.objectReferenceValue = obj;
+                                GUI.changed = true;
+                            }
+                            else if (property.objectReferenceValue != null)
+                            {
+                                property.objectReferenceValue = null;
+                                GUI.changed = true;
+                            }
+                        }
+                        break;
+                    case EntityRelativity.SelfAndParents:
+                        {
+                            if (ObjUtil.IsRelatedTo(targ, property.objectReferenceValue)) return;
+
+                            var obj = ObjUtil.GetAsFromSource(restrictionType, targ) as UnityEngine.Object;
+                            if (obj == null && ComponentUtil.IsAcceptableComponentType(restrictionType)) obj = targ.GetComponentInParent(restrictionType);
                             if (obj != null)
                             {
                                 property.objectReferenceValue = obj;
@@ -265,6 +302,21 @@ namespace com.spacepuppyeditor.Core
                             GUI.changed = true;
                         }
                         break;
+                    case EntityRelativity.SelfAndParents:
+                        {
+                            var arr = ComponentUtil.IsAcceptableComponentType(restrictionType) ? targ.GetComponentsInParent(restrictionType) : ArrayUtil.Empty<Component>();
+                            if (ValidateSerializedPropertyArray(property, arr, true)) return;
+
+                            property.arraySize = arr.Length;
+                            for (int i = 0; i < arr.Length; i++)
+                            {
+                                var variant = EditorHelper.GetTargetObjectOfProperty(property.GetArrayElementAtIndex(i)) as VariantReference;
+                                if (variant != null) variant.Value = arr[i];
+                            }
+                            property.serializedObject.Update();
+                            GUI.changed = true;
+                        }
+                        break;
                 }
             }
             else if (TypeUtil.IsType(elementType, typeof(UnityEngine.Object)))
@@ -300,6 +352,8 @@ namespace com.spacepuppyeditor.Core
                             {
                                 property.GetArrayElementAtIndex(i).objectReferenceValue = arr[i] as UnityEngine.Object;
                             }
+                            property.serializedObject.Update();
+                            GUI.changed = true;
                         }
                         break;
                     case EntityRelativity.Self:
@@ -312,6 +366,8 @@ namespace com.spacepuppyeditor.Core
                             {
                                 property.GetArrayElementAtIndex(i).objectReferenceValue = arr[i] as UnityEngine.Object;
                             }
+                            property.serializedObject.Update();
+                            GUI.changed = true;
                         }
                         break;
                     case EntityRelativity.SelfAndChildren:
@@ -324,6 +380,22 @@ namespace com.spacepuppyeditor.Core
                             {
                                 property.GetArrayElementAtIndex(i).objectReferenceValue = arr[i] as UnityEngine.Object;
                             }
+                            property.serializedObject.Update();
+                            GUI.changed = true;
+                        }
+                        break;
+                    case EntityRelativity.SelfAndParents:
+                        {
+                            var arr = ComponentUtil.IsAcceptableComponentType(restrictionType) ? targ.GetComponentsInParent(restrictionType) : ArrayUtil.Empty<Component>();
+                            if (ValidateSerializedPropertyArray(property, arr, false)) return;
+
+                            property.arraySize = arr.Length;
+                            for (int i = 0; i < arr.Length; i++)
+                            {
+                                property.GetArrayElementAtIndex(i).objectReferenceValue = arr[i] as UnityEngine.Object;
+                            }
+                            property.serializedObject.Update();
+                            GUI.changed = true;
                         }
                         break;
                 }

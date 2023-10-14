@@ -53,6 +53,24 @@ namespace com.spacepuppy
 
     }
 
+    [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = true, Inherited = true)]
+    public class RequireComponentInParentAttribute : ComponentHeaderAttribute
+    {
+
+        private System.Type[] _types;
+
+        public RequireComponentInParentAttribute(params System.Type[] tps)
+        {
+            _types = tps;
+        }
+
+        public System.Type[] Types
+        {
+            get { return _types; }
+        }
+
+    }
+
     [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
     public class RequireLayerAttribute : ComponentHeaderAttribute
     {

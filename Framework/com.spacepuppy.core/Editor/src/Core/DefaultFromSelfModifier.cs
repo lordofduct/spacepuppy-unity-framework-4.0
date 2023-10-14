@@ -59,6 +59,12 @@ namespace com.spacepuppyeditor.Core
                         if (object.ReferenceEquals(targ, null) && ComponentUtil.IsAcceptableComponentType(restrictionType)) obj = targ.GetComponentInChildren(restrictionType);
                         return obj;
                     }
+                case EntityRelativity.SelfAndParents:
+                    {
+                        var obj = ObjUtil.GetAsFromSource(restrictionType, targ);
+                        if (object.ReferenceEquals(targ, null) && ComponentUtil.IsAcceptableComponentType(restrictionType)) obj = targ.GetComponentInParent(restrictionType);
+                        return obj;
+                    }
                 default:
                     return null;
             }
@@ -158,6 +164,20 @@ namespace com.spacepuppyeditor.Core
                             GUI.changed = true;
                         }
                         break;
+                    case EntityRelativity.SelfAndParents:
+                        {
+                            var arr = ComponentUtil.IsAcceptableComponentType(restrictionType) ? targ.GetComponentsInParent(restrictionType, true) : ArrayUtil.Empty<Component>();
+
+                            property.arraySize = arr.Length;
+                            for (int i = 0; i < arr.Length; i++)
+                            {
+                                var variant = EditorHelper.GetTargetObjectOfProperty(property.GetArrayElementAtIndex(i)) as VariantReference;
+                                if (variant != null) variant.Value = arr[i];
+                            }
+                            property.serializedObject.Update();
+                            GUI.changed = true;
+                        }
+                        break;
                 }
             }
             else if (TypeUtil.IsType(elementType, typeof(UnityEngine.Object)))
@@ -208,6 +228,17 @@ namespace com.spacepuppyeditor.Core
                     case EntityRelativity.SelfAndChildren:
                         {
                             var arr = ObjUtil.GetAllFromSource(restrictionType, targ, true);
+
+                            property.arraySize = arr.Length;
+                            for (int i = 0; i < arr.Length; i++)
+                            {
+                                property.GetArrayElementAtIndex(i).objectReferenceValue = arr[i] as UnityEngine.Object;
+                            }
+                        }
+                        break;
+                    case EntityRelativity.SelfAndParents:
+                        {
+                            var arr = ComponentUtil.IsAcceptableComponentType(restrictionType) ? targ.GetComponentsInParent(restrictionType, true) : ArrayUtil.Empty<Component>();
 
                             property.arraySize = arr.Length;
                             for (int i = 0; i < arr.Length; i++)

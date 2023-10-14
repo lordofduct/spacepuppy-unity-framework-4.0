@@ -117,6 +117,35 @@ namespace com.spacepuppyeditor
             return false;
         }
 
+        public static bool AssertRequireComponentInParentAttrib(Component comp, bool silent = false)
+        {
+            System.Type missingCompType;
+
+            return AssertRequireComponentInParentAttrib(comp, out missingCompType, silent);
+        }
+
+        public static bool AssertRequireComponentInParentAttrib(Component comp, out System.Type missingCompType, bool silent = false)
+        {
+            if (comp == null) throw new System.ArgumentNullException("comp");
+            missingCompType = null;
+
+            var tp = comp.GetType();
+            foreach (var obj in tp.GetCustomAttributes(typeof(RequireComponentInParentAttribute), true))
+            {
+                RequireComponentInParentAttribute attrib = obj as RequireComponentInParentAttribute;
+                foreach (var reqType in attrib.Types)
+                {
+                    if (comp.GetComponentInParent(reqType) == null)
+                    {
+                        missingCompType = reqType;
+                        if (!silent) Assert(System.String.Format("(Object:{2}) Component type {0} requires a parent to also have a component of type {1}.", tp.Name, reqType.Name, comp.name), comp);
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
 
         public static bool AssertUniqueToEntityAttrib(Component comp, bool silent = false)
         {

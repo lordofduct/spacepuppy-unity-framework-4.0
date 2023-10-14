@@ -69,6 +69,11 @@ namespace com.spacepuppy
                         c.gameObject.Broadcast(c, Functor, includeInactiveObjs, includeDisabledComps);
                     }
                     break;
+                case EntityRelativity.SelfAndParents:
+                    {
+                        c.gameObject.SignalUpwards(c, Functor, includeDisabledComps);
+                    }
+                    break;
             }
             return false;
         }
@@ -160,6 +165,18 @@ namespace com.spacepuppy
                         };
                     }
                     break;
+                case EntityRelativity.SelfAndParents:
+                    {
+                        c.OnEnabled += (s, e) =>
+                        {
+                            c.gameObject.SignalUpwards(c, EnabledFunctor, includeDisabledComps);
+                        };
+                        c.OnDisabled += (s, e) =>
+                        {
+                            c.gameObject.SignalUpwards(c, DisabledFunctor, includeDisabledComps);
+                        };
+                    }
+                    break;
             }
             return false;
         }
@@ -234,6 +251,14 @@ namespace com.spacepuppy
                         c.ComponentDestroyed += (s, e) =>
                         {
                             c.gameObject.Broadcast(c, Functor, includeInactiveObjs, includeDisabledComps);
+                        };
+                    }
+                    break;
+                case EntityRelativity.SelfAndParents:
+                    {
+                        c.ComponentDestroyed += (s, e) =>
+                        {
+                            c.gameObject.SignalUpwards(c, Functor, includeDisabledComps);
                         };
                     }
                     break;

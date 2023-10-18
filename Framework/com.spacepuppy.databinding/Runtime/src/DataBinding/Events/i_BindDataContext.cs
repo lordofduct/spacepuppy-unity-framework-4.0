@@ -19,6 +19,7 @@ namespace com.spacepuppy.DataBinding.Events
         private UnityEngine.Object _dataSource;
 
         [SerializeField]
+        [RespectsIProxy]
         [TypeRestriction(typeof(IDataBindingContext), AllowProxy = true)]
         private UnityEngine.Object _targetDataBindingContext;
 

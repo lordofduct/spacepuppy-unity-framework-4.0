@@ -20,6 +20,7 @@ namespace com.spacepuppy.DataBinding
         #region Fields
 
         [SerializeField]
+        [RespectsIProxy]
 #if SP_TMPRO
         [TypeRestriction(typeof(UnityEngine.UI.Text), typeof(UnityEngine.UI.InputField), typeof(TMPro.TMP_Text), typeof(TMPro.TMP_InputField), typeof(IProxy), AllowProxy = true)]
 #else

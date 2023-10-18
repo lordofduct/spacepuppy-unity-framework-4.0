@@ -158,6 +158,7 @@ namespace com.spacepuppy.Events
             public float Weight;
             [UnityEngine.Serialization.FormerlySerializedAs("Clip")]
             [SerializeField]
+            [RespectsIProxy]
             [TypeRestriction(typeof(AudioClip), AllowProxy = true)]
             private UnityEngine.Object _clip;
 

@@ -11,6 +11,7 @@ namespace com.spacepuppy.Events
 
         [SerializeField()]
         [DefaultFromSelf()]
+        [RespectsIProxy]
         [TypeRestriction(typeof(Transform), AllowProxy = true)]
         private UnityEngine.Object _target;
 

@@ -20,22 +20,75 @@ namespace com.spacepuppyeditor.Core
         private SelectableComponentPropertyDrawer _selectComponentDrawer;
         private static TypeRestrictionComponentChoiceSelector _multiSelector = new TypeRestrictionComponentChoiceSelector();
 
+        private System.Type _fieldType;
+        private System.Type[] _inheritsFromTypes;
+        private bool _hideTypeDropDown;
+        private bool _hideTypeDropDownIfSingle;
+        private bool _allowProxy;
+        private bool _restrictProxyResolvedType; //if IProxy is allowed, should we test if the type returned by IProxy.GetReturnedType matches the accepted types
+        private bool _allowSceneObjects = true;
+
+        #endregion
+
+        #region Properties
+
+        public System.Type FieldType
+        {
+            get => this.fieldInfo?.FieldType ?? _fieldType ?? typeof(UnityEngine.Object);
+            set => _fieldType = value;
+        }
+
+        public System.Type[] InheritsFromTypes
+        {
+            get => (this.attribute as TypeRestrictionAttribute)?.InheritsFromTypes ?? _inheritsFromTypes ?? ArrayUtil.Empty<System.Type>();
+            set => _inheritsFromTypes = value;
+        }
+
+        public bool HideTypeDropDown
+        {
+            get => (this.attribute as TypeRestrictionAttribute)?.HideTypeDropDown ?? _hideTypeDropDown;
+            set => _hideTypeDropDown = value;
+        }
+
+        public bool HideTypeDropDownIfSingle
+        {
+            get => (this.attribute as TypeRestrictionAttribute)?.HideTypeDropDownIfSingle ?? _hideTypeDropDownIfSingle;
+            set => _hideTypeDropDownIfSingle = value;
+        }
+
+        public bool AllowProxy
+        {
+            get => (this.attribute as TypeRestrictionAttribute)?.AllowProxy ?? _allowProxy;
+            set => _allowProxy = value;
+        }
+
+        public bool RestrictProxyResolvedType
+        {
+            get => (this.attribute as TypeRestrictionAttribute)?.RestrictProxyResolvedType ?? _restrictProxyResolvedType;
+            set => _restrictProxyResolvedType = value;
+        }
+
+        public bool AllowSceneObjects
+        {
+            get => (this.attribute as TypeRestrictionAttribute)?.AllowSceneObjects ?? _allowSceneObjects;
+            set => _allowSceneObjects = value;
+        }
+
         #endregion
 
         #region Utils
 
         private bool ValidateFieldType()
         {
-            bool isArray = this.fieldInfo.FieldType.IsListType();
-            var fieldType = (isArray) ? this.fieldInfo.FieldType.GetElementTypeOfListType() : this.fieldInfo.FieldType;
+            bool isArray = this.FieldType.IsListType();
+            var fieldType = (isArray) ? this.FieldType.GetElementTypeOfListType() : this.FieldType;
             if (!TypeUtil.IsType(fieldType, typeof(UnityEngine.Object)))
                 return false;
             //if (!TypeUtil.IsType(fieldType, typeof(Component))) return false;
 
-            var attrib = this.attribute as TypeRestrictionAttribute;
-            if (attrib?.InheritsFromTypes != null && attrib?.InheritsFromTypes.Length > 0)
+            if (this.InheritsFromTypes.Length > 0)
             {
-                foreach (var tp in attrib.InheritsFromTypes)
+                foreach (var tp in this.InheritsFromTypes)
                 {
                     if (tp.IsInterface || TypeUtil.IsType(tp, fieldType)) return true;
                 }
@@ -53,8 +106,7 @@ namespace com.spacepuppyeditor.Core
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
-            var attrib = this.attribute as TypeRestrictionAttribute;
-            if (attrib.HideTypeDropDown)
+            if (this.HideTypeDropDown)
             {
                 return EditorGUIUtility.singleLineHeight;
             }
@@ -77,28 +129,26 @@ namespace com.spacepuppyeditor.Core
             EditorGUI.BeginProperty(position, label, property);
 
             //get base type
-            var attrib = this.attribute as TypeRestrictionAttribute;
-
-            bool isArray = this.fieldInfo.FieldType.IsListType();
-            var fieldType = (isArray) ? this.fieldInfo.FieldType.GetElementTypeOfListType() : this.fieldInfo.FieldType;
+            bool isArray = this.FieldType.IsListType();
+            var fieldType = (isArray) ? this.FieldType.GetElementTypeOfListType() : this.FieldType;
             bool fieldIsComponentType = TypeUtil.IsType(fieldType, typeof(Component));
             bool objIsSimpleComponentSource = (property.objectReferenceValue is Component || property.objectReferenceValue is GameObject);
 
-            System.Type[] allInheritableTypes = attrib?.InheritsFromTypes ?? ArrayUtil.Empty<System.Type>();
+            System.Type[] allInheritableTypes = this.InheritsFromTypes;
             System.Type inheritsFromType = (allInheritableTypes.Length == 1 && TypeUtil.IsType(allInheritableTypes[0], typeof(UnityEngine.Object))) ? allInheritableTypes[0] : fieldType;
             bool isNonStandardUnityType = allInheritableTypes.Any(o => o.IsInterface || o.IsGenericType || !TypeUtil.IsType(o, typeof(UnityEngine.Object))); //is a type that unity's ObjectField doesn't support directly
 
-            if (!objIsSimpleComponentSource || (attrib?.HideTypeDropDown ?? false) ||
-                (attrib.HideTypeDropDownIfSingle && !SatisfiesMoreThanOneTarget(property.objectReferenceValue, allInheritableTypes)))
+            if (!objIsSimpleComponentSource || this.HideTypeDropDown ||
+                (this.HideTypeDropDownIfSingle && !SatisfiesMoreThanOneTarget(property.objectReferenceValue, allInheritableTypes)))
             {
                 //draw object field
                 UnityEngine.Object targ;
-                if (allInheritableTypes.Length > 1 || isNonStandardUnityType || (attrib?.AllowProxy ?? false))
+                if (allInheritableTypes.Length > 1 || isNonStandardUnityType || this.AllowProxy)
                 {
                     System.Func<UnityEngine.Object, bool> filter = null;
-                    if (attrib?.AllowProxy ?? false)
+                    if (this.AllowProxy)
                     {
-                        if (attrib?.RestrictProxyResolvedType ?? false)
+                        if (this.RestrictProxyResolvedType)
                         {
                             filter = o => o && ((TypeUtil.IsType(o.GetType(), allInheritableTypes) || ObjUtil.GetAsFromSource(allInheritableTypes, o) != null)) || (o is IProxy p && TypeUtil.IsType(p.GetTargetType(), allInheritableTypes));
                         }
@@ -116,18 +166,18 @@ namespace com.spacepuppyeditor.Core
                         label,
                         property.objectReferenceValue,
                         (allInheritableTypes.Length == 1) ? allInheritableTypes[0] : fieldType,
-                        attrib?.AllowSceneObjects ?? true,
-                        attrib?.AllowProxy ?? false,
+                        this.AllowSceneObjects,
+                        this.AllowProxy,
                         filter);
                 }
                 else if (fieldIsComponentType)
                 {
                     var fieldCompType = (TypeUtil.IsType(fieldType, typeof(Component))) ? fieldType : typeof(Component);
-                    targ = SPEditorGUI.ComponentField(position, label, property.objectReferenceValue as Component, inheritsFromType, attrib?.AllowSceneObjects ?? true, fieldCompType);
+                    targ = SPEditorGUI.ComponentField(position, label, property.objectReferenceValue as Component, inheritsFromType, this.AllowSceneObjects, fieldCompType);
                 }
                 else
                 {
-                    targ = EditorGUI.ObjectField(position, label, property.objectReferenceValue, inheritsFromType, attrib?.AllowSceneObjects ?? true);
+                    targ = EditorGUI.ObjectField(position, label, property.objectReferenceValue, inheritsFromType, this.AllowSceneObjects);
                 }
 
                 if (targ == null)
@@ -137,7 +187,7 @@ namespace com.spacepuppyeditor.Core
                 else
                 {
                     var o = (allInheritableTypes.Length > 1 ? ObjUtil.GetAsFromSource(allInheritableTypes, targ) : ObjUtil.GetAsFromSource(inheritsFromType, targ)) as UnityEngine.Object;
-                    if (attrib.AllowProxy && o == null)
+                    if (this.AllowProxy && o == null)
                     {
                         o = ObjUtil.GetAsFromSource<IProxy>(targ) as UnityEngine.Object;
                     }
@@ -154,13 +204,13 @@ namespace com.spacepuppyeditor.Core
 
                 //_selectComponentDrawer.RestrictionType = inheritsFromType ?? typeof(UnityEngine.Object);
                 _selectComponentDrawer.RestrictionType = (allInheritableTypes.Length == 1) ? allInheritableTypes[0] : inheritsFromType ?? typeof(UnityEngine.Object);
-                _selectComponentDrawer.AllowProxy = (attrib?.AllowProxy ?? false);
+                _selectComponentDrawer.AllowProxy = this.AllowProxy;
                 _selectComponentDrawer.ShowXButton = true;
                 _selectComponentDrawer.AllowNonComponents = true;
-                if (allInheritableTypes.Length > 1 || (attrib?.AllowProxy ?? false))
+                if (allInheritableTypes.Length > 1 || this.AllowProxy)
                 {
                     _multiSelector.AllowedTypes = allInheritableTypes;
-                    _multiSelector.RestrictProxyResolvedType = (attrib?.RestrictProxyResolvedType ?? false);
+                    _multiSelector.RestrictProxyResolvedType = this.RestrictProxyResolvedType;
                     _selectComponentDrawer.ChoiceSelector = _multiSelector;
                 }
                 else

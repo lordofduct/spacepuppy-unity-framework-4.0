@@ -12,6 +12,7 @@ namespace com.spacepuppy.UI
         #region Fields
 
         [SerializeField]
+        [RespectsIProxy]
         [TypeRestriction(typeof(GameObject), AllowProxy = true)]
         private UnityEngine.Object _defaultElement;
 

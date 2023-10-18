@@ -200,6 +200,19 @@ namespace com.spacepuppy
         {
             return obj is IProxy;
         }
+        public static bool IsProxy(this object obj, out IProxy proxy)
+        {
+            if (obj is IProxy p)
+            {
+                proxy = p;
+                return true;
+            }
+            else
+            {
+                proxy = null;
+                return false;
+            }
+        }
 
         /// <summary>
         /// Returns true if object is an IProxy and its Params does not PrioritizeAsTargetFirst.
@@ -209,6 +222,19 @@ namespace com.spacepuppy
         public static bool IsProxy_ParamsRespecting(this object obj)
         {
             return obj is IProxy p && (p.Params & ProxyParams.PrioritizeAsTargetFirst) == 0;
+        }
+        public static bool IsProxy_ParamsRespecting(this object obj, out IProxy proxy)
+        {
+            if (obj is IProxy p && (p.Params & ProxyParams.PrioritizeAsTargetFirst) == 0)
+            {
+                proxy = p;
+                return true;
+            }
+            else
+            {
+                proxy = null;
+                return false;
+            }
         }
 
         public static System.Type GetType(this object obj, bool respectProxy)
@@ -231,6 +257,54 @@ namespace com.spacepuppy
     [System.Serializable]
     public class ProxyRef : com.spacepuppy.Project.SerializableInterfaceRef<IProxy>
     {
+
+    }
+
+    [System.Serializable]
+    public class ProxyOrDirectField<T> : IProxy where T : class
+    {
+
+        #region Fields
+
+        [SerializeField]
+        [RespectsIProxy]
+        private UnityEngine.Object _target;
+        [System.NonSerialized]
+        private object _runtimeRef;
+
+        #endregion
+
+        #region Properties
+
+        public object ConfiguredTarget
+        {
+            get => _target ? _target : _runtimeRef;
+            set
+            {
+                _target = value as UnityEngine.Object;
+                _runtimeRef = value;
+            }
+        }
+
+        #endregion
+
+        #region Methods
+
+        public T GetTarget() => ObjUtil.GetAsFromSource<T>(this.ConfiguredTarget, true);
+
+        public K GetTargetAs<K>() where K : class => ObjUtil.GetAsFromSource<K>(this.ConfiguredTarget, true);
+
+        #endregion
+
+        #region IProxy Interface
+
+        ProxyParams IProxy.Params => this.ConfiguredTarget.IsProxy_ParamsRespecting(out IProxy p) ? p.Params : ProxyParams.None;
+
+        object IProxy.GetTargetInternal(System.Type expectedType, object arg) => this.GetTarget();
+
+        System.Type IProxy.GetTargetType() => typeof(T);
+
+        #endregion
 
     }
 

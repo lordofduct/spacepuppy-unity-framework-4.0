@@ -178,6 +178,18 @@ namespace com.spacepuppy.Utils
             return t.parent.InverseTransformPoint(pnt);
         }
 
+        public static Quaternion ParentTransformRotation(this Transform t, Quaternion rot)
+        {
+            if (t.parent == null) return rot;
+            return t.parent.InverseTransformRotation(rot);
+        }
+
+        public static Quaternion ParentInverseTransformRotation(this Transform t, Quaternion rot)
+        {
+            if (t.parent == null) return rot;
+            return t.parent.InverseTransformRotation(rot);
+        }
+
         #endregion
 
         #region Transform Methods

@@ -2,7 +2,6 @@
 using UnityEngine;
 
 using com.spacepuppy.Events;
-using com.spacepuppy.Tween;
 using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.Tween.Events
@@ -10,6 +9,12 @@ namespace com.spacepuppy.Tween.Events
 
     public class i_TweenTo : AutoTriggerable, IObservableTrigger
     {
+
+        public enum TransformScope
+        {
+            Global = 0,
+            Local = 1
+        }
 
         #region Fields
 
@@ -26,6 +31,9 @@ namespace com.spacepuppy.Tween.Events
         private EaseStyle _ease;
         [SerializeField()]
         private SPTimePeriod _duration;
+
+        [SerializeField]
+        private TransformScope _scope;
 
         [SerializeField]
         private bool _orientWithLocationRotation;
@@ -88,6 +96,12 @@ namespace com.spacepuppy.Tween.Events
             set { _duration = value; }
         }
 
+        public TransformScope Scope
+        {
+            get => _scope;
+            set => _scope = value;
+        }
+
         public bool OrientWithLocationRotation
         {
             get { return _orientWithLocationRotation; }
@@ -131,12 +145,30 @@ namespace com.spacepuppy.Tween.Events
             var loc = _location.GetTarget<Transform>(arg);
             if (targ == null || loc == null) return false;
 
-            var twn = SPTween.Tween(targ)
+            TweenHash twn = null;
+            switch (_scope)
+            {
+                case TransformScope.Global:
+                    {
+                        twn = SPTween.Tween(targ)
                              .Prop(targ.position_ref()).To(EaseMethods.GetEase(_ease), _duration.Seconds, loc.position)
                              .Use(_duration.TimeSupplier)
                              .SetId(_target);
-
-            if (_orientWithLocationRotation) twn.Prop(targ.rotation_ref()).To(EaseMethods.GetEase(_ease), _duration.Seconds, loc.rotation);
+                        if (_orientWithLocationRotation) twn.Prop(targ.rotation_ref()).To(EaseMethods.GetEase(_ease), _duration.Seconds, loc.rotation);
+                    }
+                    break;
+                case TransformScope.Local:
+                    {
+                        twn = SPTween.Tween(targ)
+                             .Prop(targ.localPosition_ref()).To(EaseMethods.GetEase(_ease), _duration.Seconds, targ.ParentInverseTransformPoint(loc.position))
+                             .Use(_duration.TimeSupplier)
+                             .SetId(_target);
+                        if (_orientWithLocationRotation) twn.Prop(targ.localRotation_ref()).To(EaseMethods.GetEase(_ease), _duration.Seconds, targ.ParentInverseTransformRotation(loc.rotation));
+                    }
+                    break;
+                default:
+                    return false;
+            }
 
             if (_onComplete?.HasReceivers ?? false)
                 twn.OnFinish((t) => _onComplete.ActivateTrigger(this, null));

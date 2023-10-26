@@ -373,6 +373,12 @@ namespace com.spacepuppy.Mecanim
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void InsertOverride(this Animator animator, int index, AnimatorOverrideCollection source, object token)
+        {
+            animator.AddOrGetComponent<SPAnimatorOverrideLayers>().Insert(index, source, token);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void RemoveOverride(this Animator animator, object token)
         {
             animator.AddOrGetComponent<SPAnimatorOverrideLayers>().Remove(token);

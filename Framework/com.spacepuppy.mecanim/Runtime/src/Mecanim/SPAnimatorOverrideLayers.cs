@@ -440,6 +440,8 @@ namespace com.spacepuppy.Mecanim
             }
         }
 
+        public void Insert(int index, AnimatorOverrideCollection collection, object token) => this.Insert(index, (IOverrideList)collection, token);
+
         public void Insert(int index, IList<KeyValuePair<AnimationClip, AnimationClip>> overrides, object token)
         {
             if (!ObjUtil.IsObjectAlive(this)) return;

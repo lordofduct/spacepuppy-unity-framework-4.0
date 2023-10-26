@@ -494,23 +494,19 @@ namespace com.spacepuppyeditor.Core
             var element = _lst.serializedProperty.GetArrayElementAtIndex(index);
             if (element == null) return GUIContent.none;
 
-            var attrib = this.attribute as ReorderableArrayAttribute;
             GUIContent label = null;
             if (this.FormatElementLabel != null)
             {
                 string slbl = this.FormatElementLabel(element, index, isActive, isFocused);
                 if (slbl != null) label = EditorHelper.TempContent(slbl);
             }
-            else if (attrib != null)
+            else if (!string.IsNullOrEmpty(this.ElementLabelFormatString))
             {
-                if (!string.IsNullOrEmpty(attrib.ElementLabelFormatString))
-                {
-                    label = EditorHelper.TempContent(string.Format(attrib.ElementLabelFormatString, index));
-                }
-                if (attrib.ElementPadding > 0f)
-                {
-                    area = new Rect(area.xMin + attrib.ElementPadding, area.yMin, Mathf.Max(0f, area.width - attrib.ElementPadding), area.height);
-                }
+                label = EditorHelper.TempContent(string.Format(this.ElementLabelFormatString, index));
+            }
+            if (this.ElementPadding > 0f)
+            {
+                area = new Rect(area.xMin + this.ElementPadding, area.yMin, Mathf.Max(0f, area.width - this.ElementPadding), area.height);
             }
             if (label == null) label = (this.HideElementLabel) ? GUIContent.none : TempElementLabel(element, index);
 

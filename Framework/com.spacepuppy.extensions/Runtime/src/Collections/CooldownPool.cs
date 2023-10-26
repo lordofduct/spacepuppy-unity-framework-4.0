@@ -34,16 +34,8 @@ namespace com.spacepuppy.Collections
 
         public ITimeSupplier UpdateTimeSupplier
         {
-            get
-            {
-                if (_time == null) _time = SPTime.Normal;
-                return _time;
-            }
-            set
-            {
-                if (value == null) throw new System.ArgumentNullException("value");
-                _time = value;
-            }
+            get => _time ?? SPTime.Normal;
+            set => _time = value;
         }
 
         #endregion

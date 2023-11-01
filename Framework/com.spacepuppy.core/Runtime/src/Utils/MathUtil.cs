@@ -732,6 +732,38 @@ namespace com.spacepuppy.Utils
             return value;
         }
 
+
+        public static float Smallest(float a, float b)
+        {
+            return System.Math.Abs(a) <= System.Math.Abs(b) ? a : b;
+        }
+
+        public static double Smallest(double a, double b)
+        {
+            return System.Math.Abs(a) <= System.Math.Abs(b) ? a : b;
+        }
+
+        public static int Smallest(int a, int b)
+        {
+            return System.Math.Abs(a) <= System.Math.Abs(b) ? a : b;
+        }
+
+        public static float Largest(float a, float b)
+        {
+            return System.Math.Abs(a) >= System.Math.Abs(b) ? a : b;
+        }
+
+        public static double Largest(double a, double b)
+        {
+            return System.Math.Abs(a) >= System.Math.Abs(b) ? a : b;
+        }
+
+        public static int Largest(int a, int b)
+        {
+            return System.Math.Abs(a) >= System.Math.Abs(b) ? a : b;
+        }
+
+
         public static float Wrap01(float value)
         {
             return (float)((double)value - Math.Floor((double)value));

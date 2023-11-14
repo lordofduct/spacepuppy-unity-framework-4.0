@@ -41,6 +41,12 @@ namespace com.spacepuppy.UI
 
         #region Properties
 
+        public float ClickDuration
+        {
+            get => _clickDuration;
+            set => _clickDuration = value;
+        }
+
         public SPEvent OnClick => _onClick;
 
         #endregion
@@ -78,10 +84,19 @@ namespace com.spacepuppy.UI
             if (!this.IsActive() || !IsInteractable()) return;
 
             DoStateTransition(SelectionState.Pressed, false);
-            this.Invoke(() =>
+            this.StartCoroutine(this.OnSubmit_DelayedFadeOut(colors.fadeDuration));
+        }
+
+        private System.Collections.IEnumerable OnSubmit_DelayedFadeOut(float duration)
+        {
+            float t = 0f;
+            while (t < duration)
             {
-                DoStateTransition(currentSelectionState, false);
-            }, colors.fadeDuration, SPTime.Real);
+                yield return null;
+                t += SPTime.Real.Delta;
+            }
+
+            DoStateTransition(currentSelectionState, false);
         }
 
         #endregion

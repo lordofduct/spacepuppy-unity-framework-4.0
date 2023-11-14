@@ -9,10 +9,11 @@ namespace com.spacepuppy.Collections
 
         //private const int MAX_SIZE_INBYTES = 1024;
         private const int MAX_SIZE = 256;
+        private const int MIN_SIZE = 8;
 
         #region Fields
 
-        private static ObjectCachePool<TempList<T>> _pool = new ObjectCachePool<TempList<T>>(-1, () => new TempList<T>());
+        private static ObjectCachePool<TempList<T>> _pool = new ObjectCachePool<TempList<T>>(-1, () => new TempList<T>(MIN_SIZE));
 
         private int _maxCapacityOnRelease;
         private int _version;

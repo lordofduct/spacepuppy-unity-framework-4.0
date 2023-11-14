@@ -6,6 +6,7 @@ using System.Linq;
 
 using com.spacepuppy;
 using com.spacepuppy.Utils;
+using com.spacepuppy.Dynamic;
 
 namespace com.spacepuppyeditor.Core
 {
@@ -70,11 +71,11 @@ namespace com.spacepuppyeditor.Core
             {
                 //float objheight = !string.IsNullOrEmpty(property.managedReferenceFullTypename) ? EditorGUI.GetPropertyHeight(property, label, true) + 4f : EditorGUIUtility.singleLineHeight * 2f;
                 float objheight = 0f;
-                if(string.IsNullOrEmpty(property.managedReferenceFieldTypename))
+                if (string.IsNullOrEmpty(property.managedReferenceFieldTypename))
                 {
                     objheight = EditorGUIUtility.singleLineHeight;
                 }
-                else if(property.isExpanded)
+                else if (property.isExpanded)
                 {
                     foreach (var child in property.GetChildren())
                     {
@@ -204,7 +205,23 @@ namespace com.spacepuppyeditor.Core
                 if (index >= 0 && atypes[index] != tp)
                 {
                     tp = atypes[index];
-                    property.managedReferenceValue = tp != null ? System.Activator.CreateInstance(tp) : null;
+                    if (tp != null)
+                    {
+                        var oldobj = property.managedReferenceValue;
+                        var newobj = System.Activator.CreateInstance(tp);
+                        if (oldobj != null)
+                        {
+                            var token = StateToken.GetToken();
+                            token.CopyFrom(oldobj);
+                            token.CopyTo(newobj);
+                            StateToken.ReleaseTempToken(token);
+                        }
+                        property.managedReferenceValue = newobj;
+                    }
+                    else
+                    {
+                        property.managedReferenceValue = null;
+                    }
                     com.spacepuppyeditor.Internal.ScriptAttributeUtility.ResetPropertyHandler(property, true);
                     return true;
                 }
@@ -218,7 +235,7 @@ namespace com.spacepuppyeditor.Core
             if (reftp == null) return null;
 
             TypeInfo info;
-            if(_availableTypes.TryGetValue(reftp, out info))
+            if (_availableTypes.TryGetValue(reftp, out info))
             {
                 return info;
             }

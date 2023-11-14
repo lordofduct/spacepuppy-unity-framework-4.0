@@ -42,7 +42,7 @@ namespace com.spacepuppy.Project
     }
 
     [System.Serializable]
-    public class AssetBundleRef : SerializableInterfaceRef<IAssetSet>
+    public class AssetSetRef : SerializableInterfaceRef<IAssetSet>
     {
 
     }

@@ -893,7 +893,7 @@ namespace com.spacepuppy.Spawn
         private sealed class AssetSetCache
         {
             [SerializeField]
-            private AssetBundleRef _assetSet = new AssetBundleRef();
+            private AssetSetRef _assetSet = new AssetSetRef();
             public IAssetSet AssetSet => _assetSet.Value;
 
             [Tooltip("The starting CacheSize.")]

@@ -2,12 +2,12 @@ using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
 using System.Linq;
-using com.spacepuppy.Project;
-using com.spacepuppy.Utils;
+
 using com.spacepuppy;
 using com.spacepuppy.Collections;
+using com.spacepuppy.Project;
+using com.spacepuppy.Utils;
 using com.spacepuppyeditor.Windows;
-using System.IO;
 
 namespace com.spacepuppyeditor.Core.Project
 {
@@ -160,7 +160,7 @@ namespace com.spacepuppyeditor.Core.Project
                 var targ = this.target as QueryableAssetSet;
                 if (!targ) return;
 
-                var path = Path.GetDirectoryName(AssetDatabase.GetAssetPath(targ));
+                var path = System.IO.Path.GetDirectoryName(AssetDatabase.GetAssetPath(targ));
                 var assetguids = AssetDatabase.FindAssets(GetBestSearchStringForType(_restrictedType), new string[] { path });
                 IEnumerable<UnityEngine.Object> assets;
                 if (TypeUtil.IsType(_restrictedType, typeof(UnityEngine.Object)))

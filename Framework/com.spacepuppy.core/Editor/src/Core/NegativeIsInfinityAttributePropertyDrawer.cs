@@ -17,7 +17,7 @@ namespace com.spacepuppyeditor.Core
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-            const float WIDTH_INFTOGGLE = 55f;
+            const float WIDTH_INFTOGGLE = 62f;
 
             var shortlabel = (this.attribute as NegativeIsInfinityAttribute)?.ShortInfinityLabel;
             var longlabel = (this.attribute as NegativeIsInfinityAttribute)?.InfinityLabel;

@@ -75,7 +75,7 @@ namespace com.spacepuppyeditor
 
         public static bool AssertMultiObjectEditingNotSupportedHeight(SerializedProperty property, GUIContent label, out float height)
         {
-            if (property.hasMultipleDifferentValues)
+            if (property.serializedObject.isEditingMultipleObjects)
             {
                 height = EditorGUIUtility.singleLineHeight;
                 return true;
@@ -87,7 +87,7 @@ namespace com.spacepuppyeditor
 
         public static bool AssertMultiObjectEditingNotSupported(Rect position, SerializedProperty property, GUIContent label)
         {
-            if (property.hasMultipleDifferentValues)
+            if (property.serializedObject.isEditingMultipleObjects)
             {
                 EditorGUI.LabelField(position, label, EditorHelper.TempContent("Multi-Object editing is not supported."));
                 return true;

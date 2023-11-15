@@ -188,6 +188,7 @@ namespace com.spacepuppyeditor.Core
         {
             if (property == null) throw new System.ArgumentNullException(nameof(property));
             if (reftp == null) throw new System.ArgumentNullException(nameof(reftp));
+            if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return false;
 
             var info = GetAvailableTypes(reftp, nulllabel);
             if (info == null) return false;

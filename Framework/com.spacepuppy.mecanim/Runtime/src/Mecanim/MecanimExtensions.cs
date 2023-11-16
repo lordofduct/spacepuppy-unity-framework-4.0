@@ -14,7 +14,7 @@ namespace com.spacepuppy.Mecanim
             if (source is IProxy p)
             {
                 var tps = ArrayUtil.Temp(typeof(IAnimatorOverrideSource), typeof(AnimatorOverrideController));
-                source = p.GetTargetAs_ParamsRespecting(tps);
+                source = p.GetTargetAs(tps);
                 ArrayUtil.ReleaseTemp(tps);
             }
 
@@ -302,7 +302,7 @@ namespace com.spacepuppy.Mecanim
             var tps = ArrayUtil.Temp(typeof(IAnimatorOverrideSource), typeof(AnimatorOverrideController));
             if (respectProxy && overrides is IProxy p)
             {
-                overrides = p.GetTargetAs_ParamsRespecting(tps);
+                overrides = p.GetTargetAs(tps);
             }
             else
             {

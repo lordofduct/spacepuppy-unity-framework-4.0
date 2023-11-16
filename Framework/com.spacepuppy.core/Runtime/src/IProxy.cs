@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using ObjUtil = com.spacepuppy.Utils.ObjUtil;
 using TypeUtil = com.spacepuppy.Utils.TypeUtil;
+using com.spacepuppy.Utils;
 
 namespace com.spacepuppy
 {
@@ -50,7 +51,7 @@ namespace com.spacepuppy
         /// Returns the target. The expected type is only a suggestion to be used to coerce the type if necessary. 
         /// It will still return an object even if it does no match the expectedType.
         /// 
-        /// This method should generally only be called internally by IProxyExnteions, use the GetTarget/GetTargetAs to interact with the IProxy.
+        /// This method should generally only be called internally by IProxyExtensions, use the GetTarget/GetTargetAs to interact with the IProxy.
         /// </summary>
         /// <param name="expectedType">A type to coerce to if the IProxy deems to do so, the result does not necessarily match the expectedType</param>
         /// <param name="arg">An optional argument that may be used by the proxy to lookup/query the target. It's use is specific to the IProxy implementation.</param>
@@ -72,27 +73,27 @@ namespace com.spacepuppy
             return (proxy.Params & ProxyParams.PrioritizeAsTargetFirst) != 0;
         }
 
-        public static object GetTarget(this IProxy proxy)
+        public static object GetTarget_IgnoringParams(this IProxy proxy)
         {
             return proxy.GetTargetInternal(typeof(object), null);
         }
 
-        public static object GetTarget(this IProxy proxy, object arg)
+        public static object GetTarget_IgnoringParams(this IProxy proxy, object arg)
         {
             return proxy.GetTargetInternal(typeof(object), arg);
         }
 
-        public static object GetTargetAs(this IProxy proxy, System.Type tp, object arg = null)
+        public static object GetTargetAs_IgnoringParams(this IProxy proxy, System.Type tp, object arg = null)
         {
             return ObjUtil.GetAsFromSource(tp, proxy.GetTargetInternal(tp, arg));
         }
 
-        public static T GetTargetAs<T>(this IProxy proxy, object arg = null) where T : class
+        public static T GetTargetAs_IgnoringParams<T>(this IProxy proxy, object arg = null) where T : class
         {
             return ObjUtil.GetAsFromSource<T>(proxy.GetTargetInternal(typeof(T), arg));
         }
 
-        public static object GetTarget_ParamsRespecting(this IProxy proxy, object arg = null)
+        public static object GetTarget(this IProxy proxy, object arg = null)
         {
             if ((proxy.Params & ProxyParams.PrioritizeAsTargetFirst) != 0)
             {
@@ -101,7 +102,7 @@ namespace com.spacepuppy
             return proxy.GetTargetInternal(typeof(object), arg);
         }
 
-        public static object GetTargetAs_ParamsRespecting(this IProxy proxy, System.Type tp, object arg = null)
+        public static object GetTargetAs(this IProxy proxy, System.Type tp, object arg = null)
         {
             if ((proxy.Params & ProxyParams.PrioritizeAsTargetFirst) != 0)
             {
@@ -111,14 +112,14 @@ namespace com.spacepuppy
             return ObjUtil.GetAsFromSource(tp, proxy.GetTargetInternal(tp, arg));
         }
 
-        public static object GetTargetAs_ParamsRespecting(this IProxy proxy, System.Type[] types, object arg = null)
+        public static object GetTargetAs(this IProxy proxy, System.Type[] types, object arg = null)
         {
             switch (types.Length)
             {
                 case 0:
-                    return GetTargetAs_ParamsRespecting(proxy, typeof(object), arg);
+                    return GetTargetAs(proxy, typeof(object), arg);
                 case 1:
-                    return GetTargetAs_ParamsRespecting(proxy, types[0] ?? typeof(object), arg);
+                    return GetTargetAs(proxy, types[0] ?? typeof(object), arg);
                 default:
                     {
                         if ((proxy.Params & ProxyParams.PrioritizeAsTargetFirst) != 0)
@@ -132,7 +133,7 @@ namespace com.spacepuppy
             }
         }
 
-        public static T GetTargetAs_ParamsRespecting<T>(this IProxy proxy, object arg) where T : class
+        public static T GetTargetAs<T>(this IProxy proxy, object arg) where T : class
         {
             if ((proxy.Params & ProxyParams.PrioritizeAsTargetFirst) != 0)
             {
@@ -145,28 +146,28 @@ namespace com.spacepuppy
 
         public static object ReduceIfProxy(this object obj)
         {
-            if (obj is IProxy p) return p.GetTarget_ParamsRespecting();
+            if (obj is IProxy p) return p.GetTarget();
 
             return ObjUtil.SanitizeRef(obj);
         }
 
         public static object ReduceIfProxy(this object obj, object arg)
         {
-            if (obj is IProxy p) return p.GetTarget_ParamsRespecting(arg);
+            if (obj is IProxy p) return p.GetTarget(arg);
 
             return ObjUtil.SanitizeRef(obj);
         }
 
         public static object ReduceIfProxyAs(this object obj, System.Type tp)
         {
-            if (obj is IProxy p) return p.GetTargetAs_ParamsRespecting(tp);
+            if (obj is IProxy p) return p.GetTargetAs(tp);
 
             return ObjUtil.SanitizeRef(obj);
         }
 
         public static object ReduceIfProxyAs(this object obj, object arg, System.Type tp)
         {
-            if (obj is IProxy p) return p.GetTargetAs_ParamsRespecting(tp, arg);
+            if (obj is IProxy p) return p.GetTargetAs(tp, arg);
 
             return ObjUtil.SanitizeRef(obj);
         }
@@ -196,11 +197,11 @@ namespace com.spacepuppy
         /// </summary>
         /// <param name="obj"></param>
         /// <returns></returns>
-        public static bool IsProxy(this object obj)
+        public static bool IsProxy_IgnoringParams(this object obj)
         {
             return obj is IProxy;
         }
-        public static bool IsProxy(this object obj, out IProxy proxy)
+        public static bool IsProxy_IgnoringParams(this object obj, out IProxy proxy)
         {
             if (obj is IProxy p)
             {
@@ -219,11 +220,11 @@ namespace com.spacepuppy
         /// </summary>
         /// <param name="obj"></param>
         /// <returns></returns>
-        public static bool IsProxy_ParamsRespecting(this object obj)
+        public static bool IsProxy(this object obj)
         {
             return obj is IProxy p && (p.Params & ProxyParams.PrioritizeAsTargetFirst) == 0;
         }
-        public static bool IsProxy_ParamsRespecting(this object obj, out IProxy proxy)
+        public static bool IsProxy(this object obj, out IProxy proxy)
         {
             if (obj is IProxy p && (p.Params & ProxyParams.PrioritizeAsTargetFirst) == 0)
             {
@@ -294,11 +295,37 @@ namespace com.spacepuppy
 
         public K GetTargetAs<K>() where K : class => ObjUtil.GetAsFromSource<K>(this.ConfiguredTarget, true);
 
+        public T FindTarget()
+        {
+            var result = ObjUtil.GetAsFromSource<T>(this.ConfiguredTarget, true);
+            if (result != null) return result;
+
+            if (!ComponentUtil.IsComponentType(typeof(T))) return null;
+
+            var go = GameObjectUtil.GetGameObjectFromSource(this.ConfiguredTarget, true);
+            if (!go) return null;
+
+            return go.FindComponent<T>();
+        }
+
+        public K FindTargetAs<K>() where K : class
+        {
+            var result = ObjUtil.GetAsFromSource<K>(this.ConfiguredTarget, true);
+            if (result != null) return result;
+
+            if (!ComponentUtil.IsComponentType(typeof(K))) return null;
+
+            var go = GameObjectUtil.GetGameObjectFromSource(this.ConfiguredTarget, true);
+            if (!go) return null;
+
+            return go.FindComponent<K>();
+        }
+
         #endregion
 
         #region IProxy Interface
 
-        ProxyParams IProxy.Params => this.ConfiguredTarget.IsProxy_ParamsRespecting(out IProxy p) ? p.Params : ProxyParams.None;
+        ProxyParams IProxy.Params => this.ConfiguredTarget.IsProxy_IgnoringParams(out IProxy p) ? p.Params : ProxyParams.None;
 
         object IProxy.GetTargetInternal(System.Type expectedType, object arg) => this.GetTarget();
 

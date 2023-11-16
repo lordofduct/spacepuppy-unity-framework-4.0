@@ -50,13 +50,13 @@ namespace com.spacepuppy.Events
                     go = GameObjectUtil.GetGameObjectFromSource(target);
                     if (go == null)
                     {
-                        target = p.GetTarget(incomingarg);
+                        target = p.GetTarget_IgnoringParams(incomingarg);
                         go = GameObjectUtil.GetGameObjectFromSource(target);
                     }
                 }
                 else
                 {
-                    target = p.GetTarget(incomingarg);
+                    target = p.GetTarget_IgnoringParams(incomingarg);
                     go = GameObjectUtil.GetGameObjectFromSource(target);
                 }
             }
@@ -167,7 +167,7 @@ namespace com.spacepuppy.Events
                 }
                 else
                 {
-                    trig = p.GetTarget(incomingarg) as ITriggerable;
+                    trig = p.GetTarget_IgnoringParams(incomingarg) as ITriggerable;
                 }
             }
 
@@ -179,7 +179,7 @@ namespace com.spacepuppy.Events
 
         public void SendMessageToTarget(object target, object incomingarg, string message, object outgoingarg)
         {
-            if (target is IProxy p && (p.Params & ProxyParams.PrioritizeAsTargetFirst) == 0) target = p.GetTarget(incomingarg);
+            if (target is IProxy p) target = p.GetTarget(incomingarg);
 
             var go = GameObjectUtil.GetGameObjectFromSource(target, true);
             if (go != null && message != null)
@@ -208,7 +208,7 @@ namespace com.spacepuppy.Events
 
         public void EnableTarget(object target, object incomingarg, EnableMode mode)
         {
-            if (target is IProxy p && (p.Params & ProxyParams.PrioritizeAsTargetFirst) == 0) target = p.GetTarget(incomingarg);
+            if (target is IProxy p) target = p.GetTarget(incomingarg);
 
             if (target is Component c && IsEnableableComponent(c))
             {
@@ -248,7 +248,7 @@ namespace com.spacepuppy.Events
 
         public void DestroyTarget(object target, object incomingarg)
         {
-            if (target is IProxy p && (p.Params & ProxyParams.PrioritizeAsTargetFirst) == 0) target = p.GetTarget(incomingarg);
+            if (target is IProxy p) target = p.GetTarget(incomingarg);
 
             var go = GameObjectUtil.GetGameObjectFromSource(target);
             if (go != null)

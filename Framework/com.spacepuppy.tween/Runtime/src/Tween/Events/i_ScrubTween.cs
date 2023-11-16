@@ -33,7 +33,7 @@ namespace com.spacepuppy.Tween.Events
         {
             if (!_target) return null;
 
-            var targ = _target.IsProxy_ParamsRespecting() ? (_target as IProxy).GetTarget_ParamsRespecting(arg) : _target;
+            var targ = _target.IsProxy(out IProxy p) ? p.GetTarget(arg) : _target;
             if (_cachedTweener != null && object.ReferenceEquals(_cachedTweener.Target, targ)) return _cachedTweener;
 
             var twn = SPTween.Tween(targ);

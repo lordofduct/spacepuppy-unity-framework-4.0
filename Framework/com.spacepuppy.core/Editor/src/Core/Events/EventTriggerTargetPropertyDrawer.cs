@@ -705,7 +705,7 @@ namespace com.spacepuppyeditor.Events
 
         private static System.Reflection.MemberInfo[] GetCallableMethodsOnTarget(object target, bool respectProxy)
         {
-            var members = target.IsProxy_ParamsRespecting() ?
+            var members = target.IsProxy() ?
                           com.spacepuppy.Dynamic.DynamicUtil.GetEasilySerializedMembersFromType((target as IProxy).GetTargetType(), System.Reflection.MemberTypes.All, spacepuppy.Dynamic.DynamicMemberAccess.Write).ToArray() :
                           com.spacepuppy.Dynamic.DynamicUtil.GetEasilySerializedMembers(target, System.Reflection.MemberTypes.All, spacepuppy.Dynamic.DynamicMemberAccess.Write).ToArray();
             System.Array.Sort(members, (a, b) => string.Compare(a.Name, b.Name, true));

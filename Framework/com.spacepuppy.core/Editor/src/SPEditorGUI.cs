@@ -1598,7 +1598,7 @@ namespace com.spacepuppyeditor
         /// </summary>
         public static string ReflectedPropertyField(Rect position, GUIContent label, object targObj, string selectedMemberName, DynamicMemberAccess access, out System.Reflection.MemberInfo selectedMember, bool allowSetterMethods = false)
         {
-            if (targObj is IDynamic || targObj.IsProxy_ParamsRespecting())
+            if (targObj is IDynamic || targObj.IsProxy())
             {
                 var mask = allowSetterMethods ? System.Reflection.MemberTypes.Field | System.Reflection.MemberTypes.Property | System.Reflection.MemberTypes.Method : System.Reflection.MemberTypes.Field | System.Reflection.MemberTypes.Property;
                 System.Reflection.MemberInfo[] members = null;

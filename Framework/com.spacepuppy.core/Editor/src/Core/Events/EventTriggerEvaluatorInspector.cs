@@ -44,7 +44,7 @@ namespace com.spacepuppyeditor.Events
             {
                 if(!wastriggercall || !(obj is ITriggerable))
                 {
-                    obj = p.GetTarget(incomingarg);
+                    obj = p.GetTarget_IgnoringParams(incomingarg);
                 }
             }
 

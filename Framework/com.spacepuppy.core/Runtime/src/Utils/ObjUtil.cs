@@ -725,7 +725,7 @@ namespace com.spacepuppy.Utils
                 if (Application.isPlaying || (p.Params & ProxyParams.QueriesTarget) == 0) return ObjUtil.IsType(p.GetTarget(), tp);
                 return false;
 #else
-                return ObjUtil.IsType(p.GetTarget(), tp);
+                return ObjUtil.IsType(p.GetTarget_ParamsRespecting(), tp);
 #endif
             }
             else

@@ -389,7 +389,7 @@ namespace com.spacepuppyeditor.Core.Events
             const System.Reflection.MemberTypes MASK = System.Reflection.MemberTypes.Field | System.Reflection.MemberTypes.Property | System.Reflection.MemberTypes.Method;
             const DynamicMemberAccess ACCESS = DynamicMemberAccess.Read;
 
-            var e = o is IDynamic ? DynamicUtil.GetMembers(o, false, MASK) : DynamicUtil.GetMembersFromType((o.IsProxy_ParamsRespecting() ? (o as IProxy).GetTargetType() : o.GetType()), false, MASK);
+            var e = o is IDynamic ? DynamicUtil.GetMembers(o, false, MASK) : DynamicUtil.GetMembersFromType((o.IsProxy() ? (o as IProxy).GetTargetType() : o.GetType()), false, MASK);
             return e.Where(m =>
             {
                 if (m.IsObsolete()) return false;

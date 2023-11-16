@@ -328,7 +328,7 @@ namespace com.spacepuppyeditor.Core
 
                 IEnumerable<MemberInfo> GetMembersFromTarget(object o)
                 {
-                    var e = o is IDynamic ? DynamicUtil.GetMembers(o, false, MASK) : DynamicUtil.GetMembersFromType((o.IsProxy_ParamsRespecting() ? (o as IProxy).GetTargetType() : o.GetType()), false, MASK);
+                    var e = o is IDynamic ? DynamicUtil.GetMembers(o, false, MASK) : DynamicUtil.GetMembersFromType((o.IsProxy() ? (o as IProxy).GetTargetType() : o.GetType()), false, MASK);
                     return e.Where(o =>
                     {
                         if (o is MethodInfo mi)
@@ -354,7 +354,7 @@ namespace com.spacepuppyeditor.Core
                                        select (o, m)).ToArray();
                         var entries = members.Select(t =>
                         {
-                            if (t.o.IsProxy_ParamsRespecting())
+                            if (t.o.IsProxy())
                             {
                                 return EditorHelper.TempContent(string.Format("{0} [{1}]/{2} [{3}]", go.name, t.o.GetType().Name, t.m.Name, DynamicUtil.GetReturnType(t.m).Name));
                             }
@@ -400,7 +400,7 @@ namespace com.spacepuppyeditor.Core
                     var members = GetMembersFromTarget(targObj).Where(m => DynamicUtil.GetMemberAccessLevel(m).HasFlag(ACCESS) && !m.IsObsolete()).ToArray();
                     var entries = members.Select(m =>
                     {
-                        if (targObj.IsProxy_ParamsRespecting())
+                        if (targObj.IsProxy())
                         {
                             return EditorHelper.TempContent(string.Format("{0} [{1}].{2} [{3}]", targObj.name, targObj.GetType().Name, m.Name, DynamicUtil.GetReturnType(m).Name));
                         }

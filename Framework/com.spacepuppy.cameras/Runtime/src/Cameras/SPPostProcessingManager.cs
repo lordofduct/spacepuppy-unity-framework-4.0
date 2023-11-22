@@ -308,7 +308,7 @@ namespace com.spacepuppy.Cameras
 
         }
 
-        private class GlobalEffectCamera : MonoBehaviour, ICamera
+        private class GlobalEffectCamera : MonoBehaviour, ICamera, INameable
         {
 
             #region Fields
@@ -319,11 +319,6 @@ namespace com.spacepuppy.Cameras
             #endregion
 
             #region CONSTRUCTOR
-
-            public GlobalEffectCamera()
-            {
-                _nameCache = new NameCache.UnityObjectNameCache(this);
-            }
 
             private void Awake()
             {
@@ -389,25 +384,18 @@ namespace com.spacepuppy.Cameras
 
             #region INameable Interface
 
-            private NameCache.UnityObjectNameCache _nameCache;
             public new string name
             {
-                get { return _nameCache.Name; }
-                set { _nameCache.Name = value; }
+                get => NameCache.GetCachedName(this.gameObject);
+                set => NameCache.SetCachedName(this.gameObject, value);
             }
             string INameable.Name
             {
-                get { return _nameCache.Name; }
-                set { _nameCache.Name = value; }
+                get => NameCache.GetCachedName(this.gameObject);
+                set => NameCache.SetCachedName(this.gameObject, value);
             }
-            public bool CompareName(string nm)
-            {
-                return _nameCache.CompareName(nm);
-            }
-            void INameable.SetDirty()
-            {
-                _nameCache.SetDirty();
-            }
+            public bool CompareName(string nm) => this.gameObject.CompareName(nm);
+            void INameable.SetDirty() => NameCache.SetDirty(this.gameObject);
 
             #endregion
 

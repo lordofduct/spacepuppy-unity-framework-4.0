@@ -41,11 +41,6 @@ namespace com.spacepuppy
 
         #region CONSTRUCTOR
 
-        public SPEntity()
-        {
-            _nameCache = new NameCache.UnityObjectNameCache(this);
-        }
-
         protected override void Awake()
         {
             this.AddTag(SPConstants.TAG_ROOT);
@@ -78,30 +73,6 @@ namespace com.spacepuppy
 
         public bool IsAwake { get { return _isAwake; } }
         
-        #endregion
-
-        #region INameable Interface
-
-        private NameCache.UnityObjectNameCache _nameCache;
-        public new string name
-        {
-            get { return _nameCache.Name; }
-            set { _nameCache.Name = value; }
-        }
-        string INameable.Name
-        {
-            get { return _nameCache.Name; }
-            set { _nameCache.Name = value; }
-        }
-        public bool CompareName(string nm)
-        {
-            return _nameCache.CompareName(nm);
-        }
-        void INameable.SetDirty()
-        {
-            _nameCache.SetDirty();
-        }
-
         #endregion
 
         #region Special Types

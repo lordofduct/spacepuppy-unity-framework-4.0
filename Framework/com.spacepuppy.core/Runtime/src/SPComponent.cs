@@ -12,7 +12,7 @@ namespace com.spacepuppy
     /// 
     /// All scripts that are intended to work in tandem with Spacepuppy Unity Framework should inherit from this instead of MonoBehaviour.
     /// </summary>
-    public abstract class SPComponent : MonoBehaviour, IEventfulComponent, ISPDisposable
+    public abstract class SPComponent : MonoBehaviour, IEventfulComponent, ISPDisposable, INameable
     {
 
         #region Events
@@ -25,7 +25,7 @@ namespace com.spacepuppy
         #endregion
 
         #region Fields
-        
+
         [System.NonSerialized]
         private List<IMixin> _mixins;
 
@@ -45,12 +45,12 @@ namespace com.spacepuppy
             {
                 this.OnStarted?.Invoke(this, System.EventArgs.Empty);
             }
-            catch(System.Exception ex)
+            catch (System.Exception ex)
             {
                 Debug.LogException(ex);
             }
         }
-        
+
         protected virtual void OnEnable()
         {
             try
@@ -74,7 +74,7 @@ namespace com.spacepuppy
                 Debug.LogException(ex);
             }
         }
-        
+
         protected virtual void OnDestroy()
         {
             try
@@ -103,9 +103,9 @@ namespace com.spacepuppy
         protected void RegisterMixins(IEnumerable<IMixin> mixins)
         {
             if (mixins == null) throw new System.ArgumentNullException(nameof(mixins));
-            foreach(var mixin in mixins)
+            foreach (var mixin in mixins)
             {
-                if(mixin.Awake(this))
+                if (mixin.Awake(this))
                 {
                     (_mixins = _mixins ?? new List<IMixin>()).Add(mixin);
                 }
@@ -116,7 +116,7 @@ namespace com.spacepuppy
         {
             if (mixin == null) throw new System.ArgumentNullException(nameof(mixin));
 
-            if(mixin.Awake(this))
+            if (mixin.Awake(this))
             {
                 (_mixins = _mixins ?? new List<IMixin>()).Add(mixin);
             }
@@ -181,6 +181,23 @@ namespace com.spacepuppy
         {
             ObjUtil.SmartDestroy(this);
         }
+
+        #endregion
+
+        #region INameable Interface
+
+        public new string name
+        {
+            get => NameCache.GetCachedName(this.gameObject);
+            set => NameCache.SetCachedName(this.gameObject, value);
+        }
+        string INameable.Name
+        {
+            get => NameCache.GetCachedName(this.gameObject);
+            set => NameCache.SetCachedName(this.gameObject, value);
+        }
+        public bool CompareName(string nm) => this.gameObject.CompareName(nm);
+        void INameable.SetDirty() => NameCache.SetDirty(this.gameObject);
 
         #endregion
 

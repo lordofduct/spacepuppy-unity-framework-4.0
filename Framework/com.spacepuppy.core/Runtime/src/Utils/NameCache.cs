@@ -38,6 +38,8 @@ namespace com.spacepuppy.Utils
             return obj.name == name;
         }
 
+        public static bool CompareName(this GameObject go, string name) => go ? go.AddOrGetComponent<GameObjectNameCache>().CompareName(name) : false;
+
         public static string GetCachedName(UnityEngine.Object obj)
         {
             if (obj == null) return null;
@@ -60,6 +62,22 @@ namespace com.spacepuppy.Utils
             if (go != null) return go.AddOrGetComponent<GameObjectNameCache>().Name;
 
             return obj.name;
+        }
+
+        public static string GetCachedName(GameObject go) => go ? go.AddOrGetComponent<GameObjectNameCache>().Name : string.Empty;
+
+        public static void SetCachedName(GameObject go, string name)
+        {
+            if (!go) return;
+
+            if (go.GetComponent<GameObjectNameCache>(out GameObjectNameCache cache))
+            {
+                cache.Name = name;
+            }
+            else
+            {
+                go.name = name;
+            }
         }
 
         /// <summary>
@@ -88,6 +106,10 @@ namespace com.spacepuppy.Utils
             }
         }
 
+        public static void SetDirty(GameObject go)
+        {
+            if (go && go.GetComponent(out GameObjectNameCache cache)) cache.SetDirty();
+        }
 
 
         #region Special Types

@@ -8,6 +8,7 @@ using com.spacepuppy;
 using com.spacepuppy.Dynamic;
 using com.spacepuppy.Events;
 using com.spacepuppy.Utils;
+using UnityEngine.Rendering.VirtualTexturing;
 
 namespace com.spacepuppyeditor.Core.Events
 {
@@ -18,7 +19,7 @@ namespace com.spacepuppyeditor.Core.Events
 
         private enum PrettyResolveByCommand
         {
-            Nothing = SearchBy.Nothing,
+            Member = SearchBy.Nothing,
             WithTag = SearchBy.Tag,
             WithName = SearchBy.Name,
             WithType = SearchBy.Type
@@ -135,7 +136,8 @@ namespace com.spacepuppyeditor.Core.Events
             if (EditorHelper.AssertMultiObjectEditingNotSupportedHeight(property, label, out float h)) return h;
             this.Init(property);
 
-            if (this.AlwaysExpanded || property.isExpanded)
+            bool isConfiguredAsMember = this.IsConfiguredAsMemberGetter(property, out _);
+            if (this.AlwaysExpanded || property.isExpanded || isConfiguredAsMember)
             {
                 return EditorGUIUtility.singleLineHeight * 2f;
             }
@@ -161,12 +163,15 @@ namespace com.spacepuppyeditor.Core.Events
 
             var prefixRect = new Rect(position.xMin, position.yMin, Mathf.Max(0f, EditorGUIUtility.labelWidth - LEN_TARGETSOURCE), EditorGUIUtility.singleLineHeight);
             var rect = new Rect(prefixRect.xMax, position.yMin, position.width - prefixRect.width, EditorGUIUtility.singleLineHeight);
-            if (!this.AlwaysExpanded)
+            bool isConfiguredAsMember = this.IsConfiguredAsMemberGetter(property, out _);
+
+            if (!this.AlwaysExpanded && !isConfiguredAsMember)
             {
                 property.isExpanded = EditorGUI.Foldout(prefixRect, property.isExpanded, label);
             }
             else
             {
+                property.isExpanded = true;
                 EditorGUI.LabelField(prefixRect, label);
             }
 
@@ -176,7 +181,7 @@ namespace com.spacepuppyeditor.Core.Events
 
             //################################
             //SECOND LINE
-            if (this.AlwaysExpanded || property.isExpanded)
+            if (this.AlwaysExpanded || property.isExpanded || isConfiguredAsMember)
             {
                 var indent = Mathf.Max(0f, EditorGUIUtility.labelWidth - LEN_FINDCOMMAND);
                 rect = new Rect(position.xMin + indent, position.yMin + EditorGUIUtility.singleLineHeight, Mathf.Max(0f, position.width - indent), EditorGUIUtility.singleLineHeight);
@@ -215,7 +220,7 @@ namespace com.spacepuppyeditor.Core.Events
 
                 switch (e1)
                 {
-                    case PrettyResolveByCommand.Nothing:
+                    case PrettyResolveByCommand.Member: //same as Nothing
                         if (e0 != TriggerableTargetObject.FindCommand.Direct || targetProp.objectReferenceValue == null)
                         {
                             var cache = SPGUI.Disable();
@@ -277,6 +282,7 @@ namespace com.spacepuppyeditor.Core.Events
                 UpdateTargetFromSource(targetProp, e);
                 configProp.boolValue = (e != TargetSource.Arg);
                 if (e != TargetSource.Arg) findProp.SetEnumValue(TriggerableTargetObject.FindCommand.Direct);
+                if (this.IsConfiguredAsMemberGetter(property, out _)) property.FindPropertyRelative(PROP_QUERY).stringValue = string.Empty;
             }
             else if (e == TargetSource.Config && !_defaultSet && targetProp.objectReferenceValue == null)
             {
@@ -324,7 +330,13 @@ namespace com.spacepuppyeditor.Core.Events
             }
             else
             {
+                EditorGUI.BeginChangeCheck();
+                var old = targetProp.objectReferenceValue;
                 _objectDrawer.OnGUI(r1, targetProp, GUIContent.none);
+                if (EditorGUI.EndChangeCheck() && old != targetProp.objectReferenceValue && IsConfiguredAsMemberGetter(property, out _))
+                {
+                    property.FindPropertyRelative(PROP_QUERY).stringValue = string.Empty;
+                }
             }
 
             return new Rect(r1.xMax, r1.yMin, 0f, r1.height);
@@ -334,6 +346,23 @@ namespace com.spacepuppyeditor.Core.Events
 
 
         #region Utils
+
+        protected bool IsConfiguredAsMemberGetter(SerializedProperty property, out string memberName)
+        {
+            memberName = string.Empty;
+            var findProp = property.FindPropertyRelative(PROP_FIND);
+            var resolveByProp = property.FindPropertyRelative(PROP_RESOLVEBY);
+            var queryProp = property.FindPropertyRelative(PROP_QUERY);
+            if (findProp.GetEnumValue<TriggerableTargetObject.FindCommand>() == TriggerableTargetObject.FindCommand.Direct &&
+                resolveByProp.GetEnumValue<SearchBy>() == SearchBy.Nothing &&
+                !string.IsNullOrEmpty(queryProp.stringValue))
+            {
+                memberName = queryProp.stringValue;
+                return true;
+            }
+
+            return false;
+        }
 
         protected void UpdateTargetFromSource(SerializedProperty property, TargetSource esrc)
         {
@@ -407,7 +436,7 @@ namespace com.spacepuppyeditor.Core.Events
                         return false;
                 }
             });
-            //return o is IDynamic ? DynamicUtil.GetEasilySerializedMembers(o) : DynamicUtil.GetEasilySerializedMembersFromType((o.IsProxy_ParamsRespecting() ? (o as IProxy).GetTargetType() : o.GetType()));
+            //return o is IDynamic ? DynamicUtil.GetEasilySerializedMembers(o) : DynamicUtil.GetEasilySerializedMembersFromType((o.IsProxy() ? (o as IProxy).GetTargetType() : o.GetType()));
         }
 
         public static void ResetTriggerableTargetObjectTarget(SerializedProperty prop)

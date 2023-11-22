@@ -8,7 +8,7 @@ using com.spacepuppy.Events;
 namespace com.spacepuppy
 {
 
-    [Infobox("Assigns 'target' as the proxy target of a ProxyMediator. Anything referencing ProxyMediator as a source will receive this target.")]
+    [Infobox("Assigns 'target' as the proxy target of a ProxyMediator. Anything referencing ProxyMediator as a source will receive this target.\r\nIf 'TriggerMediatorOnSync' is true, the trigger arg is daisy chained.")]
     public sealed class i_SyncProxyMediator : AutoTriggerable
     {
 
@@ -20,7 +20,7 @@ namespace com.spacepuppy
         private ProxyMediator _mediator;
 
         [SerializeField]
-        private VariantReference _target = new VariantReference();
+        private TriggerableTargetObject _target = new TriggerableTargetObject();
 
         [SerializeField]
         private bool _triggerMediatorOnSync;
@@ -29,7 +29,7 @@ namespace com.spacepuppy
 
         #region Properties
 
-        public VariantReference Target
+        public TriggerableTargetObject Target
         {
             get => _target;
             set => _target = value;
@@ -51,12 +51,13 @@ namespace com.spacepuppy
 
         #region Methods
 
-        public void Sync()
+        public void Sync() => this.Sync(null);
+        public void Sync(object arg)
         {
             if (_mediator)
             {
-                _mediator.SetProxyTarget(IProxyExtensions.ReduceIfProxy(_target.Value));
-                if (_triggerMediatorOnSync) _mediator.Trigger(this, null);
+                _mediator.SetProxyTarget(IProxyExtensions.ReduceIfProxy(_target.GetTarget(typeof(object), arg)));
+                if (_triggerMediatorOnSync) _mediator.Trigger(this, arg);
             }
         }
 
@@ -68,7 +69,7 @@ namespace com.spacepuppy
         {
             if (!this.CanTrigger) return false;
 
-            this.Sync();
+            this.Sync(arg);
             return true;
         }
 

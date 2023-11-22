@@ -129,6 +129,13 @@ namespace com.spacepuppy
         [SerializeField]
         private bool _passAlongTriggerArgWhenTrigger = false;
 
+#if UNITY_2021_2_OR_NEWER && UNITY_EDITOR
+        [SerializeField]
+        [Tooltip("A description of the use of this ProxyMediator that only shows in editor")]
+        [TextArea(3, 20)]
+        private string _editorDescription;
+#endif
+
         [System.NonSerialized]
         private bool _initialized;
 

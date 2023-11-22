@@ -39,6 +39,12 @@ namespace com.spacepuppy.UI
             set => StringUtil.TrySetText(_target, value);
         }
 
+        public Color color
+        {
+            get => StringUtil.TryGetColor(_target);
+            set => StringUtil.TrySetColor(_target, value);
+        }
+
         #endregion
 
         #region Methods

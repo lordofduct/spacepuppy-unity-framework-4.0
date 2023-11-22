@@ -224,4 +224,9 @@ namespace com.spacepuppy.Collections
 
     }
 
+#if UNITY_2021_1_OR_NEWER
+    [System.Serializable]
+    public class SerializableDictionary<TKey, TValue> : SerializableDictionaryBase<TKey, TValue> { }
+#endif
+
 }

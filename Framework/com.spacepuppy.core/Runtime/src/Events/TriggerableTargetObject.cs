@@ -719,6 +719,8 @@ namespace com.spacepuppy.Events
             public bool DefaultFromSelf;
             public bool AlwaysExpanded;
 
+            public ConfigAttribute() { }
+
             public ConfigAttribute(System.Type targetType)
             {
                 //if (targetType == null || 

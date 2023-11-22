@@ -23,6 +23,9 @@ namespace com.spacepuppy.Events
         [SerializeField]
         private ProxyMediator _mediator;
 
+        [SerializeField]
+        private bool _useProxyMediatorAsDaisyChainedArg;
+
         #region CONSTRUCTOR
 
         protected override void OnEnable()
@@ -91,7 +94,7 @@ namespace com.spacepuppy.Events
         }
         protected virtual void ReceivedMediatorTriggeredMessage(object sender, TempEventArgs e)
         {
-            _trigger.ActivateTrigger(this, e.Value);
+            _trigger.ActivateTrigger(this, _useProxyMediatorAsDaisyChainedArg ? _mediator : e?.Value);
         }
 
         #endregion

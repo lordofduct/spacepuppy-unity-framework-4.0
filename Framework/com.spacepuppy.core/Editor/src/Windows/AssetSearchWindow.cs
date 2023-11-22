@@ -41,23 +41,21 @@ namespace com.spacepuppyeditor.Windows
         private UnityEngine.Object _target;
         private string _codePath = "Code";
 
-        private StringBuilder _statusOutput = new StringBuilder();
-        private StringBuilder _output = new StringBuilder();
-        private List<(string, UnityEngine.Object)> _outputRefs = new List<(string, UnityEngine.Object)>();
+        private AssetSearchQuery _query = new AssetSearchQuery();
         private Vector2 _scrollPos;
-
-        private CancellationTokenSource _cancellationTokenSource;
 
         private void OnEnable()
         {
             _scrollPos = Vector2.zero;
             _dataPath = Application.dataPath;
             this.titleContent = new GUIContent("Spacepuppy Asset Search...");
+            _query.StatusUpdated += (s,e) => this.Repaint();
+            _query.Completed += (s, e) => this.Repaint();
         }
 
         private void OnInspectorUpdate()
         {
-            if (_cancellationTokenSource != null)
+            if (_query.IsProcessing)
             {
                 this.Repaint();
             }
@@ -66,37 +64,50 @@ namespace com.spacepuppyeditor.Windows
         private void OnGUI()
         {
             var cache = GUI.enabled;
-            GUI.enabled = _cancellationTokenSource == null;
+            GUI.enabled = !_query.IsProcessing;
             _target = EditorGUILayout.ObjectField("Target", _target, typeof(UnityEngine.Object), false);
             _codePath = EditorGUILayout.TextField("Code Folder", _codePath);
 
             EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button("Search for unreferenced scripts", GUILayout.Width(200f)))
             {
-                _ = this.SearchForScripts(false);
+                _query.CodePath = _codePath;
+                _ = _query.SearchForScripts(false);
             }
             if (GUILayout.Button("Search for referenced scripts", GUILayout.Width(200f)))
             {
-                _ = this.SearchForScripts(true);
+                _query.CodePath = _codePath;
+                _ = _query.SearchForScripts(true);
             }
 
             if (_target != null)
             {
                 if (GUILayout.Button("Search Everything For Target", GUILayout.Width(200f)))
                 {
-                    _ = this.SearchEverythingForTargetAsset(_target != null ? AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(_target)) : null);
+                    _query.CodePath = _codePath;
+                    _ = _query.SearchEverythingForTargetAsset(_target);
                 }
             }
+
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("Force Reserialize Assets"))
+            {
+                if (EditorUtility.DisplayDialog("Caution", "This will force all assets to be reserialized, this takes a long time and touches everything. Do not continue unless you are certain this is what you want to do.", "Continue", "Cancel"))
+                {
+                    AssetDatabase.ForceReserializeAssets();
+                }
+            }
+
             GUI.enabled = cache;
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.LabelField("Output:");
             //EditorGUILayout.HelpBox(_output.ToString(), MessageType.None);
             _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos);
-            if (_outputRefs.Count > 0)
+            if (_query.OutputRefs.Count > 0)
             {
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox, GUILayout.ExpandHeight(true));
-                foreach (var pair in _outputRefs)
+                foreach (var pair in _query.OutputRefs)
                 {
                     //EditorGUILayout.ObjectField(pair.Item2, typeof(UnityEngine.Object), false);
                     if (GUILayout.Button(pair.Item1, EditorStyles.label))
@@ -108,147 +119,198 @@ namespace com.spacepuppyeditor.Windows
             }
             else
             {
-                EditorGUILayout.SelectableLabel(_output.ToString(), EditorStyles.helpBox, GUILayout.ExpandHeight(true));
+                EditorGUILayout.SelectableLabel(_query.Output.ToString(), EditorStyles.helpBox, GUILayout.ExpandHeight(true));
             }
             EditorGUILayout.EndScrollView();
 
 
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("Status:", GUILayout.Width(45f));
-            EditorGUILayout.SelectableLabel(_statusOutput.ToString(), EditorStyles.helpBox, GUILayout.ExpandWidth(true), GUILayout.Height(20f));
-            if (_cancellationTokenSource != null)
+            EditorGUILayout.SelectableLabel(_query.CurrentStatus, EditorStyles.helpBox, GUILayout.ExpandWidth(true), GUILayout.Height(20f));
+            if (_query.IsProcessing)
             {
                 if (GUILayout.Button("Cancel", GUILayout.Width(50f)))
                 {
-                    _cancellationTokenSource.Cancel();
+                    _query.Cancel();
                 }
             }
             else
             {
                 if (GUILayout.Button("Clear", GUILayout.Width(50f)))
                 {
-                    _output.Clear();
-                    _outputRefs.Clear();
-                    _statusOutput.Clear();
+                    _query.Clear();
                     this.Repaint();
                 }
             }
             EditorGUILayout.EndHorizontal();
         }
 
-        void UpdateStatus(string msg)
-        {
-            _statusOutput.Clear();
-            _statusOutput.Append(msg);
-        }
+        #endregion
 
-        private async Task SearchForScripts(bool inuse)
-        {
-            if (_cancellationTokenSource != null) return;
+        #region Special Types
 
-            try
+        public class AssetSearchQuery
+        {
+
+            public event System.EventHandler StatusUpdated;
+            public event System.EventHandler Completed;
+
+            #region Fields/Properties
+
+            private CancellationTokenSource _cancellationTokenSource;
+
+            private StringBuilder _output = new StringBuilder();
+            private List<(string, UnityEngine.Object)> _outputRefs = new List<(string, UnityEngine.Object)>();
+
+            public string CodePath { get; set; } = "Code";
+
+            public bool IsProcessing => _cancellationTokenSource != null;
+
+            public string CurrentStatus { get; private set; } = string.Empty;
+
+            public StringBuilder Output => _output;
+
+            public IReadOnlyList<(string, UnityEngine.Object)> OutputRefs => _outputRefs;
+
+            #endregion
+
+            public void Cancel()
             {
-                _cancellationTokenSource = new CancellationTokenSource();
+                _cancellationTokenSource?.Cancel();
+            }
+
+            public void Clear()
+            {
+                if (this.IsProcessing) return; //can't clear if running
+
                 _output.Clear();
                 _outputRefs.Clear();
+                this.CurrentStatus = string.Empty;
+            }
 
-                string[] guids = AssetDatabase.FindAssets("t:script", new string[] { "Assets/" + _codePath });
-                foreach (var guid in guids)
+            public async Task SearchForScripts(bool inuse)
+            {
+                if (_cancellationTokenSource != null) return;
+
+                try
                 {
-                    if (_cancellationTokenSource.Token.IsCancellationRequested) return;
+                    _cancellationTokenSource = new CancellationTokenSource();
+                    _output.Clear();
+                    _outputRefs.Clear();
 
-                    var path = AssetDatabase.GUIDToAssetPath(guid);
-                    UpdateStatus("Processing: " + path);
+                    string[] guids = AssetDatabase.FindAssets("t:script", new string[] { "Assets/" + this.CodePath });
+                    foreach (var guid in guids)
+                    {
+                        if (_cancellationTokenSource.Token.IsCancellationRequested) return;
 
+                        var path = AssetDatabase.GUIDToAssetPath(guid);
+                        OnStatusUpdated("Processing: " + path);
+
+                        await Task.Run(() =>
+                        {
+                            var fn = Path.GetFileNameWithoutExtension(path);
+                            var tp = TypeUtil.FindType(fn);
+                            if (tp == null || !TypeUtil.IsType(tp, typeof(MonoBehaviour)))
+                            {
+                                return;
+                            }
+
+                            if (FindRefs(guid).Any() == inuse)
+                            {
+                                _output.AppendLine(path);
+                                _outputRefs.Add((path, AssetDatabase.LoadAssetAtPath(path, typeof(MonoBehaviour))));
+                            }
+                        }, _cancellationTokenSource.Token);
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    OnStatusUpdated("ERROR: " + ex.Message);
+                }
+                finally
+                {
+                    _cancellationTokenSource = null;
+                    OnStatusUpdated(string.Empty);
+                    this.OnCompleted();
+                }
+            }
+
+            public Task SearchEverythingForTargetAsset(UnityEngine.Object target) => SearchEverythingForTargetAsset(target != null ? AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(target)) : null);
+
+            public async Task SearchEverythingForTargetAsset(string guid)
+            {
+                if (_cancellationTokenSource != null) return;
+
+                if (string.IsNullOrEmpty(guid))
+                {
+                    _output.Clear();
+                    _outputRefs.Clear();
+                    _output.AppendLine("Select a target to search for...");
+                    return;
+                }
+
+                try
+                {
+                    _cancellationTokenSource = new CancellationTokenSource();
+                    _output.Clear();
+                    _outputRefs.Clear();
+                    OnStatusUpdated("Processing...");
+
+                    string[] paths = ArrayUtil.Empty<string>();
                     await Task.Run(() =>
                     {
-                        var fn = Path.GetFileNameWithoutExtension(path);
-                        var tp = TypeUtil.FindType(fn);
-                        if (tp == null || !TypeUtil.IsType(tp, typeof(MonoBehaviour)))
-                        {
-                            return;
-                        }
-
-                        if (FindRefs(guid).Any() == inuse)
-                        {
-                            _output.AppendLine(path);
-                            _outputRefs.Add((path, AssetDatabase.LoadAssetAtPath(path, typeof(MonoBehaviour))));
-                        }
+                        paths = FindRefs(guid).ToArray();
                     }, _cancellationTokenSource.Token);
+
+                    if (_cancellationTokenSource.Token.IsCancellationRequested) return;
+
+                    _output.Clear();
+                    _outputRefs.Clear();
+                    foreach (var path in paths)
+                    {
+                        _output.AppendLine(path);
+
+                        var apath = path.Substring(_dataPath.Length - 6);
+                        _outputRefs.Add((apath, AssetDatabase.LoadAssetAtPath(apath, typeof(UnityEngine.Object))));
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    OnStatusUpdated("ERROR: " + ex.Message);
+                }
+                finally
+                {
+                    _cancellationTokenSource = null;
+                    OnStatusUpdated("");
+                    this.OnCompleted();
                 }
             }
-            catch (System.Exception ex)
-            {
-                UpdateStatus("ERROR: " + ex.Message);
-            }
-            finally
-            {
-                _cancellationTokenSource = null;
-                UpdateStatus("");
-                this.Repaint();
-            }
-        }
 
-        private async Task SearchEverythingForTargetAsset(string guid)
-        {
-            if (_cancellationTokenSource != null) return;
-
-            if (string.IsNullOrEmpty(guid))
+            void OnStatusUpdated(string msg)
             {
-                _output.Clear();
-                _outputRefs.Clear();
-                _output.AppendLine("Select a target to search for...");
-                return;
+                this.CurrentStatus = msg;
+                this.StatusUpdated?.Invoke(this, System.EventArgs.Empty);
             }
 
-            try
+            void OnCompleted()
             {
-                _cancellationTokenSource = new CancellationTokenSource();
-                _output.Clear();
-                _outputRefs.Clear();
-                UpdateStatus("Processing...");
-
-                string[] paths = ArrayUtil.Empty<string>();
-                await Task.Run(() =>
-                {
-                    paths = FindRefs(guid).ToArray();
-                }, _cancellationTokenSource.Token);
-
-                if (_cancellationTokenSource.Token.IsCancellationRequested) return;
-
-                _output.Clear();
-                _outputRefs.Clear();
-                foreach (var path in paths)
-                {
-                    _output.AppendLine(path);
-
-                    var apath = path.Substring(_dataPath.Length - 6);
-                    _outputRefs.Add((apath, AssetDatabase.LoadAssetAtPath(apath, typeof(UnityEngine.Object))));
-                }
+                this.Completed?.Invoke(this, System.EventArgs.Empty);
             }
-            catch (System.Exception ex)
+
+            static IEnumerable<string> FindRefs(string guid)
             {
-                UpdateStatus("ERROR: " + ex.Message);
+                if (string.IsNullOrEmpty(guid)) return Enumerable.Empty<string>();
+
+                var files = System.IO.Directory.EnumerateFiles(_dataPath, "*.unity", System.IO.SearchOption.AllDirectories)
+                            .Union(System.IO.Directory.EnumerateFiles(_dataPath, "*.prefab", System.IO.SearchOption.AllDirectories))
+                            .Union(System.IO.Directory.EnumerateFiles(_dataPath, "*.asset", System.IO.SearchOption.AllDirectories));
+
+                return from file in files.AsParallel().AsOrdered().WithMergeOptions(ParallelMergeOptions.NotBuffered)
+                       where File.ReadLines(file).Any(line => line.Contains(guid))
+                       select file;
             }
-            finally
-            {
-                _cancellationTokenSource = null;
-                UpdateStatus("");
-                this.Repaint();
-            }
-        }
 
-        static IEnumerable<string> FindRefs(string guid)
-        {
-            if (string.IsNullOrEmpty(guid)) return Enumerable.Empty<string>();
 
-            var files = System.IO.Directory.EnumerateFiles(_dataPath, "*.unity", System.IO.SearchOption.AllDirectories)
-                        .Union(System.IO.Directory.EnumerateFiles(_dataPath, "*.prefab", System.IO.SearchOption.AllDirectories))
-                        .Union(System.IO.Directory.EnumerateFiles(_dataPath, "*.asset", System.IO.SearchOption.AllDirectories));
-
-            return from file in files.AsParallel().AsOrdered().WithMergeOptions(ParallelMergeOptions.NotBuffered)
-                   where File.ReadLines(file).Any(line => line.Contains(guid))
-                   select file;
         }
 
         #endregion

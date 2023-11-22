@@ -3,8 +3,6 @@ using System.Collections.Generic;
 
 using com.spacepuppy.Collections;
 using com.spacepuppy.Utils;
-using System;
-using System.Collections;
 
 namespace com.spacepuppy.Collections
 {
@@ -394,7 +392,7 @@ namespace com.spacepuppy.Collections
             return new Enumerator(this);
         }
 
-        IEnumerator IEnumerable.GetEnumerator()
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
             return this.GetEnumerator();
         }
@@ -435,7 +433,7 @@ namespace com.spacepuppy.Collections
                 }
             }
 
-            object IEnumerator.Current
+            object System.Collections.IEnumerator.Current
             {
                 get
                 {
@@ -453,9 +451,9 @@ namespace com.spacepuppy.Collections
                 return _e.MoveNext();
             }
 
-            void IEnumerator.Reset()
+            void System.Collections.IEnumerator.Reset()
             {
-                (_e as IEnumerator).Reset();
+                (_e as System.Collections.IEnumerator).Reset();
             }
         }
 
@@ -533,6 +531,35 @@ namespace com.spacepuppy.Collections
         {
             comp = GetFromSource<TSub>(obj);
             return comp != null;
+        }
+
+
+        public SPEntity FindEntity(System.Func<T, bool> predicate)
+        {
+            var e = this.GetEnumerator();
+            while (e.MoveNext())
+            {
+                if ((predicate?.Invoke(e.Current) ?? true) &&
+                    SPEntity.Pool.GetFromSource(e.Current, out SPEntity entity))
+                {
+                    return entity;
+                }
+            }
+            return null;
+        }
+
+        public TEntity FindEntity<TEntity>(System.Func<T, bool> predicate) where TEntity : SPEntity
+        {
+            var e = this.GetEnumerator();
+            while (e.MoveNext())
+            {
+                if ((predicate?.Invoke(e.Current) ?? true) &&
+                    SPEntity.Pool.GetFromSource<TEntity>(e.Current, out TEntity entity))
+                {
+                    return entity;
+                }
+            }
+            return null;
         }
 
         #endregion

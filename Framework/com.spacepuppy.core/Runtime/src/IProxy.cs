@@ -133,7 +133,7 @@ namespace com.spacepuppy
             }
         }
 
-        public static T GetTargetAs<T>(this IProxy proxy, object arg) where T : class
+        public static T GetTargetAs<T>(this IProxy proxy, object arg = null) where T : class
         {
             if ((proxy.Params & ProxyParams.PrioritizeAsTargetFirst) != 0)
             {

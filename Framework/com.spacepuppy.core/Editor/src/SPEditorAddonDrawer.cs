@@ -3,6 +3,7 @@ using System.Collections.Generic;
 
 using com.spacepuppy.Collections;
 using com.spacepuppy.Utils;
+using UnityEngine;
 
 namespace com.spacepuppyeditor
 {
@@ -33,6 +34,7 @@ namespace com.spacepuppyeditor
 
         #region Fields
 
+        private UnityEditor.Editor _editor;
         private UnityEditor.SerializedObject _serializedObject;
         private bool _isFooter;
         private System.Type _associatedType;
@@ -48,6 +50,8 @@ namespace com.spacepuppyeditor
             protected set { _isFooter = value; }
         }
 
+        public UnityEditor.Editor Editor => _editor;
+
         public UnityEditor.SerializedObject SerializedObject
         {
             get { return _serializedObject; }
@@ -61,7 +65,12 @@ namespace com.spacepuppyeditor
 
         #region Methods
 
-        public virtual void OnEnable()
+        protected virtual void OnEnable()
+        {
+
+        }
+
+        protected internal virtual void OnDisable()
         {
 
         }
@@ -134,20 +143,25 @@ namespace com.spacepuppyeditor
             }
         }
 
-        public static SPEditorAddonDrawer[] GetDrawers(UnityEditor.SerializedObject target)
+        public static SPEditorAddonDrawer[] GetDrawers(UnityEditor.Editor editor, UnityEditor.SerializedObject target)
         {
             if (target == null) return ArrayUtil.Empty<SPEditorAddonDrawer>();
 
-            Type compType = typeof(UnityEngine.Component);
+            Type unityObjType = typeof(UnityEngine.Component);
             Type targType = target.GetTargetType();
-            if (!compType.IsAssignableFrom(targType)) return ArrayUtil.Empty<SPEditorAddonDrawer>();
+            if (!unityObjType.IsAssignableFrom(targType))
+            {
+                unityObjType = typeof(ScriptableObject);
+                if (!unityObjType.IsAssignableFrom(targType)) return ArrayUtil.Empty<SPEditorAddonDrawer>();
+            }
+
             if (_inspectedTypeToAddonDrawerType == null) BuildAddonDrawerTypeTable();
             if (_inspectedTypeToAddonDrawerType.Count == 0) return ArrayUtil.Empty<SPEditorAddonDrawer>();
 
             using (var lst = TempCollection.GetList<SPEditorAddonDrawer>())
             {
                 var tp = targType;
-                while (tp != null && compType.IsAssignableFrom(tp))
+                while (tp != null && unityObjType.IsAssignableFrom(tp))
                 {
                     object v;
                     if (_inspectedTypeToAddonDrawerType.TryGetValue(tp, out v))
@@ -156,13 +170,13 @@ namespace com.spacepuppyeditor
                         {
                             foreach(var info in (v as List<DrawerInfo>))
                             {
-                                var d = info.CreateDrawer(target, tp, null);
+                                var d = info.CreateDrawer(editor, target, tp, null);
                                 if (d != null) lst.Add(d);
                             }
                         }
                         else if (v is DrawerInfo)
                         {
-                            var d = (v as DrawerInfo).CreateDrawer(target, tp, null);
+                            var d = (v as DrawerInfo).CreateDrawer(editor, target, tp, null);
                             if (d != null) lst.Add(d);
                         }
                     }
@@ -179,13 +193,13 @@ namespace com.spacepuppyeditor
                         {
                             foreach (var info in (v as List<DrawerInfo>))
                             {
-                                var d = info.CreateDrawer(target, tp, null);
+                                var d = info.CreateDrawer(editor, target, tp, null);
                                 if (d != null) lst.Add(d);
                             }
                         }
                         else if (v is DrawerInfo)
                         {
-                            var d = (v as DrawerInfo).CreateDrawer(target, tp, null);
+                            var d = (v as DrawerInfo).CreateDrawer(editor, target, tp, null);
                             if (d != null) lst.Add(d);
                         }
                     }
@@ -200,13 +214,13 @@ namespace com.spacepuppyeditor
                         {
                             foreach (var info in (v as List<DrawerInfo>))
                             {
-                                var d = info.CreateDrawer(target, null, attrib);
+                                var d = info.CreateDrawer(editor, target, null, attrib);
                                 if (d != null) lst.Add(d);
                             }
                         }
                         else if (v is DrawerInfo)
                         {
-                            var d = (v as DrawerInfo).CreateDrawer(target, null, attrib);
+                            var d = (v as DrawerInfo).CreateDrawer(editor, target, null, attrib);
                             if (d != null) lst.Add(d);
                         }
                     }
@@ -227,13 +241,14 @@ namespace com.spacepuppyeditor
 
 
 
-            public SPEditorAddonDrawer CreateDrawer(UnityEditor.SerializedObject target, System.Type associatedType, System.Attribute attribute)
+            public SPEditorAddonDrawer CreateDrawer(UnityEditor.Editor editor, UnityEditor.SerializedObject target, System.Type associatedType, System.Attribute attribute)
             {
                 if (target.isEditingMultipleObjects && !this.SupportsMultiObject) return null;
 
                 try
                 {
                     var drawer = Activator.CreateInstance(DrawerType) as SPEditorAddonDrawer;
+                    drawer._editor = editor;
                     drawer._serializedObject = target;
                     drawer._isFooter = this.IsFooter;
                     drawer._associatedType = associatedType;

@@ -32,6 +32,22 @@ namespace com.spacepuppy.Utils
             return c;
         }
 
+        public static Color SetRGB(this Color c, Color other)
+        {
+            c.r = other.r;
+            c.g = other.g;
+            c.b = other.b;
+            return c;
+        }
+
+        public static Color SetRGB(this Color c, float r, float g, float b)
+        {
+            c.r = r;
+            c.g = g;
+            c.b = b;
+            return c;
+        }
+
         #endregion
 
         #region Extraction

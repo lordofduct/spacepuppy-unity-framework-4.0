@@ -340,7 +340,7 @@ namespace com.spacepuppyeditor.Core
                             return true;
                         }
                     });
-                    //return o is IDynamic ? DynamicUtil.GetEasilySerializedMembers(o) : DynamicUtil.GetEasilySerializedMembersFromType((o.IsProxy_ParamsRespecting() ? (o as IProxy).GetTargetType() : o.GetType()));
+                    //return o is IDynamic ? DynamicUtil.GetEasilySerializedMembers(o) : DynamicUtil.GetEasilySerializedMembersFromType((o.IsProxy() ? (o as IProxy).GetTargetType() : o.GetType()));
                 }
 
                 var go = GameObjectUtil.GetGameObjectFromSource(targObj);

@@ -525,6 +525,66 @@ namespace com.spacepuppy.Utils
             return false;
         }
 
+        /// <summary>
+        /// Supports unity.ui.Text, unity.ui.InputField, TMPro.TMP_Text, TMPro.TMP_InputField, and IProxy's of them.
+        /// </summary>
+        /// <param name="target"></param>
+        /// <returns></returns>
+        public static UnityEngine.Color TryGetColor(object target)
+        {
+            switch (StringUtil.GetAsTextBindingTarget(target, false))
+            {
+                case UnityEngine.UI.Text utxt:
+                    return utxt.color;
+                case UnityEngine.UI.InputField uifld:
+                    return uifld.colors.normalColor;
+#if SP_TMPRO
+                case TMPro.TMP_Text tmp:
+                    return tmp.color;
+                case TMPro.TMP_InputField tmp_i:
+                    return tmp_i.colors.normalColor;
+#endif
+            }
+
+            return default;
+        }
+
+        /// <summary>
+        /// Supports unity.ui.Text, TMPro.TMP_Text, and IProxy's of them.
+        /// </summary>
+        /// <param name="target"></param>
+        /// <returns></returns>
+        public static bool TrySetColor(object target, UnityEngine.Color c)
+        {
+            switch (StringUtil.GetAsTextBindingTarget(target, false))
+            {
+                case UnityEngine.UI.Text utxt:
+                    utxt.color = c;
+                    return true;
+                case UnityEngine.UI.InputField uifld:
+                    {
+                        var cs = uifld.colors;
+                        cs.normalColor = c;
+                        uifld.colors = cs;
+                    }
+                    return true;
+#if SP_TMPRO
+                case TMPro.TMP_Text tmp:
+                    tmp.color = c;
+                    return true;
+                case TMPro.TMP_InputField tmp_i:
+                    {
+                        var cs = tmp_i.colors;
+                        cs.normalColor = c;
+                        tmp_i.colors = cs;
+                    }
+                    return true;
+#endif
+            }
+
+            return false;
+        }
+
         #endregion
 
     }

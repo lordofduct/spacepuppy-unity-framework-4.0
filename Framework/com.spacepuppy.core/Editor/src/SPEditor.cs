@@ -2,15 +2,13 @@
 using UnityEditor;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 using com.spacepuppy;
 using com.spacepuppy.Dynamic;
 using com.spacepuppy.Utils;
 
 using com.spacepuppyeditor.Internal;
-using UnityEditor.Graphs;
-using System.Reflection;
-using com.spacepuppy.Collections;
 
 namespace com.spacepuppyeditor
 {
@@ -34,6 +32,22 @@ namespace com.spacepuppyeditor
         #endregion
 
         #region CONSTRUCTOR
+
+        static SPEditor()
+        {
+            Editor.finishedDefaultHeaderGUI += (e) => {
+                if (e.serializedObject.targetObject is ScriptableObject)
+                {
+                    var width = Mathf.Max(0f, Screen.width - 100f);
+                    var r = new Rect(45f, 28f, Mathf.Min(width, 60f), 18f);
+
+                    if (GUI.Button(r, "Select"))
+                    {
+                        foreach (var obj in e.serializedObject.targetObjects) EditorGUIUtility.PingObject(obj);
+                    }
+                }
+            };
+        }
 
         protected virtual void OnEnable()
         {
@@ -60,7 +74,14 @@ namespace com.spacepuppyeditor
 
         protected virtual void OnDisable()
         {
-
+            if (_addons?.Length > 0)
+            {
+                for (int i = 0; i < _addons.Length; i++)
+                {
+                    _addons[i].OnDisable();
+                }
+            }
+            _addons = null;
         }
 
         #endregion
@@ -302,7 +323,7 @@ namespace com.spacepuppyeditor
                         }
                          */
 
-                        _addons = SPEditorAddonDrawer.GetDrawers(this.serializedObject);
+                        _addons = SPEditorAddonDrawer.GetDrawers(this, this.serializedObject);
                     }
                 }
             }

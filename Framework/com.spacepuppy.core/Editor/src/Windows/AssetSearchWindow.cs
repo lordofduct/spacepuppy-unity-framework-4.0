@@ -465,6 +465,11 @@ namespace com.spacepuppyeditor.Windows
                     var task = Task.Run(() =>
                     {
                         var sb = new StringBuilder();
+                        string script = string.Empty;
+                        bool isMonoBehaviour = false;
+                        bool lastLineReset = false;
+                        Match m;
+
                         foreach (var path in files)
                         {
                             int linenum = 0;
@@ -477,12 +482,41 @@ namespace com.spacepuppyeditor.Windows
                                 string ln;
                                 while ((ln = reader.ReadLine()) != null)
                                 {
+                                    if (_cancellationTokenSource?.IsCancellationRequested ?? false) return;
+
+                                    if (ln.StartsWith("--- !u"))
+                                    {
+                                        script = string.Empty;
+                                        isMonoBehaviour = false;
+                                        lastLineReset = true;
+                                    }
+                                    else if (lastLineReset)
+                                    {
+                                        lastLineReset = false;
+                                        script = ln.EndsWith(":") ? ln.Substring(0, ln.Length - 1) : ln;
+                                        isMonoBehaviour = (script == "MonoBehaviour");
+                                    }
+                                    else if (isMonoBehaviour &&
+                                             (m = Regex.Match(ln, @"^\s*m_Script: {fileID: (?<fileid>-?\d+), guid: (?<guid>([a-zA-Z0-9]+)), type: 3}\s*$")).Success &&
+                                             ScriptDatabase.TryGUIDToScriptInfo(m.Groups["guid"].Value, out ScriptInfo info))
+                                    {
+                                        script = info.name;
+                                    }
+
                                     linenum++;
                                     if (rx != null ? rx.IsMatch(ln) : ln.Contains(str))
                                     {
                                         if (!matches) sb.AppendLine(path);
                                         matches = true;
-                                        sb.AppendLine($"{linenum:000000}: {ln}");
+
+                                        if (string.IsNullOrEmpty(script))
+                                        {
+                                            sb.AppendLine($"{linenum:000000}: {ln}");
+                                        }
+                                        else
+                                        {
+                                            sb.AppendLine($"{linenum:000000} [{script}]: {ln}");
+                                        }
                                     }
                                 }
                             }
@@ -554,4 +588,5 @@ namespace com.spacepuppyeditor.Windows
         #endregion
 
     }
+
 }

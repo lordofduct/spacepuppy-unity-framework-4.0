@@ -1,5 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
+using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.SPInput
 {
@@ -14,6 +16,16 @@ namespace com.spacepuppy.SPInput
         private Dictionary<string, IInputDevice> _dict = new Dictionary<string, IInputDevice>();
         private IInputDevice _default_main;
         private IInputDevice _override_main;
+
+        [SerializeField]
+        private bool _monitorJoystickHotplug;
+        [SerializeField]
+        private float _joystickHotplugPollingFrequency = 1f;
+
+        [System.NonSerialized]
+        private string[] _hotplugJoystickNames;
+        [System.NonSerialized]
+        private double _lastHotplugTest;
 
         #endregion
 
@@ -30,9 +42,41 @@ namespace com.spacepuppy.SPInput
 
         }
 
+        protected override void OnValidAwake()
+        {
+            base.OnValidAwake();
+
+            if (_monitorJoystickHotplug)
+            {
+                _hotplugJoystickNames = Input.GetJoystickNames();
+                _lastHotplugTest = Time.unscaledTimeAsDouble;
+            }
+            else
+            {
+                _hotplugJoystickNames = null;
+                _lastHotplugTest = double.NegativeInfinity;
+            }
+        }
+
         #endregion
 
-        #region Messages
+        #region Properties
+
+        public bool MonitorJoystickHotplug
+        {
+            get => _monitorJoystickHotplug;
+            set => _monitorJoystickHotplug = value;
+        }
+
+        public float JoystickHotplugPollingFrequency
+        {
+            get => _joystickHotplugPollingFrequency;
+            set => _joystickHotplugPollingFrequency = value;
+        }
+
+        #endregion
+
+        #region Methods
 
         protected virtual void FixedUpdate()
         {
@@ -48,11 +92,34 @@ namespace com.spacepuppy.SPInput
         /// </summary>
         protected virtual void Update()
         {
+            if (_monitorJoystickHotplug && (Time.unscaledTimeAsDouble - _lastHotplugTest) >= _joystickHotplugPollingFrequency)
+            {
+                var names = Input.GetJoystickNames();
+                _lastHotplugTest = Time.unscaledTimeAsDouble;
+                if (_hotplugJoystickNames == null || _hotplugJoystickNames.Length != names.Length || !_hotplugJoystickNames.SequenceEqual(names, System.StringComparer.Ordinal))
+                {
+                    _hotplugJoystickNames = names;
+                    this.OnJoystickHotplugged();
+                }
+            }
+
             var e = _dict.GetEnumerator();
             while (e.MoveNext())
             {
                 if (e.Current.Value.Active) e.Current.Value.Update();
             }
+        }
+
+        /// <summary>
+        /// Retrieves the joystick names array.
+        /// </summary>
+        /// <remarks>note that this is a cached if polling is active and modifying the collection may cause JoystickHotplugged event to raise</remarks>
+        /// <returns></returns>
+        protected string[] GetJoystickNames() => _hotplugJoystickNames ?? Input.GetJoystickNames();
+
+        protected virtual void OnJoystickHotplugged()
+        {
+            Messaging.Broadcast<IJoystickHotpluggedGlobalHandler, IInputManager>(this, (o, a) => o.OnJoystickHotplugged(a));
         }
 
         #endregion
@@ -90,16 +157,9 @@ namespace com.spacepuppy.SPInput
             }
         }
 
-        public IInputDevice GetDevice(string id)
+        public virtual bool TryGetDevice(string id, out IInputDevice device)
         {
-            if (!_dict.ContainsKey(id)) throw new System.Collections.Generic.KeyNotFoundException();
-            return _dict[id];
-        }
-
-        public T GetDevice<T>(string id) where T : IInputDevice
-        {
-            if (!_dict.ContainsKey(id)) throw new System.Collections.Generic.KeyNotFoundException();
-            return (T)_dict[id];
+            return _dict.TryGetValue(id, out device);
         }
 
         #endregion
@@ -142,6 +202,20 @@ namespace com.spacepuppy.SPInput
             }
         }
 
+        public bool Remove(IInputDevice device)
+        {
+            foreach (var pair in _dict)
+            {
+                if (pair.Value == device)
+                {
+                    _dict.Remove(pair.Key);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public bool Contains(string id)
         {
             return _dict.ContainsKey(id);
@@ -150,6 +224,12 @@ namespace com.spacepuppy.SPInput
         public bool Contains(IInputDevice dev)
         {
             return (_dict.Values as ICollection<IInputDevice>).Contains(dev);
+        }
+
+        public void ClearDevices()
+        {
+            _default_main = null;
+            _dict.Clear();
         }
 
         public string GetId(IInputDevice dev)
@@ -166,20 +246,43 @@ namespace com.spacepuppy.SPInput
 
         #region IEnumerable Interface
 
-        //TODO - implement propert Enumerator, remember dict.Values allocates mem in mono... ugh
+        public IEnumerable<string> GetIds() => _dict.Keys;
 
-        public IEnumerator<IInputDevice> GetEnumerator()
-        {
-            return _dict.Values.GetEnumerator();
-        }
+        public IEnumerable<IInputDevice> GetDevices() => _dict.Values;
 
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        public Enumerator GetEnumerator() => new Enumerator(this);
+
+        IEnumerator<IInputDevice> IEnumerable<IInputDevice>.GetEnumerator() => this.GetEnumerator();
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => this.GetEnumerator();
+
+        public struct Enumerator : IEnumerator<IInputDevice>
         {
-            return _dict.Values.GetEnumerator();
+
+            private Dictionary<string, IInputDevice>.Enumerator _e;
+
+            public Enumerator(SPInputManager manager)
+            {
+                _e = manager ? manager._dict.GetEnumerator() : default;
+            }
+
+            public IInputDevice Current => _e.Current.Value;
+
+            object System.Collections.IEnumerator.Current => _e.Current.Value;
+
+            public void Dispose() => _e.Dispose();
+
+            public bool MoveNext() => _e.MoveNext();
+
+            void System.Collections.IEnumerator.Reset() => ((System.Collections.IEnumerator)_e).Reset();
         }
 
         #endregion
 
+    }
+
+    public interface IJoystickHotpluggedGlobalHandler
+    {
+        void OnJoystickHotplugged(IInputManager inputmanager);
     }
 
 }

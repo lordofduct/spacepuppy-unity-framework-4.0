@@ -24,7 +24,12 @@ namespace com.spacepuppy.SPInput
         Joy8 = 8,
         Joy9 = 9,
         Joy10 = 10,
-        Joy11 = 11
+        Joy11 = 11,
+        Joy12 = 12,
+        Joy13 = 13,
+        Joy14 = 14,
+        Joy15 = 15,
+        Joy16 = 16
     }
 
     public enum AxleValueConsideration : byte

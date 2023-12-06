@@ -13,8 +13,29 @@ namespace com.spacepuppy
         IInputDevice this[string id] { get; }
         IInputDevice Main { get; }
 
-        IInputDevice GetDevice(string id);
-        T GetDevice<T>(string id) where T : IInputDevice;
+        bool TryGetDevice(string id, out IInputDevice device);
+
+    }
+
+    public static class IInputManagerExtensions
+    {
+
+        public static IInputDevice GetDevice(this IInputManager manager, string id)
+        {
+            if (manager != null && manager.TryGetDevice(id, out IInputDevice result))
+            {
+                return result;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        public static T GetDevice<T>(this IInputManager manager, string id) where T : class, IInputDevice
+        {
+            return manager?.GetDevice(id) as T;
+        }
 
     }
 

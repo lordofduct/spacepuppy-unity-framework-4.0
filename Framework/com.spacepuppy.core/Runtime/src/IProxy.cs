@@ -287,6 +287,8 @@ namespace com.spacepuppy
             }
         }
 
+        public bool IsConfigured => !object.ReferenceEquals(_target, null) || !object.ReferenceEquals(_runtimeRef, null);
+
         #endregion
 
         #region Methods

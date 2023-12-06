@@ -7,6 +7,34 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Events
 {
 
+    public struct SPEventRegistrationToken : System.IDisposable
+    {
+        private BaseSPEvent _spevent;
+        private System.EventHandler<TempEventArgs> _handler;
+
+        public void Dispose()
+        {
+            if (_spevent != null && _handler != null)
+            {
+                _spevent.TriggerActivated -= _handler;
+                _spevent = null;
+                _handler = null;
+            }
+        }
+
+        internal static SPEventRegistrationToken Create(BaseSPEvent spevent, System.EventHandler<TempEventArgs> handler)
+        {
+            if (spevent == null || handler == null) return default;
+            spevent.TriggerActivated += handler;
+            return new SPEventRegistrationToken()
+            {
+                _spevent = spevent,
+                _handler = handler
+            };
+        }
+
+    }
+
     [System.Serializable()]
     public abstract class BaseSPEvent
     {
@@ -39,7 +67,7 @@ namespace com.spacepuppy.Events
                     TempEventArgs.Release(e);
                 }
             }
-            catch(System.Exception ex)
+            catch (System.Exception ex)
             {
                 Debug.LogException(ex);
             }
@@ -180,6 +208,8 @@ namespace com.spacepuppy.Events
 
             this.OnTriggerActivated(sender, arg);
         }
+
+        public SPEventRegistrationToken RegisterTriggerActivatedHandler(System.EventHandler<TempEventArgs> handler) => SPEventRegistrationToken.Create(this, handler);
 
         #endregion
 
@@ -609,7 +639,7 @@ namespace com.spacepuppy.Events
                 this.OnTriggerActivated(sender, arg);
                 return result;
             }
-            catch(System.Exception ex)
+            catch (System.Exception ex)
             {
                 Debug.LogException(ex);
                 return false;

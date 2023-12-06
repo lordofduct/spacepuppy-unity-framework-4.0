@@ -357,14 +357,7 @@ namespace com.spacepuppyeditor
 
         public static int EnumFlagField(System.Type enumType, int value)
         {
-            //var names = (from e in EnumUtil.GetUniqueEnumFlags(enumType) select e.ToString()).ToArray();
-            //return EditorGUILayout.MaskField(value, names);
-
-            var enums = EnumUtil.GetUniqueEnumFlags(enumType).ToArray();
-            var names = (from e in enums select e.ToString()).ToArray();
-            int mask = EditorHelper.ConvertEnumMaskToPopupMask(value, enums);
-            mask = EditorGUILayout.MaskField(mask, names);
-            return EditorHelper.ConvertPopupMaskToEnumMask(mask, enums);
+            return EnumFlagField(enumType, GUIContent.none, value, ArrayUtil.Empty<GUILayoutOption>());
         }
 
         public static System.Enum EnumFlagField(System.Enum value)
@@ -376,7 +369,8 @@ namespace com.spacepuppyeditor
             return System.Enum.ToObject(enumType, i) as System.Enum;
         }
 
-        public static int EnumFlagField(System.Type enumType, GUIContent label, int value)
+        public static int EnumFlagField(System.Type enumType, GUIContent label, int value) => EnumFlagField(enumType, label, value);
+        public static int EnumFlagField(System.Type enumType, GUIContent label, int value, params GUILayoutOption[] options)
         {
             //var names = (from e in EnumUtil.GetUniqueEnumFlags(enumType) select e.ToString()).ToArray();
             //return EditorGUILayout.MaskField(label, value, names);
@@ -384,7 +378,7 @@ namespace com.spacepuppyeditor
             var enums = EnumUtil.GetUniqueEnumFlags(enumType).ToArray();
             var names = (from e in enums select e.ToString()).ToArray();
             int mask = EditorHelper.ConvertEnumMaskToPopupMask(value, enums);
-            mask = EditorGUILayout.MaskField(mask, names);
+            mask = EditorGUILayout.MaskField(mask, names, options);
             return EditorHelper.ConvertPopupMaskToEnumMask(mask, enums);
         }
 
@@ -393,7 +387,7 @@ namespace com.spacepuppyeditor
             if (value == null) throw new System.ArgumentException("Enum value must be non-null.", "value");
 
             var enumType = value.GetType();
-            int i = EnumFlagField(enumType, label, System.Convert.ToInt32(value));
+            int i = EnumFlagField(enumType, label, System.Convert.ToInt32(value), ArrayUtil.Empty<GUILayoutOption>());
             return System.Enum.ToObject(enumType, i) as System.Enum;
         }
 

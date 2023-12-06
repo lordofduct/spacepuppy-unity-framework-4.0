@@ -87,11 +87,37 @@ namespace com.spacepuppyeditor
             return false;
         }
 
+        public static bool AssertRequireLikeComponentAttrib(Component comp, bool silent = false)
+        {
+            return AssertRequireLikeComponentAttrib(comp, out _, silent);
+        }
+
+        public static bool AssertRequireLikeComponentAttrib(Component comp, out System.Type missingCompType, bool silent = false)
+        {
+            if (comp == null) throw new System.ArgumentNullException("comp");
+            missingCompType = null;
+
+            var tp = comp.GetType();
+            foreach (var obj in tp.GetCustomAttributes(typeof(RequireLikeComponentAttribute), true))
+            {
+                RequireLikeComponentAttribute attrib = obj as RequireLikeComponentAttribute;
+                foreach (var reqType in attrib.Types)
+                {
+                    if (!comp.HasComponent(reqType))
+                    {
+                        missingCompType = reqType;
+                        if (!silent) Assert(System.String.Format("(GameObject:{2}) Component type {0} requires the gameobject to also have a component of type {1}.", tp.Name, reqType.Name, comp.gameObject.name), comp);
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
         public static bool AssertRequireComponentInEntityAttrib(Component comp, bool silent = false)
         {
-            System.Type missingCompType;
-
-            return AssertRequireComponentInEntityAttrib(comp, out missingCompType, silent);
+            return AssertRequireComponentInEntityAttrib(comp, out _, silent);
         }
 
         public static bool AssertRequireComponentInEntityAttrib(Component comp, out System.Type missingCompType, bool silent = false)
@@ -119,9 +145,7 @@ namespace com.spacepuppyeditor
 
         public static bool AssertRequireComponentInParentAttrib(Component comp, bool silent = false)
         {
-            System.Type missingCompType;
-
-            return AssertRequireComponentInParentAttrib(comp, out missingCompType, silent);
+            return AssertRequireComponentInParentAttrib(comp, out _, silent);
         }
 
         public static bool AssertRequireComponentInParentAttrib(Component comp, out System.Type missingCompType, bool silent = false)

@@ -26,203 +26,68 @@ namespace com.spacepuppyeditor.Core
             }
             else
             {
-                ApplyDefaultAsSingle(property, this.fieldInfo.FieldType, EditorHelper.GetRestrictedFieldType(this.fieldInfo), relativity);
+                ApplyDefaultAsSingle(property, EditorHelper.GetRestrictedFieldType(this.fieldInfo, true) ?? property.GetPropertyValueType(), relativity);
             }
         }
 
-        private static void ApplyDefaultAsSingle(SerializedProperty property, System.Type fieldType, System.Type restrictionType, EntityRelativity relativity)
+        private static void ApplyDefaultAsSingle(SerializedProperty property, System.Type restrictionType, EntityRelativity relativity)
         {
-            if (fieldType == null || restrictionType == null) return;
+            if (restrictionType == null) return;
 
-            if (TypeUtil.IsType(fieldType, typeof(VariantReference)))
+            var targ = GameObjectUtil.GetGameObjectFromSource(property.serializedObject.targetObject);
+            if (targ == null)
             {
-                var variant = EditorHelper.GetTargetObjectOfProperty(property) as VariantReference;
-                if (variant == null) return;
-
-                var targ = GameObjectUtil.GetGameObjectFromSource(property.serializedObject.targetObject);
-                if (targ == null)
-                {
-                    var obj = ObjUtil.GetAsFromSource(restrictionType, property.serializedObject.targetObject);
-                    if (obj != null)
-                    {
-                        variant.Value = obj;
-                        property.serializedObject.Update();
-                        GUI.changed = true;
-                    }
-                    else if (variant.Value != null)
-                    {
-                        variant.Value = null;
-                        property.serializedObject.Update();
-                        GUI.changed = true;
-                    }
-                    return;
-                }
-
-                switch (relativity)
-                {
-                    case EntityRelativity.Entity:
-                        {
-                            targ = targ.FindRoot();
-                            if (ObjUtil.IsRelatedTo(targ, variant.ObjectValue)) return;
-
-                            var obj = ObjUtil.GetAsFromSource(restrictionType, targ);
-                            if (obj == null && ComponentUtil.IsAcceptableComponentType(restrictionType)) obj = targ.GetComponentInChildren(restrictionType);
-                            if (obj != null)
-                            {
-                                variant.Value = obj;
-                                property.serializedObject.Update();
-                                GUI.changed = true;
-                            }
-                            else if (variant.Value != null)
-                            {
-                                variant.Value = null;
-                                property.serializedObject.Update();
-                                GUI.changed = true;
-                            }
-                        }
-                        break;
-                    case EntityRelativity.Self:
-                        {
-                            if (ObjUtil.IsRelatedTo(targ, variant.ObjectValue)) return;
-
-                            var obj = ObjUtil.GetAsFromSource(restrictionType, targ);
-                            if (obj != null)
-                            {
-                                variant.Value = obj;
-                                property.serializedObject.Update();
-                            }
-                            else if (variant.Value != null)
-                            {
-                                variant.Value = null;
-                                property.serializedObject.Update();
-                                GUI.changed = true;
-                            }
-                        }
-                        break;
-                    case EntityRelativity.SelfAndChildren:
-                        {
-                            if (ObjUtil.IsRelatedTo(targ, variant.ObjectValue)) return;
-
-                            var obj = ObjUtil.GetAsFromSource(restrictionType, targ);
-                            if (obj == null && ComponentUtil.IsAcceptableComponentType(restrictionType)) obj = targ.GetComponentInChildren(restrictionType);
-                            if (obj != null)
-                            {
-                                variant.Value = obj;
-                                property.serializedObject.Update();
-                            }
-                            else if (variant.Value != null)
-                            {
-                                variant.Value = null;
-                                property.serializedObject.Update();
-                                GUI.changed = true;
-                            }
-                        }
-                        break;
-                    case EntityRelativity.SelfAndParents:
-                        {
-                            if (ObjUtil.IsRelatedTo(targ, variant.ObjectValue)) return;
-
-                            var obj = ObjUtil.GetAsFromSource(restrictionType, targ);
-                            if (obj == null && ComponentUtil.IsAcceptableComponentType(restrictionType)) obj = targ.GetComponentsInParent(restrictionType);
-                            if (obj != null)
-                            {
-                                variant.Value = obj;
-                                property.serializedObject.Update();
-                            }
-                            else if (variant.Value != null)
-                            {
-                                variant.Value = null;
-                                property.serializedObject.Update();
-                                GUI.changed = true;
-                            }
-                        }
-                        break;
-                }
+                property.SetPropertyValue(ObjUtil.GetAsFromSource(restrictionType, property.serializedObject.targetObject) as UnityEngine.Object);
+                return;
             }
-            else if (property.propertyType == SerializedPropertyType.ObjectReference)
+
+            var currentValue = property.GetPropertyValue() as UnityEngine.Object;
+            UnityEngine.Object obj = null;
+            switch (relativity)
             {
-                var targ = GameObjectUtil.GetGameObjectFromSource(property.serializedObject.targetObject);
-                if (targ == null)
-                {
-                    property.objectReferenceValue = ObjUtil.GetAsFromSource(restrictionType, property.serializedObject.targetObject) as UnityEngine.Object;
-                    return;
-                }
+                case EntityRelativity.Entity:
+                    {
+                        targ = targ.FindRoot();
+                        if (ObjUtil.IsRelatedTo(targ, currentValue)) return;
 
-                switch (relativity)
-                {
-                    case EntityRelativity.Entity:
-                        {
-                            targ = targ.FindRoot();
-                            if (ObjUtil.IsRelatedTo(targ, property.objectReferenceValue)) return;
+                        obj = ObjUtil.GetAsFromSource(restrictionType, targ) as UnityEngine.Object;
+                        if (obj == null && ComponentUtil.IsAcceptableComponentType(restrictionType)) obj = targ.GetComponentInChildren(restrictionType);
+                    }
+                    break;
+                case EntityRelativity.Self:
+                    {
+                        if (ObjUtil.IsRelatedTo(targ, currentValue)) return;
 
-                            var obj = ObjUtil.GetAsFromSource(restrictionType, targ) as UnityEngine.Object;
-                            if (obj == null && ComponentUtil.IsAcceptableComponentType(restrictionType)) obj = targ.GetComponentInChildren(restrictionType);
-                            if (obj != null)
-                            {
-                                property.objectReferenceValue = obj;
-                                GUI.changed = true;
-                            }
-                            else if (property.objectReferenceValue != null)
-                            {
-                                property.objectReferenceValue = null;
-                                GUI.changed = true;
-                            }
-                        }
-                        break;
-                    case EntityRelativity.Self:
-                        {
-                            if (ObjUtil.IsRelatedTo(targ, property.objectReferenceValue)) return;
+                        obj = ObjUtil.GetAsFromSource(restrictionType, targ) as UnityEngine.Object;
+                    }
+                    break;
+                case EntityRelativity.SelfAndChildren:
+                    {
+                        if (ObjUtil.IsRelatedTo(targ, property.objectReferenceValue)) return;
 
-                            var obj = ObjUtil.GetAsFromSource(restrictionType, targ) as UnityEngine.Object;
-                            if (obj != null)
-                            {
-                                property.objectReferenceValue = obj;
-                                GUI.changed = true;
-                            }
-                            else if (property.objectReferenceValue != null)
-                            {
-                                property.objectReferenceValue = null;
-                                GUI.changed = true;
-                            }
-                        }
-                        break;
-                    case EntityRelativity.SelfAndChildren:
-                        {
-                            if (ObjUtil.IsRelatedTo(targ, property.objectReferenceValue)) return;
+                        obj = ObjUtil.GetAsFromSource(restrictionType, targ) as UnityEngine.Object;
+                        if (obj == null && ComponentUtil.IsAcceptableComponentType(restrictionType)) obj = targ.GetComponentInChildren(restrictionType);
+                    }
+                    break;
+                case EntityRelativity.SelfAndParents:
+                    {
+                        if (ObjUtil.IsRelatedTo(targ, property.objectReferenceValue)) return;
 
-                            var obj = ObjUtil.GetAsFromSource(restrictionType, targ) as UnityEngine.Object;
-                            if (obj == null && ComponentUtil.IsAcceptableComponentType(restrictionType)) obj = targ.GetComponentInChildren(restrictionType);
-                            if (obj != null)
-                            {
-                                property.objectReferenceValue = obj;
-                                GUI.changed = true;
-                            }
-                            else if (property.objectReferenceValue != null)
-                            {
-                                property.objectReferenceValue = null;
-                                GUI.changed = true;
-                            }
-                        }
-                        break;
-                    case EntityRelativity.SelfAndParents:
-                        {
-                            if (ObjUtil.IsRelatedTo(targ, property.objectReferenceValue)) return;
+                        obj = ObjUtil.GetAsFromSource(restrictionType, targ) as UnityEngine.Object;
+                        if (obj == null && ComponentUtil.IsAcceptableComponentType(restrictionType)) obj = targ.GetComponentInParent(restrictionType);
+                    }
+                    break;
+            }
 
-                            var obj = ObjUtil.GetAsFromSource(restrictionType, targ) as UnityEngine.Object;
-                            if (obj == null && ComponentUtil.IsAcceptableComponentType(restrictionType)) obj = targ.GetComponentInParent(restrictionType);
-                            if (obj != null)
-                            {
-                                property.objectReferenceValue = obj;
-                                GUI.changed = true;
-                            }
-                            else if (property.objectReferenceValue != null)
-                            {
-                                property.objectReferenceValue = null;
-                                GUI.changed = true;
-                            }
-                        }
-                        break;
-                }
+            if (obj != null)
+            {
+                property.SetPropertyValue(obj);
+                GUI.changed = true;
+            }
+            else if (currentValue != null)
+            {
+                property.SetPropertyValue(null);
+                GUI.changed = true;
             }
         }
 

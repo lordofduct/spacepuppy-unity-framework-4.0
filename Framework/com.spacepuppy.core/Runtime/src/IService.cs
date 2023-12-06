@@ -81,11 +81,29 @@ namespace com.spacepuppy
             }
             return result;
         }
+        public static bool Get<T>(out T service) where T : class, IService
+        {
+            service = Entry<T>.Instance;
+            if (!object.ReferenceEquals(service, null) && service.IsNullOrDestroyed())
+            {
+                Entry<T>.Instance = null;
+                _services.Remove(service);
+                service = null;
+            }
+            return service != null;
+        }
 
         public static TConcrete Get<TService, TConcrete>() where TService : class, IService
                                                            where TConcrete : class, TService
         {
             return Get<TService>() as TConcrete;
+        }
+
+        public static bool Get<TService, TConcrete>(out TConcrete service) where TService : class, IService
+                                                                                where TConcrete : class, TService
+        {
+            service = Get<TService>() as TConcrete;
+            return service != null;
         }
 
         public static T Find<T>() where T : class, IService
@@ -99,6 +117,21 @@ namespace com.spacepuppy
                 }
             }
             return default(T);
+        }
+
+        public static bool Find<T>(out T service) where T : class, IService
+        {
+            var e = _services.GetEnumerator();
+            while (e.MoveNext())
+            {
+                if (e.Current is T && e.Current.IsAlive())
+                {
+                    service = e.Current as T;
+                    return true;
+                }
+            }
+            service = default;
+            return false;
         }
 
         public static bool TryRegister<T>(T service, bool donotSignalRegister = false) where T : class, IService

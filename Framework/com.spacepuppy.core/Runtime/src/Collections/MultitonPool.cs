@@ -562,6 +562,34 @@ namespace com.spacepuppy.Collections
             return null;
         }
 
+        public SPEntity FindEntity<TArg>(TArg arg, System.Func<T, TArg, bool> predicate)
+        {
+            var e = this.GetEnumerator();
+            while (e.MoveNext())
+            {
+                if ((predicate?.Invoke(e.Current, arg) ?? true) &&
+                    SPEntity.Pool.GetFromSource(e.Current, out SPEntity entity))
+                {
+                    return entity;
+                }
+            }
+            return null;
+        }
+
+        public TEntity FindEntity<TEntity, TArg>(TArg arg, System.Func<T, TArg, bool> predicate) where TEntity : SPEntity
+        {
+            var e = this.GetEnumerator();
+            while (e.MoveNext())
+            {
+                if ((predicate?.Invoke(e.Current, arg) ?? true) &&
+                    SPEntity.Pool.GetFromSource<TEntity>(e.Current, out TEntity entity))
+                {
+                    return entity;
+                }
+            }
+            return null;
+        }
+
         #endregion
 
     }

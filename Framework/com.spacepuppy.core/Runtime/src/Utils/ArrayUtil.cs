@@ -49,9 +49,9 @@ namespace com.spacepuppy.Utils
 
         public static bool IsEmpty(this IEnumerable lst)
         {
-            if (lst is IList)
+            if (lst is ICollection coll)
             {
-                return (lst as IList).Count == 0;
+                return coll.Count == 0;
             }
             else
             {
@@ -61,11 +61,15 @@ namespace com.spacepuppy.Utils
 
         public static T LastOrDefault<T>(this IEnumerable<T> e, T defaultvalue)
         {
-            var lst = e as IList<T>;
-            if (lst != null)
+            if (e is IList<T> ilst)
             {
-                int cnt = lst.Count;
-                return cnt > 0 ? lst[cnt - 1] : defaultvalue;
+                int cnt = ilst.Count;
+                return cnt > 0 ? ilst[cnt - 1] : defaultvalue;
+            }
+            else if (e is IReadOnlyList<T> rlst)
+            {
+                int cnt = rlst.Count;
+                return cnt > 0 ? rlst[cnt - 1] : defaultvalue;
             }
             else
             {
@@ -81,11 +85,15 @@ namespace com.spacepuppy.Utils
 
         public static T FirstOrDefault<T>(this IEnumerable<T> e, T defaultvalue)
         {
-            var lst = e as IList<T>;
-            if (lst != null)
+            if (e is IList<T> ilst)
             {
-                int cnt = lst.Count;
-                return cnt > 0 ? lst[0] : defaultvalue;
+                int cnt = ilst.Count;
+                return cnt > 0 ? ilst[0] : defaultvalue;
+            }
+            else if (e is IReadOnlyList<T> rlst)
+            {
+                int cnt = rlst.Count;
+                return cnt > 0 ? rlst[0] : defaultvalue;
             }
             else
             {
@@ -228,15 +236,14 @@ namespace com.spacepuppy.Utils
         /// <returns></returns>
         public static T GetValueAfterOrDefault<T>(this IEnumerable<T> lst, T element, bool loop = false)
         {
-            if (lst is IList<T>)
+            if (lst is IList<T> ilst)
             {
-                var arr = lst as IList<T>;
-                if (arr.Count == 0) return default(T);
+                if (ilst.Count == 0) return default(T);
 
-                int i = arr.IndexOf(element) + 1;
-                if (loop) i = i % arr.Count;
-                else if (i >= arr.Count) return default(T);
-                return arr[i];
+                int i = ilst.IndexOf(element) + 1;
+                if (loop) i = i % ilst.Count;
+                else if (i >= ilst.Count) return default(T);
+                return ilst[i];
             }
             else
             {
@@ -404,12 +411,17 @@ namespace com.spacepuppy.Utils
         public static T PickRandom<T>(this IEnumerable<T> lst, IRandom rng = null)
         {
             //return lst.PickRandom(1).FirstOrDefault();
-            if (lst is IList<T>)
+            if (lst is IList<T> ilst)
             {
                 if (rng == null) rng = RandomUtil.Standard;
-                var a = lst as IList<T>;
-                if (a.Count == 0) return default(T);
-                return a[rng.Range(a.Count)];
+                if (ilst.Count == 0) return default(T);
+                return ilst[rng.Range(ilst.Count)];
+            }
+            else if (lst is IList<T> rlst)
+            {
+                if (rng == null) rng = RandomUtil.Standard;
+                if (rlst.Count == 0) return default(T);
+                return rlst[rng.Range(rlst.Count)];
             }
             else
             {

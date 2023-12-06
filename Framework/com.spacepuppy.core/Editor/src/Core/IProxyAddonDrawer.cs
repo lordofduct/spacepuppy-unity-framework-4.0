@@ -61,12 +61,14 @@ namespace com.spacepuppyeditor.Core
             else if (_query.OutputRefs.Count > 0)
             {
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox, GUILayout.ExpandHeight(true));
-                foreach (var pair in _query.OutputRefs)
+                foreach (var entry in _query.OutputRefs)
                 {
-                    //EditorGUILayout.ObjectField(pair.Item2, typeof(UnityEngine.Object), false);
-                    if (GUILayout.Button(pair.Item1, EditorStyles.label))
+                    var c = EditorHelper.TempContent(entry.message);
+                    var h = EditorStyles.label.CalcHeight(c, EditorGUIUtility.currentViewWidth);
+                    var r = EditorGUILayout.GetControlRect(false, h);
+                    if (GUI.Button(r, entry.message, EditorStyles.label))
                     {
-                        EditorGUIUtility.PingObject(pair.Item2);
+                        EditorGUIUtility.PingObject(entry.obj);
                     }
                 }
                 EditorGUILayout.EndVertical();

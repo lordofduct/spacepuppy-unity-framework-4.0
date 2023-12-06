@@ -69,12 +69,21 @@ namespace com.spacepuppyeditor.Windows
 
         private void OnGUI()
         {
+            const string CTRL_SEACHSTRING = "AssetSearchWindow.SearchString";
+            string pressedEnterCtrl = null;
+            if (Event.current.type == EventType.KeyDown && (Event.current.keyCode == KeyCode.KeypadEnter || Event.current.keyCode == KeyCode.Return))
+            {
+                pressedEnterCtrl = GUI.GetNameOfFocusedControl();
+            }
+
             var cache = GUI.enabled;
             GUI.enabled = !(_currentQuery?.IsProcessing ?? false);
             _target = EditorGUILayout.ObjectField("Target", _target, typeof(UnityEngine.Object), false);
             _assetSearchQuery.CodePath = EditorGUILayout.TextField("Code Path", _assetSearchQuery.CodePath);
 
             EditorGUILayout.BeginHorizontal();
+
+            GUI.SetNextControlName("AssetSearchWindow.SearchString");
             _searchStringQuery.SearchString = EditorGUILayout.TextField("Search String", _searchStringQuery.SearchString, GUILayout.ExpandWidth(true));
             _searchStringQuery.AssetTypes = (AssetTypes)SPEditorGUILayout.EnumFlagField(typeof(AssetTypes), GUIContent.none, (int)_searchStringQuery.AssetTypes, GUILayout.Width(100f));
             _searchStringQuery.UseRegex = EditorGUILayout.ToggleLeft("Regex", _searchStringQuery.UseRegex, GUILayout.Width(60f));
@@ -103,7 +112,7 @@ namespace com.spacepuppyeditor.Windows
 
             if (!string.IsNullOrEmpty(_searchStringQuery.SearchString))
             {
-                if (GUILayout.Button("Search For String", GUILayout.Width(200f)))
+                if (GUILayout.Button("Search For String", GUILayout.Width(200f)) || pressedEnterCtrl == CTRL_SEACHSTRING)
                 {
                     _currentQuery = _searchStringQuery;
                     _ = _searchStringQuery.Search();
@@ -128,12 +137,14 @@ namespace com.spacepuppyeditor.Windows
             if ((_currentQuery?.OutputRefs.Count ?? 0) > 0)
             {
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox, GUILayout.ExpandHeight(true));
-                foreach (var pair in _currentQuery.OutputRefs)
+                foreach (var entry in _currentQuery.OutputRefs)
                 {
-                    //EditorGUILayout.ObjectField(pair.Item2, typeof(UnityEngine.Object), false);
-                    if (GUILayout.Button(pair.Item1, EditorStyles.label))
+                    var c = EditorHelper.TempContent(entry.message);
+                    var h = EditorStyles.label.CalcHeight(c, EditorGUIUtility.currentViewWidth);
+                    var r = EditorGUILayout.GetControlRect(false, h);
+                    if (GUI.Button(r, entry.message, EditorStyles.label))
                     {
-                        EditorGUIUtility.PingObject(pair.Item2);
+                        EditorGUIUtility.PingObject(entry.obj);
                     }
                 }
                 EditorGUILayout.EndVertical();
@@ -179,7 +190,7 @@ namespace com.spacepuppyeditor.Windows
 
             bool IsProcessing { get; }
             StringBuilder Output { get; }
-            IReadOnlyList<(string, UnityEngine.Object)> OutputRefs { get; }
+            IReadOnlyList<OutputRefEntry> OutputRefs { get; }
             string CurrentStatus { get; }
 
 
@@ -187,6 +198,13 @@ namespace com.spacepuppyeditor.Windows
             void Clear();
 
 
+        }
+
+        public struct OutputRefEntry
+        {
+            public string path;
+            public string message;
+            public UnityEngine.Object obj;
         }
 
         public class AssetSearchQuery : IQuery
@@ -200,7 +218,7 @@ namespace com.spacepuppyeditor.Windows
             private CancellationTokenSource _cancellationTokenSource;
 
             private StringBuilder _output = new StringBuilder();
-            private List<(string, UnityEngine.Object)> _outputRefs = new List<(string, UnityEngine.Object)>();
+            private List<OutputRefEntry> _outputRefs = new List<OutputRefEntry>();
 
             public string CodePath { get; set; } = "Code";
 
@@ -210,7 +228,7 @@ namespace com.spacepuppyeditor.Windows
 
             public StringBuilder Output => _output;
 
-            public IReadOnlyList<(string, UnityEngine.Object)> OutputRefs => _outputRefs;
+            public IReadOnlyList<OutputRefEntry> OutputRefs => _outputRefs;
 
             #endregion
 
@@ -262,7 +280,12 @@ namespace com.spacepuppyeditor.Windows
                         if (success)
                         {
                             _output.AppendLine(path);
-                            _outputRefs.Add((path, AssetDatabase.LoadAssetAtPath(path, typeof(MonoBehaviour))));
+                            _outputRefs.Add(new OutputRefEntry()
+                            {
+                                path = path,
+                                message = path,
+                                obj = AssetDatabase.LoadAssetAtPath(path, typeof(MonoBehaviour))
+                            });
                         }
                     }
                 }
@@ -314,7 +337,12 @@ namespace com.spacepuppyeditor.Windows
                         _output.AppendLine(path);
 
                         var apath = path.Substring(_dataPath.Length - 6);
-                        _outputRefs.Add((apath, AssetDatabase.LoadAssetAtPath(apath, typeof(UnityEngine.Object))));
+                        _outputRefs.Add(new OutputRefEntry()
+                        {
+                            path = apath,
+                            message = apath,
+                            obj = AssetDatabase.LoadAssetAtPath(apath, typeof(UnityEngine.Object))
+                        });
                     }
                 }
                 catch (System.Exception ex)
@@ -367,7 +395,7 @@ namespace com.spacepuppyeditor.Windows
             private CancellationTokenSource _cancellationTokenSource;
 
             private StringBuilder _output = new StringBuilder();
-            private List<(string, UnityEngine.Object)> _outputRefs = new List<(string, UnityEngine.Object)>();
+            private List<OutputRefEntry> _outputRefs = new List<OutputRefEntry>();
 
             public string SearchString { get; set; }
 
@@ -381,7 +409,7 @@ namespace com.spacepuppyeditor.Windows
 
             public StringBuilder Output => _output;
 
-            public IReadOnlyList<(string, UnityEngine.Object)> OutputRefs => _outputRefs;
+            public IReadOnlyList<OutputRefEntry> OutputRefs => _outputRefs;
 
             #endregion
 
@@ -433,11 +461,15 @@ namespace com.spacepuppyeditor.Windows
                         files = files.Union(Directory.EnumerateFiles("Assets", l_ext[i], SearchOption.AllDirectories));
                     }
 
-                    var validresults = new System.Collections.Concurrent.ConcurrentQueue<string>();
+                    var validresults = new System.Collections.Concurrent.ConcurrentQueue<OutputRefEntry>();
                     var task = Task.Run(() =>
                     {
+                        var sb = new StringBuilder();
                         foreach (var path in files)
                         {
+                            int linenum = 0;
+                            bool matches = false;
+                            sb.Clear();
                             this.OnStatusUpdated("Processing: " + path);
 
                             using (var reader = new StreamReader(path))
@@ -445,12 +477,23 @@ namespace com.spacepuppyeditor.Windows
                                 string ln;
                                 while ((ln = reader.ReadLine()) != null)
                                 {
+                                    linenum++;
                                     if (rx != null ? rx.IsMatch(ln) : ln.Contains(str))
                                     {
-                                        validresults.Enqueue(path);
-                                        break;
+                                        if (!matches) sb.AppendLine(path);
+                                        matches = true;
+                                        sb.AppendLine($"{linenum:000000}: {ln}");
                                     }
                                 }
+                            }
+
+                            if (matches)
+                            {
+                                validresults.Enqueue(new OutputRefEntry()
+                                {
+                                    path = path,
+                                    message = sb.ToString(),
+                                });
                             }
                         }
                     }, _cancellationTokenSource.Token);
@@ -458,17 +501,19 @@ namespace com.spacepuppyeditor.Windows
                     while (!task.IsCompleted)
                     {
                         await Task.Yield();
-                        if (validresults.Count > 0 && validresults.TryDequeue(out string path))
+                        if (validresults.Count > 0 && validresults.TryDequeue(out OutputRefEntry entry))
                         {
-                            _output.AppendLine(path);
-                            _outputRefs.Add((path, AssetDatabase.LoadAssetAtPath(path, typeof(UnityEngine.Object))));
+                            _output.AppendLine(entry.message);
+                            entry.obj = AssetDatabase.LoadAssetAtPath(entry.path, typeof(UnityEngine.Object));
+                            _outputRefs.Add(entry);
                         }
                     }
 
-                    while (validresults.TryDequeue(out string path))
+                    while (validresults.TryDequeue(out OutputRefEntry entry))
                     {
-                        _output.AppendLine(path);
-                        _outputRefs.Add((path, AssetDatabase.LoadAssetAtPath(path, typeof(UnityEngine.Object))));
+                        _output.AppendLine(entry.message);
+                        entry.obj = AssetDatabase.LoadAssetAtPath(entry.path, typeof(UnityEngine.Object));
+                        _outputRefs.Add(entry);
                     }
                 }
                 catch (System.Exception ex)

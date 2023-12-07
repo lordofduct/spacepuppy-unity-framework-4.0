@@ -29,6 +29,8 @@ namespace com.spacepuppy.Spawn
 
         [System.NonSerialized]
         private HashSet<SpawnedObjectController> _objects = new HashSet<SpawnedObjectController>();
+        [System.NonSerialized]
+        private List<SPEventTrackedListenerToken> _onSpawnedHooks = new List<SPEventTrackedListenerToken>();
 
         #endregion
 
@@ -36,14 +38,22 @@ namespace com.spacepuppy.Spawn
 
         void IMStartOrEnableReceiver.OnStartOrEnable()
         {
+            if (_onSpawnedHooks.Count > 0)
+            {
+                for(int i = 0; i < _onSpawnedHooks.Count; i++)
+                {
+                    _onSpawnedHooks[i].Dispose();
+                }
+                _onSpawnedHooks.Clear();
+            }
+
             var e = _spawnPoints.GetEnumerator();
             while(e.MoveNext())
             {
                 var s = e.Current as ISpawnPoint;
                 if (s != null)
                 {
-                    s.OnSpawned.TriggerActivated -= this.OnSpawnedObjectHandler;
-                    s.OnSpawned.TriggerActivated += this.OnSpawnedObjectHandler;
+                    _onSpawnedHooks.Add(s.OnSpawned.AddTrackedListener(this.OnSpawnedObjectHandler));
                 }
             }
         }
@@ -51,22 +61,16 @@ namespace com.spacepuppy.Spawn
         protected override void OnDisable()
         {
             base.OnDisable();
-            
-            var e = _spawnPoints.GetEnumerator();
-            while (e.MoveNext())
+
+            if (_onSpawnedHooks.Count > 0)
             {
-                var s = e.Current as ISpawnPoint;
-                if (s != null)
+                for (int i = 0; i < _onSpawnedHooks.Count; i++)
                 {
-                    s.OnSpawned.TriggerActivated -= this.OnSpawnedObjectHandler;
+                    _onSpawnedHooks[i].Dispose();
                 }
+                _onSpawnedHooks.Clear();
             }
 
-            var e2 = _objects.GetEnumerator();
-            while(e2.MoveNext())
-            {
-
-            }
             _objects.Clear();
         }
 

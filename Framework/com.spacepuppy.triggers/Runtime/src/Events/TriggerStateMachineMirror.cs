@@ -29,6 +29,9 @@ namespace com.spacepuppy
         [SerializeField]
         private Modes _mode;
 
+        [System.NonSerialized]
+        private SPEventTrackedListenerToken _onEnterStateHook;
+
         #endregion
 
         #region CONSTRUCTOR
@@ -36,14 +39,16 @@ namespace com.spacepuppy
         void IMStartOrEnableReceiver.OnStartOrEnable()
         {
             this.Sync();
-            if (_sourceStateMachine) _sourceStateMachine.OnEnterState.TriggerActivated += OnEnterState_TriggerActivated;
+
+            _onEnterStateHook.Dispose();
+            if (_sourceStateMachine) _onEnterStateHook = _sourceStateMachine.OnEnterState.AddTrackedListener(OnEnterState_TriggerActivated);
         }
 
         protected override void OnDisable()
         {
             base.OnDisable();
 
-            if (_sourceStateMachine) _sourceStateMachine.OnEnterState.TriggerActivated -= OnEnterState_TriggerActivated;
+            _onEnterStateHook.Dispose();
         }
 
         #endregion
@@ -62,10 +67,10 @@ namespace com.spacepuppy
             set
             {
                 if (_sourceStateMachine == value) return;
-                if (this.isActiveAndEnabled && _sourceStateMachine) _sourceStateMachine.OnEnterState.TriggerActivated -= OnEnterState_TriggerActivated;
+                _onEnterStateHook.Dispose();
 
                 _sourceStateMachine = value;
-                if (_sourceStateMachine && this.isActiveAndEnabled) _sourceStateMachine.OnEnterState.TriggerActivated += OnEnterState_TriggerActivated;
+                if (_sourceStateMachine && this.isActiveAndEnabled) _onEnterStateHook =  _sourceStateMachine.OnEnterState.AddTrackedListener(OnEnterState_TriggerActivated);
                 this.Sync();
             }
         }

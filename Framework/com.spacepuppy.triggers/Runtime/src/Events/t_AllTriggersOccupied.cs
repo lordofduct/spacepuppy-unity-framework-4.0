@@ -34,6 +34,9 @@ namespace com.spacepuppy.Events
         [System.NonSerialized()]
         private bool _triggered;
 
+        [System.NonSerialized]
+        private List<SPEventTrackedListenerToken> _eventHooks = new List<SPEventTrackedListenerToken>();
+
         #endregion
 
         #region CONSTRUCTOR
@@ -49,10 +52,12 @@ namespace com.spacepuppy.Events
         {
             _triggered = false;
             _activatedTriggers.Clear();
+            this.PurgeEventHooks();
+
             foreach (var t in _targets)
             {
-                t.EnterEvent.TriggerActivated += this.OnTriggerEntered;
-                t.ExitEvent.TriggerActivated += this.OnTriggerExited;
+                _eventHooks.Add(t.EnterEvent.AddTrackedListener(this.OnTriggerEntered));
+                _eventHooks.Add(t.ExitEvent.AddTrackedListener(this.OnTriggerExited));
                 if (t.IsOccupied) _activatedTriggers.Add(t);
             }
             this.TestSignalOccupied();
@@ -64,11 +69,7 @@ namespace com.spacepuppy.Events
 
             _triggered = false;
             _activatedTriggers.Clear();
-            foreach (var t in _targets)
-            {
-                t.EnterEvent.TriggerActivated -= this.OnTriggerEntered;
-                t.ExitEvent.TriggerActivated -= this.OnTriggerExited;
-            }
+            this.PurgeEventHooks();
         }
 
         #endregion
@@ -124,6 +125,18 @@ namespace com.spacepuppy.Events
             {
                 _triggered = true;
                 _onEnter.ActivateTrigger(this, null);
+            }
+        }
+
+        void PurgeEventHooks()
+        {
+            if (_eventHooks.Count > 0)
+            {
+                for (int i = 0; i < _eventHooks.Count; i++)
+                {
+                    _eventHooks[i].Dispose();
+                }
+                _eventHooks.Clear();
             }
         }
 

@@ -7,26 +7,28 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Events
 {
 
-    public struct SPEventRegistrationToken : System.IDisposable
+    public struct SPEventTrackedListenerToken : System.IDisposable
     {
         private BaseSPEvent _spevent;
         private System.EventHandler<TempEventArgs> _handler;
+
+        public BaseSPEvent SPEvent => _spevent;
 
         public void Dispose()
         {
             if (_spevent != null && _handler != null)
             {
                 _spevent.TriggerActivated -= _handler;
-                _spevent = null;
-                _handler = null;
             }
+            _spevent = null;
+            _handler = null;
         }
 
-        internal static SPEventRegistrationToken Create(BaseSPEvent spevent, System.EventHandler<TempEventArgs> handler)
+        internal static SPEventTrackedListenerToken Create(BaseSPEvent spevent, System.EventHandler<TempEventArgs> handler)
         {
             if (spevent == null || handler == null) return default;
             spevent.TriggerActivated += handler;
-            return new SPEventRegistrationToken()
+            return new SPEventTrackedListenerToken()
             {
                 _spevent = spevent,
                 _handler = handler
@@ -209,7 +211,7 @@ namespace com.spacepuppy.Events
             this.OnTriggerActivated(sender, arg);
         }
 
-        public SPEventRegistrationToken RegisterTriggerActivatedHandler(System.EventHandler<TempEventArgs> handler) => SPEventRegistrationToken.Create(this, handler);
+        public SPEventTrackedListenerToken AddTrackedListener(System.EventHandler<TempEventArgs> handler) => SPEventTrackedListenerToken.Create(this, handler);
 
         #endregion
 

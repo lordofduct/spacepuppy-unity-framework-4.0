@@ -44,6 +44,9 @@ namespace com.spacepuppy.UI
         [TypeRestriction(new System.Type[] { typeof(UnityEngine.UI.Button), typeof(SPUIButton) })]
         private Selectable _value;
 
+        [System.NonSerialized]
+        private System.IDisposable _onClickHook;
+
         #endregion
 
         #region Properties
@@ -80,25 +83,18 @@ namespace com.spacepuppy.UI
             switch (_value)
             {
                 case UnityEngine.UI.Button btn:
-                    btn.onClick.AddListener(this.UnityButtonHandler);
+                    _onClickHook = btn.onClick.AddTrackedListener(this.UnityButtonHandler);
                     break;
                 case SPUIButton spbtn:
-                    spbtn.OnClick.TriggerActivated += this.SPButtonHandler;
+                    _onClickHook = spbtn.OnClick.AddTrackedListener(this.SPButtonHandler);
                     break;
             }
         }
 
         private void RemoveEventHandlerHook()
         {
-            switch (_value)
-            {
-                case UnityEngine.UI.Button btn:
-                    btn.onClick.RemoveListener(this.UnityButtonHandler);
-                    break;
-                case SPUIButton spbtn:
-                    spbtn.OnClick.TriggerActivated += this.SPButtonHandler;
-                    break;
-            }
+            _onClickHook?.Dispose();
+            _onClickHook = null;
         }
 
         private void UnityButtonHandler()

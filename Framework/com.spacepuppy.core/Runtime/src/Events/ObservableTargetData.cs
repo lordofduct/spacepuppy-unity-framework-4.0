@@ -21,8 +21,8 @@ namespace com.spacepuppy.Events
 
         [System.NonSerialized]
         private bool _initialized;
-        [System.NonSerialized()]
-        private BaseSPEvent _targetEvent;
+        [System.NonSerialized]
+        private SPEventTrackedListenerToken _eventHook;
         
         #endregion
 
@@ -44,7 +44,6 @@ namespace com.spacepuppy.Events
                 this.DeInit();
                 _target = targ;
                 _initialized = false;
-                _targetEvent = null;
             }
         }
 
@@ -59,7 +58,7 @@ namespace com.spacepuppy.Events
             get
             {
                 if (!_initialized) this.Init();
-                return _targetEvent;
+                return _eventHook.SPEvent;
             }
         }
 
@@ -77,20 +76,17 @@ namespace com.spacepuppy.Events
                 var arr = (_target as IObservableTrigger).GetEvents();
                 if (arr != null && _triggerIndex < arr.Length)
                 {
-                    _targetEvent = arr[_triggerIndex];
-                    if (_targetEvent != null) _targetEvent.TriggerActivated += this.OnTriggerActivated;
+                    _eventHook.SPEvent?.EndHijack(this);
+                    _eventHook.Dispose();
+                    if (arr[_triggerIndex] != null) _eventHook = arr[_triggerIndex].AddTrackedListener(this.OnTriggerActivated);
                 }
             }
         }
 
         public void DeInit()
         {
-            if (_targetEvent != null)
-            {
-                _targetEvent.EndHijack(this);
-                _targetEvent.TriggerActivated -= this.OnTriggerActivated;
-                _targetEvent = null;
-            }
+            _eventHook.SPEvent?.EndHijack(this);
+            _eventHook.Dispose();
             _initialized = false;
         }
 
@@ -98,18 +94,15 @@ namespace com.spacepuppy.Events
         {
             if (!_initialized) this.Init();
 
-            if (_targetEvent == null) return false;
+            if (_eventHook.SPEvent == null) return false;
 
-            _targetEvent.BeginHijack(this);
+            _eventHook.SPEvent.BeginHijack(this);
             return true;
         }
 
         public void EndHijack()
         {
-            if (_targetEvent != null)
-            {
-                _targetEvent.EndHijack();
-            }
+            _eventHook.SPEvent?.EndHijack();
         }
 
         private void OnTriggerActivated(object sender, TempEventArgs e)

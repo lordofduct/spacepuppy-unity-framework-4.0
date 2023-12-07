@@ -8,11 +8,12 @@ using com.spacepuppy.Utils;
 
 namespace com.spacepuppyeditor.UI
 {
+
     public class SPUIButtonInspector
     {
 
         [MenuItem("CONTEXT/Button/Switch to SP UI Button")]
-        public static void DoAThing()
+        static void SwitchToSPUIButton()
         {
             UnityEngine.Object script;
             try
@@ -32,4 +33,5 @@ namespace com.spacepuppyeditor.UI
         }
 
     }
+
 }

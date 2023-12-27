@@ -1,6 +1,3 @@
-using com.spacepuppy.Events;
-using MacFsWatcher;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.Events;
 

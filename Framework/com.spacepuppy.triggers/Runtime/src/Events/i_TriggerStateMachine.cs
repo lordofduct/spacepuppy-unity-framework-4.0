@@ -26,6 +26,10 @@ namespace com.spacepuppy.Events
         private bool _returnToInitialStateOnEnable;
 
         [SerializeField]
+        [Tooltip("If this is triggered, don't signal the state that is active.")]
+        private bool _ignoreTriggerForwarding;
+
+        [SerializeField]
         private StateCollection _states = new StateCollection();
 
         [SerializeField]
@@ -70,6 +74,23 @@ namespace com.spacepuppy.Events
 
         #region Properties
 
+        public int InitialState
+        {
+            get => _initialState;
+            set => _initialState = value;
+        }
+
+        public bool ReturnToInitialStateOnEnable
+        {
+            get => _returnToInitialStateOnEnable;
+            set => _returnToInitialStateOnEnable = value;
+        }
+
+        public bool IgnoreTriggerForwarding
+        {
+            get => _ignoreTriggerForwarding;
+            set => _ignoreTriggerForwarding = value;
+        }
 
         [ShowNonSerializedProperty("Current State")]
         public int? CurrentStateIndex => _states.CurrentStateIndex;
@@ -109,6 +130,8 @@ namespace com.spacepuppy.Events
         #endregion
 
         #region ITriggerable Interface
+
+        public override bool CanTrigger => !_ignoreTriggerForwarding && base.CanTrigger;
 
         public override bool Trigger(object sender, object arg)
         {

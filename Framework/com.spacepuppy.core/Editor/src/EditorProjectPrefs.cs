@@ -93,8 +93,13 @@ namespace com.spacepuppyeditor
             float GetFloat(string key, float defaultValue);
             string GetString(string key);
             string GetString(string key, string defaultValue);
+#if UNITY_2021_3_OR_NEWER
+            T GetEnum<T>(string key) where T : struct, System.Enum;
+            T GetEnum<T>(string key, T defaultValue) where T : struct, System.Enum;
+#else
             T GetEnum<T>(string key) where T : struct, System.IConvertible;
             T GetEnum<T>(string key, T defaultValue) where T : struct, System.IConvertible;
+#endif
             void SetBool(string key, bool value);
             void SetInt(string key, int value);
             void SetFloat(string key, float value);
@@ -169,14 +174,22 @@ namespace com.spacepuppyeditor
                 return EditorPrefs.GetString(key, defaultValue);
             }
 
+#if UNITY_2021_3_OR_NEWER
+            public T GetEnum<T>(string key) where T : struct, System.Enum
+#else
             public T GetEnum<T>(string key) where T : struct, System.IConvertible
+#endif
             {
                 key = GetKey(key);
                 int i = EditorPrefs.GetInt(key);
                 return ConvertUtil.ToEnum<T>(i);
             }
 
+#if UNITY_2021_3_OR_NEWER
+            public T GetEnum<T>(string key, T defaultValue) where T : struct, System.Enum
+#else
             public T GetEnum<T>(string key, T defaultValue) where T : struct, System.IConvertible
+#endif
             {
                 key = GetKey(key);
                 int i = EditorPrefs.GetInt(key, System.Convert.ToInt32(defaultValue));
@@ -314,13 +327,21 @@ namespace com.spacepuppyeditor
                 return (xattrib != null) ? xel.Attribute("value").Value : defaultValue;
             }
 
+#if UNITY_2021_3_OR_NEWER
+            public T GetEnum<T>(string key) where T : struct, System.Enum
+#else
             public T GetEnum<T>(string key) where T : struct, System.IConvertible
+#endif
             {
                 int i = this.GetInt(key);
                 return ConvertUtil.ToEnum<T>(i);
             }
 
+#if UNITY_2021_3_OR_NEWER
+            public T GetEnum<T>(string key, T defaultValue) where T : struct, System.Enum
+#else
             public T GetEnum<T>(string key, T defaultValue) where T : struct, System.IConvertible
+#endif
             {
                 int i = this.GetInt(key, System.Convert.ToInt32(defaultValue));
                 return ConvertUtil.ToEnum<T>(i, defaultValue);

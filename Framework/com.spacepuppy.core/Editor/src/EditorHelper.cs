@@ -404,7 +404,7 @@ namespace com.spacepuppyeditor
                 {
                     var elementName = element.Substring(0, element.IndexOf("["));
                     var index = System.Convert.ToInt32(element.Substring(element.IndexOf("[")).Replace("[", "").Replace("]", ""));
-                    for(int i = 0; i < arr.Length; i++)
+                    for (int i = 0; i < arr.Length; i++)
                     {
                         arr[i] = GetValue_Imp(arr[i], elementName, index);
                     }
@@ -521,7 +521,11 @@ namespace com.spacepuppyeditor
             prop.intValue = ConvertUtil.ToInt(value);
         }
 
+#if UNITY_2021_3_OR_NEWER
+        public static T GetEnumValue<T>(this SerializedProperty prop) where T : struct, System.Enum
+#else
         public static T GetEnumValue<T>(this SerializedProperty prop) where T : struct, System.IConvertible
+#endif
         {
             if (prop == null) throw new System.ArgumentNullException("prop");
 

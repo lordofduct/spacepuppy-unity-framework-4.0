@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Text.RegularExpressions;
+using System.Runtime.CompilerServices;
 
 namespace com.spacepuppy.Utils
 {
@@ -85,7 +86,7 @@ namespace com.spacepuppy.Utils
             byte b = (byte)(value & 0xFF);
             return new Color32(r, g, b, a);
         }
-        
+
         public static Color32 ToColor32(string value)
         {
             return ToColor32(ToInt(value));
@@ -128,10 +129,15 @@ namespace com.spacepuppy.Utils
 
         #region ToEnum
 
+#if UNITY_2021_3_OR_NEWER
+        public static T ToEnum<T>(string val, T defaultValue) where T : struct, System.Enum
+        {
+#else
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T ToEnum<T>(string val, T defaultValue) where T : struct, System.IConvertible
         {
             if (!typeof(T).IsEnum) throw new System.ArgumentException("T must be an enumerated type");
-
+#endif
             try
             {
                 T result = (T)System.Enum.Parse(typeof(T), val, true);
@@ -143,10 +149,14 @@ namespace com.spacepuppy.Utils
             }
         }
 
+#if UNITY_2021_3_OR_NEWER
+        public static T ToEnum<T>(int val, T defaultValue) where T : struct, System.Enum
+        {
+#else
         public static T ToEnum<T>(int val, T defaultValue) where T : struct, System.IConvertible
         {
             if (!typeof(T).IsEnum) throw new System.ArgumentException("T must be an enumerated type");
-            
+#endif
             try
             {
                 return (T)System.Enum.ToObject(typeof(T), val);
@@ -157,10 +167,14 @@ namespace com.spacepuppy.Utils
             }
         }
 
+#if UNITY_2021_3_OR_NEWER
+        public static T ToEnum<T>(long val, T defaultValue) where T : struct, System.Enum
+        {
+#else
         public static T ToEnum<T>(long val, T defaultValue) where T : struct, System.IConvertible
         {
             if (!typeof(T).IsEnum) throw new System.ArgumentException("T must be an enumerated type");
-
+#endif
             try
             {
                 return (T)System.Enum.ToObject(typeof(T), val);
@@ -171,23 +185,53 @@ namespace com.spacepuppy.Utils
             }
         }
 
+#if UNITY_2021_3_OR_NEWER
+        public static T ToEnum<T>(object val, T defaultValue) where T : struct, System.Enum
+        {
+#else
         public static T ToEnum<T>(object val, T defaultValue) where T : struct, System.IConvertible
         {
+            if (!typeof(T).IsEnum) throw new System.ArgumentException("T must be an enumerated type");
+#endif
             return ToEnum<T>(System.Convert.ToString(val), defaultValue);
         }
 
+#if UNITY_2021_3_OR_NEWER
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T ToEnum<T>(string val) where T : struct, System.Enum
+        {
+#else
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T ToEnum<T>(string val) where T : struct, System.IConvertible
         {
+            if (!typeof(T).IsEnum) throw new System.ArgumentException("T must be an enumerated type");
+#endif
             return ToEnum<T>(val, default(T));
         }
 
+#if UNITY_2021_3_OR_NEWER
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T ToEnum<T>(int val) where T : struct, System.Enum
+        {
+#else
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T ToEnum<T>(int val) where T : struct, System.IConvertible
         {
+            if (!typeof(T).IsEnum) throw new System.ArgumentException("T must be an enumerated type");
+#endif
             return ToEnum<T>(val, default(T));
         }
 
+#if UNITY_2021_3_OR_NEWER
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T ToEnum<T>(object val) where T : struct, System.Enum
+        {
+#else
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T ToEnum<T>(object val) where T : struct, System.IConvertible
         {
+            if (!typeof(T).IsEnum) throw new System.ArgumentException("T must be an enumerated type");
+#endif
             return ToEnum<T>(System.Convert.ToString(val), default(T));
         }
 
@@ -202,9 +246,14 @@ namespace com.spacepuppy.Utils
 
         }
 
+#if UNITY_2021_3_OR_NEWER
+        public static bool TryToEnum<T>(object value, out T result) where T : struct, System.Enum
+        {
+#else
         public static bool TryToEnum<T>(object value, out T result) where T : struct, System.IConvertible
         {
             if (!typeof(T).IsEnum) throw new System.ArgumentException("T must be an enumerated type");
+#endif
 
             try
             {
@@ -778,7 +827,7 @@ namespace com.spacepuppy.Utils
         {
             return value.x;
         }
-        
+
         public static float ToSingle(object value)
         {
             if (value == null)
@@ -796,11 +845,11 @@ namespace com.spacepuppy.Utils
                     return 0;
                 }
             }
-            else if(value is Vector2)
+            else if (value is Vector2)
             {
                 return ToSingle((Vector2)value);
             }
-            else if(value is Vector3)
+            else if (value is Vector3)
             {
                 return ToSingle((Vector3)value);
             }
@@ -904,7 +953,7 @@ namespace com.spacepuppy.Utils
         {
             return value.x;
         }
-        
+
         public static double ToDouble(object value)
         {
             if (value == null)
@@ -956,7 +1005,7 @@ namespace com.spacepuppy.Utils
 
             style = style & System.Globalization.NumberStyles.Any;
             double dbl = 0;
-            if(double.TryParse(value, style, provider, out dbl))
+            if (double.TryParse(value, style, provider, out dbl))
             {
                 return dbl;
             }
@@ -1018,7 +1067,7 @@ namespace com.spacepuppy.Utils
                     return 0d;
                 }
             }
-            
+
 
             ////################
             ////OLD garbage heavy version
@@ -1420,9 +1469,9 @@ namespace com.spacepuppy.Utils
             //str = (str + "").Trim().ToLower();
             //return (!string.IsNullOrEmpty(str) && str != "false" && str != "0");
 
-            return !string.IsNullOrEmpty(str) && 
-                   !str.Equals("false", System.StringComparison.OrdinalIgnoreCase) && 
-                   !str.Equals("0", System.StringComparison.OrdinalIgnoreCase) && 
+            return !string.IsNullOrEmpty(str) &&
+                   !str.Equals("false", System.StringComparison.OrdinalIgnoreCase) &&
+                   !str.Equals("0", System.StringComparison.OrdinalIgnoreCase) &&
                    !str.Equals("off", System.StringComparison.OrdinalIgnoreCase);
         }
         #endregion
@@ -2329,7 +2378,7 @@ namespace com.spacepuppy.Utils
 
             sval = sval.Trim();
 
-            if(IsHex(sval))
+            if (IsHex(sval))
             {
                 return true;
             }
@@ -2504,7 +2553,7 @@ namespace com.spacepuppy.Utils
                     return false;
             }
         }
-        
+
         #endregion
 
         #region "wildcard"
@@ -2745,7 +2794,7 @@ namespace com.spacepuppy.Utils
             //else
             //    sType = sType.Trim();
             if (string.IsNullOrEmpty(sType)) return null;
-            
+
             var match = Regex.Match(sType, sREGX, RegexOptions.IgnoreCase);
             if (!match.Success)
                 return null;
@@ -3073,7 +3122,7 @@ namespace com.spacepuppy.Utils
         private static object ToPrim(object value, System.Type tp, System.TypeCode code)
         {
             //first make sure it's not an enum
-            if(tp != null && tp.IsEnum)
+            if (tp != null && tp.IsEnum)
             {
                 if (value is string)
                     return System.Enum.Parse(tp, value as string, true);
@@ -3169,7 +3218,7 @@ namespace com.spacepuppy.Utils
                     return null;
             }
         }
-        
+
 
         /// <summary>
         /// Will do whatever it can to convert the value to T, if it fails default(T) is returned.
@@ -3182,11 +3231,11 @@ namespace com.spacepuppy.Utils
             if (value is T) return (T)value;
             if (value == null) return default(T);
 
-            if(IsSupportedType(typeof(T), System.Type.GetTypeCode(typeof(T))))
+            if (IsSupportedType(typeof(T), System.Type.GetTypeCode(typeof(T))))
             {
                 return ToPrim<T>(value);
             }
-            else if(value is System.IConvertible)
+            else if (value is System.IConvertible)
             {
                 try
                 {
@@ -3204,11 +3253,11 @@ namespace com.spacepuppy.Utils
             if (value != null && tp.IsInstanceOfType(value)) return value;
 
             var tc = System.Type.GetTypeCode(tp);
-            if(IsSupportedType(tp, tc))
+            if (IsSupportedType(tp, tc))
             {
                 return ToPrim(value, tp, tc);
             }
-            else if(value is System.IConvertible)
+            else if (value is System.IConvertible)
             {
                 try
                 {

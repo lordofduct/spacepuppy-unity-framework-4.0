@@ -196,7 +196,8 @@ namespace com.spacepuppyeditor.Core
                                                                         targProp.objectReferenceValue,
                                                                         memberProp.stringValue,
                                                                         memberAccessLevel,
-                                                                        out selectedMember);
+                                                                        out selectedMember,
+                                                                        ReflectedPropertyFieldOptions.AllowDynamicProperties);
             return selectedMember;
         }
 

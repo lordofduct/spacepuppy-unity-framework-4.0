@@ -38,14 +38,15 @@ namespace com.spacepuppyeditor.Events
                                                                               memberProp.stringValue,
                                                                               com.spacepuppy.Dynamic.DynamicMemberAccess.ReadWrite,
                                                                               out selectedMember,
-                                                                              true);
+                                                                              ReflectedPropertyFieldOptions.AllowSetterMethods | ReflectedPropertyFieldOptions.AllowDynamicProperties);
             this.serializedObject.ApplyModifiedProperties();
 
 
             //MEMBER VALUE TO SET TO
             if (selectedMember != null)
             {
-                var propType = com.spacepuppy.Dynamic.DynamicUtil.GetInputType(selectedMember);
+                var propType = DynamicUtil.GetInputType_RespectingDynamicProperty(selectedMember, targProp.objectReferenceValue);
+
                 var emode = modeProp.GetEnumValue<i_SetValue.SetMode>();
                 if (emode == i_SetValue.SetMode.Toggle)
                 {

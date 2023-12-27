@@ -20,7 +20,8 @@ namespace com.spacepuppy
     public class VariantReference : System.Runtime.Serialization.ISerializable, 
         System.ICloneable, 
         System.IDisposable, 
-        ISPDisposable
+        ISPDisposable,
+        IDynamicProperty
     {
 
         public enum RefMode : byte
@@ -1913,6 +1914,14 @@ namespace com.spacepuppy
         {
             this.Reset();
         }
+
+        #endregion
+
+        #region IDynamicProperty Interface
+
+        void IDynamicProperty.Set(object value) => this.Value = value;
+        object IDynamicProperty.Get() => this.Value;
+        System.Type IDynamicProperty.GetType() => typeof(object);
 
         #endregion
 

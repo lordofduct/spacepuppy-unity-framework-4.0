@@ -50,7 +50,7 @@ namespace com.spacepuppyeditor.Events
                                                                                   memberProp.stringValue,
                                                                                   com.spacepuppy.Dynamic.DynamicMemberAccess.ReadWrite,
                                                                                   out selectedMember,
-                                                                                  true);
+                                                                                  ReflectedPropertyFieldOptions.AllowSetterMethods | ReflectedPropertyFieldOptions.AllowDynamicProperties);
             }
             else
             {
@@ -66,7 +66,7 @@ namespace com.spacepuppyeditor.Events
                                                                                   restrictType,
                                                                                   memberProp.stringValue,
                                                                                   out selectedMember,
-                                                                                  true);
+                                                                                  ReflectedPropertyFieldOptions.AllowSetterMethods | ReflectedPropertyFieldOptions.AllowDynamicProperties);
             }
             this.serializedObject.ApplyModifiedProperties();
 
@@ -108,7 +108,8 @@ namespace com.spacepuppyeditor.Events
             }
             else if (selectedMember != null)
             {
-                var propType = com.spacepuppy.Dynamic.DynamicUtil.GetInputType(selectedMember);
+                var propType = DynamicUtil.GetInputType_RespectingDynamicProperty(selectedMember, targProp.objectReferenceValue);
+
                 var emode = modeProp.GetEnumValue<i_SetValueOnTarget.SetMode>();
                 if (emode == i_SetValueOnTarget.SetMode.Toggle)
                 {

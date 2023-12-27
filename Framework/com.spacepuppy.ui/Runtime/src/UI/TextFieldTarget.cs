@@ -2,12 +2,13 @@ using UnityEngine;
 using System.Collections.Generic;
 
 using com.spacepuppy.Utils;
+using com.spacepuppy.Dynamic;
 
 namespace com.spacepuppy.UI
 {
 
     [System.Serializable]
-    public sealed class TextFieldTarget
+    public sealed class TextFieldTarget : IDynamicProperty
     {
 
         #region Fields
@@ -58,6 +59,14 @@ namespace com.spacepuppy.UI
                     break;
             }
         }
+
+        #endregion
+
+        #region IDynamicProperty Interface
+
+        void IDynamicProperty.Set(object value) => this.Target = value as UnityEngine.Object;
+        object IDynamicProperty.Get() => this.Target;
+        System.Type IDynamicProperty.GetType() => typeof(UnityEngine.Object);
 
         #endregion
 

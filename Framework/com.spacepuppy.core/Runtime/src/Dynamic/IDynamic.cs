@@ -5,7 +5,6 @@ using System.Globalization;
 using System.Linq;
 
 using com.spacepuppy.Utils;
-using System.Diagnostics;
 
 namespace com.spacepuppy.Dynamic
 {
@@ -23,6 +22,14 @@ namespace com.spacepuppy.Dynamic
 
     }
 
+    public interface IDynamicProperty
+    {
+        object Get();
+        void Set(object value);
+        System.Type GetType();
+    }
+
+
     [System.Flags()]
     public enum DynamicMemberAccess
     {
@@ -30,6 +37,13 @@ namespace com.spacepuppy.Dynamic
         Read = 1,
         Write = 2,
         ReadWrite = 3
+    }
+
+    [System.Flags]
+    public enum EasilySerializedFieldsOptions
+    {
+        IncludeObsoleteMembers = 1,
+        IncludeDynamicProperties = 2,
     }
 
     public static class DynamicUtil
@@ -363,35 +377,50 @@ namespace com.spacepuppy.Dynamic
 
             try
             {
-                System.Type rtp;
                 object cobj = null;
 
                 switch (member)
                 {
                     case FieldInfo fi:
                         {
-                            rtp = GetReturnType(member);
-                            fi.SetValue(obj, value, BindingFlags.SetField, DynamicSetterBinder.Default, null);
+                            if (fi.GetValue(obj) is IDynamicProperty dp)
+                            {
+                                dp.Set(value);
+                            }
+                            else
+                            {
+                                fi.SetValue(obj, value, BindingFlags.SetField, DynamicSetterBinder.Default, null);
+                            }
+                            return true;
                         }
-                        return true;
                     case PropertyInfo pi:
-                        if (pi.CanWrite)
                         {
-                            rtp = GetReturnType(member);
-                            pi.SetValue(obj, value, BindingFlags.SetProperty, DynamicSetterBinder.Default, index, null);
+                            if (pi.CanRead && pi.GetValue(obj) is IDynamicProperty dp)
+                            {
+                                dp.Set(value);
+                                return true;
+                            }
+                            else if (pi.CanWrite)
+                            {
+                                pi.SetValue(obj, value, BindingFlags.SetProperty, DynamicSetterBinder.Default, index, null);
+                                return true;
+                            }
+                            else
+                            {
+                                return false;
+                            }
                         }
-                        return true;
                     case MethodInfo mi:
                         {
-                            rtp = mi.GetParameters().FirstOrDefault()?.ParameterType;
+                            var rtp = mi.GetParameters().FirstOrDefault()?.ParameterType;
                             if (rtp != null && !rtp.IsInstanceOfType(value) && ConvertUtil.TryToPrim(value, rtp, out cobj))
                                 value = cobj;
 
                             var arr = ArrayUtil.Temp(value);
                             mi.Invoke(obj, BindingFlags.InvokeMethod, DynamicSetterBinder.Default, arr, null);
                             ArrayUtil.ReleaseTemp(arr);
+                            return true;
                         }
-                        return true;
                 }
             }
             catch
@@ -413,15 +442,22 @@ namespace com.spacepuppy.Dynamic
             {
                 var tp = obj.GetType();
                 var member = FindBestMatchingGetterMember(tp, sprop, true, args);
+                object result = null;
                 switch (FindBestMatchingGetterMember(tp, sprop, true, args))
                 {
                     case FieldInfo fi:
-                        return fi.GetValue(obj);
+                        result = fi.GetValue(obj);
+                        break;
                     case PropertyInfo prop:
-                        return prop.GetValue(obj, args);
+                        result = prop.GetValue(obj, args);
+                        break;
                     case MethodInfo meth:
-                        return meth.Invoke(obj, args);
+                        result = meth.Invoke(obj, args);
+                        break;
                 }
+
+                if (result is IDynamicProperty dp) result = dp.Get();
+                return result;
             }
             catch
             {
@@ -433,64 +469,45 @@ namespace com.spacepuppy.Dynamic
 
         public static object GetValueDirect(this object obj, MemberInfo member, params object[] args)
         {
-            switch (member.MemberType)
+            object result = null;
+            switch (member)
             {
-                case System.Reflection.MemberTypes.Field:
-                    var field = member as System.Reflection.FieldInfo;
-                    return field.GetValue(obj);
-
-                case System.Reflection.MemberTypes.Property:
+                case FieldInfo fi:
                     {
-                        var prop = member as System.Reflection.PropertyInfo;
+                        result = fi.GetValue(obj);
+                        if (result is IDynamicProperty dp) result = dp.Get();
+                    }
+                    break;
+                case PropertyInfo prop:
+                    {
                         var paramInfos = prop.GetIndexParameters();
                         if (prop.CanRead && DynamicUtil.ParameterSignatureMatches(args, paramInfos, false))
                         {
-                            return prop.GetValue(obj, args);
+                            result = prop.GetValue(obj, args);
                         }
-                        break;
+                        else if (prop.CanRead && DynamicUtil.ParameterSignatureMatchesNumericallyUnstrict(args, paramInfos, false, true))
+                        {
+                            result = prop.GetValue(obj, args);
+                        }
+                        if (result is IDynamicProperty dp) result = dp.Get();
                     }
-                case System.Reflection.MemberTypes.Method:
+                    break;
+                case MethodInfo meth:
                     {
-                        var meth = member as System.Reflection.MethodInfo;
                         var paramInfos = meth.GetParameters();
                         if (DynamicUtil.ParameterSignatureMatches(args, paramInfos, false))
                         {
-                            return meth.Invoke(obj, args);
+                            result = meth.Invoke(obj, args);
                         }
-                        break;
+                        else if (DynamicUtil.ParameterSignatureMatchesNumericallyUnstrict(args, paramInfos, false, true))
+                        {
+                            result = meth.Invoke(obj, args);
+                        }
                     }
+                    break;
             }
 
-            //unstrict
-            switch (member.MemberType)
-            {
-                case System.Reflection.MemberTypes.Field:
-                    var field = member as System.Reflection.FieldInfo;
-                    return field.GetValue(obj);
-
-                case System.Reflection.MemberTypes.Property:
-                    {
-                        var prop = member as System.Reflection.PropertyInfo;
-                        var paramInfos = prop.GetIndexParameters();
-                        if (prop.CanRead && DynamicUtil.ParameterSignatureMatchesNumericallyUnstrict(args, paramInfos, false, true))
-                        {
-                            return prop.GetValue(obj, args);
-                        }
-                        break;
-                    }
-                case System.Reflection.MemberTypes.Method:
-                    {
-                        var meth = member as System.Reflection.MethodInfo;
-                        var paramInfos = meth.GetParameters();
-                        if (DynamicUtil.ParameterSignatureMatchesNumericallyUnstrict(args, paramInfos, false, true))
-                        {
-                            return meth.Invoke(obj, args);
-                        }
-                        break;
-                    }
-            }
-
-            return null;
+            return result;
         }
 
         public static bool TryGetValueDirect(object obj, string sprop, out object result, params object[] args)
@@ -505,18 +522,25 @@ namespace com.spacepuppy.Dynamic
             {
                 var tp = obj.GetType();
                 var member = FindBestMatchingGetterMember(tp, sprop, true, args);
+                bool success = false;
                 switch (FindBestMatchingGetterMember(tp, sprop, true, args))
                 {
                     case FieldInfo fi:
                         result = fi.GetValue(obj);
-                        return true;
+                        success = true;
+                        break;
                     case PropertyInfo prop:
                         result = prop.GetValue(obj, args);
-                        return true;
+                        success = true;
+                        break;
                     case MethodInfo meth:
                         result = meth.Invoke(obj, args);
-                        return true;
+                        success = true;
+                        break;
                 }
+
+                if (success && result is IDynamicProperty dp) result = dp.Get();
+                return success;
             }
             catch
             {
@@ -1189,22 +1213,56 @@ namespace com.spacepuppy.Dynamic
         {
             if (info == null) return null;
 
-            switch (info.MemberType)
+            switch (info)
             {
-                case MemberTypes.Field:
-                    return (info as FieldInfo).FieldType;
-                case MemberTypes.Property:
-                    return (info as PropertyInfo).PropertyType;
-                case MemberTypes.Method:
+                case FieldInfo fi:
+                    return fi.FieldType;
+                case PropertyInfo prop:
+                    return prop.PropertyType;
+                case MethodInfo meth:
                     {
-                        var meth = info as MethodInfo;
-                        if (meth == null) return null;
                         var arr = meth.GetParameters();
                         if (arr.Length == 0) return null;
                         return arr[0].ParameterType;
                     }
+                default:
+                    return null;
             }
-            return null;
+        }
+
+        public static Type GetInputType_RespectingDynamicProperty(MemberInfo info, object target)
+        {
+            if (info == null) return null;
+
+            switch (info)
+            {
+                case FieldInfo fi:
+                    if (TypeUtil.IsType(fi.FieldType, typeof(IDynamicProperty)))
+                    {
+                        return target != null ? (fi.GetValue(target) as IDynamicProperty)?.GetType() ?? typeof(object) : typeof(object);
+                    }
+                    else
+                    {
+                        return fi.FieldType;
+                    }
+                case PropertyInfo prop:
+                    if (TypeUtil.IsType(prop.PropertyType, typeof(IDynamicProperty)))
+                    {
+                        return target != null ? (prop.GetValue(target) as IDynamicProperty)?.GetType() ?? typeof(object) : typeof(object);
+                    }
+                    else
+                    {
+                        return prop.PropertyType;
+                    }
+                case MethodInfo meth:
+                    {
+                        var arr = meth.GetParameters();
+                        if (arr.Length == 0) return null;
+                        return arr[0].ParameterType;
+                    }
+                default:
+                    return null;
+            }
         }
 
         public static DynamicMemberAccess GetMemberAccessLevel(MemberInfo info)
@@ -1293,17 +1351,19 @@ namespace com.spacepuppy.Dynamic
         /// <param name="mask">MemberType mask</param>
         /// <param name="access">Access mask</param>
         /// <returns></returns>
-        public static IEnumerable<System.Reflection.MemberInfo> GetEasilySerializedMembers(object obj, MemberTypes mask = MemberTypes.All, DynamicMemberAccess access = DynamicMemberAccess.ReadWrite, bool ignoreObsoleteMembers = true)
+        public static IEnumerable<System.Reflection.MemberInfo> GetEasilySerializedMembers(object obj, MemberTypes mask = MemberTypes.All, DynamicMemberAccess access = DynamicMemberAccess.ReadWrite, EasilySerializedFieldsOptions options = 0)
         {
             if (obj == null) yield break;
 
             bool bRead = (access & DynamicMemberAccess.Read) != 0;
             bool bWrite = (access & DynamicMemberAccess.Write) != 0;
+            bool bIncludeObsolete = (options & EasilySerializedFieldsOptions.IncludeObsoleteMembers) != 0;
+            bool bIncludeDynamic = (options & EasilySerializedFieldsOptions.IncludeDynamicProperties) != 0;
             var members = com.spacepuppy.Dynamic.DynamicUtil.GetMembers(obj, false, mask);
             foreach (var mi in members)
             {
                 if ((mi.MemberType & mask) == 0) continue;
-                if (ignoreObsoleteMembers && mi.IsObsolete()) continue;
+                if (!bIncludeObsolete && mi.IsObsolete()) continue;
 
                 //if ((mi.DeclaringType.IsAssignableFrom(typeof(UnityEngine.MonoBehaviour)) ||
                 //     mi.DeclaringType.IsAssignableFrom(typeof(SPComponent))) && mi.Name != "enabled") continue;
@@ -1342,7 +1402,7 @@ namespace com.spacepuppy.Dynamic
                             var f = mi as System.Reflection.FieldInfo;
                             if (f.IsSpecialName) continue;
 
-                            if (VariantReference.AcceptableSerializableType(f.FieldType)) yield return f;
+                            if (VariantReference.AcceptableSerializableType(f.FieldType) || (bIncludeDynamic && TypeUtil.IsType(f.FieldType, typeof(IDynamicProperty)))) yield return f;
                         }
                         break;
                     case System.Reflection.MemberTypes.Property:
@@ -1350,10 +1410,19 @@ namespace com.spacepuppy.Dynamic
                             var p = mi as System.Reflection.PropertyInfo;
                             if (p.IsSpecialName) continue;
                             if (!p.CanRead && bRead) continue;
-                            if (!p.CanWrite && bWrite) continue;
-                            if (p.GetIndexParameters().Length > 0) continue; //indexed properties are not allowed
+                            if (bIncludeDynamic && TypeUtil.IsType(p.PropertyType, typeof(IDynamicProperty)))
+                            {
+                                if (p.GetIndexParameters().Length > 0) continue; //indexed properties are not allowed
 
-                            if (VariantReference.AcceptableSerializableType(p.PropertyType)) yield return p;
+                                yield return p;
+                            }
+                            else
+                            {
+                                if (!p.CanWrite && bWrite) continue;
+                                if (p.GetIndexParameters().Length > 0) continue; //indexed properties are not allowed
+
+                                if (VariantReference.AcceptableSerializableType(p.PropertyType)) yield return p;
+                            }
                         }
                         break;
                 }
@@ -1361,17 +1430,19 @@ namespace com.spacepuppy.Dynamic
             }
         }
 
-        public static IEnumerable<System.Reflection.MemberInfo> GetEasilySerializedMembersFromType(System.Type tp, MemberTypes mask = MemberTypes.All, DynamicMemberAccess access = DynamicMemberAccess.ReadWrite, bool ignoreObsoleteMembers = true)
+        public static IEnumerable<System.Reflection.MemberInfo> GetEasilySerializedMembersFromType(System.Type tp, MemberTypes mask = MemberTypes.All, DynamicMemberAccess access = DynamicMemberAccess.ReadWrite, EasilySerializedFieldsOptions options = 0)
         {
             if (tp == null) yield break;
 
             bool bRead = (access & DynamicMemberAccess.Read) != 0;
             bool bWrite = (access & DynamicMemberAccess.Write) != 0;
+            bool bIncludeObsolete = (options & EasilySerializedFieldsOptions.IncludeObsoleteMembers) != 0;
+            bool bIncludeDynamic = (options & EasilySerializedFieldsOptions.IncludeDynamicProperties) != 0;
             var members = com.spacepuppy.Dynamic.DynamicUtil.GetMembersFromType(tp, false, mask);
             foreach (var mi in members)
             {
                 if ((mi.MemberType & mask) == 0) continue;
-                if (ignoreObsoleteMembers && mi.IsObsolete()) continue;
+                if (!bIncludeObsolete && mi.IsObsolete()) continue;
 
                 //if ((mi.DeclaringType.IsAssignableFrom(typeof(UnityEngine.MonoBehaviour)) ||
                 //     mi.DeclaringType.IsAssignableFrom(typeof(SPComponent))) && mi.Name != "enabled") continue;
@@ -1410,7 +1481,7 @@ namespace com.spacepuppy.Dynamic
                             var f = mi as System.Reflection.FieldInfo;
                             if (f.IsSpecialName) continue;
 
-                            if (VariantReference.AcceptableSerializableType(f.FieldType)) yield return f;
+                            if (VariantReference.AcceptableSerializableType(f.FieldType) || (bIncludeDynamic && TypeUtil.IsType(f.FieldType, typeof(IDynamicProperty)))) yield return f;
                         }
                         break;
                     case System.Reflection.MemberTypes.Property:
@@ -1418,10 +1489,19 @@ namespace com.spacepuppy.Dynamic
                             var p = mi as System.Reflection.PropertyInfo;
                             if (p.IsSpecialName) continue;
                             if (!p.CanRead && bRead) continue;
-                            if (!p.CanWrite && bWrite) continue;
-                            if (p.GetIndexParameters().Length > 0) continue; //indexed properties are not allowed
+                            if (bIncludeDynamic && TypeUtil.IsType(p.PropertyType, typeof(IDynamicProperty)))
+                            {
+                                if (p.GetIndexParameters().Length > 0) continue; //indexed properties are not allowed
 
-                            if (VariantReference.AcceptableSerializableType(p.PropertyType)) yield return p;
+                                yield return p;
+                            }
+                            else
+                            {
+                                if (!p.CanWrite && bWrite) continue;
+                                if (p.GetIndexParameters().Length > 0) continue; //indexed properties are not allowed
+
+                                if (VariantReference.AcceptableSerializableType(p.PropertyType)) yield return p;
+                            }
                         }
                         break;
                 }

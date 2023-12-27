@@ -6,6 +6,7 @@ using System.Linq;
 
 using com.spacepuppy;
 using com.spacepuppy.Events;
+using com.spacepuppy.Dynamic;
 using com.spacepuppy.Utils;
 
 using com.spacepuppyeditor.Core;
@@ -68,7 +69,7 @@ namespace com.spacepuppyeditor.Events
                     h += EditorGUIUtility.singleLineHeight * 1f; // 4.0f;
                     break;
                 case TriggerActivationType.CallMethodOnSelectedTarget:
-                    h += EditorGUIUtility.singleLineHeight * _callMethodModeExtraLines; // (3.0f + _callMethodModeExtraLines);
+                    h += EditorGUIUtility.singleLineHeight * (1 + _callMethodModeExtraLines); // (3.0f + _callMethodModeExtraLines);
                     break;
                 case TriggerActivationType.EnableTarget:
                     h += EditorGUIUtility.singleLineHeight * 1f;
@@ -283,72 +284,142 @@ namespace com.spacepuppyeditor.Events
             var targProp = property.FindPropertyRelative(EventTriggerTargetPropertyDrawer.PROP_TRIGGERABLETARG);
             var targObj = targProp.objectReferenceValue;
             System.Reflection.MemberInfo selectedMember = null;
-            if(targObj)
+            if (targObj)
             {
                 string memberName = property.FindPropertyRelative(PROP_METHODNAME).stringValue;
                 selectedMember = GetCallableMethodsOnTarget(targObj, !GameObjectUtil.IsGameObjectSource(targObj)).FirstOrDefault(o => o.Name == memberName);
             }
 
-            //Draw Triggerable Arg
-            var parr = (selectedMember != null) ? com.spacepuppy.Dynamic.DynamicUtil.GetDynamicParameterInfo(selectedMember) : null;
-            if (parr == null || parr.Length == 0)
+            switch (selectedMember?.MemberType ?? System.Reflection.MemberTypes.Method)
             {
-                //NO PARAMETERS
-                _callMethodModeExtraLines = 1;
-
-                var argRect = new Rect(area.xMin, area.yMin, area.width, EditorGUIUtility.singleLineHeight);
-                var argArrayProp = property.FindPropertyRelative(EventTriggerTargetPropertyDrawer.PROP_TRIGGERABLEARGS);
-                if (argArrayProp.arraySize > 0)
-                {
-                    argArrayProp.arraySize = 0;
-                    argArrayProp.serializedObject.ApplyModifiedProperties();
-                }
-
-                var cache = SPGUI.Disable();
-                EditorGUI.LabelField(argRect, GUIContent.none, new GUIContent("*Zero Parameter Count*"));
-                cache.Reset();
-            }
-            else
-            {
-                //MULTIPLE PARAMETERS - special case, does not support trigger event arg
-                _callMethodModeExtraLines = parr.Length;
-
-                var argArrayProp = property.FindPropertyRelative(EventTriggerTargetPropertyDrawer.PROP_TRIGGERABLEARGS);
-
-                if (argArrayProp.arraySize != parr.Length)
-                {
-                    argArrayProp.arraySize = parr.Length;
-                    argArrayProp.serializedObject.ApplyModifiedProperties();
-                }
-
-                for (int i = 0; i < parr.Length; i++)
-                {
-                    var paramType = parr[i].ParameterType;
-                    var argRect = new Rect(area.xMin, area.yMin + i * EditorGUIUtility.singleLineHeight, area.width, EditorGUIUtility.singleLineHeight);
-                    var argProp = argArrayProp.GetArrayElementAtIndex(i);
-
-                    if (paramType == typeof(object))
+                case System.Reflection.MemberTypes.Field:
+                case System.Reflection.MemberTypes.Property:
                     {
-                        //draw the default variant as the method accepts anything
-                        _variantDrawer.RestrictVariantType = false;
-                        _variantDrawer.TypeRestrictedTo = null;
-                        _variantDrawer.ForcedObjectType = null;
-                        _variantDrawer.CurrentTriggerArgIndex = i;
+                        var paramType = DynamicUtil.GetInputType_RespectingDynamicProperty(selectedMember, targObj);
 
-                        string title = string.Format("Arg {0}: {1} ({2})", i, parr[i].ParameterName, parr[i].ParameterType?.Name ?? "dynamic");
-                        _variantDrawer.OnGUI(argRect, argProp, EditorHelper.TempContent(title, "A parameter to be passed to the method if needed."));
+                        var sb = StringUtil.GetTempStringBuilder();
+                        sb.Append($"{targObj.name} : {targObj.GetType().Name}.{selectedMember.Name} : ");
+                        sb.Append(paramType?.Name ?? "*");
+                        string methodDescriptor = StringUtil.Release(sb);
+
+                        var argArrayProp = property.FindPropertyRelative(EventTriggerTargetPropertyDrawer.PROP_TRIGGERABLEARGS);
+                        if (argArrayProp.arraySize != 1)
+                        {
+                            argArrayProp.arraySize = 1;
+                            argArrayProp.serializedObject.ApplyModifiedProperties();
+                        }
+
+                        var argRect = new Rect(area.xMin, area.yMin, area.width, EditorGUIUtility.singleLineHeight);
+                        var argProp = argArrayProp.GetArrayElementAtIndex(0);
+
+                        if (paramType == typeof(object))
+                        {
+                            //draw the default variant as the method accepts anything
+                            _variantDrawer.RestrictVariantType = false;
+                            _variantDrawer.TypeRestrictedTo = null;
+                            _variantDrawer.ForcedObjectType = null;
+                            _variantDrawer.CurrentTriggerArgIndex = 0;
+
+                            string title = string.Format("Arg {0}: {1} ({2})", 0, selectedMember.Name, paramType?.Name ?? "dynamic");
+                            _variantDrawer.OnGUI(argRect, argProp, EditorHelper.TempContent(title, "A parameter to be passed to the method if needed."));
+                        }
+                        else
+                        {
+                            _variantDrawer.RestrictVariantType = true;
+                            _variantDrawer.TypeRestrictedTo = paramType;
+                            _variantDrawer.ForcedObjectType = (paramType.IsInterface || TypeUtil.IsType(paramType, typeof(Component))) ? paramType : null;
+                            _variantDrawer.CurrentTriggerArgIndex = 0;
+
+                            string title = string.Format("Arg {0}: {1} ({2})", 0, selectedMember.Name, paramType?.Name ?? "dynamic");
+                            _variantDrawer.OnGUI(argRect, argProp, EditorHelper.TempContent(title, "A parameter to be passed to the method if needed."));
+                        }
                     }
-                    else
+                    break;
+                default:
                     {
-                        _variantDrawer.RestrictVariantType = true;
-                        _variantDrawer.TypeRestrictedTo = paramType;
-                        _variantDrawer.ForcedObjectType = (paramType.IsInterface || TypeUtil.IsType(paramType, typeof(Component))) ? paramType : null;
-                        _variantDrawer.CurrentTriggerArgIndex = i;
+                        //Draw Triggerable Arg
+                        var parr = (selectedMember != null) ? DynamicUtil.GetDynamicParameterInfo(selectedMember) : null;
+                        if (parr == null || parr.Length == 0)
+                        {
+                            string methodDescriptor = targObj != null && selectedMember != null ? $"{targObj.name} : {targObj.GetType().Name}.{selectedMember.Name}()" : "Undefined member name.";
 
-                        string title = string.Format("Arg {0}: {1} ({2})", i, parr[i].ParameterName, parr[i].ParameterType?.Name ?? "dynamic");
-                        _variantDrawer.OnGUI(argRect, argProp, EditorHelper.TempContent(title, "A parameter to be passed to the method if needed."));
+                            //NO PARAMETERS
+                            _callMethodModeExtraLines = 0;
+
+                            var argRect = new Rect(area.xMin, area.yMin, area.width, EditorGUIUtility.singleLineHeight);
+                            var argArrayProp = property.FindPropertyRelative(EventTriggerTargetPropertyDrawer.PROP_TRIGGERABLEARGS);
+                            if (argArrayProp.arraySize > 0)
+                            {
+                                argArrayProp.arraySize = 0;
+                                argArrayProp.serializedObject.ApplyModifiedProperties();
+                            }
+
+                            var cache = SPGUI.Disable();
+                            EditorGUI.LabelField(argRect, GUIContent.none, new GUIContent(methodDescriptor));
+                            cache.Reset();
+                        }
+                        else
+                        {
+                            var sb = StringUtil.GetTempStringBuilder();
+                            sb.Append($"{targObj.name} : {targObj.GetType().Name}.{selectedMember.Name}(");
+                            for (int i = 0; i < parr.Length; i++)
+                            {
+                                sb.Append(parr[i].ParameterType.Name);
+                                sb.Append(" ");
+                                sb.Append(parr[i].ParameterName);
+                                if (i < parr.Length - 1) sb.Append(", ");
+                            }
+                            sb.Append(")");
+                            string methodDescriptor = StringUtil.Release(sb);
+
+                            //MULTIPLE PARAMETERS - special case, does not support trigger event arg
+                            _callMethodModeExtraLines = parr.Length;
+
+                            var argArrayProp = property.FindPropertyRelative(EventTriggerTargetPropertyDrawer.PROP_TRIGGERABLEARGS);
+
+                            if (argArrayProp.arraySize != parr.Length)
+                            {
+                                argArrayProp.arraySize = parr.Length;
+                                argArrayProp.serializedObject.ApplyModifiedProperties();
+                            }
+
+                            var cache = SPGUI.Disable();
+                            EditorGUI.LabelField(new Rect(area.xMin, area.yMin, area.width, EditorGUIUtility.singleLineHeight), GUIContent.none, new GUIContent(methodDescriptor));
+                            cache.Reset();
+
+                            for (int i = 0; i < parr.Length; i++)
+                            {
+                                var paramType = parr[i].ParameterType;
+                                if (parr.Length == 1 && TypeUtil.IsType(paramType, typeof(IDynamicProperty))) paramType = typeof(object);
+
+                                var argRect = new Rect(area.xMin, area.yMin + (i + 1) * EditorGUIUtility.singleLineHeight, area.width, EditorGUIUtility.singleLineHeight);
+                                var argProp = argArrayProp.GetArrayElementAtIndex(i);
+
+                                if (paramType == typeof(object))
+                                {
+                                    //draw the default variant as the method accepts anything
+                                    _variantDrawer.RestrictVariantType = false;
+                                    _variantDrawer.TypeRestrictedTo = null;
+                                    _variantDrawer.ForcedObjectType = null;
+                                    _variantDrawer.CurrentTriggerArgIndex = i;
+
+                                    string title = string.Format("Arg {0}: {1} ({2})", i, parr[i].ParameterName, parr[i].ParameterType?.Name ?? "dynamic");
+                                    _variantDrawer.OnGUI(argRect, argProp, EditorHelper.TempContent(title, "A parameter to be passed to the method if needed."));
+                                }
+                                else
+                                {
+                                    _variantDrawer.RestrictVariantType = true;
+                                    _variantDrawer.TypeRestrictedTo = paramType;
+                                    _variantDrawer.ForcedObjectType = (paramType.IsInterface || TypeUtil.IsType(paramType, typeof(Component))) ? paramType : null;
+                                    _variantDrawer.CurrentTriggerArgIndex = i;
+
+                                    string title = string.Format("Arg {0}: {1} ({2})", i, parr[i].ParameterName, parr[i].ParameterType?.Name ?? "dynamic");
+                                    _variantDrawer.OnGUI(argRect, argProp, EditorHelper.TempContent(title, "A parameter to be passed to the method if needed."));
+                                }
+                            }
+                        }
                     }
-                }
+                    break;
             }
 
         }
@@ -511,7 +582,7 @@ namespace com.spacepuppyeditor.Events
 
             var target = targProp.objectReferenceValue;
             var acttype = actProp.GetEnumValue<TriggerActivationType>();
-            switch(acttype)
+            switch (acttype)
             {
                 case TriggerActivationType.TriggerSelectedTarget:
                     {
@@ -536,7 +607,7 @@ namespace com.spacepuppyeditor.Events
                     break;
                 case TriggerActivationType.CallMethodOnSelectedTarget:
                     {
-                        if(target)
+                        if (target)
                         {
                             if (SPEditorGUI.XButton(ref position, "Clear Selected Object", true))
                             {
@@ -554,9 +625,9 @@ namespace com.spacepuppyeditor.Events
                                 {
                                     var objs = targGo.GetComponents<Component>().Cast<UnityEngine.Object>().Prepend(targGo);
                                     int i = 0;
-                                    foreach(var obj in objs)
+                                    foreach (var obj in objs)
                                     {
-                                        foreach(var m in GetCallableMethodsOnTarget(obj, false))
+                                        foreach (var m in GetCallableMethodsOnTarget(obj, false))
                                         {
                                             elements.Add(new System.ValueTuple<UnityEngine.Object, int, System.Reflection.MemberInfo>(obj, i, m));
                                         }
@@ -614,7 +685,7 @@ namespace com.spacepuppyeditor.Events
                     }
                     break;
                 default:
-                    DrawDefault:
+                DrawDefault:
                     {
                         EditorGUI.BeginChangeCheck();
                         if (GameObjectUtil.IsGameObjectSource(target))
@@ -664,15 +735,15 @@ namespace com.spacepuppyeditor.Events
                     using (var lst = com.spacepuppy.Collections.TempCollection.GetList<IProxy>())
                     {
                         targGo.GetComponents<IProxy>(lst);
-                        for(int i = 0; i < lst.Count; i++)
+                        for (int i = 0; i < lst.Count; i++)
                         {
-                            if(lst[i].PrioritizesSelfAsTarget())
+                            if (lst[i].PrioritizesSelfAsTarget())
                             {
                                 lst.RemoveAt(i);
                                 i--;
                             }
                         }
-                        if(lst.Count == 0)
+                        if (lst.Count == 0)
                         {
                             goto DrawBasic;
                         }
@@ -697,7 +768,7 @@ namespace com.spacepuppyeditor.Events
                     }
                 }
 
-                DrawBasic:
+            DrawBasic:
                 var go = EditorGUI.ObjectField(position, label, targGo, typeof(GameObject), true) as GameObject;
                 return (go != null) ? go.transform : null;
             }
@@ -706,8 +777,8 @@ namespace com.spacepuppyeditor.Events
         private static System.Reflection.MemberInfo[] GetCallableMethodsOnTarget(object target, bool respectProxy)
         {
             var members = target.IsProxy() ?
-                          com.spacepuppy.Dynamic.DynamicUtil.GetEasilySerializedMembersFromType((target as IProxy).GetTargetType(), System.Reflection.MemberTypes.All, spacepuppy.Dynamic.DynamicMemberAccess.Write).ToArray() :
-                          com.spacepuppy.Dynamic.DynamicUtil.GetEasilySerializedMembers(target, System.Reflection.MemberTypes.All, spacepuppy.Dynamic.DynamicMemberAccess.Write).ToArray();
+                          DynamicUtil.GetEasilySerializedMembersFromType((target as IProxy).GetTargetType(), System.Reflection.MemberTypes.All, DynamicMemberAccess.Write, EasilySerializedFieldsOptions.IncludeDynamicProperties).ToArray() :
+                          DynamicUtil.GetEasilySerializedMembers(target, System.Reflection.MemberTypes.All, DynamicMemberAccess.Write, EasilySerializedFieldsOptions.IncludeDynamicProperties).ToArray();
             System.Array.Sort(members, (a, b) => string.Compare(a.Name, b.Name, true));
             return members;
         }
@@ -749,11 +820,11 @@ namespace com.spacepuppyeditor.Events
                         this.DrawValueFieldInEvalMode(position, property, _helper);
                         break;
                     case (int)EventTriggerTarget.RefMode.TriggerArg:
-                        if(this.TriggerArgCount > 1)
+                        if (this.TriggerArgCount > 1)
                         {
                             EditorGUI.BeginChangeCheck();
                             int argindex = EditorGUI.Popup(position, (int)_helper._w, Enumerable.Range(0, this.TriggerArgCount).Select(i => EditorHelper.TempContent(string.Format("Trigger Arg {0}", i))).ToArray());
-                            if(EditorGUI.EndChangeCheck())
+                            if (EditorGUI.EndChangeCheck())
                             {
                                 _helper.IntValue = argindex;
                                 _helper._mode = (VariantReference.RefMode)((int)EventTriggerTarget.RefMode.TriggerArg);

@@ -5,6 +5,7 @@ using System.Linq;
 using ObjUtil = com.spacepuppy.Utils.ObjUtil;
 using TypeUtil = com.spacepuppy.Utils.TypeUtil;
 using com.spacepuppy.Utils;
+using com.spacepuppy.Dynamic;
 
 namespace com.spacepuppy
 {
@@ -262,7 +263,7 @@ namespace com.spacepuppy
     }
 
     [System.Serializable]
-    public class ProxyOrDirectField<T> : IProxy where T : class
+    public class ProxyOrDirectField<T> : IProxy, IDynamicProperty where T : class
     {
 
         #region Fields
@@ -332,6 +333,14 @@ namespace com.spacepuppy
         object IProxy.GetTargetInternal(System.Type expectedType, object arg) => this.GetTarget();
 
         System.Type IProxy.GetTargetType() => typeof(T);
+
+        #endregion
+
+        #region IDynamicProperty Interface
+
+        void IDynamicProperty.Set(object value) => this.ConfiguredTarget = value;
+        object IDynamicProperty.Get() => this.GetTarget();
+        System.Type IDynamicProperty.GetType() => typeof(T);
 
         #endregion
 

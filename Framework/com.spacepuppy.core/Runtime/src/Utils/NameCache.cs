@@ -20,7 +20,11 @@ namespace com.spacepuppy.Utils
             if (obj is INameable) return (obj as INameable).CompareName(name);
 
             var go = GameObjectUtil.GetGameObjectFromSource(obj);
+#if UNITY_EDITOR
+            if (Application.isPlaying && go != null) return go.AddOrGetComponent<GameObjectNameCache>().CompareName(name);
+#else
             if (go != null) return go.AddOrGetComponent<GameObjectNameCache>().CompareName(name);
+#endif
 
             return obj.name == name;
         }
@@ -33,7 +37,11 @@ namespace com.spacepuppy.Utils
             if (obj is INameable) return (obj as INameable).CompareName(name);
 
             var go = GameObjectUtil.GetGameObjectFromSource(obj);
+#if UNITY_EDITOR
+            if (Application.isPlaying && go != null) return go.AddOrGetComponent<GameObjectNameCache>().CompareName(name);
+#else
             if (go != null) return go.AddOrGetComponent<GameObjectNameCache>().CompareName(name);
+#endif
 
             return obj.name == name;
         }
@@ -46,7 +54,11 @@ namespace com.spacepuppy.Utils
             if (obj is INameable) return (obj as INameable).Name;
 
             var go = GameObjectUtil.GetGameObjectFromSource(obj);
+#if UNITY_EDITOR
+            if (Application.isPlaying && go != null) return go.AddOrGetComponent<GameObjectNameCache>().Name;
+#else
             if (go != null) return go.AddOrGetComponent<GameObjectNameCache>().Name;
+#endif
 
             return obj.name;
         }
@@ -59,17 +71,30 @@ namespace com.spacepuppy.Utils
             if (obj is INameable) return (obj as INameable).Name;
 
             var go = GameObjectUtil.GetGameObjectFromSource(obj);
+#if UNITY_EDITOR
+            if (Application.isPlaying && go != null) return go.AddOrGetComponent<GameObjectNameCache>().Name;
+#else
             if (go != null) return go.AddOrGetComponent<GameObjectNameCache>().Name;
+#endif
 
             return obj.name;
         }
 
-        public static string GetCachedName(GameObject go) => go ? go.AddOrGetComponent<GameObjectNameCache>().Name : string.Empty;
+        public static string GetCachedName(GameObject go)
+        {
+#if UNITY_EDITOR
+            if (!Application.isPlaying) return go ? go.name : string.Empty;
+#endif
+            return go ? go.AddOrGetComponent<GameObjectNameCache>().Name : string.Empty;
+        }
 
         public static void SetCachedName(GameObject go, string name)
         {
             if (!go) return;
 
+#if UNITY_EDITOR
+            if (!Application.isPlaying) go.name = name;
+#else
             if (go.GetComponent<GameObjectNameCache>(out GameObjectNameCache cache))
             {
                 cache.Name = name;
@@ -78,6 +103,7 @@ namespace com.spacepuppy.Utils
             {
                 go.name = name;
             }
+#endif
         }
 
         /// <summary>
@@ -88,6 +114,9 @@ namespace com.spacepuppy.Utils
         /// <param name="respectProxy"></param>
         public static void SetDirty(UnityEngine.Object obj, bool respectProxy = false)
         {
+#if UNITY_EDITOR
+            if (!Application.isPlaying) return;
+#endif
             if (respectProxy && obj is IProxy) obj = obj.ReduceIfProxy() as UnityEngine.Object;
             if (obj == null) return;
 
@@ -98,16 +127,14 @@ namespace com.spacepuppy.Utils
             }
 
             var go = GameObjectUtil.GetGameObjectFromSource(obj);
-            if (go != null)
-            {
-                var cache = go.GetComponent<GameObjectNameCache>();
-                if (cache != null) cache.SetDirty();
-                return;
-            }
+            if (go && go.GetComponent(out GameObjectNameCache cache)) cache.SetDirty();
         }
 
         public static void SetDirty(GameObject go)
         {
+#if UNITY_EDITOR
+            if (!Application.isPlaying) return;
+#endif
             if (go && go.GetComponent(out GameObjectNameCache cache)) cache.SetDirty();
         }
 

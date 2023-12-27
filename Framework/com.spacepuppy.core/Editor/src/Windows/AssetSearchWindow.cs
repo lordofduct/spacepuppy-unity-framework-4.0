@@ -4,12 +4,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 using com.spacepuppy.Utils;
-using System.Threading;
-using System.Text.RegularExpressions;
-using System;
 
 namespace com.spacepuppyeditor.Windows
 {
@@ -41,6 +40,7 @@ namespace com.spacepuppyeditor.Windows
 
         private UnityEngine.Object _target;
 
+        private SearchForMissingScriptsQuery _missingScriptQuery = new SearchForMissingScriptsQuery();
         private AssetSearchQuery _assetSearchQuery = new AssetSearchQuery()
         {
             CodePath = "Code",
@@ -90,6 +90,11 @@ namespace com.spacepuppyeditor.Windows
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("Search for missing scripts", GUILayout.Width(200f)))
+            {
+                _currentQuery = _missingScriptQuery;
+                _ = _missingScriptQuery.Search();
+            }
             if (GUILayout.Button("Search for unreferenced scripts", GUILayout.Width(200f)))
             {
                 _currentQuery = _assetSearchQuery;
@@ -528,6 +533,176 @@ namespace com.spacepuppyeditor.Windows
                                     path = path,
                                     message = sb.ToString(),
                                 });
+                            }
+                        }
+                    }, _cancellationTokenSource.Token);
+
+                    while (!task.IsCompleted)
+                    {
+                        await Task.Yield();
+                        if (validresults.Count > 0 && validresults.TryDequeue(out OutputRefEntry entry))
+                        {
+                            _output.AppendLine(entry.message);
+                            entry.obj = AssetDatabase.LoadAssetAtPath(entry.path, typeof(UnityEngine.Object));
+                            _outputRefs.Add(entry);
+                        }
+                    }
+
+                    while (validresults.TryDequeue(out OutputRefEntry entry))
+                    {
+                        _output.AppendLine(entry.message);
+                        entry.obj = AssetDatabase.LoadAssetAtPath(entry.path, typeof(UnityEngine.Object));
+                        _outputRefs.Add(entry);
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    OnStatusUpdated("ERROR: " + ex.Message);
+                }
+                finally
+                {
+                    _cancellationTokenSource = null;
+                    OnStatusUpdated(string.Empty);
+                    this.OnCompleted();
+                }
+            }
+
+            void OnStatusUpdated(string msg)
+            {
+                this.CurrentStatus = msg;
+                this.StatusUpdated?.Invoke(this, System.EventArgs.Empty);
+            }
+
+            void OnCompleted()
+            {
+                this.Completed?.Invoke(this, System.EventArgs.Empty);
+            }
+
+        }
+
+        public class SearchForMissingScriptsQuery : IQuery
+        {
+
+            public event System.EventHandler StatusUpdated;
+            public event System.EventHandler Completed;
+
+            #region Fields/Properties
+
+            private CancellationTokenSource _cancellationTokenSource;
+
+            private StringBuilder _output = new StringBuilder();
+            private List<OutputRefEntry> _outputRefs = new List<OutputRefEntry>();
+
+            public AssetTypes AssetTypes { get; set; } = AssetTypes.All;
+
+            public bool IsProcessing => _cancellationTokenSource != null;
+
+            public string CurrentStatus { get; private set; } = string.Empty;
+
+            public StringBuilder Output => _output;
+
+            public IReadOnlyList<OutputRefEntry> OutputRefs => _outputRefs;
+
+            #endregion
+
+            public void Cancel()
+            {
+                _cancellationTokenSource?.Cancel();
+            }
+
+            public void Clear()
+            {
+                if (this.IsProcessing) return; //can't clear if running
+
+                _output.Clear();
+                _outputRefs.Clear();
+                this.CurrentStatus = string.Empty;
+            }
+
+            public async Task Search()
+            {
+                if (_cancellationTokenSource != null) return;
+
+                try
+                {
+                    _output.Clear();
+                    _outputRefs.Clear();
+                    _cancellationTokenSource = new CancellationTokenSource();
+
+                    var l_ext = new List<string>(3);
+                    if (this.AssetTypes.HasFlagT(AssetTypes.Scenes)) l_ext.Add("*.unity");
+                    if (this.AssetTypes.HasFlagT(AssetTypes.Prefabs)) l_ext.Add("*.prefab");
+                    if (this.AssetTypes.HasFlagT(AssetTypes.Assets)) l_ext.Add("*.asset");
+                    if (l_ext.Count == 0)
+                    {
+                        _output.AppendLine("Nothing to query.");
+                        return;
+                    }
+
+                    var files = Directory.EnumerateFiles("Assets", l_ext[0], SearchOption.AllDirectories);
+                    for (int i = 1; i < l_ext.Count; i++)
+                    {
+                        files = files.Union(Directory.EnumerateFiles("Assets", l_ext[i], SearchOption.AllDirectories));
+                    }
+
+                    var validresults = new System.Collections.Concurrent.ConcurrentQueue<OutputRefEntry>();
+                    var task = Task.Run(() =>
+                    {
+                        var rxname = new Regex(@"^\s*m_Name: (?<name>(.*))$");
+                        var rxscript = new Regex(@"^\s*m_Script: {fileID: (?<fileid>-?\d+), guid: (?<guid>([a-zA-Z0-9]+)), type: 3}\s*$");
+                        foreach (var filepath in files)
+                        {
+                            if (_cancellationTokenSource?.IsCancellationRequested ?? false) return;
+
+                            this.OnStatusUpdated("Processing: " + filepath);
+                            int state = filepath.EndsWith(".asset") ? -1 : 0; //-1 = in asset, 0 = reset, 1 = reset last line, 2 = in gameobject
+                            string currentname = string.Empty;
+                            using (var reader = new StreamReader(filepath))
+                            {
+                                string ln;
+                                while ((ln = reader.ReadLine()) != null)
+                                {
+                                    if (_cancellationTokenSource?.IsCancellationRequested ?? false) return;
+
+                                    switch (state)
+                                    {
+                                        case 0:
+                                            if (ln.StartsWith("--- !u"))
+                                            {
+                                                state = 1;
+                                            }
+                                            break;
+                                        case 1:
+                                            if (ln.StartsWith("GameObject:"))
+                                            {
+                                                state = 2;
+                                                currentname = string.Empty;
+                                            }
+                                            else
+                                            {
+                                                state = 0;
+                                            }
+                                            break;
+                                        case 2:
+                                        default:
+                                            var mname = rxname.Match(ln);
+                                            if (mname.Success)
+                                            {
+                                                currentname = mname.Groups["name"].Value;
+                                            }
+                                            break;
+                                    }
+                                    var m = rxscript.Match(ln);
+                                    if (!m.Success) continue;
+
+                                    if (ScriptDatabase.TryGUIDToScriptInfo(m.Groups["guid"].Value, out _)) continue;
+
+                                    validresults.Enqueue(new OutputRefEntry()
+                                    {
+                                        path = filepath,
+                                        message = $"Missing Script: {m.Groups["guid"].Value}\r\n  {filepath}\r\n  {currentname}",
+                                    });
+                                }
                             }
                         }
                     }, _cancellationTokenSource.Token);

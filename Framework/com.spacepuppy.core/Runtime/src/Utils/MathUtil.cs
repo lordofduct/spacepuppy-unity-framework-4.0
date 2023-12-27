@@ -857,11 +857,11 @@ namespace com.spacepuppy.Utils
             switch (mode)
             {
                 case WrapMode.Clamp:
-                    return Mathf.Clamp(value, 0, max - 1);
+                    return max > 0 ? Mathf.Clamp(value, 0, max - 1) : 0;
                 case WrapMode.Loop:
-                    return MathUtil.Wrap(value, max);
+                    return max > 0 ? MathUtil.Wrap(value, max) : 0;
                 case WrapMode.PingPong:
-                    return (int)Mathf.PingPong(value, max - 1);
+                    return max > 0 ? (int)Mathf.PingPong(value, max - 1) : 0;
                 default:
                     return value;
             }
@@ -872,11 +872,11 @@ namespace com.spacepuppy.Utils
             switch (mode)
             {
                 case WrapMode.Clamp:
-                    return Mathf.Clamp(value, min, max);
+                    return max != min ? Mathf.Clamp(value, min, max) : min;
                 case WrapMode.Loop:
-                    return MathUtil.Wrap(value, max, min);
+                    return max != min ? MathUtil.Wrap(value, max, min) : min;
                 case WrapMode.PingPong:
-                    return (int)Mathf.PingPong(value - min, max - min) + min;
+                    return max != min ? (int)Mathf.PingPong(value - min, max - min) + min : min;
                 default:
                     return value;
             }
@@ -886,11 +886,11 @@ namespace com.spacepuppy.Utils
             switch (mode)
             {
                 case WrapMode.Clamp:
-                    return Mathf.Clamp(value, min, max - 1);
+                    return !Mathf.Approximately(max, min) ? Mathf.Clamp(value, min, max - 1) : min;
                 case WrapMode.Loop:
-                    return MathUtil.Wrap(value, max, min);
+                    return !Mathf.Approximately(max, min) ? MathUtil.Wrap(value, max, min) : min;
                 case WrapMode.PingPong:
-                    return (int)Mathf.PingPong(value - min, max - min - 1) + min;
+                    return !Mathf.Approximately(max, min) ? (int)Mathf.PingPong(value - min, max - min - 1) + min : min;
                 default:
                     return value;
             }

@@ -25,7 +25,7 @@
     /// <summary>
     /// Base implemenation of IRadicalWaitHandle.
     /// </summary>
-    public class RadicalWaitHandle : IRadicalWaitHandle, IPooledYieldInstruction, IRadicalEnumerator
+    public class RadicalWaitHandle : IRadicalWaitHandle, IRadicalEnumerator, System.IDisposable
     {
 
         #region Fields
@@ -37,7 +37,7 @@
 
         #region CONSTRUCTOR
 
-        protected RadicalWaitHandle()
+        public RadicalWaitHandle()
         {
 
         }
@@ -117,25 +117,6 @@
 
         #endregion
 
-        #region IPooledYieldInstruction Interface
-
-        public void Dispose()
-        {
-            if (this.GetType() == typeof(RadicalWaitHandle)) //we only release if the handle is directly a RadicalWaitHandle rather than one inherited from RadicalWaitHandle
-            {
-                _complete = true;
-                this.Cancelled = false;
-                _callback = null;
-                _pool.Release(this);
-            }
-            else
-            {
-                this.Reset();
-            }
-        }
-
-        #endregion
-
         #region IEnumerator Interface
 
         object System.Collections.IEnumerator.Current => null;
@@ -153,9 +134,18 @@
 
         #endregion
 
+        #region System.IDisposable Interface
+
+        public virtual void Dispose()
+        {
+            this.Reset();
+        }
+
+        #endregion
+
         #region Static Interface
 
-        private static com.spacepuppy.Collections.ObjectCachePool<RadicalWaitHandle> _pool = new com.spacepuppy.Collections.ObjectCachePool<RadicalWaitHandle>(-1, () => new RadicalWaitHandle(), o => o.Reset(), true);
+        private static com.spacepuppy.Collections.ObjectCachePool<PooledRadicalWaitHandle> _pool = new com.spacepuppy.Collections.ObjectCachePool<PooledRadicalWaitHandle>(-1, () => new PooledRadicalWaitHandle(), o => o.Reset(), true);
 
         public static IRadicalWaitHandle Null
         {
@@ -167,7 +157,33 @@
 
         public static RadicalWaitHandle Create()
         {
+            return new RadicalWaitHandle();
+        }
+
+        public static RadicalWaitHandle CreatePooled()
+        {
             return _pool.GetInstance();
+        }
+
+        #endregion
+
+        #region Special Types
+
+        sealed class PooledRadicalWaitHandle : RadicalWaitHandle, IPooledYieldInstruction
+        {
+
+            #region IPooledYieldInstruction Interface
+
+            public override void Dispose()
+            {
+                _complete = true;
+                this.Cancelled = false;
+                _callback = null;
+                _pool.Release(this);
+            }
+
+            #endregion
+
         }
 
         #endregion

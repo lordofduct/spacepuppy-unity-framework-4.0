@@ -61,7 +61,11 @@ namespace com.spacepuppy.Events
         {
             base.Start();
 
-            if ((_activateOn & ActivateEvent.OnStart) != 0 || (_activateOn & ActivateEvent.OnEnable) != 0)
+            if ((_activateOn & ActivateEvent.OnLateStart) != 0 && !GameLoop.LateUpdateWasCalled)
+            {
+                GameLoop.LateUpdateHandle.BeginInvoke(() => this.RestartTimer());
+            }
+            else if ((_activateOn & ActivateEvent.OnStart) != 0 || (_activateOn & ActivateEvent.OnEnable) != 0)
             {
                 this.RestartTimer();
             }
@@ -75,7 +79,17 @@ namespace com.spacepuppy.Events
 
             if ((_activateOn & ActivateEvent.OnEnable) != 0)
             {
-                this.RestartTimer();
+                if (GameLoop.LateUpdateWasCalled)
+                {
+                    this.RestartTimer();
+                }
+                else
+                {
+                    GameLoop.LateUpdateHandle.BeginInvoke(() =>
+                    {
+                        this.RestartTimer();
+                    });
+                }
             }
         }
 

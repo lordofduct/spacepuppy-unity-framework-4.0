@@ -1,4 +1,6 @@
-﻿namespace com.spacepuppy.Events
+﻿using System.Runtime.CompilerServices;
+
+namespace com.spacepuppy.Events
 {
 
     public enum EnableMode
@@ -22,7 +24,9 @@
         OnStart = 1,
         OnEnable = 2,
         OnStartOrEnable = 3,
-        Awake = 4
+        Awake = 4,
+        OnLateStart = 8,
+        OnLateStartOrEnable = 10,
     }
 
     public enum TriggerActivationType

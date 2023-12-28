@@ -71,7 +71,11 @@ namespace com.spacepuppy.DataBinding
         {
             base.Start();
 
-            if ((_activateOn & ActivateEvent.OnStart) != 0 || (_activateOn & ActivateEvent.OnEnable) != 0)
+            if ((_activateOn & ActivateEvent.OnLateStart) != 0 && !GameLoop.LateUpdateWasCalled)
+            {
+                GameLoop.LateUpdateHandle.BeginInvoke(() => this.BindConfiguredDataSource());
+            }
+            else if ((_activateOn & ActivateEvent.OnStart) != 0 || (_activateOn & ActivateEvent.OnEnable) != 0)
             {
                 this.BindConfiguredDataSource();
             }

@@ -41,7 +41,7 @@ namespace com.spacepuppy.Events
 
         #region Fields
 
-        [SerializeField()]
+        [SerializeField]
         private ActivateEvent _activateOn = ActivateEvent.None;
 
         #endregion
@@ -62,7 +62,11 @@ namespace com.spacepuppy.Events
         {
             base.Start();
 
-            if ((_activateOn & ActivateEvent.OnStart) != 0 || (_activateOn & ActivateEvent.OnEnable) != 0)
+            if ((_activateOn & ActivateEvent.OnLateStart) != 0 && !GameLoop.LateUpdateWasCalled)
+            {
+                GameLoop.LateUpdateHandle.BeginInvoke(() => this.Trigger(this, null));
+            }
+            else if ((_activateOn & ActivateEvent.OnStart) != 0 || (_activateOn & ActivateEvent.OnEnable) != 0)
             {
                 this.Trigger(this, null);
             }
@@ -101,7 +105,6 @@ namespace com.spacepuppy.Events
         }
 
         #endregion
-
 
     }
 

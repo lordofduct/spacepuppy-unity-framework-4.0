@@ -64,7 +64,11 @@ namespace com.spacepuppy.Netcode.Events
         {
             base.Start();
 
-            if ((_activateOn & ActivateEvent.OnStart) != 0 || (_activateOn & ActivateEvent.OnEnable) != 0)
+            if ((_activateOn & ActivateEvent.OnLateStart) != 0 && !GameLoop.LateUpdateWasCalled)
+            {
+                GameLoop.LateUpdateHandle.BeginInvoke(() => this.Trigger(this, null));
+            }
+            else if ((_activateOn & ActivateEvent.OnStart) != 0 || (_activateOn & ActivateEvent.OnEnable) != 0)
             {
                 this.Trigger(this, null);
             }

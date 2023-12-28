@@ -55,7 +55,7 @@ namespace com.spacepuppy.Events
 
             if ((_activateOn & ActivateEvent.Awake) != 0)
             {
-                this.OnTriggerActivate();
+                this.RestartTimer();
             }
         }
 
@@ -63,9 +63,13 @@ namespace com.spacepuppy.Events
         {
             base.Start();
 
-            if ((_activateOn & ActivateEvent.OnStart) != 0 || (_activateOn & ActivateEvent.OnEnable) != 0)
+            if ((_activateOn & ActivateEvent.OnLateStart) != 0 && !GameLoop.LateUpdateWasCalled)
             {
-                this.OnTriggerActivate();
+                GameLoop.LateUpdateHandle.BeginInvoke(() => this.RestartTimer());
+            }
+            else if ((_activateOn & ActivateEvent.OnStart) != 0 || (_activateOn & ActivateEvent.OnEnable) != 0)
+            {
+                this.RestartTimer();
             }
         }
 
@@ -77,7 +81,17 @@ namespace com.spacepuppy.Events
 
             if ((_activateOn & ActivateEvent.OnEnable) != 0)
             {
-                this.OnTriggerActivate();
+                if (GameLoop.LateUpdateWasCalled)
+                {
+                    this.RestartTimer();
+                }
+                else
+                {
+                    GameLoop.LateUpdateHandle.BeginInvoke(() =>
+                    {
+                        this.RestartTimer();
+                    });
+                }
             }
         }
 
@@ -147,11 +161,6 @@ namespace com.spacepuppy.Events
             }
 
             _routine = this.StartRadicalCoroutine(this.TickerCallback(_delay, _interval, _timeSupplier.TimeSupplier ?? SPTime.Normal, _repeatCount), RadicalCoroutineDisableMode.CancelOnDisable);
-        }
-
-        private void OnTriggerActivate()
-        {
-            this.RestartTimer();
         }
 
         private System.Collections.IEnumerator TickerCallback(float delay, Interval interval, ITimeSupplier timeSupplier, DiscreteFloat repeatCount)

@@ -349,6 +349,8 @@ namespace com.spacepuppy.SPInput.Legacy
             _lastUp = double.NegativeInfinity;
         }
 
+        bool IInputSignature.GetInputIsActivated() => InputUtil.GetInputIsActivatedDefault((IButtonInputSignature)this);
+
         #endregion
 
     }
@@ -599,6 +601,8 @@ namespace com.spacepuppy.SPInput.Legacy
             _lastUp = double.NegativeInfinity;
         }
 
+        bool IInputSignature.GetInputIsActivated() => InputUtil.GetInputIsActivatedDefault((IButtonInputSignature)this);
+
         #endregion
 
     }
@@ -606,11 +610,18 @@ namespace com.spacepuppy.SPInput.Legacy
     public class MouseCursorInputSignature : BaseInputSignature, ICursorInputSignature
     {
 
+        private Vector2? _last;
+        private Vector2 _delta;
+        private Vector2? _lastFixed;
+        private Vector2 _deltaFixed;
 
         public MouseCursorInputSignature(string id)
             : base(id)
         {
-
+            _last = null;
+            _delta = Vector2.zero;
+            _lastFixed = null;
+            _deltaFixed = Vector2.zero;
         }
 
 
@@ -624,13 +635,28 @@ namespace com.spacepuppy.SPInput.Legacy
             }
         }
 
+        public Vector2 Delta => GameLoop.CurrentSequence == UpdateSequence.FixedUpdate ? _deltaFixed : _delta;
+
         public override void Update()
         {
-            //do nothing
+            var v = (Vector2)Input.mousePosition;
+            _delta = v - (_last ?? v);
+            _last = v;
+        }
+
+        public override void FixedUpdate()
+        {
+            var v = (Vector2)Input.mousePosition;
+            _deltaFixed = v - (_lastFixed ?? v);
+            _lastFixed = v;
         }
 
         public override void Reset()
         {
+            _last = null;
+            _delta = Vector2.zero;
+            _lastFixed = null;
+            _deltaFixed = Vector2.zero;
         }
 
     }

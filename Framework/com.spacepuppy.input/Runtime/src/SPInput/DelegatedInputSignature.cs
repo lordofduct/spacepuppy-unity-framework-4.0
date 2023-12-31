@@ -364,6 +364,8 @@ namespace com.spacepuppy.SPInput
             _lastUp = double.NegativeInfinity;
         }
 
+        bool IInputSignature.GetInputIsActivated() => InputUtil.GetInputIsActivatedDefault((IButtonInputSignature)this);
+
         #endregion
 
     }
@@ -592,6 +594,8 @@ namespace com.spacepuppy.SPInput
             _lastUp = double.NegativeInfinity;
         }
 
+        bool IInputSignature.GetInputIsActivated() => InputUtil.GetInputIsActivatedDefault((IButtonInputSignature)this);
+
         #endregion
 
     }
@@ -603,6 +607,11 @@ namespace com.spacepuppy.SPInput
 
         private DualAxisDelegate _cursor;
 
+        private Vector2? _last;
+        private Vector2 _delta;
+        private Vector2? _lastFixed;
+        private Vector2 _deltaFixed;
+
         #endregion
 
         #region CONSTRUCTOR
@@ -611,12 +620,14 @@ namespace com.spacepuppy.SPInput
             : base(id)
         {
             this.CursorDelegate = cursor;
+            this.Reset();
         }
 
         public DelegatedCursorInputSignature(string id, AxisDelegate hor, AxisDelegate ver)
             : base(id)
         {
             this.SetCursorDelegate(hor, ver);
+            this.Reset();
         }
 
         #endregion
@@ -672,7 +683,7 @@ namespace com.spacepuppy.SPInput
 
         #endregion
 
-        #region IDualAxleInputSignature Interface
+        #region ICursorInputSignature Interface
 
         public Vector2 CurrentState
         {
@@ -686,17 +697,32 @@ namespace com.spacepuppy.SPInput
             }
         }
 
+        public Vector2 Delta => GameLoop.CurrentSequence == UpdateSequence.FixedUpdate ? _deltaFixed : _delta;
+
         #endregion
 
         #region IInputSignature Interface
 
         public override void Update()
         {
+            var v = (Vector2)Input.mousePosition;
+            _delta = v - (_last ?? v);
+            _last = v;
+        }
 
+        public override void FixedUpdate()
+        {
+            var v = (Vector2)Input.mousePosition;
+            _deltaFixed = v - (_lastFixed ?? v);
+            _lastFixed = v;
         }
 
         public override void Reset()
         {
+            _last = null;
+            _delta = Vector2.zero;
+            _lastFixed = null;
+            _deltaFixed = Vector2.zero;
         }
 
         #endregion

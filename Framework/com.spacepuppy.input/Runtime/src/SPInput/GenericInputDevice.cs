@@ -103,19 +103,6 @@ namespace com.spacepuppy.SPInput
             set { _active = value; }
         }
 
-        public bool AnyInputActivated
-        {
-            get
-            {
-                var e = _signatures.GetEnumerator();
-                while (e.MoveNext())
-                {
-                    if (e.Current.GetInputIsActivated()) return true;
-                }
-                return false;
-            }
-        }
-
         public bool Contains(string id)
         {
             return _signatures.Contains(id);
@@ -125,6 +112,8 @@ namespace com.spacepuppy.SPInput
         {
             return _signatures.GetSignature(id);
         }
+
+        IEnumerable<IInputSignature> IInputDevice.GetSignatures() => _signatures;
 
         public ButtonState GetButtonState(string id, bool consume = false)
         {
@@ -184,6 +173,16 @@ namespace com.spacepuppy.SPInput
             if (!(sig is ICursorInputSignature)) return Vector2.zero;
 
             return (sig as ICursorInputSignature).CurrentState;
+        }
+
+        public virtual bool GetAnyInputActivated()
+        {
+            var e = _signatures.GetEnumerator();
+            while (e.MoveNext())
+            {
+                if (e.Current.GetInputIsActivated()) return true;
+            }
+            return false;
         }
 
         #endregion

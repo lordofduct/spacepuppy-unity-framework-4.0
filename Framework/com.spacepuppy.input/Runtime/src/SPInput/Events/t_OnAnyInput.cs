@@ -77,7 +77,7 @@ namespace com.spacepuppy.SPInput.Events
                 var inputManager = Services.Get<IInputManager>();
                 foreach (var dev in inputManager)
                 {
-                    if (dev.AnyInputActivated)
+                    if (dev.GetAnyInputActivated())
                     {
                         _onInput.ActivateTrigger(this, null);
                         return;

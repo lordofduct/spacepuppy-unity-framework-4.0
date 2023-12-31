@@ -291,21 +291,14 @@ namespace com.spacepuppy.SPInput
 
         #region Generic Input Extensions
 
-        public static bool GetInputIsActivated(this IInputSignature sig)
-        {
-            if (sig == null) return false;
-
-            if (sig is IButtonInputSignature)
-                return (sig as IButtonInputSignature).CurrentState != ButtonState.None;
-            else if (sig is IAxleInputSignature)
-                return (sig as IAxleInputSignature).CurrentState > 0f;
-            else if (sig is IDualAxleInputSignature)
-                return (sig as IDualAxleInputSignature).CurrentState.sqrMagnitude > 0.0001f;
-            else if (sig is IInputDevice)
-                return (sig as IInputDevice).AnyInputActivated;
-
-            return false;
-        }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+        public static bool GetInputIsActivatedDefault(IButtonInputSignature sig) => sig.CurrentState != ButtonState.None;
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+        public static bool GetInputIsActivatedDefault(IAxleInputSignature sig) => Mathf.Abs(sig.CurrentState) > 0.01f;
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+        public static bool GetInputIsActivatedDefault(IDualAxleInputSignature sig) => sig.CurrentState.sqrMagnitude > 0.0001f;
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+        public static bool GetInputIsActivatedDefault(ICursorInputSignature sig) => sig.Delta.sqrMagnitude > 0.000001f;
 
         #endregion
 

@@ -1,8 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 
-using com.spacepuppy.Collections;
-
 namespace com.spacepuppy.SPInput
 {
 
@@ -11,11 +9,11 @@ namespace com.spacepuppy.SPInput
 
         bool Active { get; set; }
 
-        bool AnyInputActivated { get; }
-
         bool Contains(string id);
 
         IInputSignature GetSignature(string id);
+
+        IEnumerable<IInputSignature> GetSignatures();
 
         ButtonState GetButtonState(string id, bool consume = false);
         
@@ -24,6 +22,15 @@ namespace com.spacepuppy.SPInput
         Vector2 GetDualAxleState(string id);
 
         Vector2 GetCursorState(string id);
+
+        bool GetAnyInputActivated()
+        {
+            foreach (var sig in this.GetSignatures())
+            {
+                if (sig.GetInputIsActivated()) return true;
+            }
+            return false;
+        }
 
     }
 

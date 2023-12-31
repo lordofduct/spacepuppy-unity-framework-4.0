@@ -25,6 +25,8 @@ namespace com.spacepuppy.SPInput
         /// </summary>
         void Reset();
 
+        bool GetInputIsActivated() => false;
+
     }
 
     public interface IButtonInputSignature : IInputSignature
@@ -48,6 +50,8 @@ namespace com.spacepuppy.SPInput
         /// </summary>
         double LastReleaseTime { get; }
 
+        bool IInputSignature.GetInputIsActivated() => InputUtil.GetInputIsActivatedDefault(this);
+
     }
 
     public interface IAxleInputSignature : IInputSignature
@@ -56,6 +60,8 @@ namespace com.spacepuppy.SPInput
 
         float DeadZone { get; set; }
         DeadZoneCutoff Cutoff { get; set; }
+
+        bool IInputSignature.GetInputIsActivated() => InputUtil.GetInputIsActivatedDefault(this);
 
     }
 
@@ -68,11 +74,17 @@ namespace com.spacepuppy.SPInput
         float RadialDeadZone { get; set; }
         DeadZoneCutoff RadialCutoff { get; set; }
 
+        bool IInputSignature.GetInputIsActivated() => InputUtil.GetInputIsActivatedDefault(this);
+
     }
 
     public interface ICursorInputSignature : IInputSignature
     {
         Vector2 CurrentState { get; }
+        Vector2 Delta { get; }
+
+        bool IInputSignature.GetInputIsActivated() => InputUtil.GetInputIsActivatedDefault(this);
+
     }
 
     public abstract class BaseInputSignature : IInputSignature

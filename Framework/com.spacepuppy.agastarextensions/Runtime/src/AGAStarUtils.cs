@@ -184,7 +184,7 @@ namespace com.spacepuppy.Pathfinding
             {
                 if (astar == null || astar != AstarPath.active || astar.isScanning) return false;
 
-                lock(_lock)
+                lock (_lock)
                 {
                     if (_currentScan != null)
                     {
@@ -348,6 +348,66 @@ namespace com.spacepuppy.Pathfinding
 
             guo.modifyTag = gus.modifyTag;
             guo.setTag = gus.setTag;
+        }
+
+        #endregion
+
+        #region TryGetNearest
+
+        public static bool TryGetNearest(this AstarPath path, Vector3 position, out NNInfo result)
+        {
+            try
+            {
+                result = path.GetNearest(position);
+                return result.node != null;
+            }
+            catch
+            {
+                result = default;
+                return false;
+            }
+        }
+
+        public static bool TryGetNearest(this AstarPath path, Vector3 position, NNConstraint constraint, out NNInfo result)
+        {
+            try
+            {
+                result = path.GetNearest(position, constraint);
+                return result.node != null;
+            }
+            catch
+            {
+                result = default;
+                return false;
+            }
+        }
+
+        public static bool TryGetNearest(this AstarPath path, Vector3 position, NNConstraint constraint, GraphNode hint, out NNInfo result)
+        {
+            try
+            {
+                result = path.GetNearest(position, constraint, hint);
+                return result.node != null;
+            }
+            catch
+            {
+                result = default;
+                return false;
+            }
+        }
+
+        public static bool TryGetNearest(this AstarPath path, Ray ray, out GraphNode result)
+        {
+            try
+            {
+                result = path.GetNearest(ray);
+                return result != null;
+            }
+            catch
+            {
+                result = default;
+                return false;
+            }
         }
 
         #endregion

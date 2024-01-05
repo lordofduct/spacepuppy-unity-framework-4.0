@@ -247,17 +247,25 @@ namespace com.spacepuppy.Scenes
         protected virtual void OnBeganLoad(LoadSceneOptions handle)
         {
             this.BeganLoad?.Invoke(this, handle);
+            if (Messaging.HasRegisteredGlobalListener<ISceneManagerBeganLoadGlobalHandler>())
+            {
+                Messaging.Broadcast<ISceneManagerBeganLoadGlobalHandler, LoadSceneOptions>(handle, (o, a) => o.OnSceneManagerBeganLoad(a));
+            }
         }
 
         protected virtual void OnBeforeSceneLoaded(LoadSceneOptions handle)
         {
             this.BeforeSceneLoaded?.Invoke(this, handle);
+            if (Messaging.HasRegisteredGlobalListener<IBeforeSceneLoadedGlobalHandler>())
+            {
+                Messaging.Broadcast<IBeforeSceneLoadedGlobalHandler, LoadSceneOptions>(handle, (o, a) => o.OnBeforeSceneLoaded(a));
+            }
         }
 
         protected virtual void OnBeforeSceneUnloaded(Scene scene)
         {
             var d = this.BeforeSceneUnloaded;
-            if (d == null) return;
+            if (d == null && !Messaging.HasRegisteredGlobalListener<IBeforeSceneUnloadedGlobalHandler>()) return;
 
             var e = _unloadArgs;
             _unloadArgs = null;
@@ -266,7 +274,8 @@ namespace com.spacepuppy.Scenes
             else
                 e.Scene = scene;
 
-            d(this, e);
+            d?.Invoke(this, e);
+            Messaging.Broadcast<IBeforeSceneUnloadedGlobalHandler, System.ValueTuple<ISceneManager, SceneUnloadedEventArgs>>((_owner, e), (o, a) => o.OnBeforeSceneUnloaded(a.Item1, a.Item2));
 
             _unloadArgs = e;
             _unloadArgs.Scene = default(Scene);
@@ -275,7 +284,7 @@ namespace com.spacepuppy.Scenes
         protected virtual void OnSceneUnloaded(Scene scene)
         {
             var d = this.SceneUnloaded;
-            if (d == null) return;
+            if (d == null && !Messaging.HasRegisteredGlobalListener<ISceneUnloadedGlobalHandler>()) return;
 
             var e = _unloadArgs;
             _unloadArgs = null;
@@ -284,7 +293,8 @@ namespace com.spacepuppy.Scenes
             else
                 e.Scene = scene;
 
-            d(this, e);
+            d?.Invoke(this, e);
+            Messaging.Broadcast<ISceneUnloadedGlobalHandler, System.ValueTuple<ISceneManager, SceneUnloadedEventArgs>>((_owner, e), (o, a) => o.OnSceneUnloaded(a.Item1, a.Item2));
 
             _unloadArgs = e;
             _unloadArgs.Scene = default(Scene);
@@ -335,7 +345,7 @@ namespace com.spacepuppy.Scenes
         protected virtual void OnActiveSceneChanged(Scene lastScene, Scene nextScene)
         {
             var d = this.ActiveSceneChanged;
-            if (d == null) return;
+            if (d == null && !Messaging.HasRegisteredGlobalListener<IActiveSceneChangedGlobalHandler>()) return;
 
             var e = _activeChangeArgs;
             _activeChangeArgs = null;
@@ -349,7 +359,8 @@ namespace com.spacepuppy.Scenes
                 e.NextScene = nextScene;
             }
 
-            d(this, e);
+            d?.Invoke(this, e);
+            Messaging.Broadcast<IActiveSceneChangedGlobalHandler, System.ValueTuple<ISceneManager, ActiveSceneChangedEventArgs>>((_owner, e), (o, a) => o.OnActiveSceneChanged(a.Item1, a.Item2));
 
             _activeChangeArgs = e;
             _activeChangeArgs.LastScene = default(Scene);

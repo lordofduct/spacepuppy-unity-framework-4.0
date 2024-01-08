@@ -33,14 +33,6 @@ namespace com.spacepuppy
             return ev != null ? ev.currentSelectedGameObject : null;
         }
 
-        /// <summary>
-        /// The hash changes any time 'currentSelectedGameObject' would return a new value. 
-        /// By default this should be if 'currentSelectedGameObject' is has been modified, 
-        /// but in a multiplayer setup this behaviour may be more complicated. 
-        /// </summary>
-        /// <returns></returns>
-        int GetSelectionStateHash() => EventSystem.current && EventSystem.current.currentSelectedGameObject ? EventSystem.current.currentSelectedGameObject.GetInstanceID() : 0;
-
     }
 
     internal class BasicCoreEventSystemService : ServiceObject<IEventSystem>, IEventSystem

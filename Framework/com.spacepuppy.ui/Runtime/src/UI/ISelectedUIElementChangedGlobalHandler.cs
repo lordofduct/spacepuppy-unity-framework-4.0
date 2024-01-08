@@ -8,7 +8,7 @@ namespace com.spacepuppy.UI
 
     public interface ISelectedUIElementChangedGlobalHandler
     {
-        void OnSelectedUIElementChanged(GameObject deselected, GameObject selected);
+        void OnSelectedUIElementChanged();
     }
 
     [MBubbledOnSelected]
@@ -109,7 +109,11 @@ namespace com.spacepuppy.UI
             {
                 var last = _lastSelectedObject;
                 _lastSelectedObject = curgo;
-                SignalSelectedUIElementChanged(last, curgo);
+
+                System.ValueTuple<GameObject, GameObject> args = (last, curgo);
+                if (last) Messaging.SignalUpwards<IMBubbledOnDeselected, System.ValueTuple<GameObject, GameObject>>(last, args, (o, a) => o.OnBubbledDeselected(a.Item1, a.Item2));
+                if (curgo) Messaging.SignalUpwards<IMBubbledOnSelected, System.ValueTuple<GameObject, GameObject>>(curgo, args, (o, a) => o.OnBubbledSelected(a.Item1, a.Item2));
+                Messaging.Broadcast<ISelectedUIElementChangedGlobalHandler>(o => o.OnSelectedUIElementChanged());
             }
         }
 
@@ -145,14 +149,6 @@ namespace com.spacepuppy.UI
                 SelectedBubblingListenerCount = 0;
                 SelectedBubblingListenerCountChanged?.Invoke();
             }
-        }
-
-        public static void SignalSelectedUIElementChanged(GameObject last, GameObject current)
-        {
-            System.ValueTuple<GameObject, GameObject> args = (last, current);
-            if (last) Messaging.SignalUpwards<IMBubbledOnDeselected, System.ValueTuple<GameObject, GameObject>>(last, args, (o, a) => o.OnBubbledDeselected(a.Item1, a.Item2));
-            if (current) Messaging.SignalUpwards<IMBubbledOnSelected, System.ValueTuple<GameObject, GameObject>>(current, args, (o, a) => o.OnBubbledSelected(a.Item1, a.Item2));
-            Messaging.Broadcast<ISelectedUIElementChangedGlobalHandler, System.ValueTuple<GameObject, GameObject>>(args, (o, a) => o.OnSelectedUIElementChanged(a.Item1, a.Item2));
         }
 
         #endregion

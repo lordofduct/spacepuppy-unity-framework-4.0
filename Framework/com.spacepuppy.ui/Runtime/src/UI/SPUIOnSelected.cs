@@ -127,7 +127,7 @@ namespace com.spacepuppy.UI
             }
         }
 
-        void ISelectedUIElementChangedGlobalHandler.OnSelectedUIElementChanged(GameObject deselected, GameObject selected)
+        void ISelectedUIElementChangedGlobalHandler.OnSelectedUIElementChanged()
         {
             if (!_treatAsSelectedIfChildSelected)
             {

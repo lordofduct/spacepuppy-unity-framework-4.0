@@ -51,6 +51,8 @@ namespace com.spacepuppy.UI
 
         #region Methods
 
+        EventSystem IEventSystem.GetEventSystem(object context) => _eventSystem;
+
         protected override void OnServiceRegistered(System.Type serviceTypeRegisteredAs)
         {
             if (_registrarCallback == null) _registrarCallback = () => _processor?.AttemptActivate();

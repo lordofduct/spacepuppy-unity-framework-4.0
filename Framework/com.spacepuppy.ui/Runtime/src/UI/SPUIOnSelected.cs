@@ -95,10 +95,7 @@ namespace com.spacepuppy.UI
 
         bool EvaluateIfSelected()
         {
-            var evsys = EventSystem.current;
-            if (!evsys) return false;
-
-            var cur = evsys.currentSelectedGameObject;
+            var cur = Services.Get<IEventSystem>().GetSelectedGameObject(this.gameObject);
             if (_treatAsSelectedIfChildSelected)
             {
                 return cur && (cur == this.gameObject || cur.transform.IsChildOf(this.transform));

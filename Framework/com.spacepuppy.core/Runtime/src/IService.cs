@@ -75,7 +75,7 @@ namespace com.spacepuppy
             var result = Entry<T>.Instance;
             if (!object.ReferenceEquals(result, null) && result.IsNullOrDestroyed())
             {
-                Entry<T>.Instance = null;
+                Entry<T>.SetInstance(null);
                 _services.Remove(result);
                 result = null;
             }
@@ -86,7 +86,7 @@ namespace com.spacepuppy
             service = Entry<T>.Instance;
             if (!object.ReferenceEquals(service, null) && service.IsNullOrDestroyed())
             {
-                Entry<T>.Instance = null;
+                Entry<T>.SetInstance(null);
                 _services.Remove(service);
                 service = null;
             }
@@ -139,7 +139,7 @@ namespace com.spacepuppy
             var other = Entry<T>.Instance;
             if (!other.IsNullOrDestroyed()) return false;
 
-            Entry<T>.Instance = service;
+            Entry<T>.SetInstance(service);
             _services.Add(service);
             if (!donotSignalRegister)
             {
@@ -164,7 +164,7 @@ namespace com.spacepuppy
                 throw new System.InvalidOperationException("You must first unregister a service before registering a new one.");
             }
 
-            Entry<T>.Instance = service;
+            Entry<T>.SetInstance(service);
             _services.Add(service);
             if (!donotSignalRegister)
             {
@@ -184,7 +184,7 @@ namespace com.spacepuppy
             var inst = Entry<T>.Instance;
             if (!object.ReferenceEquals(inst, null))
             {
-                Entry<T>.Instance = null;
+                Entry<T>.SetInstance(null);
                 _services.Remove(inst);
                 if (!inst.IsNullOrDestroyed())
                 {
@@ -201,7 +201,7 @@ namespace com.spacepuppy
             var inst = Entry<T>.Instance;
             if (object.ReferenceEquals(inst, service) && !object.ReferenceEquals(inst, null))
             {
-                Entry<T>.Instance = null;
+                Entry<T>.SetInstance(null);
                 _services.Remove(inst);
                 if (!inst.IsNullOrDestroyed())
                 {
@@ -727,6 +727,26 @@ namespace com.spacepuppy
             return false;
         }
 
+        /// <summary>
+        /// This is considered an SPInternal public method, you should not be using this unless you understand 
+        /// it thoroughly. It is only public so that it can be accessed across multiple assemblies from spacepuppy. 
+        /// 
+        /// Register a default service. This is a service instance that will always exist if the normally 
+        /// registered service doesn't yet exit or has been destroyed. These services should be simple services 
+        /// that are uncomplicated and generally implemented as a plain old class and not a unityobject. 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="service"></param>
+        public static void SPInternal_RegisterDefaultService<T>(T service) where T : class, IService
+        {
+            Entry<T>.SetDefaultInstance(service);
+        }
+
+        public static T SPInternal_GetDefaultService<T>() where T : class, IService
+        {
+            return Entry<T>.DefaultInstance;
+        }
+
         #endregion
 
         #region Special Types
@@ -736,6 +756,35 @@ namespace com.spacepuppy
 
             public static T Instance;
 
+            public static T DefaultInstance;
+            public static void SetInstance(T inst)
+            {
+                var old = Instance;
+                Instance = inst ?? DefaultInstance;
+                if (object.ReferenceEquals(Instance, DefaultInstance) && !object.ReferenceEquals(Instance, old))
+                {
+                    if (DefaultInstance != null) DefaultInstance.OnServiceRegistered(typeof(T));
+                }
+            }
+            public static void SetDefaultInstance(T inst)
+            {
+                if (object.ReferenceEquals(inst, DefaultInstance)) return;
+
+                var old = DefaultInstance;
+                DefaultInstance = inst;
+                
+                if (object.ReferenceEquals(Instance, old))
+                {
+                    Instance = inst;
+                    if (old != null) old.OnServiceUnregistered();
+                    if (inst != null) inst.OnServiceRegistered(typeof(T));
+                }
+                else if (object.ReferenceEquals(Instance, null))
+                {
+                    Instance = inst;
+                    if (inst != null) inst.OnServiceRegistered(typeof(T));
+                }
+            }
         }
 
         #endregion
@@ -1207,6 +1256,29 @@ namespace com.spacepuppy
             public bool DestroyOnUnregister;
 
         }
+
+        #endregion
+
+    }
+
+    public abstract class ServiceObject<T> : IService where T : class, IService
+    {
+
+        #region IService Interface
+
+        public event System.EventHandler ServiceUnregistered;
+
+        void IService.OnServiceRegistered(System.Type serviceTypeRegisteredAs) => this.OnServiceRegistered(serviceTypeRegisteredAs);
+        protected virtual void OnServiceRegistered(System.Type serviceTypeRegisteredAs) { }
+
+        void IService.OnServiceUnregistered()
+        {
+            this.ServiceUnregistered?.Invoke(this, System.EventArgs.Empty);
+            this.OnServiceUnregistered();
+        }
+
+        protected virtual void OnServiceUnregistered() { }
+
 
         #endregion
 

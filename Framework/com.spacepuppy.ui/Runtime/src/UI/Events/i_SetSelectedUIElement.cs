@@ -23,7 +23,7 @@ namespace com.spacepuppy.UI.Events
         {
             if (!this.CanTrigger) return false;
 
-            return UIEventUtil.SetSelectedGameObject(_target.GetTarget<GameObject>(arg));
+            return Services.Get<IEventSystem>()?.SetSelectedGameObject(_target.GetTarget<GameObject>(arg)) ?? false;
         }
 
         #endregion

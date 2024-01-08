@@ -436,8 +436,6 @@ namespace com.spacepuppyeditor
             {
                 if (propsNotToDraw == null || !propsNotToDraw.Contains(iterator.propertyPath))
                 {
-
-
                     //using (new EditorGUI.DisabledScope(EditorHelper.PROP_SCRIPT == iterator.propertyPath))
                     {
                         //EditorGUILayout.PropertyField(iterator, true);

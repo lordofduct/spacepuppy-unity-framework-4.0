@@ -32,10 +32,10 @@ namespace com.spacepuppy.UI
         {
             base.OnDisable();
 
-            var evs = EventSystem.current;
-            if (evs && evs.currentSelectedGameObject && this.gameObject.IsParentOf(evs.currentSelectedGameObject))
+            var current = Services.Get<IEventSystem>()?.GetSelectedGameObject(this.gameObject);
+            if (current && this.gameObject.IsParentOf(current))
             {
-                _lastSelectedElement = evs.currentSelectedGameObject;
+                _lastSelectedElement = current;
             }
             else
             {
@@ -60,7 +60,7 @@ namespace com.spacepuppy.UI
 
         public void SelectTargetElement()
         {
-            UIEventUtil.SetSelectedGameObject(_lastSelectedElement ? _lastSelectedElement : GameObjectUtil.GetGameObjectFromSource(_defaultElement, true));
+            Services.Get<IEventSystem>()?.SetSelectedGameObject(_lastSelectedElement ? _lastSelectedElement : GameObjectUtil.GetGameObjectFromSource(_defaultElement, true));
         }
 
         #endregion

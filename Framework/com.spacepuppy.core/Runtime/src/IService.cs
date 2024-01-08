@@ -67,28 +67,36 @@ namespace com.spacepuppy
 
         public static bool Exists<T>() where T : class, IService
         {
-            return !Entry<T>.Instance.IsNullOrDestroyed();
+            return !Entry<T>.Instance.IsNullOrDestroyed() && Entry<T>.DefaultInstance.IsNullOrDestroyed();
         }
 
         public static T Get<T>() where T : class, IService
         {
             var result = Entry<T>.Instance;
-            if (!object.ReferenceEquals(result, null) && result.IsNullOrDestroyed())
+            if (object.ReferenceEquals(result, null))
+            {
+                result = Entry<T>.DefaultInstance;
+            }
+            else if (result.IsNullOrDestroyed())
             {
                 Entry<T>.SetInstance(null);
                 _services.Remove(result);
                 result = null;
             }
-            return result;
+            return result ?? Entry<T>.DefaultInstance;
         }
         public static bool Get<T>(out T service) where T : class, IService
         {
             service = Entry<T>.Instance;
-            if (!object.ReferenceEquals(service, null) && service.IsNullOrDestroyed())
+            if (object.ReferenceEquals(service, null))
+            {
+                service = Entry<T>.DefaultInstance;
+            }
+            else if (service.IsNullOrDestroyed())
             {
                 Entry<T>.SetInstance(null);
                 _services.Remove(service);
-                service = null;
+                service = Entry<T>.DefaultInstance;
             }
             return service != null;
         }
@@ -679,7 +687,7 @@ namespace com.spacepuppy
 
         public static bool ValidateService<T>(T service, Services.AutoRegisterOption autoRegisterService, Services.MultipleServiceResolutionOption multipleServiceResolution) where T : class, IService
         {
-            var inst = Services.Get<T>();
+            var inst = Entry<T>.Instance;
             if (inst == null)
             {
                 if (autoRegisterService > Services.AutoRegisterOption.DoNothing)
@@ -760,10 +768,19 @@ namespace com.spacepuppy
             public static void SetInstance(T inst)
             {
                 var old = Instance;
-                Instance = inst ?? DefaultInstance;
-                if (object.ReferenceEquals(Instance, DefaultInstance) && !object.ReferenceEquals(Instance, old))
+                Instance = inst;
+                if (object.ReferenceEquals(Instance, null))
                 {
-                    if (DefaultInstance != null) DefaultInstance.OnServiceRegistered(typeof(T));
+                    if (!object.ReferenceEquals(old, null) && DefaultInstance != null)
+                    {
+                        _services.Add(DefaultInstance);
+                        DefaultInstance.OnServiceRegistered(typeof(T));
+                    }
+                }
+                else if (object.ReferenceEquals(old, null) && DefaultInstance != null)
+                {
+                    _services.Remove(DefaultInstance);
+                    DefaultInstance.OnServiceUnregistered();
                 }
             }
             public static void SetDefaultInstance(T inst)
@@ -772,17 +789,19 @@ namespace com.spacepuppy
 
                 var old = DefaultInstance;
                 DefaultInstance = inst;
-                
-                if (object.ReferenceEquals(Instance, old))
+
+                if (object.ReferenceEquals(Instance, null))
                 {
-                    Instance = inst;
-                    if (old != null) old.OnServiceUnregistered();
-                    if (inst != null) inst.OnServiceRegistered(typeof(T));
-                }
-                else if (object.ReferenceEquals(Instance, null))
-                {
-                    Instance = inst;
-                    if (inst != null) inst.OnServiceRegistered(typeof(T));
+                    if (old != null)
+                    {
+                        _services.Remove(old);
+                        old.OnServiceUnregistered();
+                    }
+                    if (DefaultInstance != null)
+                    {
+                        _services.Add(DefaultInstance);
+                        DefaultInstance.OnServiceRegistered(typeof(T));
+                    }
                 }
             }
         }

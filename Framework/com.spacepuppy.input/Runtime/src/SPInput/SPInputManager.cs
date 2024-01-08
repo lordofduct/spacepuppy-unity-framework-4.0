@@ -31,7 +31,7 @@ namespace com.spacepuppy.SPInput
 
         #region CONSTRUCTOR
 
-        public SPInputManager()
+        public SPInputManager() : base(Services.AutoRegisterOption.Register, Services.MultipleServiceResolutionOption.UnregisterSelf, Services.UnregisterResolutionOption.DestroySelf)
         {
 
         }

@@ -10,7 +10,7 @@ namespace com.spacepuppy
 
         EventSystem GetEventSystem(object context = null) => EventSystem.current;
 
-        bool SetSelectedGameObject(GameObject selected)
+        bool SetSelectedGameObject(GameObject selected, object context = null)
         {
             var ev = EventSystem.current;
             if (ev == null) return false;

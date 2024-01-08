@@ -22,7 +22,7 @@ namespace com.spacepuppy.Events
         {
             if (!this.CanTrigger) return false;
 
-            return Services.Get<IEventSystem>()?.SetSelectedGameObject(_element) ?? false;
+            return Services.Get<IEventSystem>()?.SetSelectedGameObject(_element, _element ? _element : this.gameObject) ?? false;
         }
 
     }

@@ -60,7 +60,7 @@ namespace com.spacepuppy.UI
 
         public void SelectTargetElement()
         {
-            Services.Get<IEventSystem>()?.SetSelectedGameObject(_lastSelectedElement ? _lastSelectedElement : GameObjectUtil.GetGameObjectFromSource(_defaultElement, true));
+            Services.Get<IEventSystem>()?.SetSelectedGameObject(_lastSelectedElement ? _lastSelectedElement : GameObjectUtil.GetGameObjectFromSource(_defaultElement, true), this.gameObject);
         }
 
         #endregion

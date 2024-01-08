@@ -12,8 +12,13 @@ namespace com.spacepuppy.UI
 
         #region Fields
 
+        [System.NonSerialized]
         private System.Action _registrarCallback;
+        [System.NonSerialized]
         private StandardSelectedUIElementChangedProcessor _processor;
+
+        [System.NonSerialized]
+        private EventSystem _eventSystem;
 
         #endregion
 
@@ -29,6 +34,18 @@ namespace com.spacepuppy.UI
         {
 
         }
+
+        protected override void Awake()
+        {
+            _eventSystem = this.GetComponent<EventSystem>();
+            base.Awake();
+        }
+
+        #endregion
+
+        #region Properties
+
+        public EventSystem EventSystem => _eventSystem;
 
         #endregion
 

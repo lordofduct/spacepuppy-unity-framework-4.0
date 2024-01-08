@@ -7,13 +7,13 @@ namespace com.spacepuppy.Collections
 
     /// <summary>
     /// Creates a pool that will cache instances of objects for later use so that you don't have to construct them again. 
-    /// There is a max cache size, if set to 0 or less, it's considered endless in size.
+    /// There is a max cache size, if set to 0 or less, it uses the default size (see: DEFAULT_CACHESIZE).
     /// </summary>
     /// <typeparam name="T"></typeparam>
     public class ObjectCachePool<T> : ICachePool<T> where T : class
     {
 
-        private const int DEFAULT_CACHESIZE = 64; //1024;
+        public const int DEFAULT_CACHESIZE = 64; //1024;
 
         #region Fields
         

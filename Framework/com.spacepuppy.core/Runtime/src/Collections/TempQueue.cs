@@ -10,7 +10,7 @@ namespace com.spacepuppy.Collections
 
         #region Fields
 
-        private static ObjectCachePool<TempQueue<T>> _pool = new ObjectCachePool<TempQueue<T>>(-1, () => new TempQueue<T>());
+        private static ObjectCachePool<TempQueue<T>> _pool = new ObjectCachePool<TempQueue<T>>(8, () => new TempQueue<T>());
 
         #endregion
 

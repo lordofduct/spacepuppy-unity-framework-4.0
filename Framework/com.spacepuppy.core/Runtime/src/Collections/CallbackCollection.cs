@@ -90,7 +90,7 @@ namespace com.spacepuppy.Collections
 
         #region Fields
 
-        private static ObjectCachePool<TempCallbackCollection<T>> _pool = new ObjectCachePool<TempCallbackCollection<T>>(-1, () => new TempCallbackCollection<T>());
+        private static ObjectCachePool<TempCallbackCollection<T>> _pool = new ObjectCachePool<TempCallbackCollection<T>>(8, () => new TempCallbackCollection<T>());
 
         #endregion
 

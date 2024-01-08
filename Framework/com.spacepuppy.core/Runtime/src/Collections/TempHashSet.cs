@@ -12,7 +12,7 @@ namespace com.spacepuppy.Collections
 
         #region Fields
 
-        private static ObjectCachePool<TempHashSet<T>> _pool = new ObjectCachePool<TempHashSet<T>>(-1, () => new TempHashSet<T>(), (c) => c.Comparer = null);
+        private static ObjectCachePool<TempHashSet<T>> _pool = new ObjectCachePool<TempHashSet<T>>(8, () => new TempHashSet<T>(), (c) => c.Comparer = null);
 
         #endregion
 

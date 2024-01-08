@@ -12,7 +12,7 @@ namespace com.spacepuppy.Collections
 
         #region Fields
 
-        private static ObjectCachePool<TempDictionary<TKey, TValue>> _pool = new ObjectCachePool<TempDictionary<TKey, TValue>>(-1, () => new TempDictionary<TKey, TValue>(), (c) => c.Comparer = null);
+        private static ObjectCachePool<TempDictionary<TKey, TValue>> _pool = new ObjectCachePool<TempDictionary<TKey, TValue>>(8, () => new TempDictionary<TKey, TValue>(), (c) => c.Comparer = null);
 
         //private int _maxCapacityOnRelease;
         ////private int _version;

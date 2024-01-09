@@ -10,15 +10,15 @@ NOTE - various editor menu/functionality exist in the editor scripts. Define the
 
 Core library, all other libraries in spacepuppy depend on this library. Core functionality includes:
 
-SPComponent - an extension of MonoBehaviour with support for mixins as well as inheriting contract interfaces like IGameObjectsource, and IComponent.
-GameLoop - A global hook into the Update/FixedUpdate loops of the game.
-SPEntity - a foundation class placed on the root GameObject of an entity that facilitates treating its entire hierarchy as a single "entity".
-SPTime - object-identity for time suppliers as well as ability to create custom timesuppliers and reference them through the inspector
-MultiTag - ability to add multiple tags to a GameObject
-SPEvent - similar to UnityEvent but predates it with some added features like "Trigger All On Target" and IObserverableTrigger and hijacking.
-Collections - various collection implementations from a BinaryHeap to temporary/reusable lists to reduce GC on collections.
-Dynamic - generaly reflection tools
-VariantReference - ability reference a value of varying type through the inspector/serialization.
+- **SPComponent**: an extension of MonoBehaviour with support for mixins as well as inheriting contract interfaces like IGameObjectsource, and IComponent.
+- **GameLoop**: a global hook into the Update/FixedUpdate loops of the game.
+- **SPEntity**: a foundation class placed on the root GameObject of an entity that facilitates treating its entire hierarchy as a single "entity".
+- **SPTime**: object-identity for time suppliers as well as ability to create custom timesuppliers and reference them through the inspector
+- **MultiTag**: ability to add multiple tags to a GameObject
+- **SPEvent**: similar to UnityEvent but predates it with some added features like "Trigger All On Target" and IObserverableTrigger and hijacking.
+- **Collections**: various collection implementations from a BinaryHeap to temporary/reusable lists to reduce GC on collections.
+- **Dynamic**: generaly reflection tools
+- **VariantReference**: ability reference a value of varying type through the inspector/serialization.
 
 Dependencies:
 com.unity.editorcoroutines

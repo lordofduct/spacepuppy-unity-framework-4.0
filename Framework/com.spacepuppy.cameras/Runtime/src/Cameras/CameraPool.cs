@@ -41,9 +41,9 @@ namespace com.spacepuppy.Cameras
                     return manager.Main;
                 }
 
-                if(_main != null)
+                if (_main != null)
                 {
-                    if(ObjUtil.IsNullOrDestroyed(_main.camera))
+                    if (ObjUtil.IsNullOrDestroyed(_main.camera))
                     {
                         _main = null;
                     }
@@ -96,6 +96,7 @@ namespace com.spacepuppy.Cameras
                 {
                     var ev = CameraRegistrationEvent.GetTemp(cam);
                     e(null, ev);
+                    CameraRegistrationEvent.Release(ev);
                 }
             }
         }
@@ -112,6 +113,7 @@ namespace com.spacepuppy.Cameras
                 {
                     var ev = CameraRegistrationEvent.GetTemp(cam);
                     e(null, ev);
+                    CameraRegistrationEvent.Release(ev);
                 }
             }
         }

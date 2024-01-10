@@ -563,7 +563,7 @@ namespace com.spacepuppy.Tween
 
             public TweenHash FromTo(float dur, TProp start, TProp end, int option = 0)
             {
-                return FromTo(dur, start, end, option);
+                return FromTo(null, dur, start, end, option);
             }
             public TweenHash FromTo(Ease ease, float dur, TProp start, TProp end, int option = 0)
             {

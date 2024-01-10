@@ -21,14 +21,7 @@ namespace com.spacepuppy
 
         #region Multiton Interface
 
-        private static EntityPool _pool = new EntityPool();
-        public static EntityPool Pool
-        {
-            get
-            {
-                return _pool;
-            }
-        }
+        public static readonly EntityPool Pool = new EntityPool();
 
         #endregion
 
@@ -87,29 +80,22 @@ namespace com.spacepuppy
 
             #region EntityMultiton Methods
 
-            public bool IsSource(object obj)
+            public bool IsSource(object obj) => GetFromSource(obj) != null;
+
+#if UNITY_EDITOR
+            public SPEntity GetFromSource(object obj)
             {
-                if (obj is SPEntity) return true;
-
-                return GetFromSource(obj) != null;
+                var go = GameObjectUtil.GetGameObjectFromSource(obj);
+                return go ? go.GetComponentInParent<SPEntity>(true) : null;
             }
+            public SPEntity GetFromSource(GameObject obj) => obj ? obj.GetComponentInParent<SPEntity>() : null;
+            public SPEntity GetFromSource(Component obj) => obj ? obj.gameObject.GetComponentInParent<SPEntity>() : null;
+#else
+            public SPEntity GetFromSource(object obj) => obj is SPEntity e ? e : GameObjectUtil.GetGameObjectFromSource(obj).AddOrGetComponent<SPEntityHook>().GetEntity();
 
-            public virtual SPEntity GetFromSource(object obj)
-            {
-                if (obj == null) return null;
-
-                SPEntity result = obj as SPEntity;
-                if (!object.ReferenceEquals(result, null)) return result;
-
-                var go = GameObjectUtil.GetGameObjectFromSource(obj, true);
-                if (go == null) return null;
-
-                result = go.GetComponent<SPEntity>();
-                if (!object.ReferenceEquals(result, null)) return result;
-
-                result = go.AddOrGetComponent<SPEntityHook>().GetEntity();
-                return result;
-            }
+            public SPEntity GetFromSource(GameObject obj) => obj ? obj.AddOrGetComponent<SPEntityHook>().GetEntity() : null;
+            public SPEntity GetFromSource(Component obj) => obj is SPEntity e ? e : (obj ? obj.gameObject.AddOrGetComponent<SPEntityHook>().GetEntity() : null);
+#endif
 
             public bool GetFromSource(object obj, out SPEntity comp)
             {
@@ -121,42 +107,34 @@ namespace com.spacepuppy
 
 
 
-            public bool IsSource<TSub>(object obj) where TSub : SPEntity
+            public bool IsSource<TSub>(object obj) where TSub : SPEntity => GetFromSource<TSub>(obj) != null;
+
+#if UNITY_EDITOR
+            public TSub GetFromSource<TSub>(object obj) where TSub : SPEntity
             {
-                if (obj is TSub) return true;
+                var go = GameObjectUtil.GetGameObjectFromSource(obj);
+                if (go != null)
+                {
+                    var e = go.GetComponentInParent<TSub>(true);
+                    if (e is SPEntity) return e;
+                }
 
-                return GetFromSource<TSub>(obj) != null;
+                return null;
             }
+            public TSub GetFromSource<TSub>(GameObject obj) where TSub : SPEntity => obj ? obj.GetComponentInParent<TSub>() : null;
+            public TSub GetFromSource<TSub>(Component obj) where TSub : SPEntity => obj ? obj.gameObject.GetComponentInParent<TSub>() : null;
+#else
+            public TSub GetFromSource<TSub>(object obj) where TSub : SPEntity => obj is SPEntity e ? e as TSub : GameObjectUtil.GetGameObjectFromSource(obj).AddOrGetComponent<SPEntityHook>().GetEntity() as TSub;
 
-            public virtual TSub GetFromSource<TSub>(object obj) where TSub : SPEntity
-            {
-                if (obj == null) return null;
-                if (obj is TSub) return obj as TSub;
+            public TSub GetFromSource<TSub>(GameObject obj) where TSub : SPEntity => obj ? GameObjectUtil.GetGameObjectFromSource(obj).AddOrGetComponent<SPEntityHook>().GetEntity() as TSub : null;
 
-                var go = GameObjectUtil.GetGameObjectFromSource(obj, true);
-                if (go == null) return null;
-
-                var e = go.GetComponent<SPEntity>();
-                if (!object.ReferenceEquals(e, null)) return e as TSub;
-
-                return go.AddOrGetComponent<SPEntityHook>().GetEntity() as TSub;
-            }
+            public TSub GetFromSource<TSub>(Component obj) where TSub : SPEntity => obj is SPEntity e ? e as TSub : (obj ? obj.gameObject.AddOrGetComponent<SPEntityHook>().GetEntity() as TSub : null);
+#endif
 
             public virtual SPEntity GetFromSource(System.Type tp, object obj)
             {
-                if (tp == null || obj == null) return null;
-                if (obj is SPEntity) return tp.IsInstanceOfType(obj) ? obj as SPEntity : null;
-
-                var go = GameObjectUtil.GetGameObjectFromSource(obj, true);
-                if (go == null) return null;
-
-                var e = go.GetComponent<SPEntity>();
-                if (!object.ReferenceEquals(e, null)) return tp.IsInstanceOfType(e) ? e : null;
-
-                e = go.AddOrGetComponent<SPEntityHook>().GetEntity();
-                if (!object.ReferenceEquals(e, null)) return tp.IsInstanceOfType(e) ? e : null;
-
-                return null;
+                var e = this.GetFromSource(obj);
+                return !object.ReferenceEquals(e, null) && tp.IsInstanceOfType(e) ? e : null;
             }
 
             public bool GetFromSource<TSub>(object obj, out TSub comp) where TSub : SPEntity
@@ -171,12 +149,13 @@ namespace com.spacepuppy
                 return comp != null;
             }
 
-            #endregion
+#endregion
 
         }
 
-        public class SPEntityHook : MonoBehaviour
+        class SPEntityHook : MonoBehaviour
         {
+
             #region Fields
 
             private SPEntity _entity;
@@ -191,10 +170,7 @@ namespace com.spacepuppy
                 if (_synced)
                 {
                     _synced = false;
-                    if (_entity != null && !this.transform.IsChildOf(_entity.transform))
-                    {
-                        _entity = null;
-                    }
+                    _entity = null;
                 }
             }
 
@@ -207,7 +183,7 @@ namespace com.spacepuppy
                 if (!_synced)
                 {
                     _synced = true;
-                    _entity = this.GetComponentInParent<SPEntity>();
+                    _entity = this.GetComponentInParent<SPEntity>(true);
                 }
                 return _entity;
             }
@@ -222,7 +198,7 @@ namespace com.spacepuppy
 
         }
 
-        #endregion
+#endregion
 
 #if UNITY_EDITOR
 

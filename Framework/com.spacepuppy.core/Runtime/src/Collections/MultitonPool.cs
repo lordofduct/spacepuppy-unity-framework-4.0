@@ -39,6 +39,7 @@ namespace com.spacepuppy.Collections
         private HashSet<T> _pool;
         private bool _querying;
         private System.Action _queryCompleteAction;
+        private int _version;
 
         #endregion
 
@@ -69,6 +70,12 @@ namespace com.spacepuppy.Collections
             set { _queryCompleteAction = value; }
         }
 
+        /// <summary>
+        /// A value that changes if the collection any time the collection is modified. 
+        /// Can be used to quickly recognize if the collection has changed. 
+        /// </summary>
+        public int Version => _version;
+
         #endregion
 
         #region IMultitonPool Interface
@@ -91,9 +98,9 @@ namespace com.spacepuppy.Collections
             {
                 if (!_pool.Contains(obj)) _queryCompleteAction += () => _pool.Add(obj);
             }
-            else
+            else if (_pool.Add(obj))
             {
-                _pool.Add(obj);
+                _version++;
             }
         }
 
@@ -113,10 +120,12 @@ namespace com.spacepuppy.Collections
                     return false;
                 }
             }
-            else
+            else if (_pool.Remove(obj))
             {
-                return _pool.Remove(obj);
+                _version++;
+                return true;
             }
+            return false;
         }
 
         public bool Contains(T obj)
@@ -152,6 +161,7 @@ namespace com.spacepuppy.Collections
                 {
                     _queryCompleteAction();
                     _queryCompleteAction = null;
+                    _version++;
                 }
                 _querying = false;
             }
@@ -185,6 +195,7 @@ namespace com.spacepuppy.Collections
                 {
                     _queryCompleteAction();
                     _queryCompleteAction = null;
+                    _version++;
                 }
                 _querying = false;
             }
@@ -218,6 +229,7 @@ namespace com.spacepuppy.Collections
                 {
                     _queryCompleteAction();
                     _queryCompleteAction = null;
+                    _version++;
                 }
                 _querying = false;
             }
@@ -258,6 +270,7 @@ namespace com.spacepuppy.Collections
                 {
                     _queryCompleteAction();
                     _queryCompleteAction = null;
+                    _version++;
                 }
                 _querying = false;
             }
@@ -281,6 +294,7 @@ namespace com.spacepuppy.Collections
                 {
                     _queryCompleteAction();
                     _queryCompleteAction = null;
+                    _version++;
                 }
                 _querying = false;
             }
@@ -323,6 +337,7 @@ namespace com.spacepuppy.Collections
                 {
                     _queryCompleteAction();
                     _queryCompleteAction = null;
+                    _version++;
                 }
                 _querying = false;
             }
@@ -369,6 +384,7 @@ namespace com.spacepuppy.Collections
                 {
                     _queryCompleteAction();
                     _queryCompleteAction = null;
+                    _version++;
                 }
                 _querying = false;
             }

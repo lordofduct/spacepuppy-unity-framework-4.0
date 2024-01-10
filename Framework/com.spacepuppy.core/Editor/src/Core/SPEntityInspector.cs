@@ -9,83 +9,9 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppyeditor.Core
 {
 
-    [InitializeOnLoad()]
-    [CustomEditor(typeof(SPEntity), true)]
+    //[CustomEditor(typeof(SPEntity), true)]
     public class SPEntityInspector : SPEditor
     {
-
-        static SPEntityInspector()
-        {
-            var tp = typeof(SPEntity);
-            var field = tp.GetMember("_pool", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic).FirstOrDefault() as System.Reflection.FieldInfo;
-            if (field != null)
-            {
-                var pool = new EditorEntityPool();
-                var old = field.GetValue(null) as SPEntity.EntityPool;
-                field.SetValue(null, pool);
-                if (old != null)
-                {
-                    var e = old.GetEnumerator();
-                    while (e.MoveNext())
-                    {
-                        pool.AddReference(e.Current);
-                    }
-                }
-            }
-        }
-
-
-
-        private class EditorEntityPool : SPEntity.EntityPool
-        {
-
-            public override SPEntity GetFromSource(object obj)
-            {
-                //if (Application.isPlaying)
-                //    return base.GetFromSource(obj);
-
-                var go = GameObjectUtil.GetGameObjectFromSource(obj);
-                if (go != null)
-                    return go.GetComponentInParent<SPEntity>(true);
-                else
-                    return null;
-            }
-            
-            public override TSub GetFromSource<TSub>(object obj)
-            {
-                //if (Application.isPlaying)
-                //    return base.GetFromSource<TSub>(obj);
-
-                var go = GameObjectUtil.GetGameObjectFromSource(obj);
-                if (go != null)
-                {
-                    //var e = go.GetComponentInParent<SPEntity>();
-                    //if (e is TSub) return e as TSub;
-                    var e = go.GetComponentInParent<TSub>(true);
-                    if (e is SPEntity) return e;
-                }
-
-                return null;
-            }
-
-            public override SPEntity GetFromSource(System.Type tp, object obj)
-            {
-                //if (Application.isPlaying)
-                //    return base.GetFromSource(tp, obj);
-
-                var go = GameObjectUtil.GetGameObjectFromSource(obj);
-                if (go != null)
-                {
-                    //var e = go.GetComponentInParent<SPEntity>();
-                    //if (tp.IsInstanceOfType(e)) return e;
-                    var e = go.GetComponentInParent(tp, true);
-                    if (e is SPEntity spe) return spe;
-                }
-
-                return null;
-            }
-
-        }
 
     }
     

@@ -31,7 +31,7 @@ namespace com.spacepuppyeditor.Core
         public GUIContent CustomLabel;
         private CachedReorderableList _lst;
         private GUIContent _labelContent;
-        private bool _disallowFoldout;
+        private bool _alwaysExpanded;
         private bool _removeBackgroundWhenCollapsed;
         private bool _draggable = true;
         private bool _drawElementAtBottom;
@@ -165,10 +165,10 @@ namespace com.spacepuppyeditor.Core
          * Configuration
          */
 
-        public bool DisallowFoldout
+        public bool AlwaysExpanded
         {
-            get { return (this.attribute as ReorderableArrayAttribute)?.DisallowFoldout ?? _disallowFoldout; }
-            set { _disallowFoldout = value; }
+            get { return (this.attribute as ReorderableArrayAttribute)?.AlwaysExpanded ?? _alwaysExpanded; }
+            set { _alwaysExpanded = value; }
         }
 
         public bool RemoveBackgroundWhenCollapsed
@@ -271,11 +271,12 @@ namespace com.spacepuppyeditor.Core
         {
             float h;
             if (EditorHelper.AssertMultiObjectEditingNotSupportedHeight(property, label, out h)) return h;
+            if (this.AlwaysExpanded) property.isExpanded = true;
 
             if (property.isArray)
             {
                 this.StartOnGUI(property, label);
-                if (this.DisallowFoldout || property.isExpanded)
+                if (property.isExpanded)
                 {
                     h = _lst.GetHeight();
                     if (this.DrawElementAtBottom && _lst.index >= 0 && _lst.index < property.arraySize)
@@ -348,7 +349,7 @@ namespace com.spacepuppyeditor.Core
                 position = EditorGUI.IndentedRect(position);
                 Rect listArea = position;
 
-                if (this.DisallowFoldout)
+                if (this.AlwaysExpanded)
                 {
                     this.StartOnGUI(property, label);
                     listArea = new Rect(position.xMin, position.yMin, position.width, _lst.GetHeight());
@@ -356,29 +357,26 @@ namespace com.spacepuppyeditor.Core
                     _lst.DoList(listArea);
                     this.EndOnGUI(property, label);
                 }
+                else if (property.isExpanded)
+                {
+                    this.StartOnGUI(property, label);
+                    listArea = new Rect(position.xMin, position.yMin, position.width, _lst.GetHeight());
+                    property.isExpanded = EditorGUI.Foldout(foldoutRect, property.isExpanded, GUIContent.none);
+                    //_lst.DoList(EditorGUI.IndentedRect(position));
+                    _lst.DoList(listArea);
+                    this.EndOnGUI(property, label);
+                }
                 else
                 {
-                    if (property.isExpanded)
+                    if (this.RemoveBackgroundWhenCollapsed)
                     {
-                        this.StartOnGUI(property, label);
-                        listArea = new Rect(position.xMin, position.yMin, position.width, _lst.GetHeight());
-                        property.isExpanded = EditorGUI.Foldout(foldoutRect, property.isExpanded, GUIContent.none);
-                        //_lst.DoList(EditorGUI.IndentedRect(position));
-                        _lst.DoList(listArea);
-                        this.EndOnGUI(property, label);
+                        property.isExpanded = EditorGUI.Foldout(foldoutRect, property.isExpanded, label);
                     }
                     else
                     {
-                        if (this.RemoveBackgroundWhenCollapsed)
-                        {
-                            property.isExpanded = EditorGUI.Foldout(foldoutRect, property.isExpanded, label);
-                        }
-                        else
-                        {
-                            property.isExpanded = EditorGUI.Foldout(foldoutRect, property.isExpanded, GUIContent.none);
-                            //ReorderableListHelper.DrawRetractedHeader(EditorGUI.IndentedRect(position), label);
-                            ReorderableListHelper.DrawRetractedHeader(position, label);
-                        }
+                        property.isExpanded = EditorGUI.Foldout(foldoutRect, property.isExpanded, GUIContent.none);
+                        //ReorderableListHelper.DrawRetractedHeader(EditorGUI.IndentedRect(position), label);
+                        ReorderableListHelper.DrawRetractedHeader(position, label);
                     }
                 }
 
@@ -394,7 +392,7 @@ namespace com.spacepuppyeditor.Core
                 if (property.isExpanded && this.DrawElementAtBottom && _lst.index >= 0 && _lst.index < property.arraySize)
                 {
                     var pchild = property.GetArrayElementAtIndex(_lst.index);
-                    var label2 = TempElementLabel(pchild, _lst.index); //(string.IsNullOrEmpty(_childPropertyAsLabel)) ? TempElementLabel(_lst.index) : GUIContent.none;
+                    var label2 = TempElementLabel(pchild, _lst.index, true, true);
 
                     pchild.isExpanded = true;
                     float h;
@@ -495,20 +493,11 @@ namespace com.spacepuppyeditor.Core
             if (element == null) return GUIContent.none;
 
             GUIContent label = null;
-            if (this.FormatElementLabel != null)
-            {
-                string slbl = this.FormatElementLabel(element, index, isActive, isFocused);
-                if (slbl != null) label = EditorHelper.TempContent(slbl);
-            }
-            else if (!string.IsNullOrEmpty(this.ElementLabelFormatString))
-            {
-                label = EditorHelper.TempContent(string.Format(this.ElementLabelFormatString, index));
-            }
             if (this.ElementPadding > 0f)
             {
                 area = new Rect(area.xMin + this.ElementPadding, area.yMin, Mathf.Max(0f, area.width - this.ElementPadding), area.height);
             }
-            if (label == null) label = (this.HideElementLabel) ? GUIContent.none : TempElementLabel(element, index);
+            if (label == null) label = (this.HideElementLabel) ? GUIContent.none : TempElementLabel(element, index, isActive, isFocused);
 
             return label;
         }
@@ -518,15 +507,21 @@ namespace com.spacepuppyeditor.Core
             this.CurrentDrawingArrayElementIndex = elementIndex;
             if (this.DrawElementAtBottom)
             {
-                SerializedProperty prop = string.IsNullOrEmpty(this.ChildPropertyAsEntry) ? null : element.FindPropertyRelative(this.ChildPropertyAsEntry);
-
-                if (prop != null)
+                if (_internalDrawer is SerializeRefPickerPropertyDrawer pickerdrawer && pickerdrawer.RefType != null)
                 {
-                    SPEditorGUI.PropertyField(area, prop, label);
+                    SerializeRefPickerPropertyDrawer.DrawRefPicker(area, element, label, pickerdrawer.RefType, pickerdrawer.AllowNull, pickerdrawer.NullLabel);
                 }
                 else
                 {
-                    EditorGUI.LabelField(area, label);
+                    SerializedProperty prop = string.IsNullOrEmpty(this.ChildPropertyAsEntry) ? null : element.FindPropertyRelative(this.ChildPropertyAsEntry);
+                    if (prop != null)
+                    {
+                        SPEditorGUI.PropertyField(area, prop, label);
+                    }
+                    else
+                    {
+                        EditorGUI.LabelField(area, label);
+                    }
                 }
             }
             else
@@ -639,7 +634,7 @@ namespace com.spacepuppyeditor.Core
         #endregion
 
 
-        protected GUIContent TempElementLabel(SerializedProperty element, int index)
+        protected GUIContent TempElementLabel(SerializedProperty element, int index, bool isActive, bool isFocused)
         {
             var target = EditorHelper.GetTargetObjectOfProperty(element);
             string slbl = ConvertUtil.ToString(com.spacepuppy.Dynamic.DynamicUtil.GetValue(target, this.ChildPropertyAsLabel));
@@ -647,12 +642,11 @@ namespace com.spacepuppyeditor.Core
             if (string.IsNullOrEmpty(slbl))
             {
                 var propLabel = (!string.IsNullOrEmpty(this.ChildPropertyAsLabel)) ? element.FindPropertyRelative(this.ChildPropertyAsLabel) : null;
-                if (propLabel != null)
-                    slbl = ConvertUtil.ToString(EditorHelper.GetPropertyValue(propLabel));
+                if (propLabel != null) slbl = ConvertUtil.ToString(EditorHelper.GetPropertyValue(propLabel));
             }
 
-            if (string.IsNullOrEmpty(slbl))
-                slbl = string.Format("Element {0:00}", index);
+            if (string.IsNullOrEmpty(slbl)) slbl = this.FormatElementLabel?.Invoke(element, index, isActive, isFocused);
+            if (string.IsNullOrEmpty(slbl)) slbl = string.IsNullOrEmpty(this.ElementLabelFormatString) ? string.Format("Element {0:00}", index) : string.Format(this.ElementLabelFormatString, index);
 
             return EditorHelper.TempContent(slbl);
         }

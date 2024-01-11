@@ -1,4 +1,4 @@
-﻿#pragma warning disable 0649 // variable declared but not used.
+#pragma warning disable 0649 // variable declared but not used.
 using UnityEngine;
 using System.Collections.Generic;
 using com.spacepuppy.Utils;
@@ -26,60 +26,27 @@ namespace com.spacepuppy
         #region Fields
 
         [SerializeField]
-        private bool _testRoot;
-        [SerializeField]
-        private LayerMask _layerMask = -1;
+        private bool _inverse;
 
-        [SerializeField()]
-        [ReorderableArray]
-        [TagSelector()]
-        private string[] _tags;
-
-        [SerializeField]
-        [Tooltip("An optional eval string that will be operated as part of the mask, the GameObject of the activator will be passed along as $.")]
-        private string _evalStatement;
+        [SerializeReference]
+        [ReorderableArray(DrawElementAtBottom = true, AlwaysExpanded = true, ElementLabelFormatString = "Filter {0:00}")]
+        [SerializeRefPicker(typeof(IMode), AlwaysExpanded = true)]
+        private IMode[] _filters;
 
         #endregion
 
         #region Properties
 
-        public LayerMask LayerMask
+        public bool Inverse
         {
-            get { return _layerMask; }
-            set { _layerMask = value; }
+            get => _inverse;
+            set => _inverse = value;
         }
 
-        public string[] Tags
+        public IMode[] Filters
         {
-            get { return _tags; }
-            set { _tags = value; }
-        }
-
-        public string EvalStatement
-        {
-            get { return _evalStatement; }
-            set { _evalStatement = value; }
-        }
-
-        #endregion
-
-        #region Methods
-
-        public bool Intersects(GameObject go)
-        {
-            if (go == null) return false;
-
-            if (_testRoot) go = go.FindRoot();
-
-            bool result = _layerMask.Intersects(go) && (_tags == null || _tags.Length == 0 || go.HasTag(_tags));
-            if (result && !string.IsNullOrEmpty(_evalStatement)) result = com.spacepuppy.Dynamic.Evaluator.EvalBool(_evalStatement, go);
-            return result;
-        }
-
-        public bool Intersects(Component comp)
-        {
-            if (comp == null) return false;
-            return Intersects(comp.gameObject);
+            get => _filters;
+            set => _filters = value;
         }
 
         #endregion
@@ -88,7 +55,75 @@ namespace com.spacepuppy
 
         public bool Intersects(Object obj)
         {
-            return this.Intersects(GameObjectUtil.GetGameObjectFromSource(obj));
+            if (_filters == null || _filters.Length == 0) return false;
+
+            if (_inverse)
+            {
+                for (int i = 0; i < _filters.Length; i++)
+                {
+                    if (_filters[i]?.Intersects(obj) ?? true) return false;
+                }
+                return true;
+            }
+            else
+            {
+                for (int i = 0; i < _filters.Length; i++)
+                {
+                    if (!(_filters[i]?.Intersects(obj) ?? true)) return false;
+                }
+                return true;
+            }
+        }
+
+        #endregion
+
+        #region Special Types
+
+        public interface IMode : IEventActivatorMask { }
+
+        [System.Serializable]
+        public class ByLayerMask : IMode
+        {
+            public bool testRoot;
+            public LayerMask layerMask = -1;
+
+            public bool Intersects(Object obj)
+            {
+                var go = GameObjectUtil.GetGameObjectFromSource(obj);
+                return go && layerMask.Intersects(testRoot ? go.FindRoot() : go);
+            }
+        }
+
+        [System.Serializable]
+        public class ByTag : IMode
+        {
+            public bool testRoot;
+            [ReorderableArray]
+            [TagSelector()]
+            public string[] tags;
+
+            public bool Intersects(Object obj)
+            {
+                var go = GameObjectUtil.GetGameObjectFromSource(obj);
+                if (!go) return false;
+                if (testRoot) go = go.FindRoot();
+                return tags?.Length > 0 && go.HasTag(tags);
+            }
+        }
+
+        [System.Serializable]
+        public class ByEvalStatement : IMode
+        {
+            public bool testRoot;
+            public string evalStatement;
+
+            public bool Intersects(Object obj)
+            {
+                var go = GameObjectUtil.GetGameObjectFromSource(obj);
+                if (!go) return false;
+                if (testRoot) go = go.FindRoot();
+                return com.spacepuppy.Dynamic.Evaluator.EvalBool(evalStatement, go);
+            }
         }
 
         #endregion

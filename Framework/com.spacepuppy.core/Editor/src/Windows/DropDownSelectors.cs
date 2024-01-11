@@ -417,7 +417,11 @@ namespace com.spacepuppyeditor.Windows
                             }
                         }
 
-                        IEnumerable<UnityEngine.Object> results;
+                        IEnumerable<UnityEngine.Object> results = Enumerable.Empty<UnityEngine.Object>();
+                        /*
+                         * This is the slow way of doing it... we changed to this load all assets and leave the array active approach. 
+                         * I don't know the long-term implications of it so I'm leaving both here to easily swap back and forth for testing.
+                         * 
                         if (allowProxy)
                         {
                             results = AssetDatabase.FindAssets("a:assets")
@@ -429,6 +433,20 @@ namespace com.spacepuppyeditor.Windows
                         {
                             results = AssetDatabase.FindAssets("a:assets")
                                                    .Select(s => ObjUtil.GetAsFromSource(objType, AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(s), typeof(UnityEngine.Object))) as UnityEngine.Object)
+                                                   .Where(o => o != null);
+                        }
+                        */
+                        if (allowProxy)
+                        {
+                            results = UnsafeLoadedAssets.GetUnsafeLoadedAssets()
+                                                   .Select(o => ObjUtil.GetAsFromSource(types, o) as UnityEngine.Object)
+                                                   .OrderBy(o => !(objType.IsInstanceOfType(o)))
+                                                   .Where(o => o != null);
+                        }
+                        else
+                        {
+                            results = UnsafeLoadedAssets.GetUnsafeLoadedAssets()
+                                                   .Select(o => ObjUtil.GetAsFromSource(objType, o) as UnityEngine.Object)
                                                    .Where(o => o != null);
                         }
 
@@ -475,6 +493,64 @@ namespace com.spacepuppyeditor.Windows
             };
             return helper.DrawObjectField(position, label, asset);
         }
+
+        #endregion
+
+        #region UnsafeAssetDatabase
+
+        class UnsafeLoadedAssets : AssetPostprocessor
+        {
+            private static int _hash;
+            private static System.ValueTuple<string, int, UnityEngine.Object>[] _unsafeLoadedAssets;
+            public static IEnumerable<UnityEngine.Object> GetUnsafeLoadedAssets()
+            {
+                if (_unsafeLoadedAssets == null)
+                {
+                    _unsafeLoadedAssets = AssetDatabase.FindAssets("a:assets").Select(s => (s, s.GetHashCode(), AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(s), typeof(UnityEngine.Object)))).ToArray();
+                    _hash = 0;
+                    for (int i = 0; i < _unsafeLoadedAssets.Length; i++)
+                    {
+                        _hash ^= _unsafeLoadedAssets[i].Item2;
+                    }
+                }
+                return _unsafeLoadedAssets.Select(o => o.Item3);
+            }
+
+            static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
+            {
+                if (_unsafeLoadedAssets == null) return;
+
+                var sguids = AssetDatabase.FindAssets("a:assets");
+                if (_unsafeLoadedAssets.Length != sguids.Length)
+                {
+                    _unsafeLoadedAssets = null;
+                    return;
+                }
+
+                int hash = 0;
+                for (int i = 0; i < sguids.Length; i++) hash ^= sguids[i].GetHashCode();
+
+                if (hash != _hash)
+                {
+                    _unsafeLoadedAssets = null;
+                    return;
+                }
+
+                for (int i = 0; i < _unsafeLoadedAssets.Length; i++)
+                {
+                    if (_unsafeLoadedAssets[i].IsDestroyed())
+                    {
+                        _unsafeLoadedAssets[i].Item3 = AssetDatabase.LoadAssetAtPath(_unsafeLoadedAssets[i].Item1, typeof(UnityEngine.Object));
+                        if (_unsafeLoadedAssets[i].Item3 == null)
+                        {
+                            _unsafeLoadedAssets = null;
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+
 
         #endregion
 

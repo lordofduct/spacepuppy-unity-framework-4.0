@@ -651,6 +651,11 @@ namespace com.spacepuppy
         public bool PrecedeProperty;
         public bool RuntimeOnly;
         public bool SupportsMultiObjectEditing;
+        public bool Validate;
+        public string ValidateMessage;
+        public bool RecordUndo;
+        public string UndoLabel;
+        public float Space;
 
         public InsertButtonAttribute(string label, string onClick)
         {

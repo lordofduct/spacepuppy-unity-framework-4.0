@@ -25,6 +25,7 @@ namespace com.spacepuppyeditor.Core
             if (attrib.PrecedeProperty && (!attrib.RuntimeOnly || Application.isPlaying))
             {
                 this.DrawButton(property, attrib);
+                if (attrib.Space > 0f) GUILayout.Space(attrib.Space);
             }
         }
 
@@ -33,6 +34,7 @@ namespace com.spacepuppyeditor.Core
             var attrib = this.attribute as InsertButtonAttribute;
             if (!attrib.PrecedeProperty && (!attrib.RuntimeOnly || Application.isPlaying))
             {
+                if (attrib.Space > 0f) GUILayout.Space(attrib.Space);
                 this.DrawButton(property, attrib);
             }
         }
@@ -44,7 +46,12 @@ namespace com.spacepuppyeditor.Core
 
             if(GUILayout.Button(attrib.Label))
             {
-                foreach (var obj in EditorHelper.GetTargetObjectsWithProperty(property))
+                if (attrib.Validate && !EditorUtility.DisplayDialog(attrib.Label, string.IsNullOrEmpty(attrib.ValidateMessage) ? "Are you sure?" : attrib.ValidateMessage, "yes", "no")) return;
+
+                var arr = EditorHelper.GetTargetObjectsWithProperty(property);
+                if (attrib.RecordUndo && arr.Any(o => o is UnityEngine.Object)) Undo.RecordObjects(arr.Where(o => o is UnityEngine.Object).Select(o => o as UnityEngine.Object).ToArray(), string.IsNullOrEmpty(attrib.UndoLabel) ? attrib.Label : attrib.UndoLabel);
+
+                foreach (var obj in arr)
                 {
                     DynamicUtil.InvokeMethod(obj, attrib.OnClick);
                 }
@@ -78,13 +85,21 @@ namespace com.spacepuppyeditor.Core
             if (attrib.RuntimeOnly && !Application.isPlaying) return;
             if (!attrib.SupportsMultiObjectEditing && this.SerializedObject.isEditingMultipleObjects) return;
 
+            if (this.IsFooter && attrib.Space > 0f) GUILayout.Space(attrib.Space);
+
             if (GUILayout.Button(attrib.Label))
             {
+                if (attrib.Validate && !EditorUtility.DisplayDialog(attrib.Label, string.IsNullOrEmpty(attrib.ValidateMessage) ? "Are you sure?" : attrib.ValidateMessage, "yes", "no")) return;
+
+                if (attrib.RecordUndo && this.SerializedObject.targetObjects.Length > 0) Undo.RecordObjects(this.SerializedObject.targetObjects, string.IsNullOrEmpty(attrib.UndoLabel) ? attrib.Label : attrib.UndoLabel);
+
                 foreach (var obj in this.SerializedObject.targetObjects)
                 {
                     DynamicUtil.InvokeMethod(obj, attrib.OnClick);
                 }
             }
+
+            if (!this.IsFooter && attrib.Space > 0f) GUILayout.Space(attrib.Space);
         }
 
     }

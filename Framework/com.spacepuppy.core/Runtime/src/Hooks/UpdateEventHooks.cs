@@ -14,17 +14,17 @@ namespace com.spacepuppy.Hooks
         // Update is called once per frame
         void Update()
         {
-            if (this.UpdateHook != null) this.UpdateHook(this, System.EventArgs.Empty);
+            this.UpdateHook?.Invoke(this, System.EventArgs.Empty);
         }
 
         void FixedUpdate()
         {
-            if (this.FixedUpdateHook != null) this.FixedUpdateHook(this, System.EventArgs.Empty);
+            this.FixedUpdateHook?.Invoke(this, System.EventArgs.Empty);
         }
 
         void LateUpdate()
         {
-            if (this.LateUpdateHook != null) this.LateUpdateHook(this, System.EventArgs.Empty);
+            this.LateUpdateHook?.Invoke(this, System.EventArgs.Empty);
         }
 
         protected override void OnDestroy()
@@ -34,22 +34,6 @@ namespace com.spacepuppy.Hooks
             UpdateHook = null;
             FixedUpdateHook = null;
             LateUpdateHook = null;
-        }
-
-
-        public void ScheduleNextUpdate(System.Action callback)
-        {
-
-        }
-
-        public void ScheduleNextFixedUpdate(System.Action callback)
-        {
-
-        }
-
-        public void ScheduleNextLateUpdate(System.Action callback)
-        {
-
         }
 
     }

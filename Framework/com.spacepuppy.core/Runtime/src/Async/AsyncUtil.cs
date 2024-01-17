@@ -14,6 +14,52 @@ namespace com.spacepuppy.Async
     public static class AsyncUtil
     {
 
+        #region Component Extensions
+
+#if SP_UNITASK
+        public static async Cysharp.Threading.Tasks.UniTask WaitForStarted(this IEventfulComponent c, System.Threading.CancellationToken cancellationToken = default)
+        {
+            if (c == null || c.component == null || c.started) return;
+
+            while (!c.started && c.component && !cancellationToken.IsCancellationRequested)
+            {
+                await UniTask.Yield();
+            }
+        }
+        public static async Cysharp.Threading.Tasks.UniTask WaitForStarted(this SPComponent c, System.Threading.CancellationToken cancellationToken = default)
+        {
+            if (c == null || c.started) return;
+
+            while (!c.started && c && !cancellationToken.IsCancellationRequested)
+            {
+                await UniTask.Yield();
+            }
+        }
+#else
+        public static async System.Threading.Tasks.ValueTask WaitForStarted(this IEventfulComponent c, System.Threading.CancellationToken cancellationToken = default)
+        {
+            if (c == null || c.component == null || c.started) return;
+
+            while (!c.started && c.component && !cancellationToken.IsCancellationRequested)
+            {
+                await System.Threading.Tasks.Task.Yield();
+            }
+        }
+
+        public static async System.Threading.Tasks.ValueTask WaitForStarted(this SPComponent c, System.Threading.CancellationToken cancellationToken = default)
+        {
+            if (c == null || c.started) return;
+
+            while (!c.started && c && !cancellationToken.IsCancellationRequested)
+            {
+                await System.Threading.Tasks.Task.Yield();
+            }
+        }
+#endif
+
+        #endregion
+
+
         public static AsyncWaitHandle AsAsyncWaitHandle(this Task task)
         {
             if (task == null) throw new System.ArgumentNullException(nameof(task));

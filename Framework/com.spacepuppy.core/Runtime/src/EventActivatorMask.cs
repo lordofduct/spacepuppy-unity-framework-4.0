@@ -20,66 +20,91 @@ namespace com.spacepuppy
     }
 
     [CreateAssetMenu(fileName = "EventActivatorMask", menuName = "Spacepuppy/EventActivatorMask")]
+    [InsertButton("Clear", "ClearMode", PrecedeProperty = true, SupportsMultiObjectEditing = true, RecordUndo = true, UndoLabel = "EventActivatorMask - Clear", Space = 20f)]
     public class EventActivatorMask : ScriptableObject, IEventActivatorMask
     {
 
         #region Fields
 
-        [SerializeField]
-        private bool _inverse;
-
-        [SerializeReference]
-        [ReorderableArray(DrawElementAtBottom = true, AlwaysExpanded = true, ElementLabelFormatString = "Filter {0:00}")]
-        [SerializeRefPicker(typeof(IMode), AlwaysExpanded = true)]
-        private IMode[] _filters;
+        [SerializeReference, SerializeRefPicker(typeof(IMode), AlwaysExpanded = true)]
+        private IMode _mode;
 
         #endregion
 
         #region Properties
 
-        public bool Inverse
+        public IMode Mode
         {
-            get => _inverse;
-            set => _inverse = value;
-        }
-
-        public IMode[] Filters
-        {
-            get => _filters;
-            set => _filters = value;
+            get => _mode;
+            set => _mode = value;
         }
 
         #endregion
 
         #region IEventActivatorMask Interface
 
-        public bool Intersects(Object obj)
-        {
-            if (_filters == null || _filters.Length == 0) return false;
-
-            if (_inverse)
-            {
-                for (int i = 0; i < _filters.Length; i++)
-                {
-                    if (_filters[i]?.Intersects(obj) ?? true) return false;
-                }
-                return true;
-            }
-            else
-            {
-                for (int i = 0; i < _filters.Length; i++)
-                {
-                    if (!(_filters[i]?.Intersects(obj) ?? true)) return false;
-                }
-                return true;
-            }
-        }
+        public bool Intersects(Object obj) => _mode?.Intersects(obj) ?? false;
 
         #endregion
+
+#if UNITY_EDITOR
+        private void ClearMode()
+        {
+            _mode = null;
+        }
+#endif
 
         #region Special Types
 
         public interface IMode : IEventActivatorMask { }
+
+        [System.Serializable]
+        public class Inverted : IMode
+        {
+
+            [SerializeReference, SerializeRefPicker(typeof(IMode), AlwaysExpanded = true)]
+            public IMode mode;
+
+            public bool Intersects(Object obj) => mode != null ? !mode.Intersects(obj) : true;
+
+        }
+
+        [System.Serializable]
+        public class ManyFilters : IMode
+        {
+
+            [SerializeReference]
+            [ReorderableArray(DrawElementAtBottom = true, AlwaysExpanded = true, ElementLabelFormatString = "Filter {0:00}")]
+            [SerializeRefPicker(typeof(IMode), AlwaysExpanded = true)]
+            public IMode[] filters;
+
+            public bool Intersects(Object obj)
+            {
+                if (filters == null || filters.Length == 0) return false;
+
+                for (int i = 0; i < filters.Length; i++)
+                {
+                    if (!(filters[i]?.Intersects(obj) ?? true)) return false;
+                }
+                return true;
+            }
+
+        }
+
+        [System.Serializable]
+        public class Nested : IMode
+        {
+            [SerializeField]
+            private EventActivatorMaskRef _mask = new EventActivatorMaskRef();
+            public IEventActivatorMask mask
+            {
+                get => _mask.Value;
+                set => _mask.Value = value;
+            }
+
+            public bool Intersects(Object obj) => this.mask?.Intersects(obj) ?? false;
+
+        }
 
         [System.Serializable]
         public class ByLayerMask : IMode

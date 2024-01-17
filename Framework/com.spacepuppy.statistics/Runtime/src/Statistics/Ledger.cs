@@ -141,31 +141,21 @@ namespace com.spacepuppy.Statistics
             }
         }
 
+        public bool TryGetStat(string stat, out double? value) => _stats.TryGetValue(new StatId(stat), out value);
+        public bool TryGetStat(string stat, string token, out double? value) => _stats.TryGetValue(new StatId(stat, token), out value);
+        public bool TryGetStat(StatId stat, out double? value) => _stats.TryGetValue(stat, out value);
+
         public double? GetStat(string stat) => GetStat(new StatId(stat, null));
         public double? GetStat(string stat, string token) => GetStat(new StatId(stat, token));
-        public double? GetStat(StatId stat)
-        {
-            double? value = 0d;
-            _stats.TryGetValue(stat, out value);
-            return value;
-        }
+        public double? GetStat(StatId stat) => _stats.TryGetValue(stat, out double? value) ? value : null;
 
         public double GetStatOrDefault(string stat) => GetStatOrDefault(new StatId(stat, null));
         public double GetStatOrDefault(string stat, string token) => GetStatOrDefault(new StatId(stat, token));
-        public double GetStatOrDefault(StatId stat)
-        {
-            double? value = null;
-            _stats.TryGetValue(stat, out value);
-            return value.GetValueOrDefault();
-        }
+        public double GetStatOrDefault(StatId stat) => _stats.TryGetValue(stat, out double? value) ? value.GetValueOrDefault() : 0d;
 
         public bool GetStatAsBool(string stat) => GetStatAsBool(new StatId(stat, null));
         public bool GetStatAsBool(string stat, string token) => GetStatAsBool(new StatId(stat, token));
-        public bool GetStatAsBool(StatId stat)
-        {
-            double? value = null;
-            return _stats.TryGetValue(stat, out value) && value != null && value.Value != 0d;
-        }
+        public bool GetStatAsBool(StatId stat) => _stats.TryGetValue(stat, out double? value) && value != null && value.Value != 0d;
 
         public int CountStatTokens(string stat)
         {

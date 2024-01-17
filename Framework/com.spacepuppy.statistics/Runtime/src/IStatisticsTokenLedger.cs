@@ -8,7 +8,7 @@ namespace com.spacepuppy
 {
     public interface IStatisticsTokenLedger
     {
-        double? GetStat(StatId stat);
+        bool TryGetStat(StatId stat, out double? value);
         void SetStat(StatId stat, double amount);
         void AdjustStat(StatId stat, double amount);
         void ResetStats();

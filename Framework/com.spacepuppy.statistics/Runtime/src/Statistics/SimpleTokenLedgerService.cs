@@ -76,9 +76,9 @@ namespace com.spacepuppy.Statistics
             _ledger.SetStat(stat, amount, true);
         }
 
-        public virtual double? GetStat(StatId stat)
+        public virtual bool TryGetStat(StatId stat, out double? value)
         {
-            return _ledger.GetStat(stat);
+            return _ledger.TryGetStat(stat, out value);
         }
 
         public virtual void ResetStats()

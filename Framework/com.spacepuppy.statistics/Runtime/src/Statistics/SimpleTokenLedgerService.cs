@@ -66,19 +66,19 @@ namespace com.spacepuppy.Statistics
 
         #region IStatisticsTokenLedger Interface
 
-        public virtual void AdjustStat(string stat, double amount, string token = null)
+        public virtual void AdjustStat(StatId stat, double amount)
         {
-            _ledger.AdjustStat(stat, amount, token);
+            _ledger.AdjustStat(stat, amount);
         }
 
-        public virtual void SetStat(string stat, double amount, string token = null)
+        public virtual void SetStat(StatId stat, double amount)
         {
-            _ledger.SetStat(stat, token, amount, true);
+            _ledger.SetStat(stat, amount, true);
         }
 
-        public virtual double? GetStat(string stat, string token = null)
+        public virtual double? GetStat(StatId stat)
         {
-            return _ledger.GetStat(stat, token);
+            return _ledger.GetStat(stat);
         }
 
         public virtual void ResetStats()

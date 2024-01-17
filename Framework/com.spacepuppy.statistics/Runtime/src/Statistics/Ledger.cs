@@ -30,14 +30,14 @@ namespace com.spacepuppy.Statistics
     {
 
         public event System.EventHandler<LedgerChangedEventArgs> Changed;
-        private void OnChanged(string stat, string token)
+        private void OnChanged(StatId stat)
         {
             this.Dirty = true;
 
             var d = Changed;
             if (d != null)
             {
-                using (var ev = LedgerChangedEventArgs.Create(stat, token))
+                using (var ev = LedgerChangedEventArgs.Create(stat))
                 {
                     d(this, ev);
                 }
@@ -60,7 +60,7 @@ namespace com.spacepuppy.Statistics
 
         #region Fields
 
-        private Dictionary<StatKey, double?> _stats = new Dictionary<StatKey, double?>(StatKeyComparer.Default);
+        private Dictionary<StatId, double?> _stats = new Dictionary<StatId, double?>(StatIdComparer.Default);
 
         #endregion
 
@@ -133,50 +133,38 @@ namespace com.spacepuppy.Statistics
 
         public void DefineStat(string stat, double? defaultValue = null)
         {
-            var key = new StatKey(stat);
+            var key = new StatId(stat);
             if (!_stats.ContainsKey(key))
             {
                 _stats.Add(key, defaultValue);
-                this.OnChanged(stat, null);
+                this.OnChanged(new StatId(stat, null));
             }
         }
 
-        public double? GetStat(string stat)
+        public double? GetStat(string stat) => GetStat(new StatId(stat, null));
+        public double? GetStat(string stat, string token) => GetStat(new StatId(stat, token));
+        public double? GetStat(StatId stat)
         {
-            double? value = null;
-            _stats.TryGetValue(new StatKey(stat), out value);
+            double? value = 0d;
+            _stats.TryGetValue(stat, out value);
             return value;
         }
 
-        public double? GetStat(string stat, string token)
-        {
-            double? value = 0d;
-            _stats.TryGetValue(new StatKey(stat, token), out value);
-            return value;
-        }
-        public double GetStatOrDefault(string stat)
+        public double GetStatOrDefault(string stat) => GetStatOrDefault(new StatId(stat, null));
+        public double GetStatOrDefault(string stat, string token) => GetStatOrDefault(new StatId(stat, token));
+        public double GetStatOrDefault(StatId stat)
         {
             double? value = null;
-            _stats.TryGetValue(new StatKey(stat), out value);
+            _stats.TryGetValue(stat, out value);
             return value.GetValueOrDefault();
         }
 
-        public double GetStatOrDefault(string stat, string token)
-        {
-            double? value = 0d;
-            _stats.TryGetValue(new StatKey(stat, token), out value);
-            return value.GetValueOrDefault();
-        }
-        public bool GetStatAsBool(string stat)
+        public bool GetStatAsBool(string stat) => GetStatAsBool(new StatId(stat, null));
+        public bool GetStatAsBool(string stat, string token) => GetStatAsBool(new StatId(stat, token));
+        public bool GetStatAsBool(StatId stat)
         {
             double? value = null;
-            return _stats.TryGetValue(new StatKey(stat), out value) && value != null && value.Value != 0d;
-        }
-
-        public bool GetStatAsBool(string stat, string token)
-        {
-            double? value = null;
-            return _stats.TryGetValue(new StatKey(stat, token), out value) && value != null && value.Value != 0d;
+            return _stats.TryGetValue(stat, out value) && value != null && value.Value != 0d;
         }
 
         public int CountStatTokens(string stat)
@@ -229,11 +217,11 @@ namespace com.spacepuppy.Statistics
         {
             if (string.IsNullOrEmpty(stat)) return false;
 
-            var token = new StatKey(stat);
+            var token = new StatId(stat);
             if (this.Locked && !_stats.ContainsKey(token)) return false;
 
             _stats[token] = value;
-            this.OnChanged(stat, null);
+            this.OnChanged(new StatId(stat, null));
             return true;
         }
 
@@ -242,26 +230,26 @@ namespace com.spacepuppy.Statistics
         /// </summary>
         /// <param name="stat"></param>
         /// <param name="value"></param>
-        public bool SetStat(string stat, string token, double? value, bool recalcParentStat = false)
+        public bool SetStat(string stat, string token, double? value, bool recalcParentStat = false) => SetStat(new StatId(stat, token), value, recalcParentStat);
+        public bool SetStat(StatId stat, double? value, bool recalcParentStat = false)
         {
-            if (string.IsNullOrEmpty(token)) return this.SetStat(stat, value);
-            if (string.IsNullOrEmpty(stat)) return false;
+            if (string.IsNullOrEmpty(stat.Stat)) return false;
+            if (string.IsNullOrEmpty(stat.Token)) return this.SetStat(stat.Stat, value);
 
-            var topkey = new StatKey(stat);
-            if (this.Locked && !_stats.ContainsKey(new StatKey(stat))) return false;
+            var topkey = new StatId(stat.Stat);
+            if (this.Locked && !_stats.ContainsKey(topkey)) return false;
 
-            var key = new StatKey(stat, token);
             if (recalcParentStat)
             {
-                _stats[key] = value;
-                _stats[topkey] = SumStatTokens(stat);
+                _stats[stat] = value;
+                _stats[topkey] = SumStatTokens(stat.Stat);
             }
             else
             {
                 if (!_stats.ContainsKey(topkey)) _stats[topkey] = null;
-                _stats[key] = value;
+                _stats[stat] = value;
             }
-            this.OnChanged(stat, token);
+            this.OnChanged(stat);
             return true;
         }
 
@@ -274,14 +262,14 @@ namespace com.spacepuppy.Statistics
         {
             if (string.IsNullOrEmpty(stat)) return false;
 
-            var key = new StatKey(stat);
+            var key = new StatId(stat);
             if (this.Locked && !_stats.ContainsKey(key)) return false;
 
             if (value)
                 _stats[key] = 1d;
             else
                 _stats[key] = 0d;
-            this.OnChanged(stat, null);
+            this.OnChanged(new StatId(stat, null));
             return true;
         }
 
@@ -294,11 +282,11 @@ namespace com.spacepuppy.Statistics
         {
             if (string.IsNullOrEmpty(stat)) return false;
 
-            var topkey = new StatKey(stat);
+            var topkey = new StatId(stat);
             if (!_stats.ContainsKey(topkey)) return false;
 
             _stats[topkey] = null;
-            using (var set = TempCollection.GetSet<StatKey>())
+            using (var set = TempCollection.GetSet<StatId>())
             {
                 foreach (var key in _stats.Keys)
                 {
@@ -316,7 +304,7 @@ namespace com.spacepuppy.Statistics
                     }
                 }
             }
-            this.OnChanged(stat, null);
+            this.OnChanged(new StatId(stat, null));
             return true;
         }
 
@@ -329,11 +317,11 @@ namespace com.spacepuppy.Statistics
         {
             if (string.IsNullOrEmpty(stat)) return false;
 
-            var topkey = new StatKey(stat);
+            var topkey = new StatId(stat);
             if (!_stats.ContainsKey(topkey)) return false;
 
             _stats.Remove(topkey);
-            using (var set = TempCollection.GetSet<StatKey>())
+            using (var set = TempCollection.GetSet<StatId>())
             {
                 foreach (var key in _stats.Keys)
                 {
@@ -351,7 +339,7 @@ namespace com.spacepuppy.Statistics
                     }
                 }
             }
-            this.OnChanged(stat, null);
+            this.OnChanged(new StatId(stat, null));
             return true;
         }
 
@@ -362,25 +350,26 @@ namespace com.spacepuppy.Statistics
         /// <param name="amount"></param>
         /// <param name="token">A token for breaking up the stat into parts, see the class descrition for more.</param>
         /// <returns></returns>
-        public bool AdjustStat(string stat, double amount, string token = null)
+        public bool AdjustStat(string stat, double amount, string token = null) => AdjustStat(new StatId(stat, token), amount);
+        public bool AdjustStat(StatId stat, double amount)
         {
-            if (string.IsNullOrEmpty(stat)) return false;
+            if (string.IsNullOrEmpty(stat.Stat)) return false;
 
-            var key = new StatKey(stat);
+            var topkey = new StatId(stat.Stat);
             bool result = false;
             //standard stat adjustment
             double? current;
-            if (_stats.TryGetValue(key, out current))
+            if (_stats.TryGetValue(topkey, out current))
             {
                 if (current != null)
-                    _stats[key] = current + amount;
+                    _stats[topkey] = current + amount;
                 else
-                    _stats[key] = amount;
+                    _stats[topkey] = amount;
                 result = true;
             }
             else if (!this.Locked)
             {
-                _stats[key] = amount;
+                _stats[topkey] = amount;
                 result = true;
             }
             else
@@ -389,21 +378,19 @@ namespace com.spacepuppy.Statistics
             }
 
             //adjust for token if any
-            if (!string.IsNullOrEmpty(token))
+            if (!string.IsNullOrEmpty(stat.Token))
             {
-                key = new StatKey(stat, token);
-
                 //set join value
-                if (_stats.TryGetValue(key, out current) && current != null)
+                if (_stats.TryGetValue(stat, out current) && current != null)
                     current += amount;
                 else
                     current = amount;
-                _stats[key] = current;
+                _stats[stat] = current;
             }
 
             if (result)
             {
-                this.OnChanged(stat, token);
+                this.OnChanged(stat);
             }
             return result;
         }
@@ -525,7 +512,7 @@ namespace com.spacepuppy.Statistics
             _stats.Clear();
             foreach (var pair in info)
             {
-                _stats[StatKey.Parse(pair.Name)] = pair.Value != null ? (double?)ConvertUtil.ToDouble(pair.Value) : null;
+                _stats[StatId.Parse(pair.Name)] = pair.Value != null ? (double?)ConvertUtil.ToDouble(pair.Value) : null;
             }
         }
 
@@ -535,78 +522,8 @@ namespace com.spacepuppy.Statistics
             {
                 if (this.WriteNullEntries || pair.Value != null)
                 {
-                    info.AddValue(pair.Key.Id, pair.Value);
+                    info.AddValue(pair.Key.ToString(), pair.Value);
                 }
-            }
-        }
-
-        #endregion
-
-        #region Special Types
-
-        private struct StatKey
-        {
-            private const string TOKEN_SEPERATOR = "*|*";
-
-            public string Stat;
-            public string Token;
-
-            public StatKey(string stat, string token = null)
-            {
-                this.Stat = stat;
-                this.Token = token;
-            }
-
-            public string Id
-            {
-                get
-                {
-                    return string.IsNullOrEmpty(Token) ? Stat ?? string.Empty : Stat + TOKEN_SEPERATOR + Token;
-                }
-            }
-
-            public LedgerStatData CreateData(double? value)
-            {
-                return new LedgerStatData()
-                {
-                    Stat = this.Stat,
-                    Token = this.Token,
-                    Value = value
-                };
-            }
-
-            public override string ToString()
-            {
-                return this.Id;
-            }
-
-            public static StatKey Parse(string id)
-            {
-                int index = (id ?? string.Empty).IndexOf(TOKEN_SEPERATOR);
-                if (index >= 0)
-                {
-                    return new StatKey(id.Substring(0, index), id.Substring(index + TOKEN_SEPERATOR.Length));
-                }
-                else
-                {
-                    return new StatKey(id);
-                }
-            }
-
-        }
-
-        private class StatKeyComparer : IEqualityComparer<StatKey>
-        {
-            public static readonly StatKeyComparer Default = new StatKeyComparer();
-
-            public bool Equals(StatKey x, StatKey y)
-            {
-                return ((x.Stat ?? string.Empty) == (y.Stat ?? string.Empty)) && ((x.Token ?? string.Empty) == (y.Token ?? string.Empty));
-            }
-
-            public int GetHashCode(StatKey obj)
-            {
-                return (obj.Stat ?? string.Empty).GetHashCode() ^ (obj.Token ?? string.Empty).GetHashCode();
             }
         }
 
@@ -626,8 +543,11 @@ namespace com.spacepuppy.Statistics
         #region Properties
 
         public bool MultipleChanged { get; private set; }
-        public string Stat { get; private set; }
-        public string Token { get; private set; }
+
+        private StatId _statid;
+        public StatId StatId => _statid;
+        public string Stat => _statid.Stat;
+        public string Token => _statid.Token;
 
         #endregion
 
@@ -644,12 +564,19 @@ namespace com.spacepuppy.Statistics
 
         private static ObjectCachePool<LedgerChangedEventArgs> _pool = new ObjectCachePool<LedgerChangedEventArgs>(16, () => new LedgerChangedEventArgs());
 
+        public static LedgerChangedEventArgs Create(StatId stat)
+        {
+            var ev = _pool.GetInstance();
+            ev.MultipleChanged = false;
+            ev._statid = stat;
+            return ev;
+        }
+
         public static LedgerChangedEventArgs Create(string stat, string token = null)
         {
             var ev = _pool.GetInstance();
             ev.MultipleChanged = false;
-            ev.Stat = stat;
-            ev.Token = token;
+            ev._statid = new StatId(stat, token);
             return ev;
         }
 
@@ -657,8 +584,7 @@ namespace com.spacepuppy.Statistics
         {
             var ev = _pool.GetInstance();
             ev.MultipleChanged = true;
-            ev.Stat = null;
-            ev.Token = null;
+            ev._statid = default;
             return ev;
         }
 
@@ -667,8 +593,7 @@ namespace com.spacepuppy.Statistics
             if (ev == null) return;
 
             ev.MultipleChanged = false;
-            ev.Stat = null;
-            ev.Token = null;
+            ev._statid = default;
             _pool.Release(ev);
         }
 

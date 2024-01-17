@@ -8,9 +8,9 @@ namespace com.spacepuppy
 {
     public interface IStatisticsTokenLedger
     {
-        double? GetStat(string stat, string token = null);
-        void SetStat(string stat, double amount, string token = null);
-        void AdjustStat(string stat, double amount, string token = null);
+        double? GetStat(StatId stat);
+        void SetStat(StatId stat, double amount);
+        void AdjustStat(StatId stat, double amount);
         void ResetStats();
 
         IEnumerable<LedgerStatData> EnumerateStats(string filterstat = null);

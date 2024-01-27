@@ -18,6 +18,8 @@ namespace com.spacepuppyeditor.Core
 
         protected internal override void OnBeforeGUI(SerializedProperty property, ref bool cancelDraw)
         {
+            if (property.serializedObject.isEditingMultipleObjects) return;
+
             int hash = com.spacepuppyeditor.Internal.PropertyHandlerCache.GetIndexRespectingPropertyHash(property);
             if (_handled.Contains(hash)) return;
             if ((this.attribute as DefaultFromSelfAttribute).HandleOnce) _handled.Add(hash);
@@ -93,11 +95,13 @@ namespace com.spacepuppyeditor.Core
 
         private static void ApplyDefaultAsList(SerializedProperty property, System.Type elementType, System.Type restrictionType, EntityRelativity relativity)
         {
-            if (property.arraySize != 0) return;
+            if (property.arraySize > 1) return;
             if (elementType == null || restrictionType == null) return;
 
             if (TypeUtil.IsType(elementType, typeof(VariantReference)))
             {
+                if (property.arraySize == 1 && EditorHelper.GetTargetObjectOfProperty(property.GetArrayElementAtIndex(0)) is VariantReference vr && vr.Value != null) return;
+
                 var targ = GameObjectUtil.GetGameObjectFromSource(property.serializedObject.targetObject);
                 if (object.ReferenceEquals(targ, null))
                 {
@@ -182,6 +186,8 @@ namespace com.spacepuppyeditor.Core
             }
             else if (TypeUtil.IsType(elementType, typeof(UnityEngine.Object)))
             {
+                if (property.arraySize == 1 && (property.GetArrayElementAtIndex(0).objectReferenceValue != null)) return;
+
                 var targ = GameObjectUtil.GetGameObjectFromSource(property.serializedObject.targetObject);
                 if (object.ReferenceEquals(targ, null))
                 {

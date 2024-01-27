@@ -321,8 +321,8 @@ namespace com.spacepuppyeditor.Waypoints
 
         private static bool PointVisibleInCam(Camera cam, Vector3 pnt)
         {
-            var cp = cam.WorldToScreenPoint(pnt);
-            return (cp.x >= 0f && cp.x <= cam.pixelWidth && cp.y >= 0f && cp.y <= cam.pixelHeight);
+            var cp = cam.WorldToViewportPoint(pnt);
+            return (cp.x >= 0f && cp.x <= 1f && cp.y >= 0f && cp.y <= 1f);
         }
 
         #endregion

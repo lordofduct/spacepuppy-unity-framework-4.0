@@ -109,6 +109,17 @@ namespace com.spacepuppy.UI
 
         Component IComponent.component => this;
 
+        [System.NonSerialized]
+        private Canvas _canvas;
+        Canvas IUIComponent.canvas
+        {
+            get
+            {
+                if (!_canvas) _canvas = IUIComponentExtensions.FindCanvas(this.gameObject);
+                return _canvas;
+            }
+        }
+
         #endregion
 
         #region IObservableTrigger Interface

@@ -7,7 +7,7 @@ namespace com.spacepuppy.UI
 {
 
     [RequireComponent(typeof(RectTransform))]
-    public sealed class SPUISelectOnPointerEnter : MonoBehaviour, IUIComponent, IPointerEnterHandler
+    public sealed class SPUISelectOnPointerEnter : SPUIComponent, IUIComponent, IPointerEnterHandler
     {
 
         #region Fields
@@ -20,9 +20,10 @@ namespace com.spacepuppy.UI
 
         #region CONSTRUCTOR
 
-        void OnEnable()
+        protected override void OnEnable()
         {
             if (!_selectable) _selectable = GetComponent<Selectable>();
+            base.OnEnable();
         }
 
         #endregion
@@ -43,16 +44,6 @@ namespace com.spacepuppy.UI
         {
             if (_selectable && _selectable.isActiveAndEnabled && _selectable.interactable) _selectable.Select();
         }
-
-        #endregion
-
-        #region IUIComponent Interface
-
-        public new RectTransform transform => base.transform as RectTransform;
-
-        RectTransform IUIComponent.transform => base.transform as RectTransform;
-
-        Component IComponent.component => this;
 
         #endregion
 

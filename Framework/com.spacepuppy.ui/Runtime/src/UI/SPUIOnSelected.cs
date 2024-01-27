@@ -11,7 +11,7 @@ namespace com.spacepuppy.UI
 {
 
     [RequireComponent(typeof(RectTransform))]
-    public sealed class SPUIOnSelected : MonoBehaviour, IUIComponent, ISelectHandler, IDeselectHandler, ISelectedUIElementChangedGlobalHandler, IObservableTrigger
+    public sealed class SPUIOnSelected : SPUIComponent, IUIComponent, ISelectHandler, IDeselectHandler, ISelectedUIElementChangedGlobalHandler, IObservableTrigger
     {
 
         #region Fields
@@ -31,15 +31,17 @@ namespace com.spacepuppy.UI
 
         #region CONSTRUCTOR
 
-        void OnEnable()
+        protected override void OnEnable()
         {
+            base.OnEnable();
             _selected = false;
             this.SyncMessageHandler();
             this.SyncState();
         }
 
-        void OnDisable()
+        protected override void OnDisable()
         {
+            base.OnDisable();
             _selected = false;
             Messaging.UnregisterGlobal<ISelectedUIElementChangedGlobalHandler>(this);
         }
@@ -137,16 +139,6 @@ namespace com.spacepuppy.UI
 
             this.SyncState(this.EvaluateIfSelected());
         }
-
-        #endregion
-
-        #region IUIComponent Interface
-
-        public new RectTransform transform => base.transform as RectTransform;
-
-        RectTransform IUIComponent.transform => base.transform as RectTransform;
-
-        Component IComponent.component => this;
 
         #endregion
 

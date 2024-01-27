@@ -13,7 +13,7 @@ using com.spacepuppyeditor.Internal;
 namespace com.spacepuppyeditor
 {
 
-#if !DISABLE_GLOBAL_SPEDITOR
+#if !SPEDITOR_IGNORE && !DISABLE_GLOBAL_SPEDITOR
     [CustomEditor(typeof(MonoBehaviour), true)]
 #else
     [CustomEditor(typeof(SPComponent), true)]

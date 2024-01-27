@@ -13,8 +13,11 @@ using com.spacepuppyeditor.Internal;
 namespace com.spacepuppyeditor
 {
 
+#if !DISABLE_GLOBAL_SPEDITOR
     [CustomEditor(typeof(MonoBehaviour), true)]
-    //[CustomEditor(typeof(SPComponent), true)]
+#else
+    [CustomEditor(typeof(SPComponent), true)]
+#endif
     [CanEditMultipleObjects()]
     public class SPEditor : Editor
     {

@@ -204,8 +204,9 @@ namespace com.spacepuppyeditor.Settings
         {
 
             EditorGUI.BeginChangeCheck();
-            bool useSPEditor = EditorGUILayout.ToggleLeft("Use SPEditor as default editor for MonoBehaviour", SpacepuppySettings.UseSPEditorAsDefaultEditor);
+            bool useSPEditor = EditorGUILayout.ToggleLeft(SpacepuppySettings.UseSPEditorAsDefaultEditor ? "Use SPEditor as default editor for MonoBehaviour" : "Use SPEditor as default editor for MonoBehaviour (Optional: place DISABLE_GLOBAL_SPEDITOR as a compiler directive in the com.spacepuppyeditor assemblydefinition)", SpacepuppySettings.UseSPEditorAsDefaultEditor);
             if (EditorGUI.EndChangeCheck()) SpacepuppySettings.UseSPEditorAsDefaultEditor = useSPEditor;
+
 
             EditorGUI.BeginChangeCheck();
             bool useAdvancedAnimInspector = EditorGUILayout.ToggleLeft("Use Advanced Animation Inspector", SpacepuppySettings.UseAdvancedAnimationInspector);

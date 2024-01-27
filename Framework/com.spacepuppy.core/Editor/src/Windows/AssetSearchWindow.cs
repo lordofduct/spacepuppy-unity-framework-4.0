@@ -55,8 +55,6 @@ namespace com.spacepuppyeditor.Windows
             _scrollPos = Vector2.zero;
             _dataPath = Application.dataPath;
             this.titleContent = new GUIContent("Spacepuppy Asset Search...");
-            _assetSearchQuery.StatusUpdated += (s, e) => this.Repaint();
-            _assetSearchQuery.Completed += (s, e) => this.Repaint();
         }
 
         private void OnInspectorUpdate()
@@ -112,6 +110,14 @@ namespace com.spacepuppyeditor.Windows
                 {
                     _currentQuery = _assetSearchQuery;
                     _ = _assetSearchQuery.SearchEverythingForTargetAsset(_target);
+                }
+                if (_target is UnityEditor.DefaultAsset && System.IO.Directory.Exists(AssetDatabase.GetAssetPath(_target)))
+                {
+                    if (GUILayout.Button("Search Everything For Contents", GUILayout.Width(200f)))
+                    {
+                        _currentQuery = _assetSearchQuery;
+                        _ = _assetSearchQuery.SearchEverythingInFolder(AssetDatabase.GetAssetPath(_target));
+                    }
                 }
             }
 
@@ -212,37 +218,35 @@ namespace com.spacepuppyeditor.Windows
             public UnityEngine.Object obj;
         }
 
-        public class AssetSearchQuery : IQuery
+        public abstract class BaseQuery : IQuery
         {
 
             public event System.EventHandler StatusUpdated;
             public event System.EventHandler Completed;
 
-            #region Fields/Properties
-
             private CancellationTokenSource _cancellationTokenSource;
-
-            private StringBuilder _output = new StringBuilder();
-            private List<OutputRefEntry> _outputRefs = new List<OutputRefEntry>();
-
-            public string CodePath { get; set; } = "Code";
+            protected StringBuilder _output = new StringBuilder();
+            protected List<OutputRefEntry> _outputRefs = new List<OutputRefEntry>();
+            private int _invokeTokenStatusUpdated;
+            private int _invokeTokenCompleted;
 
             public bool IsProcessing => _cancellationTokenSource != null;
-
-            public string CurrentStatus { get; private set; } = string.Empty;
 
             public StringBuilder Output => _output;
 
             public IReadOnlyList<OutputRefEntry> OutputRefs => _outputRefs;
 
-            #endregion
+            public string CurrentStatus { get; protected set; } = string.Empty;
 
-            public void Cancel()
+            protected System.Threading.CancellationToken CancellationToken => _cancellationTokenSource.Token;
+            protected bool IsCancellationRequested => _cancellationTokenSource?.IsCancellationRequested ?? false;
+
+            public virtual void Cancel()
             {
                 _cancellationTokenSource?.Cancel();
             }
 
-            public void Clear()
+            public virtual void Clear()
             {
                 if (this.IsProcessing) return; //can't clear if running
 
@@ -251,23 +255,76 @@ namespace com.spacepuppyeditor.Windows
                 this.CurrentStatus = string.Empty;
             }
 
+            protected void StartProcessing()
+            {
+                if (_cancellationTokenSource == null)
+                {
+                    _cancellationTokenSource = new CancellationTokenSource();
+                }
+            }
+
+            protected void SignalStatusUpdated(string msg)
+            {
+                this.CurrentStatus = msg;
+
+                if (EditorHelper.InvokeRequired)
+                {
+                    _invokeTokenStatusUpdated = EditorHelper.InvokePassive(() =>
+                    {
+                        this.StatusUpdated?.Invoke(this, System.EventArgs.Empty);
+                    }, _invokeTokenStatusUpdated);
+                }
+                else
+                {
+                    this.StatusUpdated?.Invoke(this, System.EventArgs.Empty);
+                }
+            }
+
+            protected void SignalCompleted()
+            {
+                _cancellationTokenSource = null;
+                if (EditorHelper.InvokeRequired)
+                {
+                    _invokeTokenCompleted = EditorHelper.InvokePassive(() =>
+                    {
+                        this.Completed?.Invoke(this, System.EventArgs.Empty);
+                    }, _invokeTokenCompleted);
+                }
+                else
+                {
+                    this.Completed?.Invoke(this, System.EventArgs.Empty);
+                }
+            }
+
+        }
+
+        public class AssetSearchQuery : BaseQuery
+        {
+
+            #region Fields/Properties
+
+            public string CodePath { get; set; } = "Code";
+
+            #endregion
+
             public async Task SearchForScripts(bool inuse)
             {
-                if (_cancellationTokenSource != null) return;
+                if (this.IsProcessing) return;
 
                 try
                 {
-                    _cancellationTokenSource = new CancellationTokenSource();
+                    this.StartProcessing();
                     _output.Clear();
                     _outputRefs.Clear();
+                    SignalStatusUpdated("Processing...");
 
                     string[] guids = AssetDatabase.FindAssets("t:script", new string[] { "Assets/" + this.CodePath });
                     foreach (var guid in guids)
                     {
-                        if (_cancellationTokenSource.Token.IsCancellationRequested) return;
+                        if (this.IsCancellationRequested) return;
 
                         var path = AssetDatabase.GUIDToAssetPath(guid);
-                        OnStatusUpdated("Processing: " + path);
+                        SignalStatusUpdated("Processing: " + path);
 
                         bool success = await Task.Run(() =>
                         {
@@ -279,8 +336,8 @@ namespace com.spacepuppyeditor.Windows
                             }
 
                             return FindRefs(guid).Any() == inuse;
-                        }, _cancellationTokenSource.Token);
-                        if (_cancellationTokenSource.Token.IsCancellationRequested) return;
+                        }, this.CancellationToken);
+                        if (this.IsCancellationRequested) return;
 
                         if (success)
                         {
@@ -296,111 +353,162 @@ namespace com.spacepuppyeditor.Windows
                 }
                 catch (System.Exception ex)
                 {
-                    OnStatusUpdated("ERROR: " + ex.Message);
+                    SignalStatusUpdated("ERROR: " + ex.Message);
                 }
                 finally
                 {
-                    _cancellationTokenSource = null;
-                    OnStatusUpdated(string.Empty);
-                    this.OnCompleted();
+                    SignalStatusUpdated(string.Empty);
+                    this.SignalCompleted();
                 }
             }
 
             public Task SearchEverythingForTargetAsset(UnityEngine.Object target) => SearchEverythingForTargetAsset(target != null ? AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(target)) : null);
 
-            public async Task SearchEverythingForTargetAsset(string guid)
-            {
-                if (_cancellationTokenSource != null) return;
+            public Task SearchEverythingForTargetAsset(string guid) => SearchEverythingForTargets(string.IsNullOrEmpty(guid) ? ArrayUtil.Empty<string>() : new string[] { guid });
 
-                if (string.IsNullOrEmpty(guid))
+            public Task SearchEverythingInFolder(string directory)
+            {
+                if (this.IsProcessing) return Task.CompletedTask;
+
+                if (string.IsNullOrEmpty(directory))
                 {
                     _output.Clear();
                     _outputRefs.Clear();
                     _output.AppendLine("Select a target to search for...");
-                    return;
+                    return Task.CompletedTask;
                 }
+
+                IEnumerable<string> guids = null;
+                try
+                {
+                    guids = Directory.EnumerateFiles(directory, "*.meta", SearchOption.AllDirectories)
+                                     .Select(s => s.Substring(0, s.Length - 5))
+                                     .Select(s => AssetDatabase.AssetPathToGUID(s));
+                }
+                catch (System.Exception ex)
+                {
+                    SignalStatusUpdated("ERROR: " + ex.Message);
+                }
+                finally
+                {
+                    SignalStatusUpdated("");
+                    this.SignalCompleted();
+                }
+
+                return this.SearchEverythingForTargets(guids);
+            }
+
+            public async Task SearchEverythingForTargets(IEnumerable<string> guids)
+            {
+                if (this.IsProcessing) return;
 
                 try
                 {
-                    _cancellationTokenSource = new CancellationTokenSource();
+                    this.StartProcessing();
                     _output.Clear();
                     _outputRefs.Clear();
-                    OnStatusUpdated("Processing...");
+                    SignalStatusUpdated("Processing...");
 
-                    string[] paths = ArrayUtil.Empty<string>();
-                    await Task.Run(() =>
+                    guids = guids?.Where(s => !string.IsNullOrWhiteSpace(s)).ToArray();
+                    if (guids == null || guids.Count() == 0)
                     {
-                        paths = FindRefs(guid).ToArray();
-                    }, _cancellationTokenSource.Token);
+                        _output.Clear();
+                        _outputRefs.Clear();
+                        _output.AppendLine("Select targets to search for...");
+                        return;
+                    }
 
-                    if (_cancellationTokenSource.Token.IsCancellationRequested) return;
-
-                    _output.Clear();
-                    _outputRefs.Clear();
-                    foreach (var path in paths)
+                    var validresults = new System.Collections.Concurrent.ConcurrentQueue<OutputRefEntry>();
+                    var task = Task.Run(() =>
                     {
-                        _output.AppendLine(path);
-
-                        var apath = path.Substring(_dataPath.Length - 6);
-                        _outputRefs.Add(new OutputRefEntry()
+                        try
                         {
-                            path = apath,
-                            message = apath,
-                            obj = AssetDatabase.LoadAssetAtPath(apath, typeof(UnityEngine.Object))
-                        });
+                            var files = System.IO.Directory.EnumerateFiles("Assets", "*.unity", System.IO.SearchOption.AllDirectories)
+                                        .Union(System.IO.Directory.EnumerateFiles("Assets", "*.prefab", System.IO.SearchOption.AllDirectories))
+                                        .Union(System.IO.Directory.EnumerateFiles("Assets", "*.asset", System.IO.SearchOption.AllDirectories));
+
+                            files.AsParallel().ForAll(file =>
+                            {
+                                this.SignalStatusUpdated("Processing: " + file);
+
+                                using (var reader = new StreamReader(file))
+                                {
+                                    bool skip = false;
+                                    string ln;
+                                    while (!skip && (ln = reader.ReadLine()) != null)
+                                    {
+                                        if (this.IsCancellationRequested) return;
+
+                                        foreach (var guid in guids)
+                                        {
+                                            if (ln.Contains(guid))
+                                            {
+                                                validresults.Enqueue(new OutputRefEntry()
+                                                {
+                                                    path = file,
+                                                    message = file,
+                                                });
+                                                skip = true;
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                        catch (System.Exception ex)
+                        {
+                            Debug.LogException(ex);
+                        }
+                    }, this.CancellationToken);
+
+                    while (!task.IsCompleted)
+                    {
+                        await Task.Yield();
+                        if (validresults.Count > 0 && validresults.TryDequeue(out OutputRefEntry entry))
+                        {
+                            _output.AppendLine(entry.message);
+                            entry.obj = AssetDatabase.LoadAssetAtPath(entry.path, typeof(UnityEngine.Object));
+                            _outputRefs.Add(entry);
+                        }
+                    }
+
+                    while (validresults.TryDequeue(out OutputRefEntry entry))
+                    {
+                        _output.AppendLine(entry.message);
+                        entry.obj = AssetDatabase.LoadAssetAtPath(entry.path, typeof(UnityEngine.Object));
+                        _outputRefs.Add(entry);
                     }
                 }
                 catch (System.Exception ex)
                 {
-                    OnStatusUpdated("ERROR: " + ex.Message);
+                    SignalStatusUpdated("ERROR: " + ex.Message);
                 }
                 finally
                 {
-                    _cancellationTokenSource = null;
-                    OnStatusUpdated("");
-                    this.OnCompleted();
+                    SignalStatusUpdated("");
+                    this.SignalCompleted();
                 }
-            }
-
-            void OnStatusUpdated(string msg)
-            {
-                this.CurrentStatus = msg;
-                this.StatusUpdated?.Invoke(this, System.EventArgs.Empty);
-            }
-
-            void OnCompleted()
-            {
-                this.Completed?.Invoke(this, System.EventArgs.Empty);
             }
 
             static IEnumerable<string> FindRefs(string guid)
             {
                 if (string.IsNullOrEmpty(guid)) return Enumerable.Empty<string>();
 
-                var files = System.IO.Directory.EnumerateFiles(_dataPath, "*.unity", System.IO.SearchOption.AllDirectories)
-                            .Union(System.IO.Directory.EnumerateFiles(_dataPath, "*.prefab", System.IO.SearchOption.AllDirectories))
-                            .Union(System.IO.Directory.EnumerateFiles(_dataPath, "*.asset", System.IO.SearchOption.AllDirectories));
+                var files = System.IO.Directory.EnumerateFiles("Assets", "*.unity", System.IO.SearchOption.AllDirectories)
+                            .Union(System.IO.Directory.EnumerateFiles("Assets", "*.prefab", System.IO.SearchOption.AllDirectories))
+                            .Union(System.IO.Directory.EnumerateFiles("Assets", "*.asset", System.IO.SearchOption.AllDirectories));
 
                 return from file in files.AsParallel().AsOrdered().WithMergeOptions(ParallelMergeOptions.NotBuffered)
                        where File.ReadLines(file).Any(line => line.Contains(guid))
                        select file;
             }
 
-
         }
 
-        public class SearchStringQuery : IQuery
+        public class SearchStringQuery : BaseQuery
         {
 
-            public event System.EventHandler StatusUpdated;
-            public event System.EventHandler Completed;
-
             #region Fields/Properties
-
-            private CancellationTokenSource _cancellationTokenSource;
-
-            private StringBuilder _output = new StringBuilder();
-            private List<OutputRefEntry> _outputRefs = new List<OutputRefEntry>();
 
             public string SearchString { get; set; }
 
@@ -408,45 +516,24 @@ namespace com.spacepuppyeditor.Windows
 
             public bool UseRegex { get; set; } = true;
 
-            public bool IsProcessing => _cancellationTokenSource != null;
-
-            public string CurrentStatus { get; private set; } = string.Empty;
-
-            public StringBuilder Output => _output;
-
-            public IReadOnlyList<OutputRefEntry> OutputRefs => _outputRefs;
-
             #endregion
-
-            public void Cancel()
-            {
-                _cancellationTokenSource?.Cancel();
-            }
-
-            public void Clear()
-            {
-                if (this.IsProcessing) return; //can't clear if running
-
-                _output.Clear();
-                _outputRefs.Clear();
-                this.CurrentStatus = string.Empty;
-            }
 
             public async Task Search()
             {
-                if (_cancellationTokenSource != null) return;
+                if (this.IsProcessing) return;
 
                 try
                 {
+                    this.StartProcessing();
                     _output.Clear();
                     _outputRefs.Clear();
+                    SignalStatusUpdated("Processing...");
+
                     if (string.IsNullOrEmpty(this.SearchString) || this.AssetTypes == AssetTypes.None)
                     {
                         _output.AppendLine("Nothing to query.");
                         return;
                     }
-
-                    _cancellationTokenSource = new CancellationTokenSource();
 
                     var l_ext = new List<string>(3);
                     if (this.AssetTypes.HasFlagT(AssetTypes.Scenes)) l_ext.Add("*.unity");
@@ -480,14 +567,14 @@ namespace com.spacepuppyeditor.Windows
                             int linenum = 0;
                             bool matches = false;
                             sb.Clear();
-                            this.OnStatusUpdated("Processing: " + path);
+                            this.SignalStatusUpdated("Processing: " + path);
 
                             using (var reader = new StreamReader(path))
                             {
                                 string ln;
                                 while ((ln = reader.ReadLine()) != null)
                                 {
-                                    if (_cancellationTokenSource?.IsCancellationRequested ?? false) return;
+                                    if (this.IsCancellationRequested) return;
 
                                     if (ln.StartsWith("--- !u"))
                                     {
@@ -535,7 +622,7 @@ namespace com.spacepuppyeditor.Windows
                                 });
                             }
                         }
-                    }, _cancellationTokenSource.Token);
+                    }, this.CancellationToken);
 
                     while (!task.IsCompleted)
                     {
@@ -557,77 +644,38 @@ namespace com.spacepuppyeditor.Windows
                 }
                 catch (System.Exception ex)
                 {
-                    OnStatusUpdated("ERROR: " + ex.Message);
+                    SignalStatusUpdated("ERROR: " + ex.Message);
                 }
                 finally
                 {
-                    _cancellationTokenSource = null;
-                    OnStatusUpdated(string.Empty);
-                    this.OnCompleted();
+                    SignalStatusUpdated(string.Empty);
+                    this.SignalCompleted();
                 }
-            }
-
-            void OnStatusUpdated(string msg)
-            {
-                this.CurrentStatus = msg;
-                this.StatusUpdated?.Invoke(this, System.EventArgs.Empty);
-            }
-
-            void OnCompleted()
-            {
-                this.Completed?.Invoke(this, System.EventArgs.Empty);
             }
 
         }
 
-        public class SearchForMissingScriptsQuery : IQuery
+        public class SearchForMissingScriptsQuery : BaseQuery
         {
-
-            public event System.EventHandler StatusUpdated;
-            public event System.EventHandler Completed;
 
             #region Fields/Properties
 
-            private CancellationTokenSource _cancellationTokenSource;
-
-            private StringBuilder _output = new StringBuilder();
-            private List<OutputRefEntry> _outputRefs = new List<OutputRefEntry>();
-
             public AssetTypes AssetTypes { get; set; } = AssetTypes.All;
 
-            public bool IsProcessing => _cancellationTokenSource != null;
-
-            public string CurrentStatus { get; private set; } = string.Empty;
-
-            public StringBuilder Output => _output;
-
-            public IReadOnlyList<OutputRefEntry> OutputRefs => _outputRefs;
+            private int _invokeTokenStatusUpdated;
 
             #endregion
 
-            public void Cancel()
-            {
-                _cancellationTokenSource?.Cancel();
-            }
-
-            public void Clear()
-            {
-                if (this.IsProcessing) return; //can't clear if running
-
-                _output.Clear();
-                _outputRefs.Clear();
-                this.CurrentStatus = string.Empty;
-            }
-
             public async Task Search()
             {
-                if (_cancellationTokenSource != null) return;
+                if (this.IsProcessing) return;
 
                 try
                 {
+                    this.StartProcessing();
                     _output.Clear();
                     _outputRefs.Clear();
-                    _cancellationTokenSource = new CancellationTokenSource();
+                    SignalStatusUpdated("Processing...");
 
                     var l_ext = new List<string>(3);
                     if (this.AssetTypes.HasFlagT(AssetTypes.Scenes)) l_ext.Add("*.unity");
@@ -652,9 +700,9 @@ namespace com.spacepuppyeditor.Windows
                         var rxscript = new Regex(@"^\s*m_Script: {fileID: (?<fileid>-?\d+), guid: (?<guid>([a-zA-Z0-9]+)), type: 3}\s*$");
                         foreach (var filepath in files)
                         {
-                            if (_cancellationTokenSource?.IsCancellationRequested ?? false) return;
+                            if (this.IsCancellationRequested) return;
 
-                            this.OnStatusUpdated("Processing: " + filepath);
+                            this.SignalStatusUpdated("Processing: " + filepath);
                             int state = filepath.EndsWith(".asset") ? -1 : 0; //-1 = in asset, 0 = reset, 1 = reset last line, 2 = in gameobject
                             string currentname = string.Empty;
                             using (var reader = new StreamReader(filepath))
@@ -662,7 +710,7 @@ namespace com.spacepuppyeditor.Windows
                                 string ln;
                                 while ((ln = reader.ReadLine()) != null)
                                 {
-                                    if (_cancellationTokenSource?.IsCancellationRequested ?? false) return;
+                                    if (this.IsCancellationRequested) return;
 
                                     switch (state)
                                     {
@@ -705,7 +753,7 @@ namespace com.spacepuppyeditor.Windows
                                 }
                             }
                         }
-                    }, _cancellationTokenSource.Token);
+                    }, this.CancellationToken);
 
                     while (!task.IsCompleted)
                     {
@@ -727,25 +775,13 @@ namespace com.spacepuppyeditor.Windows
                 }
                 catch (System.Exception ex)
                 {
-                    OnStatusUpdated("ERROR: " + ex.Message);
+                    SignalStatusUpdated("ERROR: " + ex.Message);
                 }
                 finally
                 {
-                    _cancellationTokenSource = null;
-                    OnStatusUpdated(string.Empty);
-                    this.OnCompleted();
+                    SignalStatusUpdated(string.Empty);
+                    this.SignalCompleted();
                 }
-            }
-
-            void OnStatusUpdated(string msg)
-            {
-                this.CurrentStatus = msg;
-                this.StatusUpdated?.Invoke(this, System.EventArgs.Empty);
-            }
-
-            void OnCompleted()
-            {
-                this.Completed?.Invoke(this, System.EventArgs.Empty);
             }
 
         }

@@ -12,6 +12,7 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppyeditor
 {
 
+    [InitializeOnLoad]
     public static class EditorHelper
     {
 
@@ -55,6 +56,7 @@ namespace com.spacepuppyeditor
 
         static EditorHelper()
         {
+            _mainThreadId = System.Threading.Thread.CurrentThread.ManagedThreadId;
             EditorApplication.update += EditorUpdate;
 
             //SceneView.onSceneGUIDelegate -= OnSceneGUI;
@@ -1341,7 +1343,11 @@ namespace com.spacepuppyeditor
 
         #region Invoke Hook
 
+        private static int _mainThreadId;
+        private static int _updateToken;
         private static List<InvokeCallback> _invokeCallbacks = new List<InvokeCallback>();
+
+        public static bool InvokeRequired => _mainThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId;
 
         public static void Invoke(System.Action act, float dur = 0f)
         {
@@ -1358,8 +1364,32 @@ namespace com.spacepuppyeditor
             }
         }
 
+        /// <summary>
+        /// Queues up an action only if the token is for a new frame. This allows for you to schedule a single invoke 
+        /// with multiple attempts before the same frame guaranteeing it only calling back once.
+        /// </summary>
+        /// <param name="act"></param>
+        /// <param name="token"></param>
+        /// <returns></returns>
+        public static int InvokePassive(System.Action act, int token)
+        {
+            if (_updateToken == token) return _updateToken;
+
+            lock (_invokeCallbacks)
+            {
+                _invokeCallbacks.Add(new InvokeCallback()
+                {
+                    callback = act,
+                    duration = 0f,
+                    timestamp = System.DateTime.UtcNow
+                });
+            }
+            return _updateToken;
+        }
+
         private static void EditorUpdate()
         {
+            _updateToken++;
             using (var lst = TempCollection.GetList<InvokeCallback>())
             {
                 lock (_invokeCallbacks)

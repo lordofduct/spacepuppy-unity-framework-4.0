@@ -94,6 +94,16 @@ namespace com.spacepuppy.SPInput
 
         #region Button Extensions
 
+        public static bool GetButtonDown(this IInputDevice device, string buttonId)
+        {
+            return device.GetButtonState(buttonId) == ButtonState.Down;
+        }
+
+        public static bool GetButtonDown<T>(this IMappedInputDevice<T> device, T buttonId) where T : struct, System.IConvertible
+        {
+            return device.GetButtonState(buttonId) == ButtonState.Down;
+        }
+
         public static void ConsumeButtonState(this IInputDevice device, string buttonId)
         {
             if (device.GetSignature(buttonId) is IButtonInputSignature sig)

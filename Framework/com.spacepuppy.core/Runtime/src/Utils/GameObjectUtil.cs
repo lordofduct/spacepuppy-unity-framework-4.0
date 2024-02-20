@@ -86,6 +86,17 @@ namespace com.spacepuppy.Utils
         /// </summary>
         /// <param name="obj"></param>
         /// <returns></returns>
+        public static bool IsAliveAndActive(this IGameObjectSource obj)
+        {
+            var go = obj?.gameObject;
+            return go != null && go.activeInHierarchy && !go.IsKilled();
+        }
+
+        /// <summary>
+        /// Object is not null, dead/killed, and is active in hierarchy.
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
         public static bool IsAliveAndActive(this GameObject obj)
         {
             return obj != null && obj.activeInHierarchy && !obj.IsKilled();

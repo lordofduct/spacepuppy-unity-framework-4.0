@@ -1947,7 +1947,8 @@ namespace com.spacepuppy
                     return true;
             }
 
-            if (tp == typeof(Vector2)) return true;
+            if (tp.IsEnum) return true;
+            else if (tp == typeof(Vector2)) return true;
             else if (tp == typeof(Vector3)) return true;
             else if (tp == typeof(Vector4)) return true;
             else if (tp == typeof(Quaternion)) return true;

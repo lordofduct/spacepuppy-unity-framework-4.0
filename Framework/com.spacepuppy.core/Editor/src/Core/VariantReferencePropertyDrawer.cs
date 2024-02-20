@@ -170,7 +170,14 @@ namespace com.spacepuppyeditor.Core
 
             if (_typeRestrictedTo?.IsEnum ?? false)
             {
-                variant.IntValue = ConvertUtil.ToInt(EditorGUI.EnumPopup(r1, ConvertUtil.ToEnumOfType(_typeRestrictedTo, variant.IntValue)));
+                if (_typeRestrictedTo.GetCustomAttribute<System.FlagsAttribute>() != null)
+                {
+                    variant.IntValue = ConvertUtil.ToInt(EditorGUI.EnumFlagsField(r1, ConvertUtil.ToEnumOfType(_typeRestrictedTo, variant.IntValue)));
+                }
+                else
+                {
+                    variant.IntValue = ConvertUtil.ToInt(EditorGUI.EnumPopup(r1, ConvertUtil.ToEnumOfType(_typeRestrictedTo, variant.IntValue)));
+                }
             }
             else
             {

@@ -40,13 +40,7 @@ namespace com.spacepuppy.Statistics.Events
 
         #region Trigger Interface
 
-        public override bool CanTrigger
-        {
-            get
-            {
-                return base.CanTrigger && !string.IsNullOrEmpty(_token) && Services.Get<IStatisticsTokenLedgerService>() != null;
-            }
-        }
+        public override bool CanTrigger => base.CanTrigger && !string.IsNullOrEmpty(_category) && !string.IsNullOrEmpty(_token);
 
         public override bool Trigger(object sender, object arg)
         {

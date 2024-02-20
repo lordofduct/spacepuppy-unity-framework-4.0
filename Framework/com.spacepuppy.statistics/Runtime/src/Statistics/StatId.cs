@@ -4,17 +4,17 @@ using System.Collections.Generic;
 namespace com.spacepuppy.Statistics
 {
 
-    public class TokenLedgerCategorySelector : PropertyAttribute
+    public class TokenLedgerCategorySelectorAttribute : PropertyAttribute
     {
         public bool HideCustom;
     }
 
-    public class TokenLedgerCategoryEntrySelector : PropertyAttribute
+    public class TokenLedgerCategoryEntrySelectorAttribute : PropertyAttribute
     {
 
         public string CategoryFilter;
         public bool HideCustom;
-        public TokenLedgerCategoryEntrySelector(string categoryFilter)
+        public TokenLedgerCategoryEntrySelectorAttribute(string categoryFilter)
         {
             this.CategoryFilter = categoryFilter;
         }

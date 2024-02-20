@@ -21,6 +21,8 @@ namespace com.spacepuppyeditor.Statistics.Events
         private const string PROP_VALUE = "_value";
         private const string PROP_COMPARISON = "_comparison";
 
+        private TokenLedgerCategorySelectorPropertyDrawer _categoryDrawer = new TokenLedgerCategorySelectorPropertyDrawer();
+
         protected override void OnSPInspectorGUI()
         {
             this.serializedObject.Update();
@@ -34,9 +36,8 @@ namespace com.spacepuppyeditor.Statistics.Events
             var valueprop = this.serializedObject.FindProperty(PROP_VALUE);
             var compprop = this.serializedObject.FindProperty(PROP_COMPARISON);
 
-            int selection = Mathf.Max(0, StatisticsTokenLedgerCategories.FindIndexOfCategory(catprop.stringValue));
-            selection = EditorGUILayout.Popup("Category", selection, StatisticsTokenLedgerCategories.Categories.Select(o => o.Name).ToArray());
-            catprop.stringValue = StatisticsTokenLedgerCategories.IndexInRange(selection) ? StatisticsTokenLedgerCategories.Categories[selection].Name : null;
+            _categoryDrawer.OnGUILayout(catprop);
+            int selection = StatisticsTokenLedgerCategories.FindIndexOfCategory(catprop.stringValue);
 
             if (StatisticsTokenLedgerCategories.IndexInRange(selection))
             {
@@ -65,6 +66,11 @@ namespace com.spacepuppyeditor.Statistics.Events
                     valueprop.doubleValue = EditorGUILayout.DoubleField("Value", valueprop.doubleValue);
                     SPEditorGUILayout.PropertyField(compprop);
                 }
+            }
+            else
+            {
+                valueprop.doubleValue = EditorGUILayout.DoubleField("Value", valueprop.doubleValue);
+                SPEditorGUILayout.PropertyField(compprop);
             }
 
             EditorGUILayout.Space();

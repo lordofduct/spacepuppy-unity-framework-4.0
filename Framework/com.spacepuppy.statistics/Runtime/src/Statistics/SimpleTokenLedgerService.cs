@@ -81,6 +81,11 @@ namespace com.spacepuppy.Statistics
             return _ledger.TryGetStat(stat, out value);
         }
 
+        public virtual void ClearStat(StatId stat)
+        {
+            _ledger.ClearStat(stat);
+        }
+
         public virtual void ResetStats()
         {
             _ledger.Reset();

@@ -20,6 +20,9 @@ namespace com.spacepuppyeditor.Statistics.Events
         private const string PROP_VALUE = "_value";
         private const string PROP_MODE = "_mode";
 
+        private TokenLedgerCategorySelectorPropertyDrawer _categoryDrawer = new TokenLedgerCategorySelectorPropertyDrawer();
+        private TokenLedgerCategoryEntrySelectorPropertyDrawer _tokenDrawer = new TokenLedgerCategoryEntrySelectorPropertyDrawer();
+
         protected override void OnSPInspectorGUI()
         {
             this.serializedObject.Update();
@@ -34,17 +37,15 @@ namespace com.spacepuppyeditor.Statistics.Events
             var valueprop = this.serializedObject.FindProperty(PROP_VALUE);
             var modeprop = this.serializedObject.FindProperty(PROP_MODE);
 
-            int selection = Mathf.Max(0, StatisticsTokenLedgerCategories.FindIndexOfCategory(catprop.stringValue));
-            selection = EditorGUILayout.Popup("Category", selection, StatisticsTokenLedgerCategories.Categories.Select(o => o.Name).ToArray());
-            catprop.stringValue = StatisticsTokenLedgerCategories.IndexInRange(selection) ? StatisticsTokenLedgerCategories.Categories[selection].Name : null;
+            _categoryDrawer.OnGUILayout(catprop);
+            int selection = StatisticsTokenLedgerCategories.FindIndexOfCategory(catprop.stringValue);
 
             if (StatisticsTokenLedgerCategories.IndexInRange(selection))
             {
                 var category = StatisticsTokenLedgerCategories.Categories[selection];
-
-                selection = category.Entries.IndexOf(idprop.stringValue);
-                selection = EditorGUILayout.Popup("Token", selection, category.Entries);
-                idprop.stringValue = selection >= 0 ? category.Entries[selection] : null;
+                _tokenDrawer.HideCustom = false;
+                _tokenDrawer.CategoryFilter = category.Name;
+                _tokenDrawer.OnGUILayout(idprop);
 
                 if (category.DataStore == typeof(bool))
                 {
@@ -67,6 +68,15 @@ namespace com.spacepuppyeditor.Statistics.Events
                     valueprop.doubleValue = EditorGUILayout.DoubleField("Value", valueprop.doubleValue);
                     SPEditorGUILayout.PropertyField(modeprop);
                 }
+            }
+            else
+            {
+                _tokenDrawer.HideCustom = false;
+                _tokenDrawer.CategoryFilter = catprop.stringValue;
+                _tokenDrawer.OnGUILayout(idprop);
+
+                valueprop.doubleValue = EditorGUILayout.DoubleField("Value", valueprop.doubleValue);
+                SPEditorGUILayout.PropertyField(modeprop);
             }
 
             EditorGUILayout.Space();

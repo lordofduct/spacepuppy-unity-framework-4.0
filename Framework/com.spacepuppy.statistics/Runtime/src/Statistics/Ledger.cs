@@ -298,6 +298,43 @@ namespace com.spacepuppy.Statistics
             return true;
         }
 
+        public bool ClearStat(StatId stat)
+        {
+            if (stat.Token == null)
+            {
+                if (!_stats.ContainsKey(stat)) return false;
+
+                _stats[stat] = null;
+                using (var set = TempCollection.GetSet<StatId>())
+                {
+                    foreach (var key in _stats.Keys)
+                    {
+                        if (key.Stat == stat.Stat)
+                        {
+                            set.Add(key);
+                        }
+                    }
+
+                    if (set.Count > 0)
+                    {
+                        foreach (var key in set)
+                        {
+                            _stats.Remove(key);
+                        }
+                    }
+                }
+                this.OnChanged(stat);
+                return true;
+            }
+            else
+            {
+                _stats.Remove(stat);
+                _stats[new StatId(stat.Stat)] = SumStatTokens(stat.Stat);
+                this.OnChanged(stat);
+                return true;
+            }
+        }
+
         /// <summary>
         /// Deletes the stat completely and removes any tokens associated with it. Similar to Clear, but instead of nulling the stat, it's removed completely.
         /// </summary>
@@ -332,6 +369,46 @@ namespace com.spacepuppy.Statistics
             this.OnChanged(new StatId(stat, null));
             return true;
         }
+
+        public bool DeleteStat(StatId stat)
+        {
+            if (this.Locked) return ClearStat(stat);
+
+            if (stat.Token == null)
+            {
+                if (!_stats.ContainsKey(stat)) return false;
+
+                _stats.Remove(stat);
+                using (var set = TempCollection.GetSet<StatId>())
+                {
+                    foreach (var key in _stats.Keys)
+                    {
+                        if (key.Stat == stat.Stat)
+                        {
+                            set.Add(key);
+                        }
+                    }
+
+                    if (set.Count > 0)
+                    {
+                        foreach (var key in set)
+                        {
+                            _stats.Remove(key);
+                        }
+                    }
+                }
+                this.OnChanged(stat);
+                return true;
+            }
+            else
+            {
+                _stats.Remove(stat);
+                _stats[new StatId(stat.Stat)] = SumStatTokens(stat.Stat);
+                this.OnChanged(stat);
+                return true;
+            }
+        }
+
 
         /// <summary>
         /// Adjust a recorded stat by some amount.
@@ -436,20 +513,25 @@ namespace com.spacepuppy.Statistics
             }
         }
 
+        /// <summary>
+        /// Resets the entire ledger to an empty state conserving locked entries.
+        /// </summary>
         public void Reset()
         {
             if (this.Locked)
             {
-                var arr = _stats.Keys.ToArray();
-                foreach (var id in arr)
+                using (var set = TempCollection.GetSet<StatId>(_stats.Keys))
                 {
-                    if (!string.IsNullOrEmpty(id.Token))
+                    foreach (var id in set)
                     {
-                        _stats.Remove(id);
-                    }
-                    else
-                    {
-                        _stats[id] = null;
+                        if (!string.IsNullOrEmpty(id.Token))
+                        {
+                            _stats.Remove(id);
+                        }
+                        else
+                        {
+                            _stats[id] = null;
+                        }
                     }
                 }
                 this.OnChanged_Multi();
@@ -463,18 +545,20 @@ namespace com.spacepuppy.Statistics
 
 
 
-        private double SumStatTokens(string stat)
+        private double? SumStatTokens(string stat)
         {
             double total = 0d;
+            int cnt = 0;
             var e = _stats.GetEnumerator();
             while (e.MoveNext())
             {
                 if (e.Current.Key.Stat == stat && !string.IsNullOrEmpty(e.Current.Key.Token) && e.Current.Value != null)
                 {
                     total += e.Current.Value.Value;
+                    cnt++;
                 }
             }
-            return total;
+            return cnt > 0 ? total : null;
         }
 
         #endregion

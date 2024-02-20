@@ -22,6 +22,8 @@ namespace com.spacepuppyeditor.Statistics.Events
         private const string PROP_VALUE = "_value";
         private const string PROP_MODE = "_mode";
 
+        private TokenLedgerCategorySelectorPropertyDrawer _categoryDrawer = new TokenLedgerCategorySelectorPropertyDrawer();
+        private TokenLedgerCategoryEntrySelectorPropertyDrawer _tokenDrawer = new TokenLedgerCategoryEntrySelectorPropertyDrawer();
         private VariantReferencePropertyDrawer _variantDrawer = new VariantReferencePropertyDrawer();
 
         protected override void OnSPInspectorGUI()
@@ -38,25 +40,22 @@ namespace com.spacepuppyeditor.Statistics.Events
             var valueprop = this.serializedObject.FindProperty(PROP_VALUE);
             var modeprop = this.serializedObject.FindProperty(PROP_MODE);
 
-            int selection = Mathf.Max(0, StatisticsTokenLedgerCategories.FindIndexOfCategory(catprop.stringValue));
-            selection = EditorGUILayout.Popup("Category", selection, StatisticsTokenLedgerCategories.Categories.Select(o => o.Name).ToArray());
-            catprop.stringValue = StatisticsTokenLedgerCategories.IndexInRange(selection) ? StatisticsTokenLedgerCategories.Categories[selection].Name : null;
+            _categoryDrawer.OnGUILayout(catprop);
+            int selection = StatisticsTokenLedgerCategories.FindIndexOfCategory(catprop.stringValue);
 
             if (StatisticsTokenLedgerCategories.IndexInRange(selection))
             {
                 var category = StatisticsTokenLedgerCategories.Categories[selection];
+                _tokenDrawer.HideCustom = false;
+                _tokenDrawer.CategoryFilter = category.Name;
+                _tokenDrawer.OnGUILayout(idprop);
 
-                selection = category.Entries.IndexOf(idprop.stringValue);
-                selection = EditorGUILayout.Popup("Token", selection, category.Entries);
-                idprop.stringValue = selection >= 0 ? category.Entries[selection] : null;
-
-                var valuelabel = EditorHelper.TempContent(valueprop.displayName, valueprop.tooltip);
                 if (category.DataStore == typeof(bool))
                 {
                     //valueprop.doubleValue = EditorGUILayout.Toggle("True/False", valueprop.doubleValue != 0d) ? 1 : 0;
                     _variantDrawer.RestrictVariantType = true;
                     _variantDrawer.TypeRestrictedTo = typeof(bool);
-                    _variantDrawer.OnGUI(EditorGUILayout.GetControlRect(true, _variantDrawer.GetPropertyHeight(valueprop, valuelabel)), valueprop, valuelabel);
+                    _variantDrawer.OnGUILayout(valueprop);
                     modeprop.SetEnumValue(i_AdjustToken.SetMode.Set);
                 }
                 else if (category.DataStore.IsEnum)
@@ -65,7 +64,7 @@ namespace com.spacepuppyeditor.Statistics.Events
                     //valueprop.doubleValue = ConvertUtil.ToInt(SPEditorGUILayout.EnumPopup("Value", ConvertUtil.ToEnumOfType(category.DataStore, eval)));
                     _variantDrawer.RestrictVariantType = true;
                     _variantDrawer.TypeRestrictedTo = category.DataStore;
-                    _variantDrawer.OnGUI(EditorGUILayout.GetControlRect(true, _variantDrawer.GetPropertyHeight(valueprop, valuelabel)), valueprop, valuelabel);
+                    _variantDrawer.OnGUILayout(valueprop);
                     modeprop.SetEnumValue(i_AdjustToken.SetMode.Set);
                 }
                 else if (category.DataStore == typeof(int))
@@ -73,7 +72,7 @@ namespace com.spacepuppyeditor.Statistics.Events
                     //valueprop.doubleValue = EditorGUILayout.IntField("Value", (int)valueprop.doubleValue);
                     _variantDrawer.RestrictVariantType = true;
                     _variantDrawer.TypeRestrictedTo = typeof(int);
-                    _variantDrawer.OnGUI(EditorGUILayout.GetControlRect(true, _variantDrawer.GetPropertyHeight(valueprop, valuelabel)), valueprop, valuelabel);
+                    _variantDrawer.OnGUILayout(valueprop);
                     SPEditorGUILayout.PropertyField(modeprop);
                 }
                 else if (ConvertUtil.IsNumericType(category.DataStore))
@@ -81,9 +80,20 @@ namespace com.spacepuppyeditor.Statistics.Events
                     //valueprop.doubleValue = EditorGUILayout.DoubleField("Value", valueprop.doubleValue);
                     _variantDrawer.RestrictVariantType = true;
                     _variantDrawer.TypeRestrictedTo = typeof(double);
-                    _variantDrawer.OnGUI(EditorGUILayout.GetControlRect(true, _variantDrawer.GetPropertyHeight(valueprop, valuelabel)), valueprop, valuelabel);
+                    _variantDrawer.OnGUILayout(valueprop);
                     SPEditorGUILayout.PropertyField(modeprop);
                 }
+            }
+            else
+            {
+                _tokenDrawer.HideCustom = false;
+                _tokenDrawer.CategoryFilter = catprop.stringValue;
+                _tokenDrawer.OnGUILayout(idprop);
+
+                _variantDrawer.RestrictVariantType = true;
+                _variantDrawer.TypeRestrictedTo = typeof(double);
+                _variantDrawer.OnGUILayout(valueprop);
+                SPEditorGUILayout.PropertyField(modeprop);
             }
 
             EditorGUILayout.Space();

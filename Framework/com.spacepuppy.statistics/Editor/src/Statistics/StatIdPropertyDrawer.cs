@@ -7,11 +7,10 @@ using com.spacepuppy.Statistics;
 using com.spacepuppyeditor.Statistics;
 using com.spacepuppy.Utils;
 
-namespace com.spacepuppyeditor
+namespace com.spacepuppyeditor.Statistics
 {
 
     [CustomPropertyDrawer(typeof(StatId))]
-    [CustomPropertyDrawer(typeof(TokenLedgerCategorySelector))]
     public class StatIdPropertyDrawer : PropertyDrawer
     {
 
@@ -19,9 +18,9 @@ namespace com.spacepuppyeditor
         public const string PROP_TOKEN = nameof(StatId.Token);
 
         private bool _hideCustom;
-        public bool HideCustom
+        public virtual bool HideCustom
         {
-            get => (this.attribute as TokenLedgerCategorySelector)?.HideCustom ?? _hideCustom;
+            get => _hideCustom;
             set => _hideCustom = value;
         }
 
@@ -39,10 +38,11 @@ namespace com.spacepuppyeditor
             else if (property.propertyType == SerializedPropertyType.Generic && property.type == nameof(StatId))
             {
                 DrawAsStatId(position, property, label);
-                return;
             }
-
-            EditorGUI.LabelField(position, label, EditorHelper.TempContent("Mismatched PropertyDrawer..."));
+            else
+            {
+                EditorGUI.LabelField(position, label, EditorHelper.TempContent("Mismatched PropertyDrawer..."));
+            }
         }
 
         void DrawAsStatId(Rect position, SerializedProperty property, GUIContent label)
@@ -113,20 +113,18 @@ namespace com.spacepuppyeditor
         void DrawAsString(Rect position, SerializedProperty property, GUIContent label)
         {
             position = SPEditorGUI.SafePrefixLabel(position, label);
-            var r0 = new Rect(position.xMin, position.yMin, Mathf.FloorToInt(position.width / 2f), position.height);
-            var r1 = new Rect(r0.xMax + 1, position.yMin, position.width - r0.width - 1, position.height);
 
             EditorGUI.BeginChangeCheck();
             string selection;
             if (this.HideCustom)
             {
                 int index = Mathf.Max(0, StatisticsTokenLedgerCategories.FindIndexOfCategory(property.stringValue));
-                index = EditorGUI.Popup(r0, index, StatisticsTokenLedgerCategories.Categories.Select(o => o.Name).ToArray());
+                index = EditorGUI.Popup(position, index, StatisticsTokenLedgerCategories.Categories.Select(o => o.Name).ToArray());
                 selection = StatisticsTokenLedgerCategories.IndexInRange(index) ? StatisticsTokenLedgerCategories.Categories[index].Name : null;
             }
             else
             {
-                selection = SPEditorGUI.OptionPopupWithCustom(r0, GUIContent.none, property.stringValue, StatisticsTokenLedgerCategories.Categories.Select(o => o.Name).ToArray());
+                selection = SPEditorGUI.OptionPopupWithCustom(position, GUIContent.none, property.stringValue, StatisticsTokenLedgerCategories.Categories.Select(o => o.Name).ToArray());
             }
             if (EditorGUI.EndChangeCheck())
             {
@@ -136,7 +134,17 @@ namespace com.spacepuppyeditor
 
     }
 
-    [CustomPropertyDrawer(typeof(TokenLedgerCategoryEntrySelector))]
+    [CustomPropertyDrawer(typeof(TokenLedgerCategorySelectorAttribute))]
+    public class TokenLedgerCategorySelectorPropertyDrawer : StatIdPropertyDrawer
+    {
+        public override bool HideCustom
+        {
+            get => (this.attribute as TokenLedgerCategorySelectorAttribute)?.HideCustom ?? base.HideCustom;
+            set => base.HideCustom = value;
+        }
+    }
+
+    [CustomPropertyDrawer(typeof(TokenLedgerCategoryEntrySelectorAttribute))]
     public class TokenLedgerCategoryEntrySelectorPropertyDrawer : PropertyDrawer
     {
 
@@ -144,14 +152,14 @@ namespace com.spacepuppyeditor
         private bool _hideCustom;
         public bool HideCustom
         {
-            get => (this.attribute as TokenLedgerCategoryEntrySelector)?.HideCustom ?? _hideCustom;
+            get => (this.attribute as TokenLedgerCategoryEntrySelectorAttribute)?.HideCustom ?? _hideCustom;
             set => _hideCustom = value;
         }
 
         private string _categoryFilter;
         public string CategoryFilter
         {
-            get => (this.attribute as TokenLedgerCategoryEntrySelector)?.CategoryFilter ?? _categoryFilter;
+            get => (this.attribute as TokenLedgerCategoryEntrySelectorAttribute)?.CategoryFilter ?? _categoryFilter;
             set => _categoryFilter = value;
         }
 
@@ -180,7 +188,7 @@ namespace com.spacepuppyeditor
                 //}
                 //else if (sfilter.StartsWith("sibling:"))
                 //{
-                    
+
                 //}
                 //else if
                 if (StatisticsTokenLedgerCategories.FindIndexOfCategory(sfilter) >= 0)

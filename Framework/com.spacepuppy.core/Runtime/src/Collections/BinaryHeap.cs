@@ -190,7 +190,7 @@ namespace com.spacepuppy.Collections
             if (index < 0 || index >= _tail) return;
 
             int p = GetParent(index);
-            if (p == 0 || _comparer.Compare(_heap[p], _heap[index]) >= 0)
+            if (_comparer.Compare(_heap[p], _heap[index]) >= 0)
             {
                 this.BubbleDown(index);
             }

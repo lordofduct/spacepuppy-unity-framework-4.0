@@ -283,6 +283,7 @@ namespace com.spacepuppyeditor.Settings
                     if (cacheInputs != null)
                     {
                         cacheInputs.ApplyToGlobal();
+                        DestroyImmediate(cacheInputs);
                     }
                     if (cacheSymbols != null)
                     {

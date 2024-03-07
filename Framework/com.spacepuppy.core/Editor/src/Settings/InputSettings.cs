@@ -2,11 +2,11 @@
 
 using UnityEngine;
 using UnityEditor;
-using UnityEditorInternal;
 using System.Collections.Generic;
 using System.Linq;
 
 using com.spacepuppy;
+using com.spacepuppy.Collections;
 using com.spacepuppy.Utils;
 using com.spacepuppyeditor.Internal;
 
@@ -21,6 +21,8 @@ namespace com.spacepuppyeditor.Settings
 
         [SerializeField]
         private List<InputConfig> _entries = new List<InputConfig>();
+        [SerializeField]
+        private InputSettings _auxiliaryInputSettings;
         [System.NonSerialized]
         private NonNullList _protectedEntries;
 
@@ -37,26 +39,64 @@ namespace com.spacepuppyeditor.Settings
             }
         }
 
+        public InputSettings AuxiliaryInputSettings
+        {
+            get => _auxiliaryInputSettings;
+            set => _auxiliaryInputSettings = value;
+        }
+
         #endregion
 
         #region Methods
+
+        public IEnumerable<InputConfig> EnumerateAllEntries()
+        {
+            if (_auxiliaryInputSettings)
+            {
+                using (var hash = TempCollection.GetSet<InputSettings>())
+                {
+                    hash.Add(this);
+                    return this.DoEnumerateAllEntries(hash);
+                }
+            }
+            else
+            {
+                return _entries;
+            }
+        }
+
+        IEnumerable<InputConfig> DoEnumerateAllEntries(ISet<InputSettings> processed)
+        {
+            foreach (var entry in _entries)
+            {
+                yield return entry;
+            }
+            if (_auxiliaryInputSettings && (processed?.Add(_auxiliaryInputSettings) ?? false))
+            {
+                foreach (var entry in _auxiliaryInputSettings.DoEnumerateAllEntries(processed))
+                {
+                    yield return entry;
+                }
+            }
+        }
 
         public bool ApplyToGlobal()
         {
             var asset = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/InputManager.asset").FirstOrDefault();
             if (asset == null) return false;
 
-            var settings = ScriptableObject.CreateInstance<InputSettings>();
             try
             {
                 var serializedObject = new SerializedObject(asset);
                 var axes = serializedObject.FindProperty(PROP_AXES);
-                axes.arraySize = _entries.Count;
 
-                for(int i = 0; i < _entries.Count; i++)
+                var arr = this.EnumerateAllEntries().ToArray();
+                axes.arraySize = arr.Length;
+
+                for(int i = 0; i < arr.Length; i++)
                 {
                     var axis = axes.GetArrayElementAtIndex(i);
-                    var config = _entries[i];
+                    var config = arr[i];
                     axis.FindPropertyRelative(PROP_TYPE).enumValueIndex = (int)config.Type;
                     axis.FindPropertyRelative(PROP_NAME).stringValue = config.Name;
                     axis.FindPropertyRelative(PROP_DESCRIPTIVENAME).stringValue = config.DescriptiveName;
@@ -77,9 +117,9 @@ namespace com.spacepuppyeditor.Settings
                 serializedObject.ApplyModifiedProperties();
                 return true;
             }
-            finally
+            catch (System.Exception ex)
             {
-                ObjUtil.SmartDestroy(settings);
+                return false;
             }
         }
 
@@ -472,6 +512,7 @@ namespace com.spacepuppyeditor.Settings
     public class InputSettingsEditor : SPEditor
     {
 
+        public const string PROP_AUXILIARYINPUTSETTINGS = "_auxiliaryInputSettings";
         public const string PROP_ENTRIES = "_entries";
         public const string PROP_TYPE = "Type";
         public const string PROP_NAME = "Name";
@@ -505,10 +546,11 @@ namespace com.spacepuppyeditor.Settings
         {
             this.serializedObject.Update();
             this.DrawPropertyField(EditorHelper.PROP_SCRIPT);
+            this.DrawPropertyField(PROP_AUXILIARYINPUTSETTINGS);
 
             EditorGUILayout.BeginVertical();
             float listMaxHeight = _entryList.GetHeight();
-            float maxHeight = Screen.height - (_entryList.index >= 0 ? 380f : 260f);
+            float maxHeight = Screen.height - (_entryList.index >= 0 ? 470f : 350f);
             _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos, GUILayout.Height(Mathf.Min(listMaxHeight, maxHeight)));
             _entryList.DoLayoutList();
             EditorGUILayout.EndScrollView();

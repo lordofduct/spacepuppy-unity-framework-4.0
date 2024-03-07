@@ -1,6 +1,8 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+
+using com.spacepuppy.Dynamic;
 using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.Project
@@ -19,7 +21,7 @@ namespace com.spacepuppy.Project
     /// </summary>
     /// <typeparam name="T"></typeparam>
     [System.Serializable]
-    public class SerializableInterfaceRef<T> : BaseSerializableInterfaceRef, ISerializationCallbackReceiver where T : class
+    public class SerializableInterfaceRef<T> : BaseSerializableInterfaceRef, ISerializationCallbackReceiver, IDynamicProperty where T : class
     {
 
         #region Fields
@@ -79,6 +81,85 @@ namespace com.spacepuppy.Project
         {
             //do nothing
         }
+
+        #endregion
+
+        #region IDynamicProperty Interface
+
+        object IDynamicProperty.Get() => this.Value;
+
+        void IDynamicProperty.Set(object value) => this.Value = value as T;
+
+        System.Type IDynamicProperty.GetType() => typeof(T);
+
+        #endregion
+
+    }
+
+    public abstract class BaseSerializableInterfaceCollection
+    {
+
+    }
+
+    [System.Serializable]
+    public class SerializableInterfaceCollection<T> : BaseSerializableInterfaceCollection, IEnumerable<T>, ISerializationCallbackReceiver where T : class
+    {
+
+        #region Fields
+
+        [SerializeField]
+        private UnityEngine.Object[] _arr;
+        [System.NonSerialized]
+        private List<T> _values = new List<T>();
+
+        #endregion
+
+        #region CONSTRUCTOR
+
+        public SerializableInterfaceCollection()
+        {
+            _values = new List<T>();
+        }
+
+        public SerializableInterfaceCollection(IEnumerable<T> values)
+        {
+            _values = new List<T>(values);
+        }
+
+        #endregion
+
+        #region Properties
+
+        public int Count => _values.Count;
+
+        public List<T> Values => _values;
+
+        #endregion
+
+        #region ISerializationCallbackReceiver Interface
+
+        void ISerializationCallbackReceiver.OnAfterDeserialize()
+        {
+            _values.Clear();
+            if (_arr?.Length > 0)
+            {
+                _values.AddRange(_arr.Select(o => o as T));
+            }
+        }
+
+        void ISerializationCallbackReceiver.OnBeforeSerialize()
+        {
+            _arr = _values.Select(o => o as UnityEngine.Object).ToArray();
+        }
+
+        #endregion
+
+        #region IEnumerable Interface
+
+        public List<T>.Enumerator GetEnumerator() => _values.GetEnumerator();
+
+        IEnumerator<T> IEnumerable<T>.GetEnumerator() => _values.GetEnumerator();
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => _values.GetEnumerator();
 
         #endregion
 

@@ -8,6 +8,7 @@ using com.spacepuppy.Dynamic;
 using com.spacepuppy.Project;
 using com.spacepuppy.Utils;
 using com.spacepuppyeditor.Windows;
+using com.spacepuppyeditor.Internal;
 
 namespace com.spacepuppyeditor.Core.Project
 {
@@ -159,6 +160,128 @@ namespace com.spacepuppyeditor.Core.Project
         System.Type EditorHelper.ISerializedWrapperHelper.GetValueType(SerializedProperty property)
         {
             return GetRefTypeFromSerializedProperty(property);
+        }
+
+        #endregion
+
+    }
+
+    [CustomPropertyDrawer(typeof(BaseSerializableInterfaceCollection), true)]
+    public class BaseSerializableInterfaceCollectionPropertyDrawer : PropertyDrawer
+    {
+
+        public const string PROP_ARR = "_arr";
+
+        private SelectableComponentPropertyDrawer _componentSelectorDrawer = new SelectableComponentPropertyDrawer()
+        {
+            RestrictionType = typeof(UnityEngine.Object),
+            AllowNonComponents = true,
+            AllowProxy = true,
+            ShowXButton = true,
+            XButtonOnRightSide = true,
+        };
+        private CachedReorderableList _lst;
+        private GUIContent _label;
+        private System.Type _valueType;
+
+        public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+        {
+            var tp = (this.fieldInfo != null) ? this.fieldInfo.FieldType : null;
+            var arrprop = property.FindPropertyRelative(PROP_ARR);
+            if (tp == null || arrprop == null || !arrprop.isArray)
+            {
+                return EditorGUIUtility.singleLineHeight;
+            }
+
+            _lst = CachedReorderableList.GetListDrawer(property.FindPropertyRelative(PROP_ARR), _maskList_DrawHeader, _maskList_DrawElement);
+            _label = label;
+            if (arrprop.arraySize == 0)
+            {
+                _lst.elementHeight = EditorGUIUtility.singleLineHeight;
+            }
+            else
+            {
+                _lst.elementHeight = _componentSelectorDrawer.GetPropertyHeight(arrprop.GetArrayElementAtIndex(0), label);
+            }
+            return _lst.GetHeight();
+        }
+
+        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+        {
+            var tp = (this.fieldInfo != null) ? this.fieldInfo.FieldType : null;
+            var arrprop = property.FindPropertyRelative(PROP_ARR);
+            if (tp == null || arrprop == null || !arrprop.isArray)
+            {
+                this.DrawMalformed(position);
+                return;
+            }
+
+            _valueType = TypeUtil.GetElementTypeOfListType(DynamicUtil.GetReturnType(DynamicUtil.GetMemberFromType(tp, "_values", true)));
+            if (_valueType == null || !(_valueType.IsClass || _valueType.IsInterface))
+            {
+                this.DrawMalformed(position);
+                return;
+            }
+
+            _lst = CachedReorderableList.GetListDrawer(property.FindPropertyRelative(PROP_ARR), _maskList_DrawHeader, _maskList_DrawElement);
+            _label = label;
+
+            _lst.DoList(position);
+        }
+
+        private void DrawMalformed(Rect position)
+        {
+            EditorGUI.LabelField(position, "Malformed SerializedInterfaceRef.");
+            Debug.LogError("Malformed SerializedInterfaceRef - make sure you inherit from 'SerializableInterfaceRef'.");
+        }
+
+        #region Text ReorderableList Handlers
+
+        private void _maskList_DrawHeader(Rect area)
+        {
+            EditorGUI.LabelField(area, _label ?? GUIContent.none);
+        }
+
+        private void _maskList_DrawElement(Rect area, int index, bool isActive, bool isFocused)
+        {
+            var objProp = _lst.serializedProperty.GetArrayElementAtIndex(index);
+            var label = EditorHelper.TempContent(string.Format("Element {0:00}", index));
+
+            //SelfReducingEntityConfigRef - support
+            try
+            {
+                var interfaceType = typeof(ISelfReducingEntityConfig<>).MakeGenericType(_valueType);
+                if (interfaceType != null && TypeUtil.IsType(_valueType, interfaceType))
+                {
+                    var childType = typeof(SelfReducingEntityConfigRef<>).MakeGenericType(_valueType);
+                    if (TypeUtil.IsType(this.fieldInfo.FieldType, childType))
+                    {
+                        var obj = EditorHelper.GetTargetObjectOfProperty(objProp);
+                        if (obj != null && childType.IsInstanceOfType(obj))
+                        {
+                            var entity = SPEntity.Pool.GetFromSource(objProp.serializedObject.targetObject);
+                            var source = DynamicUtil.GetValue(obj, "GetSourceType", entity);
+                            label.text = string.Format("{0} (Found from: {1})", label.text, source);
+                        }
+                    }
+                }
+            }
+            catch (System.Exception) { }
+
+            if (objProp.objectReferenceValue == null)
+            {
+                object val = UnityObjectDropDownWindowSelector.ObjectField(area, label, objProp.objectReferenceValue, _valueType, true, true);
+                if (val != null && !_valueType.IsInstanceOfType(val) && ObjUtil.GetAsFromSource<IProxy>(val) == null)
+                {
+                    val = null;
+                }
+                objProp.objectReferenceValue = val as UnityEngine.Object;
+            }
+            else
+            {
+                _componentSelectorDrawer.RestrictionType = _valueType;
+                _componentSelectorDrawer.OnGUI(area, objProp, label);
+            }
         }
 
         #endregion

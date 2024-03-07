@@ -405,6 +405,11 @@ namespace com.spacepuppyeditor
             DrawDefaultInspectorExcept(this.serializedObject, propsNotToDraw);
         }
 
+        public void DrawDefaultInspectorCallback(System.Action<SerializedProperty> drawcallback)
+        {
+            DrawDefaultInspectorCallback(this.serializedObject, drawcallback);
+        }
+
         public bool DrawPropertyField(string prop)
         {
             return SPEditorGUILayout.PropertyField(this.serializedObject, prop);
@@ -444,6 +449,22 @@ namespace com.spacepuppyeditor
                         //EditorGUILayout.PropertyField(iterator, true);
                         SPEditorGUILayout.PropertyField(iterator, true);
                     }
+                }
+            }
+            return EditorGUI.EndChangeCheck();
+        }
+
+        public static bool DrawDefaultInspectorCallback(SerializedObject serializedObject, System.Action<SerializedProperty> drawcallback)
+        {
+            if (serializedObject == null) throw new System.ArgumentNullException(nameof(serializedObject));
+
+            EditorGUI.BeginChangeCheck();
+            SerializedProperty iterator = serializedObject.GetIterator();
+            for (bool enterChildren = true; iterator.NextVisible(enterChildren); enterChildren = false)
+            {
+                //using (new EditorGUI.DisabledScope(EditorHelper.PROP_SCRIPT == iterator.propertyPath))
+                {
+                    drawcallback(iterator);
                 }
             }
             return EditorGUI.EndChangeCheck();

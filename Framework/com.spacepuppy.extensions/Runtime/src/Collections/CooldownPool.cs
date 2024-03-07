@@ -10,13 +10,14 @@ namespace com.spacepuppy.Collections
     /// releasing objects that are old enough. Always call Update on the unity main thread!
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class CooldownPool<T> : IEnumerable<CooldownPool<T>.CooldownInfo> where T : class
+    public class CooldownPool<T> : IUpdateable, IEnumerable<CooldownPool<T>.CooldownInfo> where T : class
     {
 
         #region Fields
 
         private Dictionary<T, CooldownInfo> _table = new Dictionary<T, CooldownInfo>();
         private ITimeSupplier _time;
+        private bool _autoUpdate;
 
         #endregion
 
@@ -38,6 +39,24 @@ namespace com.spacepuppy.Collections
             set => _time = value;
         }
 
+        public bool AutoUpdate
+        {
+            get => _autoUpdate;
+            set
+            {
+                if (_autoUpdate == value) return;
+                _autoUpdate = value;
+                if (_autoUpdate && _table.Count > 0)
+                {
+                    GameLoop.EarlyUpdatePump.Add(this);
+                }
+                else if (!_autoUpdate)
+                {
+                    GameLoop.EarlyUpdatePump.Remove(this);
+                }
+            }
+        }
+
         #endregion
 
         #region Methods
@@ -52,6 +71,11 @@ namespace com.spacepuppy.Collections
             else
             {
                 _table[obj] = new CooldownInfo(obj, this.UpdateTimeSupplier.Total, duration);
+            }
+
+            if (_autoUpdate)
+            {
+                GameLoop.EarlyUpdatePump.Add(this);
             }
         }
 
@@ -86,11 +110,20 @@ namespace com.spacepuppy.Collections
                     }
                 }
             }
+
+            if (_autoUpdate && _table.Count == 0)
+            {
+                GameLoop.EarlyUpdatePump.Remove(this);
+            }
         }
 
         public void Clear()
         {
             _table.Clear();
+            if (_autoUpdate)
+            {
+                GameLoop.EarlyUpdatePump.Remove(this);
+            }
         }
 
         #endregion

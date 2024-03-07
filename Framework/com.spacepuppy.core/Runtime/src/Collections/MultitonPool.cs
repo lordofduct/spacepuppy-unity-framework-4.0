@@ -88,6 +88,7 @@ namespace com.spacepuppy.Collections
         public virtual void Clear()
         {
             _pool.Clear();
+            _version++;
         }
 
         public virtual void AddReference(T obj)
@@ -96,7 +97,13 @@ namespace com.spacepuppy.Collections
 
             if (_querying)
             {
-                if (!_pool.Contains(obj)) _queryCompleteAction += () => _pool.Add(obj);
+                if (!_pool.Contains(obj)) _queryCompleteAction += () =>
+                {
+                    if (_pool.Add(obj))
+                    {
+                        _version++;
+                    }
+                };
             }
             else if (_pool.Add(obj))
             {
@@ -112,7 +119,13 @@ namespace com.spacepuppy.Collections
             {
                 if (_pool.Contains(obj))
                 {
-                    _queryCompleteAction += () => _pool.Remove(obj);
+                    _queryCompleteAction += () =>
+                    {
+                        if (_pool.Remove(obj))
+                        {
+                            _version++;
+                        }
+                    };
                     return true;
                 }
                 else

@@ -52,9 +52,6 @@ namespace com.spacepuppy.Collections
 
 
 
-
-
-
         public static TempList<T> GetList<T>()
         {
             return TempList<T>.GetList();
@@ -123,6 +120,30 @@ namespace com.spacepuppy.Collections
         public static TempCallbackCollection<T> GetCallbackCollection<T>(Action<T> addCallback, Action<T> removeCallback = null)
         {
             return TempCallbackCollection<T>.GetCallbackCollection(addCallback, removeCallback);
+        }
+
+        public static void ValidateAndAdd<T>(ref TempList<T> lst, T value)
+        {
+            if (lst == null) lst = GetList<T>();
+            lst.Add(value);
+        }
+
+        public static void ValidateAndAdd<T>(ref TempHashSet<T> lst, T value)
+        {
+            if (lst == null) lst = GetSet<T>();
+            lst.Add(value);
+        }
+
+        public static void ValidateAndAdd<T>(ref TempQueue<T> lst, T value)
+        {
+            if (lst == null) lst = GetQueue<T>();
+            lst.Enqueue(value);
+        }
+
+        public static void ValidateAndAdd<T>(ref ITempCollection<T> lst, T value)
+        {
+            if (lst == null) lst = GetCollection<T>();
+            lst.Add(value);
         }
 
         #endregion

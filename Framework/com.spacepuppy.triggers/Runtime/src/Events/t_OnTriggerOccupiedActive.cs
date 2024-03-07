@@ -10,7 +10,7 @@ using System.Linq;
 namespace com.spacepuppy.Events
 {
 
-    [Infobox("Similar to t_OnTriggerOccupied, only that it can perform active scanning of the region. This is helpful if the intersecting object may disable itself mid intersection failing to raise the 'OnTriggerExit' messafe from Unity.\r\n\r\n" +
+    [Infobox("Similar to t_OnTriggerOccupied, only that it can perform active scanning of the region. This is helpful if the intersecting object may disable itself mid intersection failing to raise the 'OnTriggerExit' message from Unity.\r\n\r\n" +
              "Note that when active it doesn't necessarily make sense to have 'no mask'. It would behave effectively like t_OnTriggerOccupied but with added overhead. So either disable the scanning, or use t_OnTriggerOccupied instead.")]
     public sealed class t_OnTriggerOccupiedActive : SPComponent, ICompoundTriggerEnterHandler, ICompoundTriggerExitHandler, IOccupiedTrigger, IUpdateable
     {

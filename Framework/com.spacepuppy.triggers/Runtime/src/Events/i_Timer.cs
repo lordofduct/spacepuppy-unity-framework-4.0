@@ -9,6 +9,7 @@ namespace com.spacepuppy.Events
 
         public enum Action
         {
+            Nothing = -1,
             Restart = 0,
             EndImmediately = 1,
             Pause = 2,

@@ -11,7 +11,6 @@ using com.spacepuppy.Utils;
 
 using com.spacepuppyeditor.Core;
 using com.spacepuppyeditor.Internal;
-using static UnityEngine.GraphicsBuffer;
 
 namespace com.spacepuppyeditor.Tween.Events
 {
@@ -50,7 +49,6 @@ namespace com.spacepuppyeditor.Tween.Events
             _dataList.drawHeaderCallback = _dataList_DrawHeader;
             _dataList.drawElementCallback = _dataList_DrawElement;
             _dataList.elementHeight = EditorGUIUtility.singleLineHeight * 7f + 7f;
-
         }
 
         protected override void OnSPInspectorGUI()

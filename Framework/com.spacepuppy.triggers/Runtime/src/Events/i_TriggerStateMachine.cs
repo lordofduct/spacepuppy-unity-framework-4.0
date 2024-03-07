@@ -45,6 +45,7 @@ namespace com.spacepuppy.Events
 
         protected override void Awake()
         {
+            _states.GoToState(-1);
             _states.ExitingState += (s, e) => _onExitState.ActivateTrigger(this, null);
             _states.EnteringState += (s, e) => _onEnterState.ActivateTrigger(this, null);
             base.Awake();

@@ -13,6 +13,9 @@ namespace com.spacepuppy.Events
         [TriggerableTargetObject.Config(typeof(UnityEngine.Object))]
         private TriggerableTargetObject _target = new TriggerableTargetObject();
 
+        [SerializeField]
+        private bool _destroyRoot;
+
         [SerializeField()]
         private SPTimePeriod _delay = 0f;
 
@@ -40,6 +43,7 @@ namespace com.spacepuppy.Events
             if (!this.CanTrigger) return false;
 
             var targ = this._target.GetTarget<UnityEngine.Object>(arg);
+            if (_destroyRoot && GameObjectUtil.IsGameObjectSource(targ)) targ = GameObjectUtil.FindRoot(GameObjectUtil.GetGameObjectFromSource(targ));
             if (targ == null) return false;
 
             if (_delay.Seconds > 0f)

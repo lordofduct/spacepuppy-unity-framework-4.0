@@ -430,7 +430,7 @@ namespace com.spacepuppy.Events
     }
 
     [System.Serializable]
-    public abstract class SPDelegate<T> : BaseSPDelegate<System.Action<T>>
+    public class SPDelegate<T> : BaseSPDelegate<System.Action<T>>
     {
 
         #region CONSTRUCTOR
@@ -454,7 +454,7 @@ namespace com.spacepuppy.Events
     }
 
     [System.Serializable]
-    public abstract class SPDelegate<T1, T2> : BaseSPDelegate<System.Action<T1, T2>>
+    public class SPDelegate<T1, T2> : BaseSPDelegate<System.Action<T1, T2>>
     {
 
         #region CONSTRUCTOR
@@ -495,7 +495,7 @@ namespace com.spacepuppy.Events
     }
 
     [System.Serializable]
-    public abstract class SPDelegate<T1, T2, T3> : BaseSPDelegate<System.Action<T1, T2, T3>>
+    public class SPDelegate<T1, T2, T3> : BaseSPDelegate<System.Action<T1, T2, T3>>
     {
 
         #region CONSTRUCTOR
@@ -536,7 +536,7 @@ namespace com.spacepuppy.Events
     }
 
     [System.Serializable]
-    public abstract class SPDelegate<T1, T2, T3, T4> : BaseSPDelegate<System.Action<T1, T2, T3, T4>>
+    public class SPDelegate<T1, T2, T3, T4> : BaseSPDelegate<System.Action<T1, T2, T3, T4>>
     {
 
         #region CONSTRUCTOR
@@ -678,7 +678,7 @@ namespace com.spacepuppy.Events
     }
 
     [System.Serializable()]
-    public abstract class SPEvent<T> : BaseSPDelegate<System.EventHandler<T>> where T : System.EventArgs
+    public class SPEvent<T> : BaseSPDelegate<System.EventHandler<T>> where T : System.EventArgs
     {
 
         #region Events

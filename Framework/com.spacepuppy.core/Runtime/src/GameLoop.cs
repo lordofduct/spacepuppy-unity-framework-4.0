@@ -89,11 +89,11 @@ namespace com.spacepuppy
         private GameLoop() : base(Services.AutoRegisterOption.Register, Services.MultipleServiceResolutionOption.UnregisterSelf, Services.UnregisterResolutionOption.DestroySelf) { }
 
 #if !MANUALLY_REGISTER_SPGAMELOOP
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSplashScreen)]
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
 #endif
         public static void Init()
         {
-#if UNITY_EDITOR
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log("Registered Spacepuppy GameLoop");
 #endif
             if (!object.ReferenceEquals(_instance, null))
@@ -278,7 +278,7 @@ namespace com.spacepuppy
 
         public static void AssertMainThread()
         {
-            if(_updateInvokeHandle.InvokeRequired)
+            if (_updateInvokeHandle.InvokeRequired)
             {
                 throw new System.InvalidOperationException("Attempted to access thread dependent code from a thread other than the main thread.");
             }
@@ -362,9 +362,9 @@ namespace com.spacepuppy
             _internalEarlyUpdate -= d;
         }
 
-#endregion
+        #endregion
 
-#region Event Handlers
+        #region Event Handlers
 
         private void OnApplicationQuit()
         {
@@ -462,7 +462,7 @@ namespace com.spacepuppy
             _currentSequence = UpdateSequence.None;
         }
 
-#endregion
+        #endregion
 
     }
 

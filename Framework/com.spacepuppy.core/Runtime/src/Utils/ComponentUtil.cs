@@ -989,7 +989,157 @@ namespace com.spacepuppy.Utils
 
         #endregion
 
+        #region DestroyComponent
 
+        public static bool GetAndDestroyComponent<T>(this GameObject go, bool destroyimmediate = false) where T : Component
+        {
+            if (go && go.TryGetComponent(out T comp))
+            {
+                if (destroyimmediate)
+                {
+                    UnityEngine.Object.DestroyImmediate(comp);
+                }
+                else
+                {
+                    UnityEngine.Object.Destroy(comp);
+                }
+                return true;
+            }
+            return false;
+        }
+        public static bool GetAndDestroyComponent(this GameObject go, System.Type tp, bool destroyimmediate = false)
+        {
+            if (go && go.TryGetComponent(tp, out Component comp))
+            {
+                if (destroyimmediate)
+                {
+                    UnityEngine.Object.DestroyImmediate(comp);
+                }
+                else
+                {
+                    UnityEngine.Object.Destroy(comp);
+                }
+                return true;
+            }
+            return false;
+        }
+
+        public static bool GetAndDestroyComponent<T>(this Component c, bool destroyimmediate = false) where T : Component
+        {
+            if (c && c.gameObject.TryGetComponent(out T comp))
+            {
+                if (destroyimmediate)
+                {
+                    UnityEngine.Object.DestroyImmediate(comp);
+                }
+                else
+                {
+                    UnityEngine.Object.Destroy(comp);
+                }
+                return true;
+            }
+            return false;
+        }
+        public static bool GetAndDestroyComponent(this Component c, System.Type tp, bool destroyimmediate = false)
+        {
+            if (c && c.gameObject.TryGetComponent(tp, out Component comp))
+            {
+                if (destroyimmediate)
+                {
+                    UnityEngine.Object.DestroyImmediate(comp);
+                }
+                else
+                {
+                    UnityEngine.Object.Destroy(comp);
+                }
+                return true;
+            }
+            return false;
+        }
+
+        public static bool GetAndDestroyComponents<T>(this GameObject go, bool destroyimmediate = false) where T : Component
+        {
+            if (!go) return false;
+            using (var lst = TempCollection.GetList<T>())
+            {
+                go.GetComponents(lst);
+                foreach (var comp in lst)
+                {
+                    if (destroyimmediate)
+                    {
+                        UnityEngine.Object.DestroyImmediate(comp);
+                    }
+                    else
+                    {
+                        UnityEngine.Object.Destroy(comp);
+                    }
+                }
+                return lst.Count > 0;
+            }
+        }
+        public static bool GetAndDestroyComponents(this GameObject go, System.Type tp, bool destroyimmediate = false)
+        {
+            if (!go) return false;
+            using (var lst = TempCollection.GetList<Component>())
+            {
+                go.GetComponents(tp, lst);
+                foreach (var comp in lst)
+                {
+                    if (destroyimmediate)
+                    {
+                        UnityEngine.Object.DestroyImmediate(comp);
+                    }
+                    else
+                    {
+                        UnityEngine.Object.Destroy(comp);
+                    }
+                }
+                return lst.Count > 0;
+            }
+        }
+
+        public static bool GetAndDestroyComponents<T>(this Component c, bool destroyimmediate = false) where T : Component
+        {
+            if (!c) return false;
+            using (var lst = TempCollection.GetList<T>())
+            {
+                c.gameObject.GetComponents(lst);
+                foreach (var comp in lst)
+                {
+                    if (destroyimmediate)
+                    {
+                        UnityEngine.Object.DestroyImmediate(comp);
+                    }
+                    else
+                    {
+                        UnityEngine.Object.Destroy(comp);
+                    }
+                }
+                return lst.Count > 0;
+            }
+        }
+        public static bool GetAndDestroyComponents(this Component c, System.Type tp, bool destroyimmediate = false)
+        {
+            if (!c) return false;
+            using (var lst = TempCollection.GetList<Component>())
+            {
+                c.gameObject.GetComponents(tp, lst);
+                foreach (var comp in lst)
+                {
+                    if (destroyimmediate)
+                    {
+                        UnityEngine.Object.DestroyImmediate(comp);
+                    }
+                    else
+                    {
+                        UnityEngine.Object.Destroy(comp);
+                    }
+                }
+                return lst.Count > 0;
+            }
+        }
+
+        #endregion
 
 
         #region Utils

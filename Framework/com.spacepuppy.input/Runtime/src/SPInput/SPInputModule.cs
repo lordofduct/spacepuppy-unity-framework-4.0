@@ -29,7 +29,7 @@ namespace com.spacepuppy.SPInput
         {
             base.Awake();
 
-            this.m_InputOverride = this.AddComponent<TInput>();
+            this.m_InputOverride = this.AddOrGetComponent<TInput>();
         }
 
         #endregion
@@ -53,6 +53,8 @@ namespace com.spacepuppy.SPInput
             else
                 return Services.Get<IInputManager>()?.GetDevice(_mainInputDeviceId);
         }
+
+        public virtual T GetMainInputDevice<T>() where T : class, IInputDevice => this.GetMainInputDevice() as T;
 
         #endregion
 

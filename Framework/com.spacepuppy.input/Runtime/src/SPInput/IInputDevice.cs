@@ -32,6 +32,16 @@ namespace com.spacepuppy.SPInput
             return false;
         }
 
+        bool GetAnyButtonDown()
+        {
+            var e = this.GetSignatures().GetEnumerator();
+            while (e.MoveNext())
+            {
+                if (e.Current is IButtonInputSignature bsig && bsig.CurrentState == ButtonState.Down) return true;
+            }
+            return false;
+        }
+
     }
 
     public interface IInputSignatureCollection : ICollection<IInputSignature>

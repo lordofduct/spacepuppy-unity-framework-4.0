@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 
 namespace com.spacepuppy.SPInput
 {
@@ -7,7 +8,15 @@ namespace com.spacepuppy.SPInput
     {
         Unknown = -1,
         KBM = 0,
-        Joystick = 1
+        Joystick = 1,
+        Touch = 2,
+    }
+
+    public enum InputDeviceTypeMask
+    {
+        KBM = 1 << InputDeviceType.KBM,
+        Joystick = 1 << InputDeviceType.Joystick,
+        Touch = 1 << InputDeviceType.Touch,
     }
 
     public enum Joystick : sbyte
@@ -92,6 +101,18 @@ namespace com.spacepuppy.SPInput
 
         Largest = 0,
         Smallest = 1
+
+    }
+
+    public static class SPInputEnumExtensions
+    {
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool HasFlag(this InputDeviceTypeMask mask, InputDeviceTypeMask other) => (mask & other) != 0;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool Intersects(this InputDeviceTypeMask mask, InputDeviceType type) => ((int)mask & (1 << (int)type)) != 0;
 
     }
 

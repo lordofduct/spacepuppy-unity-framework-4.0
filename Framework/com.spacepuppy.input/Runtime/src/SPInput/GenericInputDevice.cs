@@ -36,6 +36,11 @@ namespace com.spacepuppy.SPInput
 
         public IInputSignatureCollection InputSignatures { get { return _signatures; } }
 
+        /// <summary>
+        /// Optional InputDeviceType tag
+        /// </summary>
+        public InputDeviceType DeviceTypeTag { get; set; }
+
         #endregion
 
         #region IInputSignature Interface

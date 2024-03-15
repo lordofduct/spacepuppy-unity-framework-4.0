@@ -5,6 +5,7 @@ using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.Events
 {
+
     public class i_TriggerRandomDelay : AutoTriggerable, IObservableTrigger
     {
         #region Fields
@@ -17,10 +18,16 @@ namespace com.spacepuppy.Events
         private bool _passAlongTriggerArg;
 
         [SerializeField()]
-        private SPTimePeriod _minDelay = 0f;
+        private SPTimeSpan _minDelay = 0f;
 
         [SerializeField()]
-        private SPTimePeriod _maxDelay = 0f;
+        private SPTimeSpan _maxDelay = 0f;
+
+        [SerializeField]
+        private SPTime _timeSupplier;
+
+        [SerializeField]
+        private bool _invokeGuaranteed;
 
         [SerializeField]
         private RandomRef _rng = new RandomRef();
@@ -40,16 +47,28 @@ namespace com.spacepuppy.Events
             set { _passAlongTriggerArg = value; }
         }
 
-        public SPTimePeriod MinDelay
+        public SPTimeSpan MinDelay
         {
             get { return _minDelay; }
             set { _minDelay = value; }
         }
 
-        public SPTimePeriod MaxDelay
+        public SPTimeSpan MaxDelay
         {
             get { return _maxDelay; }
             set { _maxDelay = value; }
+        }
+
+        public SPTime TimeSupplier
+        {
+            get => _timeSupplier;
+            set => _timeSupplier = value;
+        }
+
+        public bool InvokeGuaranteed
+        {
+            get => _invokeGuaranteed;
+            set => _invokeGuaranteed = value;
         }
 
         public IRandom RNG
@@ -82,10 +101,20 @@ namespace com.spacepuppy.Events
 
             if (randomDelay > 0f)
             {
-                this.InvokeGuaranteed(() =>
+                if (_invokeGuaranteed)
                 {
-                    DoTriggerNext(arg);
-                }, randomDelay);
+                    this.InvokeGuaranteed(() =>
+                    {
+                        this.DoTriggerNext(arg);
+                    }, randomDelay, _timeSupplier.TimeSupplier);
+                }
+                else
+                {
+                    this.Invoke(() =>
+                    {
+                        this.DoTriggerNext(arg);
+                    }, randomDelay, _timeSupplier.TimeSupplier, RadicalCoroutineDisableMode.CancelOnDisable);
+                }
             }
             else
             {
@@ -106,4 +135,5 @@ namespace com.spacepuppy.Events
 
         #endregion
     }
+
 }

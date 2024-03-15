@@ -49,7 +49,7 @@ namespace com.spacepuppy.Scenes.Events
             if (!this.CanTrigger) return false;
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            Debug.Log("i_LoadSceneByOptions: " + (_options?.GetType().Name ?? "NULL"));
+            Debug.Log("i_LoadSceneByOptions->" + (_options?.ToString() ?? "NULL"));
 #endif
             if (_options == null) return false;
 
@@ -117,6 +117,15 @@ namespace com.spacepuppy.Scenes.Events
             }
 
             public VariantReference ConfiguredPersistentToken => _persistentToken;
+
+            #endregion
+
+            #region Methods
+
+            public override string ToString()
+            {
+                return $"{base.ToString()}({_scene.SceneName})";
+            }
 
             #endregion
 

@@ -22,6 +22,9 @@ namespace com.spacepuppy.Netcode.Events
         [SerializeField()]
         private SPTimePeriod _delay = 0f;
 
+        [SerializeField]
+        private bool _invokeGuaranteed;
+
         #endregion
 
         #region Properties
@@ -40,6 +43,12 @@ namespace com.spacepuppy.Netcode.Events
             set { _delay = value; }
         }
 
+        public bool InvokeGuaranteed
+        {
+            get => _invokeGuaranteed;
+            set => _invokeGuaranteed = value;
+        }
+
         #endregion
 
         #region Methods
@@ -54,10 +63,20 @@ namespace com.spacepuppy.Netcode.Events
         {
             if (_delay.Seconds > 0f)
             {
-                this.InvokeGuaranteed(() =>
+                if (_invokeGuaranteed)
                 {
-                    _trigger.ActivateTrigger(this, null);
-                }, _delay.Seconds, _delay.TimeSupplier);
+                    this.InvokeGuaranteed(() =>
+                    {
+                        _trigger.ActivateTrigger(this, null);
+                    }, _delay.Seconds, _delay.TimeSupplier);
+                }
+                else
+                {
+                    this.Invoke(() =>
+                    {
+                        _trigger.ActivateTrigger(this, null);
+                    }, _delay.Seconds, _delay.TimeSupplier, RadicalCoroutineDisableMode.CancelOnDisable);
+                }
             }
             else
             {

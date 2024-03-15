@@ -101,7 +101,7 @@ namespace com.spacepuppy.Events
                 if (_cooldownInterval > 0f)
                 {
                     _coolingDown = true;
-                    this.InvokeGuaranteed(() =>
+                    this.Invoke(() =>
                     {
                         _coolingDown = false;
                     }, _cooldownInterval);

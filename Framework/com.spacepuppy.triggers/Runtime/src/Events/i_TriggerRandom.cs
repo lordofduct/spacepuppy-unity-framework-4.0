@@ -33,6 +33,9 @@ namespace com.spacepuppy.Events
         [SerializeField()]
         private SPTimePeriod _delay = 0f;
 
+        [SerializeField]
+        private bool _invokeGuaranteed;
+
         #endregion
 
         #region Properties
@@ -53,6 +56,12 @@ namespace com.spacepuppy.Events
         {
             get { return _delay; }
             set { _delay = value; }
+        }
+
+        public bool InvokeGuaranteed
+        {
+            get => _invokeGuaranteed;
+            set => _invokeGuaranteed = value;
         }
 
         public IRandom RNG
@@ -77,13 +86,26 @@ namespace com.spacepuppy.Events
 
             if (_delay.Seconds > 0f)
             {
-                this.InvokeGuaranteed(() =>
+                if (_invokeGuaranteed)
                 {
-                    if (!_targets.ActivateRandomTrigger(this, arg, true, _selectOnlyActiveTargets, _rng.Value) && _selectOnlyActiveTargets)
+                    this.InvokeGuaranteed(() =>
                     {
-                        _failOver.ActivateTrigger(this, arg);
-                    }
-                }, _delay.Seconds, _delay.TimeSupplier);
+                        if (!_targets.ActivateRandomTrigger(this, arg, true, _selectOnlyActiveTargets, _rng.Value) && _selectOnlyActiveTargets)
+                        {
+                            _failOver.ActivateTrigger(this, arg);
+                        }
+                    }, _delay.Seconds, _delay.TimeSupplier);
+                }
+                else
+                {
+                    this.Invoke(() =>
+                    {
+                        if (!_targets.ActivateRandomTrigger(this, arg, true, _selectOnlyActiveTargets, _rng.Value) && _selectOnlyActiveTargets)
+                        {
+                            _failOver.ActivateTrigger(this, arg);
+                        }
+                    }, _delay.Seconds, _delay.TimeSupplier, RadicalCoroutineDisableMode.CancelOnDisable);
+                }
             }
             else
             {

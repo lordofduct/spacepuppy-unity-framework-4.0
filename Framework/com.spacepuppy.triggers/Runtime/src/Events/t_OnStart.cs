@@ -14,6 +14,9 @@ namespace com.spacepuppy.Events
         [SerializeField()]
         private SPTimePeriod _delay;
 
+        [SerializeField]
+        private bool _invokeGuaranteed;
+
         [SerializeField()]
         private SPEvent _trigger = new SPEvent();
 
@@ -25,6 +28,12 @@ namespace com.spacepuppy.Events
         {
             get { return _delay; }
             set { _delay = value; }
+        }
+
+        public bool InvokeGuaranteed
+        {
+            get => _invokeGuaranteed;
+            set => _invokeGuaranteed = value;
         }
 
         public SPEvent Trigger => _trigger;
@@ -39,10 +48,20 @@ namespace com.spacepuppy.Events
 
             if (_delay.Seconds > 0f)
             {
-                this.InvokeGuaranteed(() =>
+                if (_invokeGuaranteed)
                 {
-                    _trigger.ActivateTrigger(this, null);
-                }, _delay.Seconds, _delay.TimeSupplier);
+                    this.InvokeGuaranteed(() =>
+                    {
+                        _trigger.ActivateTrigger(this, null);
+                    }, _delay.Seconds, _delay.TimeSupplier);
+                }
+                else
+                {
+                    this.Invoke(() =>
+                    {
+                        _trigger.ActivateTrigger(this, null);
+                    }, _delay.Seconds, _delay.TimeSupplier, RadicalCoroutineDisableMode.CancelOnDisable);
+                }
             }
             else
             {

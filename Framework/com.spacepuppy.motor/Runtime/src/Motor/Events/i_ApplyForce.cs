@@ -27,6 +27,9 @@ namespace com.spacepuppy.Motor.Events
         [SerializeField]
         private SPTimePeriod _delay;
 
+        [SerializeField]
+        private bool _invokeGuaranteed;
+
         #endregion
 
         #region Properties
@@ -51,6 +54,12 @@ namespace com.spacepuppy.Motor.Events
         {
             get => _delay;
             set => _delay = value;
+        }
+
+        public bool InvokeGuaranteed
+        {
+            get => _invokeGuaranteed;
+            set => _invokeGuaranteed = value;
         }
 
         #endregion
@@ -89,10 +98,20 @@ namespace com.spacepuppy.Motor.Events
 
             if (_delay.Seconds > 0f)
             {
-                this.InvokeGuaranteed(() =>
+                if (_invokeGuaranteed)
                 {
-                    this.DoApplyForce(targ);
-                }, _delay.Seconds, _delay.TimeSupplier);
+                    this.InvokeGuaranteed(() =>
+                    {
+                        this.DoApplyForce(targ);
+                    }, _delay.Seconds, _delay.TimeSupplier);
+                }
+                else
+                {
+                    this.Invoke(() =>
+                    {
+                        this.DoApplyForce(targ);
+                    }, _delay.Seconds, _delay.TimeSupplier, RadicalCoroutineDisableMode.CancelOnDisable);
+                }
             }
             else
             {

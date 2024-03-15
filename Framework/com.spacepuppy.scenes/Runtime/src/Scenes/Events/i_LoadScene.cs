@@ -64,12 +64,16 @@ namespace com.spacepuppy.Scenes.Events
         public override bool Trigger(object sender, object arg)
         {
             if (!this.CanTrigger) return false;
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.Log($"i_LoadScene->Load({_scene.SceneName})");
+#endif
             if (string.IsNullOrEmpty(_scene.SceneName)) return false;
 
             var persistentToken = IProxyExtensions.ReduceIfProxy(_persistentToken.Value);
 
             IRadicalWaitHandle handle = _scene.LoadScene(_mode, _behaviour.RestrictAsyncAndAwait(), persistentToken);
-            if(_onComplete.HasReceivers && handle != null)
+            if (_onComplete.HasReceivers && handle != null)
             {
                 handle.OnComplete(o => _onComplete.ActivateTrigger(this, null));
             }

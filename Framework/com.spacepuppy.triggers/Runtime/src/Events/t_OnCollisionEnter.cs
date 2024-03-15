@@ -27,6 +27,17 @@ namespace com.spacepuppy.Events
 
         #endregion
 
+        #region CONSTRUCTOR
+
+        protected override void OnDisable()
+        {
+            base.OnDisable();
+
+            _coolingDown = false;
+        }
+
+        #endregion
+
         #region Properties
 
         public IEventActivatorMask Mask
@@ -70,7 +81,7 @@ namespace com.spacepuppy.Events
 
                 _coolingDown = true;
                 //use global incase this gets disabled
-                this.InvokeGuaranteed(() =>
+                this.Invoke(() =>
                 {
                     _coolingDown = false;
                 }, _cooldownInterval);

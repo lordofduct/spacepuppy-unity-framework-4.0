@@ -28,6 +28,9 @@ namespace com.spacepuppy.Events
         private SPTimePeriod _delay;
 
         [SerializeField]
+        private bool _invokeGuaranteed;
+
+        [SerializeField]
         private RandomRef _rng = new RandomRef();
 
         [Tooltip("Trigger something at the end of the sound effect. This is NOT perfectly accurate and really just starts a timer for the duration of the sound being played.")]
@@ -59,6 +62,12 @@ namespace com.spacepuppy.Events
         {
             get { return _delay; }
             set { _delay = value; }
+        }
+
+        public bool InvokeGuaranteed
+        {
+            get => _invokeGuaranteed;
+            set => _invokeGuaranteed = value;
         }
 
         public IRandom RNG
@@ -112,28 +121,34 @@ namespace com.spacepuppy.Events
 
             if (_delay.Seconds > 0)
             {
-                this.InvokeGuaranteed(() =>
+                if (_invokeGuaranteed)
                 {
-                    if (src != null)
+                    this.InvokeGuaranteed(() =>
                     {
-                        if (this && this.isActiveAndEnabled && _onAudioComplete.HasReceivers)
-                        {
-                            src.PlayOneShot(clip, _interrupt, () =>
-                            {
-                                if (this && this.isActiveAndEnabled) _onAudioComplete.ActivateTrigger(this, null);
-                            });
-                        }
-                        else
-                        {
-                            src.PlayOneShot(clip, _interrupt);
-                        }
-                    }
-                }, _delay.Seconds, _delay.TimeSupplier);
+                        this.DoPlay(src, clip);
+                    }, _delay.Seconds, _delay.TimeSupplier);
+                }
+                else
+                {
+                    this.Invoke(() =>
+                    {
+                        this.DoPlay(src, clip);
+                    }, _delay.Seconds, _delay.TimeSupplier, RadicalCoroutineDisableMode.CancelOnDisable);
+                }
                 return true;
             }
             else
             {
-                if (_onAudioComplete.HasReceivers)
+                this.DoPlay(src, clip);
+                return true;
+            }
+        }
+
+        private void DoPlay(AudioSource src, AudioClip clip)
+        {
+            if (src != null)
+            {
+                if (this && this.isActiveAndEnabled && _onAudioComplete.HasReceivers)
                 {
                     src.PlayOneShot(clip, _interrupt, () =>
                     {
@@ -144,7 +159,6 @@ namespace com.spacepuppy.Events
                 {
                     src.PlayOneShot(clip, _interrupt);
                 }
-                return true;
             }
         }
 

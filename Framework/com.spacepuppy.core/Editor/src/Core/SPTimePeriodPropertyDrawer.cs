@@ -55,4 +55,49 @@ namespace com.spacepuppyeditor.Core
         }
 
     }
+
+    [CustomPropertyDrawer(typeof(SPTimeSpan))]
+    public class SPTimeSpanPropertyDrawer : PropertyDrawer
+    {
+
+        public const string PROP_SECONDS = "_seconds";
+
+        private TimeUnitsSelectorPropertyDrawer _timeDrawer = new TimeUnitsSelectorPropertyDrawer();
+
+        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+        {
+            position = SPEditorGUI.SafePrefixLabel(position, label);
+            this.DrawTimePeriodSansLabel(position, property);
+        }
+
+        protected virtual void DrawTimePeriodSansLabel(Rect position, SerializedProperty property)
+        {
+            var secondsProp = property.FindPropertyRelative(PROP_SECONDS);
+            var w = position.width / 2f;
+            var attrib = this.fieldInfo.GetCustomAttributes(typeof(SPTimeSpan.Config), false).FirstOrDefault() as SPTimeSpan.Config;
+            _timeDrawer.DefaultUnits = attrib?.DefaultUnits ?? null;
+
+            try
+            {
+                EditorHelper.SuppressIndentLevel();
+
+                if (w > 75f)
+                {
+                    position = _timeDrawer.DrawDuration(position, secondsProp, position.width - 75f);
+                    position = _timeDrawer.DrawUnits(position, secondsProp, 75f);
+                }
+                else
+                {
+                    position = _timeDrawer.DrawDuration(position, secondsProp, w);
+                    position = _timeDrawer.DrawUnits(position, secondsProp, w);
+                }
+            }
+            finally
+            {
+                EditorHelper.ResumeIndentLevel();
+            }
+        }
+
+    }
+
 }

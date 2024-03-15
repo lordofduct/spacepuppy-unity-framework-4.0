@@ -17,8 +17,6 @@ namespace com.spacepuppy
         public const float SECONDS_IN_DAY = 86400f;
         public const float SECONDS_IN_WEEK = 604800;
 
-
-
         #region Fields
 
         [SerializeField()]
@@ -137,6 +135,83 @@ namespace com.spacepuppy
         public static implicit operator SPTimePeriod(float seconds)
         {
             return new SPTimePeriod(seconds);
+        }
+
+        #endregion
+
+    }
+
+    [System.Serializable]
+    public struct SPTimeSpan
+    {
+
+        public static SPTimeSpan Zero { get { return new SPTimeSpan(0f); } }
+
+        public const float SECONDS_IN_MINUTE = 60f;
+        public const float SECONDS_IN_HOUR = 3600f;
+        public const float SECONDS_IN_DAY = 86400f;
+        public const float SECONDS_IN_WEEK = 604800;
+
+        #region Fields
+
+        [SerializeField()]
+        private float _seconds;
+
+        #endregion
+
+        #region CONSTRUCTOR
+
+        public SPTimeSpan(float seconds)
+        {
+            _seconds = seconds;
+        }
+
+        #endregion
+
+        #region Properties
+
+        public float Seconds
+        {
+            get { return _seconds; }
+            set { _seconds = value; }
+        }
+
+        #endregion
+
+        #region Special Types
+
+        [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
+        public class Config : System.Attribute
+        {
+            public string DefaultUnits;
+
+            public Config()
+            {
+
+            }
+            public Config(string defaultUnits)
+            {
+                DefaultUnits = defaultUnits;
+            }
+        }
+
+        #endregion
+
+        #region Conversion
+
+        public static implicit operator SPTimeSpan(float seconds)
+        {
+            return new SPTimeSpan(seconds);
+        }
+
+        public static explicit operator SPTimeSpan(System.TimeSpan span)
+        {
+            return new SPTimeSpan((float)span.TotalSeconds);
+        }
+
+        public static implicit operator System.TimeSpan(SPTimeSpan span)
+        {
+            return System.TimeSpan.FromSeconds(span.Seconds);
         }
 
         #endregion

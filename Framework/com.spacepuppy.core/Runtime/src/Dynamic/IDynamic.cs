@@ -1521,6 +1521,122 @@ namespace com.spacepuppy.Dynamic
 
         #endregion
 
+        #region Delegate Creation
+
+        public static System.Action<TInstance> CreateUnboundAction<TInstance>(string methodname, bool includeNonPublic)
+        {
+            var methinfo = GetMembersFromType(typeof(TInstance), includeNonPublic).OfType<MethodInfo>().Where(m => m.ReturnType == typeof(void) && m.GetParameters().Length == 0).FirstOrDefault();
+            if (methinfo == null || methinfo.ReturnType != typeof(void)) return null;
+
+            return methinfo.CreateDelegate(typeof(System.Action<TInstance>)) as System.Action<TInstance>;
+        }
+        public static System.Action<TInstance, T1> CreateUnboundAction<TInstance, T1>(string methodname, bool includeNonPublic)
+        {
+            var methinfo = GetMembersFromType(typeof(TInstance), includeNonPublic).OfType<MethodInfo>().Where(m =>
+            {
+                if (m.ReturnType != typeof(void)) return false;
+                var arr = m.GetParameters();
+                return arr.Length == 1 && typeof(T1).IsAssignableFrom(arr[0].ParameterType);
+            }).FirstOrDefault();
+            if (methinfo == null || methinfo.ReturnType != typeof(void)) return null;
+
+            return methinfo.CreateDelegate(typeof(System.Action<TInstance, T1>)) as System.Action<TInstance, T1>;
+        }
+        public static System.Action<TInstance, T1, T2> CreateUnboundAction<TInstance, T1, T2>(string methodname, bool includeNonPublic)
+        {
+            var methinfo = GetMembersFromType(typeof(TInstance), includeNonPublic).OfType<MethodInfo>().Where(m =>
+            {
+                if (m.ReturnType != typeof(void)) return false;
+                var arr = m.GetParameters();
+                return arr.Length == 2 && typeof(T1).IsAssignableFrom(arr[0].ParameterType) && typeof(T2).IsAssignableFrom(arr[1].ParameterType);
+            }).FirstOrDefault();
+            if (methinfo == null || methinfo.ReturnType != typeof(void)) return null;
+
+            return methinfo.CreateDelegate(typeof(System.Action<TInstance, T1, T2>)) as System.Action<TInstance, T1, T2>;
+        }
+        public static System.Action<TInstance, T1, T2, T3> CreateUnboundAction<TInstance, T1, T2, T3>(string methodname, bool includeNonPublic)
+        {
+            var methinfo = GetMembersFromType(typeof(TInstance), includeNonPublic).OfType<MethodInfo>().Where(m =>
+            {
+                if (m.ReturnType != typeof(void)) return false;
+                var arr = m.GetParameters();
+                return arr.Length == 3 && typeof(T1).IsAssignableFrom(arr[0].ParameterType) && typeof(T2).IsAssignableFrom(arr[1].ParameterType) && typeof(T3).IsAssignableFrom(arr[2].ParameterType);
+            }).FirstOrDefault();
+            if (methinfo == null || methinfo.ReturnType != typeof(void)) return null;
+
+            return methinfo.CreateDelegate(typeof(System.Action<TInstance, T1, T2, T3>)) as System.Action<TInstance, T1, T2, T3>;
+        }
+        public static System.Action<TInstance, T1, T2, T3, T4> CreateUnboundAction<TInstance, T1, T2, T3, T4>(string methodname, bool includeNonPublic)
+        {
+            var methinfo = GetMembersFromType(typeof(TInstance), includeNonPublic).OfType<MethodInfo>().Where(m =>
+            {
+                if (m.ReturnType != typeof(void)) return false;
+                var arr = m.GetParameters();
+                return arr.Length == 4 && typeof(T1).IsAssignableFrom(arr[0].ParameterType) && typeof(T2).IsAssignableFrom(arr[1].ParameterType) && typeof(T3).IsAssignableFrom(arr[2].ParameterType) && typeof(T4).IsAssignableFrom(arr[3].ParameterType);
+            }).FirstOrDefault();
+            if (methinfo == null || methinfo.ReturnType != typeof(void)) return null;
+
+            return methinfo.CreateDelegate(typeof(System.Action<TInstance, T1, T2, T3, T4>)) as System.Action<TInstance, T1, T2, T3, T4>;
+        }
+
+        public static System.Func<TInstance, TReturn> CreateUnboundFunction<TInstance, TReturn>(string methodname, bool includeNonPublic)
+        {
+            var methinfo = GetMembersFromType(typeof(TInstance), includeNonPublic).OfType<MethodInfo>().Where(m => typeof(TReturn).IsAssignableFrom(m.ReturnType) && m.GetParameters().Length == 0).FirstOrDefault();
+            if (methinfo == null) return null;
+
+            return methinfo.CreateDelegate(typeof(System.Func<TInstance, TReturn>)) as System.Func<TInstance, TReturn>;
+        }
+        public static System.Func<TInstance, T1, TReturn> CreateUnboundFunction<TInstance, T1, TReturn>(string methodname, bool includeNonPublic)
+        {
+            var methinfo = GetMembersFromType(typeof(TInstance), includeNonPublic).OfType<MethodInfo>().Where(m =>
+            {
+                if (!typeof(TReturn).IsAssignableFrom(m.ReturnType)) return false;
+                var arr = m.GetParameters();
+                return arr.Length == 1 && typeof(T1).IsAssignableFrom(arr[0].ParameterType);
+            }).FirstOrDefault();
+            if (methinfo == null) return null;
+
+            return methinfo.CreateDelegate(typeof(System.Func<TInstance, T1, TReturn>)) as System.Func<TInstance, T1, TReturn>;
+        }
+        public static System.Func<TInstance, T1, T2, TReturn> CreateUnboundFunction<TInstance, T1, T2, TReturn>(string methodname, bool includeNonPublic)
+        {
+            var methinfo = GetMembersFromType(typeof(TInstance), includeNonPublic).OfType<MethodInfo>().Where(m =>
+            {
+                if (!typeof(TReturn).IsAssignableFrom(m.ReturnType)) return false;
+                var arr = m.GetParameters();
+                return arr.Length == 2 && typeof(T1).IsAssignableFrom(arr[0].ParameterType) && typeof(T2).IsAssignableFrom(arr[1].ParameterType);
+            }).FirstOrDefault();
+            if (methinfo == null) return null;
+
+            return methinfo.CreateDelegate(typeof(System.Func<TInstance, T1, T2, TReturn>)) as System.Func<TInstance, T1, T2, TReturn>;
+        }
+        public static System.Func<TInstance, T1, T2, T3, TReturn> CreateUnboundFunction<TInstance, T1, T2, T3, TReturn>(string methodname, bool includeNonPublic)
+        {
+            var methinfo = GetMembersFromType(typeof(TInstance), includeNonPublic).OfType<MethodInfo>().Where(m =>
+            {
+                if (!typeof(TReturn).IsAssignableFrom(m.ReturnType)) return false;
+                var arr = m.GetParameters();
+                return arr.Length == 3 && typeof(T1).IsAssignableFrom(arr[0].ParameterType) && typeof(T2).IsAssignableFrom(arr[1].ParameterType) && typeof(T3).IsAssignableFrom(arr[2].ParameterType);
+            }).FirstOrDefault();
+            if (methinfo == null) return null;
+
+            return methinfo.CreateDelegate(typeof(System.Func<TInstance, T1, T2, T3, TReturn>)) as System.Func<TInstance, T1, T2, T3, TReturn>;
+        }
+        public static System.Func<TInstance, T1, T2, T3, T4, TReturn> CreateUnboundFunction<TInstance, T1, T2, T3, T4, TReturn>(string methodname, bool includeNonPublic)
+        {
+            var methinfo = GetMembersFromType(typeof(TInstance), includeNonPublic).OfType<MethodInfo>().Where(m =>
+            {
+                if (!typeof(TReturn).IsAssignableFrom(m.ReturnType)) return false;
+                var arr = m.GetParameters();
+                return arr.Length == 4 && typeof(T1).IsAssignableFrom(arr[0].ParameterType) && typeof(T2).IsAssignableFrom(arr[1].ParameterType) && typeof(T3).IsAssignableFrom(arr[2].ParameterType) && typeof(T4).IsAssignableFrom(arr[3].ParameterType);
+            }).FirstOrDefault();
+            if (methinfo == null) return null;
+
+            return methinfo.CreateDelegate(typeof(System.Func<TInstance, T1, T2, T3, T4, TReturn>)) as System.Func<TInstance, T1, T2, T3, T4, TReturn>;
+        }
+
+        #endregion
+
         #region Some Minor Helpers
 
         private static object ReduceSubObject(object obj, string sprop, out string lastProp)

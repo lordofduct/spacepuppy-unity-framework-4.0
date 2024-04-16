@@ -25,12 +25,20 @@ namespace com.spacepuppy
         ConnectedClient = 4,
     }
 
+    [System.Flags]
+    public enum NetworkOwner
+    {
+        Unknown = 0,
+        Server = 1,
+        Local = 2,
+        Remote = 4,
+    }
+
     public static class NetcodeExtensions
     {
 
-        static System.Reflection.FieldInfo FIELD_NETWORKOBJ_GLOBALOBJID = typeof(NetworkObject).GetField("GlobalObjectIdHash", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
-
-        public static uint GetGlobalObjectIdHash(this NetworkObject no) => (uint)FIELD_NETWORKOBJ_GLOBALOBJID.GetValue(no);
+        static readonly System.Reflection.FieldInfo FIELD_NETWORKOBJ_GLOBALOBJID = typeof(NetworkObject).GetField("GlobalObjectIdHash", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
+        public static uint GetGlobalObjectIdHash(this NetworkObject no) => FIELD_NETWORKOBJ_GLOBALOBJID != null ? (uint)FIELD_NETWORKOBJ_GLOBALOBJID.GetValue(no) : 0;
 
 
         public static NetworkRelationship GetNetworkRelationship(this NetworkManager manager)
@@ -67,6 +75,49 @@ namespace com.spacepuppy
                 return manager.IsConnectedClient ? NetworkRelationship.ConnectedClient : NetworkRelationship.Client;
             else
                 return NetworkRelationship.Offline;
+        }
+
+        public static NetworkOwner GetNetworkOwner(this NetworkObject nobj)
+        {
+            NetworkOwner owner = NetworkOwner.Unknown;
+            if (nobj)
+            {
+                if (nobj.IsOwnedByServer)
+                {
+                    owner |= NetworkOwner.Server;
+                }
+                if (nobj.OwnerClientId == nobj.NetworkManager.LocalClientId)
+                {
+                    owner |= NetworkOwner.Local;
+                }
+                else
+                {
+                    owner |= NetworkOwner.Remote;
+                }
+            }
+            return owner;
+        }
+
+        public static NetworkOwner GetNetworkOwner(this NetworkBehaviour behavior)
+        {
+            var nobj = behavior ? behavior.NetworkObject : null;
+            NetworkOwner owner = NetworkOwner.Unknown;
+            if (nobj)
+            {
+                if (nobj.IsOwnedByServer)
+                {
+                    owner |= NetworkOwner.Server;
+                }
+                if (nobj.OwnerClientId == nobj.NetworkManager.LocalClientId)
+                {
+                    owner |= NetworkOwner.Local;
+                }
+                else
+                {
+                    owner |= NetworkOwner.Remote;
+                }
+            }
+            return owner;
         }
 
         #region NetworkManager Async Extensions
@@ -152,6 +203,66 @@ namespace com.spacepuppy
                 nlst.Add(v);
             }
         }
+
+        #endregion
+
+        #region NetworkPrefabHandler Extension Methods
+
+        static System.Func<NetworkPrefabHandler, uint, bool> __METHOD_NETWORKPREFABHANDLER_CONTAINSHANDLER_UINT;
+        static System.Func<NetworkPrefabHandler, uint, bool> METHOD_NETWORKPREFABHANDLER_CONTAINSHANDLER_UINT
+        {
+            get
+            {
+                if (__METHOD_NETWORKPREFABHANDLER_CONTAINSHANDLER_UINT == null)
+                {
+                    __METHOD_NETWORKPREFABHANDLER_CONTAINSHANDLER_UINT = com.spacepuppy.Dynamic.DynamicUtil.CreateUnboundFunction<NetworkPrefabHandler, uint, bool>("ContainsHandler", true);
+                    var methinfo = typeof(NetworkPrefabHandler).GetMethod("ContainsHandler", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public, null, new[] { typeof(uint) }, null);
+                    if (__METHOD_NETWORKPREFABHANDLER_CONTAINSHANDLER_UINT == null)
+                    {
+                        __METHOD_NETWORKPREFABHANDLER_CONTAINSHANDLER_UINT = (a, b) => false;
+                        UnityEngine.Debug.LogWarning("This version of Spacepuppy Framework does not support the version of Unity it's being used with. (ObjUtil)");
+                    }
+                }
+                return __METHOD_NETWORKPREFABHANDLER_CONTAINSHANDLER_UINT;
+            }
+        }
+        public static bool ContainsHandler(this NetworkPrefabHandler prefabhandler, uint networkobjid) => METHOD_NETWORKPREFABHANDLER_CONTAINSHANDLER_UINT.Invoke(prefabhandler, networkobjid);
+
+        static System.Func<NetworkPrefabHandler, NetworkObject, bool> __METHOD_NETWORKPREFABHANDLER_CONTAINSHANDLER_NOBJ;
+        static System.Func<NetworkPrefabHandler, NetworkObject, bool> METHOD_NETWORKPREFABHANDLER_CONTAINSHANDLER_NOBJ
+        {
+            get
+            {
+                if (__METHOD_NETWORKPREFABHANDLER_CONTAINSHANDLER_NOBJ == null)
+                {
+                    __METHOD_NETWORKPREFABHANDLER_CONTAINSHANDLER_NOBJ = com.spacepuppy.Dynamic.DynamicUtil.CreateUnboundFunction<NetworkPrefabHandler, NetworkObject, bool>("ContainsHandler", true);
+                    var methinfo = typeof(NetworkPrefabHandler).GetMethod("ContainsHandler", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public, null, new[] { typeof(uint) }, null);
+                    if (__METHOD_NETWORKPREFABHANDLER_CONTAINSHANDLER_NOBJ == null)
+                    {
+                        __METHOD_NETWORKPREFABHANDLER_CONTAINSHANDLER_NOBJ = (a, b) => false;
+                        UnityEngine.Debug.LogWarning("This version of Spacepuppy Framework does not support the version of Unity it's being used with. (ObjUtil)");
+                    }
+                }
+                return __METHOD_NETWORKPREFABHANDLER_CONTAINSHANDLER_NOBJ;
+            }
+        }
+        public static bool ContainsHandler(this NetworkPrefabHandler prefabhandler, NetworkObject nobj) => METHOD_NETWORKPREFABHANDLER_CONTAINSHANDLER_NOBJ.Invoke(prefabhandler, nobj);
+        public static bool ContainsHandler(this NetworkPrefabHandler prefabhandler, GameObject go) => METHOD_NETWORKPREFABHANDLER_CONTAINSHANDLER_NOBJ.Invoke(prefabhandler, go.GetComponent<NetworkObject>());
+
+#if NETCODE_1_4_ORNEWER
+        public static bool TryAddNetworkPrefab(this NetworkManager manager, GameObject go)
+        {
+            if (go && manager != null && !manager.NetworkConfig.Prefabs.Contains(go))
+            {
+                manager.PrefabHandler.AddNetworkPrefab(go);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+#endif
 
         #endregion
 

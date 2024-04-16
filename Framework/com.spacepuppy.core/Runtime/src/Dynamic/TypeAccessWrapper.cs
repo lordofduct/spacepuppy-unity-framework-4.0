@@ -382,8 +382,9 @@ namespace com.spacepuppy.Dynamic
 
         #endregion
 
-        #region Unbound Method Accessor
+        #region Unbound Method Accessor - an unbound method requires the instance object as the first parameter
 
+#if ENABLE_MONO //THIS IS ONLY SUPPORTED IN MONO
         public Delegate GetUnboundAction(string name)
         {
             var dtp = typeof(Action<>).MakeGenericType(_wrappedType);
@@ -443,6 +444,7 @@ namespace com.spacepuppy.Dynamic
             var dtp = typeof(Func<,,,,,>).MakeGenericType(_wrappedType, typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(TReturn));
             return this.GetUnboundMethod(name, dtp);
         }
+#endif
 
         #endregion
 

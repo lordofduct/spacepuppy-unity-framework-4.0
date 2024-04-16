@@ -115,6 +115,22 @@ namespace com.spacepuppy.Scenes
             return false;
         }
 
+        public int GetBuildIndex()
+        {
+            if (this.IsBuildIndexReference(out int bi))
+            {
+                return bi;
+            }
+            else if (this.IsScenePath())
+            {
+                return SceneUtility.GetBuildIndexByScenePath(_sceneName);
+            }
+            else
+            {
+                return -1;
+            }
+        }
+
         /// <summary>
         /// This will unravel whatever data is in 'SceneName' into its true SceneName. 
         /// If it's a buildIndex formatted as #0 it will lookup the scene name from the SceneUtility. 

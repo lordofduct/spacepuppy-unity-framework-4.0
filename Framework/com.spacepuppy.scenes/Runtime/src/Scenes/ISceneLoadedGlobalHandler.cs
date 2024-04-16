@@ -16,9 +16,6 @@
         void OnSceneLoaded(LoadSceneOptions options);
     }
 
-    /// <summary>
-    /// A found message receiver to handle OnSceneLoaded event.
-    /// </summary>
     public interface ILoadSceneOptionsCompleteGlobalHandler
     {
 

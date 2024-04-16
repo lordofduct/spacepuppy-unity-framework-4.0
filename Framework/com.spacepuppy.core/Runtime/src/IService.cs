@@ -858,11 +858,20 @@ namespace com.spacepuppy
             {
                 this.OnValidAwake();
             }
+            else
+            {
+                this.OnFailedAwake();
+            }
         }
 
         private bool ValidateService() => Services.ValidateService<T>(this as T, _serviceRegistrationOptions.AutoRegisterService, _serviceRegistrationOptions.MultipleServiceResolution);
 
         protected virtual void OnValidAwake()
+        {
+
+        }
+
+        protected virtual void OnFailedAwake()
         {
 
         }
@@ -1116,9 +1125,18 @@ namespace com.spacepuppy
             {
                 this.OnValidAwake();
             }
+            else
+            {
+                this.OnFailedAwake();
+            }
         }
 
         protected virtual void OnValidAwake()
+        {
+
+        }
+
+        protected virtual void OnFailedAwake()
         {
 
         }

@@ -40,8 +40,6 @@ namespace com.spacepuppy.Scenes
     public abstract class LoadSceneOptions : System.EventArgs, IProgressingYieldInstruction, IRadicalWaitHandle, IRadicalEnumerator, ISPDisposable, System.ICloneable
     {
 
-        private static readonly System.Action<ILoadSceneOptionsCompleteGlobalHandler, LoadSceneOptions> OnCompleteFunctor = (o, d) => o.OnComplete(d);
-
         public event System.EventHandler<LoadSceneOptions> BeforeLoadBegins;
         public event System.EventHandler<LoadSceneOptions> BeforeSceneLoadCalled;
         public event System.EventHandler<LoadSceneOptions> Complete;
@@ -239,17 +237,6 @@ namespace com.spacepuppy.Scenes
             {
                 Debug.LogException(ex);
             }
-            try
-            {
-                if (_parent != null)
-                {
-                    Messaging.Broadcast(this, OnCompleteFunctor);
-                }
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogException(ex);
-            }
         }
 
         /// <summary>
@@ -276,17 +263,6 @@ namespace com.spacepuppy.Scenes
             try
             {
                 d?.Invoke(this, this);
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogException(ex);
-            }
-            try
-            {
-                if (_parent != null)
-                {
-                    Messaging.Broadcast(this, OnCompleteFunctor);
-                }
             }
             catch (System.Exception ex)
             {

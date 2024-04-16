@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
+
 using com.spacepuppy.Async;
 using com.spacepuppy.Utils;
 
@@ -30,6 +31,117 @@ namespace com.spacepuppy.Scenes
         public SPSceneManager()
         {
             _implementation = new StandardSPSceneManagerImplementation();
+        }
+
+        protected override void OnValidAwake()
+        {
+            _implementation?.Initialize(this);
+        }
+
+        protected override void OnDestroy()
+        {
+            base.OnDestroy();
+
+            _implementation?.Dispose();
+        }
+
+        #endregion
+
+        #region ISceneManager Interface
+
+        public event System.EventHandler<LoadSceneOptions> BeforeSceneLoaded
+        {
+            add => _implementation.BeforeSceneLoaded += value;
+            remove => _implementation.BeforeSceneLoaded -= value;
+        }
+
+        public event System.EventHandler<SceneUnloadedEventArgs> BeforeSceneUnloaded
+        {
+            add => _implementation.BeforeSceneUnloaded += value;
+            remove => _implementation.BeforeSceneUnloaded -= value;
+        }
+        public event System.EventHandler<SceneUnloadedEventArgs> SceneUnloaded
+        {
+            add => _implementation.SceneUnloaded += value;
+            remove => _implementation.SceneUnloaded -= value;
+        }
+        public event System.EventHandler<LoadSceneOptions> SceneLoaded
+        {
+            add => _implementation.SceneLoaded += value;
+            remove => _implementation.SceneLoaded -= value;
+        }
+        public event System.EventHandler<ActiveSceneChangedEventArgs> ActiveSceneChanged
+        {
+            add => _implementation.ActiveSceneChanged += value;
+            remove => _implementation.ActiveSceneChanged -= value;
+        }
+        public event System.EventHandler<LoadSceneOptions> BeganLoad
+        {
+            add => _implementation.BeganLoad += value;
+            remove => _implementation.BeganLoad -= value;
+        }
+        public event System.EventHandler<LoadSceneOptions> CompletedLoad
+        {
+            add => _implementation.CompletedLoad += value;
+            remove => _implementation.CompletedLoad -= value;
+        }
+
+        public virtual void LoadScene(LoadSceneOptions options)
+        {
+            if (options == null) throw new System.ArgumentNullException(nameof(options));
+
+            if (GameLoop.InvokeRequired)
+            {
+                GameLoop.UpdateHandle.Invoke(() => this.LoadScene(options));
+            }
+            else
+            {
+                _implementation.LoadScene(options);
+            }
+        }
+
+        public virtual AsyncWaitHandle UnloadScene(Scene scene)
+        {
+            return _implementation.UnloadScene(scene);
+        }
+
+        public virtual LoadSceneInternalResult LoadSceneInternal(SceneRef scene, LoadSceneParameters parameters, LoadSceneBehaviour behaviour) => SceneManagerUtils.LoadSceneInternal(scene, parameters, behaviour);
+
+        #endregion
+
+    }
+
+    public abstract class BaseSPSceneManagerComponent : ServiceComponent<ISceneManager>, ISceneManager
+    {
+
+        #region Fields
+
+        private StandardSPSceneManagerImplementation _implementation;
+
+        #endregion
+
+        #region CONSTRUCTOR
+
+        public BaseSPSceneManagerComponent() : base()
+        {
+            _implementation = new StandardSPSceneManagerImplementation();
+        }
+
+        public BaseSPSceneManagerComponent(StandardSPSceneManagerImplementation implementation) : base()
+        {
+            _implementation = implementation ?? new StandardSPSceneManagerImplementation();
+        }
+
+        public BaseSPSceneManagerComponent(Services.AutoRegisterOption autoRegister, Services.MultipleServiceResolutionOption multipleServiceResolution, Services.UnregisterResolutionOption unregisterResolution)
+            : base(autoRegister, multipleServiceResolution, unregisterResolution)
+        {
+            _implementation = new StandardSPSceneManagerImplementation();
+        }
+
+        public BaseSPSceneManagerComponent(StandardSPSceneManagerImplementation implementation, Services.AutoRegisterOption autoRegister, Services.MultipleServiceResolutionOption multipleServiceResolution, Services.UnregisterResolutionOption unregisterResolution)
+            : base(autoRegister, multipleServiceResolution, unregisterResolution)
+        {
+            _implementation = implementation ?? new StandardSPSceneManagerImplementation();
         }
 
         protected override void OnValidAwake()
@@ -168,6 +280,8 @@ namespace com.spacepuppy.Scenes
             set => _owner = value;
         }
 
+        public virtual bool DispatchGlobalHandlerMessages => true;
+
         #endregion
 
         #region Disposable Interface
@@ -247,7 +361,7 @@ namespace com.spacepuppy.Scenes
         protected virtual void OnBeganLoad(LoadSceneOptions handle)
         {
             this.BeganLoad?.Invoke(this, handle);
-            if (Messaging.HasRegisteredGlobalListener<ISceneManagerBeganLoadGlobalHandler>())
+            if (this.DispatchGlobalHandlerMessages && Messaging.HasRegisteredGlobalListener<ISceneManagerBeganLoadGlobalHandler>())
             {
                 Messaging.Broadcast<ISceneManagerBeganLoadGlobalHandler, LoadSceneOptions>(handle, (o, a) => o.OnSceneManagerBeganLoad(a));
             }
@@ -256,7 +370,7 @@ namespace com.spacepuppy.Scenes
         protected virtual void OnBeforeSceneLoaded(LoadSceneOptions handle)
         {
             this.BeforeSceneLoaded?.Invoke(this, handle);
-            if (Messaging.HasRegisteredGlobalListener<IBeforeSceneLoadedGlobalHandler>())
+            if (this.DispatchGlobalHandlerMessages && Messaging.HasRegisteredGlobalListener<IBeforeSceneLoadedGlobalHandler>())
             {
                 Messaging.Broadcast<IBeforeSceneLoadedGlobalHandler, LoadSceneOptions>(handle, (o, a) => o.OnBeforeSceneLoaded(a));
             }
@@ -265,7 +379,7 @@ namespace com.spacepuppy.Scenes
         protected virtual void OnBeforeSceneUnloaded(Scene scene)
         {
             var d = this.BeforeSceneUnloaded;
-            if (d == null && !Messaging.HasRegisteredGlobalListener<IBeforeSceneUnloadedGlobalHandler>()) return;
+            if (d == null && !(this.DispatchGlobalHandlerMessages && Messaging.HasRegisteredGlobalListener<IBeforeSceneUnloadedGlobalHandler>())) return;
 
             var e = _unloadArgs;
             _unloadArgs = null;
@@ -275,7 +389,7 @@ namespace com.spacepuppy.Scenes
                 e.Scene = scene;
 
             d?.Invoke(this, e);
-            Messaging.Broadcast<IBeforeSceneUnloadedGlobalHandler, System.ValueTuple<ISceneManager, SceneUnloadedEventArgs>>((_owner, e), (o, a) => o.OnBeforeSceneUnloaded(a.Item1, a.Item2));
+            if (this.DispatchGlobalHandlerMessages) Messaging.Broadcast<IBeforeSceneUnloadedGlobalHandler, System.ValueTuple<ISceneManager, SceneUnloadedEventArgs>>((_owner, e), (o, a) => o.OnBeforeSceneUnloaded(a.Item1, a.Item2));
 
             _unloadArgs = e;
             _unloadArgs.Scene = default(Scene);
@@ -284,7 +398,7 @@ namespace com.spacepuppy.Scenes
         protected virtual void OnSceneUnloaded(Scene scene)
         {
             var d = this.SceneUnloaded;
-            if (d == null && !Messaging.HasRegisteredGlobalListener<ISceneUnloadedGlobalHandler>()) return;
+            if (d == null && !(this.DispatchGlobalHandlerMessages && Messaging.HasRegisteredGlobalListener<ISceneUnloadedGlobalHandler>())) return;
 
             var e = _unloadArgs;
             _unloadArgs = null;
@@ -294,7 +408,7 @@ namespace com.spacepuppy.Scenes
                 e.Scene = scene;
 
             d?.Invoke(this, e);
-            Messaging.Broadcast<ISceneUnloadedGlobalHandler, System.ValueTuple<ISceneManager, SceneUnloadedEventArgs>>((_owner, e), (o, a) => o.OnSceneUnloaded(a.Item1, a.Item2));
+            if (this.DispatchGlobalHandlerMessages) Messaging.Broadcast<ISceneUnloadedGlobalHandler, System.ValueTuple<ISceneManager, SceneUnloadedEventArgs>>((_owner, e), (o, a) => o.OnSceneUnloaded(a.Item1, a.Item2));
 
             _unloadArgs = e;
             _unloadArgs.Scene = default(Scene);
@@ -303,8 +417,7 @@ namespace com.spacepuppy.Scenes
         protected virtual void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
             var d1 = this.SceneLoaded;
-            var d2 = this.CompletedLoad;
-            if (d1 == null && d2 == null && !Messaging.HasRegisteredGlobalListener<ISceneLoadedGlobalHandler>()) return;
+            if (d1 == null && this.CompletedLoad == null && !(this.DispatchGlobalHandlerMessages && Messaging.HasRegisteredGlobalListener<ISceneLoadedGlobalHandler>())) return;
 
             LoadSceneOptions handle = null;
             if (_activeLoadOptions.Count > 0)
@@ -325,27 +438,34 @@ namespace com.spacepuppy.Scenes
                 //signal loading unmanaged scene load
                 handle = new UnmanagedSceneLoadedEventArgs(scene, mode);
                 d1?.Invoke(this, handle);
-                d2?.Invoke(this, handle);
+                if (this.DispatchGlobalHandlerMessages && Messaging.HasRegisteredGlobalListener<ISceneLoadedGlobalHandler>())
+                {
+                    Messaging.Broadcast<ISceneLoadedGlobalHandler, LoadSceneOptions>(handle, (o, a) => o.OnSceneLoaded(a));
+                }
+                this.OnCompletedLoad(handle);
             }
             else
             {
                 d1?.Invoke(this, handle);
-            }
-
-            if (Messaging.HasRegisteredGlobalListener<ISceneLoadedGlobalHandler>())
-            {
-                Messaging.Broadcast<ISceneLoadedGlobalHandler, LoadSceneOptions>(handle, (o, a) => o.OnSceneLoaded(a));
+                if (this.DispatchGlobalHandlerMessages && Messaging.HasRegisteredGlobalListener<ISceneLoadedGlobalHandler>())
+                {
+                    Messaging.Broadcast<ISceneLoadedGlobalHandler, LoadSceneOptions>(handle, (o, a) => o.OnSceneLoaded(a));
+                }
             }
         }
         protected virtual void OnCompletedLoad(LoadSceneOptions options)
         {
             this.CompletedLoad?.Invoke(this, options);
+            if (this.DispatchGlobalHandlerMessages && Messaging.HasRegisteredGlobalListener<ILoadSceneOptionsCompleteGlobalHandler>())
+            {
+                Messaging.Broadcast<ILoadSceneOptionsCompleteGlobalHandler, LoadSceneOptions>(options, (o, a) => o.OnComplete(a));
+            }
         }
 
         protected virtual void OnActiveSceneChanged(Scene lastScene, Scene nextScene)
         {
             var d = this.ActiveSceneChanged;
-            if (d == null && !Messaging.HasRegisteredGlobalListener<IActiveSceneChangedGlobalHandler>()) return;
+            if (d == null && !(this.DispatchGlobalHandlerMessages && Messaging.HasRegisteredGlobalListener<IActiveSceneChangedGlobalHandler>())) return;
 
             var e = _activeChangeArgs;
             _activeChangeArgs = null;
@@ -360,7 +480,7 @@ namespace com.spacepuppy.Scenes
             }
 
             d?.Invoke(this, e);
-            Messaging.Broadcast<IActiveSceneChangedGlobalHandler, System.ValueTuple<ISceneManager, ActiveSceneChangedEventArgs>>((_owner, e), (o, a) => o.OnActiveSceneChanged(a.Item1, a.Item2));
+            if (this.DispatchGlobalHandlerMessages) Messaging.Broadcast<IActiveSceneChangedGlobalHandler, System.ValueTuple<ISceneManager, ActiveSceneChangedEventArgs>>((_owner, e), (o, a) => o.OnActiveSceneChanged(a.Item1, a.Item2));
 
             _activeChangeArgs = e;
             _activeChangeArgs.LastScene = default(Scene);
@@ -371,22 +491,49 @@ namespace com.spacepuppy.Scenes
 
     }
 
+    /// <summary>
+    /// Special implementation of ISceneManager used internally as a wrapper around unity standard load methods.
+    /// </summary>
     internal class InternalSceneManager : StandardSPSceneManagerImplementation, ISceneManager
     {
 
         public static readonly InternalSceneManager Instance = new InternalSceneManager();
+
+        #region Static Initializer
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSplashScreen)]
+        static void Init()
+        {
+            if (Services.SPInternal_GetDefaultService<IEventSystem>() == null)
+            {
+                Services.SPInternal_RegisterDefaultService<ISceneManager>(Instance);
+            }
+        }
+
+        #endregion
+
+        private bool _registered;
 
         private InternalSceneManager() : base()
         {
             this.Initialize(this);
         }
 
+        public override bool DispatchGlobalHandlerMessages => _registered;
+
         public LoadSceneInternalResult LoadSceneInternal(SceneRef scene, LoadSceneParameters parameters, LoadSceneBehaviour behaviour) => SceneManagerUtils.LoadSceneInternal(scene, parameters, behaviour);
 
         //not treated as an actual service, this are ignored
-        event System.EventHandler IService.ServiceUnregistered { add { } remove { } }
-        void IService.OnServiceRegistered(System.Type serviceTypeRegisteredAs) => throw new System.InvalidOperationException();
-        void IService.OnServiceUnregistered() => throw new System.InvalidOperationException();
+        public event System.EventHandler ServiceUnregistered;
+        void IService.OnServiceRegistered(System.Type serviceTypeRegisteredAs)
+        {
+            _registered = true;
+        }
+        void IService.OnServiceUnregistered()
+        {
+            _registered = false;
+            this.ServiceUnregistered?.Invoke(this, System.EventArgs.Empty);
+        }
 
     }
 

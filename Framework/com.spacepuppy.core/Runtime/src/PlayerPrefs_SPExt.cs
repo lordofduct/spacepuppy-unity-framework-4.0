@@ -76,6 +76,30 @@ namespace com.spacepuppy
             var s = PlayerPrefs.GetString(key, null);
             if (string.IsNullOrEmpty(s) || !s.Contains('|')) return defaultValue;
 
+#if UNITY_2022_2_OR_NEWER
+            var arr = s.Split('|');
+            if (arr.Length < 3) return defaultValue;
+
+            int w, h, rn, rd;
+            if (!int.TryParse(arr[0], out w)) return defaultValue;
+            if (!int.TryParse(arr[1], out h)) return defaultValue;
+            if (!int.TryParse(arr[2], out rn)) return defaultValue;
+            if (arr.Length > 3) //is 2022_2 or later
+            {
+                int.TryParse(arr[3], out rd);
+            }
+            else //is in 2021 or older format
+            {
+                rd = 1;
+            }
+
+            return new Resolution()
+            {
+                width = w,
+                height = h,
+                refreshRateRatio = new RefreshRate() { numerator = (uint)rn, denominator = (uint)rd }
+            };
+#else
             var arr = s.Split('|');
             if (arr.Length != 3) return defaultValue;
 
@@ -83,12 +107,14 @@ namespace com.spacepuppy
             if (!int.TryParse(arr[0], out w)) return defaultValue;
             if (!int.TryParse(arr[1], out h)) return defaultValue;
             if (!int.TryParse(arr[2], out r)) return defaultValue;
+
             return new Resolution()
             {
                 width = w,
                 height = h,
                 refreshRate = r
             };
+#endif
         }
 
         public static void SetResolution(string key, Resolution? resolution)
@@ -99,8 +125,13 @@ namespace com.spacepuppy
             }
             else
             {
+#if UNITY_2022_2_OR_NEWER
+                var res = resolution.Value;
+                PlayerPrefs.SetString(key, $"{res.width}|{res.height}|{res.refreshRateRatio.numerator}|{res.refreshRateRatio.denominator}");
+#else
                 var res = resolution.Value;
                 PlayerPrefs.SetString(key, $"{res.width}|{res.height}|{res.refreshRate}");
+#endif
             }
         }
 

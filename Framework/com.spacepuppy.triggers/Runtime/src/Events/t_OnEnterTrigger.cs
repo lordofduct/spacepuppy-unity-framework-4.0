@@ -98,7 +98,7 @@ namespace com.spacepuppy.Events
             {
                 _onEnterTrigger.ActivateTrigger(this, other);
 
-                if (_cooldownInterval > 0f)
+                if (_cooldownInterval > 0f && this.isActiveAndEnabled) //test if activeAndEnabled incase the '_onTriggerEnter' event disabled this
                 {
                     _coolingDown = true;
                     this.Invoke(() =>

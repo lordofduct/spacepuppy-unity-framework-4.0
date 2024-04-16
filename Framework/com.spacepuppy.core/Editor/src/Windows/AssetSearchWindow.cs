@@ -67,6 +67,12 @@ namespace com.spacepuppyeditor.Windows
 
         private void OnGUI()
         {
+            //general unity info
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.SelectableLabel($"Unity {Application.unityVersion}    PID: {System.Diagnostics.Process.GetCurrentProcess().Id}", EditorStyles.helpBox, GUILayout.ExpandWidth(true), GUILayout.Height(18f));
+            EditorGUILayout.EndHorizontal();
+
+            //actual search tool
             const string CTRL_SEACHSTRING = "AssetSearchWindow.SearchString";
             string pressedEnterCtrl = null;
             if (Event.current.type == EventType.KeyDown && (Event.current.keyCode == KeyCode.KeypadEnter || Event.current.keyCode == KeyCode.Return))

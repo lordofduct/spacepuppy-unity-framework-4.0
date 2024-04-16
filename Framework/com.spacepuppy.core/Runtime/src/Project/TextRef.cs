@@ -3,6 +3,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.Project
 {
@@ -17,6 +18,30 @@ namespace com.spacepuppy.Project
         private string[] _text;
         [SerializeField]
         private UnityEngine.Object _obj;
+
+        #endregion
+
+        #region CONSTRUCTOR
+
+        public TextRef() { }
+
+        public TextRef(string str)
+        {
+            _text = new string[] { str ?? string.Empty };
+            _obj = null;
+        }
+
+        public TextRef(IEnumerable<string> strings)
+        {
+            _text = strings.ToArray();
+            _obj = null;
+        }
+
+        public TextRef(UnityEngine.Object src)
+        {
+            _text = null;
+            _obj = src;
+        }
 
         #endregion
 
@@ -35,9 +60,9 @@ namespace com.spacepuppy.Project
         {
             get
             {
-                if (_obj != null && _obj is ITextSource)
+                if (_obj is ITextSource)
                     return (_obj as ITextSource).Count;
-                else if (_obj is TextAsset)
+                else if (!object.ReferenceEquals(_obj, null))
                     return 1;
                 else
                     return _text != null ? _text.Length : 0;
@@ -48,10 +73,10 @@ namespace com.spacepuppy.Project
         {
             get
             {
-                if (_obj != null && _obj is ITextSource)
+                if (_obj is ITextSource)
                     return (_obj as ITextSource).text;
-                else if (_obj is TextAsset)
-                    return (_obj as TextAsset).text;
+                else if (!object.ReferenceEquals(_obj, null))
+                    return StringUtil.TryGetText(_obj);
                 else
                     return _text != null && _text.Length > 0 ? _text[0] : null;
             }
@@ -62,16 +87,18 @@ namespace com.spacepuppy.Project
             get
             {
                 if (_obj != null && _obj is ITextSource)
-                    return (_obj as ITextSource)[index];
-                else if (_obj is TextAsset)
                 {
-                    if(index != 0)
+                    return (_obj as ITextSource)[index];
+                }
+                else if (!object.ReferenceEquals(_obj, null))
+                {
+                    if (index != 0)
                         throw new System.IndexOutOfRangeException("index");
-                    return (_obj as TextAsset).text;
+                    return StringUtil.TryGetText(_obj);
                 }
                 else
                 {
-                    if(_text == null || _text.Length == 0 || index < 0 || index >= _text.Length)
+                    if (_text == null || _text.Length == 0 || index < 0 || index >= _text.Length)
                         throw new System.IndexOutOfRangeException("index");
                     return _text[index];
                 }
@@ -86,7 +113,7 @@ namespace com.spacepuppy.Project
         {
             if (_obj != null && _obj is ITextSource)
                 return (_obj as ITextSource).GetEnumerator();
-            else if (_obj is TextAsset)
+            else if (!object.ReferenceEquals(_obj, null))
                 return FromTextAsset(_obj as TextAsset);
             else if (_text != null && _text.Length > 0)
                 return (_text as IEnumerable<string>).GetEnumerator();
@@ -100,9 +127,9 @@ namespace com.spacepuppy.Project
         }
 
 
-        private static IEnumerator<string> FromTextAsset(TextAsset text)
+        private static IEnumerator<string> FromTextAsset(UnityEngine.Object text)
         {
-            yield return text.text;
+            yield return StringUtil.TryGetText(text);
         }
 
         #endregion

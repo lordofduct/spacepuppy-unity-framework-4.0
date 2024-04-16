@@ -4,10 +4,12 @@ using UnityEditorInternal;
 using System.Collections.Generic;
 using System.Linq;
 
+using com.spacepuppy;
 using com.spacepuppy.Project;
 using com.spacepuppy.Utils;
 
 using com.spacepuppyeditor.Internal;
+using com.spacepuppyeditor.Core;
 
 namespace com.spacepuppyeditor.Project
 {
@@ -36,6 +38,15 @@ namespace com.spacepuppyeditor.Project
 
         private bool _disallowFoldout;
         private System.Action<Rect, SerializedProperty, GUIContent, int> _elementLabelCallback;
+        private TypeRestrictionPropertyDrawer _objPropertyDrawer = new TypeRestrictionPropertyDrawer()
+        {
+#if SP_TMPRO
+            InheritsFromTypes = new System.Type[] { typeof(ITextSource), typeof(TextAsset), typeof(UnityEngine.UI.Text), typeof(UnityEngine.UI.InputField), typeof(TMPro.TMP_Text), typeof(TMPro.TMP_InputField) },
+#else
+            InheritsFromTypes = new System.Type[] { typeof(ITextSource), typeof(TextAsset), typeof(UnityEngine.UI.Text), typeof(UnityEngine.UI.InputField) },
+#endif
+            AllowProxy = false,
+        };
 
         private CachedReorderableList _lst;
         private SerializedProperty _textProp;
@@ -44,7 +55,7 @@ namespace com.spacepuppyeditor.Project
         private Mode _mode;
         private bool _manuallyConfigured;
 
-        #endregion
+#endregion
 
         #region CONSTRUCTOR
 
@@ -136,7 +147,7 @@ namespace com.spacepuppyeditor.Project
                 _lst.displayRemove = false;
                 _lst.elementHeight = EditorGUIUtility.singleLineHeight * TEXTSRC_AREA_LINES + EditorGUIUtility.singleLineHeight + 3f;
             }
-            else if (_objProp.objectReferenceValue is TextAsset)
+            else if (StringUtil.GetAsTextBindingTarget(_objProp.objectReferenceValue, true) != null)
             {
                 _mode = Mode.TextAsset;
                 _textProp.arraySize = 1;
@@ -190,7 +201,7 @@ namespace com.spacepuppyeditor.Project
                     lst.elementHeight = EditorGUIUtility.singleLineHeight * TEXTSRC_AREA_LINES + EditorGUIUtility.singleLineHeight + 3f;
                     h += lst.GetHeight();
                 }
-                else if (objProp.objectReferenceValue is TextAsset)
+                else if (StringUtil.GetAsTextBindingTarget(objProp.objectReferenceValue, true) != null)
                 {
                     textProp.arraySize = 1;
 
@@ -239,8 +250,11 @@ namespace com.spacepuppyeditor.Project
                 }
                 else
                 {
-                    property.isExpanded = EditorGUI.Foldout(position, property.isExpanded, GUIContent.none);
-                    ReorderableListHelper.DrawRetractedHeader(position, label);
+                    this.OnGUIStart(property, label);
+                    var foldoutRect = new Rect(position.xMin, position.yMin, 20f, EditorGUIUtility.singleLineHeight);
+                    property.isExpanded = EditorGUI.Foldout(foldoutRect, property.isExpanded, GUIContent.none);
+                    ReorderableListHelper.DrawRetractedHeader(position, GUIContent.none);
+                    _maskList_DrawHeader(new Rect(position.xMin + 6f, position.yMin, position.width - 12f, position.height - 2f));
                 }
             }
         }
@@ -252,10 +266,11 @@ namespace com.spacepuppyeditor.Project
         private void _maskList_DrawHeader(Rect area)
         {
             var objArea = new Rect(area.xMin, area.yMin + 1f, area.width, EditorGUIUtility.singleLineHeight);
-            //_objProp.objectReferenceValue = EditorGUI.ObjectField(objArea, _label, _objProp.objectReferenceValue, typeof(UnityEngine.Object), true);
-            var obj = SPEditorGUI.ObjectFieldX(objArea, _label, _objProp.objectReferenceValue, typeof(UnityEngine.Object), true);
-            if (!(obj is TextAsset) || !(obj is ITextSource)) obj = null;
-            _objProp.objectReferenceValue = obj;
+            //var obj = SPEditorGUI.ObjectFieldX(objArea, _label, _objProp.objectReferenceValue, typeof(UnityEngine.Object), true);
+            //if (!(obj is TextAsset) && !(obj is ITextSource)) obj = null;
+            //_objProp.objectReferenceValue = obj;
+
+            _objPropertyDrawer.OnGUI(area, _objProp, _label);
         }
 
         private void _maskList_DrawElement(Rect area, int index, bool isActive, bool isFocused)
@@ -297,7 +312,7 @@ namespace com.spacepuppyeditor.Project
                     break;
                 case Mode.TextAsset:
                     {
-                        var src = _objProp.objectReferenceValue as TextAsset;
+                        var src = _objProp.objectReferenceValue;
                         if (src == null) return;
 
                         var labelRect = new Rect(area.xMin, area.yMin, area.width, EditorGUIUtility.singleLineHeight);
@@ -309,7 +324,7 @@ namespace com.spacepuppyeditor.Project
                         else
                             EditorGUI.LabelField(labelRect, label);
 
-                        EditorGUI.TextArea(textRect, src.text);
+                        EditorGUI.TextArea(textRect, StringUtil.TryGetText(src));
                     }
                     break;
             }

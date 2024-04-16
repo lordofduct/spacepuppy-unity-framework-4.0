@@ -159,6 +159,11 @@ namespace com.spacepuppy.Geom
 
         #region Properties
 
+        /// <summary>
+        /// Is only accurate once started.
+        /// </summary>
+        public int MemberColliderCount => _colliders.Count;
+
         public IEventActivatorMask Mask
         {
             get => _mask.Value;

@@ -17,7 +17,7 @@ namespace com.spacepuppy.Scenes
      */
 
 
-    public class SPSceneManager : ServiceScriptableObject<ISceneManager>, ISceneManager
+    public class SPSceneManager : ServiceComponent<ISceneManager>, ISceneManager
     {
 
         #region Fields
@@ -28,117 +28,23 @@ namespace com.spacepuppy.Scenes
 
         #region CONSTRUCTOR
 
-        public SPSceneManager()
+        public SPSceneManager() : base(Services.AutoRegisterOption.Register, Services.MultipleServiceResolutionOption.UnregisterSelf, Services.UnregisterResolutionOption.DestroySelf)
         {
             _implementation = new StandardSPSceneManagerImplementation();
         }
 
-        protected override void OnValidAwake()
-        {
-            _implementation?.Initialize(this);
-        }
-
-        protected override void OnDestroy()
-        {
-            base.OnDestroy();
-
-            _implementation?.Dispose();
-        }
-
-        #endregion
-
-        #region ISceneManager Interface
-
-        public event System.EventHandler<LoadSceneOptions> BeforeSceneLoaded
-        {
-            add => _implementation.BeforeSceneLoaded += value;
-            remove => _implementation.BeforeSceneLoaded -= value;
-        }
-
-        public event System.EventHandler<SceneUnloadedEventArgs> BeforeSceneUnloaded
-        {
-            add => _implementation.BeforeSceneUnloaded += value;
-            remove => _implementation.BeforeSceneUnloaded -= value;
-        }
-        public event System.EventHandler<SceneUnloadedEventArgs> SceneUnloaded
-        {
-            add => _implementation.SceneUnloaded += value;
-            remove => _implementation.SceneUnloaded -= value;
-        }
-        public event System.EventHandler<LoadSceneOptions> SceneLoaded
-        {
-            add => _implementation.SceneLoaded += value;
-            remove => _implementation.SceneLoaded -= value;
-        }
-        public event System.EventHandler<ActiveSceneChangedEventArgs> ActiveSceneChanged
-        {
-            add => _implementation.ActiveSceneChanged += value;
-            remove => _implementation.ActiveSceneChanged -= value;
-        }
-        public event System.EventHandler<LoadSceneOptions> BeganLoad
-        {
-            add => _implementation.BeganLoad += value;
-            remove => _implementation.BeganLoad -= value;
-        }
-        public event System.EventHandler<LoadSceneOptions> CompletedLoad
-        {
-            add => _implementation.CompletedLoad += value;
-            remove => _implementation.CompletedLoad -= value;
-        }
-
-        public virtual void LoadScene(LoadSceneOptions options)
-        {
-            if (options == null) throw new System.ArgumentNullException(nameof(options));
-
-            if (GameLoop.InvokeRequired)
-            {
-                GameLoop.UpdateHandle.Invoke(() => this.LoadScene(options));
-            }
-            else
-            {
-                _implementation.LoadScene(options);
-            }
-        }
-
-        public virtual AsyncWaitHandle UnloadScene(Scene scene)
-        {
-            return _implementation.UnloadScene(scene);
-        }
-
-        public virtual LoadSceneInternalResult LoadSceneInternal(SceneRef scene, LoadSceneParameters parameters, LoadSceneBehaviour behaviour) => SceneManagerUtils.LoadSceneInternal(scene, parameters, behaviour);
-
-        #endregion
-
-    }
-
-    public abstract class BaseSPSceneManagerComponent : ServiceComponent<ISceneManager>, ISceneManager
-    {
-
-        #region Fields
-
-        private StandardSPSceneManagerImplementation _implementation;
-
-        #endregion
-
-        #region CONSTRUCTOR
-
-        public BaseSPSceneManagerComponent() : base()
-        {
-            _implementation = new StandardSPSceneManagerImplementation();
-        }
-
-        public BaseSPSceneManagerComponent(StandardSPSceneManagerImplementation implementation) : base()
-        {
-            _implementation = implementation ?? new StandardSPSceneManagerImplementation();
-        }
-
-        public BaseSPSceneManagerComponent(Services.AutoRegisterOption autoRegister, Services.MultipleServiceResolutionOption multipleServiceResolution, Services.UnregisterResolutionOption unregisterResolution)
+        public SPSceneManager(Services.AutoRegisterOption autoRegister, Services.MultipleServiceResolutionOption multipleServiceResolution, Services.UnregisterResolutionOption unregisterResolution)
             : base(autoRegister, multipleServiceResolution, unregisterResolution)
         {
             _implementation = new StandardSPSceneManagerImplementation();
         }
 
-        public BaseSPSceneManagerComponent(StandardSPSceneManagerImplementation implementation, Services.AutoRegisterOption autoRegister, Services.MultipleServiceResolutionOption multipleServiceResolution, Services.UnregisterResolutionOption unregisterResolution)
+        public SPSceneManager(StandardSPSceneManagerImplementation implementation) : base(Services.AutoRegisterOption.Register, Services.MultipleServiceResolutionOption.UnregisterSelf, Services.UnregisterResolutionOption.DestroySelf)
+        {
+            _implementation = implementation ?? new StandardSPSceneManagerImplementation();
+        }
+
+        public SPSceneManager(StandardSPSceneManagerImplementation implementation, Services.AutoRegisterOption autoRegister, Services.MultipleServiceResolutionOption multipleServiceResolution, Services.UnregisterResolutionOption unregisterResolution)
             : base(autoRegister, multipleServiceResolution, unregisterResolution)
         {
             _implementation = implementation ?? new StandardSPSceneManagerImplementation();

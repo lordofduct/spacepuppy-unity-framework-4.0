@@ -19,6 +19,7 @@ namespace com.spacepuppy.SPInput
         #region Fields
 
         private Vector2 _lastPosition;
+        private Vector2 _trueDelta;
         private Vector2 _currentDelta;
         private Vector2 _characterizedMousePosition;
         private Vector2 _normalizedMousePosition;
@@ -80,15 +81,19 @@ namespace com.spacepuppy.SPInput
         public Vector2 NormalizedMousePosition => _normalizedMousePosition;
 
         /// <summary>
-        /// The last delta in mouse position effected by 'MouseSensitivity'.
+        /// The last delta in mouse position effected by 'MouseSensitivity'. Named 'CurrentState' to match signature of IDualAxleInputSignature interface.
         /// </summary>
-        public Vector2 CurrentState
-        {
-            get
-            {
-                return _currentDelta;
-            }
-        }
+        public Vector2 CurrentState => _currentDelta;
+
+        /// <summary>
+        /// Same as CurrentState.
+        /// </summary>
+        public Vector2 Delta => _currentDelta;
+
+        /// <summary>
+        /// The delta in pixels with no scaling or cutoff.
+        /// </summary>
+        public Vector2 TrueDelta => _trueDelta;
 
         public float DeadZone { get; set; }
         public DeadZoneCutoff Cutoff { get; set; }
@@ -104,10 +109,12 @@ namespace com.spacepuppy.SPInput
             var pos = _mousePositionCallback();
             if (_mouseActiveCallback())
             {
-                _currentDelta = InputUtil.CutoffDualAxis((pos - _lastPosition) * this.MouseSensitivity, this.DeadZone, this.Cutoff, this.RadialDeadZone, this.RadialCutoff);
+                _trueDelta = pos - _lastPosition;
+                _currentDelta = InputUtil.CutoffDualAxis(_trueDelta * this.MouseSensitivity, this.DeadZone, this.Cutoff, this.RadialDeadZone, this.RadialCutoff);
             }
             else
             {
+                _trueDelta = default;
                 _currentDelta = default;
             }
 
@@ -137,6 +144,7 @@ namespace com.spacepuppy.SPInput
         {
             this.ResetMousePosition();
             _lastPosition = _mousePositionCallback();
+            _trueDelta = default;
             _currentDelta = default;
         }
 

@@ -342,7 +342,7 @@ namespace com.spacepuppyeditor
                     //arr[index] = value;
                     var elementName = element.Substring(0, element.IndexOf("["));
                     var index = System.Convert.ToInt32(element.Substring(element.IndexOf("[")).Replace("[", "").Replace("]", ""));
-                    var arr = DynamicUtil.GetValue(element, elementName) as System.Collections.IList;
+                    var arr = obj.GetValue(elementName) as System.Collections.IList;
                     if (arr != null) arr[index] = value;
                 }
                 else

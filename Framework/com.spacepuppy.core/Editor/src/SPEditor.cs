@@ -511,14 +511,18 @@ namespace com.spacepuppyeditor
 
     }
 
+#if !SPEDITOR_IGNORE && !DISABLE_GLOBAL_SPEDITOR
     [CustomEditor(typeof(ScriptableObject), true)]
+#endif
     [CanEditMultipleObjects()]
     public class SPScriptableObjectEditor : SPEditor
     {
 
     }
 
+#if !SPEDITOR_IGNORE && !DISABLE_GLOBAL_SPEDITOR
     [CustomEditor(typeof(StateMachineBehaviour), true)]
+#endif
     [CanEditMultipleObjects()]
     public class SPStateMachineBehaviourEditor : SPEditor
     {

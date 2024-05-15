@@ -1,6 +1,8 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+
+using com.spacepuppy.Collections;
 using com.spacepuppy.Events;
 using com.spacepuppy.Project;
 
@@ -57,8 +59,33 @@ namespace com.spacepuppy
         public static IEnumerable<ProxyInfo> EnumerateActiveProxyMediators() => _crossDomainLookupTable.Select(o => new ProxyInfo()
         {
             Guid = o.Key,
-            Target = o.Value.Target,
         });
+
+        public static object GetTarget(System.Guid guid)
+        {
+            CrossDomainHook hook;
+            if (_crossDomainLookupTable.TryGetValue(guid, out hook))
+            {
+                return hook.Targets?.Count > 0 ? hook.Targets.PeekPop() : null;
+            }
+            else
+            {
+                return null;
+            }
+        }
+        public static Deque<object> GetTargetsCollection(System.Guid guid, bool createIfNull)
+        {
+            CrossDomainHook hook;
+            if (_crossDomainLookupTable.TryGetValue(guid, out hook))
+            {
+                if (createIfNull && hook.Targets == null) hook.Targets = new Deque<object>();
+                return hook.Targets;
+            }
+            else
+            {
+                return null;
+            }
+        }
 
         /// <summary>
         /// Set's the target of an initialized proxymediator with matching guid. 
@@ -66,15 +93,15 @@ namespace com.spacepuppy
         /// </summary>
         public static bool SetProxyTarget(System.Guid guid, object target)
         {
-            CrossDomainHook hook;
-            if (_crossDomainLookupTable.TryGetValue(guid, out hook))
-            {
-                hook.Target = target;
-                return true;
-            }
+            var coll = GetTargetsCollection(guid, true);
+            if (coll == null) return false;
 
-            return false;
+            coll.Clear();
+            if (target != null) coll.Push(target);
+            return true;
         }
+
+        public static void ClearProxyTargets(System.Guid guid) => GetTargetsCollection(guid, false)?.Clear();
 
         /// <summary>
         /// Finds a matching initialized proxymediator with matching guid and calls WaitForNextTrigger on it. 
@@ -172,19 +199,50 @@ namespace com.spacepuppy
 
         public System.Guid AssetId => _assetId.ToGuid();
 
-        public bool HasTarget => this.GetTarget() != null;
+        public bool HasTarget => this.GetTargetsCollection(false)?.Count > 0;
+
+        public int TargetCount => this.GetTargetsCollection(false)?.Count ?? 0;
 
         #endregion
 
         #region Methods
 
-        public void SetProxyTarget(object target)
+        public Deque<object> GetTargetsCollection(bool createIfNull = false)
         {
             CrossDomainHook hook;
             if (FindHook(this, out hook))
             {
-                hook.Target = target;
+                if (createIfNull && hook.Targets == null) hook.Targets = new Deque<object>();
+                return hook.Targets;
             }
+            else
+            {
+                return null;
+            }
+        }
+
+        public bool SetProxyTarget(object target)
+        {
+            var coll = this.GetTargetsCollection(true);
+            if (coll == null) return false;
+
+            coll.Clear();
+            if (target != null) coll.Push(target);
+            return true;
+        }
+
+        public void ClearProxyTargets() => this.GetTargetsCollection(false)?.Clear();
+
+        public void PushProxyTarget(object target)
+        {
+            if (target == null) throw new System.ArgumentNullException(nameof(target));
+            this.GetTargetsCollection(true).Push(target);
+        }
+
+        public object PopProxyTarget()
+        {
+            var coll = this.GetTargetsCollection(false);
+            return coll?.Count > 0 ? coll.Pop() : null;
         }
 
         public IRadicalWaitHandle WaitForNextTrigger()
@@ -217,9 +275,23 @@ namespace com.spacepuppy
                         d(this, ev);
                     }
                 }
-                if (_triggerSyncedTargetWhenTriggered && hook.Target != null)
+                if (_triggerSyncedTargetWhenTriggered && hook.Targets?.Count > 0)
                 {
-                    EventTriggerEvaluator.Current.TriggerAllOnTarget(hook.Target, arg, sender, _passAlongTriggerArgWhenTrigger ? arg : null);
+                    switch (hook.Targets.Count)
+                    {
+                        case 1:
+                            EventTriggerEvaluator.Current.TriggerAllOnTarget(hook.Targets.PeekPop(), arg, sender, _passAlongTriggerArgWhenTrigger ? arg : null);
+                            break;
+                        default:
+                            using (var lst = TempCollection.GetList<object>(hook.Targets))
+                            {
+                                foreach (var obj in lst)
+                                {
+                                    EventTriggerEvaluator.Current.TriggerAllOnTarget(obj, arg, sender, _passAlongTriggerArgWhenTrigger ? arg : null);
+                                }
+                            }
+                            break;
+                    }
                 }
 
                 if (h != null)
@@ -293,12 +365,8 @@ namespace com.spacepuppy
 
         public object GetTarget()
         {
-            CrossDomainHook hook;
-            if (FindHook(this, out hook))
-            {
-                return hook.Target;
-            }
-            return null;
+            var coll = this.GetTargetsCollection();
+            return coll?.Count > 0 ? coll.PeekPop() : null;
         }
 
         object IProxy.GetTargetInternal(System.Type expectedType, object arg)
@@ -319,7 +387,7 @@ namespace com.spacepuppy
         {
             public System.EventHandler<TempEventArgs> OnTriggered;
             public RadicalWaitHandle Handle;
-            public object Target;
+            public Deque<object> Targets;
             public int RefCount;
         }
 
@@ -328,15 +396,21 @@ namespace com.spacepuppy
         public struct ProxyInfo
         {
             public System.Guid Guid;
-            public object Target;
-
-            public IRadicalWaitHandle WaitForNextTrigger() => ProxyMediator.WaitForNextTrigger(this.Guid);
+            public object GetTarget() => ProxyMediator.GetTarget(Guid);
+            public Deque<object> GetTargetsCollection(bool createIfNull = false) => ProxyMediator.GetTargetsCollection(Guid, createIfNull);
 
             public void SetProxyTarget(object target)
             {
-                this.Target = target;
-                ProxyMediator.SetProxyTarget(this.Guid, target);
+                ProxyMediator.SetProxyTarget(Guid, target);
             }
+
+            public void ClearProxyTargets()
+            {
+                ProxyMediator.ClearProxyTargets(Guid);
+            }
+
+            public IRadicalWaitHandle WaitForNextTrigger() => ProxyMediator.WaitForNextTrigger(this.Guid);
+
         }
 
         #endregion

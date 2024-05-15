@@ -478,8 +478,6 @@ namespace com.spacepuppy.Utils
         public static T[] PickRandom<T>(this IEnumerable<T> lst, System.Func<T, float> weightPredicate, int count, IRandom rng = null)
         {
             if (count <= 0) return ArrayUtil.Empty<T>();
-            if (count == 1) return new T[] { PickRandom<T>(lst, weightPredicate, rng) };
-
 
             using (var arr = TempCollection.GetList<T>(lst))
             {

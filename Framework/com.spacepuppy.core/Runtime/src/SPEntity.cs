@@ -52,7 +52,7 @@ namespace com.spacepuppy
                 });
             }
         }
-        
+
         protected override void OnDestroy()
         {
             base.OnDestroy();
@@ -65,7 +65,57 @@ namespace com.spacepuppy
         #region Properties
 
         public bool IsAwake { get { return _isAwake; } }
-        
+
+        #endregion
+
+        #region Methods
+
+        public SPEntity GetParentEntity()
+        {
+            if (this.transform.parent)
+            {
+                Pool.GetFromSource(this.transform.parent);
+            }
+
+            return null;
+        }
+
+        public bool TryGetParentEntity<T>(out SPEntity parent)
+        {
+            if (this.transform.parent)
+            {
+                return Pool.GetFromSource(this.transform.parent, out parent);
+            }
+            else
+            {
+                parent = null;
+                return false;
+            }
+        }
+
+        public T GetParentEntity<T>() where T : SPEntity
+        {
+            if (this.transform.parent)
+            {
+                Pool.GetFromSource<T>(this.transform.parent);
+            }
+
+            return null;
+        }
+
+        public bool TryGetParentEntity<T>(out T parent) where T : SPEntity
+        {
+            if (this.transform.parent)
+            {
+                return Pool.GetFromSource<T>(this.transform.parent, out parent);
+            }
+            else
+            {
+                parent = null;
+                return false;
+            }
+        }
+
         #endregion
 
         #region Special Types
@@ -149,7 +199,7 @@ namespace com.spacepuppy
                 return comp != null;
             }
 
-#endregion
+            #endregion
 
         }
 
@@ -198,7 +248,7 @@ namespace com.spacepuppy
 
         }
 
-#endregion
+        #endregion
 
 #if UNITY_EDITOR
 

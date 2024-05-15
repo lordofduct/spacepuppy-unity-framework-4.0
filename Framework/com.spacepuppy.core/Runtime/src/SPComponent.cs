@@ -208,6 +208,7 @@ namespace com.spacepuppy
     /// 
     /// Such a component should not change parents frequently as it would be expensive.
     /// </summary>
+    [RequireComponentInEntity(typeof(SPEntity))]
     public abstract class SPEntityComponent : SPComponent
     {
 

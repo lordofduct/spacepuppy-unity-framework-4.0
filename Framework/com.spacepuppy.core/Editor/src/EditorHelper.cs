@@ -195,7 +195,7 @@ namespace com.spacepuppyeditor
                 case SerializedPropertyType.Generic:
                     {
                         field = GetFieldOfProperty(prop);
-                        if (field != null) return field.FieldType;
+                        if (field != null) return prop.propertyPath.EndsWith("]") && TypeUtil.IsListType(field.FieldType) ? TypeUtil.GetElementTypeOfListType(field.FieldType) : field.FieldType;
                         return TypeUtil.FindType(prop.type) ?? typeof(object);
                     }
                 case SerializedPropertyType.Integer:
@@ -209,14 +209,13 @@ namespace com.spacepuppyeditor
                 case SerializedPropertyType.Color:
                     {
                         field = GetFieldOfProperty(prop);
-                        if (field != null) return field.FieldType;
-                        if (field != null) return field.FieldType;
+                        if (field != null) return prop.propertyPath.EndsWith("]") && TypeUtil.IsListType(field.FieldType) ? TypeUtil.GetElementTypeOfListType(field.FieldType) : field.FieldType;
                         return TypeUtil.FindType(prop.type) ?? typeof(Color);
                     }
                 case SerializedPropertyType.ObjectReference:
                     {
                         field = GetFieldOfProperty(prop);
-                        if (field != null) return field.FieldType;
+                        if (field != null) return prop.propertyPath.EndsWith("]") && TypeUtil.IsListType(field.FieldType) ? TypeUtil.GetElementTypeOfListType(field.FieldType) : field.FieldType;
                         return TypeUtil.FindType(prop.type) ?? typeof(UnityEngine.Object);
                     }
                 case SerializedPropertyType.LayerMask:
@@ -224,7 +223,7 @@ namespace com.spacepuppyeditor
                 case SerializedPropertyType.Enum:
                     {
                         field = GetFieldOfProperty(prop);
-                        if (field != null) return field.FieldType;
+                        if (field != null) return prop.propertyPath.EndsWith("]") && TypeUtil.IsListType(field.FieldType) ? TypeUtil.GetElementTypeOfListType(field.FieldType) : field.FieldType;
                         return TypeUtil.FindType(prop.type) ?? typeof(System.Enum);
                     }
                 case SerializedPropertyType.Vector2:
@@ -250,7 +249,7 @@ namespace com.spacepuppyeditor
                 case SerializedPropertyType.ExposedReference:
                     {
                         field = GetFieldOfProperty(prop);
-                        if (field != null) return field.FieldType;
+                        if (field != null) return prop.propertyPath.EndsWith("]") && TypeUtil.IsListType(field.FieldType) ? TypeUtil.GetElementTypeOfListType(field.FieldType) : field.FieldType;
                         return TypeUtil.FindType(prop.type) ?? typeof(UnityEngine.Object);
                     }
                 case SerializedPropertyType.FixedBufferSize:
@@ -266,7 +265,7 @@ namespace com.spacepuppyeditor
                 default:
                     {
                         field = GetFieldOfProperty(prop);
-                        if (field != null) return field.FieldType;
+                        if (field != null) return prop.propertyPath.EndsWith("]") && TypeUtil.IsListType(field.FieldType) ? TypeUtil.GetElementTypeOfListType(field.FieldType) : field.FieldType;
                         return TypeUtil.FindType(prop.type) ?? typeof(object);
                     }
             }
@@ -342,7 +341,7 @@ namespace com.spacepuppyeditor
                     //arr[index] = value;
                     var elementName = element.Substring(0, element.IndexOf("["));
                     var index = System.Convert.ToInt32(element.Substring(element.IndexOf("[")).Replace("[", "").Replace("]", ""));
-                    var arr = DynamicUtil.GetValue(element, elementName) as System.Collections.IList;
+                    var arr = DynamicUtil.GetValue(obj, elementName) as System.Collections.IList;
                     if (arr != null) arr[index] = value;
                 }
                 else
@@ -962,9 +961,9 @@ namespace com.spacepuppyeditor
                     var index = System.Convert.ToInt32(element.Substring(element.IndexOf("[")).Replace("[", "").Replace("]", ""));
 
                     //field = tp.GetMember(elementName, MemberTypes.Field, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).FirstOrDefault() as System.Reflection.FieldInfo;
-                    field = DynamicUtil.GetMemberFromType(tp, element, true, MemberTypes.Field) as System.Reflection.FieldInfo;
+                    field = DynamicUtil.GetMemberFromType(tp, elementName, true, MemberTypes.Field) as System.Reflection.FieldInfo;
                     if (field == null) return null;
-                    tp = field.FieldType;
+                    tp = TypeUtil.IsListType(field.FieldType) ? TypeUtil.GetElementTypeOfListType(field.FieldType) : field.FieldType;
                 }
                 else
                 {

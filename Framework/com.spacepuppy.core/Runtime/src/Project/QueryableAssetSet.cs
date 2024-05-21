@@ -345,6 +345,7 @@ namespace com.spacepuppy.Project
         public IEnumerable<System.Guid> GetAssetGuids(bool shallow = false)
         {
             if (!_clean && !this.SetupTable()) return Enumerable.Empty<System.Guid>();
+            if (_guidTable == null) return Enumerable.Empty<System.Guid>();
 
             if (!shallow && _nested)
             {
@@ -580,7 +581,7 @@ namespace com.spacepuppy.Project
         {
             if (!_clean && !this.SetupTable()) return false;
 
-            if (_guidTable.ContainsKey(guid)) return true;
+            if (_guidTable?.ContainsKey(guid) ?? false) return true;
 
             if (_nested)
             {
@@ -659,7 +660,7 @@ namespace com.spacepuppy.Project
         IEnumerator<KeyValuePair<string, Object>> IEnumerable<KeyValuePair<string, UnityEngine.Object>>.GetEnumerator()
         {
             if (!_clean && !this.SetupTable()) return Enumerable.Empty<KeyValuePair<string, UnityEngine.Object>>().GetEnumerator();
-            
+
             if (_nested)
             {
                 return this.GetAllAssetNames().Select(o => new KeyValuePair<string, UnityEngine.Object>(o, this.GetAsset(o))).GetEnumerator();
@@ -682,7 +683,7 @@ namespace com.spacepuppy.Project
             {
                 if (!_clean && !this.SetupTable()) return Enumerable.Empty<UnityEngine.Object>();
 
-                return _nested ? this.GetAssetGuids().Select(o => this.GetAsset(o)) : _guidTable.Values;
+                return _nested ? this.GetAssetGuids().Select(o => this.GetAsset(o)) : (_guidTable?.Values ?? Enumerable.Empty<UnityEngine.Object>());
             }
         }
 
@@ -692,7 +693,7 @@ namespace com.spacepuppy.Project
             {
                 if (!_clean && !this.SetupTable()) return 0;
 
-                return _nested ? this.GetAssetGuids().Count() : _guidTable.Count;
+                return _nested ? this.GetAssetGuids().Count() : (_guidTable?.Count ?? 0);
             }
         }
 
@@ -705,6 +706,7 @@ namespace com.spacepuppy.Project
         IEnumerator<KeyValuePair<System.Guid, Object>> IEnumerable<KeyValuePair<System.Guid, UnityEngine.Object>>.GetEnumerator()
         {
             if (!_clean && !this.SetupTable()) return Enumerable.Empty<KeyValuePair<System.Guid, UnityEngine.Object>>().GetEnumerator();
+            if (_guidTable == null) return Enumerable.Empty<KeyValuePair<System.Guid, UnityEngine.Object>>().GetEnumerator();
             return _guidTable.GetEnumerator();
         }
 

@@ -152,7 +152,9 @@ namespace com.spacepuppyeditor.Core.Project
                 var assets = AssetDatabase.FindAssets(GetBestSearchStringForType(_restrictedType))
                                         .Select(s => ObjUtil.GetAsFromSource(_restrictedType, AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(s), typeof(UnityEngine.Object))) as UnityEngine.Object)
                                         .Where(o => o != null && o != targ);
+                Undo.RecordObject(targ, "QueryableAssetSet - Scan Project");
                 targ.ResetAssets(assets);
+                EditorHelper.CommitDirectChanges(targ, true);
             }
             EditorGUILayout.Space(2f);
             if (GUILayout.Button(EditorHelper.TempContent("Scan Local Folder", "Scans the folder this asset is in, and sub folders, and adds the matching assets to this AssetSet.")))
@@ -171,7 +173,9 @@ namespace com.spacepuppyeditor.Core.Project
                 {
                     assets = assetguids.Select(s => ObjUtil.GetAsFromSource(_restrictedType, AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(s), typeof(UnityEngine.Object))) as UnityEngine.Object);
                 }
+                Undo.RecordObject(targ, "QueryableAssetSet - Scan Local Folder");
                 targ.ResetAssets(assets.Where(o => o != null && o != targ));
+                EditorHelper.CommitDirectChanges(targ, true);
             }
         }
 

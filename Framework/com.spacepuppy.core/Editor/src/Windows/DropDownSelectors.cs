@@ -292,20 +292,23 @@ namespace com.spacepuppyeditor.Windows
 
             if (string.IsNullOrEmpty(window.CurrentSearch))
             {
-                return _retrieveObjectsCallback().Select(o => new SearchDropDownElement()
-                {
-                    Content = GetLabel(o),
-                    Element = o
-                }).Prepend(new SearchDropDownElement()
-                {
-                    Content = GetLabel(null),
-                    Element = null,
-                });
+                return _retrieveObjectsCallback()
+                    .OrderBy(o => this.TargetType?.IsInstanceOfType(o) ?? false ? 0 : 1).ThenBy(o => o != null ? o.name : string.Empty)
+                    .Select(o => new SearchDropDownElement()
+                    {
+                        Content = GetLabel(o),
+                        Element = o
+                    }).Prepend(new SearchDropDownElement()
+                    {
+                        Content = GetLabel(null),
+                        Element = null,
+                    });
             }
             else
             {
                 return _retrieveObjectsCallback()
                     .Where(o => (o is UnityEngine.Object uo) && uo.name.IndexOf(window.CurrentSearch, 0, System.StringComparison.OrdinalIgnoreCase) >= 0)
+                    .OrderBy(o => this.TargetType?.IsInstanceOfType(o) ?? false ? 0 : 1).ThenBy(o => o != null ? o.name : string.Empty)
                     .Select(o => new SearchDropDownElement()
                     {
                         Content = GetLabel(o),

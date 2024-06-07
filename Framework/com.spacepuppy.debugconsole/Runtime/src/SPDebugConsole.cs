@@ -43,7 +43,8 @@ namespace com.spacepuppy.DebugConsole
             if (_input.HasTarget)
             {
                 _input.text = string.Empty;
-                _input.OnSubmit_AddListener(_input_OnSubmit);
+                _input.OnSubmit -= _input_OnSubmit;
+                _input.OnSubmit += _input_OnSubmit;
                 _input.SelectUIElement();
                 _input.ActivateInputField();
             }
@@ -56,7 +57,7 @@ namespace com.spacepuppy.DebugConsole
             this.StopMonitorDebugLog();
             if (_input.HasTarget)
             {
-                _input.OnSubmit_RemoveListener(_input_OnSubmit);
+                _input.OnSubmit -= _input_OnSubmit;
             }
         }
 
@@ -92,8 +93,9 @@ namespace com.spacepuppy.DebugConsole
             _outputbuffer.AppendLine(stxt);
         }
 
-        private void _input_OnSubmit(string stxt)
+        private void _input_OnSubmit(object sender, TempEventArgs e)
         {
+            string stxt = e?.Value as string;
             if (string.IsNullOrEmpty(stxt)) return;
 
             bool reselectinput = true;

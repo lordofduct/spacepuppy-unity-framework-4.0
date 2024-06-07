@@ -31,6 +31,12 @@ namespace com.spacepuppyeditor.Windows
             }
         }
 
+        [MenuItem("CONTEXT/Component/Copy Reference Id", false, 1000)]
+        private static void ThisIsATest(MenuCommand command)
+        {
+            GUIUtility.systemCopyBuffer = command.context.GetInstanceID().ToString();
+        }
+
         #endregion
 
         #region Window

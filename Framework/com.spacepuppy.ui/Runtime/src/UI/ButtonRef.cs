@@ -1,16 +1,16 @@
 using UnityEngine;
+using UnityEngine.UI;
 using System.Collections.Generic;
 
 using com.spacepuppy;
+using com.spacepuppy.Dynamic;
 using com.spacepuppy.Utils;
-using com.spacepuppy.Project;
-using UnityEngine.UI;
 
 namespace com.spacepuppy.UI
 {
 
     [System.Serializable]
-    public sealed class ButtonRef
+    public sealed class ButtonRef : IDynamicProperty, System.IDisposable
     {
 
         private static readonly System.Type[] _supportedTypes = new System.Type[] { typeof(UnityEngine.UI.Button), typeof(SPUIButton) };
@@ -105,6 +105,26 @@ namespace com.spacepuppy.UI
         private void SPButtonHandler(object sender, System.EventArgs e)
         {
             _onClick?.Invoke(sender, System.EventArgs.Empty);
+        }
+
+        #endregion
+
+        #region IDynamicProperty Interface
+
+        object IDynamicProperty.Get() => this.Button;
+
+        void IDynamicProperty.Set(object value) => this.Button = value as Selectable;
+
+        System.Type IDynamicProperty.GetType() => typeof(Selectable);
+
+        #endregion
+
+        #region IDisposable Interface
+
+        public void Dispose()
+        {
+            this.RemoveEventHandlerHook();
+            _value = null;
         }
 
         #endregion

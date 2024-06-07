@@ -80,13 +80,13 @@ namespace com.spacepuppy.Mecanim.Events
         private System.Collections.IEnumerator DoWait(Animator animator, string stateName, int layerIndex, object token, bool purge, string finalState, SPTimePeriod timeout)
         {
             yield return WaitForAnimState.WaitForStateExit_PostPlay(animator, stateName, layerIndex);
-            if(!string.IsNullOrEmpty(finalState))
+            if (!string.IsNullOrEmpty(finalState))
             {
                 yield return WaitForAnimState.WaitForStateEnter(animator, finalState, layerIndex, timeout);
                 yield return WaitForAnimState.WaitForStateExit(animator, finalState, layerIndex);
             }
 
-            if (purge) animator.RemoveOverride(token);
+            if (purge && animator) animator.RemoveOverride(token);
 
             _onStateExit.ActivateTrigger(this, animator);
         }

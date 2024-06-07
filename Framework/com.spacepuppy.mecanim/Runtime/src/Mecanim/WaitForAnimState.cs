@@ -162,20 +162,22 @@ namespace com.spacepuppy.Mecanim
         public delegate bool KeepWaitingCallback(WaitForAnimState state);
 
         private static KeepWaitingCallback _waitForExitByHash;
-        public static KeepWaitingCallback Callback_WaitForExitByHash => _waitForExitByHash ?? (_waitForExitByHash = (s) => s._animator.GetCurrentAnimatorStateInfo(s._layerIndex).fullPathHash != s._hash);
+        public static KeepWaitingCallback Callback_WaitForExitByHash => _waitForExitByHash ?? (_waitForExitByHash = (s) => s._animator && s._animator.GetCurrentAnimatorStateInfo(s._layerIndex).fullPathHash != s._hash);
 
         private static KeepWaitingCallback _waitForExitByName;
-        public static KeepWaitingCallback Callback_WaitForExitByName => _waitForExitByName ?? (_waitForExitByName = (s) => !s._animator.GetCurrentAnimatorStateIs(s._stateName, s._layerIndex));
+        public static KeepWaitingCallback Callback_WaitForExitByName => _waitForExitByName ?? (_waitForExitByName = (s) => s._animator && !s._animator.GetCurrentAnimatorStateIs(s._stateName, s._layerIndex));
 
         private static KeepWaitingCallback _waitForEnterByHash;
-        public static KeepWaitingCallback Callback_WaitForEnterByHash => _waitForEnterByHash ?? (_waitForEnterByHash = (s) => s._animator.GetCurrentAnimatorStateInfo(s._layerIndex).fullPathHash == s._hash);
+        public static KeepWaitingCallback Callback_WaitForEnterByHash => _waitForEnterByHash ?? (_waitForEnterByHash = (s) => s._animator && s._animator.GetCurrentAnimatorStateInfo(s._layerIndex).fullPathHash == s._hash);
 
         private static KeepWaitingCallback _waitForEnterByName;
-        public static KeepWaitingCallback Callback_WaitForEnterByName => _waitForEnterByName ?? (_waitForEnterByName = (s) => s._animator.GetCurrentAnimatorStateIs(s._stateName, s._layerIndex));
+        public static KeepWaitingCallback Callback_WaitForEnterByName => _waitForEnterByName ?? (_waitForEnterByName = (s) => s._animator && s._animator.GetCurrentAnimatorStateIs(s._stateName, s._layerIndex));
 
         private static KeepWaitingCallback _waitForExitByName_PostPlay;
         public static KeepWaitingCallback Callback_WaitForExitByName_PostPlay => _waitForExitByName_PostPlay ?? (_waitForExitByName_PostPlay = (s) =>
         {
+            if (!s._animator) return false;
+
             AnimatorStateInfo info;
             int li = s._layerIndex;
             if (s._animator.GetCurrentAnimatorStateIs(s._stateName, ref li, out info))
@@ -186,7 +188,7 @@ namespace com.spacepuppy.Mecanim
                 s._mode = Callback_WaitForExitByHash;
                 return false;
             }
-            else if(s._animator.GetNextAnimatorStateIs(s._stateName, ref li, out info))
+            else if (s._animator.GetNextAnimatorStateIs(s._stateName, ref li, out info))
             {
                 //this happens if we're in a "cross-fade"
                 s._layerIndex = li;

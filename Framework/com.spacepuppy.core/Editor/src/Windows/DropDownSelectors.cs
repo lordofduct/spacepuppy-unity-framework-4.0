@@ -5,8 +5,6 @@ using System.Linq;
 
 using com.spacepuppy;
 using com.spacepuppy.Utils;
-using System.Reflection;
-using com.spacepuppy.Dynamic;
 
 namespace com.spacepuppyeditor.Windows
 {
@@ -420,38 +418,17 @@ namespace com.spacepuppyeditor.Windows
                             }
                         }
 
-                        IEnumerable<UnityEngine.Object> results = Enumerable.Empty<UnityEngine.Object>();
-                        /*
-                         * This is the slow way of doing it... we changed to this load all assets and leave the array active approach. 
-                         * I don't know the long-term implications of it so I'm leaving both here to easily swap back and forth for testing.
-                         * 
+                        var infos = SpaceuppyAssetDatabase.GetAssetInfos();
                         if (allowProxy)
                         {
-                            results = AssetDatabase.FindAssets("a:assets")
-                                                   .Select(s => ObjUtil.GetAsFromSource(types, AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(s), typeof(UnityEngine.Object))) as UnityEngine.Object)
-                                                   .OrderBy(o => !(objType.IsInstanceOfType(o)))
-                                                   .Where(o => o != null);
+                            infos = infos.Where(o => o.SupportsType(objType) || o.SupportsType(typeof(IProxy)));
                         }
                         else
                         {
-                            results = AssetDatabase.FindAssets("a:assets")
-                                                   .Select(s => ObjUtil.GetAsFromSource(objType, AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(s), typeof(UnityEngine.Object))) as UnityEngine.Object)
-                                                   .Where(o => o != null);
+                            infos = infos.Where(o => o.SupportsType(objType));
                         }
-                        */
-                        if (allowProxy)
-                        {
-                            results = UnsafeLoadedAssets.GetUnsafeLoadedAssets()
-                                                   .Select(o => ObjUtil.GetAsFromSource(types, o) as UnityEngine.Object)
-                                                   .OrderBy(o => !(objType.IsInstanceOfType(o)))
-                                                   .Where(o => o != null);
-                        }
-                        else
-                        {
-                            results = UnsafeLoadedAssets.GetUnsafeLoadedAssets()
-                                                   .Select(o => ObjUtil.GetAsFromSource(objType, o) as UnityEngine.Object)
-                                                   .Where(o => o != null);
-                        }
+
+                        var results = infos.Select(o => o.GetAsset());
 
                         if (sceneresults != null)
                         {
@@ -501,6 +478,7 @@ namespace com.spacepuppyeditor.Windows
 
         #region UnsafeAssetDatabase
 
+        /*
         class UnsafeLoadedAssets : AssetPostprocessor
         {
             private static int _hash;
@@ -553,7 +531,70 @@ namespace com.spacepuppyeditor.Windows
                 }
             }
         }
+        */
 
+        class SpaceuppyAssetDatabase : AssetPostprocessor
+        {
+            static List<AssetInfo> _assets = new();
+            static System.Threading.CancellationTokenSource _cancellationSource;
+
+            [InitializeOnLoadMethod]
+            static void InitializeDatabase()
+            {
+                _cancellationSource?.Cancel();
+                _cancellationSource = new();
+
+                var token = _cancellationSource.Token;
+                _assets.Clear();
+                _assets.AddRange(AssetDatabase.FindAssets("a:assets").Select(s =>
+                {
+                    var spath = AssetDatabase.GUIDToAssetPath(s);
+                    return new AssetInfo() { guid = s, path = spath, type = AssetDatabase.GetMainAssetTypeAtPath(spath) };
+                }));
+            }
+            static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths) => InitializeDatabase();
+
+            public static IEnumerable<AssetInfo> GetAssetInfos() => _assets;
+
+        }
+
+        class AssetInfo
+        {
+            public string guid;
+            public string path;
+            public System.Type type;
+            private System.Type[] _alternativeTypes;
+
+            public IEnumerable<System.Type> GetAlternativeTypes() => _alternativeTypes != null ? _alternativeTypes : this.SyncAltTypes();
+
+            public bool SupportsType(System.Type tp)
+            {
+                if (TypeUtil.IsType(type, tp)) return true;
+
+                foreach (var alt in this.GetAlternativeTypes())
+                {
+                    if (TypeUtil.IsType(alt, tp)) return true;
+                }
+
+                return false;
+            }
+
+            System.Type[] SyncAltTypes()
+            {
+                if (type == typeof(GameObject) && (path?.EndsWith(".prefab") ?? false))
+                {
+                    var asset = this.GetAsset() as GameObject;
+                    _alternativeTypes = asset ? asset.GetComponents().Select(o => o.GetType()).ToArray() : ArrayUtil.Empty<System.Type>();
+                }
+                else
+                {
+                    _alternativeTypes = ArrayUtil.Empty<System.Type>();
+                }
+                return _alternativeTypes;
+            }
+
+            public UnityEngine.Object GetAsset() => !string.IsNullOrEmpty(path) ? AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path) : null;
+        }
 
         #endregion
 

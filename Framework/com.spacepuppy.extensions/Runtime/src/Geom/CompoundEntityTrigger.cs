@@ -22,6 +22,7 @@ namespace com.spacepuppy.Geom
             _activeEntities.Clear();
         }
 
+        public int ActiveEntityCount => _activeEntities.Count;
 
         public bool ContainsActive(SPEntity entity)
         {

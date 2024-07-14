@@ -91,11 +91,14 @@ namespace com.spacepuppyeditor.Core
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
+            float h;
+            if (EditorHelper.AssertMultiObjectEditingNotSupportedHeight(property, label, out h)) return h;
             return EditorGUIUtility.singleLineHeight;
         }
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
             position = EditorGUI.PrefixLabel(position, label);
             EditorHelper.SuppressIndentLevel();
             this.OnGUI(position, property);
@@ -104,6 +107,7 @@ namespace com.spacepuppyeditor.Core
 
         public void OnGUI(Rect position, SerializedProperty property)
         {
+            if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, GUIContent.none)) return;
             //if (property.propertyType != SerializedPropertyType.ObjectReference || !TypeUtil.IsType(_restrictionType, typeof(Component), typeof(IComponent)))
             if (property.propertyType != SerializedPropertyType.ObjectReference || (!this.AllowNonComponents && !ComponentUtil.IsAcceptableComponentType(this.RestrictionType)))
             {

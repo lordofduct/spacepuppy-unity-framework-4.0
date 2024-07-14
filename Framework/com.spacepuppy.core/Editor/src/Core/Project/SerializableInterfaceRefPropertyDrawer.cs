@@ -33,6 +33,9 @@ namespace com.spacepuppyeditor.Core.Project
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
+            float h;
+            if (EditorHelper.AssertMultiObjectEditingNotSupportedHeight(property, label, out h)) return h;
+
             var tp = (this.fieldInfo != null) ? this.fieldInfo.FieldType : null;
             var objProp = property.FindPropertyRelative(PROP_OBJ);
             if (tp == null || objProp == null || objProp.propertyType != SerializedPropertyType.ObjectReference)
@@ -52,6 +55,8 @@ namespace com.spacepuppyeditor.Core.Project
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
+
             var tp = (this.fieldInfo != null) ? this.fieldInfo.FieldType : null;
             var objProp = property.FindPropertyRelative(PROP_OBJ);
             if (tp == null || objProp == null || objProp.propertyType != SerializedPropertyType.ObjectReference)
@@ -186,6 +191,9 @@ namespace com.spacepuppyeditor.Core.Project
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
+            float h;
+            if (EditorHelper.AssertMultiObjectEditingNotSupportedHeight(property, label, out h)) return h;
+
             var tp = (this.fieldInfo != null) ? this.fieldInfo.FieldType : null;
             var arrprop = property.FindPropertyRelative(PROP_ARR);
             if (tp == null || arrprop == null || !arrprop.isArray)
@@ -208,6 +216,8 @@ namespace com.spacepuppyeditor.Core.Project
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
+
             var tp = (this.fieldInfo != null) ? this.fieldInfo.FieldType : null;
             var arrprop = property.FindPropertyRelative(PROP_ARR);
             if (tp == null || arrprop == null || !arrprop.isArray)

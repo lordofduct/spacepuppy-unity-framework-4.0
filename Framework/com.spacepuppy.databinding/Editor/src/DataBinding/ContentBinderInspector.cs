@@ -93,11 +93,13 @@ namespace com.spacepuppyeditor.DataBinding
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-            if(property.propertyType != SerializedPropertyType.String)
+            if (property.propertyType != SerializedPropertyType.String)
             {
                 EditorGUI.LabelField(position, "ContentBinderKey attributed field is not of type 'string'.");
                 return;
             }
+
+            string value;
 
             var sob = property.serializedObject;
             Component target;
@@ -108,7 +110,12 @@ namespace com.spacepuppyeditor.DataBinding
                 (context = target.GetComponent<DataBindingContext>()) == null ||
                 (protocol = context.BindingProtocol) == null)
             {
-                property.stringValue = EditorGUI.TextField(position, label, property.stringValue);
+                EditorGUI.BeginChangeCheck();
+                value = EditorGUI.TextField(position, label, property.stringValue);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    property.stringValue = value;
+                }
                 return;
             }
 
@@ -118,11 +125,21 @@ namespace com.spacepuppyeditor.DataBinding
             var keys = protocol.GetDefinedKeys(context);
             if (keys == null || !keys.Any())
             {
-                property.stringValue = EditorGUI.TextField(position, label, property.stringValue);
+                EditorGUI.BeginChangeCheck();
+                value = EditorGUI.TextField(position, label, property.stringValue);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    property.stringValue = value;
+                }
                 return;
             }
 
-            property.stringValue = SPEditorGUI.OptionPopupWithCustom(position, label, property.stringValue, keys.ToArray());
+            EditorGUI.BeginChangeCheck();
+            value = SPEditorGUI.OptionPopupWithCustom(position, label, property.stringValue, keys.ToArray());
+            if (EditorGUI.EndChangeCheck())
+            {
+                property.stringValue = value;
+            }
         }
 
     }

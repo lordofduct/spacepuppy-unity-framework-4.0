@@ -5,8 +5,9 @@ using System.Reflection;
 using System.Linq;
 
 using com.spacepuppy;
-using com.spacepuppy.Utils;
+using com.spacepuppy.Collections;
 using com.spacepuppy.Dynamic;
+using com.spacepuppy.Utils;
 
 namespace com.spacepuppyeditor.Core
 {
@@ -64,6 +65,9 @@ namespace com.spacepuppyeditor.Core
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
+            float h;
+            if (EditorHelper.AssertMultiObjectEditingNotSupportedHeight(property, label, out h)) return h;
+
             bool cache = property.isExpanded;
             if (this.AlwaysExpanded) property.isExpanded = true;
 
@@ -71,16 +75,13 @@ namespace com.spacepuppyeditor.Core
             {
                 //float objheight = !string.IsNullOrEmpty(property.managedReferenceFullTypename) ? EditorGUI.GetPropertyHeight(property, label, true) + 4f : EditorGUIUtility.singleLineHeight * 2f;
                 float objheight = 0f;
-                if (string.IsNullOrEmpty(property.managedReferenceFieldTypename))
+                if (string.IsNullOrEmpty(property.managedReferenceFullTypename))
                 {
                     objheight = EditorGUIUtility.singleLineHeight;
                 }
                 else if (property.isExpanded)
                 {
-                    foreach (var child in property.GetChildren())
-                    {
-                        objheight += SPEditorGUI.GetPropertyHeight(child);
-                    }
+                    objheight += FindPropertyDrawer(EditorHelper.GetManagedReferenceType(property)).GetPropertyHeight(property, GUIContent.none);
                 }
 
                 objheight += EditorGUIUtility.singleLineHeight + SELECTOR_VER_MARGIN;
@@ -102,6 +103,8 @@ namespace com.spacepuppyeditor.Core
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
+
             bool cache = property.isExpanded;
             if (this.AlwaysExpanded) property.isExpanded = true;
 
@@ -124,7 +127,7 @@ namespace com.spacepuppyeditor.Core
                         GUI.EndGroup();
 
                         EditorGUI.indentLevel++;
-                        SPEditorGUI.FlatChildPropertyField(drawArea, property);
+                        FindPropertyDrawer(EditorHelper.GetManagedReferenceType(property)).OnGUI(drawArea, property, GUIContent.none);
                         EditorGUI.indentLevel--;
 
                         selectorArea = new Rect(position.xMin + SELECTOR_HOR_MARGIN, position.yMin + TOP_PAD, position.width - SELECTOR_HOR_MARGIN_DBL, EditorGUIUtility.singleLineHeight);
@@ -146,14 +149,14 @@ namespace com.spacepuppyeditor.Core
                     {
                         property.isExpanded = true;
                         EditorGUI.PrefixLabel(new Rect(position.xMin, position.yMin, position.width, EditorGUIUtility.singleLineHeight), label);
-                        SPEditorGUI.FlatChildPropertyField(drawArea, property);
+                        FindPropertyDrawer(EditorHelper.GetManagedReferenceType(property)).OnGUI(drawArea, property, GUIContent.none);
                     }
                     else
                     {
                         cache = SPEditorGUI.PrefixFoldoutLabel(new Rect(position.xMin, position.yMin, position.width, EditorGUIUtility.singleLineHeight), property.isExpanded, label);
                         if (property.isExpanded)
                         {
-                            SPEditorGUI.FlatChildPropertyField(drawArea, property);
+                            EditorGUI.PrefixLabel(new Rect(position.xMin, position.yMin, position.width, EditorGUIUtility.singleLineHeight), label);
                         }
 
                     }
@@ -272,6 +275,87 @@ namespace com.spacepuppyeditor.Core
 
             public System.Type[] AvailableTypesWithNull;
             public GUIContent[] AvailableTypeNamesWithNull;
+        }
+
+        #endregion
+
+        #region Static PropertryDrawer Cache
+
+        private static readonly Dictionary<System.Type, PropertyDrawer> _cachedPropertyDrawers = new();
+        private static System.Type FindPropertyDrawerTypeFor(System.Type tp)
+        {
+            TempList<System.Type> useForChildTypes = null;
+            foreach (var drawerType in TypeUtil.GetTypesAssignableFrom(typeof(PropertyDrawer)))
+            {
+                if (drawerType.GetConstructor(System.Type.EmptyTypes) == null) continue;
+
+                foreach (var attrib in drawerType.GetCustomAttributes<CustomPropertyDrawer>(false))
+                {
+                    var atp = DynamicUtil.GetValue(attrib, "m_Type") as System.Type;
+                    if (atp == tp)
+                    {
+                        return drawerType;
+                    }
+                    else if (System.Convert.ToBoolean(DynamicUtil.GetValue(attrib, "m_UseForChildren")) && TypeUtil.IsType(tp, atp))
+                    {
+                        (useForChildTypes ??= TempCollection.GetList<System.Type>()).Add(drawerType);
+                    }
+                }
+            }
+
+            if (useForChildTypes != null)
+            {
+                var result = useForChildTypes.FirstOrDefault();
+                useForChildTypes.Dispose();
+                return result;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        private static PropertyDrawer FindPropertyDrawer(System.Type tp)
+        {
+            if (tp == null) return SimpleClassDrawer.Default;
+
+            PropertyDrawer result;
+            if (_cachedPropertyDrawers.TryGetValue(tp, out result)) return result;
+
+            var drawerType = FindPropertyDrawerTypeFor(tp);
+            if (drawerType != null)
+            {
+                result = System.Activator.CreateInstance(drawerType) as PropertyDrawer;
+            }
+
+            if (result == null)
+            {
+                result = SimpleClassDrawer.Default;
+            }
+
+            _cachedPropertyDrawers[tp] = result;
+            return result;
+        }
+
+        private class SimpleClassDrawer : PropertyDrawer
+        {
+
+            internal static readonly SimpleClassDrawer Default = new();
+
+            public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+            {
+                float h = 0;
+                foreach (var child in property.GetChildren())
+                {
+                    h += SPEditorGUI.GetPropertyHeight(child);
+                }
+                return h;
+            }
+
+            public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+            {
+                SPEditorGUI.FlatChildPropertyField(position, property);
+            }
         }
 
         #endregion

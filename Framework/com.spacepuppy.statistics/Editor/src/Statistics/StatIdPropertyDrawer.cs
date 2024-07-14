@@ -26,11 +26,16 @@ namespace com.spacepuppyeditor.Statistics
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
+            float h;
+            if (EditorHelper.AssertMultiObjectEditingNotSupportedHeight(property, label, out h)) return h;
+
             return EditorGUIUtility.singleLineHeight;
         }
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
+
             if (property.propertyType == SerializedPropertyType.String)
             {
                 DrawAsString(position, property, label);

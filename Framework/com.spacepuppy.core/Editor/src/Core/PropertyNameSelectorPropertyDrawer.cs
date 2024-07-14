@@ -75,7 +75,12 @@ namespace com.spacepuppyeditor.Core
                 pred = pred.ChainAnd(m => !attrib.IgnorePropNames.Contains(m.Name));
             }
 
-            property.stringValue = SPEditorGUI.PropertyNameSelector(position, label, property.stringValue, attrib.TargetTypes ?? ArrayUtil.Empty<System.Type>(), attrib.AllowCustom, pred);
+            EditorGUI.BeginChangeCheck();
+            string value = SPEditorGUI.PropertyNameSelector(position, label, property.stringValue, attrib.TargetTypes ?? ArrayUtil.Empty<System.Type>(), attrib.AllowCustom, pred);
+            if (EditorGUI.EndChangeCheck())
+            {
+                property.stringValue = value;
+            }
         }
 
     }

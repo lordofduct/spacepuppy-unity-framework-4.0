@@ -18,6 +18,8 @@ namespace com.spacepuppyeditor.Core
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
+
             position = SPEditorGUI.SafePrefixLabel(position, label);
 
             var attrib = this.fieldInfo.GetCustomAttributes(typeof(SPTime.Config), false).FirstOrDefault() as SPTime.Config;

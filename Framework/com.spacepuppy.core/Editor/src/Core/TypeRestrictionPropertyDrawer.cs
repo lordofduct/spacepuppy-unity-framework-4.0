@@ -106,6 +106,9 @@ namespace com.spacepuppyeditor.Core
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
+            float h;
+            if (EditorHelper.AssertMultiObjectEditingNotSupportedHeight(property, label, out h)) return h;
+
             if (this.HideTypeDropDown)
             {
                 return EditorGUIUtility.singleLineHeight;
@@ -120,6 +123,8 @@ namespace com.spacepuppyeditor.Core
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
+
             if (!this.ValidateFieldType())
             {
                 EditorGUI.PropertyField(position, property, label);

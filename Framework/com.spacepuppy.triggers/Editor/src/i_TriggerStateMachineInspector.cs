@@ -40,6 +40,9 @@ namespace com.spacepuppyeditor.Events
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
+            float h;
+            if (EditorHelper.AssertMultiObjectEditingNotSupportedHeight(property, label, out h)) return h;
+
             _drawer = com.spacepuppyeditor.Internal.CachedReorderableList.GetListDrawer(property.FindPropertyRelative(PROP_STATES), _lst_DrawHeader, _lst_DrawElement);
             _drawer.elementHeight = EditorGUIUtility.singleLineHeight;
             return _drawer.GetHeight();
@@ -47,6 +50,8 @@ namespace com.spacepuppyeditor.Events
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
+
             _drawer = com.spacepuppyeditor.Internal.CachedReorderableList.GetListDrawer(property.FindPropertyRelative(PROP_STATES), _lst_DrawHeader, _lst_DrawElement);
             _drawer.elementHeight = EditorGUIUtility.singleLineHeight;
             _drawer.DoList(position);

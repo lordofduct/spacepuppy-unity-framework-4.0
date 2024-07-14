@@ -108,6 +108,10 @@ namespace com.spacepuppyeditor.Core.Project
 
         protected virtual void DrawAssetTypeProperty()
         {
+            bool canEditAssetType = !this.serializedObject.isEditingMultipleObjects && ((this.serializedObject.targetObject as QueryableAssetSet)?.CanEditAssetType ?? false);
+            bool cache = GUI.enabled;
+            if (!canEditAssetType) GUI.enabled = false;
+
             var prop_assettype = this.serializedObject.FindProperty(QueryableAssetSet.PROP_ASSETTYPE);
             var prop_assets = this.serializedObject.FindProperty(QueryableAssetSet.PROP_ASSETS);
             _restrictedType = TypeReferencePropertyDrawer.GetTypeFromTypeReference(prop_assettype) ?? typeof(UnityEngine.Object);
@@ -132,6 +136,8 @@ namespace com.spacepuppyeditor.Core.Project
                     }
                 }
             }
+
+            GUI.enabled = cache;
         }
 
         protected virtual void DrawAssetsProperty()

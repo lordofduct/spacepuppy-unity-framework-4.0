@@ -10,7 +10,7 @@ using com.spacepuppyeditor.Settings;
 namespace com.spacepuppyeditor.SPInput.Events
 {
 
-    [CustomEditor(typeof(t_OnSimpleButtonPressInspector))]
+    [CustomEditor(typeof(t_OnSimpleButtonPress))]
     public class t_OnSimpleButtonPressInspector : SPEditor
     {
 

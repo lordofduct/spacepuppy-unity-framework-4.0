@@ -14,23 +14,42 @@ namespace com.spacepuppyeditor.Core
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-            EditorGUI.BeginChangeCheck();
             EditorGUI.BeginProperty(position, label, property);
 
             var attr = this.attribute as EulerRotationInspectorAttribute;
             switch (property.propertyType)
             {
                 case SerializedPropertyType.Quaternion:
-                    property.quaternionValue = ConvertUtil.ToQuaternion(EditorGUI.Vector4Field(position, label, ConvertUtil.ToVector4(property.quaternionValue)));
+                    EditorGUI.BeginChangeCheck();
+                    var qval = ConvertUtil.ToQuaternion(EditorGUI.Vector4Field(position, label, ConvertUtil.ToVector4(property.quaternionValue)));
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        property.quaternionValue = qval;
+                    }
                     break;
                 case SerializedPropertyType.Vector2:
-                    property.vector2Value = EditorGUI.Vector2Field(position, label, property.vector2Value);
+                    EditorGUI.BeginChangeCheck();
+                    var v2 = EditorGUI.Vector2Field(position, label, property.vector2Value);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        property.vector2Value = v2;
+                    }
                     break;
                 case SerializedPropertyType.Vector3:
-                    property.vector3Value = EditorGUI.Vector3Field(position, label, property.vector3Value);
+                    EditorGUI.BeginChangeCheck();
+                    var v3 = EditorGUI.Vector3Field(position, label, property.vector3Value);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        property.vector3Value = v3;
+                    }
                     break;
                 case SerializedPropertyType.Vector4:
-                    property.vector4Value = EditorGUI.Vector3Field(position, label, property.vector4Value);
+                    EditorGUI.BeginChangeCheck();
+                    var v4 = EditorGUI.Vector3Field(position, label, property.vector4Value);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        property.vector4Value = v4;
+                    }
                     break;
                 default:
                     SPEditorGUI.DefaultPropertyField(position, property, label);
@@ -38,8 +57,6 @@ namespace com.spacepuppyeditor.Core
             }
 
             EditorGUI.EndProperty();
-            if (EditorGUI.EndChangeCheck())
-                property.serializedObject.ApplyModifiedProperties();
         }
 
 

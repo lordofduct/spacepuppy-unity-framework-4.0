@@ -24,7 +24,12 @@ namespace com.spacepuppyeditor.Core
             {
                 case SerializedPropertyType.AnimationCurve:
                     {
-                        property.animationCurveValue = CurveField(position, label, property.animationCurveValue);
+                        EditorGUI.BeginChangeCheck();
+                        var value = CurveField(position, label, property.animationCurveValue);
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            property.animationCurveValue = value;
+                        }
                     }
                     break;
                 case SerializedPropertyType.ManagedReference:

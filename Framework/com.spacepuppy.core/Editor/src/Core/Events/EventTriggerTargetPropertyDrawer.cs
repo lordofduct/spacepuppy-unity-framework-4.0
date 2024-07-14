@@ -54,9 +54,11 @@ namespace com.spacepuppyeditor.Events
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
+            float h;
+            if (EditorHelper.AssertMultiObjectEditingNotSupportedHeight(property, label, out h)) return h;
+
             var actProp = property.FindPropertyRelative(EventTriggerTargetPropertyDrawer.PROP_ACTIVATIONTYPE);
 
-            float h = 0f;
             switch (actProp.GetEnumValue<TriggerActivationType>())
             {
                 case TriggerActivationType.TriggerAllOnTarget:
@@ -84,6 +86,8 @@ namespace com.spacepuppyeditor.Events
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
+
             EditorGUI.BeginProperty(position, label, property);
 
             ////Draw ActivationType Popup

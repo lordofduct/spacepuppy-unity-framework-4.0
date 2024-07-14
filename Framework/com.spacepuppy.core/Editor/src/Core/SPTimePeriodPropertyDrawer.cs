@@ -17,6 +17,8 @@ namespace com.spacepuppyeditor.Core
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
+
             position = SPEditorGUI.SafePrefixLabel(position, label);
             this.DrawTimePeriodSansLabel(position, property);
         }
@@ -66,6 +68,8 @@ namespace com.spacepuppyeditor.Core
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
+
             position = SPEditorGUI.SafePrefixLabel(position, label);
             this.DrawTimePeriodSansLabel(position, property);
         }

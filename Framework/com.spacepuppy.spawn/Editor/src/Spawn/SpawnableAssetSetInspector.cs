@@ -7,6 +7,7 @@ using com.spacepuppy.Utils;
 using com.spacepuppyeditor.Core.Project;
 using com.spacepuppyeditor.Core;
 using com.spacepuppyeditor.Windows;
+using UnityEngine.UIElements;
 
 namespace com.spacepuppyeditor
 {
@@ -100,11 +101,15 @@ namespace com.spacepuppyeditor
 
             public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
             {
+                float h;
+                if (EditorHelper.AssertMultiObjectEditingNotSupportedHeight(property, label, out h)) return h;
                 return EditorGUIUtility.singleLineHeight;
             }
 
             public override void OnGUI(Rect area, SerializedProperty property, GUIContent label)
             {
+                if (EditorHelper.AssertMultiObjectEditingNotSupported(area, property, label)) return;
+
                 const float MARGIN = 1.0f;
                 const float WEIGHT_FIELD_WIDTH = 60f;
                 const float PERC_FIELD_WIDTH = 45f;

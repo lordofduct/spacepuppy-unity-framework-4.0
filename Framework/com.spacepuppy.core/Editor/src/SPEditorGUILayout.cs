@@ -369,7 +369,7 @@ namespace com.spacepuppyeditor
             return System.Enum.ToObject(enumType, i) as System.Enum;
         }
 
-        public static int EnumFlagField(System.Type enumType, GUIContent label, int value) => EnumFlagField(enumType, label, value);
+        public static int EnumFlagField(System.Type enumType, GUIContent label, int value) => EnumFlagField(enumType, label, value, null);
         public static int EnumFlagField(System.Type enumType, GUIContent label, int value, params GUILayoutOption[] options)
         {
             //var names = (from e in EnumUtil.GetUniqueEnumFlags(enumType) select e.ToString()).ToArray();
@@ -378,7 +378,7 @@ namespace com.spacepuppyeditor
             var enums = EnumUtil.GetUniqueEnumFlags(enumType).ToArray();
             var names = (from e in enums select e.ToString()).ToArray();
             int mask = EditorHelper.ConvertEnumMaskToPopupMask(value, enums);
-            mask = EditorGUILayout.MaskField(mask, names, options);
+            mask = EditorGUILayout.MaskField(label, mask, names, options);
             return EditorHelper.ConvertPopupMaskToEnumMask(mask, enums);
         }
 

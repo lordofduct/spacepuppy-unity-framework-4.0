@@ -22,12 +22,15 @@ namespace com.spacepuppyeditor.Core
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
+            float h;
+            if (EditorHelper.AssertMultiObjectEditingNotSupportedHeight(property, label, out h)) return h;
             return EditorGUIUtility.singleLineHeight;
         }
 
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
             position = EditorGUI.PrefixLabel(position, label);
             EditorHelper.SuppressIndentLevel();
 

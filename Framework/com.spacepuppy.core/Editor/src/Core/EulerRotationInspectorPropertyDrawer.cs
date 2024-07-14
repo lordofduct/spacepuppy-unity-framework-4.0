@@ -36,7 +36,10 @@ namespace com.spacepuppyeditor.Core
                     v.y = MathUtil.NormalizeAngle(v.y, attr.UseRadians);
                     v.z = MathUtil.NormalizeAngle(v.z, attr.UseRadians);
 
-                    property.vector3Value = v;
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        property.vector3Value = v;
+                    }
                     break;
                 case SerializedPropertyType.Float:
                     //2d rotation
@@ -46,15 +49,14 @@ namespace com.spacepuppyeditor.Core
 
                     a = MathUtil.NormalizeAngle(a, attr.UseRadians);
 
-                    property.floatValue = a;
-
-                    //property.floatValue = FloatAngle(new Rect(0, 0, 30, 30), property.floatValue);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        property.floatValue = a;
+                    }
                     break;
             }
 
             EditorGUI.EndProperty();
-            if (EditorGUI.EndChangeCheck())
-                property.serializedObject.ApplyModifiedProperties();
         }
 
 

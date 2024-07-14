@@ -318,6 +318,30 @@ namespace com.spacepuppy.Utils
             }
         }
 
+        public static T MinOrDefault<T>(this IEnumerable<T> e)
+        {
+            if (e?.Any() ?? false)
+            {
+                return e.Min();
+            }
+            else
+            {
+                return default(T);
+            }
+        }
+
+        public static T MaxOrDefault<T>(this IEnumerable<T> e)
+        {
+            if (e?.Any() ?? false)
+            {
+                return e.Max();
+            }
+            else
+            {
+                return default(T);
+            }
+        }
+
         #endregion
 
         #region Random Methods

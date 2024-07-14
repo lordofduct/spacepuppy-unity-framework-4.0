@@ -27,6 +27,21 @@ namespace com.spacepuppy.Project
 
         void UnloadAllAssets();
 
+        bool TryLoadAsset<T>(string name, out T asset) where T : class
+        {
+            try
+            {
+                asset = LoadAsset<T>(name);
+                return asset != null;
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogException(ex);
+                asset = null;
+                return false;
+            }
+        }
+
     }
 
     public interface IGuidAssetSet : IAssetSet
@@ -39,6 +54,22 @@ namespace com.spacepuppy.Project
         UnityEngine.Object LoadAsset(System.Guid guid);
         UnityEngine.Object LoadAsset(System.Guid guid, System.Type tp);
         T LoadAsset<T>(System.Guid guid) where T : class;
+
+        bool TryLoadAsset<T>(System.Guid guid, out T asset) where T : class
+        {
+            try
+            {
+                asset = LoadAsset<T>(guid);
+                return asset != null;
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogException(ex);
+                asset = null;
+                return false;
+            }
+        }
+
     }
 
     [System.Serializable]
@@ -248,7 +279,7 @@ namespace com.spacepuppy.Project
 
         public void Dispose()
         {
-            if(_bundle != null)
+            if (_bundle != null)
             {
                 _bundle.Unload(true);
                 Resources.UnloadAsset(_bundle);

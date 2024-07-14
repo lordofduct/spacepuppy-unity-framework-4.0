@@ -194,7 +194,13 @@ namespace com.spacepuppy.Utils
 
         #region Transform Methods
 
-        public static void ZeroOut(this GameObject go, bool bIgnoreScale, bool bGlobal = false)
+        /// <summary>
+        /// Zeroes out position, rotation, and optionally scale of transform as well as velocity and angularVelocity of rigidbody attached to GameObject.
+        /// </summary>
+        /// <param name="go"></param>
+        /// <param name="bIgnoreScale"></param>
+        /// <param name="bGlobal"></param>
+        public static void ZeroOut(this GameObject go, bool bIgnoreScale, bool bGlobal = false, bool bIgnoreRigidbody = false)
         {
             if (bGlobal)
             {
@@ -209,15 +215,24 @@ namespace com.spacepuppy.Utils
                 if (!bIgnoreScale) go.transform.localScale = Vector3.one;
             }
 
-            var rb = go.GetComponent<Rigidbody>();
-            if (rb != null && !rb.isKinematic)
+            if (!bIgnoreRigidbody)
             {
-                rb.velocity = Vector3.zero;
-                rb.angularVelocity = Vector3.zero;
+                var rb = go.GetComponent<Rigidbody>();
+                if (rb != null && !rb.isKinematic)
+                {
+                    rb.velocity = Vector3.zero;
+                    rb.angularVelocity = Vector3.zero;
 
+                }
             }
         }
 
+        /// <summary>
+        /// Zeroes out position, rotation, and optionally scale of transform.
+        /// </summary>
+        /// <param name="go"></param>
+        /// <param name="bIgnoreScale"></param>
+        /// <param name="bGlobal"></param>
         public static void ZeroOut(this Transform trans, bool bIgnoreScale, bool bGlobal = false)
         {
             if (bGlobal)

@@ -75,7 +75,7 @@ namespace com.spacepuppy.SPInput
                 throw new System.NotImplementedException();
             }
         }
-        
+
         public virtual void Update()
         {
             var e = _signatures.GetEnumerator();
@@ -185,13 +185,20 @@ namespace com.spacepuppy.SPInput
             return (sig as ICursorInputSignature).CurrentState;
         }
 
-        public virtual bool GetAnyInputActivated()
+        public bool GetAnyInputActivated() => GetAnyInputActivated(out _);
+
+        public virtual bool GetAnyInputActivated(out IInputSignature signature)
         {
             var e = _signatures.GetEnumerator();
             while (e.MoveNext())
             {
-                if (e.Current.GetInputIsActivated()) return true;
+                if (e.Current.GetInputIsActivated())
+                {
+                    signature = e.Current;
+                    return true;
+                }
             }
+            signature = null;
             return false;
         }
 

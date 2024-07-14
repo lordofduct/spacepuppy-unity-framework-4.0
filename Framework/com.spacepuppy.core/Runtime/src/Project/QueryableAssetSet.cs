@@ -15,6 +15,7 @@ namespace com.spacepuppy.Project
     {
 
 #if UNITY_EDITOR
+        public const string PROP_ASSETID = nameof(_assetId);
         public const string PROP_SUPPORTNESTEDGROUPS = nameof(_supportNestedGroups);
         public const string PROP_ASSETTYPE = nameof(_assetType);
         public const string PROP_ASSETS = nameof(_assets);
@@ -54,15 +55,26 @@ namespace com.spacepuppy.Project
             _nameCache = new NameCache.UnityObjectNameCache(this);
         }
 
+        public QueryableAssetSet(System.Type assetType)
+        {
+            _nameCache = new NameCache.UnityObjectNameCache(this);
+            _assetType.Type = assetType ?? typeof(UnityEngine.Object);
+        }
+
         #endregion
 
         #region Properties
 
-        public System.Type AssetType
+        public virtual System.Type AssetType
         {
             get => _assetType.Type ?? typeof(UnityEngine.Object);
-            set => _assetType.Type = value;
+            set
+            {
+                if (this.CanEditAssetType) _assetType.Type = value;
+            }
         }
+
+        public virtual bool CanEditAssetType => true;
 
         public bool SupportNestedGroups
         {
@@ -111,6 +123,8 @@ namespace com.spacepuppy.Project
             _clean = true;
             return true;
         }
+
+        public void ReindexAssetSet() => this.SetupTable();
 
         public IEnumerable<string> GetAllAssetNames(bool shallow = false)
         {
@@ -557,6 +571,11 @@ namespace com.spacepuppy.Project
             _clean = false;
         }
 
+        bool TryLoadAsset<T>(string name, out T asset) where T : class
+        {
+            return this.TryGetAsset<T>(name, out asset);
+        }
+
 
         public void Dispose(bool unloadAllAssetsOnDispose = false)
         {
@@ -602,6 +621,11 @@ namespace com.spacepuppy.Project
         UnityEngine.Object IGuidAssetSet.LoadAsset(System.Guid guid, System.Type tp) => this.GetAsset(guid, tp);
 
         T IGuidAssetSet.LoadAsset<T>(System.Guid guid) => this.GetAsset<T>(guid);
+
+        bool TryLoadAsset<T>(System.Guid guid, out T asset) where T : class
+        {
+            return this.TryGetAsset<T>(guid, out asset);
+        }
 
         #endregion
 

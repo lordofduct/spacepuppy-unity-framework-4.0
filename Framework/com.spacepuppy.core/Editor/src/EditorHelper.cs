@@ -672,6 +672,9 @@ namespace com.spacepuppyeditor
                 case SerializedPropertyType.Bounds:
                     return prop.boundsValue;
                 case SerializedPropertyType.Generic:
+#if UNITY_2021_2_OR_NEWER
+                case SerializedPropertyType.ManagedReference:
+#endif
                     {
                         if (!ignoreSpecialWrappers)
                         {
@@ -1447,6 +1450,9 @@ namespace com.spacepuppyeditor
 
         public struct SerializedPropertyChangeCheckToken
         {
+            /*
+             * This method while it works logs strange errors claiming accessing 'hash128Value' is junk. Might be a bug in Unity and may be resolved in the future (I'm on an old unity version, it could already be resolved)
+             * 
             private SerializedProperty property;
             private Hash128 hash;
 
@@ -1457,6 +1463,38 @@ namespace com.spacepuppyeditor
             }
 
             public bool EndChangeCheck() => property != null && property.hash128Value != this.hash;
+            */
+
+            private SerializedProperty property;
+            private int hash;
+
+            public SerializedPropertyChangeCheckToken(SerializedProperty property)
+            {
+                this.property = property;
+                this.hash = CalculateHash(property);
+            }
+
+            public bool EndChangeCheck() => CalculateHash(property) != this.hash;
+
+            static int CalculateHash(SerializedProperty property)
+            {
+                if (property == null) return 0;
+
+                if (property.hasMultipleDifferentValues)
+                {
+                    return -1;
+                }
+                else
+                {
+                    switch (property.propertyType)
+                    {
+                        case SerializedPropertyType.ObjectReference:
+                            return property.objectReferenceInstanceIDValue;
+                        default:
+                            return EditorHelper.GetPropertyValue(property)?.GetHashCode() ?? 0;
+                    }
+                }
+            }
 
         }
 

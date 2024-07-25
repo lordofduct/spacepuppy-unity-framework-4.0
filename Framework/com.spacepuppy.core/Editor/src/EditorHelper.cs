@@ -134,6 +134,8 @@ namespace com.spacepuppyeditor
 
         #region SerializedProperty Helpers
 
+        public static SerializedPropertyChangeCheckToken BeginChangeCheck(this SerializedProperty property) => new SerializedPropertyChangeCheckToken(property);
+
         public static bool TryFindPropertyRelative(this SerializedProperty property, string relativePropertyPath, out SerializedProperty result)
         {
             result = property.FindPropertyRelative(relativePropertyPath);
@@ -1441,6 +1443,21 @@ namespace com.spacepuppyeditor
             public object GetValue(SerializedProperty property);
             public bool SetValue(SerializedProperty property, object value);
             public System.Type GetValueType(SerializedProperty property);
+        }
+
+        public struct SerializedPropertyChangeCheckToken
+        {
+            private SerializedProperty property;
+            private Hash128 hash;
+
+            public SerializedPropertyChangeCheckToken(SerializedProperty property)
+            {
+                this.property = property;
+                this.hash = property != null ? property.hash128Value : default;
+            }
+
+            public bool EndChangeCheck() => property != null && property.hash128Value != this.hash;
+
         }
 
         #endregion

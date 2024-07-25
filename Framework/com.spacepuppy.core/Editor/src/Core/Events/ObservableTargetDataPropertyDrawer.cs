@@ -43,10 +43,12 @@ namespace com.spacepuppyeditor.Events
             var targProp = property.FindPropertyRelative(PROP_TARGET);
             var indexProp = property.FindPropertyRelative(PROP_TRIGGERINDEX);
 
-            EditorGUI.BeginChangeCheck();
+            var token = targProp.BeginChangeCheck();
             SPEditorGUI.PropertyField(r0, targProp);
-            if (EditorGUI.EndChangeCheck())
+            if (token.EndChangeCheck())
+            {
                 indexProp.intValue = 0;
+            }
 
             if (targProp.objectReferenceValue is IObservableTrigger)
             {
@@ -58,7 +60,9 @@ namespace com.spacepuppyeditor.Events
                 EditorGUI.BeginChangeCheck();
                 int newValue = EditorGUI.Popup(r1, "Trigger Event", indexProp.intValue, events);
                 if (EditorGUI.EndChangeCheck())
+                {
                     indexProp.intValue = newValue;
+                }
             }
             else
             {

@@ -1,5 +1,6 @@
 ﻿#pragma warning disable 0649 // variable declared but not used.
 
+using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -14,7 +15,7 @@ namespace com.spacepuppy.Scenes
     /// the integration with which is manual and not directly supported via SceneRef.LoadScene.
     /// </summary>
     [System.Serializable]
-    public struct SceneRef
+    public struct SceneRef : System.IEquatable<SceneRef>
     {
 
         #region Fields
@@ -164,6 +165,68 @@ namespace com.spacepuppy.Scenes
             }
 
             return SceneManagerUtils.LoadScene(_sceneName, mode, behaviour, persistentToken);
+        }
+
+        #endregion
+
+        #region IEquatable Interface
+
+        public override int GetHashCode()
+        {
+            return this.ResolveSceneName()?.GetHashCode() ?? 0;
+        }
+
+        public override bool Equals(object obj)
+        {
+            switch (obj)
+            {
+                case SceneRef spsr:
+                    return this.Equals(spsr);
+                case Scene usc:
+                    return this.Equals(usc);
+                default:
+                    return false;
+            }
+        }
+
+        public bool Equals(SceneRef other)
+        {
+            return this.ResolveSceneName() == other.ResolveSceneName();
+        }
+
+        public bool Equals(Scene other)
+        {
+            return this.ResolveSceneName() == other.name;
+        }
+
+        public static bool operator ==(SceneRef a, SceneRef b)
+        {
+            return a.ResolveSceneName() == b.ResolveSceneName();
+        }
+
+        public static bool operator !=(SceneRef a, SceneRef b)
+        {
+            return a.ResolveSceneName() != b.ResolveSceneName();
+        }
+
+        public static bool operator ==(Scene a, SceneRef b)
+        {
+            return a.name == b.ResolveSceneName();
+        }
+
+        public static bool operator !=(Scene a, SceneRef b)
+        {
+            return a.name != b.ResolveSceneName();
+        }
+
+        public static bool operator ==(SceneRef a, Scene b)
+        {
+            return a.ResolveSceneName() == b.name;
+        }
+
+        public static bool operator !=(SceneRef a, Scene b)
+        {
+            return a.ResolveSceneName() != b.name;
         }
 
         #endregion

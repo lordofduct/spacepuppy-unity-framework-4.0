@@ -138,18 +138,7 @@ namespace com.spacepuppy.Spawn.Events
         {
             if (!this.CanTrigger) return false;
 
-            if (arg is string)
-            {
-                return this.Spawn(arg as string) != null;
-            }
-            else if (ConvertUtil.ValueIsNumericType(arg))
-            {
-                return this.Spawn(ConvertUtil.ToInt(arg)) != null;
-            }
-            else
-            {
-                return this.Spawn() != null;
-            }
+            return this.Spawn() != null;
         }
 
         #endregion

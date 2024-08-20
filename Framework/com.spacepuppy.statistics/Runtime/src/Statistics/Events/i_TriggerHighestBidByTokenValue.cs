@@ -18,6 +18,7 @@ namespace com.spacepuppy.Statistics.Events
         public const string PROP_BIDS = nameof(_bids);
         public const string PROP_BIDS_VALUE = nameof(BidData.Value);
         public const string PROP_BIDS_TARGET = nameof(BidData.Target);
+        public const string PROP_CASCADE = nameof(_cascadeBids);
 #endif
 
         #region Fields
@@ -27,6 +28,9 @@ namespace com.spacepuppy.Statistics.Events
         [SerializeField]
         [UnityEngine.Serialization.FormerlySerializedAs("_id")]
         private string _token;
+
+        [SerializeField, UnityEngine.Serialization.FormerlySerializedAs("_cascadeTrue"), Tooltip("If true then all bids under the winning bid are also triggered.")]
+        private bool _cascadeBids;
 
         [SerializeField]
         private List<BidData> _bids = new List<BidData>();
@@ -40,6 +44,8 @@ namespace com.spacepuppy.Statistics.Events
 
         public string Category { get { return _category; } set { _category = value; } }
         public string Token { get { return _token; } set { _token = value; } }
+
+        public bool CascadeTrue { get => _cascadeBids; set => _cascadeBids = value; }
 
         public IReadOnlyList<BidData> Bids => _bids;
 
@@ -76,21 +82,38 @@ namespace com.spacepuppy.Statistics.Events
             float fval = (float)service.GetStatOrDefault(_category, _token);
             if (_bids[0].Value > fval) return false; //value is < all bids, quit now
 
-            int imax = _bids.Count - 1;
-            for (int i = 1; i <= imax; i++)
+            if (_cascadeBids)
             {
-                if (_bids[i].Value > fval)
+                for (int i = 0; i < _bids.Count; i++)
                 {
-                    //i is > than bid, so i - 1 bid is the highest bid not over
-                    EventTriggerEvaluator.Current.TriggerAllOnTarget(_bids[i - 1].Target, null, this, null);
-                    return true;
+                    if (_bids[i].Value > fval)
+                    {
+                        return i > 0;
+                    }
+                    else
+                    {
+                        EventTriggerEvaluator.Current.TriggerAllOnTarget(_bids[i].Target, null, this, null);
+                    }
                 }
             }
-
-            if (_bids[imax].Value <= fval)
+            else
             {
-                EventTriggerEvaluator.Current.TriggerAllOnTarget(_bids[imax].Target, null, this, null);
-                return true;
+                int imax = _bids.Count - 1;
+                for (int i = 1; i <= imax; i++)
+                {
+                    if (_bids[i].Value > fval)
+                    {
+                        //i is > than bid, so i - 1 bid is the highest bid not over
+                        EventTriggerEvaluator.Current.TriggerAllOnTarget(_bids[i - 1].Target, null, this, null);
+                        return true;
+                    }
+                }
+
+                if (_bids[imax].Value <= fval)
+                {
+                    EventTriggerEvaluator.Current.TriggerAllOnTarget(_bids[imax].Target, null, this, null);
+                    return true;
+                }
             }
 
             return false;

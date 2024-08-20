@@ -46,7 +46,18 @@ namespace com.spacepuppy.Utils
             return obj.name == name;
         }
 
-        public static bool CompareName(this GameObject go, string name) => go ? go.AddOrGetComponent<GameObjectNameCache>().CompareName(name) : false;
+        public static bool CompareName(this GameObject go, string name)
+        {
+            if (go == null) return false;
+
+#if UNITY_EDITOR
+            if (Application.isPlaying && go != null) return go.AddOrGetComponent<GameObjectNameCache>().CompareName(name);
+#else
+            if (go != null) return go.AddOrGetComponent<GameObjectNameCache>().CompareName(name);
+#endif
+
+            return go.name == name;
+        }
 
         public static string GetCachedName(UnityEngine.Object obj)
         {

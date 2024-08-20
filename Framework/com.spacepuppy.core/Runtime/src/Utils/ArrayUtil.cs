@@ -178,15 +178,20 @@ namespace com.spacepuppy.Utils
             return first.Except(second).Count() + second.Except(first).Count() == 0;
         }
 
-        public static bool ContainsAny<T>(this IEnumerable<T> lst, params T[] objs)
-        {
-            if (objs == null) return false;
-            return lst.Intersect(objs).Count() > 0;
-        }
-
         public static bool ContainsAny<T>(this IEnumerable<T> lst, IEnumerable<T> objs)
         {
-            return lst.Intersect(objs).Count() > 0;
+            if (lst is ISet<T> set)
+            {
+                foreach (var o in objs)
+                {
+                    if (set.Contains(o)) return true;
+                }
+                return false;
+            }
+            else
+            {
+                return lst.Intersect(objs).Any();
+            }
         }
 
         public static bool Contains<T>(this T[,] arr, T value)

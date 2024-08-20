@@ -135,7 +135,7 @@ namespace com.spacepuppy.Utils
             }
         }
 
-        public static bool TrySetActive(this IGameObjectSource src, bool active)
+        public static bool TrySetActive(this Component src, bool active)
         {
             if (src == null) return false;
             var go = src.gameObject;
@@ -229,7 +229,7 @@ namespace com.spacepuppy.Utils
                         {
                             lst[i].OnPreKill(ref token, obj);
                         }
-                        catch(System.Exception ex)
+                        catch (System.Exception ex)
                         {
                             Debug.LogException(ex);
                         }
@@ -661,10 +661,10 @@ namespace com.spacepuppy.Utils
             {
                 queue.Enqueue(t);
 
-                while(queue.Count > 0)
+                while (queue.Count > 0)
                 {
                     t = queue.Dequeue();
-                    for(int i = 0; i < t.childCount; i++)
+                    for (int i = 0; i < t.childCount; i++)
                     {
                         var child = t.GetChild(i);
                         coll.Add(child);

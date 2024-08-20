@@ -437,6 +437,14 @@ namespace com.spacepuppy.Utils
             return result;
         }
 
+        public static void ReleaseSilently(StringBuilder b)
+        {
+            if (b == null) return;
+
+            b.Length = 0;
+            _pool.Release(b);
+        }
+
         public static string ToStringHax(this StringBuilder sb)
         {
             var info = typeof(StringBuilder).GetField("_str",

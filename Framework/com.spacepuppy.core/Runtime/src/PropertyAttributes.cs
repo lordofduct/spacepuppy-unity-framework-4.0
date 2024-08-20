@@ -276,6 +276,7 @@ namespace com.spacepuppy
     {
 
         public string ElementLabelFormatString = null;
+        public bool OneBasedLabelIndex = false;
         public bool AlwaysExpanded;
         public bool RemoveBackgroundWhenCollapsed;
         public bool Draggable = true;

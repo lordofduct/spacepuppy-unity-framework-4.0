@@ -13,69 +13,153 @@ namespace com.spacepuppyeditor
     public static class EditorProjectPrefs
     {
 
+        public enum PrefsLocation
+        {
+            ProjectSettings = 0,
+            UserSettings = 1,
+            GlobalSettings = 2
+        }
+
         #region Static Interface
 
-        private const string PREFS_DIR = @"../ProjectSettings";
-        private const string PREFS_PATH = PREFS_DIR + @"/Spacepuppy.EditorProjectPrefs.xml";
-        private static string _path;
+        private static string PROJECT_PREFS_PATH => System.IO.Path.Combine(Application.dataPath, @"../ProjectSettings/Spacepuppy.EditorProjectPrefs.xml");
+        private static string LOCAL_PREFS_PATH => System.IO.Path.Combine(Application.dataPath, @"../UserSettings/Spacepuppy.EditorProjectPrefs.xml");
+        private static string GLOBAL_PREFS_PATH => System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData), @"SpacepuppyUnityFramework/Spacepuppy.EditorProjectPrefs.xml");
         private static bool _autoSaveGroupSettingsOnModify = true;
-        private static XDocument _xdoc;
         private static string _projectId;
 
-        private static LocalSettings _local;
-        private static GroupSettings _group;
+        private static XmlSettings _project;
+        private static XmlSettings _local;
+        private static XmlSettings _global;
 
         static EditorProjectPrefs()
         {
-            _path = System.IO.Path.Combine(Application.dataPath, PREFS_PATH);
-            try
-            {
-                _xdoc = XDocument.Load(_path);
-            }
-            catch
-            {
-                _xdoc = null;
-            }
-
-            if (_xdoc == null)
-            {
-                _projectId = "SPProj." + System.Guid.NewGuid().ToString();
-                _xdoc = new XDocument(new XElement("root"));
-                _xdoc.Root.Add(new XAttribute("projectId", _projectId));
-
-                var sdir = System.IO.Path.GetDirectoryName(_path);
-                if (!System.IO.Directory.Exists(sdir)) System.IO.Directory.CreateDirectory(sdir);
-                _xdoc.Save(_path);
-            }
-            else
-            {
-                var xattrib = _xdoc.Root.Attribute("projectId");
-                if (xattrib == null)
-                {
-                    xattrib = new XAttribute("projectId", "SPProj." + System.Guid.NewGuid().ToString());
-                    _xdoc.Root.Add(xattrib);
-                    _xdoc.Save(_path);
-                }
-                else if (string.IsNullOrEmpty(xattrib.Value))
-                {
-                    xattrib.Value = "SPProj." + System.Guid.NewGuid().ToString();
-                    _xdoc.Save(_path);
-                }
-                _projectId = xattrib.Value;
-            }
-
-            _local = new LocalSettings();
-            _group = new GroupSettings();
+            _project = new XmlSettings(PROJECT_PREFS_PATH, GetOrCreateSharedProjectSettingsXdoc());
+            _local = new XmlSettings(PROJECT_PREFS_PATH, GetOrCreateLocalProjectSettingsXdoc());
+            _global = new XmlSettings(GLOBAL_PREFS_PATH, GetOrCreateGlobalSettingsXdoc());
         }
 
-        public static LocalSettings Local { get { return _local; } }
+        public static ISettings SharedProject => _project;
 
-        public static GroupSettings Group { get { return _group; } }
+        public static ISettings LocalProject => _local;
+
+        public static ISettings Global => _global;
 
         public static bool AutoSaveGroupSettingsOnModify
         {
             get { return _autoSaveGroupSettingsOnModify; }
             set { _autoSaveGroupSettingsOnModify = value; }
+        }
+
+
+
+
+        static XDocument GetOrCreateSharedProjectSettingsXdoc()
+        {
+            string path = PROJECT_PREFS_PATH;
+            XDocument xdoc;
+            try
+            {
+                xdoc = XDocument.Load(path);
+            }
+            catch
+            {
+                xdoc = null;
+            }
+
+            if (xdoc == null)
+            {
+                _projectId = "SPProj." + System.Guid.NewGuid().ToString();
+                xdoc = new XDocument(new XElement("root"));
+                xdoc.Root.Add(new XAttribute("projectId", _projectId));
+
+                var sdir = System.IO.Path.GetDirectoryName(path);
+                if (!System.IO.Directory.Exists(sdir)) System.IO.Directory.CreateDirectory(sdir);
+                xdoc.Save(path);
+            }
+            else
+            {
+                var xattrib = xdoc.Root.Attribute("projectId");
+                if (xattrib == null)
+                {
+                    xattrib = new XAttribute("projectId", "SPProj." + System.Guid.NewGuid().ToString());
+                    xdoc.Root.Add(xattrib);
+                    xdoc.Save(path);
+                }
+                else if (string.IsNullOrEmpty(xattrib.Value))
+                {
+                    xattrib.Value = "SPProj." + System.Guid.NewGuid().ToString();
+                    xdoc.Save(path);
+                }
+                _projectId = xattrib.Value;
+            }
+            return xdoc;
+        }
+
+        static XDocument GetOrCreateLocalProjectSettingsXdoc()
+        {
+            string path = LOCAL_PREFS_PATH;
+            XDocument xdoc;
+            try
+            {
+                xdoc = XDocument.Load(path);
+            }
+            catch
+            {
+                xdoc = null;
+            }
+
+            if (xdoc == null)
+            {
+                xdoc = new XDocument(new XElement("root"));
+                xdoc.Root.Add(new XAttribute("projectId", _projectId));
+
+                var sdir = System.IO.Path.GetDirectoryName(path);
+                if (!System.IO.Directory.Exists(sdir)) System.IO.Directory.CreateDirectory(sdir);
+                xdoc.Save(path);
+            }
+            else
+            {
+                var xattrib = xdoc.Root.Attribute("projectId");
+                if (xattrib == null)
+                {
+                    xattrib = new XAttribute("projectId", "SPProj." + _projectId);
+                    xdoc.Root.Add(xattrib);
+                    xdoc.Save(path);
+                }
+                else if (!xattrib.Value?.EndsWith(_projectId) ?? false)
+                {
+                    xattrib.Value = "SPProj." + _projectId;
+                    xdoc.Save(path);
+                }
+                _projectId = xattrib.Value;
+            }
+            return xdoc;
+        }
+
+        static XDocument GetOrCreateGlobalSettingsXdoc()
+        {
+            string path = GLOBAL_PREFS_PATH;
+            XDocument xdoc;
+            try
+            {
+                xdoc = XDocument.Load(path);
+            }
+            catch
+            {
+                xdoc = null;
+            }
+
+            if (xdoc == null)
+            {
+                xdoc = new XDocument(new XElement("root"));
+
+                var sdir = System.IO.Path.GetDirectoryName(path);
+                if (!System.IO.Directory.Exists(sdir)) System.IO.Directory.CreateDirectory(sdir);
+                xdoc.Save(path);
+            }
+
+            return xdoc;
         }
 
         #endregion
@@ -107,154 +191,18 @@ namespace com.spacepuppyeditor
             void SetEnum<T>(string key, T value) where T : struct, System.IConvertible;
         }
 
-        public class LocalSettings : ISettings
-        {
-
-            public void DeleteAll()
-            {
-                foreach (var skey in GetAllKeys())
-                {
-                    EditorPrefs.DeleteKey(skey);
-                }
-            }
-
-            public void DeleteKey(string key)
-            {
-                key = GetKey(key);
-                EditorPrefs.DeleteKey(key);
-            }
-
-            public bool HasKey(string key)
-            {
-                key = GetKey(key);
-                return EditorPrefs.HasKey(key);
-            }
-
-            public bool GetBool(string key)
-            {
-                key = GetKey(key);
-                return EditorPrefs.GetBool(key);
-            }
-            public bool GetBool(string key, bool defaultValue)
-            {
-                key = GetKey(key);
-                return EditorPrefs.GetBool(key, defaultValue);
-            }
-
-            public int GetInt(string key)
-            {
-                key = GetKey(key);
-                return EditorPrefs.GetInt(key);
-            }
-            public int GetInt(string key, int defaultValue)
-            {
-                key = GetKey(key);
-                return EditorPrefs.GetInt(key, defaultValue);
-            }
-
-            public float GetFloat(string key)
-            {
-                key = GetKey(key);
-                return EditorPrefs.GetFloat(key);
-            }
-            public float GetFloat(string key, float defaultValue)
-            {
-                key = GetKey(key);
-                return EditorPrefs.GetFloat(key, defaultValue);
-            }
-
-            public string GetString(string key)
-            {
-                key = GetKey(key);
-                return EditorPrefs.GetString(key);
-            }
-            public string GetString(string key, string defaultValue)
-            {
-                key = GetKey(key);
-                return EditorPrefs.GetString(key, defaultValue);
-            }
-
-#if UNITY_2021_3_OR_NEWER
-            public T GetEnum<T>(string key) where T : struct, System.Enum
-#else
-            public T GetEnum<T>(string key) where T : struct, System.IConvertible
-#endif
-            {
-                key = GetKey(key);
-                int i = EditorPrefs.GetInt(key);
-                return ConvertUtil.ToEnum<T>(i);
-            }
-
-#if UNITY_2021_3_OR_NEWER
-            public T GetEnum<T>(string key, T defaultValue) where T : struct, System.Enum
-#else
-            public T GetEnum<T>(string key, T defaultValue) where T : struct, System.IConvertible
-#endif
-            {
-                key = GetKey(key);
-                int i = EditorPrefs.GetInt(key, System.Convert.ToInt32(defaultValue));
-                return ConvertUtil.ToEnum<T>(i, defaultValue);
-            }
-
-            public void SetBool(string key, bool value)
-            {
-                key = GetKey(key);
-                EditorPrefs.SetBool(key, value);
-            }
-
-            public void SetInt(string key, int value)
-            {
-                key = GetKey(key);
-                EditorPrefs.SetInt(key, value);
-            }
-
-            public void SetFloat(string key, float value)
-            {
-                key = GetKey(key);
-                EditorPrefs.SetFloat(key, value);
-            }
-
-            public void SetString(string key, string value)
-            {
-                key = GetKey(key);
-                EditorPrefs.SetString(key, value);
-            }
-
-            public void SetEnum<T>(string key, T value) where T : struct, System.IConvertible
-            {
-                key = GetKey(key);
-                EditorPrefs.SetInt(key, System.Convert.ToInt32(value));
-            }
-
-            #region Utils
-
-            private string GetKey(string id)
-            {
-                return _projectId + "." + id;
-            }
-
-            private IEnumerable<string> GetAllKeys()
-            {
-                if (string.IsNullOrEmpty(_projectId)) yield break;
-
-#if UNITY_EDITOR_WIN
-                //TODO - must fix this
-                //var prefsKey = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Unity Technologies\Unity Editor 5.x");
-                //foreach (var skey in prefsKey.GetValueNames())
-                //{
-                //    if (skey.StartsWith(_projectId)) yield return skey;
-                //}
-#endif
-            }
-
-            #endregion
-
-        }
-
-        public class GroupSettings : ISettings
+        class XmlSettings : ISettings
         {
 
             private const string NODE_NAME = "setting";
+            private string _path;
+            private XDocument _xdoc;
+
+            public XmlSettings(string path, XDocument xdoc)
+            {
+                _path = path;
+                _xdoc = xdoc;
+            }
 
             public void Save()
             {

@@ -1537,73 +1537,151 @@ namespace com.spacepuppyeditor
         #endregion
 
 
+        #region AdvancedObjectField
 
-
-
-        #region Curve Swatch
-
-        /*
-        public static void DrawCurveSwatch(Rect position, ICurve curve, Color color, Color bgColor)
+        public static UnityEngine.Object AdvancedObjectField(Rect position, GUIContent label, UnityEngine.Object asset, System.Type objType, bool allowSceneObjects, bool allowProxy, System.Func<UnityEngine.Object, bool> filter = null, int maxVisibleCount = UnityObjectDropDownWindowSelector.DEFAULT_MAXCOUNT)
         {
-            if (Event.current.type != EventType.Repaint)
-                return;
-            int previewWidth = (int)position.width;
-            int previewHeight = (int)position.height;
-            Color color1 = GUI.color;
-            GUI.color = bgColor;
-            EditorHelper.WhiteTextureStyle.Draw(position, false, false, false, false);
-            GUI.color = color1;
-
-            if (curve == null) return;
-
-            Texture2D tex = GetCurveTexture(Mathf.RoundToInt(position.width), Mathf.RoundToInt(position.height), curve, color);
-            GUIStyle basicTextureStyle = GetCurveTextureStyle(tex);
-            position.width = (float)tex.width;
-            position.height = (float)tex.height;
-            basicTextureStyle.Draw(position, false, false, false, false);
-        }
-
-
-        private static Texture2D s_CurveTexture;
-        private static GUIStyle s_CurveTextureStyle;
-        private static Texture2D GetCurveTexture(int width, int height, ICurve curve, Color color)
-        {
-            if (s_CurveTexture == null)
-                s_CurveTexture = new Texture2D(width, height);
-            else
-                s_CurveTexture.Resize(width, height);
-
-            var c = new Color(1f, 1f, 1f, 0f);
-            var pixels = s_CurveTexture.GetPixels();
-            for (int i = 0; i < pixels.Length; i++) pixels[i] = c;
-            s_CurveTexture.SetPixels(pixels);
-
-            for (int i = 0; i < s_CurveTexture.width; i++)
+            UnityEngine.Object result;
+            if (SpacepuppySettings.UseAdvancedObjectField)
             {
-                var t = (float)i / (float)width;
-                int j = (int)(curve.GetPosition(t) * height);
-                s_CurveTexture.SetPixel(i, j, color);
+                result = UnityObjectDropDownWindowSelector.ObjectField(position, label, asset, objType, allowSceneObjects, allowProxy, filter, maxVisibleCount);
+            }
+            else
+            {
+                if (label != null && !string.IsNullOrEmpty(label.text)) label = EditorHelper.TempContent($"{label.text}   ({objType.Name})", label.tooltip);
+                EditorGUI.BeginChangeCheck();
+                var tp = TypeUtil.IsType(objType, typeof(UnityEngine.Object)) && !allowProxy ? objType : typeof(UnityEngine.Object);
+                result = EditorGUI.ObjectField(position, label, asset, tp, allowSceneObjects);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    if (!(allowProxy && result is IProxy))
+                    {
+                        result = ObjUtil.GetAsFromSource(objType, result, false) as UnityEngine.Object;
+                    }
+                    if (result && filter != null && !filter(result)) result = null;
+                }
             }
 
-            s_CurveTexture.Apply();
-            return s_CurveTexture;
+            return result;
         }
-        private static GUIStyle GetCurveTextureStyle(Texture2D tex)
+
+        public static T AdvancedObjectField<T>(Rect position, GUIContent label, SerializedProperty property, bool allowSceneObjects, System.Func<T, bool> filter = null, int maxVisibleCount = UnityObjectDropDownWindowSelector.DEFAULT_MAXCOUNT) where T : class
         {
-            if (s_CurveTextureStyle == null)
-                s_CurveTextureStyle = new GUIStyle();
-            s_CurveTextureStyle.normal.background = tex;
-            return s_CurveTextureStyle;
+            T result = property.objectReferenceValue as T;
+            if (SpacepuppySettings.UseAdvancedObjectField)
+            {
+                result = UnityObjectDropDownWindowSelector.ObjectField<T>(position, label, property, allowSceneObjects, filter, maxVisibleCount);
+            }
+            else
+            {
+                if (label != null && !string.IsNullOrEmpty(label.text)) label = EditorHelper.TempContent($"{label.text}   ({typeof(T).Name})", label.tooltip);
+                EditorGUI.BeginChangeCheck();
+                var tp = TypeUtil.IsType(typeof(T), typeof(UnityEngine.Object)) ? typeof(T) : typeof(UnityEngine.Object);
+                var oresult = EditorGUI.ObjectField(position, label, property.objectReferenceValue, tp, allowSceneObjects);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    oresult = ObjUtil.GetAsFromSource(typeof(T), oresult) as UnityEngine.Object;
+                    if (oresult && oresult != null && !filter(oresult as T)) result = null;
+                    result = oresult as T;
+                    property.objectReferenceValue = oresult;
+                }
+            }
+
+            return result;
         }
-        */
+
+        public static T AdvancedObjectField<T>(Rect position, GUIContent label, T asset, bool allowSceneObjects, System.Func<T, bool> filter = null, int maxVisibleCount = UnityObjectDropDownWindowSelector.DEFAULT_MAXCOUNT) where T : class
+        {
+
+            T result = asset;
+            if (SpacepuppySettings.UseAdvancedObjectField)
+            {
+                result = UnityObjectDropDownWindowSelector.ObjectField<T>(position, label, asset, allowSceneObjects, filter, maxVisibleCount);
+            }
+            else
+            {
+                if (label != null && !string.IsNullOrEmpty(label.text)) label = EditorHelper.TempContent($"{label.text}   ({typeof(T).Name})", label.tooltip);
+                EditorGUI.BeginChangeCheck();
+                var tp = TypeUtil.IsType(typeof(T), typeof(UnityEngine.Object)) ? typeof(T) : typeof(UnityEngine.Object);
+                var oresult = EditorGUI.ObjectField(position, label, asset as UnityEngine.Object, tp, allowSceneObjects);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    oresult = ObjUtil.GetAsFromSource(typeof(T), oresult) as UnityEngine.Object;
+                    if (oresult && filter != null && !filter(oresult as T)) result = null;
+                    result = oresult as T;
+                }
+            }
+
+            return result;
+        }
 
         #endregion
 
-        #region ReflectedPropertyField
 
-        /// <summary>
-        /// Reflects the available properties and shows them in a dropdown
-        /// </summary>
+            #region Curve Swatch
+
+            /*
+            public static void DrawCurveSwatch(Rect position, ICurve curve, Color color, Color bgColor)
+            {
+                if (Event.current.type != EventType.Repaint)
+                    return;
+                int previewWidth = (int)position.width;
+                int previewHeight = (int)position.height;
+                Color color1 = GUI.color;
+                GUI.color = bgColor;
+                EditorHelper.WhiteTextureStyle.Draw(position, false, false, false, false);
+                GUI.color = color1;
+
+                if (curve == null) return;
+
+                Texture2D tex = GetCurveTexture(Mathf.RoundToInt(position.width), Mathf.RoundToInt(position.height), curve, color);
+                GUIStyle basicTextureStyle = GetCurveTextureStyle(tex);
+                position.width = (float)tex.width;
+                position.height = (float)tex.height;
+                basicTextureStyle.Draw(position, false, false, false, false);
+            }
+
+
+            private static Texture2D s_CurveTexture;
+            private static GUIStyle s_CurveTextureStyle;
+            private static Texture2D GetCurveTexture(int width, int height, ICurve curve, Color color)
+            {
+                if (s_CurveTexture == null)
+                    s_CurveTexture = new Texture2D(width, height);
+                else
+                    s_CurveTexture.Resize(width, height);
+
+                var c = new Color(1f, 1f, 1f, 0f);
+                var pixels = s_CurveTexture.GetPixels();
+                for (int i = 0; i < pixels.Length; i++) pixels[i] = c;
+                s_CurveTexture.SetPixels(pixels);
+
+                for (int i = 0; i < s_CurveTexture.width; i++)
+                {
+                    var t = (float)i / (float)width;
+                    int j = (int)(curve.GetPosition(t) * height);
+                    s_CurveTexture.SetPixel(i, j, color);
+                }
+
+                s_CurveTexture.Apply();
+                return s_CurveTexture;
+            }
+            private static GUIStyle GetCurveTextureStyle(Texture2D tex)
+            {
+                if (s_CurveTextureStyle == null)
+                    s_CurveTextureStyle = new GUIStyle();
+                s_CurveTextureStyle.normal.background = tex;
+                return s_CurveTextureStyle;
+            }
+            */
+
+            #endregion
+
+            #region ReflectedPropertyField
+
+            /// <summary>
+            /// Reflects the available properties and shows them in a dropdown
+            /// </summary>
         public static string ReflectedPropertyField(Rect position, GUIContent label, object targObj, string selectedMemberName, DynamicMemberAccess access, out System.Reflection.MemberInfo selectedMember, ReflectedPropertyFieldOptions options = 0)
         {
             bool allowSetterMethods = (options & ReflectedPropertyFieldOptions.AllowSetterMethods) != 0;

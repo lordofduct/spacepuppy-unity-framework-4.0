@@ -8,7 +8,8 @@ namespace com.spacepuppyeditor
     public static class SpacepuppySettings
     {
 
-        private const string SETTING_STORESETTINGSLOCAL = "Spacepuppy.StoreSettingsLocal";
+        private const string SETTING_STORESETTINGSLOCAL_OLD = "Spacepuppy.StoreSettingsLocal";
+        private const string SETTING_SETTINGSLOCATION = "Spacepuppy.SettingsLocation";
 
         private const string SETTING_SPEDITOR_ISDEFAULT_ACTIVE = "UseSPEditor.IsDefault.Active";
         private const string SETTING_ADVANCEDANIMINSPECTOR_ACTIVE = "AdvancedAnimationInspector.Active";
@@ -27,19 +28,29 @@ namespace com.spacepuppyeditor
         {
             get
             {
-                return EditorProjectPrefs.Local.GetBool(SETTING_STORESETTINGSLOCAL, false);
+                return EditorProjectPrefs.LocalProject.GetBool(SETTING_STORESETTINGSLOCAL_OLD, false);
             }
             set
             {
-                EditorProjectPrefs.Local.SetBool(SETTING_STORESETTINGSLOCAL, value);
+                EditorProjectPrefs.LocalProject.SetBool(SETTING_STORESETTINGSLOCAL_OLD, value);
             }
+        }
+
+        /*
+         * GLOBAL SETTINGS
+         */
+
+        public static bool UseAdvancedObjectField
+        {
+            get => EditorProjectPrefs.Global.GetBool("UseAdvancedObjectField", true);
+            set => EditorProjectPrefs.Global.SetBool("UseAdvancedObjectField", value);
         }
 
         /*
          * EDITOR SETTINGS
          */
 
-        public static EditorProjectPrefs.ISettings ProjectPrefs => StoreSettingsLocal ? EditorProjectPrefs.Local : EditorProjectPrefs.Group;
+        public static EditorProjectPrefs.ISettings ProjectPrefs => StoreSettingsLocal ? EditorProjectPrefs.LocalProject : EditorProjectPrefs.SharedProject;
 
         public static bool UseSPEditorAsDefaultEditor
         {

@@ -167,7 +167,7 @@ namespace com.spacepuppyeditor.Core
                         filter = o => o && (TypeUtil.IsType(o.GetType(), allInheritableTypes) || ObjUtil.GetAsFromSource(allInheritableTypes, o) != null);
                     }
 
-                    targ = UnityObjectDropDownWindowSelector.ObjectField(position,
+                    targ = SPEditorGUI.AdvancedObjectField(position,
                         label,
                         property.objectReferenceValue,
                         (allInheritableTypes.Length == 1) ? allInheritableTypes[0] : fieldType,

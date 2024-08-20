@@ -148,7 +148,7 @@ namespace com.spacepuppyeditor
                     EditorHelper.SuppressIndentLevel();
                 }
 
-                property.objectReferenceValue = UnityObjectDropDownWindowSelector.ObjectField(valueRect,
+                property.objectReferenceValue = SPEditorGUI.AdvancedObjectField(valueRect,
                     GUIContent.none,
                     property.objectReferenceValue,
                     typeof(UnityEngine.Object),

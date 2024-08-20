@@ -9,6 +9,12 @@ using com.spacepuppy;
 namespace com.spacepuppyeditor.Settings
 {
 
+    [System.AttributeUsage(System.AttributeTargets.Method, AllowMultiple = false)]
+    public class BulkBuildPostBuildCallbackAttribute : System.Attribute
+    {
+
+    }
+
     [CreateAssetMenu(fileName = "BulkBuildSettings", menuName = "Spacepuppy Build Pipeline/Bulk Build Settings")]
     public class BulkBuildSettings : ScriptableObject
     {
@@ -28,12 +34,13 @@ namespace com.spacepuppyeditor.Settings
         [ReorderableArray]
         private List<BuildSettings> _builds;
 
-        [SerializeField]
-        [EnumFlags]
-        private ScriptOptions _postBuildScriptRunOptions;
+        [SerializeField, EnumFlags, UnityEngine.Serialization.FormerlySerializedAs("_postBuildScriptRunOptions")]
+        private ScriptOptions _buildScriptRunOptions;
 
-        [SerializeField]
-        [ReorderableArray]
+        [SerializeField, ReorderableArray]
+        private List<string> _preBuildScripts;
+
+        [SerializeField, ReorderableArray]
         private List<string> _postBuildScripts;
 
         #endregion
@@ -47,8 +54,8 @@ namespace com.spacepuppyeditor.Settings
 
         public ScriptOptions PostBuildScriptRunOptions
         {
-            get { return _postBuildScriptRunOptions; }
-            set { _postBuildScriptRunOptions = value; }
+            get { return _buildScriptRunOptions; }
+            set { _buildScriptRunOptions = value; }
         }
 
         public List<string> PostBuildScripts
@@ -64,6 +71,13 @@ namespace com.spacepuppyeditor.Settings
         {
             await Task.Delay(10);
 
+            if ((_buildScriptRunOptions & ScriptOptions.Run) != 0)
+            {
+                this.RunScripts(_preBuildScripts);
+            }
+
+            await Task.Delay(10);
+
             bool failed = false;
             foreach (var settings in _builds)
             {
@@ -77,15 +91,27 @@ namespace com.spacepuppyeditor.Settings
                 }
             }
 
-            if ((_postBuildScriptRunOptions & ScriptOptions.Run) == 0) return;
-            if ((_postBuildScriptRunOptions & ScriptOptions.CancelIfBuildFails) != 0 && failed) return;
+            foreach (var m in TypeCache.GetMethodsWithAttribute<BulkBuildPostBuildCallbackAttribute>())
+            {
+                try
+                {
+                    m.Invoke(null, new object[] { this });
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogException(ex);
+                }
+            }
 
-            this.RunScripts();
+            if ((_buildScriptRunOptions & ScriptOptions.Run) == 0) return;
+            if ((_buildScriptRunOptions & ScriptOptions.CancelIfBuildFails) != 0 && failed) return;
+
+            this.RunScripts(_postBuildScripts);
         }
 
-        private void RunScripts()
+        private void RunScripts(IList<string> scripts)
         {
-            foreach (var str in _postBuildScripts)
+            foreach (var str in scripts)
             {
                 if (string.IsNullOrEmpty(str)) continue;
 
@@ -106,7 +132,7 @@ namespace com.spacepuppyeditor.Settings
                         proc.StartInfo.CreateNoWindow = false;
                         proc.Start();
 
-                        if ((_postBuildScriptRunOptions & ScriptOptions.BlockUntilComplete) != 0)
+                        if ((_buildScriptRunOptions & ScriptOptions.BlockUntilComplete) != 0)
                         {
                             proc.WaitForExit();
                         }
@@ -130,6 +156,29 @@ namespace com.spacepuppyeditor.Settings
         protected override void OnSPInspectorGUI()
         {
             base.OnSPInspectorGUI();
+
+            EditorGUILayout.Space(5f);
+
+            var arr = TypeCache.GetMethodsWithAttribute<BulkBuildPostBuildCallbackAttribute>();
+            if (arr.Count > 0)
+            {
+                if (GUILayout.Button("Run Only BulkBuildPostBuildCallbacks"))
+                {
+                    foreach (var m in arr)
+                    {
+                        try
+                        {
+                            m.Invoke(null, new object[] { this.target });
+                        }
+                        catch (System.Exception ex)
+                        {
+                            Debug.LogException(ex);
+                        }
+                    }
+                }
+
+                EditorGUILayout.Space(5f);
+            }
 
             if (GUILayout.Button("Build"))
             {

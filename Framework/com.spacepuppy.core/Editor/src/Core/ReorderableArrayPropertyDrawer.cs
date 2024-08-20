@@ -39,6 +39,7 @@ namespace com.spacepuppyeditor.Core
         private string _childPropertyAsLabel;
         private string _childPropertyAsEntry;
         private string _elementLabelFormatString;
+        private bool _oneBasedLabelIndex;
         private float _elementPadding;
         private bool _allowDragAndDrop = true;
         private bool _allowDragAndDropSceneObjects = true;
@@ -211,6 +212,12 @@ namespace com.spacepuppyeditor.Core
         {
             get { return (this.attribute as ReorderableArrayAttribute)?.ElementLabelFormatString ?? _elementLabelFormatString; }
             set { _elementLabelFormatString = value; }
+        }
+
+        public bool OneBasedLabelIndex
+        {
+            get => (this.attribute as ReorderableArrayAttribute)?.OneBasedLabelIndex ?? _oneBasedLabelIndex;
+            set => _oneBasedLabelIndex = value;
         }
 
         public float ElementPadding
@@ -645,8 +652,9 @@ namespace com.spacepuppyeditor.Core
                 if (propLabel != null) slbl = ConvertUtil.ToString(EditorHelper.GetPropertyValue(propLabel));
             }
 
-            if (string.IsNullOrEmpty(slbl)) slbl = this.FormatElementLabel?.Invoke(element, index, isActive, isFocused);
-            if (string.IsNullOrEmpty(slbl)) slbl = string.IsNullOrEmpty(this.ElementLabelFormatString) ? string.Format("Element {0:00}", index) : string.Format(this.ElementLabelFormatString, index);
+            int lindex = this.OneBasedLabelIndex ? index + 1 : index;
+            if (string.IsNullOrEmpty(slbl)) slbl = this.FormatElementLabel?.Invoke(element, lindex, isActive, isFocused);
+            if (string.IsNullOrEmpty(slbl)) slbl = string.IsNullOrEmpty(this.ElementLabelFormatString) ? string.Format("Element {0:00}", lindex) : string.Format(this.ElementLabelFormatString, lindex);
 
             return EditorHelper.TempContent(slbl);
         }

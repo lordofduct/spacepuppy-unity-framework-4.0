@@ -222,7 +222,7 @@ namespace com.spacepuppyeditor.Core.Project
                 if (_owner._supportNestedAssetSet || _owner._restrictedType.IsInterface)
                 {
                     EditorGUI.BeginChangeCheck();
-                    var obj = UnityObjectDropDownWindowSelector.ObjectField(position,
+                    var obj = SPEditorGUI.AdvancedObjectField(position,
                         label,
                         property.objectReferenceValue,
                         typeof(UnityEngine.Object),

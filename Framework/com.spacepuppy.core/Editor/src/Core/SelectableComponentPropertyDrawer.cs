@@ -274,7 +274,7 @@ namespace com.spacepuppyeditor.Core
             {
                 if (this.AllowProxy || (this.RestrictionType != null && !TypeUtil.IsType(this.RestrictionType, typeof(UnityEngine.Object))))
                 {
-                    nextobj = UnityObjectDropDownWindowSelector.ObjectField(position, GUIContent.none, property.objectReferenceValue, this.RestrictionType, this.AllowSceneObjects, this.AllowProxy);
+                    nextobj = SPEditorGUI.AdvancedObjectField(position, GUIContent.none, property.objectReferenceValue, this.RestrictionType, this.AllowSceneObjects, this.AllowProxy);
                 }
                 else
                 {

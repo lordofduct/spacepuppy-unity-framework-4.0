@@ -95,7 +95,7 @@ namespace com.spacepuppyeditor.Core.Project
 
             if (objProp.objectReferenceValue == null)
             {
-                object val = UnityObjectDropDownWindowSelector.ObjectField(position, label, objProp.objectReferenceValue, valueType, true, true);
+                object val = SPEditorGUI.AdvancedObjectField(position, label, objProp.objectReferenceValue, valueType, true, true);
                 if (val != null && !valueType.IsInstanceOfType(val) && ObjUtil.GetAsFromSource<IProxy>(val) == null)
                 {
                     val = null;
@@ -280,7 +280,7 @@ namespace com.spacepuppyeditor.Core.Project
 
             if (objProp.objectReferenceValue == null)
             {
-                object val = UnityObjectDropDownWindowSelector.ObjectField(area, label, objProp.objectReferenceValue, _valueType, true, true);
+                object val = SPEditorGUI.AdvancedObjectField(area, label, objProp.objectReferenceValue, _valueType, true, true);
                 if (val != null && !_valueType.IsInstanceOfType(val) && ObjUtil.GetAsFromSource<IProxy>(val) == null)
                 {
                     val = null;

@@ -9,6 +9,7 @@ using com.spacepuppy;
 using com.spacepuppy.Collections;
 using com.spacepuppy.Utils;
 using System.Threading.Tasks;
+using UnityEngine.UI;
 
 namespace com.spacepuppyeditor.Settings
 {
@@ -36,6 +37,9 @@ namespace com.spacepuppyeditor.Settings
         public string BuildDirectory;
 
         [SerializeField]
+        public bool PurgeBuildDirectory;
+
+        [SerializeField]
         public VersionInfo Version;
 
         [SerializeField]
@@ -59,8 +63,7 @@ namespace com.spacepuppyeditor.Settings
         [SerializeField]
         private bool _defineSymbols;
 
-        [SerializeField]
-        [Tooltip("Semi-colon delimited symbols.")]
+        [SerializeField, TextArea(3, 10), Tooltip("Semi-colon delimited symbols.")]
         private string _symbols;
 
         [SerializeField]
@@ -156,10 +159,11 @@ namespace com.spacepuppyeditor.Settings
         public virtual Task<bool> BuildAsync(PostBuildOption option)
         {
             string path;
+            bool purge = false;
             try
             {
                 //get output directory
-                var dir = EditorProjectPrefs.Local.GetString("LastBuildDirectory", string.Empty);
+                var dir = EditorProjectPrefs.LocalProject.GetString("LastBuildDirectory", string.Empty);
                 if (string.IsNullOrEmpty(this.BuildFileName))
                 {
                     string extension = GetExtension(this.BuildTarget);
@@ -177,6 +181,7 @@ namespace com.spacepuppyeditor.Settings
                     {
                         path = System.IO.Path.Combine(possiblePath, this.GetBuildFileNameWithExtension());
                         path = System.IO.Path.GetFullPath(path);
+                        purge = this.PurgeBuildDirectory;
                     }
                     else
                     {
@@ -199,10 +204,10 @@ namespace com.spacepuppyeditor.Settings
                 return Task.FromResult(false);
             }
 
-            return this.BuildAsync(path, option);
+            return this.BuildAsync(path, option, purge);
         }
 
-        public async virtual Task<bool> BuildAsync(string path, PostBuildOption option)
+        public async virtual Task<bool> BuildAsync(string path, PostBuildOption option, bool purgeBuildPath)
         {
             try
             {
@@ -220,7 +225,7 @@ namespace com.spacepuppyeditor.Settings
                 if (!string.IsNullOrEmpty(path))
                 {
                     //save last build directory
-                    EditorProjectPrefs.Local.SetString("LastBuildDirectory", System.IO.Path.GetDirectoryName(path));
+                    EditorProjectPrefs.LocalProject.SetString("LastBuildDirectory", System.IO.Path.GetDirectoryName(path));
 
 
                     //do build
@@ -275,6 +280,16 @@ namespace com.spacepuppyeditor.Settings
                                 catch (System.Exception)
                                 { }
                             }
+                        }
+                    }
+
+                    if (purgeBuildPath)
+                    {
+                        var dir = System.IO.Directory.GetParent(path);
+                        if (dir != null)
+                        {
+                            foreach (var f in dir.EnumerateFiles()) f.Delete();
+                            foreach (var d in dir.EnumerateDirectories()) d.Delete(true);
                         }
                     }
 
@@ -483,6 +498,7 @@ namespace com.spacepuppyeditor.Settings
 
         public const string PROP_BUILDFILENAME = "BuildFileName";
         public const string PROP_BUILDDIR = "BuildDirectory";
+        public const string PROP_PURGEBUILDDIR = "PurgeBuildDirectory";
         public const string PROP_VERSION = "Version";
         public const string PROP_BOOTSCENE = "_bootScene";
         public const string PROP_SCENES = "_scenes";
@@ -496,6 +512,7 @@ namespace com.spacepuppyeditor.Settings
         #region Fields
 
         private com.spacepuppyeditor.Core.ReorderableArrayPropertyDrawer _scenesDrawer = new com.spacepuppyeditor.Core.ReorderableArrayPropertyDrawer(typeof(SceneAsset));
+        private UnityEditorInternal.ReorderableList _symbolsListDrawer;
 
         #endregion
 
@@ -532,6 +549,8 @@ namespace com.spacepuppyeditor.Settings
             {
                 var propBuildDir = this.serializedObject.FindProperty(PROP_BUILDDIR);
                 propBuildDir.stringValue = SPEditorGUILayout.FolderPathTextfield(EditorHelper.TempContent(propBuildDir.displayName, propBuildDir.tooltip), propBuildDir.stringValue, "Build Directory");
+
+                this.DrawPropertyField(PROP_PURGEBUILDDIR);
             }
             this.DrawPropertyField(PROP_VERSION);
 
@@ -576,8 +595,51 @@ namespace com.spacepuppyeditor.Settings
             SPEditorGUILayout.PropertyField(propDefineSymbols);
             if (propDefineSymbols.boolValue)
             {
-                this.DrawPropertyField(PROP_SYMBOLS);
+                if (_symbolsListDrawer == null)
+                {
+                    _symbolsListDrawer = new UnityEditorInternal.ReorderableList(new List<string>(), typeof(string));
+                    _symbolsListDrawer.drawHeaderCallback = (r) => EditorGUI.LabelField(r, "Defined Symbols");
+                    _symbolsListDrawer.drawElementCallback = (Rect rect, int index, bool isActive, bool isFocused) =>
+                    {
+                        if (index < 0 || index >= _symbolsListDrawer.list.Count) return;
+                        _symbolsListDrawer.list[index] = EditorGUI.TextField(new Rect(rect.xMin, rect.yMin, rect.width, EditorGUIUtility.singleLineHeight), _symbolsListDrawer.list[index] as string);
+                    };
+                    _symbolsListDrawer.onAddCallback = (listdrawer) =>
+                    {
+                        (_symbolsListDrawer.list as List<string>).Add(string.Empty);
+                    };
+                    _symbolsListDrawer.onRemoveCallback = (listdrawer) =>
+                    {
+                        if (listdrawer.index >= 0 && listdrawer.index < _symbolsListDrawer.list.Count)
+                        {
+                            (_symbolsListDrawer.list as List<string>).RemoveAt(_symbolsListDrawer.index);
+                        }
+                        else if (_symbolsListDrawer.list.Count > 0)
+                        {
+                            (_symbolsListDrawer.list as List<string>).RemoveAt(_symbolsListDrawer.list.Count - 1);
+                        }
+                    };
+                }
+
+                var propSymbols = this.serializedObject.FindProperty(PROP_SYMBOLS);
+                var lst = _symbolsListDrawer.list as List<string>;
+                lst.Clear();
+                lst.AddRange(propSymbols.stringValue.Split(';'));
+                EditorGUI.BeginChangeCheck();
+                _symbolsListDrawer.DoLayoutList();
+                if (EditorGUI.EndChangeCheck())
+                {
+                    propSymbols.stringValue = string.Join(';', lst);
+                }
             }
+        }
+        void _symbolsListDrawer_Header(Rect area)
+        {
+
+        }
+        void _symbolsListDrawer_DrawElement(Rect rect, int index, bool isActive, bool isFocused)
+        {
+
         }
 
         public virtual void DrawInputSettings()

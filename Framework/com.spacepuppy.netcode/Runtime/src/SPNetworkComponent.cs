@@ -44,6 +44,17 @@ namespace com.spacepuppy
             {
                 Debug.LogException(ex);
             }
+            if (this.IsSpawned)
+            {
+                try
+                {
+                    this.OnStartOrNetworkSpawn();
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogException(ex);
+                }
+            }
         }
 
         protected virtual void OnEnable()
@@ -82,6 +93,28 @@ namespace com.spacepuppy
             {
                 Debug.LogException(ex);
             }
+        }
+
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+
+            if (this.started)
+            {
+                try
+                {
+                    this.OnStartOrNetworkSpawn();
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogException(ex);
+                }
+            }
+        }
+
+        protected virtual void OnStartOrNetworkSpawn()
+        {
+
         }
 
         #endregion

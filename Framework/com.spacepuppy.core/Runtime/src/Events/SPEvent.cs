@@ -37,6 +37,33 @@ namespace com.spacepuppy.Events
 
     }
 
+    public static class SPEventExtensions
+    {
+        public static IEnumerable<SPEventTrackedListenerToken> AddTrackedListeners(this IEnumerable<SPEvent> targets, System.EventHandler<TempEventArgs> handler)
+        {
+            if (handler == null) throw new System.ArgumentNullException(nameof(handler));
+            if (targets == null) yield break;
+
+            foreach (var t in targets)
+            {
+                if (t == null) continue;
+                yield return t.AddTrackedListener(handler);
+            }
+        }
+
+        public static void Dispose(this IEnumerable<SPEventTrackedListenerToken> hooks)
+        {
+            if (hooks == null) return;
+
+            foreach (var h in hooks)
+            {
+                h.Dispose();
+            }
+        }
+
+    }
+
+
     [System.Serializable()]
     public abstract class BaseSPEvent
     {

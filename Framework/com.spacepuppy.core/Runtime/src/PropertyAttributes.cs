@@ -101,6 +101,22 @@ namespace com.spacepuppy
     }
 
     [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+    public class RequireTagAttribute : ComponentHeaderAttribute
+    {
+        public string[] Tags;
+
+        public RequireTagAttribute(string tag)
+        {
+            this.Tags = new string[] { tag };
+        }
+
+        public RequireTagAttribute(params string[] tags)
+        {
+            this.Tags = tags ?? new string[] { }; 
+        }
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
     public class UniqueToEntityAttribute : ComponentHeaderAttribute
     {
 

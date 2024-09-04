@@ -104,6 +104,7 @@ namespace com.spacepuppy
     public class RequireTagAttribute : ComponentHeaderAttribute
     {
         public string[] Tags;
+        public bool HideInfoBox;
 
         public RequireTagAttribute(string tag)
         {

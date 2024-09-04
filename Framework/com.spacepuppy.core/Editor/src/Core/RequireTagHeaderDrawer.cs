@@ -15,7 +15,7 @@ namespace com.spacepuppyeditor.Core
         public override float GetHeight(SerializedObject serializedObject)
         {
             var attrib = this.Attribute as RequireTagAttribute;
-            if (attrib == null || attrib.Tags == null || attrib.Tags.Length == 0) return 0f;
+            if (attrib == null || attrib.Tags == null || attrib.Tags.Length == 0 || attrib.HideInfoBox) return 0f;
 
             GUIStyle style = GUI.skin.GetStyle("HelpBox");
             return Mathf.Max(40f, style.CalcHeight(EditorHelper.TempContent(GetHeaderText(attrib)), EditorGUIUtility.currentViewWidth));
@@ -43,7 +43,10 @@ namespace com.spacepuppyeditor.Core
                 }
             }
 
-            EditorGUI.HelpBox(position, GetHeaderText(attrib), MessageType.Info);
+            if (!attrib.HideInfoBox)
+            {
+                EditorGUI.HelpBox(position, GetHeaderText(attrib), MessageType.Info);
+            }
         }
 
         static string GetHeaderText(RequireTagAttribute attrib)

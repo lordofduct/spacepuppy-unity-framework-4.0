@@ -128,7 +128,9 @@ MonoBehaviour:
     _target: {fileID: 1213112371397050718}
   _input:
     _target: {fileID: 1217850300204841544}
-  _monitorDebugLogOnEnable: 0
+  _dontDestroyOnLoadWhenShown: 1
+  _monitorDebugLogOnEnable: 1
+  _printUnhandledInputs: 1
 --- !u!1 &617181378507807627
 GameObject:
   m_ObjectHideFlags: 0

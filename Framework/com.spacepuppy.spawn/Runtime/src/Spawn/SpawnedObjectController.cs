@@ -143,7 +143,7 @@ namespace com.spacepuppy.Spawn
             token.ProposeKillCandidate(this, _killableEntityPriority);
         }
 
-        void IKillableEntity.OnKill(KillableEntityToken token)
+        void IOnKillHandler.OnKill(KillableEntityToken token)
         {
             if (_pool != null && !object.ReferenceEquals(token.Candidate, this)) _pool.Purge(this);
 

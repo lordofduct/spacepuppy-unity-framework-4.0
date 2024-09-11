@@ -33,15 +33,26 @@ namespace com.spacepuppy
 
     }
 
+    public interface IOnKillHandler
+    {
+        /// <summary>
+        /// Called in reverse order if no components 'Cancelled' the kill during OnPreKill.
+        /// </summary>
+        void OnKill(KillableEntityToken token);
+    }
+
     /// <summary>
     /// Implement this interface if you want to write a script that handles how the entity is dealt with when 'Kill' is called on it. 
     /// This overrides the default behaviour of destroying the GameObject and child GameObjects. 
     /// 
-    /// This means generally a IKIllableEntity does something in place of Destroying it, or handles the destroying itself. It should return 
-    /// true if it successfully did this. If all IKillableEntity scripts on an entity return 'false', then Object.Destroy will destroy the object. 
-    /// If any 1 IKillableEntity script on an entity returns 'true', then Destroy will NOT be called.
+    /// This means generally an IKIllableEntity does something in place of Destroying it, or handles the destroying itself. 
+    /// 
+    /// There is an election process for selecting which IKillableEntity script handles the "Kill" of the object.
+    /// First all components implementing IKillableEntity will have OnPreKill called on them allowing the component to either propose itself as a candidate or to cancel the kill altogether. 
+    /// Next OnKill (inherited from IOnKillHandler) is called, the included token will point to the candiate elected or null of Destroy is going to be called.
+    /// Finally OnElectedKillCandidate is called if that component was the elected candidate.
     /// </summary>
-    public interface IKillableEntity : IComponent
+    public interface IKillableEntity : IOnKillHandler, IComponent
     {
 
         /// <summary>
@@ -56,11 +67,6 @@ namespace com.spacepuppy
         /// </summary>
         /// <param name="token"></param>
         void OnPreKill(ref KillableEntityToken token, GameObject target);
-
-        /// <summary>
-        /// Called on all IKillableEntity components in reverse order if no components 'Cancelled' the kill during OnPreKill.
-        /// </summary>
-        void OnKill(KillableEntityToken token);
 
         /// <summary>
         /// Called if this component called ProposeKillCandidate during OnPreKill and won the priority contest.

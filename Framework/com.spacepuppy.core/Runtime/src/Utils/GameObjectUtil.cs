@@ -216,10 +216,10 @@ namespace com.spacepuppy.Utils
             }
 #endif
 
-            using (var lst = TempCollection.GetList<IKillableEntity>())
+            using (var lst = TempCollection.GetList<IOnKillHandler>())
             {
                 //this returns in the order from top down, we will loop backwards to kill bottom up
-                obj.GetComponentsInChildren<IKillableEntity>(true, lst);
+                obj.GetComponentsInChildren<IOnKillHandler>(true, lst);
                 if (lst.Count > 0)
                 {
                     KillableEntityToken token = new KillableEntityToken();
@@ -227,7 +227,7 @@ namespace com.spacepuppy.Utils
                     {
                         try
                         {
-                            lst[i].OnPreKill(ref token, obj);
+                            (lst[i] as IKillableEntity)?.OnPreKill(ref token, obj);
                         }
                         catch (System.Exception ex)
                         {

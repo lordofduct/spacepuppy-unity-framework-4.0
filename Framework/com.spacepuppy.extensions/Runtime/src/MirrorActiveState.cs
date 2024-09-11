@@ -4,7 +4,7 @@ namespace com.spacepuppy
 {
 
     [Infobox("Sets target to the same active/enabled state as this during the enable/disable events.\r\n\r\nNote - this doesn't start syncing until the first time it has been enabled, the Sync method can be called to premptively sync it.")]
-    public class MirrorActiveState : SPComponent, IMStartOrEnableReceiver
+    public class MirrorActiveState : SPComponent
     {
 
         #region Fields
@@ -20,16 +20,22 @@ namespace com.spacepuppy
 
         #region CONSTRUCTOR
 
-        void IMStartOrEnableReceiver.OnStartOrEnable()
+        protected override void OnEnable()
         {
             this.Sync();
+            base.OnEnable();
+        }
+
+        protected override void Start()
+        {
+            this.Sync();
+            base.Start();
         }
 
         protected override void OnDisable()
         {
-            base.OnDisable();
-
             this.Sync();
+            base.OnDisable();
         }
 
         #endregion

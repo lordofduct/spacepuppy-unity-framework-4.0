@@ -6,6 +6,9 @@ namespace com.spacepuppy.Utils
     public static class ColorUtil
     {
 
+        public static Color32 ARGBToColor32(uint color) => new Color32((byte)((color >> 16) & 0xFF), (byte)((color >> 8) & 0xFF), (byte)(color & 0xFF), (byte)((color >> 24) & 0xFF));
+        public static Color ARGBToColor(uint color) => new Color(((color >> 16) & 0xFF) / 255f, ((color >> 8) & 0xFF) / 255f, (color & 0xFF) / 255f, ((color >> 24) & 0xFF) / 255f);
+
         #region Setters
 
         public static Color SetAlpha(this Color c, float a)

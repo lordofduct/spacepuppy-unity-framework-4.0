@@ -11,6 +11,8 @@ namespace com.spacepuppy
     public sealed class TempEventArgs : EventArgs, IDisposable
     {
 
+        public new static readonly TempEventArgs Empty = new TempEventArgs(null);
+
         #region Fields
 
         private object _value;
@@ -39,6 +41,7 @@ namespace com.spacepuppy
 
         public void Dispose()
         {
+            if (object.ReferenceEquals(this, Empty)) return;
             Release(this);
         }
 

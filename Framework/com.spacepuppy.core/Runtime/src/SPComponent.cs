@@ -8,21 +8,11 @@ namespace com.spacepuppy
 {
 
     /// <summary>
-    /// A base implementation of components used by most of Spacepuppy Framework. It expands on the functionality of MonoBehaviour as well as implements various interfaces from the Spacepuppy framework. 
-    /// 
-    /// All scripts that are intended to work in tandem with Spacepuppy Unity Framework should inherit from this instead of MonoBehaviour.
+    /// Represents a SPComponent without the eventful nature, use this only if you specifically need a component that doesn't use 'enable'. 
+    /// In most cases you should be inheriting from SPComponent. If inheriting from this you likely should be sealing the class.
     /// </summary>
-    public abstract class SPComponent : MonoBehaviour, IEventfulComponent, ISPDisposable, INameable
+    public abstract class SPMonoBehaviour : MonoBehaviour, IComponent, ISPDisposable, INameable
     {
-
-        #region Events
-
-        public event System.EventHandler OnEnabled;
-        public event System.EventHandler OnStarted;
-        public event System.EventHandler OnDisabled;
-        public event System.EventHandler ComponentDestroyed;
-
-        #endregion
 
         #region Fields
 
@@ -37,64 +27,6 @@ namespace com.spacepuppy
         {
             if (this is IAutoMixinDecorator amxd) this.RegisterMixins(MixinUtil.CreateAutoMixins(amxd));
         }
-
-        protected virtual void Start()
-        {
-            this.started = true;
-            try
-            {
-                this.OnStarted?.Invoke(this, System.EventArgs.Empty);
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogException(ex);
-            }
-        }
-
-        protected virtual void OnEnable()
-        {
-            try
-            {
-                this.OnEnabled?.Invoke(this, System.EventArgs.Empty);
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogException(ex);
-            }
-        }
-
-        protected virtual void OnDisable()
-        {
-            try
-            {
-                this.OnDisabled?.Invoke(this, System.EventArgs.Empty);
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogException(ex);
-            }
-        }
-
-        protected virtual void OnDestroy()
-        {
-            try
-            {
-                this.ComponentDestroyed?.Invoke(this, System.EventArgs.Empty);
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogException(ex);
-            }
-        }
-
-        #endregion
-
-        #region Properties
-
-        /// <summary>
-        /// Start has been called on this component.
-        /// </summary>
-        public bool started { get; private set; }
 
         #endregion
 
@@ -198,6 +130,91 @@ namespace com.spacepuppy
         }
         public bool CompareName(string nm) => this.gameObject.CompareName(nm);
         void INameable.SetDirty() => NameCache.SetDirty(this.gameObject);
+
+        #endregion
+
+    }
+
+    /// <summary>
+    /// A base implementation of components used by most of Spacepuppy Framework. It expands on the functionality of MonoBehaviour as well as implements various interfaces from the Spacepuppy framework. 
+    /// 
+    /// All scripts that are intended to work in tandem with Spacepuppy Unity Framework should inherit from this instead of MonoBehaviour.
+    /// </summary>
+    public abstract class SPComponent : SPMonoBehaviour, IEventfulComponent
+    {
+
+        #region Events
+
+        public event System.EventHandler OnEnabled;
+        public event System.EventHandler OnStarted;
+        public event System.EventHandler OnDisabled;
+        public event System.EventHandler ComponentDestroyed;
+
+        #endregion
+
+        #region Fields
+
+        #endregion
+
+        #region CONSTRUCTOR
+
+        protected virtual void Start()
+        {
+            this.started = true;
+            try
+            {
+                this.OnStarted?.Invoke(this, System.EventArgs.Empty);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+        }
+
+        protected virtual void OnEnable()
+        {
+            try
+            {
+                this.OnEnabled?.Invoke(this, System.EventArgs.Empty);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+        }
+
+        protected virtual void OnDisable()
+        {
+            try
+            {
+                this.OnDisabled?.Invoke(this, System.EventArgs.Empty);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+        }
+
+        protected virtual void OnDestroy()
+        {
+            try
+            {
+                this.ComponentDestroyed?.Invoke(this, System.EventArgs.Empty);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+        }
+
+        #endregion
+
+        #region Properties
+
+        /// <summary>
+        /// Start has been called on this component.
+        /// </summary>
+        public bool started { get; private set; }
 
         #endregion
 

@@ -76,7 +76,11 @@ namespace com.spacepuppy.Pathfinding
                         }
                         _lastSpeed = speed;
 
+#if AGASTAR_5_ORGREATER
+                        _rvoLocalAvoidanceController.SetTarget(target, speed, this.Speed, this.CurrentPath.Waypoints.LastOrDefault(new Vector3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity)));
+#else
                         _rvoLocalAvoidanceController.SetTarget(target, speed, this.Speed);
+#endif
                         //Vector3 mv = dir * speed * this.TimeSupplier.Delta;
                         Vector3 mv = _rvoLocalAvoidanceController.CalculateMovementDelta(pos, this.TimeSupplier.Delta);
                         if (mv.sqrMagnitude > dist)

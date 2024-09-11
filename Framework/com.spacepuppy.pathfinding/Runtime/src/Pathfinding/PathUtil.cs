@@ -5,6 +5,7 @@ using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.Pathfinding
 {
+
     public static class PathUtil
     {
 
@@ -153,4 +154,5 @@ namespace com.spacepuppy.Pathfinding
         }
 
     }
+
 }

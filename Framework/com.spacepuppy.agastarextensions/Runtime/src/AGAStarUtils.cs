@@ -382,6 +382,7 @@ namespace com.spacepuppy.Pathfinding
             }
         }
 
+#if !AGASTAR_5_ORGREATER
         public static bool TryGetNearest(this AstarPath path, Vector3 position, NNConstraint constraint, GraphNode hint, out NNInfo result)
         {
             try
@@ -395,6 +396,7 @@ namespace com.spacepuppy.Pathfinding
                 return false;
             }
         }
+#endif
 
         public static bool TryGetNearest(this AstarPath path, Ray ray, out GraphNode result)
         {
@@ -410,7 +412,7 @@ namespace com.spacepuppy.Pathfinding
             }
         }
 
-        #endregion
+#endregion
 
     }
 

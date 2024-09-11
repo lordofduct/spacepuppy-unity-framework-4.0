@@ -3,6 +3,8 @@
     "rootNamespace": "",
     "references": [
         "GUID:efa45043feb7e4147a305b73b5cea642",
+        "GUID:f4059aaf6c60a4a58a177a2609feb769",
+        "GUID:de4e6084e6d474788bb8c799d6b461eb",
         "GUID:ddd0eb9fc8f414a4d9750a013f135d36",
         "GUID:ad6239a0379b2de43a4d9e723d51db80",
         "GUID:18b35bcc13357ab4ebabf6cf62f8b6ac",
@@ -17,6 +19,12 @@
     "precompiledReferences": [],
     "autoReferenced": true,
     "defineConstraints": [],
-    "versionDefines": [],
+    "versionDefines": [
+        {
+            "name": "com.arongranberg.astar",
+            "expression": "5",
+            "define": "AGASTAR_5_ORGREATER"
+        }
+    ],
     "noEngineReferences": false
 }

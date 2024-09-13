@@ -187,11 +187,19 @@ namespace com.spacepuppy.Motor
         {
             get
             {
+#if UNITY_2023_3_OR_NEWER
+                return !object.ReferenceEquals(_rigidbody, null) ? _rigidbody.linearVelocity : Vector3.zero;
+#else
                 return !object.ReferenceEquals(_rigidbody, null) ? _rigidbody.velocity : Vector3.zero;
+#endif
             }
             set
             {
+#if UNITY_2023_3_OR_NEWER
+                if (!object.ReferenceEquals(_rigidbody, null)) _rigidbody.linearVelocity = value;
+#else
                 if (!object.ReferenceEquals(_rigidbody, null)) _rigidbody.velocity = value;
+#endif
                 _talliedMove = value;
             }
         }
@@ -232,7 +240,11 @@ namespace com.spacepuppy.Motor
             Vector3 v = _talliedMove / Time.deltaTime;
             //v -= _owner.LastVelocity; //remove the old velocity so it's setting to, not adding to
             //_rigidbody.AddForce(v, ForceMode.VelocityChange);
+#if UNITY_2023_3_OR_NEWER
+            _rigidbody.linearVelocity = v;
+#else
             _rigidbody.velocity = v;
+#endif
 
             _moveCalled = true;
         }
@@ -255,7 +267,11 @@ namespace com.spacepuppy.Motor
             {
                 var v = (pos - _rigidbody.position);
                 v /= Time.deltaTime;
+#if UNITY_2023_3_OR_NEWER
+                _rigidbody.linearVelocity = v;
+#else
                 _rigidbody.velocity = v;
+#endif
                 _moveCalled = true;
             }
             _rigidbody.MovePosition(pos);
@@ -386,12 +402,20 @@ namespace com.spacepuppy.Motor
         {
             if (!_freeMovement && !_moveCalled)
             {
+#if UNITY_2023_3_OR_NEWER
+                _rigidbody.linearVelocity = Vector3.zero;
+#else
                 _rigidbody.velocity = Vector3.zero;
+#endif
                 _lastVel = Vector3.zero;
             }
             else
             {
+#if UNITY_2023_3_OR_NEWER
+                _lastVel = _rigidbody.linearVelocity;
+#else
                 _lastVel = _rigidbody.velocity;
+#endif
             }
 
             _lastPos = _rigidbody.position;

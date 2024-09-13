@@ -64,7 +64,11 @@ namespace com.spacepuppy.Tween.Accessors
                 if (rb != null && !rb.isKinematic)
                 {
                     var dp = value - rb.position;
+#if UNITY_2023_3_OR_NEWER
+                    rb.linearVelocity = dp / Time.fixedDeltaTime;
+#else
                     rb.velocity = dp / Time.fixedDeltaTime;
+#endif
                     return;
                 }
 

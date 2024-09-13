@@ -1,7 +1,7 @@
-using UnityEngine;
 using UnityEngine.SceneManagement;
 using com.spacepuppy.Scenes;
 using com.spacepuppy.Async;
+using AsyncOperation = UnityEngine.AsyncOperation;
 
 #if SP_UNITASK
 using Cysharp.Threading.Tasks;

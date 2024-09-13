@@ -273,7 +273,11 @@ namespace com.spacepuppy.Utils
                 var rb = go.GetComponent<Rigidbody>();
                 if (rb != null && !rb.isKinematic)
                 {
+#if UNITY_2023_3_OR_NEWER
+                    rb.linearVelocity = Vector3.zero;
+#else
                     rb.velocity = Vector3.zero;
+#endif
                     rb.angularVelocity = Vector3.zero;
 
                 }
@@ -314,7 +318,11 @@ namespace com.spacepuppy.Utils
         {
             if (body.isKinematic) return;
 
+#if UNITY_2023_3_OR_NEWER
+            body.linearVelocity = Vector3.zero;
+#else
             body.velocity = Vector3.zero;
+#endif
             body.angularVelocity = Vector3.zero;
         }
 
@@ -560,7 +568,7 @@ namespace com.spacepuppy.Utils
             return new RaycastInfo(t.TransformPoint(r.Origin), t.TransformDirection(r.Direction), dist);
         }
 
-        #endregion
+#endregion
 
         #region Transpose Methods
 

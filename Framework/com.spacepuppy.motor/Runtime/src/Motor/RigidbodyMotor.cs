@@ -405,7 +405,11 @@ namespace com.spacepuppy.Motor
 
             if (_constrainSimulatedRigidbodyVelocity)
             {
+#if UNITY_2023_3_OR_NEWER
+                _rigidbody.linearVelocity = Vector3.zero;
+#else
                 _rigidbody.velocity = Vector3.zero;
+#endif
                 _rigidbody.angularVelocity = Vector3.zero;
             }
 

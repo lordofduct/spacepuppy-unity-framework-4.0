@@ -172,7 +172,11 @@ namespace com.spacepuppy.Spawn
                 var e = lst.GetEnumerator();
                 while (e.MoveNext())
                 {
+#if UNITY_2023_3_OR_NEWER
+                    e.Current.linearVelocity = Vector3.zero;
+#else
                     e.Current.velocity = Vector3.zero;
+#endif
                     e.Current.angularVelocity = Vector3.zero;
                 }
             }
@@ -182,7 +186,7 @@ namespace com.spacepuppy.Spawn
                 var e = lst.GetEnumerator();
                 while (e.MoveNext())
                 {
-                    e.Current.velocity = Vector2.zero;
+                    e.Current.linearVelocity = Vector2.zero;
                     e.Current.angularVelocity = 0f;
                 }
             }

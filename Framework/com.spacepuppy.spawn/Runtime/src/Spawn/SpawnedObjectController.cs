@@ -186,7 +186,11 @@ namespace com.spacepuppy.Spawn
                 var e = lst.GetEnumerator();
                 while (e.MoveNext())
                 {
+#if UNITY_2023_3_OR_NEWER
                     e.Current.linearVelocity = Vector2.zero;
+#else
+                    e.Current.velocity = Vector2.zero;
+#endif
                     e.Current.angularVelocity = 0f;
                 }
             }

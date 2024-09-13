@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 
 using com.spacepuppy.Geom;
+using System.Runtime.CompilerServices;
 
 namespace com.spacepuppy.Utils
 {
@@ -194,6 +195,50 @@ namespace com.spacepuppy.Utils
 
         #region Transform Methods
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ZeroOutPositionAndRotation(this GameObject go)
+        {
+#if UNITY_2021_3_OR_NEWER
+            go.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+#else
+            go.transform.position = Vector3.zero;
+            go.transform.rotation = Quaternion.identity;
+#endif
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ZeroOutPositionAndRotation(this Transform trans)
+        {
+#if UNITY_2021_3_OR_NEWER
+            trans.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+#else
+            trans.position = Vector3.zero;
+            trans.rotation = Quaternion.identity;
+#endif
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ZeroOutLocalPositionAndRotation(this GameObject go)
+        {
+#if UNITY_2021_3_OR_NEWER
+            go.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+#else
+            go.transform.localPosition = Vector3.zero;
+            go.transform.localRotation = Quaternion.identity;
+#endif
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ZeroOutLocalPositionAndRotation(this Transform trans)
+        {
+#if UNITY_2021_3_OR_NEWER
+            trans.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+#else
+            trans.localPosition = Vector3.zero;
+            trans.localRotation = Quaternion.identity;
+#endif
+        }
+
         /// <summary>
         /// Zeroes out position, rotation, and optionally scale of transform as well as velocity and angularVelocity of rigidbody attached to GameObject.
         /// </summary>
@@ -204,14 +249,22 @@ namespace com.spacepuppy.Utils
         {
             if (bGlobal)
             {
+#if UNITY_2021_3_OR_NEWER
+                go.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+#else
                 go.transform.position = Vector3.zero;
                 go.transform.rotation = Quaternion.identity;
+#endif
                 if (!bIgnoreScale) go.transform.localScale = Vector3.one;
             }
             else
             {
+#if UNITY_2021_3_OR_NEWER
+                go.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+#else
                 go.transform.localPosition = Vector3.zero;
                 go.transform.localRotation = Quaternion.identity;
+#endif
                 if (!bIgnoreScale) go.transform.localScale = Vector3.one;
             }
 
@@ -237,14 +290,22 @@ namespace com.spacepuppy.Utils
         {
             if (bGlobal)
             {
+#if UNITY_2021_3_OR_NEWER
+                trans.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+#else
                 trans.position = Vector3.zero;
                 trans.rotation = Quaternion.identity;
+#endif
                 if (!bIgnoreScale) trans.localScale = Vector3.one;
             }
             else
             {
+#if UNITY_2021_3_OR_NEWER
+                trans.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+#else
                 trans.localPosition = Vector3.zero;
                 trans.localRotation = Quaternion.identity;
+#endif
                 if (!bIgnoreScale) trans.localScale = Vector3.one;
             }
         }
@@ -612,15 +673,23 @@ namespace com.spacepuppy.Utils
         public static void LocalTransposeAroundAnchor(this Transform trans, Vector3 anchor, Vector3 position, Quaternion rotation)
         {
             anchor = rotation * Vector3.Scale(anchor, trans.localScale);
+#if UNITY_2021_3_OR_NEWER
+            trans.SetLocalPositionAndRotation(position - anchor, rotation);
+#else
             trans.localPosition = position - anchor;
             trans.localRotation = rotation;
+#endif
         }
 
         public static void LocalTransposeAroundAnchor(this Transform trans, Trans anchor, Vector3 position, Quaternion rotation)
         {
             var anchorPos = rotation * Vector3.Scale(anchor.Position, trans.localScale);
+#if UNITY_2021_3_OR_NEWER
+            trans.SetLocalPositionAndRotation(position - anchorPos, anchor.Rotation * rotation);
+#else
             trans.localPosition = position - anchorPos;
             trans.localRotation = anchor.Rotation * rotation;
+#endif
         }
 
         public static void LocalTransposeAroundAnchor(this Transform trans, Transform anchor, Vector3 position, Quaternion rotation)
@@ -628,8 +697,12 @@ namespace com.spacepuppy.Utils
             var m = anchor.GetRelativeMatrix(trans);
 
             var anchorPos = rotation * Vector3.Scale(m.GetTranslation(), trans.localScale);
+#if UNITY_2021_3_OR_NEWER
+            trans.SetLocalPositionAndRotation(position - anchorPos, m.GetRotation() * rotation);
+#else
             trans.localPosition = position - anchorPos;
             trans.localRotation = m.GetRotation() * rotation;
+#endif
         }
 
         #endregion

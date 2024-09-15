@@ -84,7 +84,20 @@ namespace com.spacepuppyeditor.Internal
         private static System.Func<System.Type, bool, System.Type> _imp_getDrawerTypeForType;
         public static System.Type GetDrawerTypeForType(System.Type tp)
         {
-            if (_imp_getDrawerTypeForType == null) _imp_getDrawerTypeForType = _accessWrapper.GetStaticMethod("GetDrawerTypeForType", typeof(System.Func<System.Type, bool, System.Type>)) as System.Func<System.Type, bool, System.Type>;
+            if (_imp_getDrawerTypeForType == null)
+            {
+                if (!_accessWrapper.TryGetStaticMethod<System.Func<System.Type, bool, System.Type>>("GetDrawerTypeForType", out _imp_getDrawerTypeForType))
+                {
+                    if (_accessWrapper.TryGetStaticMethod<System.Func<System.Type, System.Type>>("GetDrawerTypeForType", out System.Func<System.Type, System.Type> olddel)) //depending how old the version of 2022_3 you're in, it might still be the older version
+                    {
+                        _imp_getDrawerTypeForType = (t, b) => olddel(t);
+                    }
+                    else
+                    {
+                        _imp_getDrawerTypeForType = (t, b) => null;
+                    }
+                }
+            }
             return _imp_getDrawerTypeForType(tp, false);
         }
 #else

@@ -7,6 +7,56 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy
 {
 
+    public abstract class SPScriptableObject : ScriptableObject, ISPDisposable, INameable
+    {
+
+        #region Fields
+
+        #endregion
+
+        #region ISPDisposable Interface
+
+        bool ISPDisposable.IsDisposed
+        {
+            get
+            {
+                return !ObjUtil.IsObjectAlive(this);
+            }
+        }
+
+        void System.IDisposable.Dispose()
+        {
+            ObjUtil.SmartDestroy(this);
+        }
+
+        #endregion
+
+        #region INameable Interface
+
+        private NameCache.UnityObjectNameCache _nameCache;
+        public new string name
+        {
+            get { return (_nameCache ??= new NameCache.UnityObjectNameCache(this)).Name; }
+            set { (_nameCache ??= new NameCache.UnityObjectNameCache(this)).Name = value; }
+        }
+        string INameable.Name
+        {
+            get { return (_nameCache ??= new NameCache.UnityObjectNameCache(this)).Name; }
+            set { (_nameCache ??= new NameCache.UnityObjectNameCache(this)).Name = value; }
+        }
+        public bool CompareName(string nm)
+        {
+            return (_nameCache ??= new NameCache.UnityObjectNameCache(this)).CompareName(nm);
+        }
+        void INameable.SetDirty()
+        {
+            (_nameCache ??= new NameCache.UnityObjectNameCache(this)).SetDirty();
+        }
+
+        #endregion
+
+    }
+
     /// <summary>
     /// Represents a SPComponent without the eventful nature, use this only if you specifically need a component that doesn't use 'enable'. 
     /// In most cases you should be inheriting from SPComponent. If inheriting from this you likely should be sealing the class.

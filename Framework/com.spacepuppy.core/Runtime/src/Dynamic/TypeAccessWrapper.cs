@@ -286,6 +286,36 @@ namespace com.spacepuppy.Dynamic
             return (from p in _wrappedType.GetProperties(binding) select p.Name).Union(from f in _wrappedType.GetFields(binding) select f.Name).ToArray();
         }
 
+        public bool TryGetStaticMethod(string name, System.Type delegShape, out Delegate del)
+        {
+            if (!delegShape.IsSubclassOf(typeof(Delegate))) throw new ArgumentException("Type must inherit from Delegate.", "delegShape");
+
+            var binding = PUBLIC_STATIC_MEMBERS;
+            if (_includeNonPublic) binding |= BindingFlags.NonPublic;
+
+            var invokeMeth = delegShape.GetMethod("Invoke");
+            var paramTypes = (from p in invokeMeth.GetParameters() select p.ParameterType).ToArray();
+            var meth = _wrappedType.GetMethod(name, binding, null, paramTypes, null);
+
+            if (meth != null)
+            {
+                try
+                {
+                    del = Delegate.CreateDelegate(delegShape, meth);
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    del = null;
+                    return false;
+                }
+            }
+            else
+            {
+                del = null;
+                return false;
+            }
+        }
         public Delegate GetStaticMethod(string name, System.Type delegShape)
         {
             if (!delegShape.IsSubclassOf(typeof(Delegate))) throw new ArgumentException("Type must inherit from Delegate.", "delegShape");
@@ -312,9 +342,21 @@ namespace com.spacepuppy.Dynamic
             {
                 throw new InvalidOperationException("A method matching the name and shape requested could not be found.");
             }
-
         }
 
+        public bool TryGetStaticMethod<T>(string name, out T del) where T : System.Delegate
+        {
+            if (TryGetStaticMethod(name, typeof(T), out System.Delegate d) && d is T)
+            {
+                del = d as T;
+                return true;
+            }
+            else
+            {
+                del = null;
+                return false;
+            }
+        }
         public T GetStaticMethod<T>(string name) where T : System.Delegate
         {
             return GetStaticMethod(name, typeof(T)) as T;

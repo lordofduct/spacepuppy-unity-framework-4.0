@@ -160,7 +160,6 @@ namespace com.spacepuppyeditor.Core
                 else
                 {
                     this.ChoiceSelector.BeforeGUI(this, property, this.RestrictionType, this.AllowProxy);
-                    var components = this.ChoiceSelector.GetComponents();
 
                     var fullsize = position;
                     if (this.ShowXButton && SPEditorGUI.XButton(ref position, "Clear Selected Object", this.XButtonOnRightSide))
@@ -184,14 +183,9 @@ namespace com.spacepuppyeditor.Core
                         if (oi != ni)
                         {
                             if (ni == names.Length - 1)
-                                property.objectReferenceValue = targGo;
+                                property.objectReferenceValue = this.RestrictionType.IsInstanceOfType(targGo) ? targGo : property.objectReferenceValue;
                             else
                                 property.objectReferenceValue = this.ChoiceSelector.GetComponentAtPopupIndex(ni);
-
-                            //if (ni < components.Length)
-                            //    property.objectReferenceValue = this.ChoiceSelector.GetComponentAtPopupIndex(ni);
-                            //else
-                            //    property.objectReferenceValue = targGo;
                         }
 
                         this.ChoiceSelector.GUIComplete(property, ni);

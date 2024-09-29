@@ -434,6 +434,23 @@ namespace com.spacepuppyeditor
                             }
                         }
                     }
+                    else if (valueType.IsInterface)
+                    {
+                        if (value is UnityEngine.Object || value.IsNullOrDestroyed())
+                        {
+                            EditorGUI.BeginChangeCheck();
+                            object obj = EditorGUI.ObjectField(position, label, value as UnityEngine.Object, valueType, true);
+                            if (EditorGUI.EndChangeCheck())
+                            {
+                                return obj;
+                            }
+                        }
+                        else
+                        {
+                            EditorGUI.LabelField(position, label, EditorHelper.TempContent($"ref:({value.GetType().Name})"));
+                            return value;
+                        }
+                    }
                     else
                     {
                         EditorGUI.LabelField(position, label, EditorHelper.TempContent("* Unsupported Value Type *"));
@@ -1554,7 +1571,11 @@ namespace com.spacepuppyeditor
                 result = EditorGUI.ObjectField(position, label, asset, tp, allowSceneObjects);
                 if (EditorGUI.EndChangeCheck())
                 {
-                    if (!(allowProxy && result is IProxy))
+                    if (allowProxy && ObjUtil.GetAsFromSource(result, out IProxy p, false) && p is UnityEngine.Object po)
+                    {
+                        result = po;
+                    }
+                    else
                     {
                         result = ObjUtil.GetAsFromSource(objType, result, false) as UnityEngine.Object;
                     }
@@ -1618,70 +1639,70 @@ namespace com.spacepuppyeditor
         #endregion
 
 
-            #region Curve Swatch
+        #region Curve Swatch
 
-            /*
-            public static void DrawCurveSwatch(Rect position, ICurve curve, Color color, Color bgColor)
+        /*
+        public static void DrawCurveSwatch(Rect position, ICurve curve, Color color, Color bgColor)
+        {
+            if (Event.current.type != EventType.Repaint)
+                return;
+            int previewWidth = (int)position.width;
+            int previewHeight = (int)position.height;
+            Color color1 = GUI.color;
+            GUI.color = bgColor;
+            EditorHelper.WhiteTextureStyle.Draw(position, false, false, false, false);
+            GUI.color = color1;
+
+            if (curve == null) return;
+
+            Texture2D tex = GetCurveTexture(Mathf.RoundToInt(position.width), Mathf.RoundToInt(position.height), curve, color);
+            GUIStyle basicTextureStyle = GetCurveTextureStyle(tex);
+            position.width = (float)tex.width;
+            position.height = (float)tex.height;
+            basicTextureStyle.Draw(position, false, false, false, false);
+        }
+
+
+        private static Texture2D s_CurveTexture;
+        private static GUIStyle s_CurveTextureStyle;
+        private static Texture2D GetCurveTexture(int width, int height, ICurve curve, Color color)
+        {
+            if (s_CurveTexture == null)
+                s_CurveTexture = new Texture2D(width, height);
+            else
+                s_CurveTexture.Resize(width, height);
+
+            var c = new Color(1f, 1f, 1f, 0f);
+            var pixels = s_CurveTexture.GetPixels();
+            for (int i = 0; i < pixels.Length; i++) pixels[i] = c;
+            s_CurveTexture.SetPixels(pixels);
+
+            for (int i = 0; i < s_CurveTexture.width; i++)
             {
-                if (Event.current.type != EventType.Repaint)
-                    return;
-                int previewWidth = (int)position.width;
-                int previewHeight = (int)position.height;
-                Color color1 = GUI.color;
-                GUI.color = bgColor;
-                EditorHelper.WhiteTextureStyle.Draw(position, false, false, false, false);
-                GUI.color = color1;
-
-                if (curve == null) return;
-
-                Texture2D tex = GetCurveTexture(Mathf.RoundToInt(position.width), Mathf.RoundToInt(position.height), curve, color);
-                GUIStyle basicTextureStyle = GetCurveTextureStyle(tex);
-                position.width = (float)tex.width;
-                position.height = (float)tex.height;
-                basicTextureStyle.Draw(position, false, false, false, false);
+                var t = (float)i / (float)width;
+                int j = (int)(curve.GetPosition(t) * height);
+                s_CurveTexture.SetPixel(i, j, color);
             }
 
+            s_CurveTexture.Apply();
+            return s_CurveTexture;
+        }
+        private static GUIStyle GetCurveTextureStyle(Texture2D tex)
+        {
+            if (s_CurveTextureStyle == null)
+                s_CurveTextureStyle = new GUIStyle();
+            s_CurveTextureStyle.normal.background = tex;
+            return s_CurveTextureStyle;
+        }
+        */
 
-            private static Texture2D s_CurveTexture;
-            private static GUIStyle s_CurveTextureStyle;
-            private static Texture2D GetCurveTexture(int width, int height, ICurve curve, Color color)
-            {
-                if (s_CurveTexture == null)
-                    s_CurveTexture = new Texture2D(width, height);
-                else
-                    s_CurveTexture.Resize(width, height);
+        #endregion
 
-                var c = new Color(1f, 1f, 1f, 0f);
-                var pixels = s_CurveTexture.GetPixels();
-                for (int i = 0; i < pixels.Length; i++) pixels[i] = c;
-                s_CurveTexture.SetPixels(pixels);
+        #region ReflectedPropertyField
 
-                for (int i = 0; i < s_CurveTexture.width; i++)
-                {
-                    var t = (float)i / (float)width;
-                    int j = (int)(curve.GetPosition(t) * height);
-                    s_CurveTexture.SetPixel(i, j, color);
-                }
-
-                s_CurveTexture.Apply();
-                return s_CurveTexture;
-            }
-            private static GUIStyle GetCurveTextureStyle(Texture2D tex)
-            {
-                if (s_CurveTextureStyle == null)
-                    s_CurveTextureStyle = new GUIStyle();
-                s_CurveTextureStyle.normal.background = tex;
-                return s_CurveTextureStyle;
-            }
-            */
-
-            #endregion
-
-            #region ReflectedPropertyField
-
-            /// <summary>
-            /// Reflects the available properties and shows them in a dropdown
-            /// </summary>
+        /// <summary>
+        /// Reflects the available properties and shows them in a dropdown
+        /// </summary>
         public static string ReflectedPropertyField(Rect position, GUIContent label, object targObj, string selectedMemberName, DynamicMemberAccess access, out System.Reflection.MemberInfo selectedMember, ReflectedPropertyFieldOptions options = 0)
         {
             bool allowSetterMethods = (options & ReflectedPropertyFieldOptions.AllowSetterMethods) != 0;

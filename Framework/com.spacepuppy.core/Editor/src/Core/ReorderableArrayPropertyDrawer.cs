@@ -21,7 +21,7 @@ namespace com.spacepuppyeditor.Core
         public delegate string FormatElementLabelCallback(SerializedProperty property, int index, bool isActive, bool isFocused);
 
         private static readonly float TOP_PAD = 2f + EditorGUIUtility.singleLineHeight;
-        private const float BOTTOM_PAD = 2f;
+        private const float BOTTOM_PAD = 4f;
         private const float MARGIN = 2f;
         private const float LENGTHFIIELD_WIDTH = 50f;
         private const float LENGTHFIIELD_MARGIN = 5f;
@@ -310,7 +310,7 @@ namespace com.spacepuppyeditor.Core
                 }
                 else
                 {
-                    h = EditorGUIUtility.singleLineHeight;
+                    h = EditorGUIUtility.singleLineHeight + BOTTOM_PAD;
                 }
             }
             else

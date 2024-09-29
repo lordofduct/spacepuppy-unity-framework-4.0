@@ -244,12 +244,24 @@ namespace com.spacepuppyeditor.Core
                 return info;
             }
 
+            var types = TypeUtil.GetTypesAssignableFrom(reftp).Where(o => !o.IsAbstract && !o.IsInterface && (o.IsValueType || o.GetConstructor(System.Type.EmptyTypes) != null) && !TypeUtil.IsType(o, typeof(UnityEngine.Object)) && o.IsSerializable).ToList();
+            types.Sort((a, b) =>
+            {
+                var ap = a.GetCustomAttribute<SerializeRefLabelAttribute>();
+                var bp = b.GetCustomAttribute<SerializeRefLabelAttribute>();
+                var albl = string.IsNullOrEmpty(ap?.Label) ? a.Name : ap.Label;
+                var blbl = string.IsNullOrEmpty(bp?.Label) ? b.Name : bp.Label;
+                int aord = ap?.Order ?? 0;
+                int bord = bp?.Order ?? 0;
+                return aord == bord ? albl.CompareTo(blbl) : aord.CompareTo(bord);
+            });
+
             info = new TypeInfo();
-            info.AvailableTypes = TypeUtil.GetTypesAssignableFrom(reftp).Where(o => !o.IsAbstract && !o.IsInterface && (o.IsValueType || o.GetConstructor(System.Type.EmptyTypes) != null) && !TypeUtil.IsType(o, typeof(UnityEngine.Object)) && o.IsSerializable).OrderBy(o => o.Name).ToArray();
+            info.AvailableTypes = types.ToArray();
             info.AvailableTypeNames = info.AvailableTypes.Select(tp =>
             {
                 var attrib = tp.GetCustomAttribute<SerializeRefLabelAttribute>();
-                if (attrib != null) return new GUIContent(attrib.Label ?? string.Empty);
+                if (!string.IsNullOrEmpty(attrib?.Label)) return new GUIContent(attrib.Label);
 
                 if (info.AvailableTypes.Count(o => string.Equals(o.Name, tp.Name)) > 1)
                 {
@@ -315,7 +327,7 @@ namespace com.spacepuppyeditor.Core
             }
         }
 
-        private static PropertyDrawer FindPropertyDrawer(System.Type tp)
+        public static PropertyDrawer FindPropertyDrawer(System.Type tp)
         {
             if (tp == null) return SimpleClassDrawer.Default;
 

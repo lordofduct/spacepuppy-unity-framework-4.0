@@ -58,13 +58,13 @@ namespace com.spacepuppyeditor.Core
                 case EntityRelativity.SelfAndChildren:
                     {
                         var obj = ObjUtil.GetAsFromSource(restrictionType, targ);
-                        if (object.ReferenceEquals(targ, null) && ComponentUtil.IsAcceptableComponentType(restrictionType)) obj = targ.GetComponentInChildren(restrictionType);
+                        if (object.ReferenceEquals(obj, null) && ComponentUtil.IsAcceptableComponentType(restrictionType)) obj = targ.GetComponentInChildren(restrictionType);
                         return obj;
                     }
                 case EntityRelativity.SelfAndParents:
                     {
                         var obj = ObjUtil.GetAsFromSource(restrictionType, targ);
-                        if (object.ReferenceEquals(targ, null) && ComponentUtil.IsAcceptableComponentType(restrictionType)) obj = targ.GetComponentInParent(restrictionType);
+                        if (object.ReferenceEquals(obj, null) && ComponentUtil.IsAcceptableComponentType(restrictionType)) obj = targ.GetComponentInParent(restrictionType);
                         return obj;
                     }
                 default:

@@ -152,7 +152,9 @@ namespace com.spacepuppy
     public class SerializeRefLabelAttribute : System.Attribute
     {
         public string Label { get; set; }
+        public int Order { get; set; }
 
+        public SerializeRefLabelAttribute() { }
         public SerializeRefLabelAttribute(string label)
         {
             this.Label = label;

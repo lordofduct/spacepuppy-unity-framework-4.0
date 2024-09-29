@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 using com.spacepuppy.Collections;
+using com.spacepuppy.Geom;
 
 namespace com.spacepuppy.Utils
 {
@@ -379,12 +380,14 @@ namespace com.spacepuppy.Utils
         /// <returns></returns>
         public static Transform FindByName(this Transform trans, string sname, bool bIgnoreCase = false)
         {
-            if (trans == null) return null;
-            foreach (var child in trans.IterateAllChildren())
+            if (bIgnoreCase)
             {
-                if (StringUtil.Equals(child.name, sname, bIgnoreCase)) return child;
+                return SearchChildren<System.ValueTuple<string, bool>>(trans, (sname, bIgnoreCase), (t, a) => StringUtil.Equals(t.name, sname, bIgnoreCase));
             }
-            return null;
+            else
+            {
+                return SearchChildren<System.ValueTuple<string, bool>>(trans, (sname, bIgnoreCase), (t, a) => t.CompareName(sname));
+            }
         }
 
         public static IEnumerable<GameObject> FindAllByName(string sname, bool bIgnoreCase = false)
@@ -560,21 +563,21 @@ namespace com.spacepuppy.Utils
         {
             if (MultiTagHelper.HasTag(go, tag)) return go;
 
-            foreach (var child in go.transform.IterateAllChildren())
-            {
-                if (MultiTagHelper.HasTag(child.gameObject, tag)) return child.gameObject;
-            }
-
-            return null;
+            var child = SearchChildren<string>(go.transform, tag, (t, a) => MultiTagHelper.HasTag(t.gameObject, tag));
+            return child ? child.gameObject : null;
         }
 
         public static IEnumerable<GameObject> FindAllWithMultiTag(this GameObject go, string tag)
         {
-            if (MultiTagHelper.HasTag(go)) yield return go;
+            if (!go) return ArrayUtil.Empty<GameObject>();
 
-            foreach (var child in go.transform.IterateAllChildren())
+            if (go.transform.childCount == 0)
             {
-                if (MultiTagHelper.HasTag(child.gameObject, tag)) yield return child.gameObject;
+                return MultiTagHelper.HasTag(go) ? new GameObject[] { go } : ArrayUtil.Empty<GameObject>();
+            }
+            else
+            {
+                return go.GetComponentsInChildren<Transform>().Where(t => MultiTagHelper.HasTag(t.gameObject, tag)).Select(t => t.gameObject);
             }
         }
 
@@ -619,18 +622,90 @@ namespace com.spacepuppy.Utils
             obj.transform.SetParent(parent, worldPositionStays);
         }
 
-        public static IEnumerable<Transform> IterateAllChildren(this Transform trans)
+        public static Transform SearchChildren(this Transform trans, System.Func<Transform, bool> callback)
         {
-            for (int i = 0; i < trans.childCount; i++)
+            if (callback == null) throw new System.ArgumentNullException(nameof(callback));
+            if (!trans || trans.childCount == 0) return null;
+
+            const int STACK_LEN = 16; //we pick a child depth of 16 before recursing as this should cover MOST scenarios without putting more pressure on the stack
+            const int MAX_P = STACK_LEN - 1;
+            System.Span<int> stack = stackalloc int[STACK_LEN];
+            int p = 0;
+
+            while (p >= 0)
             {
-                yield return trans.GetChild(i);
+                if (stack[p] < trans.childCount)
+                {
+                    var t = trans.GetChild(stack[p]);
+                    if (callback(t)) return t;
+
+                    stack[p]++;
+                    if (t.childCount > 0)
+                    {
+                        if (p < MAX_P)
+                        {
+                            p++;
+                            stack[p] = 0;
+                            trans = t;
+                        }
+                        else
+                        {
+                            SearchChildren(t, callback);
+                        }
+                    }
+                }
+                else
+                {
+                    stack[p] = 0;
+                    p--;
+                    trans = trans.parent;
+                }
             }
 
-            for (int i = 0; i < trans.childCount; i++)
+            return null;
+        }
+
+        public static Transform SearchChildren<TArg>(this Transform trans, TArg arg, System.Func<Transform, TArg, bool> callback)
+        {
+            if (callback == null) throw new System.ArgumentNullException(nameof(callback));
+            if (!trans || trans.childCount == 0) return null;
+
+            const int STACK_LEN = 16; //we pick a child depth of 16 before recursing as this should cover MOST scenarios without putting more pressure on the stack
+            const int MAX_P = STACK_LEN - 1;
+            System.Span<int> stack = stackalloc int[STACK_LEN];
+            int p = 0;
+
+            while (p >= 0)
             {
-                foreach (var c in IterateAllChildren(trans.GetChild(i)))
-                    yield return c;
+                if (stack[p] < trans.childCount)
+                {
+                    var t = trans.GetChild(stack[p]);
+                    if (callback(t, arg)) return t;
+
+                    stack[p]++;
+                    if (t.childCount > 0)
+                    {
+                        if (p < MAX_P)
+                        {
+                            p++;
+                            stack[p] = 0;
+                            trans = t;
+                        }
+                        else
+                        {
+                            SearchChildren(t, arg, callback);
+                        }
+                    }
+                }
+                else
+                {
+                    stack[p] = 0;
+                    p--;
+                    trans = trans.parent;
+                }
             }
+
+            return null;
         }
 
         public static Transform[] GetAllChildren(this GameObject go)

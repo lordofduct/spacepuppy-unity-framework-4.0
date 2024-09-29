@@ -104,7 +104,14 @@ namespace com.spacepuppy.Utils
             if (!go) return;
 
 #if UNITY_EDITOR
-            if (!Application.isPlaying) go.name = name;
+            if (Application.isPlaying && go.GetComponent<GameObjectNameCache>(out GameObjectNameCache cache))
+            {
+                cache.Name = name;
+            }
+            else
+            {
+                go.name = name;
+            }
 #else
             if (go.GetComponent<GameObjectNameCache>(out GameObjectNameCache cache))
             {

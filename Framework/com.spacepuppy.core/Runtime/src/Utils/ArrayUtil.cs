@@ -136,7 +136,7 @@ namespace com.spacepuppy.Utils
             int i = 0;
             foreach (var v in lst)
             {
-                if (object.Equals(v, value)) return i;
+                if (EqualityComparer<T>.Default.Equals(v, value)) return i;
                 i++;
             }
             return -1;
@@ -155,7 +155,7 @@ namespace com.spacepuppy.Utils
 
                 if (b1 && b2)
                 {
-                    if (!object.Equals(e1.Current, e2.Current)) return false;
+                    if (!EqualityComparer<T>.Default.Equals(e1.Current, e2.Current)) return false;
                 }
                 else
                 {
@@ -347,6 +347,24 @@ namespace com.spacepuppy.Utils
             }
         }
 
+        public static IEnumerable ForEach(this IEnumerable e, System.Action<object> callback)
+        {
+            foreach (var o in e)
+            {
+                callback?.Invoke(o);
+                yield return o;
+            }
+        }
+
+        public static IEnumerable<T> ForEach<T>(this IEnumerable<T> e, System.Action<T> callback)
+        {
+            foreach (var o in e)
+            {
+                callback?.Invoke(o);
+                yield return o;
+            }
+        }
+
         #endregion
 
         #region Random Methods
@@ -437,24 +455,24 @@ namespace com.spacepuppy.Utils
             }
         }
 
-        public static T PickRandom<T>(this IEnumerable<T> lst, IRandom rng = null)
+        public static T PickRandom<T>(this IEnumerable<T> e, IRandom rng = null)
         {
-            //return lst.PickRandom(1).FirstOrDefault();
-            if (lst is IList<T> ilst)
+            if (rng == null) rng = RandomUtil.Standard;
+
+            if (e is IList<T> ilst)
             {
-                if (rng == null) rng = RandomUtil.Standard;
-                if (ilst.Count == 0) return default(T);
-                return ilst[rng.Range(ilst.Count)];
+                return ilst.Count > 0 ? ilst[rng.Range(ilst.Count)] : default;
             }
-            else if (lst is IList<T> rlst)
+            else if (e is IReadOnlyList<T> rlst)
             {
-                if (rng == null) rng = RandomUtil.Standard;
-                if (rlst.Count == 0) return default(T);
-                return rlst[rng.Range(rlst.Count)];
+                return rlst.Count > 0 ? rlst[rng.Range(rlst.Count)] : default;
             }
             else
             {
-                return lst.PickRandom(1, rng).FirstOrDefault();
+                using (var tlst = TempCollection.GetList<T>(e))
+                {
+                    return tlst.Count > 0 ? tlst[rng.Range(tlst.Count)] : default;
+                }
             }
         }
 
@@ -749,6 +767,28 @@ namespace com.spacepuppy.Utils
             }
         }
 
+
+        #endregion
+
+        #region List Methods
+
+        public static T Pop<T>(this List<T> lst)
+        {
+            if (lst.Count == 0) throw new System.ArgumentException("List is empty.", nameof(lst));
+
+            var result = lst[lst.Count - 1];
+            lst.RemoveAt(lst.Count - 1);
+            return result;
+        }
+
+        public static T Shift<T>(this List<T> lst)
+        {
+            if (lst.Count == 0) throw new System.ArgumentException("List is empty.", nameof(lst));
+
+            var result = lst[0];
+            lst.RemoveAt(0);
+            return result;
+        }
 
         #endregion
 

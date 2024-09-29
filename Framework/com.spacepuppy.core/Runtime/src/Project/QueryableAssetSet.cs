@@ -750,6 +750,33 @@ namespace com.spacepuppy.Project
 
         #endregion
 
+        #region Static Factory
+
+        public static QueryableAssetSet CreateAssetSet(System.Type assetType = null)
+        {
+            var inst = CreateInstance<QueryableAssetSet>();
+            if (assetType != null) inst.AssetType = assetType;
+            return inst;
+        }
+
+        public static QueryableAssetSet CreateAssetSet(System.Collections.IEnumerable coll, System.Type assetType = null)
+        {
+            var inst = CreateInstance<QueryableAssetSet>();
+            if (assetType != null) inst.AssetType = assetType;
+            inst.ResetAssets(coll.OfType<UnityEngine.Object>());
+            return inst;
+        }
+
+        public static QueryableAssetSet CreateAssetSet<T>(IEnumerable<T> coll)
+        {
+            var inst = CreateInstance<QueryableAssetSet>();
+            inst.AssetType = typeof(T);
+            inst.ResetAssets(coll.OfType<UnityEngine.Object>());
+            return inst;
+        }
+
+        #endregion
+
     }
 
 }

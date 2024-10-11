@@ -6,15 +6,18 @@ namespace com.spacepuppy.SPInput
 
     /// <summary>
     /// Input signature where 'CurrentState' represents the change in mouse position (relative to screen size) scaled by MouseSensitivity. 
-    /// By default delta is only registered if the left mouse button is held. Set 'MouseActiveCallback' to override this behaviour. 
+    /// The default configuration is CreateNormalizedAxisOnMouseDown due to historical reasons, use the factory methods in place of constructor for 
+    /// more nuanced configuration.
     /// </summary>
-    public class MouseDeltaSignature : BaseInputSignature, IDualAxleInputSignature
+    public class MouseDeltaSignature : BaseInputSignature, IDualAxleInputSignature, ICursorInputSignature
     {
 
         static DualAxisDelegate __DEFAULT_MOUSEPOS_CALLBACK;
         static DualAxisDelegate DEFAULT_MOUSEPOS_CALLBACK => __DEFAULT_MOUSEPOS_CALLBACK ??= (() => (Vector2)Input.mousePosition);
         static ButtonDelegate __DEFAULT_MOUSEACTIVE_CALLBACK;
         static ButtonDelegate DEFAULT_MOUSEACTIVE_CALLBACK => __DEFAULT_MOUSEACTIVE_CALLBACK ??= (() => Input.GetMouseButtonDown(0));
+        static ButtonDelegate __DEFAULT_MOUSEALWAYSACTIVE_CALLBACK;
+        static ButtonDelegate DEFAULT_MOUSEALWAYSACTIVE_CALLBACK => __DEFAULT_MOUSEACTIVE_CALLBACK ??= (() => true);
 
         #region Fields
 
@@ -31,6 +34,12 @@ namespace com.spacepuppy.SPInput
 
         #region CONSTRUCTOR
 
+        /// <summary>
+        /// Creates a default MouseDeltaSignature, its default state of which is the same as calling 'CreateNormalizedAxisOnMouseDown'. 
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="mousePositionCallback"></param>
+        /// <param name="mouseActiveCallback"></param>
         public MouseDeltaSignature(string id, DualAxisDelegate mousePositionCallback = null, ButtonDelegate mouseActiveCallback = null) : base(id)
         {
             this.MousePositionCallback = mousePositionCallback;
@@ -95,9 +104,26 @@ namespace com.spacepuppy.SPInput
         /// </summary>
         public Vector2 TrueDelta => _trueDelta;
 
+        /// <summary>
+        /// Cuts off the axis if it extends past a length of 1.
+        /// </summary>
+        public bool CutoffAxis { get; set; } = true;
+
+        /// <summary>
+        /// Deadzone when normalizing axis. Only used if CutoffAxis is true.
+        /// </summary>
         public float DeadZone { get; set; }
+        /// <summary>
+        /// DeadZoneCutoff when normalizing axis. Only used if CutoffAxis is true.
+        /// </summary>
         public DeadZoneCutoff Cutoff { get; set; }
+        /// <summary>
+        /// RadialDeadZone when normalizing axis. Only used if CutoffAxis is true.
+        /// </summary>
         public float RadialDeadZone { get; set; }
+        /// <summary>
+        /// Radial DeadZoneCutoff when normalizing axis. Only used if CutoffAxis is true.
+        /// </summary>
         public DeadZoneCutoff RadialCutoff { get; set; }
 
         #endregion
@@ -110,7 +136,7 @@ namespace com.spacepuppy.SPInput
             if (_mouseActiveCallback())
             {
                 _trueDelta = pos - _lastPosition;
-                _currentDelta = InputUtil.CutoffDualAxis(_trueDelta * this.MouseSensitivity, this.DeadZone, this.Cutoff, this.RadialDeadZone, this.RadialCutoff);
+                _currentDelta = this.CutoffAxis ? InputUtil.CutoffDualAxis(_trueDelta * this.MouseSensitivity, this.DeadZone, this.Cutoff, this.RadialDeadZone, this.RadialCutoff) : _trueDelta * this.MouseSensitivity;
             }
             else
             {
@@ -146,6 +172,62 @@ namespace com.spacepuppy.SPInput
             _lastPosition = _mousePositionCallback();
             _trueDelta = default;
             _currentDelta = default;
+        }
+
+        bool IInputSignature.GetInputIsActivated() => InputUtil.GetInputIsActivatedDefault(this as IAxleInputSignature);
+
+        #endregion
+
+        #region Static Factory
+
+        /// <summary>
+        /// Delta is defined as a Vector2 cutoff to length 1 registered only when mouse button 0 is down.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="mousePositionCallback"></param>
+        /// <param name="mouseActiveCallback"></param>
+        /// <returns></returns>
+        public static MouseDeltaSignature CreateNormalizedAxisOnMouseDown(string id, float sensitivity = 1f, DualAxisDelegate mousePositionCallback = null, ButtonDelegate mouseActiveCallback = null)
+        {
+            return new MouseDeltaSignature(id, mousePositionCallback ?? DEFAULT_MOUSEPOS_CALLBACK, mouseActiveCallback ?? DEFAULT_MOUSEACTIVE_CALLBACK)
+            {
+                MouseSensitivity = sensitivity,
+                CutoffAxis = true,
+            };
+        }
+
+        /// <summary>
+        /// Delta is defined as a Vector2 cutoff to length 1 registered always regardless of mouse button.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="mousePositionCallback"></param>
+        /// <param name="mouseActiveCallback"></param>
+        /// <returns></returns>
+        public static MouseDeltaSignature CreateNormalizedAxis(string id, float sensitivity = 1f, DualAxisDelegate mousePositionCallback = null, ButtonDelegate mouseActiveCallback = null)
+        {
+            return new MouseDeltaSignature(id, mousePositionCallback ?? DEFAULT_MOUSEPOS_CALLBACK, mouseActiveCallback ?? DEFAULT_MOUSEALWAYSACTIVE_CALLBACK)
+            {
+                MouseSensitivity = sensitivity,
+                CutoffAxis = true,
+            };
+        }
+
+        public static MouseDeltaSignature CreateAxisOnMouseDown(string id, float sensitivity = 1f, DualAxisDelegate mousePositionCallback = null, ButtonDelegate mouseActiveCallback = null)
+        {
+            return new MouseDeltaSignature(id, mousePositionCallback ?? DEFAULT_MOUSEPOS_CALLBACK, mouseActiveCallback ?? DEFAULT_MOUSEACTIVE_CALLBACK)
+            {
+                MouseSensitivity = sensitivity,
+                CutoffAxis = false,
+            };
+        }
+
+        public static MouseDeltaSignature CreateAxis(string id, float sensitivity = 1f, DualAxisDelegate mousePositionCallback = null, ButtonDelegate mouseActiveCallback = null)
+        {
+            return new MouseDeltaSignature(id, mousePositionCallback ?? DEFAULT_MOUSEPOS_CALLBACK, mouseActiveCallback ?? DEFAULT_MOUSEALWAYSACTIVE_CALLBACK)
+            {
+                MouseSensitivity = sensitivity,
+                CutoffAxis = false,
+            };
         }
 
         #endregion

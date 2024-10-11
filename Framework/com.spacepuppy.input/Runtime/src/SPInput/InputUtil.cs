@@ -120,7 +120,7 @@ namespace com.spacepuppy.SPInput
             }
         }
 
-        public static ButtonState ConsumeButtonState(ButtonState current)
+        public static ButtonState ConsumeButtonState(this ButtonState current)
         {
             switch (current)
             {
@@ -141,7 +141,7 @@ namespace com.spacepuppy.SPInput
         /// <param name="current"></param>
         /// <param name="isButtonActive"></param>
         /// <returns></returns>
-        public static ButtonState GetNextButtonState(ButtonState current, bool isButtonActive)
+        public static ButtonState GetNextButtonState(this ButtonState current, bool isButtonActive)
         {
             if (isButtonActive)
             {
@@ -178,7 +178,7 @@ namespace com.spacepuppy.SPInput
         /// <param name="currentFixedState"></param>
         /// <param name="current"></param>
         /// <returns></returns>
-        public static ButtonState GetNextFixedButtonStateFromCurrent(ButtonState currentFixedState, ButtonState current)
+        public static ButtonState GetNextFixedButtonStateFromCurrent(this ButtonState currentFixedState, ButtonState current)
         {
             switch (currentFixedState)
             {
@@ -200,7 +200,37 @@ namespace com.spacepuppy.SPInput
             }
         }
 
-        
+        public static ButtonState Conjoin(this ButtonState a, ButtonState b)
+        {
+            switch (a)
+            {
+                case ButtonState.None:
+                    return b;
+                case ButtonState.Down:
+                    switch (b)
+                    {
+                        case ButtonState.Held:
+                        case ButtonState.Released:
+                            return ButtonState.Held;
+                        default:
+                            return a;
+                    }
+                case ButtonState.Held:
+                    return ButtonState.Held;
+                case ButtonState.Released:
+                    switch (b)
+                    {
+                        case ButtonState.Down:
+                        case ButtonState.Held:
+                            return ButtonState.Held;
+                        default:
+                            return a;
+                    }
+                default:
+                    return ButtonState.None;
+            }
+        }
+
         public static ButtonPress GetButtonPress(this IInputDevice device, string id, float duration)
         {
             if (device == null) return ButtonPress.None;
@@ -237,7 +267,7 @@ namespace com.spacepuppy.SPInput
         /// <returns></returns>
         public static ButtonPress ResolvePressState(this ButtonState state, double lastDownTime, float duration)
         {
-            switch(state)
+            switch (state)
             {
                 case ButtonState.Released:
                     return (Time.unscaledTimeAsDouble - lastDownTime) <= duration ? ButtonPress.Tapped : ButtonPress.Released;
@@ -314,6 +344,32 @@ namespace com.spacepuppy.SPInput
 
         #region Cursor Extensions
 
+        public static Vector2 GetCursorStateAsViewportPosition(this IInputDevice input, string state)
+        {
+            var v = input.GetCursorState(state);
+            v.x /= Screen.width;
+            v.y /= Screen.height;
+            return v;
+        }
+
+        public static Vector2 GetCursorStateAsViewportPosition<T>(this IMappedInputDevice<T> input, T state) where T : struct, System.IConvertible
+        {
+            var v = input.GetCursorState(state);
+            v.x /= Screen.width;
+            v.y /= Screen.height;
+            return v;
+        }
+
+        public static Vector2 GetCursorDelta(this IInputDevice input, string state)
+        {
+            return (input.GetSignature(state) as ICursorInputSignature)?.Delta ?? default;
+        }
+
+        public static Vector2 GetCursorDelta<T>(this IMappedInputDevice<T> input, T state) where T : struct, System.IConvertible
+        {
+            return (input.GetSignature(state) as ICursorInputSignature)?.Delta ?? default;
+        }
+
         public static CursorRaycastHit TestCursorOver(Camera cursorCamera, Vector2 cursorPos, float maxDistance = float.PositiveInfinity, int layerMask = Physics.AllLayers, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal, int blockingLayerMask = 0)
         {
             if (cursorCamera)
@@ -348,7 +404,7 @@ namespace com.spacepuppy.SPInput
         public static bool TestCursorOverEntity(Camera cursorCamera, Vector2 cursorPos, out SPEntity entity, float maxDistance = float.PositiveInfinity, int layerMask = Physics.AllLayers, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal, int blockingLayerMask = 0)
         {
             Collider c;
-            if(TestCursorOver(cursorCamera, cursorPos, out c, maxDistance, layerMask, query, blockingLayerMask))
+            if (TestCursorOver(cursorCamera, cursorPos, out c, maxDistance, layerMask, query, blockingLayerMask))
             {
                 entity = SPEntity.Pool.GetFromSource(c);
                 return !object.ReferenceEquals(entity, null);
@@ -377,7 +433,7 @@ namespace com.spacepuppy.SPInput
 
         public static CursorRaycastHit TestCursorOver2D(Camera cursorCamera, Vector2 cursorPos, float maxDistance = float.PositiveInfinity, int layerMask = Physics.AllLayers, float minDepth = float.NegativeInfinity, int blockingLayerMask = 0)
         {
-            if(cursorCamera)
+            if (cursorCamera)
             {
                 var hit = Physics2D.Raycast(cursorCamera.ScreenToWorldPoint(cursorPos), Vector2.zero, maxDistance, layerMask | blockingLayerMask, minDepth);
                 if (hit && (blockingLayerMask == 0 || ((1 << hit.collider.gameObject.layer) & blockingLayerMask) == 0))
@@ -390,14 +446,14 @@ namespace com.spacepuppy.SPInput
 
         public static bool TestCursorOver2D(Camera cursorCamera, Vector2 cursorPos, out Collider2D collider, float maxDistance = float.PositiveInfinity, int layerMask = Physics.AllLayers, float minDepth = float.NegativeInfinity, int blockingLayerMask = 0)
         {
-            if(cursorCamera == null)
+            if (cursorCamera == null)
             {
                 collider = null;
                 return false;
             }
 
             var hit = Physics2D.Raycast(cursorCamera.ScreenToWorldPoint(cursorPos), Vector2.zero, maxDistance, layerMask | blockingLayerMask, minDepth);
-            if(hit && (blockingLayerMask == 0 || ((1 << hit.collider.gameObject.layer) & blockingLayerMask) == 0))
+            if (hit && (blockingLayerMask == 0 || ((1 << hit.collider.gameObject.layer) & blockingLayerMask) == 0))
             {
                 collider = hit.collider;
                 return true;

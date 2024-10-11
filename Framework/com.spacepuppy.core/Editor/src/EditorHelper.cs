@@ -1024,6 +1024,14 @@ namespace com.spacepuppyeditor
             return label != null && (!string.IsNullOrEmpty(label.text) || label.image != null);
         }
 
+        public static GUIContent GetLabelContent(SerializedProperty prop)
+        {
+            var c = new GUIContent(); // _temp_text.GetInstance();
+            c.text = prop.displayName;
+            c.tooltip = prop.tooltip;
+            return c;
+        }
+
         /// <summary>
         /// Single immediate use GUIContent for a label. Should be used immediately and not stored/referenced for later use.
         /// </summary>

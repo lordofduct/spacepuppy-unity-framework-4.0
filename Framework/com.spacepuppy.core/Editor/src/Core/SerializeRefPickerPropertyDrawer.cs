@@ -359,7 +359,7 @@ namespace com.spacepuppyeditor.Core
                 float h = 0;
                 foreach (var child in property.GetChildren())
                 {
-                    h += SPEditorGUI.GetPropertyHeight(child);
+                    h += SPEditorGUI.GetPropertyHeight(child, label, true);
                 }
                 return h;
             }

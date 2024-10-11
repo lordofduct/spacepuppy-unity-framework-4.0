@@ -1098,14 +1098,28 @@ namespace com.spacepuppy.Utils
             public int SubscriberCount => _observers?.Count ?? 0;
 
             [Preserve]
-            public bool Subscribe(T observer) => observer != null && ObjUtil.IsObjectAlive(this) && this.enabled && _observers.Add(observer);
+            public bool Subscribe(T observer) => observer != null && ObjUtil.IsObjectAlive(this) && _observers.Add(observer);
             [Preserve]
             public bool Unsubscribe(T observer)
             {
                 if (!ObjUtil.IsObjectAlive(this)) return false;
 
-                bool result = observer != null && this.enabled && _observers.Remove(observer);
-                if (this.SubscriberCount == 0 && !this.PreserveOnUnsubscribe()) Destroy(this);
+                bool result = observer != null && _observers.Remove(observer);
+                if (this.SubscriberCount == 0 && !this.PreserveOnUnsubscribe())
+                {
+                    //we only destroy at the end of the frame if no new subscribers pick this up
+                    if (GameLoop.LateUpdateWasCalled)
+                    {
+                        Destroy(this);
+                    }
+                    else
+                    {
+                        GameLoop.LateUpdateHandle.BeginInvoke(() =>
+                        {
+                            if (this.SubscriberCount == 0) Destroy(this);
+                        });
+                    }
+                }
                 return result;
             }
 
@@ -1140,7 +1154,7 @@ namespace com.spacepuppy.Utils
                 if (go)
                 {
                     hook = go.GetComponent<ISubscribableMessageHook<T>>();
-                    if (hook == null && _hookType != null) hook = go.AddComponent(_hookType) as ISubscribableMessageHook<T>;
+                    if (hook.IsNullOrDestroyed() && _hookType != null) hook = go.AddComponent(_hookType) as ISubscribableMessageHook<T>;
                     return hook != null ? hook.Subscribe(observer) : false;
                 }
                 else

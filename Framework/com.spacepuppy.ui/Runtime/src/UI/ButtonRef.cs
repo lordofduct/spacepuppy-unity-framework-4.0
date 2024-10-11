@@ -74,6 +74,24 @@ namespace com.spacepuppy.UI
 
         public Transform transform => this.Button ? this.Button.transform : null;
 
+        public bool interactable
+        {
+            get => _value ? _value.interactable : false;
+            set
+            {
+                if (_value) _value.interactable = value;
+            }
+        }
+
+        public bool enabled
+        {
+            get => _value ? _value.enabled : false;
+            set
+            {
+                if (_value) _value.enabled = value;
+            }
+        }
+
         #endregion
 
         #region Methods

@@ -6,7 +6,7 @@ namespace com.spacepuppy.Geom
     [System.Serializable()]
     public struct Interval
     {
-        
+
         #region Fields
 
         [SerializeField()]
@@ -171,6 +171,8 @@ namespace com.spacepuppy.Geom
             return Mathf.Abs(_max - inter.Min);
         }
 
+        public float Clamp(float v) => System.Math.Clamp(v, _min, _max);
+
         #endregion
 
         #region Static Members
@@ -214,6 +216,11 @@ namespace com.spacepuppy.Geom
             return new Interval(min, max);
         }
 
+        public static Interval Lerp(Interval a, Interval b, float t)
+        {
+            return new Interval(Mathf.Lerp(a.Min, b.Min, t), Mathf.Lerp(a.Max, b.Max, t));
+        }
+
         #endregion
 
         #region Operators
@@ -238,6 +245,16 @@ namespace com.spacepuppy.Geom
             return Concat(a, b);
         }
 
+        public static explicit operator Interval(Vector2 v)
+        {
+            return new Interval(v.x, v.y);
+        }
+
+        public static explicit operator Vector2(Interval v)
+        {
+            return new Vector2(v.Min, v.Max);
+        }
+
         #endregion
 
 
@@ -252,7 +269,7 @@ namespace com.spacepuppy.Geom
             public float MinValue = float.NegativeInfinity;
             public float MaxValue = float.PositiveInfinity;
             public bool DiscreteValuesOnly = false;
-            
+
             public ConfigAttribute()
             {
 

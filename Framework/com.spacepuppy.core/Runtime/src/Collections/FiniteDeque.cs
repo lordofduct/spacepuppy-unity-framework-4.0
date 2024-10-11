@@ -52,8 +52,12 @@ namespace com.spacepuppy.Collections
             get
             {
                 if (index < 0 || index >= _count) throw new IndexOutOfRangeException();
-
                 return _buffer[(_rear + index) % _buffer.Length];
+            }
+            set
+            {
+                if (index < 0 || index >= _count) throw new IndexOutOfRangeException();
+                _buffer[(_rear + index) % _buffer.Length] = value;
             }
         }
 
@@ -174,7 +178,7 @@ namespace com.spacepuppy.Collections
             if (_rear < 0) _rear += _buffer.Length;
             _buffer[index] = item;
             _rear = index;
-            if(_count < _buffer.Length)
+            if (_count < _buffer.Length)
             {
                 _count++;
             }

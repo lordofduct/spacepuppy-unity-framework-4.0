@@ -10,8 +10,47 @@ namespace com.spacepuppyeditor.Statistics
     {
         public string Name { get; set; }
         public System.Type DataStore { get; set; }
-        public string[] Entries { get; set; }
         public bool Permanent { get; set; }
+
+        private string[] _entries = ArrayUtil.Empty<string>();
+        public object Entries
+        {
+            get => _entries;
+            set
+            {
+                switch(value)
+                {
+                    case string str:
+                        _entries = new string[] { str };
+                        break;
+                    case string[] arr:
+                        _entries = arr;
+                        break;
+                    case IEnumerable<string> e:
+                        _entries = e.ToArray();
+                        break;
+                    case System.Type tp:
+                        _entries = tp.IsEnum ? System.Enum.GetNames(tp) : new string[] { tp.Name };
+                        break;
+                    case System.Delegate d:
+                        try
+                        {
+                            this.Entries = d.DynamicInvoke();
+                        }
+                        catch( System.Exception ex)
+                        {
+                            Debug.LogException(ex);
+                        }
+                        break;
+                    default:
+                        //unsupported
+                        _entries = ArrayUtil.Empty<string>();
+                        break;
+                }
+            }
+        }
+        public string[] EntriesArray => _entries;
+
     }
 
     public class StatisticsTokenLedgerCategories
@@ -37,7 +76,7 @@ namespace com.spacepuppyeditor.Statistics
 
         public static IEnumerable<string> GetTokenCategoryEntryValues(string name)
         {
-            return Categories.FirstOrDefault(o => o.Name == name)?.Entries ?? Enumerable.Empty<string>();
+            return Categories.FirstOrDefault(o => o.Name == name)?.EntriesArray ?? Enumerable.Empty<string>();
         }
 
 

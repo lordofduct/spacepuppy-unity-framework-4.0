@@ -1,5 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System;
+using System.Drawing;
 
 namespace com.spacepuppy.Statistics
 {
@@ -24,40 +26,94 @@ namespace com.spacepuppy.Statistics
     [System.Serializable]
     public struct StatId
     {
-        private const string TOKEN_SEPERATOR = "*|*";
+        private const string LEGACY_SEPERATOR = "*|*";
+        private const char SEPERATOR = '|';
 
-        public string Stat;
+        public string Category;
         public string Token;
+        /// <summary>
+        /// Normally left blank, this is used to represent meta data used by custom IStatModifiers.
+        /// </summary>
+        public string MetaData;
 
-        public StatId(string stat, string token = null)
+        public bool IsMeta => !string.IsNullOrEmpty(MetaData);
+
+        public StatId(string category)
         {
-            this.Stat = stat;
-            this.Token = token;
+            this.Category = category;
+            this.Token = null;
+            this.MetaData = null;
         }
+        public StatId(string category, string token)
+        {
+            this.Category = category;
+            this.Token = token;
+            this.MetaData = null;
+        }
+        public StatId(string category, string token, string metadata)
+        {
+            this.Category = category;
+            this.Token = token;
+            this.MetaData = metadata;
+        }
+
 
         public LedgerStatData CreateData(double? value)
         {
             return new LedgerStatData()
             {
-                Stat = this.Stat,
+                Stat = this.Category,
                 Token = this.Token,
+                MetaData = this.MetaData,
                 Value = value
             };
         }
 
-        public override string ToString() => string.IsNullOrEmpty(Token) ? Stat ?? string.Empty : Stat + TOKEN_SEPERATOR + Token;
-
-        public static StatId Parse(string id)
+        public StatId GetMeta(string metadata)
         {
-            int index = (id ?? string.Empty).IndexOf(TOKEN_SEPERATOR);
-            if (index >= 0)
+            return new StatId(Category, Token, metadata);
+        }
+
+        public override string ToString()
+        {
+            if (!string.IsNullOrEmpty(MetaData))
             {
-                return new StatId(id.Substring(0, index), id.Substring(index + TOKEN_SEPERATOR.Length));
+                return $"{Category}{SEPERATOR}{Token}{SEPERATOR}{MetaData}";
+            }
+            if (!string.IsNullOrEmpty(Token))
+            {
+                return $"{Category}{SEPERATOR}{Token}";
             }
             else
             {
-                return new StatId(id);
+                return Category ?? string.Empty;
             }
+        }
+
+        public static StatId Parse(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return default;
+
+            //this is to support older serialized data
+            int index = id.IndexOf(LEGACY_SEPERATOR);
+            if (index >= 0) return new StatId(id.Substring(0, index), id.Substring(index + LEGACY_SEPERATOR.Length));
+
+            index = id.IndexOf(SEPERATOR);
+            if (index >= 0)
+            {
+                string cat = id.Substring(0, index);
+                string token = id.Substring(index + 1);
+                string aux = null;
+                index = token.IndexOf(SEPERATOR);
+                if (index >= 0)
+                {
+                    token = token.Substring(0, index);
+                    aux = token.Substring(index + 1);
+                }
+                return new StatId(cat, token, aux);
+            }
+
+            return new StatId(id);
         }
 
     }
@@ -68,12 +124,14 @@ namespace com.spacepuppy.Statistics
 
         public bool Equals(StatId x, StatId y)
         {
-            return ((x.Stat ?? string.Empty) == (y.Stat ?? string.Empty)) && ((x.Token ?? string.Empty) == (y.Token ?? string.Empty));
+            return (string.IsNullOrEmpty(x.Category) ? string.IsNullOrEmpty(y.Category) : x.Category.Equals(y.Category)) &&
+                   (string.IsNullOrEmpty(x.Token) ? string.IsNullOrEmpty(y.Token) : x.Token.Equals(y.Token)) &&
+                   (string.IsNullOrEmpty(x.MetaData) ? string.IsNullOrEmpty(y.MetaData) : x.MetaData.Equals(y.MetaData));
         }
 
         public int GetHashCode(StatId obj)
         {
-            return (obj.Stat ?? string.Empty).GetHashCode() ^ (obj.Token ?? string.Empty).GetHashCode();
+            return System.HashCode.Combine(obj.Category ?? string.Empty, obj.Token ?? string.Empty, obj.MetaData ?? string.Empty);
         }
     }
 

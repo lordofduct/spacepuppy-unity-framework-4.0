@@ -91,9 +91,9 @@ namespace com.spacepuppy.Statistics
             _ledger.Reset();
         }
 
-        public IEnumerable<LedgerStatData> EnumerateStats(string filterstat = null)
+        public IEnumerable<LedgerStatData> EnumerateStats(string filtercategory = null)
         {
-            return string.IsNullOrEmpty(filterstat) ? _ledger.GetAllStatAndTokenEntries() : _ledger.GetStatAndTokenEntries(filterstat);
+            return string.IsNullOrEmpty(filtercategory) ? _ledger.GetAllStatTokenEntries() : _ledger.GetStatTokenEntries(filtercategory);
         }
 
         #endregion

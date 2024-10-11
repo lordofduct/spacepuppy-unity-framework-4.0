@@ -46,9 +46,9 @@ namespace com.spacepuppyeditor.Statistics.Events
                         {
                             var category = StatisticsTokenLedgerCategories.Categories[selection];
 
-                            selection = category.Entries.IndexOf(idprop.stringValue);
-                            selection = EditorGUILayout.Popup("Token", selection, category.Entries);
-                            idprop.stringValue = selection >= 0 ? category.Entries[selection] : null;
+                            selection = category.EntriesArray.IndexOf(idprop.stringValue);
+                            selection = EditorGUILayout.Popup("Token", selection, category.EntriesArray);
+                            idprop.stringValue = selection >= 0 ? category.EntriesArray[selection] : null;
                         }
                     }
                     break;

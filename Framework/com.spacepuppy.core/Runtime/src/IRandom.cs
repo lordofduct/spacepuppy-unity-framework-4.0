@@ -26,7 +26,7 @@ namespace com.spacepuppy
     }
 
     [System.Serializable]
-    public class RandomRef : com.spacepuppy.Project.SerializableInterfaceRef<IRandom>
+    public class RandomRef : com.spacepuppy.Project.InterfaceRef<IRandom>
     {
 
         public IRandom ValueOrDefault => this.Value ?? RandomUtil.Standard;

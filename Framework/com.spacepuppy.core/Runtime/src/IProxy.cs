@@ -257,7 +257,7 @@ namespace com.spacepuppy
     }
 
     [System.Serializable]
-    public class ProxyRef : com.spacepuppy.Project.SerializableInterfaceRef<IProxy>
+    public class ProxyRef : com.spacepuppy.Project.InterfaceRef<IProxy>
     {
 
     }

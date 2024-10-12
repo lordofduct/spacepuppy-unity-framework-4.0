@@ -24,7 +24,7 @@ namespace com.spacepuppy.Project
     /// </summary>
     /// <typeparam name="T"></typeparam>
     [System.Serializable]
-    public class SerializableInterfaceRef<T> : BaseSerializableInterfaceRef, ISerializationCallbackReceiver, IDynamicProperty where T : class
+    public class InterfaceRef<T> : BaseSerializableInterfaceRef, ISerializationCallbackReceiver, IDynamicProperty where T : class
     {
 
         #region Fields
@@ -38,12 +38,12 @@ namespace com.spacepuppy.Project
 
         #region CONSTRUCTOR
 
-        public SerializableInterfaceRef()
+        public InterfaceRef()
         {
 
         }
 
-        public SerializableInterfaceRef(T value)
+        public InterfaceRef(T value)
         {
             this.Value = value;
         }
@@ -105,7 +105,7 @@ namespace com.spacepuppy.Project
     }
 
     [System.Serializable]
-    public class SerializableInterfaceCollection<T> : BaseSerializableInterfaceCollection, IEnumerable<T>, ISerializationCallbackReceiver where T : class
+    public class InterfaceRefCollection<T> : BaseSerializableInterfaceCollection, IEnumerable<T>, ISerializationCallbackReceiver where T : class
     {
 
         #region Fields
@@ -119,12 +119,12 @@ namespace com.spacepuppy.Project
 
         #region CONSTRUCTOR
 
-        public SerializableInterfaceCollection()
+        public InterfaceRefCollection()
         {
             _values = new List<T>();
         }
 
-        public SerializableInterfaceCollection(IEnumerable<T> values)
+        public InterfaceRefCollection(IEnumerable<T> values)
         {
             _values = new List<T>(values);
         }

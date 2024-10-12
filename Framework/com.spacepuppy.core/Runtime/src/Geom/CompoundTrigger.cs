@@ -20,7 +20,7 @@ namespace com.spacepuppy.Geom
     }
 
     [System.Serializable]
-    public class ICompoundTriggerRef : SerializableInterfaceRef<ICompoundTrigger> { }
+    public class ICompoundTriggerRef : InterfaceRef<ICompoundTrigger> { }
 
     public interface ICompoundTriggerEnterHandler
     {

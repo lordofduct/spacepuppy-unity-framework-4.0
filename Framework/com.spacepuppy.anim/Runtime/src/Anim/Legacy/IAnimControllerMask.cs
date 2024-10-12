@@ -15,7 +15,7 @@ namespace com.spacepuppy.Anim.Legacy
     }
 
     [System.Serializable]
-    public class AnimControllerMaskSerializedRef : com.spacepuppy.Project.SerializableInterfaceRef<IAnimControllerMask>
+    public class AnimControllerMaskSerializedRef : com.spacepuppy.Project.InterfaceRef<IAnimControllerMask>
     {
 
     }

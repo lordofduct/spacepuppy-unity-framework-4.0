@@ -9,7 +9,6 @@ using com.spacepuppy.Project;
 using com.spacepuppy.Utils;
 
 using com.spacepuppyeditor.Internal;
-using System.Drawing.Printing;
 
 namespace com.spacepuppyeditor.Core.Project
 {

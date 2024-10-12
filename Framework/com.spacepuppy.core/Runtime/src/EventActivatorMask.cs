@@ -14,7 +14,7 @@ namespace com.spacepuppy
     }
 
     [System.Serializable]
-    public sealed class EventActivatorMaskRef : Project.SerializableInterfaceRef<IEventActivatorMask>
+    public sealed class EventActivatorMaskRef : Project.InterfaceRef<IEventActivatorMask>
     {
 
     }

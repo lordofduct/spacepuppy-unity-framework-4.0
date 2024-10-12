@@ -52,7 +52,7 @@ namespace com.spacepuppy.Spawn
     }
 
     [System.Serializable]
-    public class SpawnPoolRef : SerializableInterfaceRef<ISpawnPool>
+    public class SpawnPoolRef : InterfaceRef<ISpawnPool>
     {
         public ISpawnPool ValueOrDefault => this.Value.IsAlive() ? this.Value : SpawnPool.DefaultPool;
     }

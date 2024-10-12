@@ -75,7 +75,7 @@ namespace com.spacepuppyeditor.Core
             {
                 //float objheight = !string.IsNullOrEmpty(property.managedReferenceFullTypename) ? EditorGUI.GetPropertyHeight(property, label, true) + 4f : EditorGUIUtility.singleLineHeight * 2f;
                 float objheight = 0f;
-                if (string.IsNullOrEmpty(property.managedReferenceFullTypename))
+                if (string.IsNullOrEmpty(property.managedReferenceFullTypename)) //this means nothing is referenced currently
                 {
                     objheight = EditorGUIUtility.singleLineHeight;
                 }
@@ -144,24 +144,26 @@ namespace com.spacepuppyeditor.Core
                 }
                 else
                 {
+                    selectorArea = new Rect(position.xMin, position.yMin, position.width, EditorGUIUtility.singleLineHeight);
                     var drawArea = new Rect(position.xMin, position.yMin + SELECTOR_VER_MARGIN + EditorGUIUtility.singleLineHeight, position.width, Mathf.Max(position.height - EditorGUIUtility.singleLineHeight - SELECTOR_VER_MARGIN, 0f));
                     if (this.AlwaysExpanded)
                     {
                         property.isExpanded = true;
-                        EditorGUI.PrefixLabel(new Rect(position.xMin, position.yMin, position.width, EditorGUIUtility.singleLineHeight), label);
+                        if (label.HasContent())
+                        {
+                            selectorArea = EditorGUI.PrefixLabel(selectorArea, label);
+                        }
                         FindPropertyDrawer(EditorHelper.GetManagedReferenceType(property)).OnGUI(drawArea, property, GUIContent.none);
                     }
                     else
                     {
-                        cache = SPEditorGUI.PrefixFoldoutLabel(new Rect(position.xMin, position.yMin, position.width, EditorGUIUtility.singleLineHeight), property.isExpanded, label);
+                        cache = SPEditorGUI.PrefixFoldoutLabel(ref selectorArea, property.isExpanded, label);
                         if (property.isExpanded)
                         {
-                            EditorGUI.PrefixLabel(new Rect(position.xMin, position.yMin, position.width, EditorGUIUtility.singleLineHeight), label);
+                            FindPropertyDrawer(EditorHelper.GetManagedReferenceType(property)).OnGUI(drawArea, property, GUIContent.none);
                         }
-
                     }
 
-                    selectorArea = new Rect(position.xMin + EditorGUIUtility.labelWidth, position.yMin, Mathf.Max(0f, position.width - EditorGUIUtility.labelWidth), EditorGUIUtility.singleLineHeight);
                     drawSelector = true;
                 }
             }

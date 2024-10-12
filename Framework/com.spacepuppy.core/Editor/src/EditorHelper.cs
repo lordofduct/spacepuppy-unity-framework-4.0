@@ -172,6 +172,17 @@ namespace com.spacepuppyeditor
             return System.Type.GetType(string.Format("{0}, {1}", arr[1], arr[0]));
         }
 
+        public static System.Type GetManagedReferenceFieldType(this SerializedProperty property)
+        {
+            var sfull = property.managedReferenceFieldTypename;
+            if (string.IsNullOrEmpty(sfull)) return null;
+
+            var arr = sfull.Split(' ');
+            if (arr.Length != 2) return null;
+
+            return System.Type.GetType(string.Format("{0}, {1}", arr[1], arr[0]));
+        }
+
         public static System.Type GetTargetType(this SerializedObject obj)
         {
             if (obj == null) return null;

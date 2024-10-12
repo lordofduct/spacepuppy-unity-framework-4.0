@@ -7,8 +7,9 @@ using com.spacepuppy;
 using com.spacepuppy.Dynamic;
 using com.spacepuppy.Project;
 using com.spacepuppy.Utils;
-using com.spacepuppyeditor.Windows;
+
 using com.spacepuppyeditor.Internal;
+using System.Drawing.Printing;
 
 namespace com.spacepuppyeditor.Core.Project
 {
@@ -20,7 +21,8 @@ namespace com.spacepuppyeditor.Core.Project
     public class SerializableInterfaceRefPropertyDrawer : PropertyDrawer, EditorHelper.ISerializedWrapperHelper
     {
 
-        public const string PROP_OBJ = "_obj";
+        public const string PROP_UOBJECT = BaseSerializableInterfaceRef.PROP_UOBJECT;
+        public const string PROP_REFOBJECT = BaseSerializableInterfaceRef.PROP_REFOBJECT;
 
         private SelectableComponentPropertyDrawer _componentSelectorDrawer = new SelectableComponentPropertyDrawer()
         {
@@ -30,26 +32,59 @@ namespace com.spacepuppyeditor.Core.Project
             ShowXButton = true,
             XButtonOnRightSide = true,
         };
+        private SerializeRefPickerPropertyDrawer _refSelectorDrawer = new()
+        {
+            AllowNull = true,
+            DisplayBox = false,
+            AlwaysExpanded = true,
+        };
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
             float h;
             if (EditorHelper.AssertMultiObjectEditingNotSupportedHeight(property, label, out h)) return h;
 
-            var tp = (this.fieldInfo != null) ? this.fieldInfo.FieldType : null;
-            var objProp = property.FindPropertyRelative(PROP_OBJ);
-            if (tp == null || objProp == null || objProp.propertyType != SerializedPropertyType.ObjectReference)
+            System.Type valueType;
+            SerializedProperty prop_obj;
+            SerializedProperty prop_ref;
+            if (!ValidateRefType(property, out valueType, out prop_obj, out prop_ref))
             {
                 return EditorGUIUtility.singleLineHeight;
             }
 
-            if (objProp.objectReferenceValue == null)
+            _refSelectorDrawer.RefType = valueType;
+            _componentSelectorDrawer.RestrictionType = valueType;
+
+
+            if (prop_ref == null)
             {
-                return EditorGUIUtility.singleLineHeight;
+                if (prop_obj != null && prop_obj.objectReferenceValue != null)
+                {
+                    return _componentSelectorDrawer.GetPropertyHeight(prop_obj, label);
+                }
+                else
+                {
+                    return EditorGUIUtility.singleLineHeight;
+                }
+            }
+            else if (prop_obj == null)
+            {
+                return _refSelectorDrawer.GetPropertyHeight(prop_ref, label);
             }
             else
             {
-                return _componentSelectorDrawer.GetPropertyHeight(objProp, label);
+                if (prop_ref.managedReferenceValue != null)
+                {
+                    return _refSelectorDrawer.GetPropertyHeight(prop_ref, label);
+                }
+                else if (prop_obj.objectReferenceValue != null)
+                {
+                    return _componentSelectorDrawer.GetPropertyHeight(prop_obj, label);
+                }
+                else
+                {
+                    return EditorGUIUtility.singleLineHeight;
+                }
             }
         }
 
@@ -57,20 +92,17 @@ namespace com.spacepuppyeditor.Core.Project
         {
             if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
 
-            var tp = (this.fieldInfo != null) ? this.fieldInfo.FieldType : null;
-            var objProp = property.FindPropertyRelative(PROP_OBJ);
-            if (tp == null || objProp == null || objProp.propertyType != SerializedPropertyType.ObjectReference)
+            System.Type valueType;
+            SerializedProperty prop_obj;
+            SerializedProperty prop_ref;
+            if (!ValidateRefType(property, out valueType, out prop_obj, out prop_ref))
             {
                 this.DrawMalformed(position);
                 return;
             }
 
-            var valueType = DynamicUtil.GetReturnType(DynamicUtil.GetMemberFromType(tp, "_value", true));
-            if (valueType == null || !(valueType.IsClass || valueType.IsInterface))
-            {
-                this.DrawMalformed(position);
-                return;
-            }
+            _refSelectorDrawer.RefType = valueType;
+            _componentSelectorDrawer.RestrictionType = valueType;
 
             //SelfReducingEntityConfigRef - support
             try
@@ -93,19 +125,60 @@ namespace com.spacepuppyeditor.Core.Project
             }
             catch (System.Exception) { }
 
-            if (objProp.objectReferenceValue == null)
+            if (prop_ref == null)
             {
-                object val = SPEditorGUI.AdvancedObjectField(position, label, objProp.objectReferenceValue, valueType, true, true);
+                this.DrawUObjectField(position, prop_obj, GUIContent.none, valueType);
+            }
+            else if(prop_obj == null)
+            {
+                _refSelectorDrawer.OnGUI(position, prop_ref, label);
+            }
+            else
+            {
+                if (prop_ref.managedReferenceValue == null)
+                {
+                    const float DROP_ARROW_WIDTH = 20f;
+
+                    var r0 = new Rect(position.xMin, position.yMin, position.width, position.height);
+                    r0 = EditorGUI.PrefixLabel(r0, label);
+                    var r0_a = new Rect(r0.xMin, r0.yMin, r0.width - DROP_ARROW_WIDTH, r0.height);
+                    var r0_b = new Rect(r0_a.xMax, r0.yMin, DROP_ARROW_WIDTH, r0.height);
+
+                    this.DrawUObjectField(r0_a, prop_obj, GUIContent.none, valueType);
+
+                    _refSelectorDrawer.OnGUI(r0_b, prop_ref, GUIContent.none);
+                }
+                else
+                {
+                    //const float MARGIN = 2f;//
+                    //const float MARGIN_DBL = MARGIN * 2f;
+
+                    //var area = position;
+                    //position = new Rect(area.xMin + MARGIN, area.yMin, area.width - MARGIN_DBL, area.height);
+
+                    //GUI.BeginGroup(area, GUIContent.none, GUI.skin.box);
+                    //GUI.EndGroup();
+
+                    _refSelectorDrawer.OnGUI(position, prop_ref, label);
+                    if (prop_obj != null) prop_obj.objectReferenceValue = null;
+                }
+            }
+        }
+
+        private void DrawUObjectField(Rect position, SerializedProperty prop_obj, GUIContent label, System.Type valueType)
+        {
+            if (prop_obj.objectReferenceValue == null)
+            {
+                object val = SPEditorGUI.AdvancedObjectField(position, GUIContent.none, prop_obj.objectReferenceValue, valueType, true, true);
                 if (val != null && !valueType.IsInstanceOfType(val) && ObjUtil.GetAsFromSource<IProxy>(val) == null)
                 {
                     val = null;
                 }
-                objProp.objectReferenceValue = val as UnityEngine.Object;
+                prop_obj.objectReferenceValue = val as UnityEngine.Object;
             }
             else
             {
-                _componentSelectorDrawer.RestrictionType = valueType;
-                _componentSelectorDrawer.OnGUI(position, objProp, label);
+                _componentSelectorDrawer.OnGUI(position, prop_obj, label);
             }
         }
 
@@ -116,35 +189,74 @@ namespace com.spacepuppyeditor.Core.Project
         }
 
 
-        public static void SetSerializedProperty(SerializedProperty property, UnityEngine.Object obj)
+        public static void SetSerializedProperty(SerializedProperty property, object value)
         {
             if (property == null) throw new System.ArgumentNullException(nameof(property));
-            var objProp = property.FindPropertyRelative(PROP_OBJ);
-            if (objProp != null && objProp.propertyType == SerializedPropertyType.ObjectReference)
+
+            var prop_obj = property.FindPropertyRelative(PROP_UOBJECT);
+            if (prop_obj != null && prop_obj.propertyType != SerializedPropertyType.ObjectReference) prop_obj = null;
+            var prop_ref = property.FindPropertyRelative(PROP_REFOBJECT);
+            if (prop_ref != null && prop_ref.propertyType != SerializedPropertyType.ManagedReference) prop_ref = null;
+
+            if (value is UnityEngine.Object uot)
             {
-                objProp.objectReferenceValue = obj;
+                if (prop_obj != null) prop_obj.objectReferenceValue = uot;
+                if (prop_ref != null) prop_ref.managedReferenceValue = null;
+            }
+            else if (value == null || value.GetType().IsSerializable)
+            {
+                if (prop_obj != null) prop_obj.objectReferenceValue = null;
+                if (prop_ref != null) prop_ref.managedReferenceValue = value;
             }
         }
 
-        public static UnityEngine.Object GetFromSerializedProperty(SerializedProperty property)
+        public static object GetFromSerializedProperty(SerializedProperty property)
         {
             if (property == null) throw new System.ArgumentNullException(nameof(property));
 
-            return property.FindPropertyRelative(PROP_OBJ)?.objectReferenceValue;
+            var prop_obj = property.FindPropertyRelative(PROP_UOBJECT);
+            if (prop_obj != null && prop_obj.propertyType != SerializedPropertyType.ObjectReference) prop_obj = null;
+            var prop_ref = property.FindPropertyRelative(PROP_REFOBJECT);
+            if (prop_ref != null && prop_ref.propertyType != SerializedPropertyType.ManagedReference) prop_ref = null;
+
+            if (prop_obj != null && prop_obj.objectReferenceValue != null) return prop_obj.objectReferenceValue;
+            if (prop_ref != null) return prop_ref.managedReferenceValue;
+            return null;
         }
 
         public static System.Type GetRefTypeFromSerializedProperty(SerializedProperty property)
         {
+            if (ValidateRefType(property, out System.Type valueType, out _, out _))
+            {
+                return valueType;
+            }
+            else
+            {
+                return typeof(object);
+            }
+        }
+
+        static bool ValidateRefType(SerializedProperty property, out System.Type valueType, out SerializedProperty prop_obj, out SerializedProperty prop_ref)
+        {
             if (property == null) throw new System.ArgumentNullException(nameof(property));
 
-            var wrapperType = property.GetTargetType();
-            if (TypeUtil.IsType(wrapperType, typeof(SerializableInterfaceRef<>)))
+            prop_obj = property.FindPropertyRelative(PROP_UOBJECT);
+            if (prop_obj != null && prop_obj.propertyType != SerializedPropertyType.ObjectReference) prop_obj = null;
+            prop_ref = property.FindPropertyRelative(PROP_REFOBJECT);
+            if (prop_ref != null && prop_ref.propertyType != SerializedPropertyType.ManagedReference) prop_ref = null;
+
+            if (prop_ref != null)
             {
+                valueType = prop_ref.GetManagedReferenceFieldType();
+            }
+            else
+            {
+                var wrapperType = property.GetTargetType();
                 var valueprop = wrapperType.GetProperty("Value", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-                return valueprop?.PropertyType ?? typeof(UnityEngine.Object);
+                valueType = valueprop?.PropertyType ?? (prop_obj != null ? typeof(UnityEngine.Object) : typeof(object));
             }
 
-            return typeof(UnityEngine.Object);
+            return valueType != null && (valueType.IsClass || valueType.IsInterface) && (prop_obj != null || prop_ref != null);
         }
 
 
@@ -158,7 +270,7 @@ namespace com.spacepuppyeditor.Core.Project
 
         bool EditorHelper.ISerializedWrapperHelper.SetValue(SerializedProperty property, object value)
         {
-            SetSerializedProperty(property, ObjUtil.GetAsFromSource<UnityEngine.Object>(value));
+            SetSerializedProperty(property, value);
             return true;
         }
 

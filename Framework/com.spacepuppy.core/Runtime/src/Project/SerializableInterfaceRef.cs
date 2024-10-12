@@ -14,6 +14,9 @@ namespace com.spacepuppy.Project
     public abstract class BaseSerializableInterfaceRef
     {
 
+        public const string PROP_UOBJECT = "_obj";
+        public const string PROP_REFOBJECT = "_ref";
+
     }
 
     /// <summary>
@@ -160,6 +163,69 @@ namespace com.spacepuppy.Project
 
         IEnumerator<T> IEnumerable<T>.GetEnumerator() => _values.GetEnumerator();
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => _values.GetEnumerator();
+
+        #endregion
+
+    }
+
+
+    [System.Serializable]
+    public class InterfaceRefOrPicker<T> : BaseSerializableInterfaceRef, IDynamicProperty where T : class
+    {
+
+        #region Fields
+
+        [SerializeField]
+        private UnityEngine.Object _obj;
+        [SerializeReference]
+        private T _ref;
+
+        #endregion
+
+        #region CONSTRUCTOR
+
+        public InterfaceRefOrPicker()
+        {
+
+        }
+
+        public InterfaceRefOrPicker(T value)
+        {
+            this.Value = value;
+        }
+
+        #endregion
+
+        #region Properties
+
+        public T Value
+        {
+            get
+            {
+                return _obj is T uot ? uot : _ref;
+            }
+            set
+            {
+                if (value is UnityEngine.Object uot)
+                {
+                    _obj = uot;
+                }
+                else
+                {
+                    _ref = value;
+                }
+            }
+        }
+
+        #endregion
+
+        #region IDynamicProperty Interface
+
+        object IDynamicProperty.Get() => this.Value;
+
+        void IDynamicProperty.Set(object value) => this.Value = value as T;
+
+        System.Type IDynamicProperty.GetType() => typeof(T);
 
         #endregion
 

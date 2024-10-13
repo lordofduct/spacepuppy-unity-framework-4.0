@@ -2,7 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
-
+using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.UI
 {
@@ -31,6 +31,13 @@ namespace com.spacepuppy.UI
         [SerializeField]
         private int _layoutPriority = 1;
 
+        private float _calculatedMinWidth;
+        private float _calculatedMinHeight;
+        private float _calculatedPreferredWidth;
+        private float _calculatedPreferredHeight;
+        private float _calculatedFlexibleWidth;
+        private float _calculatedFlexibleHeight;
+
         #endregion
 
         #region Properties
@@ -53,19 +60,88 @@ namespace com.spacepuppy.UI
             }
         }
 
+        public bool ignoreLayout
+        {
+            get => _ignoreLayout;
+            set
+            {
+                if (_ignoreLayout != value)
+                {
+                    _ignoreLayout = value;
+                    SetDirty();
+                }
+            }
+        }
+
+        public float minWidth
+        {
+            get
+            {
+                return _minWidth;
+            }
+            set
+            {
+                if (_minWidth != value)
+                {
+                    _minWidth = value;
+                    SetDirty();
+                }
+            }
+        }
+
+        public float preferredWidth
+        {
+            get
+            {
+                return _preferredWidth;
+            }
+            set
+            {
+                if (_preferredWidth != value)
+                {
+                    _preferredWidth = value;
+                    SetDirty();
+                }
+            }
+        }
+
+        public float flexibleWidth
+        {
+            get
+            {
+                return _flexibleWidth;
+            }
+            set
+            {
+                if (_flexibleWidth != value)
+                {
+                    _flexibleWidth = value;
+                    SetDirty();
+                }
+            }
+        }
+
+        public int layoutPriority
+        {
+            get => _layoutPriority;
+            set
+            {
+                if (_layoutPriority != value)
+                {
+                    _layoutPriority = value;
+                    SetDirty();
+                }
+            }
+        }
+
         #endregion
 
         #region Methods
 
         protected override void OnEnable()
         {
+            SetDirty();
             base.OnEnable();
-            SetDirty();
-        }
-
-        protected override void OnTransformParentChanged()
-        {
-            SetDirty();
         }
 
         protected override void OnDisable()
@@ -77,15 +153,31 @@ namespace com.spacepuppy.UI
         protected override void OnDidApplyAnimationProperties()
         {
             SetDirty();
+            base.OnDidApplyAnimationProperties();
         }
 
         protected override void OnBeforeTransformParentChanged()
         {
             SetDirty();
+            base.OnBeforeTransformParentChanged();
         }
 
-        protected void SetDirty()
+        protected override void OnTransformParentChanged()
         {
+            SetDirty();
+            base.OnTransformParentChanged();
+        }
+
+        protected override void Start()
+        {
+            SetDirty();
+            base.Start();
+        }
+
+        void SetDirty()
+        {
+            (this as ILayoutElement).CalculateLayoutInputHorizontal();
+            (this as ILayoutElement).CalculateLayoutInputVertical();
             if (IsActive())
             {
                 LayoutRebuilder.MarkLayoutForRebuild(base.transform as RectTransform);
@@ -103,83 +195,50 @@ namespace com.spacepuppy.UI
 
         #region ILayoutElement Interface
 
-        public bool ignoreLayout
-        {
-            get => _ignoreLayout;
-            set
-            {
-                if (_ignoreLayout != value)
-                {
-                    _ignoreLayout = value;
-                    SetDirty();
-                }
-            }
-        }
-
-        public float minWidth
-        {
-            get => _minWidth;
-            set
-            {
-                if (_minWidth != value)
-                {
-                    _minWidth = value;
-                    SetDirty();
-                }
-            }
-        }
-
-        public float minHeight => this.transform.sizeDelta.x * _aspectRatio;
-
-        public float preferredWidth
-        {
-            get => _preferredWidth;
-            set
-            {
-                if (_preferredWidth != value)
-                {
-                    _preferredWidth = value;
-                    SetDirty();
-                }
-            }
-        }
-
-        public float preferredHeight => _preferredWidth * _aspectRatio;
-
-        public float flexibleWidth
-        {
-            get => _flexibleWidth;
-            set
-            {
-                if (_flexibleWidth != value)
-                {
-                    _flexibleWidth = value;
-                    SetDirty();
-                }
-            }
-        }
-
-        public float flexibleHeight => _flexibleWidth * _aspectRatio;
-
-        public int layoutPriority
-        {
-            get => _layoutPriority;
-            set
-            {
-                if (_layoutPriority != value)
-                {
-                    _layoutPriority = value;
-                    SetDirty();
-                }
-            }
-        }
+        float ILayoutElement.minWidth => _calculatedMinWidth;
+        float ILayoutElement.minHeight => _calculatedMinHeight;
+        float ILayoutElement.preferredWidth => _calculatedMinWidth;
+        float ILayoutElement.preferredHeight => _calculatedMinHeight;
+        float ILayoutElement.flexibleWidth => _calculatedMinWidth;
+        float ILayoutElement.flexibleHeight => _calculatedMinHeight;
 
         void ILayoutElement.CalculateLayoutInputHorizontal()
         {
+            Vector2 sz = this.transform.sizeDelta;
+            bool isVertical = this.transform.parent && this.transform.parent.HasComponent<VerticalLayoutGroup>();
+            if (isVertical)
+            {
+                _calculatedMinWidth = _minWidth;
+            }
+            else
+            {
+                sz.x = sz.y / _aspectRatio;
+                _calculatedMinWidth = _minWidth >= 0f ? sz.x : -1f;
+            }
+            _calculatedPreferredWidth = _preferredWidth;
+            _calculatedFlexibleWidth = _flexibleWidth;
         }
 
         void ILayoutElement.CalculateLayoutInputVertical()
         {
+            Vector2 sz = this.transform.sizeDelta;
+            bool isVertical = this.transform.parent && this.transform.parent.HasComponent<VerticalLayoutGroup>();
+            if (isVertical)
+            {
+                sz.y = sz.x * _aspectRatio;
+                _calculatedMinHeight = _minWidth >= 0f ? sz.y : 0f;
+            }
+            else
+            {
+                _calculatedMinHeight = _minWidth * _aspectRatio;
+            }
+            _calculatedPreferredHeight = _preferredWidth * _aspectRatio;
+            _calculatedFlexibleHeight = _flexibleWidth * _aspectRatio;
+        }
+
+        void Update()
+        {
+            this.SetDirty();
         }
 
         #endregion

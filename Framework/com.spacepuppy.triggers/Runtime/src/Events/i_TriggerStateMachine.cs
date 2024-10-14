@@ -9,7 +9,7 @@ namespace com.spacepuppy.Events
 {
 
     [Infobox("Triggering this forwards the trigger down to the current state using that state's configuration.")]
-    public class i_TriggerStateMachine : Triggerable, IObservableTrigger
+    public class i_TriggerStateMachine : Triggerable, IObservableTrigger, IStateMachine
     {
 
         public enum WrapMode
@@ -99,9 +99,6 @@ namespace com.spacepuppy.Events
             set => _ignoreTriggerForwarding = value;
         }
 
-        [ShowNonSerializedProperty("Current State")]
-        public int? CurrentStateIndex => _states.CurrentStateIndex;
-
         public StateInfo? CurrentState => _states.CurrentState;
 
         public StateCollection States => _states;
@@ -118,7 +115,21 @@ namespace com.spacepuppy.Events
 
         #endregion
 
-        #region Methods
+        #region IStateMachine Interface
+
+        public event System.EventHandler StateChanged
+        {
+            add => _states.StateChanged += value;
+            remove => _states.StateChanged -= value;
+        }
+
+        public int StateCount => _states.Count;
+
+        [ShowNonSerializedProperty("Current State Id")]
+        public string CurrentStateId => _states.CurrentStateId;
+
+        [ShowNonSerializedProperty("Current State Index")]
+        public int? CurrentStateIndex => _states.CurrentStateIndex;
 
         public virtual void GoToState(int index)
         {
@@ -176,6 +187,7 @@ namespace com.spacepuppy.Events
         {
 
             public event System.EventHandler ExitingState;
+            public event System.EventHandler StateChanged;
             public event System.EventHandler EnteringState;
 
             #region Fields
@@ -211,6 +223,8 @@ namespace com.spacepuppy.Events
                     _idToIndex = null;
                 }
             }
+
+            public string CurrentStateId => this.CurrentState?.Id ?? string.Empty;
 
             public int? CurrentStateIndex => _currentState;
 
@@ -293,9 +307,7 @@ namespace com.spacepuppy.Events
 
             public virtual void GoToState(int index)
             {
-                bool signal = (_currentState != index);
-
-                if (signal && _currentState >= 0)
+                if (_currentState != index && _currentState >= 0)
                 {
                     var trans = this.Owner?.StateTransition;
                     if (trans != null)
@@ -313,24 +325,25 @@ namespace com.spacepuppy.Events
                         {
                             if (v != _transitionVersion) return;
                             _transitionVersion = 0;
-                            this.CompleteStateTransition(state, index, signal);
+                            this.CompleteStateTransition(state, index);
                         });
                     }
                     else
                     {
                         this.ExitingState?.Invoke(this, System.EventArgs.Empty);
-                        this.CompleteStateTransition(this.CurrentState, index, signal);
+                        this.CompleteStateTransition(this.CurrentState, index);
                     }
                 }
                 else
                 {
-                    this.CompleteStateTransition(this.CurrentState, index, signal);
+                    this.CompleteStateTransition(this.CurrentState, index);
                 }
             }
 
-            private void CompleteStateTransition(StateInfo? laststate, int index, bool signal)
+            private void CompleteStateTransition(StateInfo? laststate, int index)
             {
                 //first disable, then enable, this way you can use the OnDisable and OnEnable of the states to perform actions predictably
+                bool signal = _currentState != index;
                 _currentState = index;
                 var currentGo = index >= 0 && index < _states.Count ? GameObjectUtil.GetGameObjectFromSource(_states[index].Target, true) : null;
                 for (int i = 0; i < _states.Count; i++)
@@ -342,6 +355,8 @@ namespace com.spacepuppy.Events
 
                 if (signal)
                 {
+                    this.StateChanged?.Invoke(this, System.EventArgs.Empty);
+
                     var trans = this.Owner?.StateTransition;
                     var currentstate = this.CurrentState;
                     this.EnteringState?.Invoke(this, System.EventArgs.Empty);

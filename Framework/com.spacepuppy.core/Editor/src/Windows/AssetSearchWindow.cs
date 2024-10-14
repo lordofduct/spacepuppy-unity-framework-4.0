@@ -435,9 +435,7 @@ namespace com.spacepuppyeditor.Windows
                     {
                         try
                         {
-                            var files = System.IO.Directory.EnumerateFiles("Assets", "*.unity", System.IO.SearchOption.AllDirectories)
-                                        .Union(System.IO.Directory.EnumerateFiles("Assets", "*.prefab", System.IO.SearchOption.AllDirectories))
-                                        .Union(System.IO.Directory.EnumerateFiles("Assets", "*.asset", System.IO.SearchOption.AllDirectories));
+                            var files = AssetSearchWindow.EnumerateAssetFiles(AssetTypes.All);
 
                             files.AsParallel().ForAll(file =>
                             {
@@ -506,9 +504,7 @@ namespace com.spacepuppyeditor.Windows
             {
                 if (string.IsNullOrEmpty(guid)) return Enumerable.Empty<string>();
 
-                var files = System.IO.Directory.EnumerateFiles("Assets", "*.unity", System.IO.SearchOption.AllDirectories)
-                            .Union(System.IO.Directory.EnumerateFiles("Assets", "*.prefab", System.IO.SearchOption.AllDirectories))
-                            .Union(System.IO.Directory.EnumerateFiles("Assets", "*.asset", System.IO.SearchOption.AllDirectories));
+                var files = AssetSearchWindow.EnumerateAssetFiles(AssetTypes.All);
 
                 return from file in files.AsParallel().AsOrdered().WithMergeOptions(ParallelMergeOptions.NotBuffered)
                        where File.ReadLines(file).Any(line => line.Contains(guid))
@@ -547,11 +543,8 @@ namespace com.spacepuppyeditor.Windows
                         return;
                     }
 
-                    var l_ext = new List<string>(3);
-                    if (this.AssetTypes.HasFlagT(AssetTypes.Scenes)) l_ext.Add("*.unity");
-                    if (this.AssetTypes.HasFlagT(AssetTypes.Prefabs)) l_ext.Add("*.prefab");
-                    if (this.AssetTypes.HasFlagT(AssetTypes.Assets)) l_ext.Add("*.asset");
-                    if (l_ext.Count == 0)
+                    var files = AssetSearchWindow.EnumerateAssetFiles(this.AssetTypes);
+                    if (!files.Any())
                     {
                         _output.AppendLine("Nothing to query.");
                         return;
@@ -559,11 +552,6 @@ namespace com.spacepuppyeditor.Windows
 
                     var rx = this.UseRegex ? new Regex(this.SearchString) : null;
                     var str = this.SearchString;
-                    var files = Directory.EnumerateFiles("Assets", l_ext[0], SearchOption.AllDirectories);
-                    for (int i = 1; i < l_ext.Count; i++)
-                    {
-                        files = files.Union(Directory.EnumerateFiles("Assets", l_ext[i], SearchOption.AllDirectories));
-                    }
 
                     var validresults = new System.Collections.Concurrent.ConcurrentQueue<OutputRefEntry>();
                     var task = Task.Run(() =>
@@ -689,20 +677,11 @@ namespace com.spacepuppyeditor.Windows
                     _outputRefs.Clear();
                     SignalStatusUpdated("Processing...");
 
-                    var l_ext = new List<string>(3);
-                    if (this.AssetTypes.HasFlagT(AssetTypes.Scenes)) l_ext.Add("*.unity");
-                    if (this.AssetTypes.HasFlagT(AssetTypes.Prefabs)) l_ext.Add("*.prefab");
-                    if (this.AssetTypes.HasFlagT(AssetTypes.Assets)) l_ext.Add("*.asset");
-                    if (l_ext.Count == 0)
+                    var files = AssetSearchWindow.EnumerateAssetFiles(this.AssetTypes);
+                    if (!files.Any())
                     {
                         _output.AppendLine("Nothing to query.");
                         return;
-                    }
-
-                    var files = Directory.EnumerateFiles("Assets", l_ext[0], SearchOption.AllDirectories);
-                    for (int i = 1; i < l_ext.Count; i++)
-                    {
-                        files = files.Union(Directory.EnumerateFiles("Assets", l_ext[i], SearchOption.AllDirectories));
                     }
 
                     var validresults = new System.Collections.Concurrent.ConcurrentQueue<OutputRefEntry>();
@@ -806,6 +785,25 @@ namespace com.spacepuppyeditor.Windows
             Scenes = 1, //*.unity
             Prefabs = 2, //*.prefab
             Assets = 4, //*.asset
+            AssemblyDefinitions = 8, //*.asmdef
+        }
+
+        static IEnumerable<string> GetAssetExtentions(AssetTypes e)
+        {
+            if (e.HasFlagT(AssetTypes.Scenes)) yield return "*.unity";
+            if (e.HasFlagT(AssetTypes.Prefabs)) yield return "*.prefab";
+            if (e.HasFlagT(AssetTypes.Assets)) yield return "*.asset";
+            if (e.HasFlagT(AssetTypes.AssemblyDefinitions)) yield return "*.asmdef";
+        }
+
+        static IEnumerable<string> EnumerateAssetFiles(AssetTypes e)
+        {
+            var files = Enumerable.Empty<string>();
+            foreach (var ext in AssetSearchWindow.GetAssetExtentions(e))
+            {
+                files = files.Union(Directory.EnumerateFiles("Assets", ext, SearchOption.AllDirectories));
+            }
+            return files;
         }
 
         #endregion

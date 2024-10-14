@@ -5,10 +5,11 @@ using System.Linq;
 
 namespace com.spacepuppy.Collections
 {
+
     /// <summary>
     /// A double-ended queue (deque).
     /// </summary>
-    public class Deque<T> : IIndexedEnumerable<T>, IList<T>
+    public class Deque<T> : IList<T> //, IIndexedEnumerable<T>
     {
 
         private static T[] _insertHelperArray;
@@ -165,6 +166,8 @@ namespace com.spacepuppy.Collections
             }
             else
             {
+                this.EnsureCapacity(_count + 1);
+
                 InsertHelperArray[0] = item;
                 this.DoInsertRange(index, InsertHelperArray, 1);
                 InsertHelperArray[0] = default(T);
@@ -174,14 +177,14 @@ namespace com.spacepuppy.Collections
 
         public void InsertRange(int index, IEnumerable<T> values)
         {
-            if (index < 0 || index >= _count) throw new IndexOutOfRangeException();
+            if (index < 0 || index > _count) throw new IndexOutOfRangeException();
             int cnt = values.Count();
             if (cnt == 0) return;
 
             // Overflow-safe check for "this.Count + collectionCount > this.Capacity"
             if (cnt > _buffer.Length - _count)
             {
-                this.Capacity = checked(_count + cnt);
+                this.EnsureCapacity(checked(_count + cnt));
             }
 
             if (cnt == 0)
@@ -297,6 +300,25 @@ namespace com.spacepuppy.Collections
 
         #region Private Methods
 
+        private void EnsureCapacity(int min)
+        {
+            if (_buffer.Length < min)
+            {
+                int len = ((_buffer.Length == 0) ? 4 : (_buffer.Length * 2));
+                if ((uint)len > 2146435071u)
+                {
+                    len = 2146435071;
+                }
+
+                if (len < min)
+                {
+                    len = min;
+                }
+
+                this.Resize(len);
+            }
+        }
+
         private void Resize(int size)
         {
             T[] arr = new T[size];
@@ -351,7 +373,9 @@ namespace com.spacepuppy.Collections
                 int copyCount = index;
                 int writeIndex = Capacity - count;
                 for (int j = 0; j != copyCount; ++j)
+                {
                     _buffer[DequeIndexToBufferIndex(writeIndex + j)] = _buffer[DequeIndexToBufferIndex(j)];
+                }
 
                 // Rotate to the new view
                 this.PreDecrement(count);
@@ -364,7 +388,9 @@ namespace com.spacepuppy.Collections
                 int copyCount = Count - index;
                 int writeIndex = index + count;
                 for (int j = copyCount - 1; j != -1; --j)
+                {
                     _buffer[DequeIndexToBufferIndex(writeIndex + j)] = _buffer[DequeIndexToBufferIndex(index + j)];
+                }
             }
 
             // Copy new items into place

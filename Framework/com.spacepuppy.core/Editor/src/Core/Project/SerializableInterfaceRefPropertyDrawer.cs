@@ -126,7 +126,7 @@ namespace com.spacepuppyeditor.Core.Project
 
             if (prop_ref == null)
             {
-                this.DrawUObjectField(position, prop_obj, GUIContent.none, valueType);
+                this.DrawUObjectField(position, prop_obj, label, valueType);
             }
             else if(prop_obj == null)
             {
@@ -168,7 +168,7 @@ namespace com.spacepuppyeditor.Core.Project
         {
             if (prop_obj.objectReferenceValue == null)
             {
-                object val = SPEditorGUI.AdvancedObjectField(position, GUIContent.none, prop_obj.objectReferenceValue, valueType, true, true);
+                object val = SPEditorGUI.AdvancedObjectField(position, label, prop_obj.objectReferenceValue, valueType, true, true);
                 if (val != null && !valueType.IsInstanceOfType(val) && ObjUtil.GetAsFromSource<IProxy>(val) == null)
                 {
                     val = null;

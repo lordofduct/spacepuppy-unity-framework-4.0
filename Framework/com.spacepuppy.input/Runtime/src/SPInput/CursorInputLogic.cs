@@ -1,13 +1,9 @@
 using UnityEngine;
 using System.Collections.Generic;
-
 using UnityEngine.EventSystems;
+
 using com.spacepuppy.Utils;
 using com.spacepuppy.Collections;
-using static UnityEngine.GraphicsBuffer;
-using com.spacepuppy.Events;
-using UnityEditor.VersionControl;
-using NUnit;
 
 namespace com.spacepuppy.SPInput
 {
@@ -359,7 +355,7 @@ namespace com.spacepuppy.SPInput
             }
             if (_current)
             {
-                if (_resolver?.GetDispatchTarget(this, out GameObject target, out Messaging.MessageSendCommand send) ?? false)
+                if (_resolver != null && _resolver.GetDispatchTarget(this, out GameObject target, out Messaging.MessageSendCommand send))
                 {
                     send.Send(target, _cursorEnterFunctor);
                 }
@@ -371,7 +367,7 @@ namespace com.spacepuppy.SPInput
 
         private void DispatchClick()
         {
-            if (_resolver?.GetDispatchTarget(this, out GameObject target, out Messaging.MessageSendCommand send) ?? false)
+            if (_resolver != null && _resolver.GetDispatchTarget(this, out GameObject target, out Messaging.MessageSendCommand send))
             {
                 send.Send(target, _clickFunctor);
             }
@@ -382,7 +378,7 @@ namespace com.spacepuppy.SPInput
 
         private void DispatchDoubleClick()
         {
-            if (_resolver?.GetDispatchTarget(this, out GameObject target, out Messaging.MessageSendCommand send) ?? false)
+            if (_resolver != null && _resolver.GetDispatchTarget(this, out GameObject target, out Messaging.MessageSendCommand send))
             {
                 send.Send(target, _doubleClickFunctor);
             }
@@ -393,7 +389,7 @@ namespace com.spacepuppy.SPInput
 
         private void DispatchCursorDown()
         {
-            if (_resolver?.GetDispatchTarget(this, out GameObject target, out Messaging.MessageSendCommand send) ?? false)
+            if (_resolver != null && _resolver.GetDispatchTarget(this, out GameObject target, out Messaging.MessageSendCommand send))
             {
                 send.Send(target, _cursorDownFunctor);
             }
@@ -404,7 +400,7 @@ namespace com.spacepuppy.SPInput
 
         private void DispatchCursorUp()
         {
-            if (_resolver?.GetDispatchTarget(this, out GameObject target, out Messaging.MessageSendCommand send) ?? false)
+            if (_resolver != null && _resolver.GetDispatchTarget(this, out GameObject target, out Messaging.MessageSendCommand send))
             {
                 send.Send(target, _cursorUpFunctor);
             }
@@ -415,7 +411,7 @@ namespace com.spacepuppy.SPInput
 
         private void DispatchCursorHeld()
         {
-            if (_resolver?.GetDispatchTarget(this, out GameObject target, out Messaging.MessageSendCommand send) ?? false)
+            if (_resolver != null && _resolver.GetDispatchTarget(this, out GameObject target, out Messaging.MessageSendCommand send))
             {
                 send.Send(target, _cursorHeldFunctor);
             }
@@ -426,7 +422,7 @@ namespace com.spacepuppy.SPInput
 
         private void DispatchBeginDrag()
         {
-            if (_resolver?.GetDispatchTarget(this, out GameObject target, out Messaging.MessageSendCommand send) ?? false)
+            if (_resolver != null && _resolver.GetDispatchTarget(this, out GameObject target, out Messaging.MessageSendCommand send))
             {
                 send.Send(target, _beginDragFunctor);
             }
@@ -437,7 +433,7 @@ namespace com.spacepuppy.SPInput
 
         private void DispatchEndDrag()
         {
-            if (_resolver?.GetDispatchTarget(this, out GameObject target, out Messaging.MessageSendCommand send) ?? false)
+            if (_resolver != null && _resolver.GetDispatchTarget(this, out GameObject target, out Messaging.MessageSendCommand send))
             {
                 send.Send(target, _endDragFunctor);
             }

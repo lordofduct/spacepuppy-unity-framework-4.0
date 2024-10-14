@@ -1,16 +1,16 @@
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
+using System.Linq;
 using System.IO;
 using System.Reflection;
+using System.Text.RegularExpressions;
+using StringComparison = System.StringComparison;
 
+using com.spacepuppy;
 using com.spacepuppy.Collections;
 using com.spacepuppy.Utils;
 using com.spacepuppyeditor.Windows;
-using System.Text.RegularExpressions;
-using System;
-using com.spacepuppy;
-using UnityEngine.UIElements;
 
 namespace com.spacepuppyeditor
 {
@@ -28,9 +28,15 @@ namespace com.spacepuppyeditor
         public static void UpgradeAssetYAML(Assembly assembly)
         {
             if (assembly == null) throw new System.ArgumentNullException(nameof(assembly));
+
+#if UNITY_2022_3_OR_NEWER
             UpgradeAssetYAML(TypeCache.GetMethodsWithAttribute<YamlUpgradeCallbackAttribute>(assembly.FullName));
+#else
+            var methods = TypeCache.GetMethodsWithAttribute<YamlUpgradeCallbackAttribute>();
+            UpgradeAssetYAML(methods.Where(m => m.DeclaringType.Assembly == assembly).ToList());
+#endif
         }
-        static async void UpgradeAssetYAML(TypeCache.MethodCollection methods)
+        static async void UpgradeAssetYAML(IList<MethodInfo> methods)
         {
             var lst = new List<(ScriptInfo, System.Func<string, bool>)>(methods.Count);
             foreach (var m in methods)
@@ -57,7 +63,7 @@ namespace com.spacepuppyeditor
                         }
                     }
                 }
-                catch(System.Exception ex)
+                catch (System.Exception ex)
                 {
                     Debug.Log($"Malformed YamlUpgradeCallback: {m.DeclaringType.Name}.{m.Name} [must match bool(string assetpath)]");
                 }
@@ -605,7 +611,7 @@ namespace com.spacepuppyeditor
         }
         public string ReadUntilAnyScript(params System.Type[] types)
         {
-            using (var hash = TempCollection.GetSet<string>(StringComparer.OrdinalIgnoreCase))
+            using (var hash = TempCollection.GetSet<string>(System.StringComparer.OrdinalIgnoreCase))
             {
                 if (types?.Length > 0)
                 {

@@ -1,8 +1,11 @@
 using UnityEngine;
 using System.Collections.Generic;
-using com.spacepuppy.Events;
 
-namespace com.spacepuppy
+using com.spacepuppy.Events;
+using com.spacepuppy.Project;
+using com.spacepuppy.Utils;
+
+namespace com.spacepuppy.Events
 {
 
     [RequireComponent(typeof(i_TriggerStateMachine))]
@@ -17,20 +20,17 @@ namespace com.spacepuppy
 
         #region Fields
 
-        [SerializeField]
-        [ForceFromSelf]
-        [Tooltip("The state machine that will mirror the source.")]
-        private i_TriggerStateMachine _targetStateMachine;
+        [SerializeField, ForceFromSelf, Tooltip("The state machine that will mirror the source.")]
+        private InterfaceRef<IStateMachine> _targetStateMachine = new();
 
-        [SerializeField]
-        [Tooltip("The state machine being mirrored.")]
-        private i_TriggerStateMachine _sourceStateMachine;
+        [SerializeField, Tooltip("The state machine being mirrored.")]
+        private InterfaceRef<IStateMachine> _sourceStateMachine = new();
 
         [SerializeField]
         private Modes _mode;
 
         [System.NonSerialized]
-        private SPEventTrackedListenerToken _onEnterStateHook;
+        private TrackedEventListenerToken _onStateChangedHook;
 
         #endregion
 
@@ -40,37 +40,37 @@ namespace com.spacepuppy
         {
             this.Sync();
 
-            _onEnterStateHook.Dispose();
-            if (_sourceStateMachine) _onEnterStateHook = _sourceStateMachine.OnEnterState.AddTrackedListener(OnEnterState_TriggerActivated);
+            _onStateChangedHook.Dispose();
+            if (this.SourceStateMachine.IsAlive()) _onStateChangedHook = this.SourceStateMachine.AddTrackedStateChangedListener(OnEnterState_TriggerActivated);
         }
 
         protected override void OnDisable()
         {
             base.OnDisable();
 
-            _onEnterStateHook.Dispose();
+            _onStateChangedHook.Dispose();
         }
 
         #endregion
 
         #region Properties
 
-        public i_TriggerStateMachine TargetStateMachine
+        public IStateMachine TargetStateMachine
         {
-            get => _targetStateMachine;
-            set => _targetStateMachine = value != null && value.gameObject == this.gameObject ? value : null;
+            get => _targetStateMachine.Value;
+            set => _targetStateMachine.Value = GameObjectUtil.GetGameObjectFromSource(value) == this.gameObject ? value : null;
         }
 
-        public i_TriggerStateMachine SourceStateMachine
+        public IStateMachine SourceStateMachine
         {
-            get => _sourceStateMachine;
+            get => _sourceStateMachine.Value;
             set
             {
-                if (_sourceStateMachine == value) return;
-                _onEnterStateHook.Dispose();
+                if (_sourceStateMachine.Value == value) return;
+                _onStateChangedHook.Dispose();
 
-                _sourceStateMachine = value;
-                if (_sourceStateMachine && this.isActiveAndEnabled) _onEnterStateHook =  _sourceStateMachine.OnEnterState.AddTrackedListener(OnEnterState_TriggerActivated);
+                _sourceStateMachine.Value = value;
+                if (_sourceStateMachine.Value.IsAlive() && this.isActiveAndEnabled) _onStateChangedHook =  _sourceStateMachine.Value.AddTrackedStateChangedListener(OnEnterState_TriggerActivated);
                 this.Sync();
             }
         }
@@ -81,21 +81,21 @@ namespace com.spacepuppy
 
         public void Sync()
         {
-            if (_targetStateMachine && _sourceStateMachine)
+            if (this.TargetStateMachine.IsAlive() && this.SourceStateMachine.IsAlive())
             {
                 switch (_mode)
                 {
                     case Modes.MirrorByIndex:
-                        _targetStateMachine.GoToState(_sourceStateMachine.CurrentStateIndex ?? -1);
+                        this.TargetStateMachine.GoToState(this.SourceStateMachine.CurrentStateIndex ?? -1);
                         break;
                     case Modes.MirrodById:
-                        _targetStateMachine.GoToStateById(_sourceStateMachine.CurrentState?.Id);
+                        this.TargetStateMachine.GoToStateById(this.SourceStateMachine.CurrentStateId);
                         break;
                 }
             }
         }
 
-        private void OnEnterState_TriggerActivated(object sender, TempEventArgs e)
+        private void OnEnterState_TriggerActivated(object sender, System.EventArgs e)
         {
             this.Sync();
         }

@@ -796,7 +796,7 @@ namespace com.spacepuppyeditor.Windows
             if (e.HasFlagT(AssetTypes.AssemblyDefinitions)) yield return "*.asmdef";
         }
 
-        static IEnumerable<string> EnumerateAssetFiles(AssetTypes e)
+        public static IEnumerable<string> EnumerateAssetFiles(AssetTypes e)
         {
             var files = Enumerable.Empty<string>();
             foreach (var ext in AssetSearchWindow.GetAssetExtentions(e))

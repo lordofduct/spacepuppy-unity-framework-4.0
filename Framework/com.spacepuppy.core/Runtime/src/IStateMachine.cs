@@ -9,6 +9,13 @@ namespace com.spacepuppy
     public interface IStateMachine
     {
 
+        event System.EventHandler StateChanged;
+        public TrackedEventListenerToken AddTrackedStateChangedListener(System.EventHandler handler)
+        {
+            this.StateChanged += handler;
+            return new TrackedEventListenerToken(handler, (h) => this.StateChanged -= h);
+        }
+
         int StateCount { get; }
         string CurrentStateId { get; }
         int? CurrentStateIndex { get; }

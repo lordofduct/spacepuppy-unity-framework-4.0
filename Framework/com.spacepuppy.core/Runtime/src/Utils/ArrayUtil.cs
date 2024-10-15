@@ -731,12 +731,19 @@ namespace com.spacepuppy.Utils
         {
             return System.Array.IndexOf(lst, obj);
         }
-
         public static int IndexOf<T>(this IList<T> lst, System.Func<T, bool> predicate)
         {
             for (int i = 0; i < lst.Count; i++)
             {
                 if (predicate(lst[i])) return i;
+            }
+            return -1;
+        }
+        public static int IndexOf<T, TArg>(this IList<T> lst, TArg arg, System.Func<T, TArg, bool> predicate)
+        {
+            for (int i = 0; i < lst.Count; i++)
+            {
+                if (predicate(lst[i], arg)) return i;
             }
             return -1;
         }

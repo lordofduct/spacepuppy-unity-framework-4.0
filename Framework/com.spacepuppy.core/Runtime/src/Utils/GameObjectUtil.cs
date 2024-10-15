@@ -708,6 +708,14 @@ namespace com.spacepuppy.Utils
             return null;
         }
 
+        public static IEnumerable<Transform> EnumerateImmediateChildren(this Transform trans)
+        {
+            foreach (Transform t in trans)
+            {
+                yield return t;
+            }
+        }
+
         public static Transform[] GetAllChildren(this GameObject go)
         {
             if (go == null) return null;

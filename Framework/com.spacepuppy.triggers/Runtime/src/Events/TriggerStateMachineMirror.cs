@@ -70,7 +70,11 @@ namespace com.spacepuppy.Events
                 _onStateChangedHook.Dispose();
 
                 _sourceStateMachine.Value = value;
+#if UNITY_EDITOR
+                if (Application.isPlaying && _sourceStateMachine.Value.IsAlive() && this.isActiveAndEnabled) _onStateChangedHook = _sourceStateMachine.Value.AddTrackedStateChangedListener(OnEnterState_TriggerActivated);
+#else
                 if (_sourceStateMachine.Value.IsAlive() && this.isActiveAndEnabled) _onStateChangedHook =  _sourceStateMachine.Value.AddTrackedStateChangedListener(OnEnterState_TriggerActivated);
+#endif
                 this.Sync();
             }
         }

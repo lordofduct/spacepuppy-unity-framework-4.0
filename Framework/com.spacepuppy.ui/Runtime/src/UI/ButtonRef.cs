@@ -16,6 +16,9 @@ namespace com.spacepuppy.UI
         private static readonly System.Type[] _supportedTypes = new System.Type[] { typeof(UnityEngine.UI.Button), typeof(SPUIButton) };
 
         private System.EventHandler _onClick;
+        /// <summary>
+        /// The sender returned by OnClick is the button itself, not the ButtonRef object.
+        /// </summary>
         public event System.EventHandler OnClick
         {
             add
@@ -49,6 +52,17 @@ namespace com.spacepuppy.UI
 
         #endregion
 
+        #region CONSTRUCTOR
+
+        public ButtonRef() { }
+
+        public ButtonRef(Selectable btn)
+        {
+            this.Button = btn;
+        }
+
+        #endregion
+
         #region Properties
 
         public Selectable Button
@@ -58,14 +72,15 @@ namespace com.spacepuppy.UI
             {
                 if (_value == value) return;
 
-                if (_value && _onClick != null)
-                {
-                    RemoveEventHandlerHook();
-                }
-                _value = ObjUtil.GetAsFromSource(_supportedTypes, value) as Selectable;
                 if (_onClick != null)
                 {
+                    RemoveEventHandlerHook();
+                    _value = ObjUtil.GetAsFromSource(_supportedTypes, value) as Selectable;
                     AddEventHandlerHook();
+                }
+                else
+                {
+                    _value = ObjUtil.GetAsFromSource(_supportedTypes, value) as Selectable;
                 }
             }
         }

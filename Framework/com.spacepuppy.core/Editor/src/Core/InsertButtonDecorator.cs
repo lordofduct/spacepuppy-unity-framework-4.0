@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 using com.spacepuppy;
+using com.spacepuppy.Collections;
 using com.spacepuppy.Dynamic;
 using com.spacepuppy.Utils;
 
@@ -44,14 +45,44 @@ namespace com.spacepuppyeditor.Core
         {
             if (!attrib.SupportsMultiObjectEditing && property.serializedObject.isEditingMultipleObjects) return;
 
-            if(GUILayout.Button(attrib.Label))
+            object[] targets = null;
+            if (!string.IsNullOrEmpty(attrib.ValidateShowCallback))
+            {
+                using (var lst = TempCollection.GetList<object>())
+                {
+                    try
+                    {
+                        var meth = property.serializedObject.targetObject.GetType()
+                                           .GetMethod(attrib.ValidateShowCallback, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+                        if (meth != null)
+                        {
+                            targets = EditorHelper.GetTargetObjectsWithProperty(property);
+                            foreach (var t in targets)
+                            {
+                                var d = meth.CreateDelegate(typeof(System.Func<bool>), t) as System.Func<bool>;
+                                if (d?.Invoke() ?? false)
+                                {
+                                    lst.Add(t);
+                                }
+                            }
+                        }
+                    }
+                    catch { }
+
+                    if (lst.Count == 0) return;
+
+                    targets = lst.ToArray();
+                }
+            }
+
+            if (GUILayout.Button(attrib.Label))
             {
                 if (attrib.Validate && !EditorUtility.DisplayDialog(attrib.Label, string.IsNullOrEmpty(attrib.ValidateMessage) ? "Are you sure?" : attrib.ValidateMessage, "yes", "no")) return;
 
-                var arr = EditorHelper.GetTargetObjectsWithProperty(property);
-                if (attrib.RecordUndo && arr.Any(o => o is UnityEngine.Object)) Undo.RecordObjects(arr.Where(o => o is UnityEngine.Object).Select(o => o as UnityEngine.Object).ToArray(), string.IsNullOrEmpty(attrib.UndoLabel) ? attrib.Label : attrib.UndoLabel);
+                if (targets == null) targets = EditorHelper.GetTargetObjectsWithProperty(property);
+                if (attrib.RecordUndo && targets.Any(o => o is UnityEngine.Object)) Undo.RecordObjects(targets.Where(o => o is UnityEngine.Object).Select(o => o as UnityEngine.Object).ToArray(), string.IsNullOrEmpty(attrib.UndoLabel) ? attrib.Label : attrib.UndoLabel);
 
-                foreach (var obj in arr)
+                foreach (var obj in targets)
                 {
                     DynamicUtil.InvokeMethod(obj, attrib.OnClick);
                 }
@@ -85,15 +116,46 @@ namespace com.spacepuppyeditor.Core
             if (attrib.RuntimeOnly && !Application.isPlaying) return;
             if (!attrib.SupportsMultiObjectEditing && this.SerializedObject.isEditingMultipleObjects) return;
 
+            UnityEngine.Object[] targets = null;
+            if (!string.IsNullOrEmpty(attrib.ValidateShowCallback))
+            {
+                using (var lst = TempCollection.GetList<UnityEngine.Object>())
+                {
+                    try
+                    {
+                        var meth = this.SerializedObject.targetObject.GetType()
+                                       .GetMethod(attrib.ValidateShowCallback, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+                        if (meth != null)
+                        {
+                            targets = this.SerializedObject.targetObjects;
+                            foreach (var t in targets)
+                            {
+                                var d = meth.CreateDelegate(typeof(System.Func<bool>), t) as System.Func<bool>;
+                                if (d?.Invoke() ?? false)
+                                {
+                                    lst.Add(t);
+                                }
+                            }
+                        }
+                    }
+                    catch { }
+
+                    if (lst.Count == 0) return;
+
+                    targets = lst.ToArray();
+                }
+            }
+
             if (this.IsFooter && attrib.Space > 0f) GUILayout.Space(attrib.Space);
 
             if (GUILayout.Button(attrib.Label))
             {
                 if (attrib.Validate && !EditorUtility.DisplayDialog(attrib.Label, string.IsNullOrEmpty(attrib.ValidateMessage) ? "Are you sure?" : attrib.ValidateMessage, "yes", "no")) return;
 
-                if (attrib.RecordUndo && this.SerializedObject.targetObjects.Length > 0) Undo.RecordObjects(this.SerializedObject.targetObjects, string.IsNullOrEmpty(attrib.UndoLabel) ? attrib.Label : attrib.UndoLabel);
+                if (targets == null) targets = this.SerializedObject.targetObjects;
+                if (attrib.RecordUndo && targets.Length > 0) Undo.RecordObjects(targets, string.IsNullOrEmpty(attrib.UndoLabel) ? attrib.Label : attrib.UndoLabel);
 
-                foreach (var obj in this.SerializedObject.targetObjects)
+                foreach (var obj in targets)
                 {
                     DynamicUtil.InvokeMethod(obj, attrib.OnClick);
                 }

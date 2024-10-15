@@ -4,13 +4,27 @@ using System.Collections.Generic;
 using System.Linq;
 
 using com.spacepuppy;
+using com.spacepuppy.UI;
 using com.spacepuppy.Utils;
 
 namespace com.spacepuppyeditor.UI
 {
 
-    public class SPUIButtonInspector
+    [CustomEditor(typeof(SPUIButton)), CanEditMultipleObjects]
+    public class SPUIButtonInspector : UnityEditor.UI.SelectableEditor
     {
+
+        public override void OnInspectorGUI()
+        {
+            base.OnInspectorGUI();
+            EditorGUILayout.Space();
+            base.serializedObject.Update();
+            SPEditorGUILayout.PropertyField(this.serializedObject.FindProperty("_onClick"));
+            SPEditorGUILayout.PropertyField(this.serializedObject.FindProperty("_clickDuration"));
+            base.serializedObject.ApplyModifiedProperties();
+        }
+
+        #region Static Menu Methods
 
         [MenuItem("CONTEXT/Button/Switch to SP UI Button")]
         static void SwitchToSPUIButton()
@@ -31,6 +45,8 @@ namespace com.spacepuppyeditor.UI
                 sob.ApplyModifiedProperties();
             }
         }
+
+        #endregion
 
     }
 

@@ -136,13 +136,21 @@ namespace com.spacepuppy
 
     #region Property Drawer Attributes
 
-    public class SerializeRefPickerAttribute : SPPropertyAttribute
+    [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
+    public class RefPickerConfigAttribute : SPPropertyAttribute
     {
-        public readonly System.Type RefType;
         public bool AllowNull;
         public bool AlwaysExpanded;
         public bool DisplayBox;
+    }
 
+    [System.Obsolete("User InterfaceRef, InterfaceRefOrPicker, or InterfacePicker in place of this combined with the 'RefPickerConfigAttribute' for configuration.")]
+    [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
+    public class SerializeRefPickerAttribute : RefPickerConfigAttribute
+    {
+        public readonly System.Type RefType;
+
+        public SerializeRefPickerAttribute() { }
         public SerializeRefPickerAttribute(System.Type tp)
         {
             this.RefType = tp;
@@ -673,6 +681,7 @@ namespace com.spacepuppy
         public bool SupportsMultiObjectEditing;
         public bool Validate;
         public string ValidateMessage;
+        public string ValidateShowCallback;
         public bool RecordUndo;
         public string UndoLabel;
         public float Space;

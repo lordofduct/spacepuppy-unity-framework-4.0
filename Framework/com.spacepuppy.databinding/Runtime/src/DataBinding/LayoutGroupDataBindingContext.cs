@@ -49,8 +49,7 @@ namespace com.spacepuppy.DataBinding
             IncludeInactiveObjects = true,
         };
 
-        [SerializeReference]
-        [SerializeRefPicker(typeof(IStampSource), AllowNull = false, AlwaysExpanded = true, DisplayBox = true)]
+        [SerializeReference, SerializeRefPicker(typeof(IStampSource), AllowNull = false, AlwaysExpanded = true, DisplayBox = true)]
         private IStampSource _stampSource = new GameObjectStampSource();
 
         #endregion

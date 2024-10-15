@@ -2,6 +2,7 @@
 using UnityEditor;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 using com.spacepuppy;
 using com.spacepuppy.Dynamic;
@@ -38,6 +39,17 @@ namespace com.spacepuppyeditor.Core.Project
             AlwaysExpanded = true,
         };
 
+        void Configure(System.Type valueType)
+        {
+            var attrib = this.fieldInfo?.GetCustomAttribute<RefPickerConfigAttribute>();
+            _refSelectorDrawer.RefType = valueType;
+            _refSelectorDrawer.AllowNull = attrib?.AllowNull ?? true;
+            _refSelectorDrawer.DisplayBox = attrib?.DisplayBox ?? false;
+            _refSelectorDrawer.AlwaysExpanded = attrib?.AlwaysExpanded ?? true;
+
+            _componentSelectorDrawer.RestrictionType = valueType;
+        }
+
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
             float h;
@@ -51,9 +63,7 @@ namespace com.spacepuppyeditor.Core.Project
                 return EditorGUIUtility.singleLineHeight;
             }
 
-            _refSelectorDrawer.RefType = valueType;
-            _componentSelectorDrawer.RestrictionType = valueType;
-
+            this.Configure(valueType);
 
             if (prop_ref == null)
             {
@@ -100,8 +110,7 @@ namespace com.spacepuppyeditor.Core.Project
                 return;
             }
 
-            _refSelectorDrawer.RefType = valueType;
-            _componentSelectorDrawer.RestrictionType = valueType;
+            this.Configure(valueType);
 
             //SelfReducingEntityConfigRef - support
             try
@@ -128,7 +137,7 @@ namespace com.spacepuppyeditor.Core.Project
             {
                 this.DrawUObjectField(position, prop_obj, label, valueType);
             }
-            else if(prop_obj == null)
+            else if (prop_obj == null)
             {
                 _refSelectorDrawer.OnGUI(position, prop_ref, label);
             }

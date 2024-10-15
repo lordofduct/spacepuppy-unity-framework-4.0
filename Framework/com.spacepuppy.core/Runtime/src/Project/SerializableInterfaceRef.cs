@@ -11,12 +11,35 @@ namespace com.spacepuppy.Project
     /// <summary>
     /// Exists to make SerializableInterfaceRef drawable. Do not inherit from this, instead inherit from SerializableInterfaceRef.
     /// </summary>
-    public abstract class BaseSerializableInterfaceRef
+    public abstract class BaseSerializableInterfaceRef : IDynamicProperty
     {
 
         public const string PROP_UOBJECT = "_obj";
         public const string PROP_REFOBJECT = "_ref";
 
+        #region Methods
+
+        public abstract void SetValue(object value);
+        public abstract object GetValue();
+        public abstract System.Type GetValueType();
+
+        #endregion
+
+        #region IDynamicProperty Interface
+
+        object IDynamicProperty.Get() => this.GetValue();
+
+        void IDynamicProperty.Set(object value) => this.SetValue(value);
+
+        System.Type IDynamicProperty.GetType() => this.GetValueType();
+
+        #endregion
+
+    }
+    public abstract class BaseSerializableInterfaceRef<T> : BaseSerializableInterfaceRef where T : class
+    {
+
+        public override System.Type GetValueType() => typeof(T);
     }
 
     /// <summary>
@@ -24,7 +47,7 @@ namespace com.spacepuppy.Project
     /// </summary>
     /// <typeparam name="T"></typeparam>
     [System.Serializable]
-    public class InterfaceRef<T> : BaseSerializableInterfaceRef, ISerializationCallbackReceiver, IDynamicProperty where T : class
+    public class InterfaceRef<T> : BaseSerializableInterfaceRef<T>, ISerializationCallbackReceiver where T : class
     {
 
         #region Fields
@@ -73,6 +96,13 @@ namespace com.spacepuppy.Project
 
         #endregion
 
+        #region Methods
+
+        public override object GetValue() => this.Value;
+        public override void SetValue(object value) => this.Value = value as T;
+
+        #endregion
+
         #region ISerializationCallbackReceiver Interface
 
         void ISerializationCallbackReceiver.OnAfterDeserialize()
@@ -87,17 +117,128 @@ namespace com.spacepuppy.Project
 
         #endregion
 
-        #region IDynamicProperty Interface
+    }
 
-        object IDynamicProperty.Get() => this.Value;
+    /// <summary>
+    /// Serializes an object via 'SerializeReference' and includes a handy picker tool for the editor.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    [System.Serializable]
+    public class InterfacePicker<T> : BaseSerializableInterfaceRef<T> where T : class
+    {
 
-        void IDynamicProperty.Set(object value) => this.Value = value as T;
+        #region Fields
 
-        System.Type IDynamicProperty.GetType() => typeof(T);
+        [SerializeReference]
+        private T _ref;
+
+        #endregion
+
+        #region CONSTRUCTOR
+
+        public InterfacePicker()
+        {
+
+        }
+
+        public InterfacePicker(T value)
+        {
+            this.Value = value;
+        }
+
+        #endregion
+
+        #region Properties
+
+        public T Value
+        {
+            get
+            {
+                return _ref;
+            }
+            set
+            {
+                _ref = value;
+            }
+        }
+
+        #endregion
+
+        #region Methods
+
+        public override object GetValue() => this.Value;
+        public override void SetValue(object value) => this.Value = value as T;
 
         #endregion
 
     }
+
+    /// <summary>
+    /// Joins InterfaceRef and InterfacePicker together in a dual mode supporting both simultaneously.
+    /// 
+    /// The way this is designed internally supports easily converting InterfaceRef or InterfacePicker to this without breaking existing serialized data. 
+    /// For this reason any of these 3 are favored over the older 'SerializeRefPicker' attribute.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    [System.Serializable]
+    public class InterfaceRefOrPicker<T> : BaseSerializableInterfaceRef<T> where T : class
+    {
+
+        #region Fields
+
+        [SerializeField]
+        private UnityEngine.Object _obj;
+        [SerializeReference]
+        private T _ref;
+
+        #endregion
+
+        #region CONSTRUCTOR
+
+        public InterfaceRefOrPicker()
+        {
+
+        }
+
+        public InterfaceRefOrPicker(T value)
+        {
+            this.Value = value;
+        }
+
+        #endregion
+
+        #region Properties
+
+        public T Value
+        {
+            get
+            {
+                return _obj is T uot ? uot : _ref;
+            }
+            set
+            {
+                if (value is UnityEngine.Object uot)
+                {
+                    _obj = uot;
+                }
+                else
+                {
+                    _ref = value;
+                }
+            }
+        }
+
+        #endregion
+
+        #region Methods
+
+        public override object GetValue() => this.Value;
+        public override void SetValue(object value) => this.Value = value as T;
+
+        #endregion
+
+    }
+
 
     public abstract class BaseSerializableInterfaceCollection
     {
@@ -168,67 +309,6 @@ namespace com.spacepuppy.Project
 
     }
 
-
-    [System.Serializable]
-    public class InterfaceRefOrPicker<T> : BaseSerializableInterfaceRef, IDynamicProperty where T : class
-    {
-
-        #region Fields
-
-        [SerializeField]
-        private UnityEngine.Object _obj;
-        [SerializeReference]
-        private T _ref;
-
-        #endregion
-
-        #region CONSTRUCTOR
-
-        public InterfaceRefOrPicker()
-        {
-
-        }
-
-        public InterfaceRefOrPicker(T value)
-        {
-            this.Value = value;
-        }
-
-        #endregion
-
-        #region Properties
-
-        public T Value
-        {
-            get
-            {
-                return _obj is T uot ? uot : _ref;
-            }
-            set
-            {
-                if (value is UnityEngine.Object uot)
-                {
-                    _obj = uot;
-                }
-                else
-                {
-                    _ref = value;
-                }
-            }
-        }
-
-        #endregion
-
-        #region IDynamicProperty Interface
-
-        object IDynamicProperty.Get() => this.Value;
-
-        void IDynamicProperty.Set(object value) => this.Value = value as T;
-
-        System.Type IDynamicProperty.GetType() => typeof(T);
-
-        #endregion
-
-    }
+    //TODO - make InterfaceRefOrPickerCollection and InterfacePickerCollection
 
 }

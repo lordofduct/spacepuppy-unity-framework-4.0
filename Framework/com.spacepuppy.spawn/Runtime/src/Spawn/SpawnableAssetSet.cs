@@ -22,8 +22,7 @@ namespace com.spacepuppy.Spawn
         [SerializeField]
         private float[] _weights;
 
-        [SerializeReference]
-        [SerializeRefPicker(typeof(ISelectionLogic), AllowNull = true, DisplayBox = true, AlwaysExpanded = true)]
+        [SerializeReference, SerializeRefPicker(typeof(ISelectionLogic), AllowNull = true, DisplayBox = true, AlwaysExpanded = true)]
         private ISelectionLogic _logic = DefaultLogic;
 
         #endregion

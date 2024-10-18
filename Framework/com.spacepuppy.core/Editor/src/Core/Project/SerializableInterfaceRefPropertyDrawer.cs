@@ -18,7 +18,7 @@ namespace com.spacepuppyeditor.Core.Project
     /// Deals with both SerializableInterfaceRef and SelfReducingEntityConfigRef.
     /// </summary>
     [CustomPropertyDrawer(typeof(BaseSerializableInterfaceRef), true)]
-    public class SerializableInterfaceRefPropertyDrawer : PropertyDrawer, EditorHelper.ISerializedWrapperHelper
+    public class BaseInterfaceRefPropertyDrawer : PropertyDrawer, EditorHelper.ISerializedWrapperHelper
     {
 
         public const string PROP_UOBJECT = BaseSerializableInterfaceRef.PROP_UOBJECT;
@@ -32,20 +32,23 @@ namespace com.spacepuppyeditor.Core.Project
             ShowXButton = true,
             XButtonOnRightSide = true,
         };
-        private SerializeRefPickerPropertyDrawer _refSelectorDrawer = new()
+        private SerializeRefPickerPropertyDrawer _refPickerDrawer = new()
         {
             AllowNull = true,
             DisplayBox = false,
             AlwaysExpanded = true,
         };
 
+        public SerializeRefPickerPropertyDrawer RefPickerDrawer => _refPickerDrawer;
+        public RefPickerConfigAttribute OverrideConfigAttribute { get; set; }
+
         void Configure(System.Type valueType)
         {
-            var attrib = this.fieldInfo?.GetCustomAttribute<RefPickerConfigAttribute>();
-            _refSelectorDrawer.RefType = valueType;
-            _refSelectorDrawer.AllowNull = attrib?.AllowNull ?? true;
-            _refSelectorDrawer.DisplayBox = attrib?.DisplayBox ?? false;
-            _refSelectorDrawer.AlwaysExpanded = attrib?.AlwaysExpanded ?? true;
+            var attrib = this.OverrideConfigAttribute ?? this.fieldInfo?.GetCustomAttribute<RefPickerConfigAttribute>();
+            _refPickerDrawer.RefType = valueType;
+            _refPickerDrawer.AllowNull = attrib?.AllowNull ?? true;
+            _refPickerDrawer.DisplayBox = attrib?.DisplayBox ?? false;
+            _refPickerDrawer.AlwaysExpanded = attrib?.AlwaysExpanded ?? true;
 
             _componentSelectorDrawer.RestrictionType = valueType;
         }
@@ -78,13 +81,13 @@ namespace com.spacepuppyeditor.Core.Project
             }
             else if (prop_obj == null)
             {
-                return _refSelectorDrawer.GetPropertyHeight(prop_ref, label);
+                return _refPickerDrawer.GetPropertyHeight(prop_ref, label);
             }
             else
             {
                 if (prop_ref.managedReferenceValue != null)
                 {
-                    return _refSelectorDrawer.GetPropertyHeight(prop_ref, label);
+                    return _refPickerDrawer.GetPropertyHeight(prop_ref, label);
                 }
                 else if (prop_obj.objectReferenceValue != null)
                 {
@@ -139,7 +142,7 @@ namespace com.spacepuppyeditor.Core.Project
             }
             else if (prop_obj == null)
             {
-                _refSelectorDrawer.OnGUI(position, prop_ref, label);
+                _refPickerDrawer.OnGUI(position, prop_ref, label);
             }
             else
             {
@@ -154,7 +157,7 @@ namespace com.spacepuppyeditor.Core.Project
 
                     this.DrawUObjectField(r0_a, prop_obj, GUIContent.none, valueType);
 
-                    _refSelectorDrawer.OnGUI(r0_b, prop_ref, GUIContent.none);
+                    _refPickerDrawer.OnGUI(r0_b, prop_ref, GUIContent.none);
                 }
                 else
                 {
@@ -167,7 +170,7 @@ namespace com.spacepuppyeditor.Core.Project
                     //GUI.BeginGroup(area, GUIContent.none, GUI.skin.box);
                     //GUI.EndGroup();
 
-                    _refSelectorDrawer.OnGUI(position, prop_ref, label);
+                    _refPickerDrawer.OnGUI(position, prop_ref, label);
                     if (prop_obj != null) prop_obj.objectReferenceValue = null;
                 }
             }
@@ -196,6 +199,7 @@ namespace com.spacepuppyeditor.Core.Project
             Debug.LogError("Malformed SerializedInterfaceRef - make sure you inherit from 'SerializableInterfaceRef'.");
         }
 
+        #region Static Utils
 
         public static void SetSerializedProperty(SerializedProperty property, object value)
         {
@@ -244,7 +248,7 @@ namespace com.spacepuppyeditor.Core.Project
             }
         }
 
-        static bool ValidateRefType(SerializedProperty property, out System.Type valueType, out SerializedProperty prop_obj, out SerializedProperty prop_ref)
+        internal static bool ValidateRefType(SerializedProperty property, out System.Type valueType, out SerializedProperty prop_obj, out SerializedProperty prop_ref)
         {
             if (property == null) throw new System.ArgumentNullException(nameof(property));
 
@@ -267,7 +271,7 @@ namespace com.spacepuppyeditor.Core.Project
             return valueType != null && (valueType.IsClass || valueType.IsInterface) && (prop_obj != null || prop_ref != null);
         }
 
-
+        #endregion
 
         #region EditorHelper.ISerializedWrapperHelper Interface
 
@@ -291,11 +295,151 @@ namespace com.spacepuppyeditor.Core.Project
 
     }
 
-    [CustomPropertyDrawer(typeof(BaseSerializableInterfaceCollection), true)]
+    [CustomPropertyDrawer(typeof(BaseSerializableInterfaceList), true)]
+    public class BaseSerializableInterfaceListPropertyDrawer : PropertyDrawer
+    {
+
+        public const string PROP_DATA = BaseSerializableInterfaceList.PROP_DATA;
+        static readonly RefPickerConfigAttribute DEFAULT_PICKERCONFIG = new RefPickerConfigAttribute()
+        {
+            AllowNull = true,
+            DisplayBox = false,
+            AlwaysExpanded = true,
+        };
+
+        const float FOOTER_MARGIN_LEFT = 4f;
+        const float FOOTER_MARGIN_RIGHT = 4f;
+        const float FOOTER_MARGIN_TOP = 10f;
+        const float FOOTER_MARGIN_BOTTOM = 4f;
+
+        #region Fields
+
+        private GUIContent _lstLabel;
+        private CachedReorderableList _lstDrawer;
+        private BaseInterfaceRefPropertyDrawer _elementDrawer = new BaseInterfaceRefPropertyDrawer();
+
+        #endregion
+
+        #region Properties
+
+        public ReorderableArrayPropertyDrawer.FormatElementLabelCallback FormatElementLabel { get; set; }
+
+        public int SelectedIndex => _lstDrawer?.index ?? -1;
+
+        #endregion
+
+        void Configure(SerializedProperty property, GUIContent label)
+        {
+            _lstLabel = label;
+            _lstDrawer = CachedReorderableList.GetListDrawer(property.FindPropertyRelative(PROP_DATA), _lst_DrawHeader, _lst_DrawElement);
+            _lstDrawer.elementHeight = EditorGUIUtility.singleLineHeight;
+            _elementDrawer.RefPickerDrawer.DrawOnlyPicker = true;
+            _elementDrawer.OverrideConfigAttribute = this.fieldInfo?.GetCustomAttribute<RefPickerConfigAttribute>() ?? DEFAULT_PICKERCONFIG;
+        }
+
+        public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+        {
+            this.Configure(property, label);
+
+            float h;
+            if (EditorHelper.AssertMultiObjectEditingNotSupportedHeight(property, label, out h)) return h;
+
+            h = _lstDrawer.GetHeight();
+            int sz = _lstDrawer.serializedProperty.arraySize;
+            int index = _lstDrawer.index;
+            if (sz > 0 && index >= 0 && index < sz && TryGetManagedRefChildPropertyIfNotNull(_lstDrawer.serializedProperty.GetArrayElementAtIndex(index), out SerializedProperty refprop))
+            {
+                h += SerializeRefPickerPropertyDrawer.FindPropertyDrawer(EditorHelper.GetManagedReferenceType(refprop)).GetPropertyHeight(refprop, GUIContent.none);
+                h += FOOTER_MARGIN_TOP + FOOTER_MARGIN_BOTTOM;
+            }
+            return h;
+        }
+
+        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+        {
+            this.Configure(property, label);
+            if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
+
+            GUI.Box(position, GUIContent.none);
+            _lstDrawer.DoList(position);
+
+            int sz = _lstDrawer.serializedProperty.arraySize;
+            int index = _lstDrawer.index;
+            if (sz > 0 && index >= 0 && index < sz && TryGetManagedRefChildPropertyIfNotNull(_lstDrawer.serializedProperty.GetArrayElementAtIndex(index), out SerializedProperty refprop))
+            {
+                float h = _lstDrawer.GetHeight();
+                position = new Rect(position.xMin + FOOTER_MARGIN_LEFT, position.yMin + h + FOOTER_MARGIN_TOP, position.width - FOOTER_MARGIN_LEFT - FOOTER_MARGIN_RIGHT, position.height - h - FOOTER_MARGIN_TOP - FOOTER_MARGIN_BOTTOM);
+                var rheader = new Rect(position.xMin + 5f, position.yMin - EditorGUIUtility.singleLineHeight, position.width * 0.5f, EditorGUIUtility.singleLineHeight);
+                EditorGUI.LabelField(rheader, this.GetElementLabel(_lstDrawer.serializedProperty.GetArrayElementAtIndex(index), index, true, true) + ":");
+                SerializeRefPickerPropertyDrawer.FindPropertyDrawer(EditorHelper.GetManagedReferenceType(refprop)).OnGUI(position, refprop, GUIContent.none);
+            }
+        }
+
+        private string GetElementLabel(SerializedProperty element, int index, bool isActive, bool isFocused)
+        {
+            string slbl = this.FormatElementLabel?.Invoke(element, index, isActive, isFocused);
+            if (string.IsNullOrEmpty(slbl)) slbl = $"Element {(index + 1):00}";
+            return slbl;
+        }
+
+        private void _lst_DrawHeader(Rect rect)
+        {
+            EditorGUI.LabelField(rect, _lstLabel);
+        }
+
+        private void _lst_DrawElement(Rect rect, int index, bool isActive, bool isFocused)
+        {
+            if (_lstDrawer == null || _lstDrawer.serializedProperty.arraySize == 0) return;
+
+            var property = _lstDrawer.serializedProperty.GetArrayElementAtIndex(index);
+            EditorHelper.SuppressIndentLevel();
+
+            try
+            {
+                _elementDrawer.OnGUI(rect, property, EditorHelper.TempContent(this.GetElementLabel(property, index, true, true)));
+            }
+            finally
+            {
+                EditorHelper.ResumeIndentLevel();
+            }
+        }
+
+        static bool TryGetManagedRefChildPropertyIfNotNull(SerializedProperty arrayElementProperty, out SerializedProperty refprop)
+        {
+            var prop = arrayElementProperty.FindPropertyRelative(BaseInterfaceRefPropertyDrawer.PROP_REFOBJECT);
+            if (prop != null && prop.managedReferenceValue != null)
+            {
+                refprop = prop;
+                return true;
+            }
+            else
+            {
+                refprop = null;
+                return false;
+            }
+        }
+
+        #region Static Utils
+
+        public static object GetFromSerializedProperty(SerializedProperty property, int index)
+        {
+            if (property == null) throw new System.ArgumentNullException(nameof(property));
+
+            var prop_arr = property.FindPropertyRelative(PROP_DATA);
+            if (prop_arr == null || !prop_arr.isArray || index < 0 || index >= prop_arr.arraySize) return null;
+
+            return BaseInterfaceRefPropertyDrawer.GetFromSerializedProperty(prop_arr.GetArrayElementAtIndex(index));
+        }
+
+        #endregion
+
+    }
+
+    [CustomPropertyDrawer(typeof(BaseObsoleteInterfaceRefCollection), true)]
     public class BaseSerializableInterfaceCollectionPropertyDrawer : PropertyDrawer
     {
 
-        public const string PROP_ARR = "_arr";
+        public const string PROP_ARR_OBSOLETE = BaseObsoleteInterfaceRefCollection.PROP_ARR_OBSOLETE;
 
         private SelectableComponentPropertyDrawer _componentSelectorDrawer = new SelectableComponentPropertyDrawer()
         {
@@ -315,13 +459,13 @@ namespace com.spacepuppyeditor.Core.Project
             if (EditorHelper.AssertMultiObjectEditingNotSupportedHeight(property, label, out h)) return h;
 
             var tp = (this.fieldInfo != null) ? this.fieldInfo.FieldType : null;
-            var arrprop = property.FindPropertyRelative(PROP_ARR);
+            var arrprop = property.FindPropertyRelative(PROP_ARR_OBSOLETE);
             if (tp == null || arrprop == null || !arrprop.isArray)
             {
                 return EditorGUIUtility.singleLineHeight;
             }
 
-            _lst = CachedReorderableList.GetListDrawer(property.FindPropertyRelative(PROP_ARR), _maskList_DrawHeader, _maskList_DrawElement);
+            _lst = CachedReorderableList.GetListDrawer(property.FindPropertyRelative(PROP_ARR_OBSOLETE), _maskList_DrawHeader, _maskList_DrawElement);
             _label = label;
             if (arrprop.arraySize == 0)
             {
@@ -339,7 +483,7 @@ namespace com.spacepuppyeditor.Core.Project
             if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
 
             var tp = (this.fieldInfo != null) ? this.fieldInfo.FieldType : null;
-            var arrprop = property.FindPropertyRelative(PROP_ARR);
+            var arrprop = property.FindPropertyRelative(PROP_ARR_OBSOLETE);
             if (tp == null || arrprop == null || !arrprop.isArray)
             {
                 this.DrawMalformed(position);
@@ -353,7 +497,7 @@ namespace com.spacepuppyeditor.Core.Project
                 return;
             }
 
-            _lst = CachedReorderableList.GetListDrawer(property.FindPropertyRelative(PROP_ARR), _maskList_DrawHeader, _maskList_DrawElement);
+            _lst = CachedReorderableList.GetListDrawer(property.FindPropertyRelative(PROP_ARR_OBSOLETE), _maskList_DrawHeader, _maskList_DrawElement);
             _label = label;
 
             _lst.DoList(position);

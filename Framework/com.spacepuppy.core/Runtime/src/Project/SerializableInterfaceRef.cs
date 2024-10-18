@@ -38,7 +38,6 @@ namespace com.spacepuppy.Project
     }
     public abstract class BaseSerializableInterfaceRef<T> : BaseSerializableInterfaceRef where T : class
     {
-
         public override System.Type GetValueType() => typeof(T);
     }
 
@@ -240,13 +239,174 @@ namespace com.spacepuppy.Project
     }
 
 
-    public abstract class BaseSerializableInterfaceCollection
+    public abstract class BaseSerializableInterfaceList
     {
+        public const string PROP_DATA = "_data";
+
+        #region Methods
+        public abstract System.Type GetValueType();
+        #endregion
+
+    }
+    public abstract class BaseSerializableInterfaceList<T> : BaseSerializableInterfaceList, IList<T> where T : class
+    {
+
+        #region Fields
+
+        [System.NonSerialized]
+        private List<T> _values;
+
+        #endregion
+
+        #region CONSTRUCTOR
+
+        public BaseSerializableInterfaceList()
+        {
+            _values = new List<T>();
+        }
+
+        public BaseSerializableInterfaceList(IEnumerable<T> values)
+        {
+            _values = new List<T>(values);
+        }
+
+        #endregion
+
+        #region Properties
+
+        public List<T> Values => _values;
+
+        #endregion
+
+        #region Methods
+
+        public override System.Type GetValueType() => typeof(T);
+
+        #endregion
+
+        #region IList Interface
+
+        public virtual int Count => _values.Count;
+        public virtual T this[int index]
+        {
+            get => _values[index];
+            set => _values[index] = value;
+        }
+
+        public virtual int IndexOf(T item) => _values.IndexOf(item);
+
+        public virtual void Insert(int index, T item) => _values.Insert(index, item);
+
+        public virtual void RemoveAt(int index) => _values.RemoveAt(index);
+
+        public virtual void Add(T item) => _values.Add(item);
+
+        public virtual void Clear() => _values.Clear();
+
+        public virtual bool Contains(T item) => _values.Contains(item);
+
+        public virtual void CopyTo(T[] array, int arrayIndex) => _values.CopyTo(array, arrayIndex);
+
+        public virtual bool Remove(T item) => _values.Remove(item);
+
+        public List<T>.Enumerator GetEnumerator() => _values.GetEnumerator();
+
+        bool ICollection<T>.IsReadOnly => false;
+        IEnumerator<T> IEnumerable<T>.GetEnumerator() => _values.GetEnumerator();
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => this.GetEnumerator();
+
+        #endregion
 
     }
 
     [System.Serializable]
-    public class InterfaceRefCollection<T> : BaseSerializableInterfaceCollection, IEnumerable<T>, ISerializationCallbackReceiver where T : class
+    public class InterfaceRefList<T> : BaseSerializableInterfaceList<T>, ISerializationCallbackReceiver where T : class
+    {
+
+        #region Fields
+
+        [SerializeField]
+        private InterfaceRef<T>[] _data;
+
+        #endregion
+
+        #region CONSTRUCTOR
+
+        public InterfaceRefList() : base() { }
+        public InterfaceRefList(IEnumerable<T> values) : base(values) { }
+
+        #endregion
+
+        #region ISerializationCallbackReceiver Interface
+
+        void ISerializationCallbackReceiver.OnAfterDeserialize()
+        {
+            this.Values.Clear();
+            if (_data?.Length > 0)
+            {
+                this.Values.AddRange(_data.Select(o => o as T));
+            }
+        }
+
+        void ISerializationCallbackReceiver.OnBeforeSerialize()
+        {
+            _data = this.Values.Select(o => new InterfaceRef<T>(o is UnityEngine.Object ? o : default(T))).ToArray();
+        }
+
+        #endregion
+
+    }
+
+    [System.Serializable]
+    public class InterfacePickerList<T> : BaseSerializableInterfaceList<T>, ISerializationCallbackReceiver where T : class
+    {
+
+        #region Fields
+
+        [SerializeField]
+        private InterfacePicker<T>[] _data;
+
+        #endregion
+
+        #region CONSTRUCTOR
+
+        public InterfacePickerList() : base() { }
+        public InterfacePickerList(IEnumerable<T> values) : base(values) { }
+
+        #endregion
+
+        #region ISerializationCallbackReceiver Interface
+
+        void ISerializationCallbackReceiver.OnAfterDeserialize()
+        {
+            this.Values.Clear();
+            if (_data?.Length > 0)
+            {
+                this.Values.AddRange(_data.Select(o => o.Value));
+            }
+        }
+
+        void ISerializationCallbackReceiver.OnBeforeSerialize()
+        {
+            _data = this.Values.Select(o => new InterfacePicker<T>(!(o is UnityEngine.Object) ? o : default(T))).ToArray();
+        }
+
+        #endregion
+
+    }
+
+    //TODO - make InterfaceRefOrPickerList
+
+
+
+
+    [System.Obsolete("Use InterfaceRefList")]
+    public abstract class BaseObsoleteInterfaceRefCollection
+    {
+        public const string PROP_ARR_OBSOLETE = "_arr";
+    }
+    [System.Serializable, System.Obsolete("Use InterfaceRefList")]
+    public class InterfaceRefCollection<T> : BaseObsoleteInterfaceRefCollection, IEnumerable<T>, ISerializationCallbackReceiver where T : class
     {
 
         #region Fields
@@ -308,7 +468,5 @@ namespace com.spacepuppy.Project
         #endregion
 
     }
-
-    //TODO - make InterfaceRefOrPickerCollection and InterfacePickerCollection
 
 }

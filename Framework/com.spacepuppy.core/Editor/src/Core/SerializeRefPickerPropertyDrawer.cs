@@ -61,6 +61,12 @@ namespace com.spacepuppyeditor.Core
             set;
         }
 
+        public bool DrawOnlyPicker
+        {
+            get;
+            set;
+        }
+
         #endregion
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
@@ -73,26 +79,34 @@ namespace com.spacepuppyeditor.Core
 
             try
             {
-                //float objheight = !string.IsNullOrEmpty(property.managedReferenceFullTypename) ? EditorGUI.GetPropertyHeight(property, label, true) + 4f : EditorGUIUtility.singleLineHeight * 2f;
-                float objheight = 0f;
-                if (string.IsNullOrEmpty(property.managedReferenceFullTypename)) //this means nothing is referenced currently
+                if (this.DrawOnlyPicker)
                 {
-                    objheight = EditorGUIUtility.singleLineHeight;
-                }
-                else if (property.isExpanded)
-                {
-                    objheight += FindPropertyDrawer(EditorHelper.GetManagedReferenceType(property)).GetPropertyHeight(property, GUIContent.none);
-                }
-
-                objheight += EditorGUIUtility.singleLineHeight + SELECTOR_VER_MARGIN;
-
-                if (this.DisplayBox)
-                {
-                    return objheight + BOTTOM_PAD + TOP_PAD;
+                    return EditorGUIUtility.singleLineHeight;
                 }
                 else
                 {
-                    return objheight;
+                    //float objheight = !string.IsNullOrEmpty(property.managedReferenceFullTypename) ? EditorGUI.GetPropertyHeight(property, label, true) + 4f : EditorGUIUtility.singleLineHeight * 2f;
+                    float objheight = 0f;
+
+                    if (string.IsNullOrEmpty(property.managedReferenceFullTypename)) //this means nothing is referenced currently
+                    {
+                        objheight = EditorGUIUtility.singleLineHeight;
+                    }
+                    else if (property.isExpanded)
+                    {
+                        objheight += FindPropertyDrawer(EditorHelper.GetManagedReferenceType(property)).GetPropertyHeight(property, GUIContent.none);
+                    }
+
+                    objheight += EditorGUIUtility.singleLineHeight + SELECTOR_VER_MARGIN;
+
+                    if (this.DisplayBox)
+                    {
+                        return objheight + BOTTOM_PAD + TOP_PAD;
+                    }
+                    else
+                    {
+                        return objheight;
+                    }
                 }
             }
             finally
@@ -105,84 +119,95 @@ namespace com.spacepuppyeditor.Core
         {
             if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
 
-            bool cache = property.isExpanded;
-            if (this.AlwaysExpanded) property.isExpanded = true;
-
-            Rect selectorArea;
-            bool drawSelector;
-            try
+            if (!this.DrawOnlyPicker)
             {
-                if (this.DisplayBox)
+                bool cache = property.isExpanded;
+                if (this.AlwaysExpanded) property.isExpanded = true;
+
+                Rect selectorArea;
+                bool drawSelector;
+
+                try
                 {
-                    if (!this.AlwaysExpanded) cache = SPEditorGUI.PrefixFoldoutLabel(position, property.isExpanded, GUIContent.none);
-
-                    if (property.isExpanded)
+                    if (this.DisplayBox)
                     {
-                        //float h = SPEditorGUI.GetDefaultPropertyHeight(property, label, true) + BOTTOM_PAD + TOP_PAD - EditorGUIUtility.singleLineHeight;
-                        //var area = new Rect(position.xMin, position.yMax - h, position.width, h);
-                        var area = position;
-                        var drawArea = new Rect(area.xMin + MARGIN, area.yMin + TOP_PAD + SELECTOR_VER_MARGIN + EditorGUIUtility.singleLineHeight, area.width - MARGIN_DBL, area.height - TOP_PAD - EditorGUIUtility.singleLineHeight);
+                        if (!this.AlwaysExpanded) cache = SPEditorGUI.PrefixFoldoutLabel(position, property.isExpanded, GUIContent.none);
 
-                        GUI.BeginGroup(area, label, GUI.skin.box);
-                        GUI.EndGroup();
-
-                        EditorGUI.indentLevel++;
-                        FindPropertyDrawer(EditorHelper.GetManagedReferenceType(property)).OnGUI(drawArea, property, GUIContent.none);
-                        EditorGUI.indentLevel--;
-
-                        selectorArea = new Rect(position.xMin + SELECTOR_HOR_MARGIN, position.yMin + TOP_PAD, position.width - SELECTOR_HOR_MARGIN_DBL, EditorGUIUtility.singleLineHeight);
-                        drawSelector = true;
-                    }
-                    else
-                    {
-                        GUI.BeginGroup(position, label, GUI.skin.box);
-                        GUI.EndGroup();
-
-                        selectorArea = default(Rect);
-                        drawSelector = false;
-                    }
-                }
-                else
-                {
-                    selectorArea = new Rect(position.xMin, position.yMin, position.width, EditorGUIUtility.singleLineHeight);
-                    var drawArea = new Rect(position.xMin, position.yMin + SELECTOR_VER_MARGIN + EditorGUIUtility.singleLineHeight, position.width, Mathf.Max(position.height - EditorGUIUtility.singleLineHeight - SELECTOR_VER_MARGIN, 0f));
-                    if (this.AlwaysExpanded)
-                    {
-                        property.isExpanded = true;
-                        if (label.HasContent())
-                        {
-                            selectorArea = EditorGUI.PrefixLabel(selectorArea, label);
-                        }
-                        FindPropertyDrawer(EditorHelper.GetManagedReferenceType(property)).OnGUI(drawArea, property, GUIContent.none);
-                    }
-                    else
-                    {
-                        cache = SPEditorGUI.PrefixFoldoutLabel(ref selectorArea, property.isExpanded, label);
                         if (property.isExpanded)
                         {
+                            //float h = SPEditorGUI.GetDefaultPropertyHeight(property, label, true) + BOTTOM_PAD + TOP_PAD - EditorGUIUtility.singleLineHeight;
+                            //var area = new Rect(position.xMin, position.yMax - h, position.width, h);
+                            var area = position;
+                            var drawArea = new Rect(area.xMin + MARGIN, area.yMin + TOP_PAD + SELECTOR_VER_MARGIN + EditorGUIUtility.singleLineHeight, area.width - MARGIN_DBL, area.height - TOP_PAD - EditorGUIUtility.singleLineHeight);
+
+                            GUI.BeginGroup(area, label, GUI.skin.box);
+                            GUI.EndGroup();
+
+                            EditorGUI.indentLevel++;
                             FindPropertyDrawer(EditorHelper.GetManagedReferenceType(property)).OnGUI(drawArea, property, GUIContent.none);
+                            EditorGUI.indentLevel--;
+
+                            selectorArea = new Rect(position.xMin + SELECTOR_HOR_MARGIN, position.yMin + TOP_PAD, position.width - SELECTOR_HOR_MARGIN_DBL, EditorGUIUtility.singleLineHeight);
+                            drawSelector = true;
+                        }
+                        else
+                        {
+                            GUI.BeginGroup(position, label, GUI.skin.box);
+                            GUI.EndGroup();
+
+                            selectorArea = default(Rect);
+                            drawSelector = false;
                         }
                     }
+                    else
+                    {
+                        selectorArea = new Rect(position.xMin, position.yMin, position.width, EditorGUIUtility.singleLineHeight);
+                        var drawArea = new Rect(position.xMin, position.yMin + SELECTOR_VER_MARGIN + EditorGUIUtility.singleLineHeight, position.width, Mathf.Max(position.height - EditorGUIUtility.singleLineHeight - SELECTOR_VER_MARGIN, 0f));
+                        if (this.AlwaysExpanded)
+                        {
+                            property.isExpanded = true;
+                            if (label.HasContent())
+                            {
+                                selectorArea = EditorGUI.PrefixLabel(selectorArea, label);
+                            }
+                            FindPropertyDrawer(EditorHelper.GetManagedReferenceType(property)).OnGUI(drawArea, property, GUIContent.none);
+                        }
+                        else
+                        {
+                            cache = SPEditorGUI.PrefixFoldoutLabel(ref selectorArea, property.isExpanded, label);
+                            if (property.isExpanded)
+                            {
+                                FindPropertyDrawer(EditorHelper.GetManagedReferenceType(property)).OnGUI(drawArea, property, GUIContent.none);
+                            }
+                        }
 
-                    drawSelector = true;
+                        drawSelector = true;
+                    }
+                }
+                finally
+                {
+                    property.isExpanded = cache;
+                }
+
+                if (!drawSelector || Application.isPlaying) return;
+
+
+                if (this.RefType != null)
+                {
+                    DrawRefPicker(selectorArea, property, GUIContent.none, this.RefType, this.AllowNull, this.NullLabel);
                 }
             }
-            finally
+            else
             {
-                property.isExpanded = cache;
+                if (Application.isPlaying) return;
+
+                if (this.RefType != null)
+                {
+                    DrawRefPicker(position, property, label, this.RefType, this.AllowNull, this.NullLabel);
+                }
             }
 
-
-
-
-            if (!drawSelector || Application.isPlaying) return;
-
-            if (this.RefType != null)
-            {
-                DrawRefPicker(selectorArea, property, GUIContent.none, this.RefType, this.AllowNull, this.NullLabel);
-            }
         }
-
 
         #region Static Entries
 

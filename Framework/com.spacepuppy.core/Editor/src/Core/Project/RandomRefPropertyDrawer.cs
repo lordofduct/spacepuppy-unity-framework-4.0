@@ -5,7 +5,7 @@ namespace com.spacepuppyeditor.Core.Project
 {
 
     [CustomPropertyDrawer(typeof(com.spacepuppy.RandomRef), true)]
-    public class RandomRefPropertyDrawer : SerializableInterfaceRefPropertyDrawer
+    public class RandomRefPropertyDrawer : BaseInterfaceRefPropertyDrawer
     {
 
         private const string STR_TOOLTIP = "Optional - leaving this blank will result in the Unity Random class to be used.";

@@ -31,7 +31,7 @@ namespace com.spacepuppy.Statistics
     {
 
         public event System.EventHandler<LedgerChangedEventArgs> Changed;
-        private void OnChanged(StatId stat)
+        public void SignalOnChanged(StatId stat)
         {
             this.Dirty = true;
 
@@ -45,7 +45,7 @@ namespace com.spacepuppy.Statistics
             }
         }
 
-        private void OnChanged_Multi()
+        public void SignalOnChanged_Multi()
         {
             this.Dirty = true;
 
@@ -157,6 +157,7 @@ namespace com.spacepuppy.Statistics
 
         #region Methods
 
+        public bool Contains(string category) => _stats.ContainsKey(new StatId(category)) || _stats.Keys.Contains(new StatId(category), StatIdCategoryComparer.Default);
         public bool Contains(StatId stat) => _stats.ContainsKey(stat);
 
         public void DefineCategory(string category, double? defaultValue = null)
@@ -165,7 +166,7 @@ namespace com.spacepuppy.Statistics
             if (!_stats.ContainsKey(key))
             {
                 _stats.Add(key, defaultValue);
-                this.OnChanged(new StatId(category, null));
+                this.SignalOnChanged(new StatId(category, null));
             }
         }
 
@@ -182,7 +183,19 @@ namespace com.spacepuppy.Statistics
                 _modifiers[category] = modifier;
             }
         }
+        public IStatModifier GetCategoryModifier(string category)
+        {
+            if (string.IsNullOrEmpty(category)) throw new System.ArgumentException("Category must not be null or empty.", nameof(category));
 
+            if (_modifiers.TryGetValue(category, out IStatModifier result))
+            {
+                return result;
+            }
+            else
+            {
+                return null;
+            }
+        }
 
         public bool TryGetStat(string category, out double? value) => this.GetOperator(category).TryGetStat(this, new StatId(category), out value);
         public bool TryGetStat(string category, string token, out double? value) => this.GetOperator(category).TryGetStat(this, new StatId(category, token), out value);
@@ -295,7 +308,7 @@ namespace com.spacepuppy.Statistics
                     success = true;
                 }
             }
-            if (success) this.OnChanged(topkey);
+            if (success) this.SignalOnChanged(topkey);
             return success;
         }
 
@@ -330,7 +343,7 @@ namespace com.spacepuppy.Statistics
                     success = true;
                 }
             }
-            if (success) this.OnChanged(topkey);
+            if (success) this.SignalOnChanged(topkey);
             return success;
         }
 
@@ -417,12 +430,12 @@ namespace com.spacepuppy.Statistics
                         }
                     }
                 }
-                this.OnChanged_Multi();
+                this.SignalOnChanged_Multi();
             }
             else
             {
                 _stats.Clear();
-                this.OnChanged_Multi();
+                this.SignalOnChanged_Multi();
             }
         }
 
@@ -431,6 +444,45 @@ namespace com.spacepuppy.Statistics
         private IStatModifier GetOperator(string stat)
         {
             return !string.IsNullOrEmpty(stat) && _modifiers.TryGetValue(stat, out IStatModifier result) ? result : _defaultModifier;
+        }
+
+        #endregion
+
+        #region Raw Access
+
+        public double? GetStatRaw(StatId stat)
+        {
+            if (_stats.TryGetValue(stat, out double? value))
+            {
+                return value;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        public bool TryGetStatRaw(StatId stat, out double? value)
+        {
+            return _stats.TryGetValue(stat, out value);
+        }
+
+        /// <summary>
+        /// This should only ever be called from within a IStatModifier for raw modification based on that modifiers rules. Use at your own risk.
+        /// </summary>
+        /// <param name="stat"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public bool SetStatRaw(StatId stat, double? value)
+        {
+            if (string.IsNullOrEmpty(stat.Category)) return false;
+            _stats[stat] = value;
+            return true;
+        }
+
+        public bool RemoveStatRaw(StatId stat)
+        {
+            return _stats.Remove(stat);
         }
 
         #endregion
@@ -477,6 +529,9 @@ namespace com.spacepuppy.Statistics
 
         #region Stat Operators
 
+        /// <summary>
+        /// When implementing one must call 'SignalOnChanged' manually.
+        /// </summary>
         public interface IStatModifier
         {
             bool AdjustStat(Ledger ledger, StatId stat, double amount);
@@ -532,7 +587,7 @@ namespace com.spacepuppy.Statistics
 
                 if (result)
                 {
-                    ledger.OnChanged(stat);
+                    ledger.SignalOnChanged(stat);
                 }
                 return result;
             }
@@ -549,7 +604,7 @@ namespace com.spacepuppy.Statistics
                 {
                     _stats.Remove(stat);
                     _stats[new StatId(stat.Category)] = this.SumCategorySubTokens(ledger, stat.Category);
-                    ledger.OnChanged(stat);
+                    ledger.SignalOnChanged(stat);
                     return true;
                 }
             }
@@ -567,7 +622,7 @@ namespace com.spacepuppy.Statistics
                 {
                     _stats.Remove(stat);
                     _stats[new StatId(stat.Category)] = this.SumCategorySubTokens(ledger, stat.Category);
-                    ledger.OnChanged(stat);
+                    ledger.SignalOnChanged(stat);
                     return true;
                 }
             }
@@ -583,7 +638,7 @@ namespace com.spacepuppy.Statistics
                     if (ledger.Locked && !_stats.ContainsKey(stat)) return false;
 
                     _stats[stat] = value;
-                    ledger.OnChanged(stat);
+                    ledger.SignalOnChanged(stat);
                     return true;
                 }
                 else
@@ -593,7 +648,7 @@ namespace com.spacepuppy.Statistics
 
                     _stats[stat] = value;
                     _stats[topkey] = this.SumCategorySubTokens(ledger, stat.Category);
-                    ledger.OnChanged(stat);
+                    ledger.SignalOnChanged(stat);
                     return true;
                 }
             }
@@ -629,7 +684,7 @@ namespace com.spacepuppy.Statistics
         public class ReadWriteStatModifier : IStatModifier
         {
 
-            public static readonly StandardStatModifier Default = new();
+            public static readonly ReadWriteStatModifier Default = new();
 
             public bool AdjustStat(Ledger ledger, StatId stat, double amount)
             {
@@ -638,14 +693,16 @@ namespace com.spacepuppy.Statistics
                 var current = ledger._stats.TryGetValue(stat, out double? v) ? v.GetValueOrDefault() : 0d;
                 current += amount;
                 ledger._stats[stat] = current;
+                ledger.SignalOnChanged(stat);
                 return true;
             }
 
             public bool ClearStat(Ledger ledger, StatId stat)
             {
-                if (ledger._stats.ContainsKey(stat))
+                if (ledger._stats.TryGetValue(stat, out double? value) && value != null)
                 {
                     ledger._stats[stat] = null;
+                    ledger.SignalOnChanged(stat);
                     return true;
                 }
                 return false;
@@ -653,13 +710,23 @@ namespace com.spacepuppy.Statistics
 
             public bool DeleteStat(Ledger ledger, StatId stat)
             {
-                return ledger._stats.Remove(stat);
+                if (ledger._stats.Remove(stat))
+                {
+                    ledger.SignalOnChanged(stat);
+                    return true;
+                }
+                return false;
             }
 
             public bool SetStat(Ledger ledger, StatId stat, double? value)
             {
                 if (string.IsNullOrEmpty(stat.Category)) return false;
-                ledger._stats[stat] = value;
+
+                if (!ledger._stats.TryGetValue(stat, out double? exist) || exist != value)
+                {
+                    ledger._stats[stat] = value;
+                    ledger.SignalOnChanged(stat);
+                }
                 return true;
             }
 
@@ -677,40 +744,78 @@ namespace com.spacepuppy.Statistics
 
             public bool AdjustStat(Ledger ledger, StatId stat, double amount)
             {
-                var token_cnt = stat.GetMeta(META_COUNT);
-                var token_sum = stat.GetMeta(META_SUM);
-                double cnt = ledger._stats.TryGetValue(token_cnt, out double? d1) ? d1.GetValueOrDefault() : 0d;
-                double sum = ledger._stats.TryGetValue(token_sum, out double? d2) ? d2.GetValueOrDefault() : 0d;
+                if (string.IsNullOrEmpty(stat.Category)) return false;
+
+                var tk_token = stat.GetMeta(null);
+                var tk_cnt = stat.GetMeta(META_COUNT);
+                var tk_sum = stat.GetMeta(META_SUM);
+                double cnt = ledger._stats.TryGetValue(tk_cnt, out double? d1) ? d1.GetValueOrDefault() : 0d;
+                double sum = ledger._stats.TryGetValue(tk_sum, out double? d2) ? d2.GetValueOrDefault() : 0d;
                 cnt += 1d;
                 sum += amount;
-                ledger._stats[token_cnt] = cnt;
-                ledger._stats[token_sum] = sum;
-                ledger._stats[stat] = sum / cnt;
+                ledger._stats[tk_cnt] = cnt;
+                ledger._stats[tk_sum] = sum;
+                ledger._stats[tk_token] = sum / cnt;
+
+                ledger.SignalOnChanged(tk_token);
                 return true;
             }
 
             public bool ClearStat(Ledger ledger, StatId stat)
             {
-                if (!string.IsNullOrEmpty(stat.Token)) throw new System.InvalidOperationException($"{nameof(CumulativeAverageStatModifier)} does not support manipulating tokens.");
-                return ledger.ClearCategory(stat.Category);
+                if (string.IsNullOrEmpty(stat.Category)) return false;
+
+                var tk_token = stat.GetMeta(null);
+                var tk_cnt = stat.GetMeta(META_COUNT);
+                var tk_sum = stat.GetMeta(META_SUM);
+                if (ledger.Contains(tk_token))
+                {
+                    ledger.SetStatRaw(tk_token, null);
+                    ledger.RemoveStatRaw(tk_cnt);
+                    ledger.RemoveStatRaw(tk_sum);
+                    ledger.SignalOnChanged(tk_token);
+                    return true;
+                }
+
+                return false;
             }
 
             public bool DeleteStat(Ledger ledger, StatId stat)
             {
-                if (!string.IsNullOrEmpty(stat.Token)) throw new System.InvalidOperationException($"{nameof(CumulativeAverageStatModifier)} does not support manipulating tokens.");
-                return ledger.DeleteCategory(stat.Category);
+                if (string.IsNullOrEmpty(stat.Category)) return false;
+
+                var tk_token = stat.GetMeta(null);
+                var tk_cnt = stat.GetMeta(META_COUNT);
+                var tk_sum = stat.GetMeta(META_SUM);
+
+                if (ledger.RemoveStatRaw(tk_token))
+                {
+                    ledger.RemoveStatRaw(tk_cnt);
+                    ledger.RemoveStatRaw(tk_sum);
+                    ledger.SignalOnChanged(tk_token);
+                    return true;
+                }
+
+                return false;
             }
 
             public bool SetStat(Ledger ledger, StatId stat, double? value)
             {
-                if (!string.IsNullOrEmpty(stat.Token)) throw new System.InvalidOperationException($"{nameof(CumulativeAverageStatModifier)} does not support manipulating tokens.");
+                if (string.IsNullOrEmpty(stat.Category)) return false;
 
+                var tk_token = stat.GetMeta(null);
+                var tk_cnt = stat.GetMeta(META_COUNT);
+                var tk_sum = stat.GetMeta(META_SUM);
+                ledger.SetStatRaw(tk_token, value ?? 0d);
+                ledger.SetStatRaw(tk_cnt, 1);
+                ledger.SetStatRaw(tk_sum, value ?? 0d);
+                ledger.SignalOnChanged(tk_token);
                 return true;
             }
 
             public bool TryGetStat(Ledger ledger, StatId stat, out double? value)
             {
-                //we can read the individual stats for exponential moving average
+                //we can read the individual stats for CumulativeAverageStatModifier
                 return ledger._stats.TryGetValue(stat, out value);
             }
         }
@@ -743,14 +848,16 @@ namespace com.spacepuppy.Statistics
                 double avg = ledger._stats.TryGetValue(stat, out double? d) ? d.GetValueOrDefault() : 0d;
                 avg = amount * _alpha + avg * (1d - _alpha);
                 ledger._stats[stat] = avg;
+                ledger.SignalOnChanged(stat);
                 return true;
             }
 
             public bool ClearStat(Ledger ledger, StatId stat)
             {
-                if (ledger._stats.ContainsKey(stat))
+                if (ledger._stats.TryGetValue(stat, out double? value) && value != null)
                 {
                     ledger._stats[stat] = null;
+                    ledger.SignalOnChanged(stat);
                     return true;
                 }
                 return false;
@@ -758,18 +865,29 @@ namespace com.spacepuppy.Statistics
 
             public bool DeleteStat(Ledger ledger, StatId stat)
             {
-                return ledger._stats.Remove(stat);
+                if (ledger._stats.Remove(stat))
+                {
+                    ledger.SignalOnChanged(stat);
+                    return true;
+                }
+                return false;
             }
 
             public bool SetStat(Ledger ledger, StatId stat, double? value)
             {
                 if (string.IsNullOrEmpty(stat.Category)) return false;
-                ledger._stats[stat] = value;
+
+                if (!ledger._stats.TryGetValue(stat, out double? exist) || exist != value)
+                {
+                    ledger._stats[stat] = value;
+                    ledger.SignalOnChanged(stat);
+                }
                 return true;
             }
 
             public bool TryGetStat(Ledger ledger, StatId stat, out double? value)
             {
+                //we can read the individual stats for ExponentialMovingAverageStatModifier
                 return ledger._stats.TryGetValue(stat, out value);
             }
         }

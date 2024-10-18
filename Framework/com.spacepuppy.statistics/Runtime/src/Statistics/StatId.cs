@@ -135,4 +135,19 @@ namespace com.spacepuppy.Statistics
         }
     }
 
+    class StatIdCategoryComparer : IEqualityComparer<StatId>
+    {
+        public static readonly StatIdCategoryComparer Default = new StatIdCategoryComparer();
+
+        public bool Equals(StatId x, StatId y)
+        {
+            return (string.IsNullOrEmpty(x.Category) ? string.IsNullOrEmpty(y.Category) : x.Category.Equals(y.Category));
+        }
+
+        public int GetHashCode(StatId obj)
+        {
+            return (obj.Category ?? string.Empty).GetHashCode();
+        }
+    }
+
 }

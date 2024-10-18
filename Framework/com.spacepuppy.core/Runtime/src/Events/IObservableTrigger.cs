@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Linq;
+using System.Reflection;
+using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.Events
 {
@@ -8,7 +11,12 @@ namespace com.spacepuppy.Events
     /// </summary>
     public interface IObservableTrigger
     {
-        BaseSPEvent[] GetEvents();
+        /// <summary>
+        /// Return any SPEvents that are observable. 
+        /// This will reflectively return and BaseSPEvent that is a accessible as a public property by default unless otherwise implemented explicitly.
+        /// </summary>
+        /// <returns></returns>
+        BaseSPEvent[] GetEvents() => this.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public).Where(o => o.CanRead && typeof(BaseSPEvent).IsAssignableFrom(o.PropertyType)).Select(o => o.GetMethod.Invoke(this, ArrayUtil.Empty<object>()) as BaseSPEvent).Where(o => o != null).ToArray();
     }
 
     /// <summary>

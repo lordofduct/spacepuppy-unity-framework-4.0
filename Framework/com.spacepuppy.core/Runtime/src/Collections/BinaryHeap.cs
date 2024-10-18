@@ -6,6 +6,11 @@ using System.Linq;
 namespace com.spacepuppy.Collections
 {
 
+    /// <summary>
+    /// BinaryHeap implementation sorted ascending with "largest" as the top element returned by Peek or Pop. 
+    /// Use a Comparer to invert the collection if desired.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     public class BinaryHeap<T> : ICollection<T>
     {
 

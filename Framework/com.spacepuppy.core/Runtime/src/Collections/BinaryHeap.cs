@@ -11,7 +11,7 @@ namespace com.spacepuppy.Collections
     /// Use a Comparer to invert the collection if desired.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class BinaryHeap<T> : ICollection<T>
+    public class BinaryHeap<T> : ICollection<T>, IReadOnlyCollection<T>
     {
 
         #region Fields

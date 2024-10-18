@@ -153,7 +153,7 @@ namespace com.spacepuppy.UI
                 int current = tabbar.StateMachine.CurrentStateIndex ?? -1;
                 for (int i = 0; i < tabbar.Buttons.Count; i++)
                 {
-                    if (tabbar.Buttons[i].Button?.TryGetComponent(out SelectableOverride h) ?? false)
+                    if (tabbar.Buttons[i].Button && tabbar.Buttons[i].Button.TryGetComponent(out SelectableOverride h))
                     {
                         h.OverrideHighlighted = (current == i);
                     }
@@ -181,7 +181,7 @@ namespace com.spacepuppy.UI
                 string current = tabbar.StateMachine.CurrentStateId;
                 for (int i = 0; i < tabbar.Buttons.Count; i++)
                 {
-                    if (tabbar.Buttons[i].Button?.TryGetComponent(out SelectableOverride h) ?? false)
+                    if (tabbar.Buttons[i].Button && tabbar.Buttons[i].Button.TryGetComponent(out SelectableOverride h))
                     {
                         h.OverrideHighlighted = h.CompareName(current);
                     }

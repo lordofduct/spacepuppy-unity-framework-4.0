@@ -73,6 +73,21 @@ namespace com.spacepuppy
 
         #region Methods
 
+        public void ToHighLow(out ulong high, out ulong low)
+        {
+            high = (ulong)a << 32;
+            high |= (ulong)b << 16;
+            high |= (ulong)c << 16;
+            low = (ulong)d << 56;
+            low |= (ulong)e << 48;
+            low |= (ulong)f << 40;
+            low |= (ulong)g << 32;
+            low |= (ulong)h << 24;
+            low |= (ulong)i << 16;
+            low |= (ulong)j << 8;
+            low |= (ulong)k;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public byte[] ToByteArray() => this.ToGuid().ToByteArray();
 

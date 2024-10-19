@@ -48,6 +48,12 @@ namespace com.spacepuppy.Events
 
         #region CONSTRUCTOR
 
+        public AutoTriggerable() { }
+        public AutoTriggerable(ActivateEvent defaultActiveOn)
+        {
+            _activateOn = defaultActiveOn;
+        }
+
         protected override void Awake()
         {
             base.Awake();

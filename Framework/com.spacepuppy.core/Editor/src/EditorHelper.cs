@@ -1220,6 +1220,70 @@ namespace com.spacepuppyeditor
             return result;
         }
 
+        public static bool TryGetLinkedGuid(UnityEngine.Object obj, out System.Guid guid, LinkedGuidMode mode)
+        {
+            if (mode == LinkedGuidMode.Auto)
+            {
+                if (obj is Component || obj is GameObject)
+                {
+                    mode = LinkedGuidMode.Convolusion;
+                }
+                else if (obj is ScriptableObject)
+                {
+                    mode = LinkedGuidMode.Asset;
+                }
+                else
+                {
+                    //we really shouldn't get here ever, but we're going to just assume it's some rando asset
+                    mode = LinkedGuidMode.Asset;
+                }
+            }
+
+            switch (mode)
+            {
+                case LinkedGuidMode.None:
+                    guid = default;
+                    return false;
+                case LinkedGuidMode.Asset:
+                    if (EditorHelper.TryGetNearestAssetGuid(obj, out guid) && guid != default)
+                    {
+                        return true;
+                    }
+                    break;
+                case LinkedGuidMode.GlobIdPair:
+                    {
+                        var gid = GlobalObjectId.GetGlobalObjectIdSlow(obj);
+                        if (gid.targetObjectId != 0UL)
+                        {
+                            guid = (new SerializableGuid(gid.targetObjectId, gid.targetPrefabId)).ToGuid();
+                            return true;
+                        }
+                    }
+                    break;
+                case LinkedGuidMode.Convolusion:
+                    {
+                        var gid = GlobalObjectId.GetGlobalObjectIdSlow(obj);
+                        ulong high = (gid.targetObjectId << 32) | (gid.targetObjectId >> 32) | (gid.targetObjectId >> 48);
+                        if (gid.targetPrefabId != 0UL)
+                        {
+                            guid = new SerializableGuid(high, gid.targetPrefabId);
+                        }
+                        else
+                        {
+                            ulong h, l;
+                            ((SerializableGuid)gid.assetGUID.ToGuid()).ToHighLow(out h, out l);
+                            guid = new SerializableGuid(high, h);
+                        }
+
+                    }
+                    break;
+
+            }
+
+            guid = default;
+            return false;
+        }
+
         public static bool TryGetNearestAssetGlobalObjectId(UnityEngine.Object obj, out GlobalObjectId gid)
         {
             if (obj == null)

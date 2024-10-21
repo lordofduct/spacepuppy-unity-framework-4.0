@@ -5,6 +5,15 @@ using System.Runtime.CompilerServices;
 namespace com.spacepuppy
 {
 
+    public enum LinkedGuidMode
+    {
+        Auto = -1, //automaticall picks the best option based on the type of the target in mind
+        None = 0,
+        Asset = 1, //linked to guid associated with asset metadata
+        GlobIdPair = 2, //linked to the targetObjectId and targetPrefabId of the GlobalObjectId for the target
+        Convolusion = 3, //links to a convolusion of data resulting in a guid that is top heavy in its bits (the first 32-bits are populated)
+    }
+
     [System.Serializable]
     [StructLayout(LayoutKind.Sequential)]
     public struct SerializableGuid
@@ -72,6 +81,8 @@ namespace com.spacepuppy
         #endregion
 
         #region Methods
+
+        public bool IsEmpty() => a == 0 && b == 0 && c == 0 && d == 0 && e == 0 && f == 0 && g == 0 && h == 0 && i == 0 && j == 0 && k == 0;
 
         public void ToHighLow(out ulong high, out ulong low)
         {
@@ -234,9 +245,36 @@ namespace com.spacepuppy
 
         #region Special Types
 
+        [System.AttributeUsage(System.AttributeTargets.Field)]
         public class ConfigAttribute : System.Attribute
         {
+
+            public LinkedGuidMode mode;
+
+            /// <summary>
+            /// Allows the guid to be empty/zero, this only pertains to if the mode is 'none'.
+            /// </summary>
             public bool AllowZero;
+
+            /// <summary>
+            /// The guid will be displayed as an object reference field showing the asset related to the asset guid. 
+            /// Dragging an object onto said field will update its value unless any LinkTo* is true. 
+            /// This only works if in 'Asset' mode.
+            /// </summary>
+            public bool ObjectRefField;
+
+            public ConfigAttribute() : this(LinkedGuidMode.None) { }
+            public ConfigAttribute(LinkedGuidMode mode)
+            {
+                this.mode = mode;
+            }
+
+        }
+
+        [System.AttributeUsage(System.AttributeTargets.Field)]
+        public class ConfigLegacyAttribute : ConfigAttribute
+        {
+
             /// <summary>
             /// Attempts to make the guid match the guid associated with the asset this is on. 
             /// Note this only works if it's on an asset that exists on disk (ScriptableObject, Prefab). 
@@ -247,19 +285,22 @@ namespace com.spacepuppy
             /// New instances created via 'Instantiate' or 'CreateInstance' will not get anything. 
             /// This is editor time only for assets on disk! 
             /// </summary>
-            public bool LinkToAsset;
+            public bool LinkToAsset
+            {
+                get => mode == LinkedGuidMode.Asset;
+                set => mode = value ? LinkedGuidMode.Asset : mode;
+            }
 
             /// <summary>
             /// Attempts to make the guid match the targetObjectId & targetPrefabId of the GlobalObjectId from the object 
             /// for the upper and lower portions of the guid respectively. If LinkToAsset is true, that takes precedance to this. 
             /// </summary>
-            public bool LinkToGlobalObjectId;
+            public bool LinkToGlobalObjectId
+            {
+                get => mode == LinkedGuidMode.GlobIdPair;
+                set => mode = value ? LinkedGuidMode.GlobIdPair : mode;
+            }
 
-            /// <summary>
-            /// The guid will be displayed as an object reference field showing the asset related to the guid. 
-            /// Dragging an object onto said field will update its value unless any LinkTo* is true.
-            /// </summary>
-            public bool ObjectRefField;
         }
 
         #endregion

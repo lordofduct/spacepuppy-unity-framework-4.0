@@ -24,7 +24,7 @@ namespace com.spacepuppy.Project
         #region Fields
 
         [SerializeField]
-        [SerializableGuid.Config(LinkToAsset = true)]
+        [SerializableGuid.Config(LinkedGuidMode.Asset)]
         private SerializableGuid _assetId;
 
         [SerializeField]

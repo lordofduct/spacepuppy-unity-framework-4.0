@@ -154,7 +154,7 @@ namespace com.spacepuppy
 
         [SerializeField]
         [UnityEngine.Serialization.FormerlySerializedAs("_guid")]
-        [SerializableGuid.Config(LinkToAsset = true, AllowZero = false)]
+        [SerializableGuid.Config(LinkedGuidMode.Asset)]
         private SerializableGuid _assetId;
 
         [SerializeField]

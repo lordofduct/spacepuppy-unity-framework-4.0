@@ -344,7 +344,7 @@ namespace com.spacepuppy.Project
             this.Values.Clear();
             if (_data?.Length > 0)
             {
-                this.Values.AddRange(_data.Select(o => o as T));
+                this.Values.AddRange(_data.Select(o => o.Value));
             }
         }
 

@@ -708,6 +708,25 @@ namespace com.spacepuppy.Async
             }
         }
 
+        public static UniTask Delay(SPTimePeriod period, PlayerLoopTiming delayTiming = PlayerLoopTiming.Update, CancellationToken cancellationToken = default)
+        {
+            switch (period.TimeSupplierType)
+            {
+                case DeltaTimeType.Normal:
+                    return UniTask.Delay(System.TimeSpan.FromSeconds(period.Seconds), false, delayTiming, cancellationToken);
+                case DeltaTimeType.Real:
+                    return UniTask.Delay(System.TimeSpan.FromSeconds(period.Seconds), true, delayTiming, cancellationToken);
+                case DeltaTimeType.Smooth:
+                case DeltaTimeType.Custom:
+                    {
+                        var ts = period.TimeSupplier ?? SPTime.Normal;
+                        return PerformDelay(ts, period.Seconds, delayTiming, cancellationToken);
+                    }
+                default:
+                    return UniTask.Delay(System.TimeSpan.FromSeconds(period.Seconds), false, delayTiming, cancellationToken);
+            }
+        }
+
         static async UniTask PerformDelay(ITimeSupplier supplier, double dur, PlayerLoopTiming delayTiming, CancellationToken cancellationToken)
         {
             double start = supplier.TotalPrecise;

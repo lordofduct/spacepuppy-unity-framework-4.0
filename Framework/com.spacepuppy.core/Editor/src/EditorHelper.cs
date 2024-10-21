@@ -1274,9 +1274,8 @@ namespace com.spacepuppyeditor
                             ((SerializableGuid)gid.assetGUID.ToGuid()).ToHighLow(out h, out l);
                             guid = new SerializableGuid(high, h);
                         }
-
+                        return guid != default;
                     }
-                    break;
 
             }
 

@@ -33,7 +33,7 @@ namespace com.spacepuppyeditor
 
         #region Special Menu Entries
 
-        [MenuItem(SPMenu.MENU_NAME_SETTINGS + "/Sync TagData", priority = MENU_PRIORITY_SETTINGS)]
+        [MenuItem(SPMenu.MENU_NAME_SETTINGS + "/Sync TagData", priority = SPMenu.MENU_PRIORITY_SETTINGS)]
         public static void SyncTagData()
         {
             var tagData = (TagData)AssetDatabase.LoadAssetAtPath(@"Assets/Resources/TagData.asset", typeof(TagData));

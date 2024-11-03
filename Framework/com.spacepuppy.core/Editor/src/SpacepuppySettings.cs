@@ -11,6 +11,8 @@ namespace com.spacepuppyeditor
         private const string SETTING_STORESETTINGSLOCAL_OLD = "Spacepuppy.StoreSettingsLocal";
         private const string SETTING_SETTINGSLOCATION = "Spacepuppy.SettingsLocation";
 
+        private const string SETTING_AUTOSYNCGLOBALDEFINES = "AutoSyncGlobalDefines.Active"; //always local!!!
+
         private const string SETTING_SPEDITOR_ISDEFAULT_ACTIVE = "UseSPEditor.IsDefault.Active";
         private const string SETTING_ADVANCEDANIMINSPECTOR_ACTIVE = "AdvancedAnimationInspector.Active";
         private const string SETTING_HIERARCHYDRAWER_ACTIVE = "EditorHierarchyEvents.Active";
@@ -44,6 +46,12 @@ namespace com.spacepuppyeditor
         {
             get => EditorProjectPrefs.Global.GetBool("UseAdvancedObjectField", true);
             set => EditorProjectPrefs.Global.SetBool("UseAdvancedObjectField", value);
+        }
+
+        public static bool AutoSyncGlobalDefines
+        {
+            get => EditorProjectPrefs.Global.GetBool(SETTING_AUTOSYNCGLOBALDEFINES, false);
+            set => EditorProjectPrefs.Global.SetBool(SETTING_AUTOSYNCGLOBALDEFINES, value);
         }
 
         /*

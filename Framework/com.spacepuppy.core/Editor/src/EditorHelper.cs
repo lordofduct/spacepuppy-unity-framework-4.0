@@ -1300,8 +1300,10 @@ namespace com.spacepuppyeditor
                 if (root == null) root = go;
 
                 //first check if we're on a stage
-                var stage = UnityEditor.SceneManagement.PrefabStageUtility.GetCurrentPrefabStage();
-                if (stage != null && stage.prefabContentsRoot == root)
+                //var stage = UnityEditor.SceneManagement.PrefabStageUtility.GetCurrentPrefabStage();
+                //if (stage != null && stage.prefabContentsRoot == root)
+                var stage = UnityEditor.SceneManagement.PrefabStageUtility.GetPrefabStage(root);
+                if (stage != null)
                 {
                     gid = GlobalObjectId.GetGlobalObjectIdSlow(AssetDatabase.LoadAssetAtPath(stage.assetPath, typeof(UnityEngine.Object)));
                     if (gid.assetGUID != default)
@@ -1356,8 +1358,10 @@ namespace com.spacepuppyeditor
                 if (root == null) root = go;
 
                 //first check if we're on a stage
-                var stage = UnityEditor.SceneManagement.PrefabStageUtility.GetCurrentPrefabStage();
-                if (stage != null && stage.prefabContentsRoot == root &&
+                //var stage = UnityEditor.SceneManagement.PrefabStageUtility.GetCurrentPrefabStage();
+                //if (stage != null && stage.prefabContentsRoot == root &&
+                var stage = UnityEditor.SceneManagement.PrefabStageUtility.GetPrefabStage(root);
+                if (stage != null &&
                     System.Guid.TryParse(AssetDatabase.AssetPathToGUID(stage.assetPath), out guid) &&
                     guid != default)
                 {
@@ -1392,6 +1396,29 @@ namespace com.spacepuppyeditor
 
             guid = default;
             return false;
+        }
+
+        public static GameObject GetNearestPrefabInstanceRoot_PrefabStageAware(UnityEngine.Object obj)
+        {
+            var root = PrefabUtility.GetNearestPrefabInstanceRoot(obj);
+            if (root) return root;
+
+            root = obj as GameObject;
+            if (!root && obj is Component c) root = c.gameObject;
+
+            var stage = UnityEditor.SceneManagement.PrefabStageUtility.GetPrefabStage(root);
+            if (stage != null) return AssetDatabase.LoadAssetAtPath<GameObject>(stage.assetPath);
+
+            var path = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(root);
+            if (!string.IsNullOrEmpty(path)) return AssetDatabase.LoadAssetAtPath<GameObject>(stage.assetPath);
+
+            var gid = GlobalObjectId.GetGlobalObjectIdSlow(obj);
+            if (gid.assetGUID != default)
+            {
+                return AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GUIDToAssetPath(gid.assetGUID));
+            }
+
+            return null;
         }
 
         #endregion

@@ -515,6 +515,18 @@ namespace com.spacepuppy.Utils
             return avg / values.Length;
         }
 
+        public static float ExponentialMovingAverage(float newvalue, float runningAverage, float sampleLength)
+        {
+            float alpha = 2f / (sampleLength + 1);
+            return newvalue * alpha + runningAverage * (1f - alpha);
+        }
+
+        public static double ExponentialMovingAverage(double newvalue, double runningAverage, double sampleLength)
+        {
+            double alpha = 2d / (sampleLength + 1);
+            return newvalue * alpha + runningAverage * (1d - alpha);
+        }
+
         /// <summary>
         /// The percentage a value is from min to max
         /// 

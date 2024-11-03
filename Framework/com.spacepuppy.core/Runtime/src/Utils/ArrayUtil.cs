@@ -59,6 +59,18 @@ namespace com.spacepuppy.Utils
             }
         }
 
+        public static int Count<T, TArg>(this IEnumerable<T> e, TArg arg, System.Func<T, TArg, bool> predicate)
+        {
+            if (predicate == null) throw new System.ArgumentNullException(nameof(predicate));
+
+            int cnt = 0;
+            foreach (var o in e)
+            {
+                if (predicate(o, arg)) cnt++;
+            }
+            return cnt;
+        }
+
         public static T LastOrDefault<T>(this IEnumerable<T> e, T defaultvalue)
         {
             if (e is IList<T> ilst)

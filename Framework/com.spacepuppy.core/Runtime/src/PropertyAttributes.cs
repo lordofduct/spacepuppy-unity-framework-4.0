@@ -473,13 +473,18 @@ namespace com.spacepuppy
         public float y;
         public float width = float.PositiveInfinity;
         public float height = float.PositiveInfinity;
-        public Color color = Color.green;
+        public uint color = Color.green.ToARGB();
+
+        public Color GetColor() => ColorUtil.ARGBToColor(color);
     }
 
+    [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
     public class AnimationCurveEaseScaleAttribute : PropertyAttribute
     {
         public float overscan = 1f;
-        public Color color = Color.green;
+        public uint color = Color.green.ToARGB();
+
+        public Color GetColor() => ColorUtil.ARGBToColor(color);
     }
 
     /// <summary>

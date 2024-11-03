@@ -165,6 +165,13 @@ namespace com.spacepuppyeditor.Settings
             EditorGUILayout.Space();
             EditorGUILayout.Space();
 
+            if (GUILayout.Button("Sync Spacepuppy Global Define Symbols", GUILayout.Width(BTN_WIDTH)) && EditorUtility.DisplayDialog("Spacepuppy Settings", "This will create/modify the csc.rsp file associated with this project, are you sure?", "Yes", "No"))
+            {
+                SPPackage.SyncGlobalDefineSymbolsForSpacepuppy();
+            }
+
+            EditorGUILayout.Space();
+
 #if UNITY_2021_2_OR_NEWER
             var currentBuildTarget = UnityEditor.Build.NamedBuildTarget.FromBuildTargetGroup(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget));
             string defines = PlayerSettings.GetScriptingDefineSymbols(currentBuildTarget);
@@ -186,7 +193,6 @@ namespace com.spacepuppyeditor.Settings
 #endif
 
             GUILayout.EndVertical();
-
 
             EditorGUILayout.Space();
             EditorGUILayout.Space();
@@ -255,6 +261,10 @@ namespace com.spacepuppyeditor.Settings
             EditorGUI.BeginChangeCheck();
             bool useAdvancedObjectField = EditorGUILayout.ToggleLeft("Use Advanced Object Field", SpacepuppySettings.UseAdvancedObjectField);
             if (EditorGUI.EndChangeCheck()) SpacepuppySettings.UseAdvancedObjectField = useAdvancedObjectField;
+
+            EditorGUI.BeginChangeCheck();
+            bool autoSyncGlobalDefines = EditorGUILayout.ToggleLeft("Auto Sync Global Defines", SpacepuppySettings.AutoSyncGlobalDefines);
+            if (EditorGUI.EndChangeCheck()) SpacepuppySettings.AutoSyncGlobalDefines = autoSyncGlobalDefines;
         }
 
 

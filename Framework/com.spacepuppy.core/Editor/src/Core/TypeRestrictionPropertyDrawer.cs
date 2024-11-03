@@ -179,25 +179,15 @@ namespace com.spacepuppyeditor.Core
                 {
                     var fieldCompType = (TypeUtil.IsType(fieldType, typeof(Component))) ? fieldType : typeof(Component);
                     targ = SPEditorGUI.ComponentField(position, label, property.objectReferenceValue as Component, inheritsFromType, this.AllowSceneObjects, fieldCompType);
+                    targ = (allInheritableTypes.Length > 1 ? ObjUtil.GetAsFromSource(allInheritableTypes, targ) : ObjUtil.GetAsFromSource(inheritsFromType, targ)) as UnityEngine.Object;
                 }
                 else
                 {
                     targ = EditorGUI.ObjectField(position, label, property.objectReferenceValue, inheritsFromType, this.AllowSceneObjects);
+                    targ = (allInheritableTypes.Length > 1 ? ObjUtil.GetAsFromSource(allInheritableTypes, targ) : ObjUtil.GetAsFromSource(inheritsFromType, targ)) as UnityEngine.Object;
                 }
 
-                if (targ == null)
-                {
-                    property.objectReferenceValue = null;
-                }
-                else
-                {
-                    var o = (allInheritableTypes.Length > 1 ? ObjUtil.GetAsFromSource(allInheritableTypes, targ) : ObjUtil.GetAsFromSource(inheritsFromType, targ)) as UnityEngine.Object;
-                    if (this.AllowProxy && o == null)
-                    {
-                        o = ObjUtil.GetAsFromSource<IProxy>(targ) as UnityEngine.Object;
-                    }
-                    property.objectReferenceValue = o;
-                }
+                property.objectReferenceValue = targ;
             }
             else
             {

@@ -7,7 +7,6 @@ using com.spacepuppy;
 using com.spacepuppy.Collections;
 using com.spacepuppy.Project;
 using com.spacepuppy.Utils;
-using com.spacepuppyeditor.Windows;
 
 namespace com.spacepuppyeditor.Core.Project
 {
@@ -152,36 +151,12 @@ namespace com.spacepuppyeditor.Core.Project
 
             if (GUILayout.Button(EditorHelper.TempContent("Scan Project", "Scans the entire project and adds the matching assets to this AssetSet.")))
             {
-                var targ = this.target as QueryableAssetSet;
-                if (!targ) return;
-
-                var assets = AssetDatabase.FindAssets(GetBestSearchStringForType(_restrictedType))
-                                        .Select(s => ObjUtil.GetAsFromSource(_restrictedType, AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(s), typeof(UnityEngine.Object))) as UnityEngine.Object)
-                                        .Where(o => o != null && o != targ);
-                Undo.RecordObject(targ, "QueryableAssetSet - Scan Project");
-                targ.ResetAssets(assets);
-                EditorHelper.CommitDirectChanges(targ, true);
+                UpdateContentsByScanProject(this.target as QueryableAssetSet, _restrictedType);
             }
             EditorGUILayout.Space(2f);
             if (GUILayout.Button(EditorHelper.TempContent("Scan Local Folder", "Scans the folder this asset is in, and sub folders, and adds the matching assets to this AssetSet.")))
             {
-                var targ = this.target as QueryableAssetSet;
-                if (!targ) return;
-
-                var path = System.IO.Path.GetDirectoryName(AssetDatabase.GetAssetPath(targ));
-                var assetguids = AssetDatabase.FindAssets(GetBestSearchStringForType(_restrictedType), new string[] { path });
-                IEnumerable<UnityEngine.Object> assets;
-                if (TypeUtil.IsType(_restrictedType, typeof(UnityEngine.Object)))
-                {
-                    assets = assetguids.Select(s => AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(s), _restrictedType));
-                }
-                else
-                {
-                    assets = assetguids.Select(s => ObjUtil.GetAsFromSource(_restrictedType, AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(s), typeof(UnityEngine.Object))) as UnityEngine.Object);
-                }
-                Undo.RecordObject(targ, "QueryableAssetSet - Scan Local Folder");
-                targ.ResetAssets(assets.Where(o => o != null && o != targ));
-                EditorHelper.CommitDirectChanges(targ, true);
+                UpdateContentsByScanLocalFolder(this.target as QueryableAssetSet, _restrictedType);
             }
         }
 
@@ -242,6 +217,46 @@ namespace com.spacepuppyeditor.Core.Project
                 }
             }
 
+        }
+
+        #endregion
+
+        #region Static Helpers
+
+        public static void UpdateContentsByScanProject(QueryableAssetSet assetset, System.Type restrictedType)
+        {
+            if (!assetset) return;
+
+            if (restrictedType == null) restrictedType = assetset.AssetType;
+
+            var assets = AssetDatabase.FindAssets(GetBestSearchStringForType(restrictedType))
+                                    .Select(s => ObjUtil.GetAsFromSource(restrictedType, AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(s), typeof(UnityEngine.Object))) as UnityEngine.Object)
+                                    .Where(o => o != null && o != assetset);
+            Undo.RecordObject(assetset, "QueryableAssetSet - Scan Project");
+            assetset.ResetAssets(assets);
+            EditorHelper.CommitDirectChanges(assetset, true);
+        }
+
+        public static void UpdateContentsByScanLocalFolder(QueryableAssetSet assetset, System.Type restrictedType)
+        {
+            if (!assetset) return;
+
+            if (restrictedType == null) restrictedType = assetset.AssetType;
+
+            var path = System.IO.Path.GetDirectoryName(AssetDatabase.GetAssetPath(assetset));
+            var assetguids = AssetDatabase.FindAssets(GetBestSearchStringForType(restrictedType), new string[] { path });
+            IEnumerable<UnityEngine.Object> assets;
+            if (TypeUtil.IsType(restrictedType, typeof(UnityEngine.Object)))
+            {
+                assets = assetguids.Select(s => AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(s), restrictedType));
+            }
+            else
+            {
+                assets = assetguids.Select(s => ObjUtil.GetAsFromSource(restrictedType, AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(s), typeof(UnityEngine.Object))) as UnityEngine.Object);
+            }
+            Undo.RecordObject(assetset, "QueryableAssetSet - Scan Local Folder");
+            assetset.ResetAssets(assets.Where(o => o != null && o != assetset));
+            EditorHelper.CommitDirectChanges(assetset, true);
         }
 
         #endregion

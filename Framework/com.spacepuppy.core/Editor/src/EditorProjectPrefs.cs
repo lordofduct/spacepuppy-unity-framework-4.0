@@ -35,7 +35,7 @@ namespace com.spacepuppyeditor
         static EditorProjectPrefs()
         {
             _project = new XmlSettings(PROJECT_PREFS_PATH, GetOrCreateSharedProjectSettingsXdoc());
-            _local = new XmlSettings(PROJECT_PREFS_PATH, GetOrCreateLocalProjectSettingsXdoc());
+            _local = new XmlSettings(LOCAL_PREFS_PATH, GetOrCreateLocalProjectSettingsXdoc());
             _global = new XmlSettings(GLOBAL_PREFS_PATH, GetOrCreateGlobalSettingsXdoc());
         }
 

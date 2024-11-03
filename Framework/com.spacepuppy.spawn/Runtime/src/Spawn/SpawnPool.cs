@@ -145,7 +145,7 @@ namespace com.spacepuppy.Spawn
         [ReorderableArray(DrawElementAtBottom = true, ChildPropertyToDrawAsElementLabel = "Name", ChildPropertyToDrawAsElementEntry = "_prefab")]
         private List<PrefabCache> _registeredPrefabs = new List<PrefabCache>();
 
-        [Space(20f)]
+        [Space(5f)]
         [SerializeField]
         [ReorderableArray(DrawElementAtBottom = true, ChildPropertyToDrawAsElementEntry = "_assetSet")]
         private AssetSetCache[] _registeredAssetSets;

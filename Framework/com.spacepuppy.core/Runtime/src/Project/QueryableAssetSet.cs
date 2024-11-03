@@ -110,6 +110,7 @@ namespace com.spacepuppy.Project
             _nested = false;
             for (int i = 0; i < _assets.Length; i++)
             {
+                if (!_assets[i]) continue;
                 _table[_assets[i].name] = _assets[i];
                 if (_supportNestedGroups && _assets[i] is IAssetSet) _nested = true;
 

@@ -196,7 +196,7 @@ namespace com.spacepuppy.Mecanim
 
         private AnimatorSubStateBridge[] _bridges;
         private Dictionary<int, int> _hashToStartIndex = new Dictionary<int, int>();
-        private HashSet<AnimatorSubStateBridge> _activeStateBridges = new HashSet<AnimatorSubStateBridge>(ObjectInstanceIDEqualityComparer<AnimatorSubStateBridge>.Default);
+        private HashSet<AnimatorSubStateBridge> _activeStateBridges = new HashSet<AnimatorSubStateBridge>(ObjectReferenceEqualityComparer<AnimatorSubStateBridge>.Default);
 
         private bool _signaling;
         private bool _attemptedSync;

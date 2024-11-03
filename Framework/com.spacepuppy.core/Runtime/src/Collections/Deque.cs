@@ -9,7 +9,7 @@ namespace com.spacepuppy.Collections
     /// <summary>
     /// A double-ended queue (deque).
     /// </summary>
-    public class Deque<T> : IList<T> //, IIndexedEnumerable<T>
+    public class Deque<T> : IList<T>, IIndexedEnumerable<T>
     {
 
         private static T[] _insertHelperArray;
@@ -24,6 +24,8 @@ namespace com.spacepuppy.Collections
         private int _rear;
         private int _version;
 
+        private IEqualityComparer<T> _comparer;
+
         #endregion
 
         #region CONSTRUCTOR
@@ -37,6 +39,19 @@ namespace com.spacepuppy.Collections
             if (capacity < 1)
                 throw new ArgumentOutOfRangeException("capacity", "Capacity must be greater than 0.");
             _buffer = new T[capacity];
+            _comparer = EqualityComparer<T>.Default;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Deque&lt;T&gt;"/> class with the specified capacity.
+        /// </summary>
+        /// <param name="capacity">The initial capacity. Must be greater than <c>0</c>.</param>
+        public Deque(int capacity, IEqualityComparer<T> comparer)
+        {
+            if (capacity < 1)
+                throw new ArgumentOutOfRangeException("capacity", "Capacity must be greater than 0.");
+            _buffer = new T[capacity];
+            _comparer = comparer ?? EqualityComparer<T>.Default;
         }
 
         /// <summary>
@@ -55,6 +70,26 @@ namespace com.spacepuppy.Collections
             {
                 _buffer = new T[DefaultCapacity];
             }
+            _comparer = EqualityComparer<T>.Default;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Deque&lt;T&gt;"/> class with the elements from the specified collection.
+        /// </summary>
+        /// <param name="collection">The collection.</param>
+        public Deque(IEnumerable<T> collection, IEqualityComparer<T> comparer)
+        {
+            int count = collection.Count();
+            if (count > 0)
+            {
+                _buffer = new T[count];
+                DoInsertRange(0, collection, count);
+            }
+            else
+            {
+                _buffer = new T[DefaultCapacity];
+            }
+            _comparer = comparer ?? EqualityComparer<T>.Default;
         }
 
         /// <summary>
@@ -62,6 +97,14 @@ namespace com.spacepuppy.Collections
         /// </summary>
         public Deque()
             : this(DefaultCapacity)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Deque&lt;T&gt;"/> class.
+        /// </summary>
+        public Deque(IEqualityComparer<T> comparer)
+            : this(DefaultCapacity, comparer)
         {
         }
 
@@ -97,6 +140,8 @@ namespace com.spacepuppy.Collections
             }
         }
 
+        public IEqualityComparer<T> Comparer => _comparer;
+
         #endregion
 
         #region Methods
@@ -114,7 +159,7 @@ namespace com.spacepuppy.Collections
             var e = this.GetEnumerator();
             while (e.MoveNext())
             {
-                if (EqualityComparer<T>.Default.Equals(item, e.Current))
+                if (_comparer.Equals(item, e.Current))
                 {
                     return true;
                 }
@@ -142,7 +187,7 @@ namespace com.spacepuppy.Collections
             int index = 0;
             while (e.MoveNext())
             {
-                if (EqualityComparer<T>.Default.Equals(item, e.Current))
+                if (_comparer.Equals(item, e.Current))
                 {
                     return index;
                 }

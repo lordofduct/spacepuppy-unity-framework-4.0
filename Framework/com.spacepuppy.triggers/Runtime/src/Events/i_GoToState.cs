@@ -15,7 +15,7 @@ namespace com.spacepuppy
         [SerializeField]
         private InterfaceRef<IStateMachine> _stateMachine = new();
 
-        [SerializeReference, RefPickerConfig(AllowNull = false, AlwaysExpanded = true, DisplayBox = false)]
+        [SerializeField, RefPickerConfig(AllowNull = false, AlwaysExpanded = true, DisplayBox = false)]
         private InterfacePicker<IMode> _mode = new(new ById());
 
         #endregion

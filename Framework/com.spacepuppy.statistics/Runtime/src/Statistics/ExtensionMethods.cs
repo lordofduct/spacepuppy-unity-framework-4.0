@@ -12,6 +12,12 @@ namespace com.spacepuppy.Statistics
             double? value = null;
             return ledger?.TryGetStat(new StatId(category, token), out value) ?? false ? value : null;
         }
+        public static double? GetStat(this IStatisticsTokenLedger ledger, StatId stat)
+        {
+            double? value = null;
+            return ledger?.TryGetStat(stat, out value) ?? false ? value : null;
+        }
+
         public static void SetStat(this IStatisticsTokenLedger ledger, string category, double amount, string token = null) => ledger?.SetStat(new StatId(category, token), amount);
         public static void AdjustStat(this IStatisticsTokenLedger ledger, string category, double amount, string token = null) => ledger?.AdjustStat(new StatId(category, token), amount);
         public static void ClearStat(this IStatisticsTokenLedger ledger, string category, string token = null) => ledger?.ClearStat(new StatId(category, token));

@@ -16,6 +16,8 @@ namespace com.spacepuppy.Statistics
         public string Token;
         public string MetaData;
         public double? Value;
+
+        public StatId ToStatId() => new StatId(this.Stat, this.Token, this.MetaData);
     }
 
     /// <summary>

@@ -24,7 +24,7 @@ namespace com.spacepuppy.Statistics
     }
 
     [System.Serializable]
-    public struct StatId
+    public struct StatId : IEquatable<StatId>
     {
         private const string LEGACY_SEPERATOR = "*|*";
         private const char SEPERATOR = '|';
@@ -90,6 +90,22 @@ namespace com.spacepuppy.Statistics
             }
         }
 
+        public override int GetHashCode() => StatIdComparer.Default.GetHashCode(this);
+
+        public override bool Equals(object obj)
+        {
+            if (obj is StatId other)
+            {
+                return StatIdComparer.Default.Equals(this, other);
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public bool Equals(StatId other) => StatIdComparer.Default.Equals(this, other);
+
         public static StatId Parse(string id)
         {
             if (string.IsNullOrEmpty(id)) return default;
@@ -115,6 +131,9 @@ namespace com.spacepuppy.Statistics
 
             return new StatId(id);
         }
+
+        public static bool operator ==(StatId a, StatId b) => StatIdComparer.Default.Equals(a, b);
+        public static bool operator !=(StatId a, StatId b) => !StatIdComparer.Default.Equals(a, b);
 
     }
 

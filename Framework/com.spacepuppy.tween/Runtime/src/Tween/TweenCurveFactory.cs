@@ -78,14 +78,14 @@ namespace com.spacepuppy.Tween
 
         public static MemberCurve<Vector2> CreateUninitializedVector2MemberCurve(IMemberAccessor accessor, int option)
         {
-            switch (option)
+            switch ((VectorTweenOptions)option)
             {
-                case 0:
+                case VectorTweenOptions.Lerp:
                     return new Vector2LerpMemberCurve(accessor);
-                case 1:
+                case VectorTweenOptions.Slerp:
                     return new Vector2SlerpMemberCurve(accessor);
-                case 2:
-                    return new Vector2ScaleMemberCurve(accessor);
+                case VectorTweenOptions.ScaleIn:
+                    return new Vector2ScaleInMemberCurve(accessor);
                 default:
                     return new Vector2LerpMemberCurve(accessor);
             }
@@ -93,14 +93,14 @@ namespace com.spacepuppy.Tween
 
         public static MemberCurve<Vector3> CreateUninitializedVector3MemberCurve(IMemberAccessor accessor, int option)
         {
-            switch(option)
+            switch((VectorTweenOptions)option)
             {
-                case 0:
+                case VectorTweenOptions.Lerp:
                     return new Vector3LerpMemberCurve(accessor);
-                case 1:
+                case VectorTweenOptions.Slerp:
                     return new Vector3SlerpMemberCurve(accessor);
-                case 2:
-                    return new Vector3ScaleMemberCurve(accessor);
+                case VectorTweenOptions.ScaleIn:
+                    return new Vector3ScaleInMemberCurve(accessor);
                 default:
                     return new Vector3LerpMemberCurve(accessor);
             }

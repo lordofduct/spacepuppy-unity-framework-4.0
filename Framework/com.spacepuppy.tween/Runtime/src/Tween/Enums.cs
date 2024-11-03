@@ -39,7 +39,7 @@ namespace com.spacepuppy.Tween
         /// <summary>
         /// Treats the tween as a scale (start * t) + ((end - start) * t), this allows a tween from 1->1 to still have a grow/shrink effect
         /// </summary>
-        Scale = 2,
+        ScaleIn = 2,
     }
 
 }

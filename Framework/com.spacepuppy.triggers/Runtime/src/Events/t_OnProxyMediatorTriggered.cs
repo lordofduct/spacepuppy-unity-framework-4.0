@@ -16,6 +16,8 @@ namespace com.spacepuppy.Events
     public class t_OnProxyMediatorTriggered : SPComponent, IObservableTrigger
     {
 
+        #region Fields
+
         [SerializeField()]
         [SPEvent.Config("daisy chained arg (object)")]
         private SPEvent _trigger = new SPEvent("Trigger");
@@ -26,27 +28,26 @@ namespace com.spacepuppy.Events
         [SerializeField]
         private bool _useProxyMediatorAsDaisyChainedArg;
 
+        [System.NonSerialized]
+        private TrackedEventListenerToken<TempEventArgs> _onTriggerHook;
+
+        #endregion
+
         #region CONSTRUCTOR
 
         protected override void OnEnable()
         {
             base.OnEnable();
 
-            if (_mediator != null)
-            {
-                _mediator.OnTriggered -= this.OnMediatorTriggeredCallback;
-                _mediator.OnTriggered += this.OnMediatorTriggeredCallback;
-            }
+            _onTriggerHook.Dispose();
+            if (_mediator != null) _onTriggerHook = _mediator.AddTrackedOnTriggeredListener(this.OnMediatorTriggeredCallback);
         }
 
         protected override void OnDisable()
         {
             base.OnDisable();
 
-            if (!object.ReferenceEquals(_mediator, null))
-            {
-                _mediator.OnTriggered -= this.OnMediatorTriggeredCallback;
-            }
+            _onTriggerHook.Dispose();
         }
 
         #endregion
@@ -62,15 +63,15 @@ namespace com.spacepuppy.Events
             {
                 if (_mediator == value) return;
 
-                if (Application.isPlaying && this.enabled)
+#if UNITY_EDITOR
+                if (Application.isPlaying && this.isActiveAndEnabled)
+#else
+                if (this.isActiveAndEnabled)
+#endif
                 {
-                    if (!object.ReferenceEquals(_mediator, null)) _mediator.OnTriggered -= this.OnMediatorTriggeredCallback;
+                    _onTriggerHook.Dispose();
                     _mediator = value;
-                    if (_mediator != null)
-                    {
-                        _mediator.OnTriggered -= this.OnMediatorTriggeredCallback;
-                        _mediator.OnTriggered += this.OnMediatorTriggeredCallback;
-                    }
+                    if (_mediator != null) _onTriggerHook = _mediator.AddTrackedOnTriggeredListener(this.OnMediatorTriggeredCallback);
                 }
                 else
                 {
@@ -79,9 +80,20 @@ namespace com.spacepuppy.Events
             }
         }
 
+        public bool UseProxyMediatorAsDaisyChainedArg
+        {
+            get => _useProxyMediatorAsDaisyChainedArg;
+            set => _useProxyMediatorAsDaisyChainedArg = value;
+        }
+
         #endregion
 
         #region Methods
+
+        public void Signal(object tempEventArgValue = null)
+        {
+            _trigger.ActivateTrigger(this, _useProxyMediatorAsDaisyChainedArg ? _mediator : tempEventArgValue);
+        }
 
         private System.EventHandler<TempEventArgs> _onMediatorTriggeredCallback;
         private System.EventHandler<TempEventArgs> OnMediatorTriggeredCallback

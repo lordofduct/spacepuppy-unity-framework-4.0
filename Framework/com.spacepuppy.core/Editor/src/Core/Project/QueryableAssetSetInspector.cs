@@ -203,7 +203,7 @@ namespace com.spacepuppyeditor.Core.Project
                         typeof(UnityEngine.Object),
                         false,
                         true,
-                        (o) => _owner._reorderableArrayDrawer.DragDropElementFilter(o) != null);
+                        (ref UnityEngine.Object o) => _owner._reorderableArrayDrawer.DragDropElementFilter(o) != null);
                     if (EditorGUI.EndChangeCheck())
                     {
                         obj = _owner._reorderableArrayDrawer.DragDropElementFilter(obj);

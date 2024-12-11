@@ -12,7 +12,7 @@ namespace com.spacepuppy.Render
 
         [SerializeField()]
         [DisableOnPlay()]
-        [TypeRestriction(typeof(MaterialSource), typeof(IMaterialSource), typeof(Renderer), typeof(UnityEngine.UI.Graphic), HideTypeDropDown = true)]
+        [TypeRestriction(typeof(MaterialSource), typeof(IMaterialSource), typeof(Renderer), typeof(UnityEngine.UI.Graphic), HideTypeDropDownIfSingle = true)]
         private UnityEngine.Object _material;
         [SerializeField()]
         private MaterialPropertyValueType _valueType;

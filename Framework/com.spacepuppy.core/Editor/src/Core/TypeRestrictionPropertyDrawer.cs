@@ -150,21 +150,65 @@ namespace com.spacepuppyeditor.Core
                 UnityEngine.Object targ;
                 if (allInheritableTypes.Length > 1 || isNonStandardUnityType || this.AllowProxy)
                 {
-                    System.Func<UnityEngine.Object, bool> filter = null;
+                    SearchFilter<UnityEngine.Object> filter = null;
                     if (this.AllowProxy)
                     {
                         if (this.RestrictProxyResolvedType)
                         {
-                            filter = o => o && ((TypeUtil.IsType(o.GetType(), allInheritableTypes) || ObjUtil.GetAsFromSource(allInheritableTypes, o) != null)) || (o is IProxy p && TypeUtil.IsType(p.GetTargetType(), allInheritableTypes));
+                            //filter = o => o && ((TypeUtil.IsType(o.GetType(), allInheritableTypes) || ObjUtil.GetAsFromSource(allInheritableTypes, o) != null)) || (o is IProxy p && TypeUtil.IsType(p.GetTargetType(), allInheritableTypes));
+                            filter = (ref UnityEngine.Object o) =>
+                            {
+                                if (!o) return false;
+                                if (TypeUtil.IsType(o.GetType(), allInheritableTypes)) return true;
+                                if (o is IProxy p && TypeUtil.IsType(p.GetTargetType(), allInheritableTypes)) return true;
+
+                                var ot = ObjUtil.GetAsFromSource(allInheritableTypes, o) as UnityEngine.Object;
+                                if (ot)
+                                {
+                                    o = ot;
+                                    return true;
+                                }
+
+                                return false;
+                            };
                         }
                         else
                         {
-                            filter = o => o && ((TypeUtil.IsType(o.GetType(), allInheritableTypes) || ObjUtil.GetAsFromSource(allInheritableTypes, o) != null)) || (o is IProxy);
+                            //filter = o => o && ((TypeUtil.IsType(o.GetType(), allInheritableTypes) || ObjUtil.GetAsFromSource(allInheritableTypes, o) != null)) || (o is IProxy);
+                            filter = (ref UnityEngine.Object o) =>
+                            {
+                                if (!o) return false;
+                                if (TypeUtil.IsType(o.GetType(), allInheritableTypes)) return true;
+                                if (o is IProxy) return true;
+
+                                var ot = ObjUtil.GetAsFromSource(allInheritableTypes, o) as UnityEngine.Object;
+                                if (ot)
+                                {
+                                    o = ot;
+                                    return true;
+                                }
+
+                                return false;
+                            };
                         }
                     }
                     else
                     {
-                        filter = o => o && (TypeUtil.IsType(o.GetType(), allInheritableTypes) || ObjUtil.GetAsFromSource(allInheritableTypes, o) != null);
+                        //filter = o => o && (TypeUtil.IsType(o.GetType(), allInheritableTypes) || ObjUtil.GetAsFromSource(allInheritableTypes, o) != null);
+                        filter = (ref UnityEngine.Object o) =>
+                        {
+                            if (!o) return false;
+                            if (TypeUtil.IsType(o.GetType(), allInheritableTypes)) return true;
+
+                            var ot = ObjUtil.GetAsFromSource(allInheritableTypes, o) as UnityEngine.Object;
+                            if (ot)
+                            {
+                                o = ot;
+                                return true;
+                            }
+
+                            return false;
+                        };
                     }
 
                     targ = SPEditorGUI.AdvancedObjectField(position,

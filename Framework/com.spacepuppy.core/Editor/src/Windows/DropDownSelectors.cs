@@ -367,7 +367,7 @@ namespace com.spacepuppyeditor.Windows
 
         #region Special Object Field
 
-        public static UnityEngine.Object ObjectField(Rect position, GUIContent label, UnityEngine.Object asset, System.Type objType, bool allowSceneObjects, bool allowProxy, System.Func<UnityEngine.Object, bool> filter = null, int maxVisibleCount = DEFAULT_MAXCOUNT)
+        public static UnityEngine.Object ObjectField(Rect position, GUIContent label, UnityEngine.Object asset, System.Type objType, bool allowSceneObjects, bool allowProxy, SearchFilter<UnityEngine.Object> filter = null, int maxVisibleCount = DEFAULT_MAXCOUNT)
         {
             if (objType == null) throw new System.ArgumentNullException(nameof(objType));
             if (!objType.IsInterface && !TypeUtil.IsType(objType, typeof(UnityEngine.Object))) throw new System.ArgumentException("Type must be an interface or UnityEngine.Object", nameof(objType));
@@ -375,7 +375,7 @@ namespace com.spacepuppyeditor.Windows
             return DoObjectField<UnityEngine.Object>(position, label, asset, objType, allowSceneObjects, allowProxy, null, filter, maxVisibleCount);
         }
 
-        public static T ObjectField<T>(Rect position, GUIContent label, SerializedProperty property, bool allowSceneObjects, System.Func<T, bool> filter = null, int maxVisibleCount = DEFAULT_MAXCOUNT) where T : class
+        public static T ObjectField<T>(Rect position, GUIContent label, SerializedProperty property, bool allowSceneObjects, SearchFilter<T> filter = null, int maxVisibleCount = DEFAULT_MAXCOUNT) where T : class
         {
             return DoObjectField<T>(position, label, property.objectReferenceValue as T, typeof(T), allowSceneObjects, false, (o) =>
             {
@@ -385,12 +385,12 @@ namespace com.spacepuppyeditor.Windows
             }, filter, maxVisibleCount);
         }
 
-        public static T ObjectField<T>(Rect position, GUIContent label, T asset, bool allowSceneObjects, System.Func<T, bool> filter = null, int maxVisibleCount = DEFAULT_MAXCOUNT) where T : class
+        public static T ObjectField<T>(Rect position, GUIContent label, T asset, bool allowSceneObjects, SearchFilter<T> filter = null, int maxVisibleCount = DEFAULT_MAXCOUNT) where T : class
         {
             return DoObjectField<T>(position, label, asset, typeof(T), allowSceneObjects, false, null, filter, maxVisibleCount);
         }
 
-        private static T DoObjectField<T>(Rect position, GUIContent label, T asset, System.Type objType, bool allowSceneObjects, bool allowProxy, System.Action<T> dropdownselectedcallback, System.Func<T, bool> filter = null, int maxVisibleCount = DEFAULT_MAXCOUNT) where T : class
+        private static T DoObjectField<T>(Rect position, GUIContent label, T asset, System.Type objType, bool allowSceneObjects, bool allowProxy, System.Action<T> dropdownselectedcallback, SearchFilter<T> filter = null, int maxVisibleCount = DEFAULT_MAXCOUNT) where T : class
         {
             var helper = new GenericSearchDropDownObjectFieldHelper<T>()
             {
@@ -439,14 +439,43 @@ namespace com.spacepuppyeditor.Windows
                         {
                             if (typeof(T) == typeof(UnityEngine.Object))
                             {
-                                results = results.Where(o => filter(o as T));
+                                //results = results.Where(o =>
+                                //{
+                                //    var ot = o as T;
+                                //    return filter(ref ot);
+                                //});
+                                results = results.Select(o =>
+                                {
+                                    var ot = o as T;
+                                    if (filter(ref ot))
+                                    {
+                                        return ot as UnityEngine.Object;
+                                    }
+                                    else
+                                    {
+                                        return null;
+                                    }
+                                }).Where(o => o != null);
                             }
                             else
                             {
-                                results = (from o in results
-                                           let x = ObjUtil.GetAsFromSource<T>(o)
-                                           where x != null && filter(x)
-                                           select x as UnityEngine.Object);
+                                //results = results.Where(o =>
+                                //{
+                                //    var ot = ObjUtil.GetAsFromSource<T>(o);
+                                //    return ot != null && filter(ref ot);
+                                //});
+                                results = results.Select(o =>
+                                {
+                                    var ot = ObjUtil.GetAsFromSource<T>(o);
+                                    if (filter(ref ot))
+                                    {
+                                        return ot as UnityEngine.Object;
+                                    }
+                                    else
+                                    {
+                                        return null;
+                                    }
+                                }).Where(o => o != null);
                             }
                         }
                         else if (typeof(T) != typeof(UnityEngine.Object))

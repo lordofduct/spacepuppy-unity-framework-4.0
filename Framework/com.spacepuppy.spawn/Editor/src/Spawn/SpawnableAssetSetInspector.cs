@@ -154,7 +154,7 @@ namespace com.spacepuppyeditor
                     typeof(UnityEngine.Object),
                     false,
                     false,
-                    o => _owner.AssetArrayDrawer.DragDropElementFilter(o) != null
+                    (ref UnityEngine.Object o) => _owner.AssetArrayDrawer.DragDropElementFilter(o) != null
                 );
             }
 

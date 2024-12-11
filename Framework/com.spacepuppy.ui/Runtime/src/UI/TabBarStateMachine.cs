@@ -24,10 +24,13 @@ namespace com.spacepuppy.UI
         private List<ButtonRef> _buttons = new();
 
         [SerializeField]
-        private InterfaceRefOrPicker<IMode> _mode = new (ByIndex.Default);
+        private InterfaceRefOrPicker<IMode> _mode = new(ByIndex.Default);
 
         [SerializeField, Tooltip("If the button for the currently selected state has a 'SelectableOverride' on it, it'll be flagged as highlighted.")]
         private bool _tryHighlightSelectedTabButton;
+
+        [SerializeField, NegativeIsInfinity(InfinityLabel = "Disabled Goto On Multi-Click Disabled", ShortInfinityLabel = "disable")]
+        private int _gotoStateOnMultipleClicks = -1;
 
         [System.NonSerialized]
         private List<ButtonRef.TrackedListenerToken> _buttonOnClickHooks = new();
@@ -71,6 +74,14 @@ namespace com.spacepuppy.UI
         {
             get => _tryHighlightSelectedTabButton;
             set => _tryHighlightSelectedTabButton = value;
+        }
+
+        public bool GotoStateOnMultipleClicks_Enabled => _gotoStateOnMultipleClicks >= 0;
+
+        public int GotoStateOnMultipleClicks_Index
+        {
+            get => _gotoStateOnMultipleClicks;
+            set => _gotoStateOnMultipleClicks = value;
         }
 
         #endregion
@@ -142,7 +153,14 @@ namespace com.spacepuppy.UI
                 int i = tabbar.Buttons.IndexOf(btn, (o, a) => object.ReferenceEquals(a, o.Button));
                 if (i >= 0)
                 {
-                    tabbar.StateMachine?.GoToState(i);
+                    if (tabbar.GotoStateOnMultipleClicks_Enabled && i == tabbar.StateMachine?.CurrentStateIndex)
+                    {
+                        tabbar.StateMachine?.GoToState(tabbar.GotoStateOnMultipleClicks_Index);
+                    }
+                    else
+                    {
+                        tabbar.StateMachine?.GoToState(i);
+                    }
                 }
             }
 
@@ -171,7 +189,17 @@ namespace com.spacepuppy.UI
             {
                 if (tabbar == null || tabbar.StateMachine.IsNullOrDestroyed()) return;
 
-                if (btn) tabbar.StateMachine?.GoToStateById(btn.name);
+                if (btn)
+                {
+                    if (tabbar.GotoStateOnMultipleClicks_Enabled && btn.CompareName(tabbar.StateMachine?.CurrentStateId))
+                    {
+                        tabbar.StateMachine?.GoToState(tabbar.GotoStateOnMultipleClicks_Index);
+                    }
+                    else
+                    {
+                        tabbar.StateMachine?.GoToStateById(btn.name);
+                    }
+                }
             }
 
             public void SyncHighlighted(TabBarStateMachine tabbar)

@@ -142,6 +142,7 @@ namespace com.spacepuppy
         public bool AllowNull;
         public bool AlwaysExpanded;
         public bool DisplayBox;
+        public string NullLabel;
     }
 
     [System.Obsolete("User InterfaceRef, InterfaceRefOrPicker, or InterfacePicker in place of this combined with the 'RefPickerConfigAttribute' for configuration.")]

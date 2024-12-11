@@ -268,8 +268,7 @@ namespace com.spacepuppy
 
         #region Fields
 
-        [SerializeField]
-        [RespectsIProxy]
+        [SerializeField, RespectsIProxy]
         private UnityEngine.Object _target;
         [System.NonSerialized]
         private object _runtimeRef;
@@ -288,7 +287,7 @@ namespace com.spacepuppy
             }
         }
 
-        public bool IsConfigured => !object.ReferenceEquals(_target, null) || !object.ReferenceEquals(_runtimeRef, null);
+        public bool IsConfigured => ObjUtil.IsValidObject(_target) || !object.ReferenceEquals(_runtimeRef, null);
 
         #endregion
 

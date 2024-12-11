@@ -62,7 +62,29 @@ namespace com.spacepuppy.Statistics.Events
         public int Value
         {
             get => _value;
-            set => _value = Value;
+            set => _value = value;
+        }
+
+        #endregion
+
+        #region Methods
+
+        public void Resync()
+        {
+            if (this.isActiveAndEnabled && _effectiveValue != null && Services.Get(out IStatisticsTokenLedgerService ledger))
+            {
+                ledger.AdjustStat(_effectiveValue.Value.Item1, -_effectiveValue.Value.Item2);
+                _effectiveValue = (_stat, _value);
+                ledger.AdjustStat(_stat, _value);
+            }
+        }
+
+        public void ChangeEffectiveValue(int value)
+        {
+            if (_value == value) return;
+
+            _value = value;
+            this.Resync();
         }
 
         #endregion

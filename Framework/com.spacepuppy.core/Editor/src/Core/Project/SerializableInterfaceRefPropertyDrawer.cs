@@ -37,6 +37,7 @@ namespace com.spacepuppyeditor.Core.Project
             AllowNull = true,
             DisplayBox = false,
             AlwaysExpanded = true,
+            NullLabel = null,
         };
 
         public SerializeRefPickerPropertyDrawer RefPickerDrawer => _refPickerDrawer;
@@ -49,6 +50,7 @@ namespace com.spacepuppyeditor.Core.Project
             _refPickerDrawer.AllowNull = attrib?.AllowNull ?? true;
             _refPickerDrawer.DisplayBox = attrib?.DisplayBox ?? false;
             _refPickerDrawer.AlwaysExpanded = attrib?.AlwaysExpanded ?? true;
+            _refPickerDrawer.NullLabel = attrib?.NullLabel;
 
             _componentSelectorDrawer.RestrictionType = valueType;
         }

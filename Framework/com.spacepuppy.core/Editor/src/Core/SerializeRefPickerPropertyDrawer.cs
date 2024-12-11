@@ -28,6 +28,7 @@ namespace com.spacepuppyeditor.Core
         private bool _allowNull;
         private bool _displayBox;
         private bool _alwaysExpanded;
+        private string _nullLabel;
 
         #region Properties
 
@@ -57,8 +58,8 @@ namespace com.spacepuppyeditor.Core
 
         public string NullLabel
         {
-            get;
-            set;
+            get => (this.attribute as SerializeRefPickerAttribute)?.NullLabel ?? _nullLabel;
+            set => _nullLabel = value;
         }
 
         public bool DrawOnlyPicker
@@ -77,6 +78,7 @@ namespace com.spacepuppyeditor.Core
             bool cache = property.isExpanded;
             if (this.AlwaysExpanded) property.isExpanded = true;
 
+            bool hasref = !string.IsNullOrEmpty(property.managedReferenceFullTypename);
             try
             {
                 if (this.DrawOnlyPicker)
@@ -86,18 +88,16 @@ namespace com.spacepuppyeditor.Core
                 else
                 {
                     //float objheight = !string.IsNullOrEmpty(property.managedReferenceFullTypename) ? EditorGUI.GetPropertyHeight(property, label, true) + 4f : EditorGUIUtility.singleLineHeight * 2f;
-                    float objheight = 0f;
+                    float objheight = EditorGUIUtility.singleLineHeight + SELECTOR_VER_MARGIN;
 
-                    if (string.IsNullOrEmpty(property.managedReferenceFullTypename)) //this means nothing is referenced currently
+                    if (!hasref) //this means nothing is referenced currently
                     {
-                        objheight = EditorGUIUtility.singleLineHeight;
+                        //all good on height
                     }
                     else if (property.isExpanded)
                     {
                         objheight += FindPropertyDrawer(EditorHelper.GetManagedReferenceType(property)).GetPropertyHeight(property, GUIContent.none);
                     }
-
-                    objheight += EditorGUIUtility.singleLineHeight + SELECTOR_VER_MARGIN;
 
                     if (this.DisplayBox)
                     {
@@ -119,6 +119,7 @@ namespace com.spacepuppyeditor.Core
         {
             if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
 
+            bool hasref = !string.IsNullOrEmpty(property.managedReferenceFullTypename);
             if (!this.DrawOnlyPicker)
             {
                 bool cache = property.isExpanded;
@@ -163,7 +164,7 @@ namespace com.spacepuppyeditor.Core
                     {
                         selectorArea = new Rect(position.xMin, position.yMin, position.width, EditorGUIUtility.singleLineHeight);
                         var drawArea = new Rect(position.xMin, position.yMin + SELECTOR_VER_MARGIN + EditorGUIUtility.singleLineHeight, position.width, Mathf.Max(position.height - EditorGUIUtility.singleLineHeight - SELECTOR_VER_MARGIN, 0f));
-                        if (this.AlwaysExpanded)
+                        if (this.AlwaysExpanded || !hasref)
                         {
                             property.isExpanded = true;
                             if (label.HasContent())

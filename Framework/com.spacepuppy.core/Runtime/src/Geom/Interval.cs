@@ -173,6 +173,8 @@ namespace com.spacepuppy.Geom
 
         public float Clamp(float v) => System.Math.Clamp(v, _min, _max);
 
+        public Interval ToDiscrete() => new Interval((int)_min, (int)_max);
+
         #endregion
 
         #region Static Members

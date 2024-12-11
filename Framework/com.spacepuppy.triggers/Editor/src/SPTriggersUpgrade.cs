@@ -28,14 +28,14 @@ namespace com.spacepuppyeditor
                 {
                     edited = true;
 
-                    if (reader.SeekUntilSerializedField("_targetStateMachine", out field, true))
+                    if (reader.SeekUntilSerializedField("_targetStateMachine", out field, true) && !string.IsNullOrEmpty(field.fieldData)) //the data is completely empty if and only if we've previously updated
                     {
                         reader.DeleteLine();
                         reader.InsertLine("  _targetStateMachine:");
                         reader.InsertLine("    _obj:" + field.fieldData);
                         reader.SeekToBeginningOfCurrentObject();
                     }
-                    if (reader.SeekUntilSerializedField("_sourceStateMachine", out field, true))
+                    if (reader.SeekUntilSerializedField("_sourceStateMachine", out field, true) && !string.IsNullOrEmpty(field.fieldData)) //the data is completely empty if and only if we've previously updated
                     {
                         reader.DeleteLine();
                         reader.InsertLine("  _sourceStateMachine:");
@@ -65,7 +65,7 @@ namespace com.spacepuppyeditor
                 {
                     edited = true;
 
-                    if (reader.SeekUntilSerializedField("_stateMachine", out field, true))
+                    if (reader.SeekUntilSerializedField("_stateMachine", out field, true)) //the field is no longer named this so this is our test for re-processing
                     {
                         reader.DeleteLine();
                         reader.InsertLine("  _sourceStateMachine:");

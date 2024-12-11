@@ -186,6 +186,10 @@ namespace com.spacepuppy.UI
 
         }
 
+        #endregion
+
+        #region ITransition Modes
+
         public interface ITransition
         {
             void PerformTransition(Selectable selectable, SelectionState state, bool instant);

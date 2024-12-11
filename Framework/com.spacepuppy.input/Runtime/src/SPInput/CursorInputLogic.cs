@@ -184,13 +184,16 @@ namespace com.spacepuppy.SPInput
         /// <summary>
         /// Current GameObject the cursor is over.
         /// </summary>
+        [ShowNonSerializedProperty("Current GameObject Over", Readonly = true)]
         public GameObject Current => _current;
 
         /// <summary>
         /// The current entity, if any, that the Collider is attached to.
         /// </summary>
+        [ShowNonSerializedProperty("Current Entity Over", Readonly = true)]
         public SPEntity CurrentEntity => _currentEntity;
 
+        [ShowNonSerializedProperty("Last GameObject Over", Readonly = true)]
         public GameObject LastObjectUnderCursor => _lastObjectUnderCursor;
 
         /// <summary>
@@ -219,6 +222,7 @@ namespace com.spacepuppy.SPInput
 
         public Vector2 LastButtonDownPosition { get; private set; }
 
+        [ShowNonSerializedProperty("Last Button Down Target", Readonly = true)]
         public GameObject LastButtonDownTarget { get; private set; }
 
         public bool DragInitiated { get; private set; }
@@ -790,7 +794,7 @@ namespace com.spacepuppy.SPInput
                 switch (_eventSystemConsideration)
                 {
                     case EventSystemConsideration.EventSystemBlocks:
-                        if (!ignoreCursorIsBlocked) return default;
+                        if (!ignoreCursorIsBlocked && this.CursorIsBlocked) return default;
                         break;
                     case EventSystemConsideration.SignalSupportedEventSystem:
                         if (EventSystem.current?.currentInputModule is ICursorSupportedInputModule module)
@@ -945,7 +949,7 @@ namespace com.spacepuppy.SPInput
                 switch (_eventSystemConsideration)
                 {
                     case EventSystemConsideration.EventSystemBlocks:
-                        if (!ignoreCursorIsBlocked) return default;
+                        if (!ignoreCursorIsBlocked && this.CursorIsBlocked) return default;
                         break;
                     case EventSystemConsideration.SignalSupportedEventSystem:
                         if (EventSystem.current?.currentInputModule is ICursorSupportedInputModule module)

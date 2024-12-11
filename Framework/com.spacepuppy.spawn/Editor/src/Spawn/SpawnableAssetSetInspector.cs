@@ -1,13 +1,12 @@
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
+
 using com.spacepuppy.Project;
 using com.spacepuppy.Spawn;
 using com.spacepuppy.Utils;
+
 using com.spacepuppyeditor.Core.Project;
-using com.spacepuppyeditor.Core;
-using com.spacepuppyeditor.Windows;
-using UnityEngine.UIElements;
 
 namespace com.spacepuppyeditor
 {

@@ -8,7 +8,8 @@ namespace com.spacepuppy.UI
 {
 
     [RequireComponent(typeof(RectTransform))]
-    public class FixedSizeLayoutElement : UIBehaviour, ILayoutElement
+    [ExecuteAlways]
+    public class FixedSizeLayoutElement : UIBehaviour, ILayoutElement, ILayoutIgnorer
     {
 
         #region Fields

@@ -863,7 +863,7 @@ namespace com.spacepuppy
         {
             if (data.Length > 0)
             {
-                _value = Mathf.Round(Numerics.ToSingle(data));
+                _value = Numerics.ToSingle(data);
                 _hasValue = true;
             }
             else
@@ -881,7 +881,7 @@ namespace com.spacepuppy
 
         void INumeric.FromDouble(double value)
         {
-            _value = (float)Math.Round(value);
+            _value = (float)value;
             _hasValue = true;
         }
 
@@ -890,7 +890,7 @@ namespace com.spacepuppy
             if (data.Length > 0)
             {
                 var result = new NullableFloat();
-                result._value = Mathf.Round(Numerics.ToSingle(data));
+                result._value = Numerics.ToSingle(data);
                 result._hasValue = true;
                 return result;
             }
@@ -1061,4 +1061,319 @@ namespace com.spacepuppy
 
     }
 
+    /// <summary>
+    /// Very similar to int?, but is serializable. Unfortunately it doesn't behave 100% like float? and should be cast to float? as early as possible 
+    /// since C# relies on a lot of syntax sugar to get things like coallescing and boxing correct.
+    /// </summary>
+    [System.Serializable]
+    public struct NullableInt : INumeric, IConvertible
+    {
+
+        #region Fields
+
+        [SerializeField]
+        private int _value;
+        [SerializeField, HideInInspector]
+        private bool _hasValue;
+
+        #endregion
+
+        #region CONSTRUCTOR
+
+        public NullableInt(int value)
+        {
+            this._value = value;
+            this._hasValue = true;
+        }
+
+        #endregion
+
+        #region Properties
+
+        public int Value
+        {
+            get
+            {
+                if (!_hasValue) throw new System.InvalidOperationException("NullableInt has no value.");
+                return _value;
+            }
+        }
+
+        public bool HasValue => _hasValue;
+
+        #endregion
+
+        #region Methods
+
+        public int GetValueOrDefault()
+        {
+            return _value;
+        }
+
+        public int GetValueOrDefault(int defaultValue)
+        {
+            return _hasValue ? _value : defaultValue;
+        }
+
+        public override bool Equals(object other)
+        {
+            if (!_hasValue) return other == null;
+            if (other == null) return false;
+            return _value.Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return _hasValue ? _value.GetHashCode() : 0;
+        }
+
+        public override string ToString()
+        {
+            return _hasValue ? _value.ToString() : string.Empty;
+        }
+
+        public Nullable<float> ToNullable()
+        {
+            return _hasValue ? new Nullable<float>(_value) : null;
+        }
+
+        #endregion
+
+        #region Conversions
+
+        public static implicit operator NullableInt(int value)
+        {
+            return new NullableInt(value);
+        }
+
+        public static explicit operator int(NullableInt value)
+        {
+            return value.Value;
+        }
+
+        public static implicit operator Nullable<int>(NullableInt value)
+        {
+            return value._hasValue ? new Nullable<int>(value._value) : null;
+        }
+
+        public static implicit operator NullableInt(Nullable<int> value)
+        {
+            return value.HasValue ? new NullableInt(value.Value) : default;
+        }
+
+        #endregion
+
+        #region INumeric Interface
+
+        TypeCode INumeric.GetUnderlyingTypeCode()
+        {
+            return TypeCode.Int32;
+        }
+
+        public byte[] ToByteArray()
+        {
+            return _hasValue ? Numerics.GetBytes(_value) : ArrayUtil.Empty<byte>();
+        }
+
+        void INumeric.FromByteArray(byte[] data)
+        {
+            if (data.Length > 0)
+            {
+                _value = Numerics.ToInt32(data);
+                _hasValue = true;
+            }
+            else
+            {
+                _value = default;
+                _hasValue = false;
+            }
+        }
+
+        void INumeric.FromLong(long value)
+        {
+            _value = Convert.ToInt32(value);
+            _hasValue = true;
+        }
+
+        void INumeric.FromDouble(double value)
+        {
+            _value = (int)Math.Round(value);
+            _hasValue = true;
+        }
+
+        public static NullableInt FromByteArray(byte[] data)
+        {
+            if (data.Length > 0)
+            {
+                var result = new NullableInt();
+                result._value = Numerics.ToInt32(data);
+                result._hasValue = true;
+                return result;
+            }
+            else
+            {
+                return default;
+            }
+        }
+
+        #endregion
+
+        #region IConvertible
+
+        public TypeCode GetTypeCode()
+        {
+            return TypeCode.Int32;
+        }
+
+        bool IConvertible.ToBoolean(IFormatProvider provider)
+        {
+            return _value != 0;
+        }
+
+        char IConvertible.ToChar(IFormatProvider provider)
+        {
+            return Convert.ToChar(_value);
+        }
+
+        sbyte IConvertible.ToSByte(IFormatProvider provider)
+        {
+            return Convert.ToSByte(_value);
+        }
+
+        byte IConvertible.ToByte(IFormatProvider provider)
+        {
+            return Convert.ToByte(_value);
+        }
+
+        short IConvertible.ToInt16(IFormatProvider provider)
+        {
+            return Convert.ToInt16(_value);
+        }
+
+        ushort IConvertible.ToUInt16(IFormatProvider provider)
+        {
+            return Convert.ToUInt16(_value);
+        }
+
+        int IConvertible.ToInt32(IFormatProvider provider)
+        {
+            return _value;
+        }
+
+        uint IConvertible.ToUInt32(IFormatProvider provider)
+        {
+            return Convert.ToUInt32(_value);
+        }
+
+        long IConvertible.ToInt64(IFormatProvider provider)
+        {
+            return Convert.ToInt64(_value);
+        }
+
+        ulong IConvertible.ToUInt64(IFormatProvider provider)
+        {
+            return Convert.ToUInt64(_value);
+        }
+
+        float IConvertible.ToSingle(IFormatProvider provider)
+        {
+            return Convert.ToSingle(_value);
+        }
+
+        double IConvertible.ToDouble(IFormatProvider provider)
+        {
+            return Convert.ToDouble(_value);
+        }
+
+        decimal IConvertible.ToDecimal(IFormatProvider provider)
+        {
+            return Convert.ToDecimal(_value);
+        }
+
+        DateTime IConvertible.ToDateTime(IFormatProvider provider)
+        {
+            return Convert.ToDateTime(_value);
+        }
+
+        string IConvertible.ToString(IFormatProvider provider)
+        {
+            return _hasValue ? _value.ToString(provider) : string.Empty;
+        }
+
+        object IConvertible.ToType(Type conversionType, IFormatProvider provider)
+        {
+            return (_value as IConvertible).ToType(conversionType, provider);
+        }
+
+        #endregion
+
+        #region Equality Interface
+
+        public static bool operator ==(NullableInt a, NullableInt b)
+        {
+            return a._hasValue == b._hasValue && a._value == b._value;
+        }
+        public static bool operator !=(NullableInt a, NullableInt b)
+        {
+            return a._hasValue != b._hasValue || a._value != b._value;
+        }
+
+        public static bool operator ==(NullableInt a, float b)
+        {
+            return a._hasValue && a._value == b;
+        }
+        public static bool operator !=(NullableInt a, float b)
+        {
+            return !a._hasValue || a._value != b;
+        }
+
+        public static bool operator ==(float a, NullableInt b)
+        {
+            return b._hasValue && a == b._value;
+        }
+        public static bool operator !=(float a, NullableInt b)
+        {
+            return !b._hasValue || a != b._value;
+        }
+
+        #endregion
+
+        #region Special Types
+
+        public class LabelAttribute : System.Attribute
+        {
+            public string ShortLabel;
+            public string LongLabel;
+        }
+
+        public abstract class ConfigAttribute : System.Attribute
+        {
+
+            public abstract int Normalize(int value);
+
+        }
+
+        public class NonNegative : ConfigAttribute
+        {
+
+            public override int Normalize(int value)
+            {
+                if (value < 0f) return 0;
+                else return value;
+            }
+
+        }
+
+        public class Positive : ConfigAttribute
+        {
+            public override int Normalize(int value)
+            {
+                if (value <= 0f) return 1;
+                else return value;
+            }
+        }
+
+        #endregion
+
+    }
 }

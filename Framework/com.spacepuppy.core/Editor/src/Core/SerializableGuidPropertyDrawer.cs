@@ -87,7 +87,7 @@ namespace com.spacepuppyeditor.Core
             }
         }
 
-        private System.Guid DrawGuidField(Rect position, System.Guid guid, SerializableGuid.ConfigAttribute attrib)
+        private static System.Guid DrawGuidField(Rect position, System.Guid guid, SerializableGuid.ConfigAttribute attrib)
         {
             if (attrib?.ObjectRefField ?? false)
             {
@@ -151,6 +151,14 @@ namespace com.spacepuppyeditor.Core
                 EditorGUI.SelectableLabel(position, guid.ToString("D"), EditorStyles.textField);
                 return guid;
             }
+        }
+        public static System.Guid DrawGuidField(Rect position, GUIContent label, System.Guid guid, SerializableGuid.ConfigAttribute attrib = null)
+        {
+            if (label.HasContent())
+            {
+                position = EditorGUI.PrefixLabel(position, label);
+            }
+            return DrawGuidField(position, guid, attrib);
         }
 
         public static System.Guid FromSerializedProperty(SerializedProperty prop)

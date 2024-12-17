@@ -10,6 +10,7 @@ using com.spacepuppy.Dynamic;
 
 using com.spacepuppyeditor.Windows;
 using com.spacepuppyeditor.Internal;
+using com.spacepuppyeditor.Core;
 
 namespace com.spacepuppyeditor
 {
@@ -592,6 +593,15 @@ namespace com.spacepuppyeditor
                         if (EditorGUI.EndChangeCheck())
                         {
                             return ts;
+                        }
+                    }
+                    else if (valueType == typeof(System.Guid) || valueType == typeof(SerializableGuid))
+                    {
+                        EditorGUI.BeginChangeCheck();
+                        var guid = SerializableGuidPropertyDrawer.DrawGuidField(position, label, (System.Guid)value);
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            return guid;
                         }
                     }
                     else

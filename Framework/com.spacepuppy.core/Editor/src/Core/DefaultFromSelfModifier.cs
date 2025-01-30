@@ -2,6 +2,7 @@
 using UnityEditor;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 using com.spacepuppy;
 using com.spacepuppy.Collections;
@@ -30,12 +31,12 @@ namespace com.spacepuppyeditor.Core
             {
                 //TODO - make list support SerializedInterfaceRef
                 var elementType = TypeUtil.GetElementTypeOfListType(this.fieldInfo.FieldType);
-                var restrictionType = EditorHelper.GetRestrictedFieldType(this.fieldInfo, true) ?? elementType;
+                var restrictionType = DefaultFromSelfModifier.GetRestrictedPropertyType(property, this.fieldInfo) ?? elementType;
                 ApplyDefaultAsList(property, elementType, restrictionType, relativity);
             }
             else
             {
-                ApplyDefaultAsSingle(property, EditorHelper.GetRestrictedFieldType(this.fieldInfo, true) ?? property.GetPropertyValueType(), relativity);
+                ApplyDefaultAsSingle(property, DefaultFromSelfModifier.GetRestrictedPropertyType(property, this.fieldInfo) ?? property.GetPropertyValueType(), relativity);
             }
         }
 
@@ -255,6 +256,33 @@ namespace com.spacepuppyeditor.Core
                         break;
                 }
             }
+        }
+
+
+
+
+        public static System.Type GetRestrictedPropertyType(SerializedProperty prop, FieldInfo field)
+        {
+            if (field == null) return null;
+
+            var a_tpr = field.GetCustomAttribute<TypeRestrictionAttribute>();
+            if (a_tpr?.InheritsFromTypes?.Length > 0)
+            {
+                return a_tpr.InheritsFromTypes[0];
+            }
+
+            var a_scr = field.GetCustomAttribute<SelectableComponentAttribute>();
+            if (a_scr?.InheritsFromType != null)
+            {
+                return a_scr.InheritsFromType;
+            }
+
+            var tp = EditorHelper.GetPropertyValueType(prop);
+            if (TypeUtil.IsListType(tp))
+            {
+                tp = TypeUtil.GetElementTypeOfListType(tp);
+            }
+            return tp;
         }
 
     }

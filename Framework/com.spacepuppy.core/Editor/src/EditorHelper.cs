@@ -1094,7 +1094,9 @@ namespace com.spacepuppyeditor
             if (!prop.propertyPath.Contains('.'))
             {
                 //we're at the root of the serializedObject, just look at it
-                return roottype != null ? DynamicUtil.GetMemberFromType(roottype, prop.propertyPath, true, MemberTypes.Field) as System.Reflection.FieldInfo : null;
+                var result = roottype != null ? DynamicUtil.GetMemberFromType(roottype, prop.propertyPath, true, MemberTypes.Field) as System.Reflection.FieldInfo : null;
+                fieldType = result?.FieldType;
+                return result;
             }
 
             SerializedProperty parent;
@@ -1217,27 +1219,6 @@ namespace com.spacepuppyeditor
                 }
             }
 
-        }
-
-        /// <summary>
-        /// Get the type defined in a TypeRestrictionAttribute attached to the field, otherwise returns the FieldType as defined by the field itself.
-        /// </summary>
-        /// <param name="field"></param>
-        /// <param name="returnNullIfNoTypeRestrictionAttribute">Return null if TypeRestrictionAttribute is not found</param>
-        /// <returns></returns>
-        public static System.Type GetRestrictedFieldType(System.Reflection.FieldInfo field, bool returnNullIfNoTypeRestrictionAttribute = false)
-        {
-            if (field == null) return null;
-
-            var attrib = field.GetCustomAttribute<TypeRestrictionAttribute>();
-            if (attrib?.InheritsFromTypes?.Length > 0)
-            {
-                return attrib.InheritsFromTypes[0];
-            }
-            else
-            {
-                return returnNullIfNoTypeRestrictionAttribute ? null : field.FieldType;
-            }
         }
 
         #endregion

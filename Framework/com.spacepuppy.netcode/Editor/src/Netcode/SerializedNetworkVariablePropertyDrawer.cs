@@ -3,10 +3,8 @@ using UnityEditor;
 using System.Collections.Generic;
 
 using com.spacepuppy.Netcode;
-using com.spacepuppyeditor;
-using UnityEngine.UIElements;
 
-namespace com.ardenteditor.Netcode
+namespace com.spacepuppyeditor.Netcode
 {
 
     [CustomPropertyDrawer(typeof(SerializedNetworkVariableAttribute))]

@@ -370,6 +370,36 @@ namespace com.spacepuppy.SPInput
             return (input.GetSignature(state) as ICursorInputSignature)?.Delta ?? default;
         }
 
+        public static Vector2 GetCursorDeltaInViewport(this IInputDevice input, string state)
+        {
+            if (input.GetSignature(state) is ICursorInputSignature sig)
+            {
+                var v = sig.Delta;
+                v.x /= Screen.width;
+                v.y /= Screen.height;
+                return v;
+            }
+            else
+            {
+                return default;
+            }
+        }
+
+        public static Vector2 GetCursorDeltaInViewport<T>(this IMappedInputDevice<T> input, T state) where T : struct, System.IConvertible
+        {
+            if (input.GetSignature(state) is ICursorInputSignature sig)
+            {
+                var v = sig.Delta;
+                v.x /= Screen.width;
+                v.y /= Screen.height;
+                return v;
+            }
+            else
+            {
+                return default;
+            }
+        }
+
         public static CursorRaycastHit TestCursorOver(Camera cursorCamera, Vector2 cursorPos, float maxDistance = float.PositiveInfinity, int layerMask = Physics.AllLayers, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal, int blockingLayerMask = 0)
         {
             if (cursorCamera)

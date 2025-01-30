@@ -705,14 +705,14 @@ namespace com.spacepuppy.SPInput
 
         public override void Update()
         {
-            var v = (Vector2)Input.mousePosition;
+            Vector2 v = _cursor?.Invoke() ?? Vector2.zero;
             _delta = v - (_last ?? v);
             _last = v;
         }
 
         public override void FixedUpdate()
         {
-            var v = (Vector2)Input.mousePosition;
+            Vector2 v = _cursor?.Invoke() ?? Vector2.zero;
             _deltaFixed = v - (_lastFixed ?? v);
             _lastFixed = v;
         }

@@ -1083,10 +1083,18 @@ namespace com.spacepuppy.Utils
             /// </summary>
             [System.NonSerialized]
             private HashSet<T> _observers = new HashSet<T>();
+            [System.NonSerialized]
+            private LockingEnumerable<T> _enumerable;
+
+            public SubscribableMessageHook()
+            {
+                _enumerable = new(_observers);
+            }
 
             protected virtual void OnDestroy()
             {
                 _observers = null;
+                _enumerable = null;
             }
 
             /// <summary>
@@ -1098,13 +1106,79 @@ namespace com.spacepuppy.Utils
             public int SubscriberCount => _observers?.Count ?? 0;
 
             [Preserve]
-            public bool Subscribe(T observer) => observer != null && ObjUtil.IsObjectAlive(this) && _observers.Add(observer);
+            public bool Subscribe(T observer)
+            {
+                if (observer == null || !ObjUtil.IsObjectAlive(this)) return false;
+
+                if (_enumerable.Locked)
+                {
+                    if (_observers.Contains(observer)) return false;
+                    _enumerable.Add(observer);
+                    return true;
+                }
+                else
+                {
+                    return _observers.Add(observer);
+                }
+            }
+
             [Preserve]
             public bool Unsubscribe(T observer)
             {
                 if (!ObjUtil.IsObjectAlive(this)) return false;
 
-                bool result = observer != null && _observers.Remove(observer);
+                if (_enumerable.Locked)
+                {
+                    return observer != null && _enumerable.Remove(observer);
+                }
+                else
+                {
+                    bool result = observer != null && _enumerable.Remove(observer);
+                    this.ValidateContinueUpdateLoop();
+                    return result;
+                }
+            }
+
+            public void Signal(System.Action<T> functor)
+            {
+                if (_observers == null || _observers.Count == 0) return;
+
+                try
+                {
+                    _enumerable.Lock();
+                    foreach (var o in _observers)
+                    {
+                        functor(o);
+                    }
+                }
+                finally
+                {
+                    _enumerable.Unlock();
+                    this.ValidateContinueUpdateLoop();
+                }
+            }
+
+            public void Signal<TArg>(TArg arg, System.Action<T, TArg> functor)
+            {
+                if (_observers == null || _observers.Count == 0) return;
+
+                try
+                {
+                    _enumerable.Lock();
+                    foreach (var o in _observers)
+                    {
+                        functor(o, arg);
+                    }
+                }
+                finally
+                {
+                    _enumerable.Unlock();
+                    this.ValidateContinueUpdateLoop();
+                }
+            }
+
+            void ValidateContinueUpdateLoop()
+            {
                 if (this.SubscriberCount == 0 && !this.PreserveOnUnsubscribe())
                 {
                     //we only destroy at the end of the frame if no new subscribers pick this up
@@ -1120,19 +1194,6 @@ namespace com.spacepuppy.Utils
                         });
                     }
                 }
-                return result;
-            }
-
-            public void Signal(System.Action<T> functor)
-            {
-                if (_observers == null || _observers.Count == 0) return;
-                foreach (var o in _observers) functor(o);
-            }
-
-            public void Signal<TArg>(TArg arg, System.Action<T, TArg> functor)
-            {
-                if (_observers == null || _observers.Count == 0) return;
-                foreach (var o in _observers) functor(o, arg);
             }
 
             protected HashSet<T>.Enumerator GetSubscriberEnumerator() => _observers != null ? _observers.GetEnumerator() : default;

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-
+using System.Linq;
+using System.Reflection;
 using com.spacepuppy.Collections;
 using com.spacepuppy.Utils;
 using UnityEngine;
@@ -39,6 +40,7 @@ namespace com.spacepuppyeditor
         private bool _isFooter;
         private System.Type _associatedType;
         private System.Attribute _attribute;
+        private System.Reflection.MethodInfo _method;
 
         #endregion
 
@@ -60,6 +62,11 @@ namespace com.spacepuppyeditor
         public System.Type AssociatedType => _associatedType;
 
         public System.Attribute Attribute => _attribute;
+
+        /// <summary>
+        /// The MethodInfo of the method this SPEditorAddonDrawer is associated with, null if it's not associated with a method.
+        /// </summary>
+        public System.Reflection.MethodInfo Method => _method;
 
         #endregion
 
@@ -160,68 +167,67 @@ namespace com.spacepuppyeditor
 
             using (var lst = TempCollection.GetList<SPEditorAddonDrawer>())
             {
+                void CreateDrawer(object v, UnityEditor.Editor editor, UnityEditor.SerializedObject target, System.Type associatedType, System.Attribute attribute, System.Reflection.MethodInfo methodInfo)
+                {
+                    if (v is List<DrawerInfo>)
+                    {
+                        foreach (var info in (v as List<DrawerInfo>))
+                        {
+                            var d = info.CreateDrawer(editor, target, associatedType, attribute, methodInfo);
+                            if (d != null) lst.Add(d);
+                        }
+                    }
+                    else if (v is DrawerInfo)
+                    {
+                        var d = (v as DrawerInfo).CreateDrawer(editor, target, associatedType, attribute, methodInfo);
+                        if (d != null) lst.Add(d);
+                    }
+                }
+
+                //by associated class to drawer by class (see: CustomAddonDrawer(...) is applied to the drawer, no examples exist in the project, see interface below for similar example)
+                //context = System.Type
                 var tp = targType;
                 while (tp != null && unityObjType.IsAssignableFrom(tp))
                 {
                     object v;
                     if (_inspectedTypeToAddonDrawerType.TryGetValue(tp, out v))
                     {
-                        if (v is List<DrawerInfo>)
-                        {
-                            foreach(var info in (v as List<DrawerInfo>))
-                            {
-                                var d = info.CreateDrawer(editor, target, tp, null);
-                                if (d != null) lst.Add(d);
-                            }
-                        }
-                        else if (v is DrawerInfo)
-                        {
-                            var d = (v as DrawerInfo).CreateDrawer(editor, target, tp, null);
-                            if (d != null) lst.Add(d);
-                        }
+                        CreateDrawer(v, editor, target, tp, null, null);
                     }
 
                     tp = tp.BaseType;
                 }
 
-                foreach(var itp in targType.GetInterfaces())
+                //by associted to drawer by interface (see: CustomAddonDrawer(...) is applied to the drawer like IProxyAddonDrawer, similar as above with class but for interfaces)
+                //context = System.Type
+                foreach (var itp in targType.GetInterfaces())
                 {
                     object v;
                     if (_inspectedTypeToAddonDrawerType.TryGetValue(itp, out v))
                     {
-                        if (v is List<DrawerInfo>)
-                        {
-                            foreach (var info in (v as List<DrawerInfo>))
-                            {
-                                var d = info.CreateDrawer(editor, target, tp, null);
-                                if (d != null) lst.Add(d);
-                            }
-                        }
-                        else if (v is DrawerInfo)
-                        {
-                            var d = (v as DrawerInfo).CreateDrawer(editor, target, tp, null);
-                            if (d != null) lst.Add(d);
-                        }
+                        CreateDrawer(v, editor, target, itp, null, null);
                     }
                 }
 
+                //if associated by attribute attached to script class (see: an attribute associated with a CustomAddonDrawer is assigned to a class)
                 foreach (System.Attribute attrib in targType.GetCustomAttributes(typeof(System.Attribute), true))
                 {
                     object v;
                     if (_inspectedTypeToAddonDrawerType.TryGetValue(attrib.GetType(), out v))
                     {
-                        if (v is List<DrawerInfo>)
+                        CreateDrawer(v, editor, target, targType, attrib, null);
+                    }
+                }
+
+                //if associated by attribute attached to instance methods in a class (see: an attribute associated with a CustomAddonDrawer is assigned to a method in a class)
+                foreach (var meth in com.spacepuppy.Dynamic.DynamicUtil.EnumerateAllMembers(targType, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static, MemberTypes.Method).OfType<System.Reflection.MethodInfo>())
+                {
+                    foreach (var attrib in meth.GetCustomAttributes<System.Attribute>())
+                    {
+                        object v;
+                        if (_inspectedTypeToAddonDrawerType.TryGetValue(attrib.GetType(), out v))
                         {
-                            foreach (var info in (v as List<DrawerInfo>))
-                            {
-                                var d = info.CreateDrawer(editor, target, null, attrib);
-                                if (d != null) lst.Add(d);
-                            }
-                        }
-                        else if (v is DrawerInfo)
-                        {
-                            var d = (v as DrawerInfo).CreateDrawer(editor, target, null, attrib);
-                            if (d != null) lst.Add(d);
+                            CreateDrawer(v, editor, target, targType, attrib, meth);
                         }
                     }
                 }
@@ -241,7 +247,7 @@ namespace com.spacepuppyeditor
 
 
 
-            public SPEditorAddonDrawer CreateDrawer(UnityEditor.Editor editor, UnityEditor.SerializedObject target, System.Type associatedType, System.Attribute attribute)
+            public SPEditorAddonDrawer CreateDrawer(UnityEditor.Editor editor, UnityEditor.SerializedObject target, System.Type associatedType, System.Attribute attribute, System.Reflection.MethodInfo methodInfo)
             {
                 if (target.isEditingMultipleObjects && !this.SupportsMultiObject) return null;
 
@@ -253,6 +259,7 @@ namespace com.spacepuppyeditor
                     drawer._isFooter = this.IsFooter;
                     drawer._associatedType = associatedType;
                     drawer._attribute = attribute;
+                    drawer._method = methodInfo;
                     drawer.OnEnable();
                     return drawer;
                 }

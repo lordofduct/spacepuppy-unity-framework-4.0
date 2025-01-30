@@ -676,7 +676,7 @@ namespace com.spacepuppy
 
     #region DecoratorDrawer Attributes
 
-    [System.AttributeUsage(System.AttributeTargets.Field | System.AttributeTargets.Class, AllowMultiple = true)]
+    [System.AttributeUsage(System.AttributeTargets.Field | System.AttributeTargets.Class | System.AttributeTargets.Method, AllowMultiple = true)]
     public class InsertButtonAttribute : SPPropertyAttribute
     {
 
@@ -691,6 +691,12 @@ namespace com.spacepuppy
         public bool RecordUndo;
         public string UndoLabel;
         public float Space;
+
+        public InsertButtonAttribute(string label)
+        {
+            this.Label = label;
+            this.OnClick = string.Empty;
+        }
 
         public InsertButtonAttribute(string label, string onClick)
         {

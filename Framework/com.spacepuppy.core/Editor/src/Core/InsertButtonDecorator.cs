@@ -155,9 +155,31 @@ namespace com.spacepuppyeditor.Core
                 if (targets == null) targets = this.SerializedObject.targetObjects;
                 if (attrib.RecordUndo && targets.Length > 0) Undo.RecordObjects(targets, string.IsNullOrEmpty(attrib.UndoLabel) ? attrib.Label : attrib.UndoLabel);
 
-                foreach (var obj in targets)
+                if (this.Method?.IsStatic ?? false)
                 {
-                    DynamicUtil.InvokeMethod(obj, attrib.OnClick);
+                    try
+                    {
+                        this.Method.Invoke(null, null);
+                    }
+                    catch { }
+                }
+                else
+                {
+                    foreach (var obj in targets)
+                    {
+                        if (this.Method != null)
+                        {
+                            try
+                            {
+                                this.Method.Invoke(obj, null);
+                            }
+                            catch { }
+                        }
+                        else
+                        {
+                            DynamicUtil.InvokeMethod(obj, attrib.OnClick);
+                        }
+                    }
                 }
             }
 

@@ -2,9 +2,9 @@
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 using com.spacepuppy;
+using static com.spacepuppyeditor.Settings.BuildSettings;
 
 namespace com.spacepuppyeditor.Settings
 {
@@ -67,30 +67,38 @@ namespace com.spacepuppyeditor.Settings
 
         #region Methods
 
-        public async Task BuildAsync(BuildSettings.PostBuildOption postBuildOption = BuildSettings.PostBuildOption.Nothing)
+        public void Build(BuildSettings.PostBuildOption postBuildOption = BuildSettings.PostBuildOption.Nothing)
         {
-            await Task.Delay(10);
-
             if ((_buildScriptRunOptions & ScriptOptions.Run) != 0)
             {
                 this.RunScripts(_preBuildScripts);
             }
 
-            await Task.Delay(10);
-
-            bool failed = false;
-            foreach (var settings in _builds)
+            if (_builds.Count > 0)
             {
-                if (settings != null)
-                {
-                    if (!(await settings.BuildAsync(postBuildOption)))
-                    {
-                        failed = true;
-                    }
-                    await Task.Delay(1000);
-                }
+                _builds[0].Build(postBuildOption, new BuildSettings.BulkBuildCallback(this, postBuildOption, 0));
             }
+        }
 
+        internal async void ContinueBuild(BuildSettings.BulkBuildCallback callback, bool success)
+        {
+            callback.pass++;
+            if (!success) callback.failed = true;
+
+            await System.Threading.Tasks.Task.Delay(1000);
+
+            if (callback.pass < _builds.Count)
+            {
+                _builds[callback.pass].Build(callback.postBuildOption, callback);
+            }
+            else
+            {
+                this.CompleteBuild(callback.failed);
+            }
+        }
+
+        void CompleteBuild(bool failed)
+        {
             foreach (var m in TypeCache.GetMethodsWithAttribute<BulkBuildPostBuildCallbackAttribute>())
             {
                 try
@@ -187,7 +195,7 @@ namespace com.spacepuppyeditor.Settings
                     var settings = this.target as BulkBuildSettings;
                     if (settings == null) return;
 
-                    _ = settings.BuildAsync();
+                    settings.Build();
                 }
             }
         }

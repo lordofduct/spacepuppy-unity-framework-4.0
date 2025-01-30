@@ -304,7 +304,7 @@ namespace com.spacepuppy.Dynamic
                     del = Delegate.CreateDelegate(delegShape, meth);
                     return true;
                 }
-                catch (Exception ex)
+                catch //(Exception ex)
                 {
                     del = null;
                     return false;

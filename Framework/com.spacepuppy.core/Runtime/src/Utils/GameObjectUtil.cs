@@ -151,6 +151,19 @@ namespace com.spacepuppy.Utils
             }
         }
 
+        public static bool TrySetEnabled(this Behaviour src, bool enabled)
+        {
+            if (src != null)
+            {
+                src.enabled = enabled;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
         /// <summary>
         /// Tests if the object is either destroyed or killed.
         /// </summary>

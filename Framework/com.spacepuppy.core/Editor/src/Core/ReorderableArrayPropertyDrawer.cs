@@ -125,7 +125,7 @@ namespace com.spacepuppyeditor.Core
 
             if (this.fieldInfo != null)
             {
-                this.DragDropElementType = TypeUtil.GetElementTypeOfListType(this.fieldInfo.FieldType);
+                if (this.DragDropElementType == null) this.DragDropElementType = TypeUtil.GetElementTypeOfListType(this.fieldInfo.FieldType);
 
                 if (!string.IsNullOrEmpty(this.ChildPropertyAsEntry) && this.DragDropElementType != null)
                 {
@@ -470,25 +470,26 @@ namespace com.spacepuppyeditor.Core
 
         private void _maskList_OnElementAdded(ReorderableList lst)
         {
+            int i = lst.serializedProperty.arraySize;
             lst.serializedProperty.arraySize++;
-            lst.index = lst.serializedProperty.arraySize - 1;
+            lst.index = i;
+            var element = lst.serializedProperty.GetArrayElementAtIndex(i);
 
             var attrib = this.attribute as ReorderableArrayAttribute;
             if (attrib != null && !string.IsNullOrEmpty(attrib.OnAddCallback))
             {
                 lst.serializedProperty.serializedObject.ApplyModifiedProperties();
 
-                var prop = lst.serializedProperty.GetArrayElementAtIndex(lst.index);
-                var obj = EditorHelper.GetTargetObjectOfProperty(prop);
+                var obj = EditorHelper.GetTargetObjectOfProperty(element);
                 obj = com.spacepuppy.Dynamic.DynamicUtil.InvokeMethod(lst.serializedProperty.serializedObject.targetObject, attrib.OnAddCallback, obj);
-                EditorHelper.SetTargetObjectOfProperty(prop, obj);
+                EditorHelper.SetTargetObjectOfProperty(element, obj);
                 lst.serializedProperty.serializedObject.Update();
             }
 
-            this.OnElementAdded(lst);
+            this.OnElementAdded(lst, element);
         }
 
-        protected virtual void OnElementAdded(ReorderableList lst)
+        protected virtual void OnElementAdded(ReorderableList lst, SerializedProperty element)
         {
             var d = this.ElementAdded;
             if (d != null) d(this, System.EventArgs.Empty);

@@ -1,4 +1,5 @@
 #pragma warning disable 0649 // variable declared but not used.
+#pragma warning disable 0618 // use of SerializeRefPicker
 using UnityEngine;
 using System.Collections.Generic;
 using com.spacepuppy.Utils;

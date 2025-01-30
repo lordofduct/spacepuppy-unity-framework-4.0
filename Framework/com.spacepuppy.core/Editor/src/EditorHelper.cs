@@ -213,16 +213,18 @@ namespace com.spacepuppyeditor
             if (prop == null) return null;
 
             System.Reflection.FieldInfo field;
+            System.Type fieldType;
             switch (prop.propertyType)
             {
                 case SerializedPropertyType.Generic:
                     {
-                        field = GetFieldOfProperty(prop);
-                        if (field != null) return prop.propertyPath.EndsWith("]") && TypeUtil.IsListType(field.FieldType) ? TypeUtil.GetElementTypeOfListType(field.FieldType) : field.FieldType;
-                        return TypeUtil.FindType(prop.type) ?? typeof(object);
+                        field = GetFieldOfProperty(prop, out fieldType);
+                        if (fieldType != null) return fieldType;
+                        return typeof(object);
+                        //return TypeUtil.FindType(prop.type) ?? typeof(object); //NOTE - prop.type is unreliable
                     }
                 case SerializedPropertyType.Integer:
-                    return prop.type == "long" ? typeof(int) : typeof(long);
+                    return prop.type == "long" ? typeof(long) : typeof(int);
                 case SerializedPropertyType.Boolean:
                     return typeof(bool);
                 case SerializedPropertyType.Float:
@@ -231,23 +233,26 @@ namespace com.spacepuppyeditor
                     return typeof(string);
                 case SerializedPropertyType.Color:
                     {
-                        field = GetFieldOfProperty(prop);
-                        if (field != null) return prop.propertyPath.EndsWith("]") && TypeUtil.IsListType(field.FieldType) ? TypeUtil.GetElementTypeOfListType(field.FieldType) : field.FieldType;
-                        return TypeUtil.FindType(prop.type) ?? typeof(Color);
+                        field = GetFieldOfProperty(prop, out fieldType);
+                        if (fieldType != null) return fieldType;
+                        return typeof(Color);
+                        //return TypeUtil.FindType(prop.type) ?? typeof(Color); //NOTE - prop.type is unreliable
                     }
                 case SerializedPropertyType.ObjectReference:
                     {
-                        field = GetFieldOfProperty(prop);
-                        if (field != null) return prop.propertyPath.EndsWith("]") && TypeUtil.IsListType(field.FieldType) ? TypeUtil.GetElementTypeOfListType(field.FieldType) : field.FieldType;
-                        return TypeUtil.FindType(prop.type) ?? typeof(UnityEngine.Object);
+                        field = GetFieldOfProperty(prop, out fieldType);
+                        if (fieldType != null) return fieldType;
+                        return typeof(UnityEngine.Object);
+                        //return TypeUtil.FindType(prop.type) ?? typeof(UnityEngine.Object); //NOTE - prop.type is unreliable
                     }
                 case SerializedPropertyType.LayerMask:
                     return typeof(LayerMask);
                 case SerializedPropertyType.Enum:
                     {
-                        field = GetFieldOfProperty(prop);
-                        if (field != null) return prop.propertyPath.EndsWith("]") && TypeUtil.IsListType(field.FieldType) ? TypeUtil.GetElementTypeOfListType(field.FieldType) : field.FieldType;
-                        return TypeUtil.FindType(prop.type) ?? typeof(System.Enum);
+                        field = GetFieldOfProperty(prop, out fieldType);
+                        if (fieldType != null) return fieldType;
+                        return typeof(System.Enum);
+                        //return TypeUtil.FindType(prop.type) ?? typeof(System.Enum); //NOTE - prop.type is unreliable
                     }
                 case SerializedPropertyType.Vector2:
                     return typeof(Vector2);
@@ -271,9 +276,10 @@ namespace com.spacepuppyeditor
                     return typeof(Quaternion);
                 case SerializedPropertyType.ExposedReference:
                     {
-                        field = GetFieldOfProperty(prop);
-                        if (field != null) return prop.propertyPath.EndsWith("]") && TypeUtil.IsListType(field.FieldType) ? TypeUtil.GetElementTypeOfListType(field.FieldType) : field.FieldType;
-                        return TypeUtil.FindType(prop.type) ?? typeof(UnityEngine.Object);
+                        field = GetFieldOfProperty(prop, out fieldType);
+                        if (fieldType != null) return fieldType;
+                        return typeof(UnityEngine.Object);
+                        //return TypeUtil.FindType(prop.type) ?? typeof(UnityEngine.Object); //NOTE - prop.type is unreliable
                     }
                 case SerializedPropertyType.FixedBufferSize:
                     return typeof(int);
@@ -287,9 +293,10 @@ namespace com.spacepuppyeditor
                     return typeof(BoundsInt);
                 default:
                     {
-                        field = GetFieldOfProperty(prop);
-                        if (field != null) return prop.propertyPath.EndsWith("]") && TypeUtil.IsListType(field.FieldType) ? TypeUtil.GetElementTypeOfListType(field.FieldType) : field.FieldType;
-                        return TypeUtil.FindType(prop.type) ?? typeof(object);
+                        field = GetFieldOfProperty(prop, out fieldType);
+                        if (fieldType != null) return fieldType;
+                        return typeof(object);
+                        //return TypeUtil.FindType(prop.type) ?? typeof(object); //NOTE - prop.type is unreliable
                     }
             }
         }
@@ -301,86 +308,170 @@ namespace com.spacepuppyeditor
         /// <returns></returns>
         public static object GetTargetObjectOfProperty(SerializedProperty prop)
         {
-#if UNITY_2021_2_OR_NEWER
-            if (prop.propertyType == SerializedPropertyType.ManagedReference)
-            {
-                return prop.managedReferenceValue;
-            }
-#elif UNITY_2022_1_OR_NEWER
-            return prop.boxedValue;
-#endif
+            if (prop == null) return null;
 
-            var path = prop.propertyPath.Replace(".Array.data[", "[");
-            object obj = prop.serializedObject.targetObject;
-            var elements = path.Split('.');
-            foreach (var element in elements)
+            System.Reflection.FieldInfo field;
+            System.Type fieldType;
+            switch (prop.propertyType)
             {
-                if (element.Contains("["))
+                case SerializedPropertyType.Generic:
+                    //must be walked
+                    break;
+#if UNITY_2021_2_OR_NEWER
+                case SerializedPropertyType.ManagedReference:
+                    return prop.managedReferenceValue;
+#endif
+#if UNITY_2022_1_OR_NEWER
+                default:
+                    return prop.boxedValue;
+#else
+                case SerializedPropertyType.Integer:
+                    return prop.type == "long" ? prop.longValue : prop.intValue;
+                case SerializedPropertyType.Boolean:
+                    return typeof(bool);
+                case SerializedPropertyType.Float:
+                    return prop.type == "double" ? prop.doubleValue : prop.floatValue;
+                case SerializedPropertyType.String:
+                    return prop.stringValue;
+                case SerializedPropertyType.Color:
+                    return prop.colorValue;
+                case SerializedPropertyType.ObjectReference:
+                    return prop.objectReferenceValue;
+                case SerializedPropertyType.LayerMask:
+                    return (LayerMask)prop.intValue;
+                case SerializedPropertyType.Enum:
+                    {
+                        field = GetFieldOfProperty(prop, out fieldType);
+                        if (fieldType != null && fieldType.IsEnum) return ConvertUtil.ToEnumOfType(fieldType, prop.intValue);
+                        return prop.intValue;
+                    }
+                case SerializedPropertyType.Vector2:
+                    return prop.vector2Value;
+                case SerializedPropertyType.Vector3:
+                    return prop.vector3Value;
+                case SerializedPropertyType.Vector4:
+                    return prop.vector4Value;
+                case SerializedPropertyType.Rect:
+                    return prop.rectValue;
+                case SerializedPropertyType.ArraySize:
+                    return prop.arraySize;
+                case SerializedPropertyType.Character:
+                    return (char)prop.intValue;
+                case SerializedPropertyType.AnimationCurve:
+                    return prop.animationCurveValue;
+                case SerializedPropertyType.Bounds:
+                    return prop.boundsValue;
+#if UNITY_2022_1_OR_NEWER
+                case SerializedPropertyType.Gradient:
+                    return prop.gradientValue;
+#endif
+                case SerializedPropertyType.Quaternion:
+                    return prop.quaternionValue;
+                case SerializedPropertyType.ExposedReference:
+                    return prop.exposedReferenceValue;
+                case SerializedPropertyType.FixedBufferSize:
+                    return prop.fixedBufferSize;
+                case SerializedPropertyType.Vector2Int:
+                    return prop.vector2IntValue;
+                case SerializedPropertyType.Vector3Int:
+                    return prop.vector3IntValue;
+                case SerializedPropertyType.RectInt:
+                    return prop.rectIntValue;
+                case SerializedPropertyType.BoundsInt:
+                    return prop.boundsIntValue;
+#endif
+            }
+
+            object obj = prop.serializedObject.targetObject;
+            try
+            {
+                foreach (var (p, fi, ftp) in WalkPropertyPath(prop))
                 {
-                    var elementName = element.Substring(0, element.IndexOf("["));
-                    var index = System.Convert.ToInt32(element.Substring(element.IndexOf("[")).Replace("[", "").Replace("]", ""));
-                    obj = GetValue_Imp(obj, elementName, index);
+                    if (fi == null)
+                    {
+                        //this is an array element
+                        int index = p.propertyPath.LastIndexOf('[') + 1;
+                        index = int.Parse(p.propertyPath.Substring(index, p.propertyPath.Length - index - 1));
+                        obj = ((System.Collections.IList)obj)[index];
+                    }
+                    else
+                    {
+                        obj = fi.GetValue(obj);
+                    }
                 }
-                else
-                {
-                    obj = GetValue_Imp(obj, element);
-                }
+            }
+            catch
+            {
+                //fatal error, quit now
+                return null;
             }
             return obj;
         }
 
         public static void SetTargetObjectOfProperty(SerializedProperty prop, object value)
         {
-            var path = prop.propertyPath.Replace(".Array.data[", "[");
-            object obj = prop.serializedObject.targetObject;
-            var elements = path.Split('.');
-            foreach (var element in elements.Take(elements.Length - 1))
+            if (prop == null) return;
+
+            switch (prop.propertyType)
             {
-                if (element.Contains("["))
-                {
-                    var elementName = element.Substring(0, element.IndexOf("["));
-                    var index = System.Convert.ToInt32(element.Substring(element.IndexOf("[")).Replace("[", "").Replace("]", ""));
-                    obj = GetValue_Imp(obj, elementName, index);
-                }
-                else
-                {
-                    obj = GetValue_Imp(obj, element);
-                }
+                case SerializedPropertyType.Generic:
+                    //must be walked
+                    break;
+#if UNITY_2021_2_OR_NEWER
+                case SerializedPropertyType.ManagedReference:
+                    prop.managedReferenceValue = value;
+                    return;
+#endif
+#if UNITY_2022_1_OR_NEWER
+                default:
+                    prop.boxedValue = value;
+                    return;
+#else
+                    //TODO - do we want to support pre-2022 here the same we boxedValue does? It's 2025 now and honestly 2021 support is minimal, the below logic should suffice if slow
+#endif
             }
 
-            if (object.ReferenceEquals(obj, null)) return;
-
+            object obj = prop.serializedObject.targetObject;
             try
             {
-                var element = elements.Last();
+                var arr = WalkPropertyPath(prop).ToArray();
+                if (arr.Length == 0) return; //how'd this happen?
 
-                if (element.Contains("["))
+                for (int i = 0; i < arr.Length - 1; i++)
                 {
-                    //var tp = obj.GetType();
-                    //var elementName = element.Substring(0, element.IndexOf("["));
-                    //var index = System.Convert.ToInt32(element.Substring(element.IndexOf("[")).Replace("[", "").Replace("]", ""));
-                    //var field = tp.GetField(elementName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                    //var arr = field.GetValue(obj) as System.Collections.IList;
-                    //arr[index] = value;
-                    var elementName = element.Substring(0, element.IndexOf("["));
-                    var index = System.Convert.ToInt32(element.Substring(element.IndexOf("[")).Replace("[", "").Replace("]", ""));
-                    var arr = DynamicUtil.GetValue(obj, elementName) as System.Collections.IList;
-                    if (arr != null) arr[index] = value;
-                }
-                else
-                {
-                    //var tp = obj.GetType();
-                    //var field = tp.GetField(element, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                    //if (field != null)
-                    //{
-                    //    field.SetValue(obj, value);
-                    //}
-                    DynamicUtil.SetValue(obj, element, value);
+                    var (p, fi, ftp) = arr[i];
+
+                    if (fi == null)
+                    {
+                        //this is an array element
+                        int index = p.propertyPath.LastIndexOf('[') + 1;
+                        index = int.Parse(p.propertyPath.Substring(index, p.propertyPath.Length - index - 1));
+                        obj = ((System.Collections.IList)obj)[index];
+                    }
+                    else
+                    {
+                        obj = fi.GetValue(obj);
+                    }
                 }
 
+                {
+                    var (p, fi, ftp) = arr[arr.Length - 1];
+                    if (fi == null)
+                    {
+                        //this is an array element
+                        int index = p.propertyPath.LastIndexOf('[') + 1;
+                        index = int.Parse(p.propertyPath.Substring(index, p.propertyPath.Length - index - 1));
+                        ((System.Collections.IList)obj)[index] = ConvertUtil.Coerce(value, ftp);
+                    }
+                    else
+                    {
+                        fi.SetValue(obj, ConvertUtil.Coerce(value, ftp));
+                    }
+                }
             }
             catch
             {
+                //fatal error, quit now
                 return;
             }
         }
@@ -390,6 +481,7 @@ namespace com.spacepuppyeditor
         /// </summary>
         /// <param name="prop"></param>
         /// <returns></returns>
+        [System.Obsolete("Use GetParentProperty instead and get the targetobject from that. eg: GetTargetObjectOfProperty(GetParentProperty(prop))")]
         public static object GetTargetObjectWithProperty(SerializedProperty prop)
         {
             if (prop == null) return null;
@@ -413,6 +505,7 @@ namespace com.spacepuppyeditor
             return obj;
         }
 
+        [System.Obsolete("Use GetParentProperty instead and get the targetobject from that. eg: GetTargetObjectOfProperty(GetParentProperty(prop))")]
         public static object[] GetTargetObjectsWithProperty(SerializedProperty prop)
         {
             if (prop == null) return null;
@@ -444,6 +537,7 @@ namespace com.spacepuppyeditor
             return arr;
         }
 
+        [System.Obsolete("Obsoleted with GetTargetObjectWithProperty/GetTargetObjectsWithProperty")]
         private static object GetValue_Imp(object source, string name)
         {
             if (source == null)
@@ -465,6 +559,7 @@ namespace com.spacepuppyeditor
             return null;
         }
 
+        [System.Obsolete("Obsoleted with GetTargetObjectWithProperty/GetTargetObjectsWithProperty")]
         private static object GetValue_Imp(object source, string name, int index)
         {
             var enumerable = GetValue_Imp(source, name) as System.Collections.IEnumerable;
@@ -969,37 +1064,159 @@ namespace com.spacepuppyeditor
 
         #region Serialized Field Helpers
 
-        public static System.Reflection.FieldInfo GetFieldOfProperty(SerializedProperty prop)
+        public static SerializedProperty GetParentProperty(SerializedProperty prop)
         {
             if (prop == null) return null;
 
-            var tp = GetTargetType(prop.serializedObject);
-            if (tp == null) return null;
+            var elements = prop.propertyPath.Split('.');
+            if (elements.Length <= 1) return null; //we're at the base of the serializedobject, there is no parent.
 
-            var path = prop.propertyPath.Replace(".Array.data[", "[");
-            var elements = path.Split('.');
-            System.Reflection.FieldInfo field = null;
-            foreach (var element in elements)
+            if (elements[elements.Length - 1].StartsWith("data["))
             {
-                if (element.Contains("["))
-                {
-                    var elementName = element.Substring(0, element.IndexOf("["));
-                    var index = System.Convert.ToInt32(element.Substring(element.IndexOf("[")).Replace("[", "").Replace("]", ""));
+                //we're an array element, go back 2
+                return prop.serializedObject.FindProperty(string.Join('.', elements.Take(elements.Length - 2)));
+            }
+            else
+            {
+                return prop.serializedObject.FindProperty(string.Join('.', elements.Take(elements.Length - 1)));
+            }
+        }
 
-                    //field = tp.GetMember(elementName, MemberTypes.Field, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).FirstOrDefault() as System.Reflection.FieldInfo;
-                    field = DynamicUtil.GetMemberFromType(tp, elementName, true, MemberTypes.Field) as System.Reflection.FieldInfo;
-                    if (field == null) return null;
-                    tp = TypeUtil.IsListType(field.FieldType) ? TypeUtil.GetElementTypeOfListType(field.FieldType) : field.FieldType;
+        public static System.Reflection.FieldInfo GetFieldOfProperty(SerializedProperty prop) => GetFieldOfProperty(prop, out _);
+        public static System.Reflection.FieldInfo GetFieldOfProperty(SerializedProperty prop, out System.Type fieldType) //NOTE - this exists because we can't actually return the FieldInfo of an array element, this way a caller who really wants the fieldtype can just access that.
+        {
+            fieldType = null;
+            if (prop == null) return null;
+
+            var roottype = GetTargetType(prop.serializedObject);
+            if (roottype == null) return null;
+
+            if (!prop.propertyPath.Contains('.'))
+            {
+                //we're at the root of the serializedObject, just look at it
+                return roottype != null ? DynamicUtil.GetMemberFromType(roottype, prop.propertyPath, true, MemberTypes.Field) as System.Reflection.FieldInfo : null;
+            }
+
+            SerializedProperty parent;
+#if UNITY_2021_2_OR_NEWER
+            parent = GetParentProperty(prop);
+            if (parent == null) return null; //this shouldn't happen since previous check, but here just in case
+
+            switch (parent.propertyType)
+            {
+                case SerializedPropertyType.ManagedReference:
+                    {
+                        fieldType = parent.GetManagedReferenceType() ?? parent.GetManagedReferenceFieldType();
+                        var result = DynamicUtil.GetMemberFromType(fieldType, prop.name, true, MemberTypes.Field) as System.Reflection.FieldInfo;
+                        fieldType = result?.FieldType;
+                        return result;
+                    }
+                default:
+#if UNITY_2022_1_OR_NEWER
+                    if (parent.propertyType != SerializedPropertyType.Generic && parent.boxedValue != null)
+                    {
+                        var result = DynamicUtil.GetMemberFromType(parent.boxedValue.GetType(), prop.name, true, MemberTypes.Field) as System.Reflection.FieldInfo;
+                        fieldType = result?.FieldType;
+                        return result;
+                    }
+#endif
+                    break;
+            }
+#endif
+
+            var elements = prop.propertyPath.Split('.');
+            var field = DynamicUtil.GetMemberFromType(roottype, elements[0], true, MemberTypes.Field) as System.Reflection.FieldInfo;
+            fieldType = field.FieldType;
+            parent = prop.serializedObject.FindProperty(elements[0]);
+            for (int i = 1; i < elements.Length; i++)
+            {
+                var element = elements[i];
+                if (element == "Array" && (i + 1) < elements.Length && elements[i + 1].StartsWith("data") && TypeUtil.IsListType(fieldType))
+                {
+                    var sindex = elements[i + 1];
+                    element = "Array." + sindex;
+                    int index = System.Convert.ToInt32(sindex.Substring(sindex.IndexOf("[")).Replace("[", "").Replace("]", ""));
+                    i++; //skip one
+
+                    field = null; //we don't actually support ref'n the field of an array/list element because array doesn't have a FieldInfo for an indexed entry, and List<> is just wrapping an array.
+                    fieldType = TypeUtil.GetElementTypeOfListType(fieldType);
+                    parent = parent.FindPropertyRelative(element);
                 }
                 else
                 {
-                    //tp.GetMember(element, MemberTypes.Field, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).FirstOrDefault() as System.Reflection.FieldInfo;
-                    field = DynamicUtil.GetMemberFromType(tp, element, true, MemberTypes.Field) as System.Reflection.FieldInfo;
-                    if (field == null) return null;
-                    tp = field.FieldType;
+                    field = DynamicUtil.GetMemberFromType(fieldType, element, true, MemberTypes.Field) as System.Reflection.FieldInfo;
+                    if (field == null)
+                    {
+                        fieldType = null;
+                        return null; //we failed in some critical way, quit now
+                    }
+
+                    parent = parent.FindPropertyRelative(elements[i]);
+#if UNITY_2021_2_OR_NEWER
+                    if (parent.propertyType == SerializedPropertyType.ManagedReference)
+                    {
+                        fieldType = parent.GetManagedReferenceType() ?? field.FieldType;
+                    }
+                    else
+#endif
+                    {
+                        fieldType = field.FieldType;
+                    }
                 }
             }
+
             return field;
+        }
+
+        static IEnumerable<System.ValueTuple<SerializedProperty, FieldInfo, System.Type>> WalkPropertyPath(SerializedProperty prop)
+        {
+            var roottype = GetTargetType(prop.serializedObject);
+            var elements = prop.propertyPath.Split('.');
+            var field = DynamicUtil.GetMemberFromType(roottype, elements[0], true, MemberTypes.Field) as System.Reflection.FieldInfo;
+            var fieldType = field.FieldType;
+            var parent = prop.serializedObject.FindProperty(elements[0]);
+            yield return (parent, field, fieldType);
+
+            for (int i = 1; i < elements.Length; i++)
+            {
+                var element = elements[i];
+                if (element == "Array" && (i + 1) < elements.Length && elements[i + 1].StartsWith("data") && TypeUtil.IsListType(fieldType))
+                {
+                    var sindex = elements[i + 1];
+                    element = "Array." + sindex;
+                    int index = System.Convert.ToInt32(sindex.Substring(sindex.IndexOf("[")).Replace("[", "").Replace("]", ""));
+                    i++; //skip one
+
+                    field = null; //we don't actually support ref'n the field of an array/list element because array doesn't have a FieldInfo for an indexed entry, and List<> is just wrapping an array.
+                    fieldType = TypeUtil.GetElementTypeOfListType(fieldType);
+                    parent = parent.FindPropertyRelative(element);
+                    yield return (parent, field, fieldType);
+                }
+                else
+                {
+                    field = DynamicUtil.GetMemberFromType(fieldType, element, true, MemberTypes.Field) as System.Reflection.FieldInfo;
+                    if (field == null)
+                    {
+                        fieldType = null;
+                        yield break;
+                    }
+
+                    parent = parent.FindPropertyRelative(elements[i]);
+#if UNITY_2021_2_OR_NEWER
+                    if (parent.propertyType == SerializedPropertyType.ManagedReference)
+                    {
+                        fieldType = parent.GetManagedReferenceType() ?? field.FieldType;
+                    }
+                    else
+#endif
+                    {
+                        fieldType = field.FieldType;
+                    }
+
+                    yield return (parent, field, fieldType);
+                }
+            }
+
         }
 
         /// <summary>

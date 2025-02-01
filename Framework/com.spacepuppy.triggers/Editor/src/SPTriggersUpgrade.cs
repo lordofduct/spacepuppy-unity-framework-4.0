@@ -68,7 +68,7 @@ namespace com.spacepuppyeditor
                     if (reader.SeekUntilSerializedField("_stateMachine", out field, true)) //the field is no longer named this so this is our test for re-processing
                     {
                         reader.DeleteLine();
-                        reader.InsertLine("  _sourceStateMachine:");
+                        reader.InsertLine("  _stateMachine:");
                         reader.InsertLine("    _obj:" + field.fieldData);
                         reader.SeekToNextObject();
                     }

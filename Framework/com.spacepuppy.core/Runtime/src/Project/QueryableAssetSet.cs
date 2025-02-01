@@ -307,6 +307,35 @@ namespace com.spacepuppy.Project
             }
         }
 
+        public int GetAllAssets<T>(ICollection<T> buffer, bool shallow = false) where T : class
+        {
+            if (!_clean && !this.SetupTable()) return 0;
+
+            int cnt = 0;
+            if (!shallow && _nested)
+            {
+                foreach (var obj in this.GetAllAssets().Select(o => ObjUtil.GetAsFromSource<T>(o)).Where(o => !object.ReferenceEquals(o, null)))
+                {
+                    cnt++;
+                    buffer.Add(obj);
+                }
+            }
+            else
+            {
+                var e = _table.Values.GetEnumerator();
+                while (e.MoveNext())
+                {
+                    var obj = ObjUtil.GetAsFromSource<T>(e.Current);
+                    if (!object.ReferenceEquals(obj, null))
+                    {
+                        cnt++;
+                        buffer.Add(obj);
+                    }
+                }
+            }
+            return cnt;
+        }
+
         /// <summary>
         /// Replaces the internal collection with a new set of assets.
         /// </summary>

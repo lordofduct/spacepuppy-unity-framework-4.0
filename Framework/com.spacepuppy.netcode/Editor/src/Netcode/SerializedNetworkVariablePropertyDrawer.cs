@@ -1,8 +1,10 @@
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
+using Unity.Netcode;
 
 using com.spacepuppy.Netcode;
+using com.spacepuppy.Utils;
 
 namespace com.spacepuppyeditor.Netcode
 {
@@ -38,7 +40,8 @@ namespace com.spacepuppyeditor.Netcode
         private bool TryValidateSerializedProperty(SerializedProperty property, out SerializedProperty innerprop)
         {
             innerprop = null;
-            if (!property.type.StartsWith("NetworkVariable")) return false;
+            //if (!property.type.StartsWith("NetworkVariable")) return false;
+            if (!TypeUtil.IsType(property.GetTargetType(), typeof(NetworkVariable<>))) return false;
 
             innerprop = property.FindPropertyRelative("m_InternalValue");
             if (innerprop == null) return false;

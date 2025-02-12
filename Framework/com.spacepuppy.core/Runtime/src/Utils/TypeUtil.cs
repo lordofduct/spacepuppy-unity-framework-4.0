@@ -62,9 +62,6 @@ namespace com.spacepuppy.Utils
                 var arr = hash.Split('|');
                 var tp = TypeUtil.ParseType(arr.Length > 0 ? arr[0] : string.Empty,
                                             arr.Length > 1 ? arr[1] : string.Empty);
-
-                //set type to void if the type is unfruitful, this way we're not constantly retesting this
-                if (tp == null) tp = typeof(void);
                 return tp;
             }
             else

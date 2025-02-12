@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 using com.spacepuppy.Collections;
 
@@ -980,6 +981,7 @@ namespace com.spacepuppy.Utils
 
         public static System.Func<UnityEngine.Object, bool> IsObjectAlive
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return _isObjectAlive; }
         }
 

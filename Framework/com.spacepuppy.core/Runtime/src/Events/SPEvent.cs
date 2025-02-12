@@ -88,6 +88,7 @@ namespace com.spacepuppy.Events
         {
             try
             {
+                _activationToken++;
                 if (_triggerActivated != null)
                 {
                     var e = TempEventArgs.Create(arg);
@@ -117,6 +118,9 @@ namespace com.spacepuppy.Events
 
         [System.NonSerialized]
         private HashSet<object> _hijackTokens;
+
+        [System.NonSerialized]
+        private int _activationToken;
 
         #endregion
 
@@ -167,6 +171,11 @@ namespace com.spacepuppy.Events
         {
             get { return _hijackTokens != null && _hijackTokens.Count > 0; }
         }
+
+        /// <summary>
+        /// This value changes every time the event is triggered.
+        /// </summary>
+        public int ActivationToken => _activationToken;
 
         #endregion
 

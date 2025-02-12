@@ -606,7 +606,7 @@ namespace com.spacepuppyeditor
                     }
                     else
                     {
-                        EditorGUI.PrefixLabel(position, label);
+                        SPEditorGUI.SafePrefixLabel(position, label);
                     }
                     break;
             }

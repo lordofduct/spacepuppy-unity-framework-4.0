@@ -4,6 +4,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using System.Reflection;
 
+using com.spacepuppy.Events;
 using com.spacepuppy.Project;
 
 namespace com.spacepuppy.UI
@@ -11,7 +12,9 @@ namespace com.spacepuppy.UI
 
     [RequireComponent(typeof(Selectable))]
     [Infobox("This component must exist after/below the attached 'Selectable' on the GameObject which it is overriding for event timing to work correctly.")]
-    public class SelectableOverride : SPMonoBehaviour, IPointerDownHandler, IPointerUpHandler, IPointerEnterHandler, IPointerExitHandler, ISelectHandler, IDeselectHandler
+    [SelectionBase]
+    [DisallowMultipleComponent]
+    public class SelectableOverride : SPMonoBehaviour, IObservableTrigger, IPointerDownHandler, IPointerUpHandler, IPointerEnterHandler, IPointerExitHandler, ISelectHandler, IDeselectHandler
     {
 
         public enum SelectionState
@@ -35,6 +38,9 @@ namespace com.spacepuppy.UI
         [SerializeField]
         private InterfacePicker<ITransition> _transition = new(null);
 
+        [SerializeField, Tooltip("Activates if CurrentSelectionState or OverrideHighlighted changes.")]
+        private SPEvent _onSelectionStateChanged = new SPEvent("OnSelectionStateChanged");
+
         #endregion
 
         #region CONSTRUCTOR
@@ -43,6 +49,19 @@ namespace com.spacepuppy.UI
         {
             if (!_selectable) _selectable = this.GetComponent<Selectable>();
             base.Awake();
+        }
+
+        protected virtual void OnEnable()
+        {
+            if (!this.started) return;
+            this.ForceEvaluateCurrentStateAndSync(true);
+        }
+
+        protected virtual void Start()
+        {
+            this.started = true;
+            if (_selectable) _selectable.transition = Selectable.Transition.None;
+            this.ForceEvaluateCurrentStateAndSync(true);
         }
 
         protected virtual void OnDisable()
@@ -54,6 +73,8 @@ namespace com.spacepuppy.UI
 
         #region Properties
 
+        public bool started { get; private set; }
+
         public Selectable Selectable => _selectable;
 
         public bool OverrideHighlighted
@@ -63,11 +84,17 @@ namespace com.spacepuppy.UI
             {
                 if (_overrideHighlighted == value) return;
                 _overrideHighlighted = value;
+
 #if UNITY_EDITOR
-                if (Application.isPlaying && this.isActiveAndEnabled) this.EvaluateCurrentStateAndSync(false);
+                if (Application.isPlaying && this.isActiveAndEnabled)
 #else
-                if (this.isActiveAndEnabled) this.EvaluateCurrentStateAndSync(false);
+                if (this.isActiveAndEnabled)
 #endif
+                {
+                    int v = _onSelectionStateChanged.ActivationToken;
+                    this.EvaluateCurrentStateAndSync(false);
+                    if (v != _onSelectionStateChanged.ActivationToken && _onSelectionStateChanged.HasReceivers) _onSelectionStateChanged.ActivateTrigger(this, null);
+                }
             }
         }
 
@@ -79,6 +106,8 @@ namespace com.spacepuppy.UI
 
         public SelectionState CurrentSelectionState { get; private set; }
 
+        public SPEvent OnSelectStateChanged => _onSelectionStateChanged;
+
         #endregion
 
         #region Methods
@@ -89,6 +118,11 @@ namespace com.spacepuppy.UI
             {
                 this.CurrentSelectionState = state;
                 this.Transition.PerformTransition(_selectable, state, instant);
+#if UNITY_EDITOR
+                if (Application.isPlaying && _onSelectionStateChanged.HasReceivers) _onSelectionStateChanged.ActivateTrigger(this, null);
+#else
+                if (_onSelectionStateChanged.HasReceivers) _onSelectionStateChanged.ActivateTrigger(this, null);
+#endif
             }
         }
 
@@ -96,6 +130,11 @@ namespace com.spacepuppy.UI
         {
             this.CurrentSelectionState = state;
             this.Transition.PerformTransition(_selectable, state, instant);
+#if UNITY_EDITOR
+            if (Application.isPlaying && _onSelectionStateChanged.HasReceivers) _onSelectionStateChanged.ActivateTrigger(this, null);
+#else
+            if (_onSelectionStateChanged.HasReceivers) _onSelectionStateChanged.ActivateTrigger(this, null);
+#endif
         }
 
         void EvaluateCurrentStateAndSync(bool instant)
@@ -118,6 +157,30 @@ namespace com.spacepuppy.UI
                 case SelectionState.Disabled:
                 default:
                     this.SetCurrentSelectionState(state, instant);
+                    break;
+            }
+        }
+
+        void ForceEvaluateCurrentStateAndSync(bool instant)
+        {
+            var state = _selectable ? GetCurrentSelectionState(_selectable) : SelectionState.Normal;
+            switch (state)
+            {
+                case SelectionState.Normal:
+                    this.ForceSetCurrentSelectionState(this.OverrideHighlighted ? SelectionState.Highlighted : state, instant);
+                    break;
+                case SelectionState.Highlighted:
+                    this.ForceSetCurrentSelectionState(state, instant);
+                    break;
+                case SelectionState.Pressed:
+                    this.ForceSetCurrentSelectionState(state, instant);
+                    break;
+                case SelectionState.Selected:
+                    this.ForceSetCurrentSelectionState(this.OverrideHighlighted ? SelectionState.Highlighted : state, instant);
+                    break;
+                case SelectionState.Disabled:
+                default:
+                    this.ForceSetCurrentSelectionState(state, instant);
                     break;
             }
         }
@@ -358,6 +421,8 @@ namespace com.spacepuppy.UI
 
                 _selectable.transition = Selectable.Transition.None;
             }
+
+            this.ForceEvaluateCurrentStateAndSync(true);
         }
 #endif
 

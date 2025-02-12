@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 
+using com.spacepuppy.Events;
 using com.spacepuppy.Utils;
 
 using SelectionState = com.spacepuppy.UI.SelectableOverride.SelectionState;
@@ -33,6 +34,8 @@ namespace com.spacepuppy.UI
         private SelectionState _lastKnownState;
         [System.NonSerialized]
         private UpdateHook _updateHook;
+        [System.NonSerialized]
+        private SPEventTrackedListenerToken _selectableOverrideOnStateChangedToken;
 
         #endregion
 
@@ -50,6 +53,7 @@ namespace com.spacepuppy.UI
         {
             base.OnDisable();
 
+            _selectableOverrideOnStateChangedToken.Dispose();
             _updateHook?.Deinitialize();
         }
 
@@ -106,7 +110,7 @@ namespace com.spacepuppy.UI
 
         #region Methods
 
-        public void Sync() => this.Sync( _target ? SelectableOverride.GetCurrentSelectionState(_target) : SelectionState.Normal);
+        public void Sync() => this.Sync(_target ? SelectableOverride.GetCurrentSelectionState(_target) : SelectionState.Normal);
         void Sync(SelectionState state)
         {
             _lastKnownState = state;
@@ -154,10 +158,24 @@ namespace com.spacepuppy.UI
         {
             if (_target)
             {
-                (_updateHook ??= new UpdateHook()).Initialize(this, _target);
+                if (_target.TryGetComponent(out SelectableOverride sover))
+                {
+                    _updateHook?.Deinitialize();
+                    _selectableOverrideOnStateChangedToken.Dispose();
+                    _selectableOverrideOnStateChangedToken = sover.OnSelectStateChanged.AddTrackedListener((s, e) =>
+                    {
+                        this.Sync();
+                    });
+                }
+                else
+                {
+                    _selectableOverrideOnStateChangedToken.Dispose();
+                    (_updateHook ??= new UpdateHook()).Initialize(this, _target);
+                }
             }
             else
             {
+                _selectableOverrideOnStateChangedToken.Dispose();
                 _updateHook?.Deinitialize();
             }
         }

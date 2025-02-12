@@ -32,6 +32,7 @@ namespace com.spacepuppyeditor
                 var targ = EditorGUILayout.ObjectField("Target Graphic", over.Selectable.targetGraphic, typeof(Graphic), true) as Graphic;
                 if (EditorGUI.EndChangeCheck())
                 {
+                    Undo.RecordObject(over.Selectable, "SelectableOverride Set Target Graphic");
                     over.Selectable.targetGraphic = targ;
                     EditorUtility.SetDirty(over.Selectable);
                 }

@@ -584,7 +584,11 @@ namespace com.spacepuppy.SPInput
         {
             Nothing = 0,
             EventSystemBlocks = 1,
-            SignalSupportedEventSystem = 2, //NOTE - this requires that you use an inputmodule that implemented ICursorSupportedInputModule
+            /// <summary>
+            /// Allows signaling ui elements as part of this cursor.
+            /// NOTE - requires that you use an inputmodule that implemented ICursorSupportedInputModule
+            /// </summary>
+            SignalSupportedEventSystem = 2,
         }
 
         public interface ICursorSupportedInputModule
@@ -630,7 +634,7 @@ namespace com.spacepuppy.SPInput
 
             public Vector2 CursorPosition => EventSystem.current?.currentInputModule.input?.mousePosition ?? default;
 
-            public bool CursorIsBlocked => false;
+            public bool CursorIsBlocked => false; //why would it be blocked by EventSystem/UI? This cursor is specifically for the EventSystem/UI
 
             public Ray GetRay()
             {
@@ -647,7 +651,8 @@ namespace com.spacepuppy.SPInput
                 if (EventSystem.current?.currentInputModule is ICursorSupportedInputModule module)
                 {
 #if (UNITY_IOS || UNITY_ANDROID)
-                    if (module.IsPointerOverGameObject(MouseButtonToPointerId(_mouseButtonIndex), out CursorRaycastHit hit) || module.IsPointerOverGameObject(0, out CursorRaycastHit hit))
+                    CursorRaycastHit hit;
+                    if (module.IsPointerOverGameObject(MouseButtonToPointerId(_mouseButtonIndex), out hit) || module.IsPointerOverGameObject(0, out hit))
                     {
                         return hit;
                     }
@@ -775,11 +780,36 @@ namespace com.spacepuppy.SPInput
 
             public Vector2 CursorPosition => EventSystem.current?.currentInputModule?.input?.mousePosition ?? Vector2.zero;
 
+            public virtual bool CursorIsBlocked
+            {
+                get
+                {
+                    switch (_eventSystemConsideration)
+                    {
+                        case EventSystemConsideration.EventSystemBlocks:
+                            {
+                                if (EventSystem.current?.currentInputModule is ICursorSupportedInputModule module)
+                                {
 #if (UNITY_IOS || UNITY_ANDROID)
-            public virtual bool CursorIsBlocked => _eventSystemConsideration == EventSystemConsideration.EventSystemBlocks && ((EventSystem.current?.IsPointerOverGameObject(MouseButtonToPointerId(_mouseButtonIndex)) ?? false) || (EventSystem.current?.IsPointerOverGameObject(0) ?? false));
+                                    return module.IsPointerOverGameObject(MouseButtonToPointerId(_mouseButtonIndex), out _) || module.IsPointerOverGameObject(0, out _);
 #else
-            public virtual bool CursorIsBlocked => _eventSystemConsideration == EventSystemConsideration.EventSystemBlocks && (EventSystem.current?.IsPointerOverGameObject(MouseButtonToPointerId(_mouseButtonIndex)) ?? false);
+                                    return module.IsPointerOverGameObject(MouseButtonToPointerId(_mouseButtonIndex), out _);
 #endif
+                                }
+                                else
+                                {
+#if (UNITY_IOS || UNITY_ANDROID)
+                                    return (EventSystem.current?.IsPointerOverGameObject(MouseButtonToPointerId(_mouseButtonIndex)) ?? false) || (EventSystem.current?.IsPointerOverGameObject(0) ?? false);
+#else
+                                    return EventSystem.current?.IsPointerOverGameObject(MouseButtonToPointerId(_mouseButtonIndex)) ?? false;
+#endif
+                                }
+                            }
+                        default:
+                            return false;
+                    }
+                }
+            }
 
             public virtual Ray GetRay()
             {
@@ -800,7 +830,8 @@ namespace com.spacepuppy.SPInput
                         if (EventSystem.current?.currentInputModule is ICursorSupportedInputModule module)
                         {
 #if (UNITY_IOS || UNITY_ANDROID)
-                            if (module.IsPointerOverGameObject(MouseButtonToPointerId(_mouseButtonIndex), out CursorRaycastHit hit) || module.IsPointerOverGameObject(0, out CursorRaycastHit hit))
+                            CursorRaycastHit hit;
+                            if (module.IsPointerOverGameObject(MouseButtonToPointerId(_mouseButtonIndex), out hit) || module.IsPointerOverGameObject(0, out hit))
                             {
                                 return hit;
                             }
@@ -930,11 +961,36 @@ namespace com.spacepuppy.SPInput
 
             public Vector2 CursorPosition => EventSystem.current?.currentInputModule?.input?.mousePosition ?? Vector2.zero;
 
+            public virtual bool CursorIsBlocked
+            {
+                get
+                {
+                    switch (_eventSystemConsideration)
+                    {
+                        case EventSystemConsideration.EventSystemBlocks:
+                            {
+                                if (EventSystem.current?.currentInputModule is ICursorSupportedInputModule module)
+                                {
 #if (UNITY_IOS || UNITY_ANDROID)
-            public virtual bool CursorIsBlocked => _eventSystemConsideration == EventSystemConsideration.EventSystemBlocks && ((EventSystem.current?.IsPointerOverGameObject(MouseButtonToPointerId(_mouseButtonIndex)) ?? false) || (EventSystem.current?.IsPointerOverGameObject(0) ?? false));
+                                    return module.IsPointerOverGameObject(MouseButtonToPointerId(_mouseButtonIndex), out _) || module.IsPointerOverGameObject(0, out _);
 #else
-            public virtual bool CursorIsBlocked => _eventSystemConsideration == EventSystemConsideration.EventSystemBlocks && (EventSystem.current?.IsPointerOverGameObject(MouseButtonToPointerId(_mouseButtonIndex)) ?? false);
+                                    return module.IsPointerOverGameObject(MouseButtonToPointerId(_mouseButtonIndex), out _);
 #endif
+                                }
+                                else
+                                {
+#if (UNITY_IOS || UNITY_ANDROID)
+                                    return (EventSystem.current?.IsPointerOverGameObject(MouseButtonToPointerId(_mouseButtonIndex)) ?? false) || (EventSystem.current?.IsPointerOverGameObject(0) ?? false);
+#else
+                                    return EventSystem.current?.IsPointerOverGameObject(MouseButtonToPointerId(_mouseButtonIndex)) ?? false;
+#endif
+                                }
+                            }
+                        default:
+                            return false;
+                    }
+                }
+            }
 
             public virtual Ray GetRay()
             {
@@ -955,7 +1011,8 @@ namespace com.spacepuppy.SPInput
                         if (EventSystem.current?.currentInputModule is ICursorSupportedInputModule module)
                         {
 #if (UNITY_IOS || UNITY_ANDROID)
-                            if (module.IsPointerOverGameObject(MouseButtonToPointerId(_mouseButtonIndex), out CursorRaycastHit hit) || module.IsPointerOverGameObject(0, out CursorRaycastHit hit))
+                            CursorRaycastHit hit;
+                            if (module.IsPointerOverGameObject(MouseButtonToPointerId(_mouseButtonIndex), out hit) || module.IsPointerOverGameObject(0, out hit))
                             {
                                 return hit;
                             }

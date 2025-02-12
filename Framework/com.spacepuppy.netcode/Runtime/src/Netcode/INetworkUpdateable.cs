@@ -26,11 +26,41 @@ namespace com.spacepuppy.Netcode
     public static class NetworkUpdateableExtensions
     {
 
+        /// <summary>
+        /// Will return the local network status regardless of if this GameObject is in a NetworkObject or not.
+        /// </summary>
+        /// <param name="nobj"></param>
+        /// <returns></returns>
+        static NetworkStatus GetNetworkStatusUnbiased(GameObject go)
+        {
+            if (go.GetComponentInParent(out NetworkObject nobj))
+            {
+                return nobj.GetNetworkStatus();
+            }
+            else if (NetworkManager.Singleton)
+            {
+                var result = NetworkStatus.Unkown;
+                if (NetworkManager.Singleton.IsServer)
+                {
+                    result |= NetworkStatus.Server;
+                }
+                if (NetworkManager.Singleton.IsClient)
+                {
+                    result |= NetworkStatus.Client;
+                }
+                return result;
+            }
+            else
+            {
+                return NetworkStatus.Offline;
+            }
+        }
+
         public static bool RegisterNetworkUpdate(this INetworkUpdateable obj, NetworkStatus status)
         {
             if (obj == null || obj.gameObject == null) throw new System.ArgumentNullException(nameof(obj));
 
-            if (obj.gameObject.GetComponentInParent(out NetworkObject ngo) && ngo.GetNetworkStatus().Intersects(status))
+            if (GetNetworkStatusUnbiased(obj.gameObject).Intersects(status))
             {
                 var updater = obj.gameObject.AddOrGetComponent<SPNetworkUpdater>();
                 updater.Register(obj);
@@ -53,7 +83,7 @@ namespace com.spacepuppy.Netcode
         {
             if (obj == null || obj.gameObject == null) throw new System.ArgumentNullException(nameof(obj));
 
-            if (obj.gameObject.GetComponentInParent(out NetworkObject ngo) && ngo.GetNetworkStatus().Intersects(status))
+            if (GetNetworkStatusUnbiased(obj.gameObject).Intersects(status))
             {
                 var updater = obj.gameObject.AddOrGetComponent<SPNetworkFixedUpdater>();
                 updater.Register(obj);
@@ -76,7 +106,7 @@ namespace com.spacepuppy.Netcode
         {
             if (obj == null || obj.gameObject == null) throw new System.ArgumentNullException(nameof(obj));
 
-            if (obj.gameObject.GetComponentInParent(out NetworkObject ngo) && ngo.GetNetworkStatus().Intersects(status))
+            if (GetNetworkStatusUnbiased(obj.gameObject).Intersects(status))
             {
                 var updater = obj.gameObject.AddOrGetComponent<SPNetworkLateUpdater>();
                 updater.Register(obj);
@@ -143,9 +173,6 @@ namespace com.spacepuppy.Netcode
         #region Fields
 
         [System.NonSerialized]
-        private NetworkObject _networkObject;
-
-        [System.NonSerialized]
         private List<INetworkUpdateable> _lst = new();
         [System.NonSerialized]
         private LockingEnumerable<INetworkUpdateable> _enumerable;
@@ -156,7 +183,6 @@ namespace com.spacepuppy.Netcode
 
         private void Awake()
         {
-            _networkObject = this.GetComponentInParent<NetworkObject>();
             _enumerable = new(_lst);
         }
 
@@ -243,9 +269,6 @@ namespace com.spacepuppy.Netcode
         #region Fields
 
         [System.NonSerialized]
-        private NetworkObject _networkObject;
-
-        [System.NonSerialized]
         private List<INetworkFixedUpdateable> _lst = new();
         [System.NonSerialized]
         private LockingEnumerable<INetworkFixedUpdateable> _enumerable;
@@ -256,7 +279,6 @@ namespace com.spacepuppy.Netcode
 
         private void Awake()
         {
-            _networkObject = this.GetComponentInParent<NetworkObject>();
             _enumerable = new(_lst);
         }
 
@@ -343,9 +365,6 @@ namespace com.spacepuppy.Netcode
         #region Fields
 
         [System.NonSerialized]
-        private NetworkObject _networkObject;
-
-        [System.NonSerialized]
         private List<INetworkLateUpdateable> _lst = new();
         [System.NonSerialized]
         private LockingEnumerable<INetworkLateUpdateable> _enumerable;
@@ -356,7 +375,6 @@ namespace com.spacepuppy.Netcode
 
         private void Awake()
         {
-            _networkObject = this.GetComponentInParent<NetworkObject>();
             _enumerable = new(_lst);
         }
 

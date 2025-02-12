@@ -55,6 +55,7 @@ namespace com.spacepuppy
             DoNothing = 0,
             DestroySelf = 1,
             DestroyGameObject = 2,
+            DisableSelf = 3,
         }
 
         #region Fields
@@ -944,6 +945,9 @@ namespace com.spacepuppy
                     break;
                 case Services.UnregisterResolutionOption.DestroyGameObject:
                     ObjUtil.SmartDestroy(this.gameObject);
+                    break;
+                case Services.UnregisterResolutionOption.DisableSelf:
+                    this.enabled = false;
                     break;
             }
         }

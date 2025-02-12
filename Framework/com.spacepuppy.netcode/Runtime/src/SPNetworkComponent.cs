@@ -390,6 +390,9 @@ namespace com.spacepuppy
                         }
                     }
                     break;
+                case UnregisterResolutionOption.DisableSelf:
+                    this.enabled = false;
+                    break;
             }
         }
 
@@ -415,6 +418,7 @@ namespace com.spacepuppy
             DoNothing = 0,
             //
             DespawnNetworkObject = 2,
+            DisableSelf = 3,
         }
 
         #endregion

@@ -21,6 +21,7 @@ namespace com.spacepuppyeditor.UI
             base.serializedObject.Update();
             SPEditorGUILayout.PropertyField(this.serializedObject.FindProperty("_onClick"));
             SPEditorGUILayout.PropertyField(this.serializedObject.FindProperty("_clickDuration"));
+            SPEditorGUILayout.PropertyField(this.serializedObject.FindProperty("_acceptedButtons"));
             base.serializedObject.ApplyModifiedProperties();
         }
 

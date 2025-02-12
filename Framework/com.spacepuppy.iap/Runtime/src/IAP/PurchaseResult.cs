@@ -15,6 +15,7 @@ namespace com.spacepuppy.IAP
         public Product Product;
         public PurchaseStatus Status;
         public PurchaseFailureReason FailureReason;
+        public string Message;
 
         public bool Failed => Status < PurchaseStatus.Complete;
 
@@ -45,6 +46,29 @@ namespace com.spacepuppy.IAP
                 Product = prod,
                 Status = PurchaseStatus.Failed,
                 FailureReason = reason,
+                Message = string.Empty,
+            };
+        }
+
+        public static PurchaseResult Failure(Product prod, PurchaseFailureReason reason, string message)
+        {
+            return new PurchaseResult()
+            {
+                Product = prod,
+                Status = PurchaseStatus.Failed,
+                FailureReason = reason,
+                Message = message ?? string.Empty,
+            };
+        }
+
+        public static PurchaseResult Failure(Product prod, UnityEngine.Purchasing.Extension.PurchaseFailureDescription failureDescription)
+        {
+            return new PurchaseResult()
+            {
+                Product = prod,
+                Status = PurchaseStatus.Failed,
+                FailureReason = failureDescription?.reason ?? PurchaseFailureReason.Unknown,
+                Message = failureDescription?.message ?? string.Empty,
             };
         }
 

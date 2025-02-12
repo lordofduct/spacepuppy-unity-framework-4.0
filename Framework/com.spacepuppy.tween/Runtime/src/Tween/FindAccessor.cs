@@ -68,6 +68,14 @@ namespace com.spacepuppy.Tween
         public static IMemberAccessor<Vector2> RectTransformSizeDelta { get { return _rectTransformSizeDelta ?? (_rectTransformSizeDelta = new GetterSetterMemberAccessor<RectTransform, Vector2>(t => t.sizeDelta, (t, v) => t.sizeDelta = v)); } }
         public static IMemberAccessor<Vector2> sizeDelta_ref(this RectTransform t) { return RectTransformSizeDelta; }
 
+        private static IMemberAccessor<Vector2> _rectTransformOffsetMax;
+        public static IMemberAccessor<Vector2> RectTransformOffsetMax { get { return _rectTransformOffsetMax ?? (_rectTransformOffsetMax = new GetterSetterMemberAccessor<RectTransform, Vector2>(t => t.offsetMax, (t, v) => t.offsetMax = v)); } }
+        public static IMemberAccessor<Vector2> offsetMax_ref(this RectTransform t) { return RectTransformOffsetMax; }
+
+        private static IMemberAccessor<Vector2> _rectTransformOffsetMin;
+        public static IMemberAccessor<Vector2> RectTransformOffsetMin { get { return _rectTransformOffsetMin ?? (_rectTransformOffsetMin = new GetterSetterMemberAccessor<RectTransform, Vector2>(t => t.offsetMin, (t, v) => t.offsetMin = v)); } }
+        public static IMemberAccessor<Vector2> offsetMin_ref(this RectTransform t) { return RectTransformOffsetMin; }
+
         #endregion
 
         #region UnityEngine.UI.Text

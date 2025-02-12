@@ -71,6 +71,7 @@ namespace com.spacepuppy.SPInput
         {
             //_signatures.Sort();
 
+            _signatures.Update(false);
             var e = _signatures.GetEnumerator();
             while (e.MoveNext())
             {
@@ -82,6 +83,7 @@ namespace com.spacepuppy.SPInput
         {
             //_signatures.Sort();
 
+            _signatures.Update(true);
             var e = _signatures.GetEnumerator();
             while (e.MoveNext())
             {

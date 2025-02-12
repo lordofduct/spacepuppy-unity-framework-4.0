@@ -59,7 +59,13 @@ namespace com.spacepuppy.Statistics
 
         private void _ledger_Changed(object sender, LedgerChangedEventArgs ev)
         {
+            this.OnLedgerChanged();
             Messaging.Broadcast<IStatisticsTokenLedgerChangedGlobalHandler, LedgerChangedEventArgs>(ev, (o, e) => o.OnChanged(this, e));
+        }
+
+        protected virtual void OnLedgerChanged()
+        {
+
         }
 
         #endregion

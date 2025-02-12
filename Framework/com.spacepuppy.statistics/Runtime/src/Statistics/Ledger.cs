@@ -6,6 +6,7 @@ using System.Linq;
 using com.spacepuppy;
 using com.spacepuppy.Collections;
 using com.spacepuppy.Utils;
+using System.Text;
 
 namespace com.spacepuppy.Statistics
 {
@@ -523,6 +524,171 @@ namespace com.spacepuppy.Statistics
                 if (this.WriteNullEntries || pair.Value != null)
                 {
                     info.AddValue(pair.Key.ToString(), pair.Value);
+                }
+            }
+        }
+
+        public string ToJson()
+        {
+            var sb = StringUtil.GetTempStringBuilder();
+            try
+            {
+                sb.AppendLine("{");
+                int cnt = 0;
+                foreach (var pair in _stats)
+                {
+                    if (this.WriteNullEntries || pair.Value != null)
+                    {
+                        cnt++;
+                        if (pair.Value.HasValue)
+                        {
+                            sb.AppendLine($"\"{pair.Key.ToString()}\":{pair.Value.Value},");
+                        }
+                        else
+                        {
+                            sb.AppendLine($"\"{pair.Key.ToString()}\":null,");
+                        }
+                    }
+                }
+                if (cnt > 0)
+                {
+                    while (char.IsWhiteSpace(sb[sb.Length - 1])) sb.Length--;
+                    sb.Length--;
+                }
+
+                sb.AppendLine();
+                sb.Append("}");
+                return sb.ToString();
+            }
+            finally
+            {
+                StringUtil.ReleaseSilently(sb);
+            }
+        }
+
+        public void FromJson(string json)
+        {
+            bool ReadThruWhitespace(System.IO.StringReader reader)
+            {
+                while (reader.Peek() != -1 && char.IsWhiteSpace((char)reader.Peek()))
+                {
+                    reader.Read();
+                }
+                return reader.Peek() != -1;
+            }
+
+            bool ReadKey(System.IO.StringReader reader, StringBuilder sb)
+            {
+                if (!ReadThruWhitespace(reader)) return false;
+                if (reader.Read() != '"') return false;
+
+                while (true)
+                {
+                    int i = reader.Read();
+                    if (i == -1) return false;
+
+                    char c = (char)i;
+                    if (c == '"') return true;
+
+                    sb.Append(c);
+                }
+            }
+
+            int ReadValue(System.IO.StringReader reader, StringBuilder sb)
+            {
+                if (!ReadThruWhitespace(reader)) return -1;
+
+                int i = reader.Read();
+                if (i == -1) return -1;
+
+                char c = (char)i;
+                if (c != ':') return -1;
+
+                if (!ReadThruWhitespace(reader)) return -1;
+
+                bool reachedEndOfNum = false;
+                while (true)
+                {
+                    i = reader.Read();
+                    if (i == -1) return -1;
+
+                    c = (char)i;
+                    if (c == ',') return 0;
+                    if (c == '}') return 1;
+                    if (char.IsWhiteSpace(c))
+                    {
+                        reachedEndOfNum = true;
+                    }
+                    else if (!reachedEndOfNum)
+                    {
+                        sb.Append(c);
+                    }
+                }
+            }
+
+            using (var reader = new System.IO.StringReader(json))
+            {
+                _stats.Clear();
+                var sb = StringUtil.GetTempStringBuilder();
+                try
+                {
+                    if (!ReadThruWhitespace(reader)) return; //reached end of empty json
+
+                    if ((char)reader.Read() != '{')
+                    {
+                        //malformed - not an object
+                        throw new System.ArgumentException("Malformed json string.");
+                    }
+
+                    if (!ReadThruWhitespace(reader))
+                    {
+                        //malformed - json cuts off
+                        throw new System.ArgumentException("Malformed json string.");
+                    }
+
+                    if (reader.Peek() == '}')
+                    {
+                        //it's an empty json object
+                        return;
+                    }
+
+                    while (true)
+                    {
+                        //read string
+                        sb.Clear();
+                        if (!ReadKey(reader, sb))
+                        {
+                            //malformed - json cuts off
+                            throw new System.ArgumentException("Malformed json string.");
+                        }
+
+                        var key = sb.ToString();
+                        sb.Clear();
+
+                        bool reachedEnd = false; ;
+                        switch (ReadValue(reader, sb))
+                        {
+                            case -1:
+                                //malformed - json cuts off
+                                throw new System.ArgumentException("Malformed json string.");
+                            case 0:
+                                //end of line
+                                reachedEnd = false;
+                                break;
+                            case 1:
+                                //end of file
+                                reachedEnd = true;
+                                break;
+                        }
+                        var value = sb.ToString();
+                        _stats[StatId.Parse(key)] = (value != null && !string.Equals(value, "null", System.StringComparison.OrdinalIgnoreCase)) ? (double?)ConvertUtil.ToDouble(value) : null;
+
+                        if (reachedEnd) break;
+                    }
+                }
+                finally
+                {
+                    StringUtil.ReleaseSilently(sb);
                 }
             }
         }

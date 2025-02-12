@@ -26,32 +26,21 @@ namespace com.spacepuppy.Geom
 
         public bool ContainsActive(SPEntity entity)
         {
-            if (!entity) return false;
+            if (!ObjUtil.IsObjectAlive(entity)) return false;
 
             return _activeEntities.Contains(entity);
         }
 
-        public SPEntity[] GetActiveEntities()
+        public IEnumerable<SPEntity> GetActiveEntities()
         {
-            if (_activeEntities.Count == 0) return ArrayUtil.Empty<SPEntity>();
+            if (_isDirty) this.CleanActive();
+            return _activeEntities.Where(this.ValidateEntryOrSetDirty);
+        }
 
-            bool doclean = false;
-            try
-            {
-                return _activeEntities.Where(o =>
-                {
-                    if (!ObjUtil.IsObjectAlive(o))
-                    {
-                        doclean = true;
-                        return false;
-                    }
-                    return true;
-                }).ToArray();
-            }
-            finally
-            {
-                if (doclean) this.CleanActive();
-            }
+        public IEnumerable<T> GetActiveEntities<T>() where T : SPEntity
+        {
+            if (_isDirty) this.CleanActive();
+            return _activeEntities.Where(this.ValidateEntryOrSetDirty).OfType<T>();
         }
 
         public int GetActiveEntities<T>(ICollection<T> output) where T : SPEntity
@@ -59,23 +48,18 @@ namespace com.spacepuppy.Geom
             if (_active.Count == 0) return 0;
 
             var e = _active.GetEnumerator();
-            bool doclean = false;
             int cnt = 0;
             try
             {
                 while (e.MoveNext())
                 {
-                    if (!ObjUtil.IsObjectAlive(e.Current))
-                    {
-                        doclean = true;
-                        continue;
-                    }
+                    if (!this.ValidateEntryOrSetDirty(e.Current)) continue;
                     if (e.Current is T ent) output.Add(ent);
                 }
             }
             finally
             {
-                if (doclean) this.CleanActive();
+                if (_isDirty) this.CleanActive();
             }
             return cnt;
         }
@@ -145,6 +129,19 @@ namespace com.spacepuppy.Geom
             if (_activeEntities.Count > 0)
             {
                 _activeEntities.RemoveWhere(o => !ObjUtil.IsObjectAlive(o) || !o.isActiveAndEnabled);
+            }
+        }
+
+        protected bool ValidateEntryOrSetDirty(SPEntity o)
+        {
+            if (ObjUtil.IsObjectAlive(o) && o.isActiveAndEnabled)
+            {
+                return true;
+            }
+            else
+            {
+                _isDirty = true;
+                return false;
             }
         }
 

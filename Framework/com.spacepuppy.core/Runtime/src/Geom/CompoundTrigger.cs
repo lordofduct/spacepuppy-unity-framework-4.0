@@ -120,6 +120,8 @@ namespace com.spacepuppy.Geom
             IncludeInactiveObjects = false,
         };
 
+        protected bool _isDirty;
+
         #endregion
 
         #region CONSTRUCTOR
@@ -153,6 +155,7 @@ namespace com.spacepuppy.Geom
             }
             _active.Clear();
             _signaled?.Clear();
+            _isDirty = false;
         }
 
         #endregion
@@ -258,7 +261,13 @@ namespace com.spacepuppy.Geom
         /// The 'other' colliders that are currently inside this compoundtrigger
         /// </summary>
         /// <returns></returns>
-        public IEnumerable<Collider> GetActiveColliders() => _active.Where(o => ObjUtil.IsObjectAlive(o));
+        public IEnumerable<Collider> GetActiveColliders()
+        {
+            if (_isDirty) this.CleanActive();
+            if (_active.Count == 0) return Enumerable.Empty<Collider>();
+
+            return _active.Where(this.ValidateEntryOrSetDirty);
+        }
 
         public bool Contains(Vector3 position)
         {
@@ -272,7 +281,28 @@ namespace com.spacepuppy.Geom
             return false;
         }
 
-        public bool ContainsActive() => _active.Count > 0 && _active.Count(o => ObjUtil.IsObjectAlive(o)) > 0;
+        public bool ContainsActive()
+        {
+            if (_active.Count == 0) return false;
+
+            var e = _active.GetEnumerator();
+            try
+            {
+                while (e.MoveNext())
+                {
+                    if (this.ValidateEntryOrSetDirty(e.Current))
+                    {
+                        return true;
+                    }
+                }
+            }
+            finally
+            {
+                if (_isDirty) this.CleanActive();
+            }
+
+            return false;
+        }
 
         public bool ContainsActive(Collider c) => c != null && _active.Contains(c);
 
@@ -282,24 +312,20 @@ namespace com.spacepuppy.Geom
 
             var e = _active.GetEnumerator();
             int cnt = 0;
-            bool doclean = false;
             try
             {
                 while (e.MoveNext())
                 {
-                    if (!ObjUtil.IsObjectAlive(e.Current))
+                    if (this.ValidateEntryOrSetDirty(e.Current))
                     {
-                        doclean = true;
-                        continue;
+                        cnt++;
+                        output.Add(e.Current);
                     }
-
-                    cnt++;
-                    output.Add(e.Current);
                 }
             }
             finally
             {
-                if (doclean) this.CleanActive();
+                if (_isDirty) this.CleanActive();
             }
             return cnt;
         }
@@ -311,6 +337,7 @@ namespace com.spacepuppy.Geom
             var e = _active.GetEnumerator();
             while (e.MoveNext())
             {
+                if (!this.ValidateEntryOrSetDirty(e.Current)) continue;
                 if (ObjUtil.GetAsFromSource(e.Current, out T o)) yield return o;
             }
         }
@@ -322,6 +349,7 @@ namespace com.spacepuppy.Geom
             var e = _active.GetEnumerator();
             while (e.MoveNext())
             {
+                if (!this.ValidateEntryOrSetDirty(e.Current)) continue;
                 if (ObjUtil.GetAsFromSource(e.Current, out T o) && (filter?.Invoke(o) ?? true)) yield return o;
             }
         }
@@ -335,7 +363,7 @@ namespace com.spacepuppy.Geom
             {
                 while (e.MoveNext())
                 {
-                    if (!ObjUtil.IsObjectAlive(e.Current)) continue;
+                    if (!this.ValidateEntryOrSetDirty(e.Current)) continue;
                     var o = cast(e.Current);
                     if (o != null && (filter?.Invoke(o) ?? true)) yield return o;
                 }
@@ -344,6 +372,7 @@ namespace com.spacepuppy.Geom
             {
                 while (e.MoveNext())
                 {
+                    if (!this.ValidateEntryOrSetDirty(e.Current)) continue;
                     if (ObjUtil.GetAsFromSource(e.Current, out T o) && (filter?.Invoke(o) ?? true)) yield return o;
                 }
             }
@@ -355,17 +384,11 @@ namespace com.spacepuppy.Geom
 
             var e = _active.GetEnumerator();
             int cnt = 0;
-            bool doclean = false;
             try
             {
                 while (e.MoveNext())
                 {
-                    if (!ObjUtil.IsObjectAlive(e.Current))
-                    {
-                        doclean = true;
-                        continue;
-                    }
-                    else if (ObjUtil.GetAsFromSource(e.Current, out T o))
+                    if (this.ValidateEntryOrSetDirty(e.Current) && ObjUtil.GetAsFromSource(e.Current, out T o))
                     {
                         cnt++;
                         output.Add(o);
@@ -374,7 +397,7 @@ namespace com.spacepuppy.Geom
             }
             finally
             {
-                if (doclean) this.CleanActive();
+                if (_isDirty) this.CleanActive();
             }
             return cnt;
         }
@@ -385,17 +408,11 @@ namespace com.spacepuppy.Geom
 
             var e = _active.GetEnumerator();
             int cnt = 0;
-            bool doclean = false;
             try
             {
                 while (e.MoveNext())
                 {
-                    if (!ObjUtil.IsObjectAlive(e.Current))
-                    {
-                        doclean = true;
-                        continue;
-                    }
-                    else if (ObjUtil.GetAsFromSource(e.Current, out T o) && (filter?.Invoke(o) ?? true))
+                    if (this.ValidateEntryOrSetDirty(e.Current) && ObjUtil.GetAsFromSource(e.Current, out T o) && (filter?.Invoke(o) ?? true))
                     {
                         cnt++;
                         output.Add(o);
@@ -404,7 +421,7 @@ namespace com.spacepuppy.Geom
             }
             finally
             {
-                if (doclean) this.CleanActive();
+                if (_isDirty) this.CleanActive();
             }
             return cnt;
         }
@@ -415,16 +432,11 @@ namespace com.spacepuppy.Geom
 
             var e = _active.GetEnumerator();
             int cnt = 0;
-            bool doclean = false;
             try
             {
                 while (e.MoveNext())
                 {
-                    if (!ObjUtil.IsObjectAlive(e.Current))
-                    {
-                        doclean = true;
-                        continue;
-                    }
+                    if (!this.ValidateEntryOrSetDirty(e.Current)) continue;
 
                     var o = cast != null ? cast(e.Current) : ObjUtil.GetAsFromSource<T>(e.Current);
                     if (o != null && (filter?.Invoke(o) ?? true))
@@ -436,7 +448,7 @@ namespace com.spacepuppy.Geom
             }
             finally
             {
-                if (doclean) this.CleanActive();
+                if (_isDirty) this.CleanActive();
             }
             return cnt;
         }
@@ -540,6 +552,20 @@ namespace com.spacepuppy.Geom
             foreach (var pair in _colliders)
             {
                 pair.Value.CleanActive();
+            }
+            _isDirty = false;
+        }
+
+        protected bool ValidateEntryOrSetDirty(Collider o)
+        {
+            if (ObjUtil.IsObjectAlive(o) && o.IsActiveAndEnabled())
+            {
+                return true;
+            }
+            else
+            {
+                _isDirty = true;
+                return false;
             }
         }
 

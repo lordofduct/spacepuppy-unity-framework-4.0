@@ -5,6 +5,7 @@ using System.Linq;
 
 using com.spacepuppy.Project;
 using com.spacepuppy.Utils;
+using System.Reflection.Emit;
 
 namespace com.spacepuppy.UI
 {
@@ -33,9 +34,7 @@ namespace com.spacepuppy.UI
         private int _gotoStateOnMultipleClicks = -1;
 
         [System.NonSerialized]
-        private List<ButtonRef.TrackedListenerToken> _buttonOnClickHooks = new();
-        [System.NonSerialized]
-        private TrackedEventListenerToken _stateMachineStateChangedHook;
+        private MultiTrackedListenerToken _eventTokens;
 
         #endregion
 
@@ -93,11 +92,11 @@ namespace com.spacepuppy.UI
             this.RemoveTrackedListeners();
             foreach (var btn in _buttons)
             {
-                _buttonOnClickHooks.Add(btn.AddTrackedListener(this.btn_OnClick));
+                _eventTokens += btn.OnClick_ref().AddTrackedListener(this.btn_OnClick);
             }
             if (this.StateMachine != null)
             {
-                _stateMachineStateChangedHook = this.StateMachine.AddTrackedStateChangedListener(stateMachine_StateChanged);
+                _eventTokens += this.StateMachine.StateChanged_ref().AddTrackedListener(stateMachine_StateChanged);
             }
             if (_tryHighlightSelectedTabButton)
             {
@@ -107,12 +106,7 @@ namespace com.spacepuppy.UI
 
         void RemoveTrackedListeners()
         {
-            _stateMachineStateChangedHook.Dispose();
-            foreach (var d in _buttonOnClickHooks)
-            {
-                d.Dispose();
-            }
-            _buttonOnClickHooks.Clear();
+            _eventTokens.Dispose();
         }
 
         void btn_OnClick(object sender, System.EventArgs e)

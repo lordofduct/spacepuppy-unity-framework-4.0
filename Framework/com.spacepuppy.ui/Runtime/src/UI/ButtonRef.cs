@@ -40,6 +40,7 @@ namespace com.spacepuppy.UI
                 }
             }
         }
+        public EventHandlerRef OnClick_ref() => EventHandlerRef.Create(this, (o, l) => o.OnClick += l, (o, l) => o.OnClick -= l);
 
         #region Fields
 
@@ -140,7 +141,8 @@ namespace com.spacepuppy.UI
             _onClick?.Invoke(sender, System.EventArgs.Empty);
         }
 
-        public TrackedListenerToken AddTrackedListener(System.EventHandler handler) => new TrackedListenerToken(this, handler);
+        [System.Obsolete("Use OnClick_Ref().AddTrackedListener instead.")]
+        public TrackedEventHandlerToken AddTrackedListener(System.EventHandler listener) => OnClick_ref().AddTrackedListener(listener);
 
         #endregion
 
@@ -160,43 +162,6 @@ namespace com.spacepuppy.UI
         {
             this.RemoveEventHandlerHook();
             _value = null;
-        }
-
-        #endregion
-
-        #region Special Types
-
-        public struct TrackedListenerToken : System.IDisposable
-        {
-
-            private ButtonRef _target;
-            private System.EventHandler _handler;
-
-            public TrackedListenerToken(ButtonRef target, System.EventHandler handler)
-            {
-                if (target != null && handler != null)
-                {
-                    _target = target;
-                    _handler = handler;
-                    _target.OnClick += handler;
-                }
-                else
-                {
-                    _target = null;
-                    _handler = null;
-                }
-            }
-
-            public void Dispose()
-            {
-                if (_target != null && _handler != null)
-                {
-                    _target.OnClick -= _handler;
-                }
-                _target = null;
-                _handler = null;
-            }
-
         }
 
         #endregion

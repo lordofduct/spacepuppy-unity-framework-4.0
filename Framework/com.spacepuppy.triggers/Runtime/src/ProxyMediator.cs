@@ -143,12 +143,7 @@ namespace com.spacepuppy
                 }
             }
         }
-        public TrackedEventListenerToken<TempEventArgs> AddTrackedOnTriggeredListener(System.EventHandler<TempEventArgs> handler)
-        {
-            this.OnTriggered += handler;
-            return new TrackedEventListenerToken<TempEventArgs>(handler, (h) => this.OnTriggered -= h);
-        }
-
+        public EventHandlerRef<TempEventArgs> OnTriggered_ref() => EventHandlerRef<TempEventArgs>.Create(this, (o, l) => o.OnTriggered += l, (o, l) => o.OnTriggered -= l);
 
         #region Fields
 

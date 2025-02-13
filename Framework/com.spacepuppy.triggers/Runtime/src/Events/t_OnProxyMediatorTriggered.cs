@@ -29,7 +29,7 @@ namespace com.spacepuppy.Events
         private bool _useProxyMediatorAsDaisyChainedArg;
 
         [System.NonSerialized]
-        private TrackedEventListenerToken<TempEventArgs> _onTriggerHook;
+        private TrackedEventHandlerToken<TempEventArgs> _onTriggerHook;
 
         #endregion
 
@@ -40,7 +40,7 @@ namespace com.spacepuppy.Events
             base.OnEnable();
 
             _onTriggerHook.Dispose();
-            if (_mediator != null) _onTriggerHook = _mediator.AddTrackedOnTriggeredListener(this.OnMediatorTriggeredCallback);
+            if (_mediator != null) _onTriggerHook = _mediator.OnTriggered_ref().AddTrackedListener(this.OnMediatorTriggeredCallback);
         }
 
         protected override void OnDisable()
@@ -71,7 +71,7 @@ namespace com.spacepuppy.Events
                 {
                     _onTriggerHook.Dispose();
                     _mediator = value;
-                    if (_mediator != null) _onTriggerHook = _mediator.AddTrackedOnTriggeredListener(this.OnMediatorTriggeredCallback);
+                    if (_mediator != null) _onTriggerHook = _mediator.OnTriggered_ref().AddTrackedListener(this.OnMediatorTriggeredCallback);
                 }
                 else
                 {

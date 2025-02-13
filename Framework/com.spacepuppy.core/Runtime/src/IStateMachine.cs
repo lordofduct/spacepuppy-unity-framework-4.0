@@ -10,11 +10,7 @@ namespace com.spacepuppy
     {
 
         event System.EventHandler StateChanged;
-        public TrackedEventListenerToken AddTrackedStateChangedListener(System.EventHandler handler)
-        {
-            this.StateChanged += handler;
-            return new TrackedEventListenerToken(handler, (h) => this.StateChanged -= h);
-        }
+        public EventHandlerRef StateChanged_ref() => EventHandlerRef.Create(this, (o, l) => o.StateChanged += l, (o, l) => o.StateChanged -= l);
 
         int StateCount { get; }
         string CurrentStateId { get; }

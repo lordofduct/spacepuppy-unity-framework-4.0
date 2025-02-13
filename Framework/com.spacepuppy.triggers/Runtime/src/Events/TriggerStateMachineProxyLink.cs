@@ -20,7 +20,7 @@ namespace com.spacepuppy.Events
         private List<ProxyLink> _links = new List<ProxyLink>();
 
         [System.NonSerialized]
-        private List<TrackedEventListenerToken<TempEventArgs>> _eventHooks = new List<TrackedEventListenerToken<TempEventArgs>>();
+        private MultiTrackedListenerToken _eventTokens;
 
         #endregion
 
@@ -31,7 +31,7 @@ namespace com.spacepuppy.Events
             if (_stateMachine.Value == null) _stateMachine.Value = this.GetComponent<IStateMachine>();
             for (int i = 0; i < _links.Count; i++)
             {
-                if (_links[i].Proxy) _eventHooks.Add(_links[i].Proxy.AddTrackedOnTriggeredListener(Proxy_OnTriggered));
+                if (_links[i].Proxy) _eventTokens += _links[i].Proxy.OnTriggered_ref().AddTrackedListener(Proxy_OnTriggered);
             }
         }
 
@@ -39,14 +39,7 @@ namespace com.spacepuppy.Events
         {
             base.OnDisable();
 
-            if (_eventHooks.Count > 0)
-            {
-                foreach (var hook in _eventHooks)
-                {
-                    hook.Dispose();
-                }
-                _eventHooks.Clear();
-            }
+            _eventTokens.Dispose();
         }
 
         #endregion

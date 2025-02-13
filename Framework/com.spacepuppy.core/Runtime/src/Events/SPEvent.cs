@@ -7,38 +7,48 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Events
 {
 
-    public struct SPEventTrackedListenerToken : System.IDisposable
+    public struct SPEventTrackedListenerToken : ITrackedListenerToken<System.EventHandler<TempEventArgs>>
     {
         private BaseSPEvent _spevent;
-        private System.EventHandler<TempEventArgs> _handler;
+        private System.EventHandler<TempEventArgs> _listener;
 
         public BaseSPEvent SPEvent => _spevent;
+        ITrackableEvent<System.EventHandler<TempEventArgs>> ITrackedListenerToken<System.EventHandler<TempEventArgs>>.Target => _spevent;
+        System.EventHandler<TempEventArgs> ITrackedListenerToken<System.EventHandler<TempEventArgs>>.Listener => _listener;
 
         public void Dispose()
         {
-            if (_spevent != null && _handler != null)
+            if (_spevent != null && _listener != null)
             {
-                _spevent.TriggerActivated -= _handler;
+                _spevent.TriggerActivated -= _listener;
             }
             _spevent = null;
-            _handler = null;
+            _listener = null;
         }
 
-        internal static SPEventTrackedListenerToken Create(BaseSPEvent spevent, System.EventHandler<TempEventArgs> handler)
+        internal static SPEventTrackedListenerToken AddListener(BaseSPEvent spevent, System.EventHandler<TempEventArgs> listener)
         {
-            if (spevent == null || handler == null) return default;
-            spevent.TriggerActivated += handler;
+            if (spevent == null || listener == null) return default;
+            spevent.TriggerActivated += listener;
             return new SPEventTrackedListenerToken()
             {
                 _spevent = spevent,
-                _handler = handler
+                _listener = listener
             };
+        }
+
+        public static implicit operator TrackedListenerToken<System.EventHandler<TempEventArgs>>(SPEventTrackedListenerToken token)
+        {
+            return new TrackedListenerToken<System.EventHandler<TempEventArgs>>(token._spevent, token._listener);
         }
 
     }
 
     public static class SPEventExtensions
     {
+
+
+        [System.Obsolete("Use MultiTrackedListenerToken instead.")]
         public static IEnumerable<SPEventTrackedListenerToken> AddTrackedListeners(this IEnumerable<SPEvent> targets, System.EventHandler<TempEventArgs> handler)
         {
             if (handler == null) throw new System.ArgumentNullException(nameof(handler));
@@ -51,6 +61,7 @@ namespace com.spacepuppy.Events
             }
         }
 
+        [System.Obsolete("Use MultiTrackedListenerToken instead.")]
         public static void Dispose(this IEnumerable<SPEventTrackedListenerToken> hooks)
         {
             if (hooks == null) return;
@@ -65,7 +76,7 @@ namespace com.spacepuppy.Events
 
 
     [System.Serializable()]
-    public abstract class BaseSPEvent
+    public abstract class BaseSPEvent : ITrackableEvent<System.EventHandler<TempEventArgs>>
     {
 
         public const string ID_DEFAULT = "Trigger";
@@ -247,7 +258,22 @@ namespace com.spacepuppy.Events
             this.OnTriggerActivated(sender, arg);
         }
 
-        public SPEventTrackedListenerToken AddTrackedListener(System.EventHandler<TempEventArgs> handler) => SPEventTrackedListenerToken.Create(this, handler);
+        #endregion
+
+        #region ITrackableEvent Interface
+
+        void ITrackableEvent<System.EventHandler<TempEventArgs>>.AddListener(System.EventHandler<com.spacepuppy.TempEventArgs> listener)
+        {
+
+        }
+
+        void ITrackableEvent<System.EventHandler<TempEventArgs>>.RemoveListener(System.EventHandler<com.spacepuppy.TempEventArgs> listener)
+        {
+
+        }
+
+        public SPEventTrackedListenerToken AddTrackedListener(System.EventHandler<TempEventArgs> listener) => SPEventTrackedListenerToken.AddListener(this, listener);
+        ITrackedListenerToken<System.EventHandler<TempEventArgs>> ITrackableEvent<System.EventHandler<TempEventArgs>>.AddTrackedListener(System.EventHandler<com.spacepuppy.TempEventArgs> listener) => SPEventTrackedListenerToken.AddListener(this, listener);
 
         #endregion
 

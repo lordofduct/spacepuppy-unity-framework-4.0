@@ -30,7 +30,7 @@ namespace com.spacepuppy.Events
         private Modes _mode;
 
         [System.NonSerialized]
-        private TrackedEventListenerToken _onStateChangedHook;
+        private TrackedEventHandlerToken _eventHook;
 
         #endregion
 
@@ -40,15 +40,15 @@ namespace com.spacepuppy.Events
         {
             this.Sync();
 
-            _onStateChangedHook.Dispose();
-            if (this.SourceStateMachine.IsAlive()) _onStateChangedHook = this.SourceStateMachine.AddTrackedStateChangedListener(OnEnterState_TriggerActivated);
+            _eventHook.Dispose();
+            if (this.SourceStateMachine.IsAlive()) _eventHook = this.SourceStateMachine.StateChanged_ref().AddTrackedListener(OnEnterState_TriggerActivated);
         }
 
         protected override void OnDisable()
         {
             base.OnDisable();
 
-            _onStateChangedHook.Dispose();
+            _eventHook.Dispose();
         }
 
         #endregion
@@ -67,13 +67,13 @@ namespace com.spacepuppy.Events
             set
             {
                 if (_sourceStateMachine.Value == value) return;
-                _onStateChangedHook.Dispose();
+                _eventHook.Dispose();
 
                 _sourceStateMachine.Value = value;
 #if UNITY_EDITOR
-                if (Application.isPlaying && _sourceStateMachine.Value.IsAlive() && this.isActiveAndEnabled) _onStateChangedHook = _sourceStateMachine.Value.AddTrackedStateChangedListener(OnEnterState_TriggerActivated);
+                if (Application.isPlaying && _sourceStateMachine.Value.IsAlive() && this.isActiveAndEnabled) _eventHook = _sourceStateMachine.Value.StateChanged_ref().AddTrackedListener(OnEnterState_TriggerActivated);
 #else
-                if (_sourceStateMachine.Value.IsAlive() && this.isActiveAndEnabled) _onStateChangedHook =  _sourceStateMachine.Value.AddTrackedStateChangedListener(OnEnterState_TriggerActivated);
+                if (_sourceStateMachine.Value.IsAlive() && this.isActiveAndEnabled) _eventHook = _sourceStateMachine.Value.StateChanged_ref().AddTrackedListener(OnEnterState_TriggerActivated);
 #endif
                 this.Sync();
             }
@@ -105,6 +105,17 @@ namespace com.spacepuppy.Events
         }
 
         #endregion
+
+#if UNITY_EDITOR
+        void OnValidate()
+        {
+            if (Application.isPlaying)
+            {
+                _eventHook.Dispose();
+                if (this.SourceStateMachine.IsAlive() && this.isActiveAndEnabled) _eventHook = this.SourceStateMachine.StateChanged_ref().AddTrackedListener(OnEnterState_TriggerActivated);
+            }
+        }
+#endif
 
     }
 

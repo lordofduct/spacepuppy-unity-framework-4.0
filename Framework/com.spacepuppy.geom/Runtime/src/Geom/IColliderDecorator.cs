@@ -113,6 +113,11 @@ namespace com.spacepuppy.Geom
                 return Capsule.FromCollider(_collider).CastAll(direction, results, distance, layerMask, query);
             }
 
+            public int OverlapNonAlloc(Collider[] buffer, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
+            {
+                return Capsule.FromCollider(_collider).OverlapNonAlloc(buffer, layerMask, query);
+            }
+
             public int Overlap(ICollection<Collider> results, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
             {
                 return Capsule.FromCollider(_collider).Overlap(results, layerMask, query);
@@ -170,6 +175,11 @@ namespace com.spacepuppy.Geom
             public int CastAll(Vector3 direction, ICollection<RaycastHit> results, float distance, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
             {
                 return Box.FromCollider(_collider).CastAll(direction, results, distance, layerMask, query);
+            }
+
+            public int OverlapNonAlloc(Collider[] buffer, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
+            {
+                return Box.FromCollider(_collider).OverlapNonAlloc(buffer, layerMask, query);
             }
 
             public int Overlap(ICollection<Collider> results, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
@@ -231,6 +241,11 @@ namespace com.spacepuppy.Geom
                 return Sphere.FromCollider(_collider).CastAll(direction, results, distance, layerMask, query);
             }
 
+            public int OverlapNonAlloc(Collider[] buffer, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
+            {
+                return Sphere.FromCollider(_collider).OverlapNonAlloc(buffer, layerMask, query);
+            }
+
             public int Overlap(ICollection<Collider> results, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
             {
                 return Sphere.FromCollider(_collider).Overlap(results, layerMask, query);
@@ -288,6 +303,11 @@ namespace com.spacepuppy.Geom
             public int CastAll(Vector3 direction, ICollection<RaycastHit> results, float distance, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
             {
                 return Capsule.FromCollider(_collider).CastAll(direction, results, distance, layerMask, query);
+            }
+
+            public int OverlapNonAlloc(Collider[] buffer, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
+            {
+                return Capsule.FromCollider(_collider).OverlapNonAlloc(buffer, layerMask, query);
             }
 
             public int Overlap(ICollection<Collider> results, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
@@ -370,6 +390,18 @@ namespace com.spacepuppy.Geom
                 }
             }
 
+            public int OverlapNonAlloc(Collider[] buffer, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
+            {
+                if (GeomUtil.DefaultBoundingSphereAlgorithm == BoundingSphereAlgorithm.FromBounds)
+                {
+                    return AABBox.FromCollider(_collider).OverlapNonAlloc(buffer, layerMask, query);
+                }
+                else
+                {
+                    return Sphere.FromMesh(_collider.sharedMesh, GeomUtil.DefaultBoundingSphereAlgorithm, Trans.GetGlobal(this.transform)).OverlapNonAlloc(buffer, layerMask, query);
+                }
+            }
+
             public int Overlap(ICollection<Collider> results, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
             {
                 if (GeomUtil.DefaultBoundingSphereAlgorithm == BoundingSphereAlgorithm.FromBounds)
@@ -441,6 +473,11 @@ namespace com.spacepuppy.Geom
             public int CastAll(Vector3 direction, ICollection<RaycastHit> results, float distance, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
             {
                 return AABBox.FromCollider(_collider).CastAll(direction, results, distance, layerMask, query);
+            }
+
+            public int OverlapNonAlloc(Collider[] buffer, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
+            {
+                return AABBox.FromCollider(_collider).OverlapNonAlloc(buffer, layerMask, query);
             }
 
             public int Overlap(ICollection<Collider> results, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)

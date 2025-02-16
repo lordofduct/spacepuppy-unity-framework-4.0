@@ -199,6 +199,12 @@ namespace com.spacepuppy.Geom
 
         #region GetBounds
 
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+        public static AABBox ToAABBox(this Bounds bounds) => new AABBox(bounds);
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+        public static Box ToBox(this Bounds bounds) => new Box(bounds);
+
         public static Sphere GetGlobalBoundingSphere(this Renderer rend)
         {
             return GetGlobalBoundingSphere(rend, GeomUtil.DefaultBoundingSphereAlgorithm);

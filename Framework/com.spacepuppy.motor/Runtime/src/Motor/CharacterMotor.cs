@@ -312,6 +312,11 @@ namespace com.spacepuppy.Motor
             return Capsule.FromCollider(_controller).TestOverlap(layerMask, query);
         }
 
+        public int OverlapNonAlloc(Collider[] buffer, int layerMask, QueryTriggerInteraction query)
+        {
+            return Capsule.FromCollider(_controller).OverlapNonAlloc(buffer, layerMask, query);
+        }
+
         public int Overlap(ICollection<Collider> results, int layerMask, QueryTriggerInteraction query)
         {
             return Capsule.FromCollider(_controller).Overlap(results, layerMask, query);

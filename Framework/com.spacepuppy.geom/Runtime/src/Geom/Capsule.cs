@@ -212,6 +212,11 @@ namespace com.spacepuppy.Geom
             }
         }
 
+        public int OverlapNonAlloc(Collider[] buffer, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
+        {
+            return Physics.OverlapCapsuleNonAlloc(_start, _end, _rad, buffer, layerMask, query);
+        }
+
         public int Overlap(ICollection<Collider> results, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
         {
             return PhysicsUtil.OverlapCapsule(_start, _end, _rad, results, layerMask, query);

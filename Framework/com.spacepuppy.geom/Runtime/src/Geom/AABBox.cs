@@ -148,6 +148,11 @@ namespace com.spacepuppy.Geom
             return Physics.CheckBox(_center, this.Extents, Quaternion.identity, layerMask, query);
         }
 
+        public int OverlapNonAlloc(Collider[] buffer, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
+        {
+            return Physics.OverlapBoxNonAlloc(_center, this.Extents, buffer, Quaternion.identity, layerMask, query);
+        }
+
         public int Overlap(ICollection<Collider> results, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
         {
             return PhysicsUtil.OverlapBox(_center, this.Extents, results, Quaternion.identity, layerMask, query);

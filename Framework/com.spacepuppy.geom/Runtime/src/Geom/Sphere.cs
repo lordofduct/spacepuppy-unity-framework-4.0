@@ -136,6 +136,11 @@ namespace com.spacepuppy.Geom
             return Physics.CheckSphere(_cent, _rad, layerMask, query);
         }
 
+        public int OverlapNonAlloc(Collider[] buffer, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
+        {
+            return Physics.OverlapSphereNonAlloc(this.Center, this.Radius, buffer, layerMask, query);
+        }
+
         public int Overlap(ICollection<Collider> results, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
         {
             return PhysicsUtil.OverlapSphere(this.Center, this.Radius, results, layerMask, query);

@@ -316,29 +316,71 @@ namespace com.spacepuppy.Motor
             return false;
         }
 
+        public int OverlapNonAlloc(Collider[] buffer, int layerMask, QueryTriggerInteraction query)
+        {
+            if (buffer == null) throw new System.ArgumentNullException(nameof(buffer));
+
+            switch (_colliders.Length)
+            {
+                case 0:
+                    return 0;
+                case 1:
+                    return _colliders[0].AsColliderDecorator().Overlap(buffer, layerMask, query);
+                default:
+                    using (var set = TempCollection.GetSet<Collider>())
+                    {
+                        foreach (var c in _colliders)
+                        {
+                            c.AsColliderDecorator().Overlap(set, layerMask, query);
+                        }
+
+                        if (set.Count > 0)
+                        {
+                            int cnt = Mathf.Max(set.Count, buffer.Length);
+                            int i = 0;
+                            var e = set.GetEnumerator();
+                            while (e.MoveNext() && i < cnt)
+                            {
+                                buffer[i] = e.Current;
+                                i++;
+                            }
+                            return set.Count;
+                        }
+                    }
+                    return 0;
+            }
+        }
+
         public int Overlap(ICollection<Collider> results, int layerMask, QueryTriggerInteraction query)
         {
-            if (results == null) throw new System.ArgumentNullException("results");
+            if (results == null) throw new System.ArgumentNullException(nameof(results));
 
-            using (var set = TempCollection.GetSet<Collider>())
+            switch (_colliders.Length)
             {
-                foreach (var c in _colliders)
-                {
-                    GeomUtil.GetGeom(c).Overlap(set, layerMask, query);
-                }
-
-                if (set.Count > 0)
-                {
-                    var e = set.GetEnumerator();
-                    while (e.MoveNext())
+                case 0:
+                    return 0;
+                case 1:
+                    return _colliders[0].AsColliderDecorator().Overlap(results, layerMask, query);
+                default:
+                    using (var set = TempCollection.GetSet<Collider>())
                     {
-                        results.Add(e.Current);
-                    }
-                    return set.Count;
-                }
-            }
+                        foreach (var c in _colliders)
+                        {
+                            c.AsColliderDecorator().Overlap(set, layerMask, query);
+                        }
 
-            return 0;
+                        if (set.Count > 0)
+                        {
+                            var e = set.GetEnumerator();
+                            while (e.MoveNext())
+                            {
+                                results.Add(e.Current);
+                            }
+                            return set.Count;
+                        }
+                    }
+                    return 0;
+            }
         }
 
         public bool Cast(Vector3 direction, out RaycastHit hitinfo, float distance, int layerMask, QueryTriggerInteraction query)

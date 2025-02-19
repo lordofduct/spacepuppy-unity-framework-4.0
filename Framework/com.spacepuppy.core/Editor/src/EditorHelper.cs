@@ -107,6 +107,16 @@ namespace com.spacepuppyeditor
 
             return false;
         }
+        public static bool AssertMultiObjectEditingNotSupported(SerializedObject serializedObject, GUIContent label)
+        {
+            if (serializedObject.isEditingMultipleObjects)
+            {
+                EditorGUILayout.LabelField(label, EditorHelper.TempContent("Multi-Object editing is not supported."));
+                return true;
+            }
+
+            return false;
+        }
 
         #endregion
 

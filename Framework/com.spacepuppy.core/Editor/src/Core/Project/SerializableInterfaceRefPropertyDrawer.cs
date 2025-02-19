@@ -333,7 +333,7 @@ namespace com.spacepuppyeditor.Core.Project
         void Configure(SerializedProperty property, GUIContent label)
         {
             _lstLabel = label;
-            _lstDrawer = CachedReorderableList.GetListDrawer(property.FindPropertyRelative(PROP_DATA), _lst_DrawHeader, _lst_DrawElement);
+            _lstDrawer = CachedReorderableList.GetListDrawer(property.FindPropertyRelative(PROP_DATA), _lst_DrawHeader, _lst_DrawElement, onAddCallback: _lst_OnAdd);
             _lstDrawer.elementHeight = EditorGUIUtility.singleLineHeight;
             _elementDrawer.RefPickerDrawer.DrawOnlyPicker = true;
             _elementDrawer.OverrideConfigAttribute = this.fieldInfo?.GetCustomAttribute<RefPickerConfigAttribute>() ?? DEFAULT_PICKERCONFIG;
@@ -406,6 +406,18 @@ namespace com.spacepuppyeditor.Core.Project
             }
         }
 
+        private void _lst_OnAdd(UnityEditorInternal.ReorderableList lst)
+        {
+            int index = lst.serializedProperty.arraySize;
+            lst.serializedProperty.arraySize++;
+
+            var element = lst.serializedProperty.GetArrayElementAtIndex(index);
+            var obj_el = element.FindPropertyRelative("_obj");
+            if (obj_el != null) obj_el.objectReferenceValue = null;
+            var ref_el = element.FindPropertyRelative("_ref");
+            if (ref_el != null) ref_el.managedReferenceValue = null;
+        }
+
         static bool TryGetManagedRefChildPropertyIfNotNull(SerializedProperty arrayElementProperty, out SerializedProperty refprop)
         {
             var prop = arrayElementProperty.FindPropertyRelative(BaseInterfaceRefPropertyDrawer.PROP_REFOBJECT);
@@ -467,7 +479,7 @@ namespace com.spacepuppyeditor.Core.Project
                 return EditorGUIUtility.singleLineHeight;
             }
 
-            _lst = CachedReorderableList.GetListDrawer(property.FindPropertyRelative(PROP_ARR_OBSOLETE), _maskList_DrawHeader, _maskList_DrawElement);
+            _lst = CachedReorderableList.GetListDrawer(property.FindPropertyRelative(PROP_ARR_OBSOLETE), _maskList_DrawHeader, _maskList_DrawElement, onAddCallback: _lst_OnAdd);
             _label = label;
             if (arrprop.arraySize == 0)
             {
@@ -558,6 +570,18 @@ namespace com.spacepuppyeditor.Core.Project
                 _componentSelectorDrawer.RestrictionType = _valueType;
                 _componentSelectorDrawer.OnGUI(area, objProp, label);
             }
+        }
+
+        private void _lst_OnAdd(UnityEditorInternal.ReorderableList lst)
+        {
+            int index = lst.serializedProperty.arraySize;
+            lst.serializedProperty.arraySize++;
+
+            var element = lst.serializedProperty.GetArrayElementAtIndex(index);
+            var obj_el = element.FindPropertyRelative("_obj");
+            if (obj_el != null) obj_el.objectReferenceValue = null;
+            var ref_el = element.FindPropertyRelative("_ref");
+            if (ref_el != null) ref_el.managedReferenceValue = null;
         }
 
         #endregion

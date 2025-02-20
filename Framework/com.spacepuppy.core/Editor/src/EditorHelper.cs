@@ -1459,31 +1459,32 @@ namespace com.spacepuppyeditor
                     }
                     break;
                 case LinkedGuidMode.GlobIdPair:
+                    if (EditorHelper.TryGetNearestAssetGlobalObjectId(obj, out GlobalObjectId gid1))
                     {
-                        var gid = GlobalObjectId.GetGlobalObjectIdSlow(obj);
-                        if (gid.targetObjectId != 0UL)
+                        if (gid1.targetObjectId != 0UL)
                         {
-                            guid = (new SerializableGuid(gid.targetObjectId, gid.targetPrefabId)).ToGuid();
+                            guid = (new SerializableGuid(gid1.targetObjectId, gid1.targetPrefabId)).ToGuid();
                             return true;
                         }
                     }
                     break;
                 case LinkedGuidMode.Convolusion:
+                    if (EditorHelper.TryGetNearestAssetGlobalObjectId(obj, out GlobalObjectId gid2))
                     {
-                        var gid = GlobalObjectId.GetGlobalObjectIdSlow(obj);
-                        ulong high = (gid.targetObjectId << 32) | (gid.targetObjectId >> 32) | (gid.targetObjectId >> 48);
-                        if (gid.targetPrefabId != 0UL)
+                        ulong high = (gid2.targetObjectId << 32) | (gid2.targetObjectId >> 32) | (gid2.targetObjectId >> 48);
+                        if (gid2.targetPrefabId != 0UL)
                         {
-                            guid = new SerializableGuid(high, gid.targetPrefabId);
+                            guid = new SerializableGuid(high, gid2.targetPrefabId);
                         }
                         else
                         {
                             ulong h, l;
-                            ((SerializableGuid)gid.assetGUID.ToGuid()).ToHighLow(out h, out l);
+                            ((SerializableGuid)gid2.assetGUID.ToGuid()).ToHighLow(out h, out l);
                             guid = new SerializableGuid(high, h);
                         }
                         return guid != default;
                     }
+                    break;
 
             }
 
@@ -1523,7 +1524,7 @@ namespace com.spacepuppyeditor
                 var path = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(root);
                 if (!string.IsNullOrEmpty(path))
                 {
-                    gid = GlobalObjectId.GetGlobalObjectIdSlow(AssetDatabase.LoadAssetAtPath(stage.assetPath, typeof(UnityEngine.Object)));
+                    gid = GlobalObjectId.GetGlobalObjectIdSlow(AssetDatabase.LoadAssetAtPath(path, typeof(UnityEngine.Object)));
                     if (gid.assetGUID != default)
                     {
                         return true;

@@ -1082,19 +1082,11 @@ namespace com.spacepuppy.Utils
             /// Set true if you'd like this hook to not auto destroy when no subscribers.
             /// </summary>
             [System.NonSerialized]
-            private HashSet<T> _observers = new HashSet<T>();
-            [System.NonSerialized]
-            private LockingEnumerable<T> _enumerable;
-
-            public SubscribableMessageHook()
-            {
-                _enumerable = new(_observers);
-            }
+            private LockingHashSet<T> _observers = new();
 
             protected virtual void OnDestroy()
             {
                 _observers = null;
-                _enumerable = null;
             }
 
             /// <summary>
@@ -1110,15 +1102,15 @@ namespace com.spacepuppy.Utils
             {
                 if (observer == null || !ObjUtil.IsObjectAlive(this)) return false;
 
-                if (_enumerable.Locked)
+                if (_observers.Locked)
                 {
                     if (_observers.Contains(observer)) return false;
-                    _enumerable.Add(observer);
+                    _observers.Add(observer);
                     return true;
                 }
                 else
                 {
-                    return _observers.Add(observer);
+                    return _observers.InnerCollection.Add(observer);
                 }
             }
 
@@ -1127,13 +1119,13 @@ namespace com.spacepuppy.Utils
             {
                 if (!ObjUtil.IsObjectAlive(this)) return false;
 
-                if (_enumerable.Locked)
+                if (_observers.Locked)
                 {
-                    return observer != null && _enumerable.Remove(observer);
+                    return observer != null && _observers.Remove(observer);
                 }
                 else
                 {
-                    bool result = observer != null && _enumerable.Remove(observer);
+                    bool result = observer != null && _observers.Remove(observer);
                     this.ValidateContinueUpdateLoop();
                     return result;
                 }
@@ -1145,7 +1137,7 @@ namespace com.spacepuppy.Utils
 
                 try
                 {
-                    _enumerable.Lock();
+                    _observers.Lock();
                     foreach (var o in _observers)
                     {
                         functor(o);
@@ -1153,7 +1145,7 @@ namespace com.spacepuppy.Utils
                 }
                 finally
                 {
-                    _enumerable.Unlock();
+                    _observers.Unlock();
                     this.ValidateContinueUpdateLoop();
                 }
             }
@@ -1164,7 +1156,7 @@ namespace com.spacepuppy.Utils
 
                 try
                 {
-                    _enumerable.Lock();
+                    _observers.Lock();
                     foreach (var o in _observers)
                     {
                         functor(o, arg);
@@ -1172,7 +1164,7 @@ namespace com.spacepuppy.Utils
                 }
                 finally
                 {
-                    _enumerable.Unlock();
+                    _observers.Unlock();
                     this.ValidateContinueUpdateLoop();
                 }
             }

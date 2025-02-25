@@ -173,18 +173,11 @@ namespace com.spacepuppy.Netcode
         #region Fields
 
         [System.NonSerialized]
-        private List<INetworkUpdateable> _lst = new();
-        [System.NonSerialized]
-        private LockingEnumerable<INetworkUpdateable> _enumerable;
+        private LockingList<INetworkUpdateable> _lst = new();
 
         #endregion
 
         #region CONSTRUCTOR
-
-        private void Awake()
-        {
-            _enumerable = new(_lst);
-        }
 
         #endregion
 
@@ -194,9 +187,9 @@ namespace com.spacepuppy.Netcode
         {
             if (obj == null) return;
 
-            if (_enumerable.Locked)
+            if (_lst.Locked)
             {
-                if (!_enumerable.Contains(obj)) _enumerable.Add(obj);
+                if (!_lst.Contains(obj)) _lst.Add(obj);
             }
             else
             {
@@ -209,9 +202,9 @@ namespace com.spacepuppy.Netcode
         {
             if (obj == null) return false;
 
-            if (_enumerable.Locked)
+            if (_lst.Locked)
             {
-                return _enumerable.Remove(obj);
+                return _lst.Remove(obj);
             }
             else
             {
@@ -231,13 +224,13 @@ namespace com.spacepuppy.Netcode
 
             try
             {
-                _enumerable.Lock();
+                _lst.Lock();
 
                 foreach (var t in _lst)
                 {
                     if (t.IsDestroyed())
                     {
-                        _enumerable.Remove(t);
+                        _lst.Remove(t);
                     }
                     else
                     {
@@ -254,7 +247,7 @@ namespace com.spacepuppy.Netcode
             }
             finally
             {
-                _enumerable.Unlock();
+                _lst.Unlock();
                 if (_lst.Count == 0) this.enabled = false;
             }
         }
@@ -269,18 +262,11 @@ namespace com.spacepuppy.Netcode
         #region Fields
 
         [System.NonSerialized]
-        private List<INetworkFixedUpdateable> _lst = new();
-        [System.NonSerialized]
-        private LockingEnumerable<INetworkFixedUpdateable> _enumerable;
+        private LockingList<INetworkFixedUpdateable> _lst = new();
 
         #endregion
 
         #region CONSTRUCTOR
-
-        private void Awake()
-        {
-            _enumerable = new(_lst);
-        }
 
         #endregion
 
@@ -290,9 +276,9 @@ namespace com.spacepuppy.Netcode
         {
             if (obj == null) return;
 
-            if (_enumerable.Locked)
+            if (_lst.Locked)
             {
-                if (!_enumerable.Contains(obj)) _enumerable.Add(obj);
+                if (!_lst.Contains(obj)) _lst.Add(obj);
             }
             else
             {
@@ -305,9 +291,9 @@ namespace com.spacepuppy.Netcode
         {
             if (obj == null) return false;
 
-            if (_enumerable.Locked)
+            if (_lst.Locked)
             {
-                return _enumerable.Remove(obj);
+                return _lst.Remove(obj);
             }
             else
             {
@@ -327,13 +313,13 @@ namespace com.spacepuppy.Netcode
 
             try
             {
-                _enumerable.Lock();
+                _lst.Lock();
 
                 foreach (var t in _lst)
                 {
                     if (t.IsDestroyed())
                     {
-                        _enumerable.Remove(t);
+                        _lst.Remove(t);
                     }
                     else
                     {
@@ -350,7 +336,7 @@ namespace com.spacepuppy.Netcode
             }
             finally
             {
-                _enumerable.Unlock();
+                _lst.Unlock();
                 if (_lst.Count == 0) this.enabled = false;
             }
         }
@@ -365,18 +351,11 @@ namespace com.spacepuppy.Netcode
         #region Fields
 
         [System.NonSerialized]
-        private List<INetworkLateUpdateable> _lst = new();
-        [System.NonSerialized]
-        private LockingEnumerable<INetworkLateUpdateable> _enumerable;
+        private LockingList<INetworkLateUpdateable> _lst = new();
 
         #endregion
 
         #region CONSTRUCTOR
-
-        private void Awake()
-        {
-            _enumerable = new(_lst);
-        }
 
         #endregion
 
@@ -386,9 +365,9 @@ namespace com.spacepuppy.Netcode
         {
             if (obj == null) return;
 
-            if (_enumerable.Locked)
+            if (_lst.Locked)
             {
-                if (!_enumerable.Contains(obj)) _enumerable.Add(obj);
+                if (!_lst.Contains(obj)) _lst.Add(obj);
             }
             else
             {
@@ -401,9 +380,9 @@ namespace com.spacepuppy.Netcode
         {
             if (obj == null) return false;
 
-            if (_enumerable.Locked)
+            if (_lst.Locked)
             {
-                return _enumerable.Remove(obj);
+                return _lst.Remove(obj);
             }
             else
             {
@@ -423,13 +402,13 @@ namespace com.spacepuppy.Netcode
 
             try
             {
-                _enumerable.Lock();
+                _lst.Lock();
 
                 foreach (var t in _lst)
                 {
                     if (t.IsDestroyed())
                     {
-                        _enumerable.Remove(t);
+                        _lst.Remove(t);
                     }
                     else
                     {
@@ -446,7 +425,7 @@ namespace com.spacepuppy.Netcode
             }
             finally
             {
-                _enumerable.Unlock();
+                _lst.Unlock();
                 if (_lst.Count == 0) this.enabled = false;
             }
         }

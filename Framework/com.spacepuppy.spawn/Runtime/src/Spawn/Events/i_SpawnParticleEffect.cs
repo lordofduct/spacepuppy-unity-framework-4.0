@@ -14,6 +14,13 @@ namespace com.spacepuppy.Spawn.Events
 
         public const string TRG_ONSPAWNED = "OnSpawned";
 
+        public enum PositioningMode
+        {
+            AtSpawner = 0,
+            AtSpawnedObjectParent = 1,
+            FromPrefab = 2,
+        }
+
         #region Fields
 
         [SerializeField()]
@@ -21,7 +28,12 @@ namespace com.spacepuppy.Spawn.Events
         private SpawnPoolRef _spawnPool = new SpawnPoolRef();
 
         [SerializeField]
-        private Transform _spawnedObjectParent;
+        [RespectsIProxy()]
+        [TypeRestriction(typeof(Transform), AllowProxy = true, HideTypeDropDown = false)]
+        private UnityEngine.Object _spawnedObjectParent;
+
+        [SerializeField]
+        private PositioningMode _positioning;
 
         [SerializeField()]
         [WeightedValueCollection("Weight", "Prefab", DrawElementAtBottom = true)]
@@ -43,6 +55,18 @@ namespace com.spacepuppy.Spawn.Events
         {
             get { return _spawnPool.Value; }
             set { _spawnPool.Value = value; }
+        }
+
+        public UnityEngine.Object SpawnedObjectParent
+        {
+            get => _spawnedObjectParent;
+            set => _spawnedObjectParent = value;
+        }
+
+        public PositioningMode Positioning
+        {
+            get => _positioning;
+            set => _positioning = value;
         }
 
         public List<PrefabEntry> Prefabs
@@ -106,7 +130,20 @@ namespace com.spacepuppy.Spawn.Events
             if (entry.Prefab == null) return null;
 
             var pool = _spawnPool.ValueOrDefault;
-            var go = pool.Spawn(entry.Prefab.gameObject, this.transform.position, this.transform.rotation, _spawnedObjectParent);
+            var parent = ObjUtil.GetAsFromSource<Transform>(_spawnedObjectParent, true);
+            GameObject go;
+            switch (_positioning)
+            {
+                case PositioningMode.AtSpawnedObjectParent:
+                    go = parent ? pool.Spawn(entry.Prefab.gameObject, parent.position, parent.rotation, parent) : pool.Spawn(entry.Prefab.gameObject);
+                    break;
+                case PositioningMode.FromPrefab:
+                    go = pool.Spawn(entry.Prefab.gameObject, parent);
+                    break;
+                default:
+                    go = pool.Spawn(entry.Prefab.gameObject, this.transform.position, this.transform.rotation, parent);
+                    break;
+            }
 
             var dur = (entry.Duration > 0f) ? entry.Duration : entry.Prefab.main.duration;
             var timeSupplier = (entry.Prefab.main.useUnscaledTime) ? SPTime.Real : SPTime.Normal;

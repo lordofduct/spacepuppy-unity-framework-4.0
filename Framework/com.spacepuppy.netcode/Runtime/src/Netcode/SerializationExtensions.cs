@@ -16,10 +16,12 @@ namespace com.spacepuppy.Netcode
         {
             UserNetworkVariableSerialization<System.Guid>.ReadValue = ReadValueSafe;
             UserNetworkVariableSerialization<System.Guid>.WriteValue = WriteValueSafe;
-            UserNetworkVariableSerialization<System.Guid>.DuplicateValue = DuplicateValueSafe;
             UserNetworkVariableSerialization<SerializableGuid>.ReadValue = ReadValueSafe;
             UserNetworkVariableSerialization<SerializableGuid>.WriteValue = WriteValueSafe;
+#if NETCODE_1_5_ORNEWER
+            UserNetworkVariableSerialization<System.Guid>.DuplicateValue = DuplicateValueSafe;
             UserNetworkVariableSerialization<SerializableGuid>.DuplicateValue = DuplicateValueSafe;
+#endif
         }
 
         public static void ReadValueSafe(this FastBufferReader reader, out System.Guid guid)
@@ -113,7 +115,9 @@ namespace com.spacepuppy.Netcode
         {
             UserNetworkVariableSerialization<TValue?>.ReadValue = ReadNullableValueSafe<TValue>;
             UserNetworkVariableSerialization<TValue?>.WriteValue = WriteNullableValueSafe<TValue>;
+#if NETCODE_1_5_ORNEWER
             UserNetworkVariableSerialization<TValue?>.DuplicateValue = DuplicateValueSafe<TValue>;
+#endif
         }
 
         private static void ReadNullableValueSafe<TValue>(this FastBufferReader reader, out TValue? value) where TValue : unmanaged, System.IComparable, System.IConvertible, System.IComparable<TValue>, System.IEquatable<TValue>

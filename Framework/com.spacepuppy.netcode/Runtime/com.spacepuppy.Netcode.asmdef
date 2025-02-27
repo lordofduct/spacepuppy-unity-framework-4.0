@@ -26,6 +26,11 @@
             "name": "com.unity.netcode.gameobjects",
             "expression": "1.4.0",
             "define": "NETCODE_1_4_ORNEWER"
+        },
+        {
+            "name": "com.unity.netcode.gameobjects",
+            "expression": "1.5.0",
+            "define": "NETCODE_1_5_ORNEWER"
         }
     ],
     "noEngineReferences": false

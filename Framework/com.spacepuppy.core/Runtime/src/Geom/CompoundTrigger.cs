@@ -122,6 +122,8 @@ namespace com.spacepuppy.Geom
 
         protected bool _isDirty;
 
+        private ActiveColliderCollection _activeCollidersWrapper;
+
         #endregion
 
         #region CONSTRUCTOR
@@ -195,6 +197,8 @@ namespace com.spacepuppy.Geom
             get => _otherColliderMessageSettings;
             set => _otherColliderMessageSettings = value;
         }
+
+        public ActiveColliderCollection ActiveCollider => (_activeCollidersWrapper ??= new(this));
 
         #endregion
 
@@ -659,6 +663,58 @@ namespace com.spacepuppy.Geom
                 }
             }
 
+        }
+
+        public class ActiveColliderCollection : IEnumerable<Collider>
+        {
+
+            private CompoundTrigger _owner;
+            internal ActiveColliderCollection(CompoundTrigger owner)
+            {
+                _owner = owner;
+            }
+
+            public bool Contains(Collider item) => item && _owner._active.Contains(item);
+            public void CopyTo(Collider[] array, int arrayIndex)
+            {
+                var e = this.GetEnumerator();
+                while (e.MoveNext() && arrayIndex < array.Length)
+                {
+                    array[arrayIndex] = e.Current;
+                    arrayIndex++;
+                }
+            }
+
+            public ActiveColliderEnumerator GetEnumerator() => new ActiveColliderEnumerator(_owner);
+            IEnumerator<Collider> IEnumerable<Collider>.GetEnumerator() => new ActiveColliderEnumerator(_owner);
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => new ActiveColliderEnumerator(_owner);
+
+        }
+
+        public struct ActiveColliderEnumerator : IEnumerator<Collider>
+        {
+            private CompoundTrigger _owner;
+            private HashSet<Collider>.Enumerator _e;
+            internal ActiveColliderEnumerator(CompoundTrigger owner)
+            {
+                _owner = owner;
+                _e = owner._active.GetEnumerator();
+            }
+
+            public Collider Current => _e.Current;
+            object System.Collections.IEnumerator.Current => _e.Current;
+
+            public void Dispose() => _e.Dispose();
+            public bool MoveNext()
+            {
+                while (_e.MoveNext())
+                {
+                    if (_owner.ValidateEntryOrSetDirty(_e.Current)) return true;
+                }
+                return false;
+            }
+            void System.Collections.IEnumerator.Reset() => (_e as System.Collections.IEnumerator).Reset();
+            
         }
 
         #endregion

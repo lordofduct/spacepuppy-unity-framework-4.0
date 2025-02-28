@@ -13,7 +13,14 @@ namespace com.spacepuppy.Geom
     public class CompoundEntityTrigger : CompoundTrigger
     {
 
+        #region Fields
+
         private HashSet<SPEntity> _activeEntities = new HashSet<SPEntity>();
+        private ActiveEntityCollection _activeEntitiesWrapper;
+
+        #endregion
+
+        #region CONSTRUCTOR
 
         protected override void OnDisable()
         {
@@ -22,7 +29,22 @@ namespace com.spacepuppy.Geom
             _activeEntities.Clear();
         }
 
-        public int ActiveEntityCount => _activeEntities.Count;
+        #endregion
+
+        #region Properties
+
+        /// <summary>
+        /// This value is an estimate of the active entity count, while this number is never < the real number, it may be larger.
+        /// Accessing GetActiveEntities or other methods that enumerate the overlapped colliders will reduce this to the real value 
+        // and will remain accurate until the next physics event.
+        /// </summary>
+        public int EstimatedActiveEntityCount => _activeEntities.Count;
+
+        public ActiveEntityCollection ActiveEntities => (_activeEntitiesWrapper ??= new(this));
+
+        #endregion
+
+        #region Methods
 
         public bool ContainsActive(SPEntity entity)
         {
@@ -144,6 +166,64 @@ namespace com.spacepuppy.Geom
                 return false;
             }
         }
+
+        #endregion
+
+        #region Special Types
+
+        public class ActiveEntityCollection : IEnumerable<SPEntity>
+        {
+
+            private CompoundEntityTrigger _owner;
+            internal ActiveEntityCollection(CompoundEntityTrigger owner)
+            {
+                _owner = owner;
+            }
+
+            public bool Contains(SPEntity item) => item && _owner._activeEntities.Contains(item);
+            public void CopyTo(SPEntity[] array, int arrayIndex)
+            {
+                var e = this.GetEnumerator();
+                while (e.MoveNext() && arrayIndex < array.Length)
+                {
+                    array[arrayIndex] = e.Current;
+                    arrayIndex++;
+                }
+            }
+
+            public ActiveEntityEnumerator GetEnumerator() => new ActiveEntityEnumerator(_owner);
+            IEnumerator<SPEntity> IEnumerable<SPEntity>.GetEnumerator() => new ActiveEntityEnumerator(_owner);
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => new ActiveEntityEnumerator(_owner);
+
+        }
+
+        public struct ActiveEntityEnumerator : IEnumerator<SPEntity>
+        {
+            private CompoundEntityTrigger _owner;
+            private HashSet<SPEntity>.Enumerator _e;
+            internal ActiveEntityEnumerator(CompoundEntityTrigger owner)
+            {
+                _owner = owner;
+                _e = owner._activeEntities.GetEnumerator();
+            }
+
+            public SPEntity Current => _e.Current;
+            object System.Collections.IEnumerator.Current => _e.Current;
+
+            public void Dispose() => _e.Dispose();
+            public bool MoveNext()
+            {
+                while (_e.MoveNext())
+                {
+                    if (_owner.ValidateEntryOrSetDirty(_e.Current)) return true;
+                }
+                return false;
+            }
+            void System.Collections.IEnumerator.Reset() => (_e as System.Collections.IEnumerator).Reset();
+            
+        }
+
+        #endregion
 
     }
 }

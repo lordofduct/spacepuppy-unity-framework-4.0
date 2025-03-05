@@ -5,7 +5,7 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Netcode
 {
 
-    public sealed class NetworkOwnerStateMachine : SPNetworkComponent, IMStartOrEnableReceiver
+    public sealed class NetworkOwnerStateMachine : SPNetworkComponent
     {
 
         #region Fields
@@ -19,14 +19,8 @@ namespace com.spacepuppy.Netcode
 
         #region CONSTRUCTOR
 
-        void IMStartOrEnableReceiver.OnStartOrEnable()
+        protected override void OnStartOrEnableOrNetworkSpawn()
         {
-            this.SyncState();
-        }
-
-        public override void OnNetworkSpawn()
-        {
-            base.OnNetworkSpawn();
             this.SyncState();
         }
 

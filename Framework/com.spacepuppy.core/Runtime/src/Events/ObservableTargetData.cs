@@ -102,7 +102,7 @@ namespace com.spacepuppy.Events
 
         public void EndHijack()
         {
-            _eventHook.SPEvent?.EndHijack();
+            _eventHook.SPEvent?.EndHijack(this);
         }
 
         private void OnTriggerActivated(object sender, TempEventArgs e)

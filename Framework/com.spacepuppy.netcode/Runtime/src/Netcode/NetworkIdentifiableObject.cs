@@ -1,8 +1,89 @@
 using UnityEngine;
 using System.Collections.Generic;
+using Unity.Netcode;
+
+using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.netcode
 {
+
+    [System.Serializable]
+    public struct NetworkIdToken : INetworkSerializable
+    {
+        private byte mode;
+        private ulong id;
+
+        public NetworkIdToken(NetworkIdentifiableObject nidobj)
+        {
+            if (nidobj)
+            {
+                mode = 2;
+                id = nidobj.Id;
+            }
+            else
+            {
+                mode = 0;
+                id = 0;
+            }
+        }
+        public NetworkIdToken(NetworkObject nobj)
+        {
+            if (nobj)
+            {
+                mode = 1;
+                id = nobj.NetworkObjectId;
+            }
+            else
+            {
+                mode = 0;
+                id = 0;
+            }
+        }
+
+        public GameObject FindTarget(NetworkManager manager = null)
+        {
+            switch (mode)
+            {
+                case 1:
+                    if (manager == null) manager = NetworkManager.Singleton;
+                    return manager && manager.SpawnManager.SpawnedObjects.TryGetValue(id, out NetworkObject nobj) && nobj ? nobj.gameObject : null;
+                case 2:
+                    return NetworkIdentifiableObject.Find<GameObject>(id);
+                default:
+                    return null;
+            }
+        }
+        public bool TryFindTarget(out GameObject go, NetworkManager manager = null)
+        {
+            switch (mode)
+            {
+                case 1:
+                    if (manager == null) manager = NetworkManager.Singleton;
+                    if (manager && manager.SpawnManager.SpawnedObjects.TryGetValue(id, out NetworkObject nobj) && nobj)
+                    {
+                        go = nobj.gameObject;
+                        return true;
+                    }
+                    else
+                    {
+                        go = null;
+                        return false;
+                    }
+                case 2:
+                    go = NetworkIdentifiableObject.Find<GameObject>(id);
+                    return go != null;
+                default:
+                    go = null;
+                    return false;
+            }
+        }
+
+        public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+        {
+            serializer.SerializeValue(ref mode);
+            serializer.SerializeValue(ref id);
+        }
+    }
 
     //NOTE - NetworkIdentifiableObject does not enable any sort of RPC logic, it just allows locating an object by an id over the network.
     [Infobox("Represents a static scene object that can be identified over the network by an ID.")]
@@ -22,10 +103,10 @@ namespace com.spacepuppy.netcode
 
         public static T Find<T>(ulong id) where T : class
         {
-            Debug.Log("SEARCHING FOR: " + id.ToString("X") + " : WITH " + _table.Count + " INITIALIZED");
+            //Debug.Log("SEARCHING FOR: " + id.ToString("X") + " : WITH " + _table.Count + " INITIALIZED");
             if (_table.TryGetValue(id, out NetworkIdentifiableObject nobj))
             {
-                return nobj.GetComponent<T>();
+                return ObjUtil.GetAsFromSource<T>(nobj);
             }
             return null;
         }

@@ -63,7 +63,7 @@ namespace com.spacepuppy.Pathfinding
             }
         }
 
-        PathCalculateStatus IPath.Status
+        public PathCalculateStatus Status
         {
             get
             {

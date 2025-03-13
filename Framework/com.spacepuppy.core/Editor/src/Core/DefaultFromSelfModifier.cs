@@ -15,15 +15,26 @@ namespace com.spacepuppyeditor.Core
     public class DefaultFromSelfModifier : PropertyModifier
     {
 
-        private HashSet<int> _handled = new HashSet<int>();
+        private Dictionary<int, int> _handled = new();
 
         protected internal override void OnBeforeGUI(SerializedProperty property, ref bool cancelDraw)
         {
             if (property.serializedObject.isEditingMultipleObjects) return;
 
-            int hash = com.spacepuppyeditor.Internal.PropertyHandlerCache.GetIndexRespectingPropertyHash(property);
-            if (_handled.Contains(hash)) return;
-            if ((this.attribute as DefaultFromSelfAttribute).HandleOnce) _handled.Add(hash);
+            int key_hash = com.spacepuppyeditor.Internal.PropertyHandlerCache.GetIndexRespectingPropertyHash(property);
+            if ((this.attribute as DefaultFromSelfAttribute).HandleOnce)
+            {
+                //this logic validates if the component list on the gameobject has changed, and if it has will rescan for potential 'defaults'
+                var go = GameObjectUtil.GetGameObjectFromSource(property.serializedObject.targetObject);
+                int hash = 0;
+                foreach (var c in go.GetComponents<Component>())
+                {
+                    hash = System.HashCode.Combine(hash, c.GetHashCode());
+                }
+
+                if (_handled.TryGetValue(key_hash, out int h) && h == hash) return;
+                _handled[key_hash] = hash;
+            }
 
             var relativity = (this.attribute as DefaultFromSelfAttribute).Relativity;
 

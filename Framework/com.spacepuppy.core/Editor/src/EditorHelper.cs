@@ -422,6 +422,7 @@ namespace com.spacepuppyeditor
         {
             if (prop == null) return;
 
+
             switch (prop.propertyType)
             {
                 case SerializedPropertyType.Generic:
@@ -429,6 +430,8 @@ namespace com.spacepuppyeditor
                     break;
 #if UNITY_2021_2_OR_NEWER
                 case SerializedPropertyType.ManagedReference:
+                    //setting null doesn't work and is a known bug with 'managedReferenceValue'. Using even the fieldInfo below doesn't fix it. I know it to work on 2022.3.45f1 and newer. See:
+                    //https://discussions.unity.com/t/how-to-set-serializedproperty-managedreferencevalue-to-null/758618/4
                     prop.managedReferenceValue = value;
                     return;
 #endif

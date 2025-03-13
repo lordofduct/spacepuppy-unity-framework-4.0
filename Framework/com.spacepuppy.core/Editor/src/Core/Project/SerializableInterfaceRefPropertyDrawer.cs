@@ -215,12 +215,14 @@ namespace com.spacepuppyeditor.Core.Project
             if (value is UnityEngine.Object uot)
             {
                 if (prop_obj != null) prop_obj.objectReferenceValue = uot;
-                if (prop_ref != null) prop_ref.managedReferenceValue = null;
+                //if (prop_ref != null) prop_ref.managedReferenceValue = null;
+                if (prop_ref != null) EditorHelper.SetTargetObjectOfProperty(prop_ref, null);
             }
             else if (value == null || value.GetType().IsSerializable)
             {
                 if (prop_obj != null) prop_obj.objectReferenceValue = null;
-                if (prop_ref != null) prop_ref.managedReferenceValue = value;
+                //if (prop_ref != null) prop_ref.managedReferenceValue = value;
+                if (prop_ref != null) EditorHelper.SetTargetObjectOfProperty(prop_ref, value);
             }
         }
 
@@ -415,7 +417,8 @@ namespace com.spacepuppyeditor.Core.Project
             var obj_el = element.FindPropertyRelative("_obj");
             if (obj_el != null) obj_el.objectReferenceValue = null;
             var ref_el = element.FindPropertyRelative("_ref");
-            if (ref_el != null) ref_el.managedReferenceValue = null;
+            //if (ref_el != null) ref_el.managedReferenceValue = null;
+            if (ref_el != null) EditorHelper.SetTargetObjectOfProperty(ref_el, null);
         }
 
         static bool TryGetManagedRefChildPropertyIfNotNull(SerializedProperty arrayElementProperty, out SerializedProperty refprop)
@@ -581,7 +584,8 @@ namespace com.spacepuppyeditor.Core.Project
             var obj_el = element.FindPropertyRelative("_obj");
             if (obj_el != null) obj_el.objectReferenceValue = null;
             var ref_el = element.FindPropertyRelative("_ref");
-            if (ref_el != null) ref_el.managedReferenceValue = null;
+            //if (ref_el != null) ref_el.managedReferenceValue = null;
+            if (ref_el != null) EditorHelper.SetTargetObjectOfProperty(ref_el, null);
         }
 
         #endregion

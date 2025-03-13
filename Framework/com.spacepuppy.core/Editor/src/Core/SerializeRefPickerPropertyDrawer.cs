@@ -248,11 +248,13 @@ namespace com.spacepuppyeditor.Core
                             token.CopyTo(newobj);
                             StateToken.ReleaseTempToken(token);
                         }
-                        property.managedReferenceValue = newobj;
+                        //property.managedReferenceValue = newobj;
+                        EditorHelper.SetTargetObjectOfProperty(property, newobj);
                     }
                     else
                     {
-                        property.managedReferenceValue = null;
+                        //property.managedReferenceValue = null;
+                        EditorHelper.SetTargetObjectOfProperty(property, null);
                     }
                     com.spacepuppyeditor.Internal.ScriptAttributeUtility.ResetPropertyHandler(property, true);
                     return true;

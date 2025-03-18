@@ -38,6 +38,12 @@ namespace com.spacepuppyeditor.Internal
 
         #endregion
 
+        #region Properties
+
+        public System.Action<ReorderableList> onClearContextMenu { get; set; } = null;
+
+        #endregion
+
         #region Methods
 
         public new void DoLayoutList()
@@ -70,7 +76,17 @@ namespace com.spacepuppyeditor.Internal
             {
                 Event.current.Use();
 
-                if (this.serializedProperty != null)
+                if (this.onClearContextMenu != null)
+                {
+                    var menu = new GenericMenu();
+                    var lst = this.list;
+                    menu.AddItem(new GUIContent("Clear"), false, () =>
+                    {
+                        onClearContextMenu?.Invoke(this);
+                    });
+                    menu.ShowAsContext();
+                }
+                else if (this.serializedProperty != null)
                 {
                     var menu = new GenericMenu();
                     var prop = this.serializedProperty;
@@ -85,7 +101,6 @@ namespace com.spacepuppyeditor.Internal
                 }
                 else if (this.list != null)
                 {
-
                     var menu = new GenericMenu();
                     var lst = this.list;
                     menu.AddItem(new GUIContent("Clear"), false, () =>

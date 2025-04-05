@@ -7,7 +7,7 @@ namespace com.spacepuppy
 
     public enum LinkedGuidMode
     {
-        Auto = -1, //automaticall picks the best option based on the type of the target in mind
+        Auto = -1, //automatically picks the best option based on the type of the target in mind
         None = 0,
         Asset = 1, //linked to guid associated with asset metadata
         GlobIdPair = 2, //linked to the targetObjectId and targetPrefabId of the GlobalObjectId for the target

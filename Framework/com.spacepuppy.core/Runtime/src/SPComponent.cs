@@ -183,6 +183,29 @@ namespace com.spacepuppy
 
         #endregion
 
+#if UNITY_EDITOR
+        [ContextMenu("Move To Top")]
+        void ComponentEditor_MoveToTop()
+        {
+            int steps = this.gameObject.GetComponentIndex(this) - 1;
+            for (int i = 0; i < steps; i++)
+            {
+                UnityEditorInternal.ComponentUtility.MoveComponentUp(this);
+            }
+        }
+
+        [ContextMenu("Move To Bottom")]
+        void ComponentEditor_MoveToBottom()
+        {
+            int lastindex = this.gameObject.GetComponentCount() - 1;
+            int steps = lastindex - this.gameObject.GetComponentIndex(this);
+            for (int i = 0; i < steps; i++)
+            {
+                UnityEditorInternal.ComponentUtility.MoveComponentDown(this);
+            }
+        }
+#endif
+
     }
 
     /// <summary>

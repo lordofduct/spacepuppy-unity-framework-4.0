@@ -36,9 +36,7 @@ namespace com.spacepuppy.Collections
 
         #region Fields
 
-        private HashSet<T> _pool;
-        private bool _querying;
-        private System.Action _queryCompleteAction;
+        private LockingHashSet<T> _pool;
         private int _version;
 
         #endregion
@@ -47,12 +45,12 @@ namespace com.spacepuppy.Collections
 
         public MultitonPool()
         {
-            _pool = new HashSet<T>();
+            _pool = new LockingHashSet<T>();
         }
 
         public MultitonPool(IEqualityComparer<T> comparer)
         {
-            _pool = new HashSet<T>(comparer);
+            _pool = new LockingHashSet<T>(new HashSet<T>(comparer));
         }
 
         #endregion
@@ -61,13 +59,7 @@ namespace com.spacepuppy.Collections
 
         public bool IsQuerying
         {
-            get { return _querying; }
-        }
-
-        protected System.Action QueryCompleteAction
-        {
-            get { return _queryCompleteAction; }
-            set { _queryCompleteAction = value; }
+            get { return _pool.Locked; }
         }
 
         /// <summary>
@@ -95,17 +87,7 @@ namespace com.spacepuppy.Collections
         {
             if (object.ReferenceEquals(obj, null)) throw new System.ArgumentNullException();
 
-            if (_querying)
-            {
-                if (!_pool.Contains(obj)) _queryCompleteAction += () =>
-                {
-                    if (_pool.Add(obj))
-                    {
-                        _version++;
-                    }
-                };
-            }
-            else if (_pool.Add(obj))
+            if (_pool.Add(obj))
             {
                 _version++;
             }
@@ -115,25 +97,7 @@ namespace com.spacepuppy.Collections
         {
             if (object.ReferenceEquals(obj, null)) throw new System.ArgumentNullException();
 
-            if (_querying)
-            {
-                if (_pool.Contains(obj))
-                {
-                    _queryCompleteAction += () =>
-                    {
-                        if (_pool.Remove(obj))
-                        {
-                            _version++;
-                        }
-                    };
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-            else if (_pool.Remove(obj))
+            if (_pool.Remove(obj))
             {
                 _version++;
                 return true;
@@ -148,11 +112,11 @@ namespace com.spacepuppy.Collections
 
         public T Find(System.Func<T, bool> predicate)
         {
-            if (_querying) throw new System.InvalidOperationException("MultitonPool is already in the process of a query.");
-            _querying = true;
+            if (this.IsQuerying) throw new System.InvalidOperationException("MultitonPool is already in the process of a query.");
 
             try
             {
+                _pool.Lock();
                 var e = _pool.GetEnumerator();
                 if (predicate == null)
                 {
@@ -170,23 +134,20 @@ namespace com.spacepuppy.Collections
             }
             finally
             {
-                if (_queryCompleteAction != null)
+                if (_pool.Unlock())
                 {
-                    _queryCompleteAction();
-                    _queryCompleteAction = null;
                     _version++;
                 }
-                _querying = false;
             }
         }
 
         public TSub Find<TSub>(System.Func<TSub, bool> predicate) where TSub : class, T
         {
-            if (_querying) throw new System.InvalidOperationException("MultitonPool is already in the process of a query.");
-            _querying = true;
+            if (this.IsQuerying) throw new System.InvalidOperationException("MultitonPool is already in the process of a query.");
 
             try
             {
+                _pool.Lock();
                 var e = _pool.GetEnumerator();
                 if (predicate == null)
                 {
@@ -204,23 +165,20 @@ namespace com.spacepuppy.Collections
             }
             finally
             {
-                if (_queryCompleteAction != null)
+                if (_pool.Unlock())
                 {
-                    _queryCompleteAction();
-                    _queryCompleteAction = null;
                     _version++;
                 }
-                _querying = false;
             }
         }
 
         public TSub Find<TSub, TArg>(TArg arg, System.Func<TSub, TArg, bool> predicate) where TSub : class, T
         {
-            if (_querying) throw new System.InvalidOperationException("MultitonPool is already in the process of a query.");
-            _querying = true;
+            if (this.IsQuerying) throw new System.InvalidOperationException("MultitonPool is already in the process of a query.");
 
             try
             {
+                _pool.Lock();
                 var e = _pool.GetEnumerator();
                 if (predicate == null)
                 {
@@ -238,25 +196,22 @@ namespace com.spacepuppy.Collections
             }
             finally
             {
-                if (_queryCompleteAction != null)
+                if (_pool.Unlock())
                 {
-                    _queryCompleteAction();
-                    _queryCompleteAction = null;
                     _version++;
                 }
-                _querying = false;
             }
         }
 
         public T[] FindAll(System.Func<T, bool> predicate)
         {
-            if (_querying) throw new System.InvalidOperationException("MultitonPool is already in the process of a query.");
+            if (this.IsQuerying) throw new System.InvalidOperationException("MultitonPool is already in the process of a query.");
 
             try
             {
                 if (predicate == null)
                 {
-                    _querying = true;
+                    _pool.Lock();
 
                     T[] arr = new T[_pool.Count];
                     var e = _pool.GetEnumerator();
@@ -279,48 +234,32 @@ namespace com.spacepuppy.Collections
             }
             finally
             {
-                if (_queryCompleteAction != null)
+                if (_pool.Unlock())
                 {
-                    _queryCompleteAction();
-                    _queryCompleteAction = null;
                     _version++;
                 }
-                _querying = false;
             }
         }
 
         public TSub[] FindAll<TSub>(System.Func<TSub, bool> predicate) where TSub : class, T
         {
-            if (_querying) throw new System.InvalidOperationException("MultitonPool is already in the process of a query.");
+            if (this.IsQuerying) throw new System.InvalidOperationException("MultitonPool is already in the process of a query.");
 
-            try
+            using (var lst = TempCollection.GetList<TSub>())
             {
-                using (var lst = TempCollection.GetList<TSub>())
-                {
-                    FindAll<TSub>(lst, predicate);
-                    return lst.ToArray();
-                }
-            }
-            finally
-            {
-                if (_queryCompleteAction != null)
-                {
-                    _queryCompleteAction();
-                    _queryCompleteAction = null;
-                    _version++;
-                }
-                _querying = false;
+                FindAll<TSub>(lst, predicate);
+                return lst.ToArray();
             }
         }
 
         public int FindAll(ICollection<T> coll, System.Func<T, bool> predicate)
         {
             if (coll == null) throw new System.ArgumentNullException("coll");
-            if (_querying) throw new System.InvalidOperationException("MultitonPool is already in the process of a query.");
-            _querying = true;
+            if (this.IsQuerying) throw new System.InvalidOperationException("MultitonPool is already in the process of a query.");
 
             try
             {
+                _pool.Lock();
                 int cnt = 0;
                 var e = _pool.GetEnumerator();
                 if (predicate == null)
@@ -346,24 +285,21 @@ namespace com.spacepuppy.Collections
             }
             finally
             {
-                if (_queryCompleteAction != null)
+                if (_pool.Unlock())
                 {
-                    _queryCompleteAction();
-                    _queryCompleteAction = null;
                     _version++;
                 }
-                _querying = false;
             }
         }
 
         public int FindAll<TSub>(ICollection<TSub> coll, System.Func<TSub, bool> predicate) where TSub : class, T
         {
             if (coll == null) throw new System.ArgumentNullException("coll");
-            if (_querying) throw new System.InvalidOperationException("MultitonPool is already in the process of a query.");
-            _querying = true;
+            if (this.IsQuerying) throw new System.InvalidOperationException("MultitonPool is already in the process of a query.");
 
             try
             {
+                _pool.Lock();
                 int cnt = 0;
                 var e = _pool.GetEnumerator();
                 if (predicate == null)
@@ -393,13 +329,10 @@ namespace com.spacepuppy.Collections
             }
             finally
             {
-                if (_queryCompleteAction != null)
+                if (_pool.Unlock())
                 {
-                    _queryCompleteAction();
-                    _queryCompleteAction = null;
                     _version++;
                 }
-                _querying = false;
             }
         }
 
@@ -409,6 +342,25 @@ namespace com.spacepuppy.Collections
             while (e.MoveNext())
             {
                 if (e.Current is TSub) yield return e.Current as TSub;
+            }
+        }
+
+        public IEnumerable<TSub> Enumerate<TSub>(System.Func<TSub, bool> predicate) where TSub : class, T
+        {
+            var e = _pool.GetEnumerator();
+            if (predicate == null)
+            {
+                while (e.MoveNext())
+                {
+                    if (e.Current is TSub) yield return e.Current as TSub;
+                }
+            }
+            else
+            {
+                while (e.MoveNext())
+                {
+                    if (e.Current is TSub o && predicate(o)) yield return o;
+                }
             }
         }
 

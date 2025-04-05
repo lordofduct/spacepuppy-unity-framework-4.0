@@ -103,7 +103,7 @@ namespace com.spacepuppy.Collections
             _state = States.Locked;
         }
 
-        public virtual void Unlock()
+        public virtual bool Unlock()
         {
             switch (_state)
             {
@@ -111,13 +111,15 @@ namespace com.spacepuppy.Collections
                 case States.Locked:
                     _state = States.Unlocked;
                     _buffer?.Clear();
-                    break;
+                    return false;
                 case States.Altered:
                     _state = States.Unlocked;
                     _coll.Clear();
                     _coll.AddRange(_buffer);
                     _buffer.Clear();
-                    break;
+                    return true;
+                default:
+                    return false;
             }
         }
 
@@ -284,6 +286,32 @@ namespace com.spacepuppy.Collections
         public LockingHashSet(HashSet<T> coll) : base(coll) { }
 
         public HashSet<T>.Enumerator GetEnumerator() => this.InnerCollection.GetEnumerator();
+
+        public new bool Add(T item)
+        {
+            switch (this.State)
+            {
+                case States.Unlocked:
+                    return this.InnerCollection.Add(item);
+                case States.Locked:
+                    if (!this.Contains(item))
+                    {
+                        this.TransitionToAlteredState();
+                        this.Buffer.Add(item);
+                        return true;
+                    }
+                    break;
+                case States.Altered:
+                    if (!this.Contains(item))
+                    {
+                        this.Buffer.Add(item);
+                        return true;
+                    }
+                    break;
+            }
+
+            return false;
+        }
 
     }
 

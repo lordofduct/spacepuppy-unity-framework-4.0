@@ -305,36 +305,17 @@ namespace com.spacepuppy
 
             public override void AddReference(MultiTag obj)
             {
-                if (object.ReferenceEquals(obj, null)) throw new System.ArgumentNullException();
-
-                if (this.IsQuerying)
-                {
-                    if (!_table.Values.Contains(obj)) this.QueryCompleteAction += () => _table[obj.gameObject] = obj;
-                }
-                else
-                {
-                    _table[obj.gameObject] = obj;
-                }
+                if (object.ReferenceEquals(obj, null)) throw new System.ArgumentNullException(nameof(obj));
 
                 base.AddReference(obj);
+                _table[obj.gameObject] = obj;
             }
 
             public override bool RemoveReference(MultiTag obj)
             {
-                if (object.ReferenceEquals(obj, null)) throw new System.ArgumentNullException();
+                if (object.ReferenceEquals(obj, null)) throw new System.ArgumentNullException(nameof(obj));
 
-                if (this.IsQuerying)
-                {
-                    if (_table.Values.Contains(obj))
-                    {
-                        this.QueryCompleteAction += () => _table.Remove(obj.gameObject);
-                    }
-                }
-                else
-                {
-                    _table.Remove(obj.gameObject);
-                }
-
+                _table.Remove(obj.gameObject);
                 return base.RemoveReference(obj);
             }
 

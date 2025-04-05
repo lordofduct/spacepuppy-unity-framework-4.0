@@ -880,6 +880,29 @@ namespace com.spacepuppy.Utils
             }
         }
 
+        /// <summary>
+        /// Same as WrapIndex but forced oblivion to be clamped
+        /// </summary>
+        /// <param name="mode"></param>
+        /// <param name="value"></param>
+        /// <param name="max"></param>
+        /// <returns></returns>
+        public static int WrapIndexClamped(WrapMode mode, int value, int max)
+        {
+            switch (mode)
+            {
+                case WrapMode.Oblivion:
+                case WrapMode.Clamp:
+                    return max > 0 ? Mathf.Clamp(value, 0, max - 1) : 0;
+                case WrapMode.Loop:
+                    return max > 0 ? MathUtil.Wrap(value, max) : 0;
+                case WrapMode.PingPong:
+                    return max > 0 ? (int)Mathf.PingPong(value, max - 1) : 0;
+                default:
+                    return value;
+            }
+        }
+
         public static float Wrap(WrapMode mode, int value, int max, int min = 0)
         {
             switch (mode)

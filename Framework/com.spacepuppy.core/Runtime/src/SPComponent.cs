@@ -183,7 +183,7 @@ namespace com.spacepuppy
 
         #endregion
 
-#if UNITY_EDITOR
+#if UNITY_EDITOR && UNITY_2022_3_OR_NEWER
         [ContextMenu("Move To Top")]
         void ComponentEditor_MoveToTop()
         {

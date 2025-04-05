@@ -177,6 +177,8 @@ namespace com.spacepuppy.Mecanim
             }
         }
 
+        public bool HasOverrideSource => _runtimeRef != null || _obj != null;
+
         #endregion
 
         #region Methods

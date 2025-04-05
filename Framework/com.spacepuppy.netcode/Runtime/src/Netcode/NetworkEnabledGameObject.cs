@@ -9,22 +9,36 @@ namespace com.spacepuppy.Netcode
 {
 
     [Infobox("The 'active/enabled' state of this GameObject will be synced from server to client.\r\n\r\nNote that the component has to be enabled on start to initiate itself and receive messages.")]
-    public sealed class NetworkEnabledGameObject : SPNetworkComponent, IMStartOrEnableReceiver
+    public sealed class NetworkEnabledGameObject : SPNetworkComponent
     {
 
         #region Fields
 
-
+        [SerializeField]
+        private bool _disableOnStart;
 
         #endregion
 
         #region CONSTRUCTOR
 
-        void IMStartOrEnableReceiver.OnStartOrEnable()
+        protected override void OnStartOrNetworkSpawn()
         {
+            base.OnStartOrNetworkSpawn();
+
             if (this.IsServer && this.enabled)
             {
-                this.SyncState(this.gameObject.activeSelf);
+                this.SyncStateClientRpc(!_disableOnStart && this.gameObject.activeSelf);
+            }
+        }
+
+        protected override void OnEnable()
+        {
+            base.OnEnable();
+            if (!this.started || !this.IsSpawned) return;
+
+            if (this.IsServer && this.enabled)
+            {
+                this.SyncStateClientRpc(this.gameObject.activeSelf);
             }
         }
 
@@ -34,7 +48,7 @@ namespace com.spacepuppy.Netcode
 
             if (this.IsServer && !this.IsDestroyed() && this.enabled)
             {
-                this.SyncState(this.gameObject.activeSelf);
+                this.SyncStateClientRpc(this.gameObject.activeSelf);
             }
         }
 
@@ -42,28 +56,10 @@ namespace com.spacepuppy.Netcode
 
         #region Methods
 
-        private void SyncState(bool state)
-        {
-            if (state)
-                this.SyncActiveClientRpc();
-            else
-                this.SyncInactiveClientRpc();
-        }
-
         [ClientRpc]
-        private void SyncActiveClientRpc()
+        private void SyncStateClientRpc(bool state)
         {
-            if (this.IsServer) return;
-
-            this.gameObject.SetActive(true);
-        }
-
-        [ClientRpc]
-        private void SyncInactiveClientRpc()
-        {
-            if (this.IsServer) return;
-
-            this.gameObject.SetActive(false);
+            this.gameObject.SetActive(state);
         }
 
         #endregion

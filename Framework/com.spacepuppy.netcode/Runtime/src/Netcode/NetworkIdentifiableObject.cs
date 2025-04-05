@@ -4,13 +4,15 @@ using Unity.Netcode;
 
 using com.spacepuppy.Utils;
 
-namespace com.spacepuppy.netcode
+namespace com.spacepuppy.Netcode
 {
 
     [System.Serializable]
     public struct NetworkIdToken : INetworkSerializable
     {
+        [SerializeField]
         private byte mode;
+        [SerializeField]
         private ulong id;
 
         public NetworkIdToken(NetworkIdentifiableObject nidobj)

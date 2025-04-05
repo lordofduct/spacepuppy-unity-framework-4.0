@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 
 using com.spacepuppy;
 using com.spacepuppy.Dynamic.Accessors;
@@ -22,6 +23,9 @@ namespace com.spacepuppy.Tween
             factory.RegisterPerminentlyCachedAccessor(typeof(RectTransform).GetProperty(nameof(RectTransform.sizeDelta)), FindAccessor.RectTransformSizeDelta);
             factory.RegisterPerminentlyCachedAccessor(typeof(UnityEngine.UI.Text).GetProperty(nameof(UnityEngine.UI.Text.text)), FindAccessor.TextGraphicText);
             factory.RegisterPerminentlyCachedAccessor(typeof(CanvasGroup).GetProperty(nameof(CanvasGroup.alpha)), FindAccessor.CanvasGroupAlpha);
+            factory.RegisterPerminentlyCachedAccessor(typeof(Image).GetProperty(nameof(Image.color)), FindAccessor.ImageColor);
+
+
         }
 
         #region Transform
@@ -91,6 +95,14 @@ namespace com.spacepuppy.Tween
         private static IMemberAccessor<float> _canvasGroupAlpha;
         public static IMemberAccessor<float> CanvasGroupAlpha { get { return _canvasGroupAlpha ?? (_canvasGroupAlpha = new GetterSetterMemberAccessor<CanvasGroup, float>(c => c.alpha, (c, v) => c.alpha = v)); } }
         public static IMemberAccessor<float> alpha_ref(this CanvasGroup c) { return CanvasGroupAlpha; }
+
+        #endregion
+
+        #region Image
+
+        private static IMemberAccessor<Color> _imageColor;
+        public static IMemberAccessor<Color> ImageColor { get { return _imageColor ?? (_imageColor = new GetterSetterMemberAccessor<Image, Color>(img => img.color, (img, v) => img.color = v)); } }
+        public static IMemberAccessor<Color> color_ref(this Image img) { return ImageColor; }
 
         #endregion
 

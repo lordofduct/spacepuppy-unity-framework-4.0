@@ -8,7 +8,7 @@ using com.spacepuppy.Events;
 namespace com.spacepuppy
 {
 
-    public sealed class i_UIOnSubmit : SPComponent, IMStartOrEnableReceiver, ISubmitHandler
+    public sealed class t_UIOnSubmit : SPComponent, IMStartOrEnableReceiver, ISubmitHandler
     {
 
         #region Fields

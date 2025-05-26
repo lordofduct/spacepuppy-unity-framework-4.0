@@ -246,6 +246,8 @@ namespace com.spacepuppy.Geom
             }
         }
 
+        bool IPhysicsObject.ContainsPoint(Vector3 point) => this.Contains(point);
+
         #endregion
 
 

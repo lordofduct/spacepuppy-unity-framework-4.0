@@ -3,13 +3,18 @@ using System.Collections.Generic;
 
 namespace com.spacepuppy.Geom
 {
+
+    [System.Serializable]
     public struct Cylinder : IGeom
     {
 
         #region Fields
 
+        [SerializeField]
         private Vector3 _start;
+        [SerializeField]
         private Vector3 _end;
+        [SerializeField]
         private float _rad;
 
         #endregion
@@ -251,4 +256,5 @@ namespace com.spacepuppy.Geom
 
         #endregion
     }
+
 }

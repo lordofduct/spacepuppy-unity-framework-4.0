@@ -73,6 +73,13 @@ namespace com.spacepuppy.Geom
     public class CompoundTrigger : SPComponent, ICompoundTrigger
     {
 
+        protected System.EventHandler _activeTargetsChanged;
+        public event System.EventHandler ActiveTargetsChanged
+        {
+            add { _activeTargetsChanged += value; }
+            remove { _activeTargetsChanged -= value; }
+        }
+
         [System.Flags]
         public enum ConfigurationOptions
         {
@@ -255,11 +262,19 @@ namespace com.spacepuppy.Geom
             }
         }
 
+        public CompoundTriggerMember GetMember(Collider collider) => collider && _colliders.TryGetValue(collider, out var m) ? m : null;
+
         /// <summary>
         /// The colliders that make up this compoundtrigger
         /// </summary>
         /// <returns></returns>
-        public IEnumerable<Collider> GetMemberColliders() => _colliders.Keys;
+        public IReadOnlyCollection<CompoundTriggerMember> GetMembers() => _colliders.Values;
+
+        /// <summary>
+        /// The colliders that make up this compoundtrigger
+        /// </summary>
+        /// <returns></returns>
+        public IReadOnlyCollection<Collider> GetMemberColliders() => _colliders.Keys;
 
         /// <summary>
         /// The 'other' colliders that are currently inside this compoundtrigger
@@ -462,7 +477,7 @@ namespace com.spacepuppy.Geom
             var e = _colliders.GetEnumerator();
             while (e.MoveNext())
             {
-                if (e.Current.Value.Active.Contains(c))
+                if (e.Current.Value.ActiveRaw.Contains(c))
                 {
                     member = e.Current.Value;
                     return true;
@@ -476,6 +491,7 @@ namespace com.spacepuppy.Geom
         {
             if (this.isActiveAndEnabled && (_mask.Value?.Intersects(other) ?? true) && _active.Add(other))
             {
+                _activeTargetsChanged?.Invoke(this, System.EventArgs.Empty);
                 _messageSettings.Send(this.gameObject, (this, other), OnEnterFunctor);
                 if ((_configuration & ConfigurationOptions.SendMessageToOtherCollider) != 0) _otherColliderMessageSettings.Send(other.gameObject, (this, member.Collider), OnEnterFunctor);
             }
@@ -488,6 +504,7 @@ namespace com.spacepuppy.Geom
 
             if (_active.Remove(other))
             {
+                _activeTargetsChanged?.Invoke(this, System.EventArgs.Empty);
                 _messageSettings.Send(this.gameObject, (this, other), OnExitFunctor);
                 if ((_configuration & ConfigurationOptions.SendMessageToOtherCollider) != 0) _otherColliderMessageSettings.Send(other.gameObject, (this, member.Collider), OnExitFunctor);
             }
@@ -508,6 +525,8 @@ namespace com.spacepuppy.Geom
                     _otherColliderMessageSettings.Send(other.gameObject, (this, membercoll), OnExitFunctor);
                 }
             }
+            _active.Clear();
+            _activeTargetsChanged?.Invoke(this, System.EventArgs.Empty);
         }
 
         protected virtual void SignalTriggerStay(CompoundTriggerStayMember member, Collider other)
@@ -536,9 +555,9 @@ namespace com.spacepuppy.Geom
             while (ed.MoveNext())
             {
                 ed.Current.Value.CleanActive();
-                if (ed.Current.Value.Active.Count > 0)
+                if (ed.Current.Value.ActiveRaw.Count > 0)
                 {
-                    foreach (var a in ed.Current.Value.Active)
+                    foreach (var a in ed.Current.Value.ActiveRaw)
                     {
                         this.SignalTriggerEnter(ed.Current.Value, a);
                     }
@@ -586,7 +605,7 @@ namespace com.spacepuppy.Geom
 
         #region Special Types
 
-        protected class CompoundTriggerMember : MonoBehaviour
+        public class CompoundTriggerMember : MonoBehaviour
         {
 
             [System.NonSerialized]
@@ -606,10 +625,8 @@ namespace com.spacepuppy.Geom
                 get { return _collider; }
             }
 
-            public HashSet<Collider> Active
-            {
-                get { return _active; }
-            }
+            public IReadOnlyCollection<Collider> Active => _active;
+            protected internal HashSet<Collider> ActiveRaw => _active;
 
             internal void Init(CompoundTrigger owner, Collider collider)
             {
@@ -674,10 +691,15 @@ namespace com.spacepuppy.Geom
                 _owner = owner;
             }
 
-            public bool Contains(Collider item) => item && _owner._active.Contains(item);
+            public bool Contains(Collider item)
+            {
+                if (!item) return false;
+                if (_owner._isDirty) _owner.CleanActive();
+                return _owner._active.Contains(item);
+            }
             public void CopyTo(Collider[] array, int arrayIndex)
             {
-                var e = this.GetEnumerator();
+                var e = new ActiveColliderEnumerator(_owner);
                 while (e.MoveNext() && arrayIndex < array.Length)
                 {
                     array[arrayIndex] = e.Current;
@@ -698,6 +720,7 @@ namespace com.spacepuppy.Geom
             internal ActiveColliderEnumerator(CompoundTrigger owner)
             {
                 _owner = owner;
+                if (_owner._isDirty) _owner.CleanActive();
                 _e = owner._active.GetEnumerator();
             }
 
@@ -714,7 +737,7 @@ namespace com.spacepuppy.Geom
                 return false;
             }
             void System.Collections.IEnumerator.Reset() => (_e as System.Collections.IEnumerator).Reset();
-            
+
         }
 
         #endregion

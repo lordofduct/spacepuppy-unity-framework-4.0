@@ -22,13 +22,6 @@ namespace com.spacepuppy.Geom
 
         #region CONSTRUCTOR
 
-        protected override void OnDisable()
-        {
-            base.OnDisable();
-
-            _activeEntities.Clear();
-        }
-
         #endregion
 
         #region Properties
@@ -92,9 +85,14 @@ namespace com.spacepuppy.Geom
             var entity = SPEntity.Pool.GetFromSource(other);
             if (!entity || !(this.Mask?.Intersects(other) ?? true)) return;
 
-            if (_active.Add(other) && _activeEntities.Add(entity))
+            if (_active.Add(other))
             {
-                _messageSettings.Send(this.gameObject, (this, other), OnEnterFunctor);
+                _activeTargetsChanged?.Invoke(this, System.EventArgs.Empty);
+                if (_activeEntities.Add(entity))
+                {
+                    _messageSettings.Send(this.gameObject, (this, other), OnEnterFunctor);
+                    if ((this.Configuration & ConfigurationOptions.SendMessageToOtherCollider) != 0) _otherColliderMessageSettings.Send(other.gameObject, (this, member.Collider), OnEnterFunctor);
+                }
             }
         }
 
@@ -107,6 +105,8 @@ namespace com.spacepuppy.Geom
 
             if (!_active.Remove(other)) return;
 
+            _activeTargetsChanged?.Invoke(this, System.EventArgs.Empty);
+
             //test if any of our other active colliders are related to this entity
             var e = _active.GetEnumerator();
             while (e.MoveNext())
@@ -117,6 +117,7 @@ namespace com.spacepuppy.Geom
             if (_activeEntities.Remove(entity))
             {
                 _messageSettings.Send(this.gameObject, (this, other), OnExitFunctor);
+                if ((this.Configuration & ConfigurationOptions.SendMessageToOtherCollider) != 0) _otherColliderMessageSettings.Send(other.gameObject, (this, member.Collider), OnExitFunctor);
             }
         }
 
@@ -142,6 +143,9 @@ namespace com.spacepuppy.Geom
                     }
                 }
             }
+            _active.Clear();
+            _activeEntities.Clear();
+            _activeTargetsChanged?.Invoke(this, System.EventArgs.Empty);
         }
 
         protected override void CleanActive()
@@ -180,10 +184,15 @@ namespace com.spacepuppy.Geom
                 _owner = owner;
             }
 
-            public bool Contains(SPEntity item) => item && _owner._activeEntities.Contains(item);
+            public bool Contains(SPEntity item)
+            {
+                if (!item) return false;
+                if (_owner._isDirty) _owner.CleanActive();
+                return _owner._activeEntities.Contains(item);
+            }
             public void CopyTo(SPEntity[] array, int arrayIndex)
             {
-                var e = this.GetEnumerator();
+                var e = new ActiveEntityEnumerator(_owner);
                 while (e.MoveNext() && arrayIndex < array.Length)
                 {
                     array[arrayIndex] = e.Current;
@@ -204,6 +213,7 @@ namespace com.spacepuppy.Geom
             internal ActiveEntityEnumerator(CompoundEntityTrigger owner)
             {
                 _owner = owner;
+                if (_owner._isDirty) _owner.CleanActive();
                 _e = owner._activeEntities.GetEnumerator();
             }
 
@@ -220,7 +230,7 @@ namespace com.spacepuppy.Geom
                 return false;
             }
             void System.Collections.IEnumerator.Reset() => (_e as System.Collections.IEnumerator).Reset();
-            
+
         }
 
         #endregion

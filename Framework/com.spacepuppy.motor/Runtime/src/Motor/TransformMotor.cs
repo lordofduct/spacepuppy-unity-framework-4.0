@@ -416,6 +416,15 @@ namespace com.spacepuppy.Motor
             return 0;
         }
 
+        bool IPhysicsObject.ContainsPoint(Vector3 point)
+        {
+            foreach (var c in _colliders)
+            {
+                if (c.ContainsPoint(point)) return true;
+            }
+            return false;
+        }
+
         #endregion
 
         #region IUpdatable Interface

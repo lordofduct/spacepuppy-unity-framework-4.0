@@ -128,6 +128,11 @@ namespace com.spacepuppy.Geom
                 return Capsule.FromCollider(_collider).TestOverlap(layerMask, query);
             }
 
+            public bool ContainsPoint(Vector3 point)
+            {
+                return _collider.ContainsPoint(point);
+            }
+
             #endregion
 
             internal static IColliderDecorator Configure(CharacterController c)
@@ -190,6 +195,11 @@ namespace com.spacepuppy.Geom
             public bool TestOverlap(int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
             {
                 return Box.FromCollider(_collider).TestOverlap(layerMask, query);
+            }
+
+            public bool ContainsPoint(Vector3 point)
+            {
+                return _collider.ContainsPoint(point);
             }
 
             #endregion
@@ -256,6 +266,11 @@ namespace com.spacepuppy.Geom
                 return Sphere.FromCollider(_collider).TestOverlap(layerMask, query);
             }
 
+            public bool ContainsPoint(Vector3 point)
+            {
+                return _collider.ContainsPoint(point);
+            }
+
             #endregion
 
             internal static IColliderDecorator Configure(SphereCollider c)
@@ -318,6 +333,11 @@ namespace com.spacepuppy.Geom
             public bool TestOverlap(int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
             {
                 return Capsule.FromCollider(_collider).TestOverlap(layerMask, query);
+            }
+
+            public bool ContainsPoint(Vector3 point)
+            {
+                return _collider.ContainsPoint(point);
             }
 
             #endregion
@@ -426,6 +446,11 @@ namespace com.spacepuppy.Geom
                 }
             }
 
+            public bool ContainsPoint(Vector3 point)
+            {
+                return _collider.ContainsPoint(point);
+            }
+
             #endregion
 
             internal static IColliderDecorator Configure(MeshCollider c)
@@ -488,6 +513,11 @@ namespace com.spacepuppy.Geom
             public bool TestOverlap(int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
             {
                 return AABBox.FromCollider(_collider).TestOverlap(layerMask, query);
+            }
+
+            public bool ContainsPoint(Vector3 point)
+            {
+                return AABBox.FromCollider(_collider).Contains(point);
             }
 
             #endregion

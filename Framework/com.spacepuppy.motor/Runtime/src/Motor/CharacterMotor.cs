@@ -332,6 +332,8 @@ namespace com.spacepuppy.Motor
             return Capsule.FromCollider(_controller).CastAll(direction, results, distance, layerMask, query);
         }
 
+        bool IPhysicsObject.ContainsPoint(Vector3 point) => _controller.ContainsPoint(point);
+
         #endregion
 
         #region IUpdatable Interface

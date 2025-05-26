@@ -3,6 +3,8 @@ using System.Collections.Generic;
 
 namespace com.spacepuppy.Geom
 {
+
+    [System.Serializable]
     public struct Box : IGeom, System.Runtime.Serialization.ISerializable, IPhysicsGeom
     {
 
@@ -148,6 +150,8 @@ namespace com.spacepuppy.Geom
         {
             return PhysicsUtil.BoxCastAll(_center, this.Extents, direction, results, _orientation, distance, layerMask, query);
         }
+
+        bool IPhysicsObject.ContainsPoint(Vector3 point) => this.Contains(point);
 
         #endregion
 

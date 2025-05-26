@@ -50,6 +50,7 @@ namespace com.spacepuppy.Geom
         bool Cast(Vector3 direction, out RaycastHit hitinfo, float distance, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal);
         int CastAll(Vector3 direction, ICollection<RaycastHit> results, float distance, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal);
 
+        bool ContainsPoint(Vector3 point);
     }
 
     public interface IPhysicsGeom : IGeom, IPhysicsObject

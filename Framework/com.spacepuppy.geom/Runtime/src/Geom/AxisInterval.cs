@@ -2,6 +2,7 @@
 
 namespace com.spacepuppy.Geom
 {
+
     /// <summary>
     /// Represents an interval on some axis. This is useful for projection of geometry on an axis. The axis is stored for token 
     /// purposes only and is not used for any actions with other intervals.
@@ -167,4 +168,5 @@ namespace com.spacepuppy.Geom
 
         #endregion
     }
+
 }

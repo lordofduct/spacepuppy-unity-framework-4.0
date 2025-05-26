@@ -4,14 +4,19 @@ using System.Collections.Generic;
 namespace com.spacepuppy.Geom
 {
 
+    [System.Serializable]
     public struct Cone : IGeom
     {
 
         #region Fields
 
+        [SerializeField]
         private Vector3 _start;
+        [SerializeField]
         private Vector3 _end;
+        [SerializeField]
         private float _startRad;
+        [SerializeField]
         private float _endRad;
 
         #endregion
@@ -24,6 +29,40 @@ namespace com.spacepuppy.Geom
             _end = end;
             _startRad = startRadius;
             _endRad = endRadius;
+        }
+
+        public static Cone FromAngle(Vector3 start, Vector3 end, float radians, float startRadius)
+        {
+            float length = (end - start).magnitude;
+            return new Cone()
+            {
+                _start = start,
+                _end = end,
+                _startRad = startRadius,
+                _endRad = startRadius + length * Mathf.Tan(radians),
+            };
+        }
+
+        public static Cone FromAngle(Vector3 start, Vector3 dir, float range, float radians, float startRadius)
+        {
+            return new Cone()
+            {
+                _start = start,
+                _end = start + dir.normalized * range,
+                _startRad = startRadius,
+                _endRad = startRadius + range * Mathf.Tan(radians),
+            };
+        }
+
+        public static Cone FromAngle(Ray ray, float range, float radians, float startRadius = 0f)
+        {
+            return new Cone()
+            {
+                _start = ray.origin,
+                _end = ray.GetPoint(range),
+                _startRad = startRadius,
+                _endRad = startRadius + range * Mathf.Tan(radians),
+            };
         }
 
         #endregion
@@ -100,6 +139,19 @@ namespace com.spacepuppy.Geom
 
         #endregion
 
+        #region Methods
+
+        public float RadiusAtHeight(float h)
+        {
+            if (h <= 0f) return _startRad;
+
+            float height = this.Height;
+            float t = h / height;
+            return Mathf.Lerp(_startRad, _endRad, h / height);
+        }
+
+        #endregion
+
         #region IGeom Interface
 
         public void Move(Vector3 mv)
@@ -146,6 +198,60 @@ namespace com.spacepuppy.Geom
         public bool Contains(Vector3 pos)
         {
             return ContainsPoint(_start, _end, _startRad, _endRad, pos);
+        }
+
+        #endregion
+
+        #region Gizmos
+
+        public void DrawGizmo(Matrix4x4 matrix, int circleDetail = 16, int lineCount = 4)
+        {
+            Vector3 s = matrix.MultiplyPoint(_start);
+            Vector3 e = matrix.MultiplyPoint(_end);
+            Vector3 dir = (e - s).normalized;
+            Vector3 leg;
+            if (Mathf.Abs(Vector3.Dot(dir, Vector3.up)) > 0.9f)
+            {
+                leg = Vector3.Cross(dir, Vector3.forward).normalized;
+            }
+            else
+            {
+                leg = Vector3.Cross(dir, Vector3.up).normalized;
+            }
+
+            if (lineCount > 0)
+            {
+                float delta = 360f / (float)lineCount;
+                for (int i = 0; i < lineCount; i++)
+                {
+                    float a = delta * i;
+                    var p = Quaternion.AngleAxis(a, dir) * leg;
+                    Gizmos.DrawLine(s + p * _startRad, e + p * _endRad);
+                }
+            }
+            if (circleDetail > 0)
+            {
+                float delta = 360f / (float)circleDetail;
+                var lps = leg * _startRad;
+                var lpe = leg * _endRad;
+                for (int i = 1; i < circleDetail; i++)
+                {
+                    float a = delta * i;
+                    var p = Quaternion.AngleAxis(a, dir) * leg;
+                    var ps = p * _startRad;
+                    var pe = p * _endRad;
+                    if (_startRad > 0f)
+                    {
+                        Gizmos.DrawLine(s + lps, s + ps);
+                    }
+                    if (_endRad > 0f)
+                    {
+                        Gizmos.DrawLine(e + lpe, e + pe);
+                    }
+                    lps = ps;
+                    lpe = pe;
+                }
+            }
         }
 
         #endregion

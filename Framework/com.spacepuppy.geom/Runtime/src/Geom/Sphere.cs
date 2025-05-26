@@ -156,6 +156,8 @@ namespace com.spacepuppy.Geom
             return PhysicsUtil.SphereCastAll(_cent, _rad, direction, results, distance, layerMask, query);
         }
 
+        bool IPhysicsObject.ContainsPoint(Vector3 point) => this.Contains(point);
+
         #endregion
 
 

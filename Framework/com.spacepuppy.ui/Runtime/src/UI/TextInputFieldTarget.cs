@@ -3,6 +3,7 @@ using System.Collections.Generic;
 
 using com.spacepuppy.Dynamic;
 using com.spacepuppy.Utils;
+using System;
 
 namespace com.spacepuppy.UI
 {
@@ -75,6 +76,38 @@ namespace com.spacepuppy.UI
         {
             get => StringUtil.TryGetText(_target);
             set => StringUtil.TrySetText(_target, value);
+        }
+
+        public int caretPosition
+        {
+            get
+            {
+                switch (StringUtil.GetAsTextBindingTarget(_target, false))
+                {
+                    case UnityEngine.UI.InputField uif:
+                        return uif.caretPosition;
+#if SP_TMPRO
+                    case TMPro.TMP_InputField tmpif:
+                        return tmpif.caretPosition;
+#endif
+                    default:
+                        return -1;
+                }
+            }
+            set
+            {
+                switch (StringUtil.GetAsTextBindingTarget(_target, false))
+                {
+                    case UnityEngine.UI.InputField uif:
+                        uif.caretPosition = value;
+                        break;
+#if SP_TMPRO
+                    case TMPro.TMP_InputField tmpif:
+                        tmpif.caretPosition = value;
+                        break;
+#endif
+                }
+            }
         }
 
         #endregion

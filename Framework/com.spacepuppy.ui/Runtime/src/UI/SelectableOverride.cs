@@ -6,6 +6,7 @@ using System.Reflection;
 
 using com.spacepuppy.Events;
 using com.spacepuppy.Project;
+using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.UI
 {
@@ -183,6 +184,19 @@ namespace com.spacepuppy.UI
                     this.ForceSetCurrentSelectionState(state, instant);
                     break;
             }
+        }
+
+        public void SimulatePressVisuals(float duration = 0.1f)
+        {
+            if (this.CurrentSelectionState == SelectionState.Pressed) return;
+
+            this.StartCoroutine(this.DoSimulatePressVisuals(duration));
+        }
+        System.Collections.IEnumerable DoSimulatePressVisuals(float duration)
+        {
+            this.SetCurrentSelectionState(SelectionState.Pressed, false);
+            yield return new WaitForSeconds(duration);
+            this.EvaluateCurrentStateAndSync(false);
         }
 
         #endregion

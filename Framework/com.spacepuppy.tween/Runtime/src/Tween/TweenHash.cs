@@ -615,7 +615,7 @@ namespace com.spacepuppy.Tween
 
             public TweenHash RedirectTo(float dur, TProp start, TProp end, int option = 0)
             {
-                return RedirectTo(dur, start, end, option);
+                return RedirectTo(null, dur, start, end, option);
             }
             public TweenHash RedirectTo(Ease ease, float dur, TProp start, TProp end, int option = 0)
             {

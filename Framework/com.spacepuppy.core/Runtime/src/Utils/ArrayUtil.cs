@@ -364,8 +364,8 @@ namespace com.spacepuppy.Utils
             foreach (var o in e)
             {
                 callback?.Invoke(o);
-                yield return o;
             }
+            return e;
         }
 
         public static IEnumerable<T> ForEach<T>(this IEnumerable<T> e, System.Action<T> callback)
@@ -373,8 +373,8 @@ namespace com.spacepuppy.Utils
             foreach (var o in e)
             {
                 callback?.Invoke(o);
-                yield return o;
             }
+            return e;
         }
 
         #endregion

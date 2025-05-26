@@ -144,6 +144,19 @@ namespace com.spacepuppy.UI
         [System.Obsolete("Use OnClick_Ref().AddTrackedListener instead.")]
         public TrackedEventHandlerToken AddTrackedListener(System.EventHandler listener) => OnClick_ref().AddTrackedListener(listener);
 
+        public void ActivateClickHandler(bool ignoreIsActiveAndInteractableValidation = false)
+        {
+            switch (_value)
+            {
+                case UnityEngine.UI.Button btn:
+                    if (!ignoreIsActiveAndInteractableValidation || (btn.isActiveAndEnabled && btn.interactable)) btn.onClick.Invoke();
+                    break;
+                case SPUIButton spbtn:
+                    if (!ignoreIsActiveAndInteractableValidation || (spbtn.isActiveAndEnabled && spbtn.interactable)) spbtn.OnClick.ActivateTrigger(spbtn, null);
+                    break;
+            }
+        }
+
         #endregion
 
         #region IDynamicProperty Interface

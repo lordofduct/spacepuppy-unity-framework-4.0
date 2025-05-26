@@ -455,6 +455,8 @@ namespace com.spacepuppy.Utils
 
         public static bool HasRegisteredGlobalListener<T>() where T : class => GlobalMessagePool<T>.Count > 0;
 
+        public static bool IsExecutingGlobal<T>() where T : class => GlobalMessagePool<T>.IsExecuting;
+
         /// <summary>
         /// Register a listener for a global Broadcast.
         /// </summary>
@@ -887,6 +889,8 @@ namespace com.spacepuppy.Utils
             {
                 get { return _receivers?.Count ?? 0; }
             }
+
+            public static bool IsExecuting => _state != ExecutingState.None;
 
             public static void Add(T listener)
             {

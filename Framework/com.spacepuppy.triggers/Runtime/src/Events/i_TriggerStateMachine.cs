@@ -9,7 +9,7 @@ namespace com.spacepuppy.Events
 {
 
     [Infobox("Triggering this forwards the trigger down to the current state using that state's configuration.")]
-    public class i_TriggerStateMachine : Triggerable, IObservableTrigger, IStateMachine
+    public class i_TriggerStateMachine : Triggerable, IObservableTrigger, IStateMachine, IReadOnlyStateMachine
     {
 
         public enum WrapMode
@@ -32,6 +32,9 @@ namespace com.spacepuppy.Events
         private bool _ignoreTriggerForwarding;
 
         [SerializeField]
+        private bool _triggerCurrentOnStateChange;
+
+        [SerializeField]
         private StateCollection _states = new StateCollection();
 
         [SerializeField, SPEvent.Config("state (object)")]
@@ -41,6 +44,8 @@ namespace com.spacepuppy.Events
         [UnityEngine.Serialization.FormerlySerializedAs("_onStateChanged")]
         private SPEvent _onEnterState = new SPEvent("OnEnterState");
 
+        [SerializeField, Tooltip("Defines how a state is activated. By default only the current state is enabled and all others are disabled.")]
+        private InterfaceRefOrPicker<IStateActivator> _stateActivator = new();
         [SerializeField]
         private InterfaceRefOrPicker<IStateTransition> _stateTransition = new();
 
@@ -99,6 +104,12 @@ namespace com.spacepuppy.Events
             set => _ignoreTriggerForwarding = value;
         }
 
+        public bool TriggerCurrentOnStateChange
+        {
+            get => _triggerCurrentOnStateChange;
+            set => _triggerCurrentOnStateChange = value;
+        }
+
         public StateInfo? CurrentState => _states.CurrentState;
 
         public StateCollection States => _states;
@@ -106,6 +117,12 @@ namespace com.spacepuppy.Events
         public SPEvent OnExitState => _onExitState;
 
         public SPEvent OnEnterState => _onEnterState;
+
+        public IStateActivator StateActivator
+        {
+            get => _stateActivator.Value;
+            set => _stateActivator.Value = value;
+        }
 
         public IStateTransition StateTransition
         {
@@ -345,13 +362,7 @@ namespace com.spacepuppy.Events
                 //first disable, then enable, this way you can use the OnDisable and OnEnable of the states to perform actions predictably
                 bool signal = _currentState != index;
                 _currentState = index;
-                var currentGo = index >= 0 && index < _states.Count ? GameObjectUtil.GetGameObjectFromSource(_states[index].Target, true) : null;
-                for (int i = 0; i < _states.Count; i++)
-                {
-                    var go = GameObjectUtil.GetGameObjectFromSource(_states[i].Target, true);
-                    if (go && i != _currentState && go != currentGo) go.SetActive(false);
-                }
-                if (currentGo) currentGo.SetActive(true);
+                (this.Owner?.StateActivator ?? StandardStateActivator.Default).Activate(this);
 
                 if (signal)
                 {
@@ -363,6 +374,11 @@ namespace com.spacepuppy.Events
                     if (trans != null)
                     {
                         trans.OnEnter(this, laststate, currentstate);
+                    }
+
+                    if (this.Owner && this.Owner.TriggerCurrentOnStateChange)
+                    {
+                        this.Owner.Trigger(null, null);
                     }
                 }
             }
@@ -553,7 +569,7 @@ namespace com.spacepuppy.Events
                 var grp = ObjUtil.GetAsFromSource<CanvasGroup>(enterstate?.Target);
                 if (!grp) return;
 
-                if(fadeInTime > 0f && collection.Owner)
+                if (fadeInTime > 0f && collection.Owner)
                 {
                     collection.Owner.StartRadicalCoroutine(this.FadeIn(grp, new SPTimePeriod(fadeInTime, timeSupplier.TimeSupplier ?? SPTime.Real)));
                 }
@@ -763,6 +779,47 @@ namespace com.spacepuppy.Events
                 _version++;
             }
 
+        }
+
+
+        /// <summary>
+        /// Defines how a state is activated (enabled/disabled).
+        /// </summary>
+        public interface IStateActivator
+        {
+            void Activate(StateCollection states);
+        }
+
+        class StandardStateActivator : IStateActivator
+        {
+            public static readonly StandardStateActivator Default = new();
+
+            public void Activate(StateCollection states)
+            {
+                var index = states.CurrentStateIndex;
+                var currentGo = index >= 0 && index < states.Count ? GameObjectUtil.GetGameObjectFromSource(states[index.Value].Target, true) : null;
+                for (int i = 0; i < states.Count; i++)
+                {
+                    var go = GameObjectUtil.GetGameObjectFromSource(states[i].Target, true);
+                    if (go && i != index && go != currentGo) go.SetActive(false);
+                }
+                if (currentGo) currentGo.SetActive(true);
+            }
+        }
+
+        [System.Serializable]
+        [SerializeRefLabel("Cascade")]
+        public class CascadeStateActivator : IStateActivator
+        {
+            public void Activate(StateCollection states)
+            {
+                var index = states.CurrentStateIndex;
+                for (int i = 0; i < states.Count; i++)
+                {
+                    var go = GameObjectUtil.GetGameObjectFromSource(states[i].Target, true);
+                    if (go) go.SetActive(i <= index);
+                }
+            }
         }
 
         #endregion

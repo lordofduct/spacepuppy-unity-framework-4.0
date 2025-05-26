@@ -6,7 +6,7 @@ using com.spacepuppy.Events;
 namespace com.spacepuppy
 {
 
-    public interface IStateMachine
+    public interface IReadOnlyStateMachine
     {
 
         event System.EventHandler StateChanged;
@@ -16,6 +16,17 @@ namespace com.spacepuppy
         string CurrentStateId { get; }
         int? CurrentStateIndex { get; }
 
+    }
+
+    public interface IStateMachine
+    {
+
+        event System.EventHandler StateChanged;
+        public EventHandlerRef StateChanged_ref() => EventHandlerRef.Create(this, (o, l) => o.StateChanged += l, (o, l) => o.StateChanged -= l);
+
+        int StateCount { get; }
+        string CurrentStateId { get; }
+        int? CurrentStateIndex { get; }
 
         void GoToStateById(string id);
         void GoToState(int index);

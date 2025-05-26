@@ -24,7 +24,7 @@ namespace com.spacepuppy.Events
         private InterfaceRef<IStateMachine> _targetStateMachine = new();
 
         [SerializeField, Tooltip("The state machine being mirrored.")]
-        private InterfaceRef<IStateMachine> _sourceStateMachine = new();
+        private InterfaceRef<IReadOnlyStateMachine> _sourceStateMachine = new();
 
         [SerializeField]
         private Modes _mode;
@@ -61,7 +61,7 @@ namespace com.spacepuppy.Events
             set => _targetStateMachine.Value = GameObjectUtil.GetGameObjectFromSource(value) == this.gameObject ? value : null;
         }
 
-        public IStateMachine SourceStateMachine
+        public IReadOnlyStateMachine SourceStateMachine
         {
             get => _sourceStateMachine.Value;
             set

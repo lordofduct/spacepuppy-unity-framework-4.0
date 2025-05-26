@@ -26,7 +26,11 @@ namespace com.spacepuppyeditor.Netcode
 
                 //HACK: Reset the hash and apply it.
                 //This implicitly marks the field as dirty, allowing it to be saved as an override.
+#if UNITY_2022_2_OR_NEWER
                 hashField.uintValue = 0;
+#else
+                hashField.intValue = 0;
+#endif
                 serializedObject.ApplyModifiedProperties();
                 //Afterwards, OnValidate will kick in and return the hash to it's real value, which will be saved now.
             }

@@ -619,11 +619,18 @@ namespace com.spacepuppy.Utils
         /// <typeparam name="T"></typeparam>
         /// <param name="go"></param>
         /// <returns></returns>
-        public static MessageToken<T> CreateSignalToken<T>(GameObject go) where T : class
+        public static MessageToken<T> CreateSignalToken<T>(GameObject go, bool includeDisabledComponents = false) where T : class
         {
             if (object.ReferenceEquals(go, null)) throw new System.ArgumentNullException("go");
 
-            return new MessageToken<T>(() => go.GetComponents<T>());
+            if (includeDisabledComponents)
+            {
+                return new MessageToken<T>(() => go.GetComponents<T>());
+            }
+            else
+            {
+                return new MessageToken<T>(() => go.GetComponents<T>().Where(o => TargetIsValid(o)).ToArray());
+            } 
         }
 
         /// <summary>
@@ -632,24 +639,18 @@ namespace com.spacepuppy.Utils
         /// <typeparam name="T"></typeparam>
         /// <param name="go"></param>
         /// <returns></returns>
-        public static MessageToken<T> CreateSignalUpwardsToken<T>(GameObject go) where T : class
+        public static MessageToken<T> CreateSignalUpwardsToken<T>(GameObject go, bool includeDisabledComponents = false) where T : class
         {
             if (object.ReferenceEquals(go, null)) throw new System.ArgumentNullException("go");
 
-            return new MessageToken<T>(() =>
+            if (includeDisabledComponents)
             {
-                using (var lst = TempCollection.GetList<T>())
-                {
-                    var p = go.transform;
-                    while (p != null)
-                    {
-                        p.GetComponents<T>(lst);
-                        p = p.parent;
-                    }
-
-                    return lst.ToArray();
-                }
-            });
+                return new MessageToken<T>(() => go.GetComponentsInParent<T>());
+            }
+            else
+            {
+                return new MessageToken<T>(() => go.GetComponentsInParent<T>().Where(o => TargetIsValid(o)).ToArray());
+            }
         }
 
         /// <summary>
@@ -660,23 +661,39 @@ namespace com.spacepuppy.Utils
         /// <param name="includeInactiveObjects"></param>
         /// <param name="includeDisabledComponents"></param>
         /// <returns></returns>
-        public static MessageToken<T> CreateBroadcastToken<T>(GameObject go, bool includeInactiveObjects = false) where T : class
+        public static MessageToken<T> CreateBroadcastToken<T>(GameObject go, bool includeInactiveObjects = false, bool includeDisabledComponents = false) where T : class
         {
             if (object.ReferenceEquals(go, null)) throw new System.ArgumentNullException("go");
 
-            return new MessageToken<T>(() => go.GetComponentsInChildren<T>(includeInactiveObjects));
+            if (includeDisabledComponents)
+            {
+                return new MessageToken<T>(() => go.GetComponentsInChildren<T>(includeInactiveObjects));
+            }
+            else
+            {
+                return new MessageToken<T>(() => go.GetComponentsInChildren<T>(includeInactiveObjects).Where(o => TargetIsValid(o)).ToArray());
+            }
         }
 
-        public static MessageToken<T> CreateBroadcastTokenIfReceiversExist<T>(GameObject go, bool includeInactiveObjects = false) where T : class
+        public static MessageToken<T> CreateBroadcastTokenIfReceiversExist<T>(GameObject go, bool includeInactiveObjects = false, bool includeDisabledComponents = false) where T : class
         {
             if (object.ReferenceEquals(go, null)) throw new System.ArgumentNullException("go");
 
             using (var lst = TempCollection.GetList<T>())
             {
                 go.GetComponentsInChildren<T>(includeInactiveObjects, lst);
-                if (lst.Count > 0)
+                int cnt = includeDisabledComponents ? lst.Count : lst.Count(o => TargetIsValid(o));
+
+                if (cnt > 0)
                 {
-                    return new MessageToken<T>(() => go.GetComponentsInChildren<T>(includeInactiveObjects));
+                    if (includeDisabledComponents)
+                    {
+                        return new MessageToken<T>(() => go.GetComponentsInChildren<T>(includeInactiveObjects));
+                    }
+                    else
+                    {
+                        return new MessageToken<T>(() => go.GetComponentsInChildren<T>(includeInactiveObjects).Where(o => TargetIsValid(o)).ToArray());
+                    }
                 }
             }
 
@@ -1281,7 +1298,7 @@ namespace com.spacepuppy.Utils
                 }
             }
 
-            void ValidateContinueUpdateLoop()
+            protected virtual void ValidateContinueUpdateLoop()
             {
                 if (this.SubscriberCount == 0 && !this.PreserveOnUnsubscribe())
                 {
@@ -1300,6 +1317,8 @@ namespace com.spacepuppy.Utils
                 }
             }
 
+            protected void LockObservers() { _observers.Lock(); }
+            protected void UnlockObservers() { _observers.Unlock(); }
             protected HashSet<T>.Enumerator GetSubscriberEnumerator() => _observers != null ? _observers.GetEnumerator() : default;
 
             static readonly System.Type _hookType;

@@ -14,7 +14,7 @@ namespace com.spacepuppy.Motor
             };
             this.OnDisabled += (s, e) =>
             {
-                this.gameObject.FindRoot().Broadcast<IMotor>(o => o.SetCollisionMessageDirty(true));
+                this.gameObject.FindRoot().Broadcast<IMotor>(o => o.SetCollisionMessageDirty(false));
             };
         }
 

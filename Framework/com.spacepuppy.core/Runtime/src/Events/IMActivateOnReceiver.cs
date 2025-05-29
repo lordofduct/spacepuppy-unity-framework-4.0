@@ -9,7 +9,7 @@ namespace com.spacepuppy.Events
     public interface IMActivateOnReceiver : IMixin, IEventfulComponent
     {
 
-        sealed void OnInitMixin()
+        void OnInitMixin()
         {
             OnActivateReceiverMixinLogic.Current.Initialize(this);
         }

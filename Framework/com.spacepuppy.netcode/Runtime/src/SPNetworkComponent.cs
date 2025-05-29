@@ -16,6 +16,7 @@ namespace com.spacepuppy
         public event System.EventHandler OnStarted;
         public event System.EventHandler OnDisabled;
         public event System.EventHandler ComponentDestroyed;
+        public event System.EventHandler OnNetworkSpawned;
 
         #endregion
 
@@ -115,6 +116,14 @@ namespace com.spacepuppy
         {
             base.OnNetworkSpawn();
 
+            try
+            {
+                this.OnNetworkSpawned?.Invoke(this, System.EventArgs.Empty);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogException(ex);
+            }
             if (this.started)
             {
                 try

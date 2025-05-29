@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using Unity.Netcode;
 
 using com.spacepuppy.Events;
 using com.spacepuppy.Utils;
@@ -38,63 +39,13 @@ namespace com.spacepuppy.Netcode.Events
 
     }
 
-    public abstract class NetworkAutoTriggerable : NetworkTriggerable
+    public abstract class NetworkAutoTriggerable : NetworkTriggerable, IMActivateOnReceiver
     {
 
         #region Fields
 
         [SerializeField()]
         private ActivateEvent _activateOn = ActivateEvent.None;
-
-        #endregion
-
-        #region CONSTRUCTOR
-
-        protected override void Awake()
-        {
-            base.Awake();
-
-            if ((_activateOn & ActivateEvent.Awake) != 0)
-            {
-                this.Trigger(this, null);
-            }
-        }
-
-        protected override void Start()
-        {
-            base.Start();
-
-            if ((_activateOn & ActivateEvent.OnLateStart) != 0 && !GameLoop.LateUpdateWasCalled)
-            {
-                GameLoop.LateUpdateHandle.BeginInvoke(() => this.Trigger(this, null));
-            }
-            else if ((_activateOn & ActivateEvent.OnStart) != 0 || (_activateOn & ActivateEvent.OnEnable) != 0)
-            {
-                this.Trigger(this, null);
-            }
-        }
-
-        protected override void OnEnable()
-        {
-            base.OnEnable();
-
-            if (!this.started) return;
-
-            if ((_activateOn & ActivateEvent.OnEnable) != 0)
-            {
-                if (GameLoop.LateUpdateWasCalled)
-                {
-                    this.Trigger(this, null);
-                }
-                else
-                {
-                    GameLoop.LateUpdateHandle.BeginInvoke(() =>
-                    {
-                        this.Trigger(this, null);
-                    });
-                }
-            }
-        }
 
         #endregion
 
@@ -108,6 +59,19 @@ namespace com.spacepuppy.Netcode.Events
 
         #endregion
 
+        #region IMActivateOnReceiver Interface
+
+        void IMActivateOnReceiver.OnInitMixin()
+        {
+            NetworkOnActivateReceiverMixinLogic.NetworkOnActivateMixinLogic.Initialize(this);
+        }
+
+        void IMActivateOnReceiver.Activate()
+        {
+            this.Trigger(this, null);
+        }
+
+        #endregion
 
     }
 

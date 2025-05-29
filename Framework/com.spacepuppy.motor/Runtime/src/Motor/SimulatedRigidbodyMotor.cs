@@ -18,7 +18,7 @@ namespace com.spacepuppy.Motor
     /// </summary>
     [RequireComponentInEntity(typeof(Rigidbody))]
     [Infobox("Velocity/Forces are used to move.")]
-    public class SimulatedRigidbodyMotor : SPComponent, IMotor, IUpdateable, IMotorCollisionMessageDispatcher, IOnCollisionStaySubscriber
+    public class SimulatedRigidbodyMotor : SPComponent, IMotor, IUpdateable, IOnCollisionStaySubscriber
     {
 
         #region Fields
@@ -277,6 +277,15 @@ namespace com.spacepuppy.Motor
             _rigidbody.MovePosition(pos);
         }
 
+        void IMotor.SetCollisionMessageDirty(bool validate)
+        {
+            _onCollisionMessage?.SetDirty();
+            if (validate)
+            {
+                this.ValidateCollisionHandler();
+            }
+        }
+
         #endregion
 
         #region IForceReceiver Interface
@@ -503,15 +512,6 @@ namespace com.spacepuppy.Motor
             {
                 _collisionHook.Unsubscribe(this);
                 _collisionHook = null;
-            }
-        }
-
-        void IMotorCollisionMessageDispatcher.SetDirty(IMotorCollisionMessageHandler handler)
-        {
-            _onCollisionMessage?.SetDirty();
-            if (handler.enabled)
-            {
-                this.ValidateCollisionHandler();
             }
         }
 

@@ -17,7 +17,7 @@ namespace com.spacepuppy.Motor
     /// </summary>
     [RequireComponentInEntity(typeof(Rigidbody))]
     [Infobox("Rigidbody.MovePosition is used to move the Rigidbody around.")]
-    public class RigidbodyMotor : SPComponent, IMotor, IUpdateable, IMotorCollisionMessageDispatcher, IOnCollisionStaySubscriber
+    public class RigidbodyMotor : SPComponent, IMotor, IUpdateable, IOnCollisionStaySubscriber
     {
 
         #region Fields
@@ -250,6 +250,15 @@ namespace com.spacepuppy.Motor
             _talliedMove += mv;
             _vel = _talliedMove / Time.deltaTime;
             _moveCalledLastFrame = true;
+        }
+
+        void IMotor.SetCollisionMessageDirty(bool validate)
+        {
+            _onCollisionMessage?.SetDirty();
+            if (validate)
+            {
+                this.ValidateCollisionHandler();
+            }
         }
 
         #endregion
@@ -501,15 +510,6 @@ namespace com.spacepuppy.Motor
             {
                 _collisionHook.Unsubscribe(this);
                 _collisionHook = null;
-            }
-        }
-
-        void IMotorCollisionMessageDispatcher.SetDirty(IMotorCollisionMessageHandler handler)
-        {
-            _onCollisionMessage?.SetDirty();
-            if (handler.enabled)
-            {
-                this.ValidateCollisionHandler();
             }
         }
 

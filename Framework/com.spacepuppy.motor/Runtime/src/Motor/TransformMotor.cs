@@ -15,7 +15,7 @@ namespace com.spacepuppy.Motor
     /// IMotor interface that directly positions a Transform.
     /// </summary>
     [Infobox("A motor the directly translates the transform.position property. While this does not require a Rigidbody, one attached and configured as kinematic is useful for accurate collision events.")]
-    public class TransformMotor : SPComponent, IMotor, IUpdateable, IMotorCollisionMessageDispatcher, IOnCollisionStaySubscriber
+    public class TransformMotor : SPComponent, IMotor, IUpdateable, IOnCollisionStaySubscriber
     {
 
         #region Fields
@@ -235,6 +235,15 @@ namespace com.spacepuppy.Motor
 
             }
             this.transform.position = pos;
+        }
+
+        void IMotor.SetCollisionMessageDirty(bool validate)
+        {
+            _onCollisionMessage?.SetDirty();
+            if (validate)
+            {
+                this.ValidateCollisionHandler();
+            }
         }
 
         #endregion
@@ -475,15 +484,6 @@ namespace com.spacepuppy.Motor
             {
                 _collisionHook.Unsubscribe(this);
                 _collisionHook = null;
-            }
-        }
-
-        void IMotorCollisionMessageDispatcher.SetDirty(IMotorCollisionMessageHandler handler)
-        {
-            _onCollisionMessage?.SetDirty();
-            if (handler.enabled)
-            {
-                this.ValidateCollisionHandler();
             }
         }
 

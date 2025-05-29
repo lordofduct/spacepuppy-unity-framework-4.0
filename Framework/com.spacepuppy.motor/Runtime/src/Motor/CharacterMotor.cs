@@ -12,7 +12,7 @@ namespace com.spacepuppy.Motor
     /// Treats a CharacterController as an IMotor for a more uniform interface.
     /// </summary>
     [RequireComponentInEntity(typeof(CharacterController))]
-    public class CharacterMotor : SPComponent, IMotor, IUpdateable, IMotorCollisionMessageDispatcher, IOnControllerColliderHitSubscriber
+    public class CharacterMotor : SPComponent, IMotor, IUpdateable, IOnControllerColliderHitSubscriber
     {
 
         #region Fields
@@ -252,6 +252,15 @@ namespace com.spacepuppy.Motor
             }
         }
 
+        void IMotor.SetCollisionMessageDirty(bool validate)
+        {
+            _onCollisionMessage?.SetDirty();
+            if (validate)
+            {
+                this.ValidateCollisionHandler();
+            }
+        }
+
         #endregion
 
         #region IForceReceiver Interface
@@ -368,15 +377,6 @@ namespace com.spacepuppy.Motor
             {
                 _collisionHook.Unsubscribe(this);
                 _collisionHook = null;
-            }
-        }
-
-        void IMotorCollisionMessageDispatcher.SetDirty(IMotorCollisionMessageHandler handler)
-        {
-            _onCollisionMessage?.SetDirty();
-            if (handler.enabled)
-            {
-                this.ValidateCollisionHandler();
             }
         }
 

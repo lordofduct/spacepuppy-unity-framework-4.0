@@ -33,6 +33,8 @@ namespace com.spacepuppy.Motor
         //void AddForce(Vector3 f, ForceMode mode);
         //void AddForceAtPosition(Vector3 f, Vector3 pos, ForceMode mode);
 
+        void SetCollisionMessageDirty(bool validate);
+
     }
 
     [System.Serializable]

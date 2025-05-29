@@ -12,20 +12,15 @@ namespace com.spacepuppy.Motor
         {
             this.OnEnabled += (s,e) =>
             {
-                this.gameObject.FindRoot().Broadcast<IMotorCollisionMessageDispatcher, IMotorCollisionMessageHandler>(this, (o, a) => o.SetDirty(a));
+                this.gameObject.FindRoot().Broadcast<IMotor>(o => o.SetCollisionMessageDirty(true));
             };
             this.OnDisabled += (s, e) =>
             {
-                this.gameObject.FindRoot().Broadcast<IMotorCollisionMessageDispatcher, IMotorCollisionMessageHandler>(this, (o, a) => o.SetDirty(a));
+                this.gameObject.FindRoot().Broadcast<IMotor>(o => o.SetCollisionMessageDirty(true));
             };
         }
 
         void OnCollision(MotorCollisionInfo info);
-    }
-
-    internal interface IMotorCollisionMessageDispatcher
-    {
-        void SetDirty(IMotorCollisionMessageHandler handler);
     }
 
     public enum MotorCollisionType

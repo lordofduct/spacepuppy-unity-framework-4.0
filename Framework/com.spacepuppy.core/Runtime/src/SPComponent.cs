@@ -66,55 +66,18 @@ namespace com.spacepuppy
 
         #region Fields
 
-        [System.NonSerialized]
-        private List<IMixin> _mixins;
-
         #endregion
 
         #region CONSTRUCTOR
 
         protected virtual void Awake()
         {
-            if (this is IAutoMixinDecorator amxd) this.RegisterMixins(MixinUtil.CreateAutoMixins(amxd));
+            if (this is IMixin mx) MixinUtil.InitializeMixins(mx);
         }
 
         #endregion
 
         #region Methods
-
-        protected void RegisterMixins(IEnumerable<IMixin> mixins)
-        {
-            if (mixins == null) throw new System.ArgumentNullException(nameof(mixins));
-            foreach (var mixin in mixins)
-            {
-                if (mixin.Awake(this))
-                {
-                    (_mixins = _mixins ?? new List<IMixin>()).Add(mixin);
-                }
-            }
-        }
-
-        protected void RegisterMixin(IMixin mixin)
-        {
-            if (mixin == null) throw new System.ArgumentNullException(nameof(mixin));
-
-            if (mixin.Awake(this))
-            {
-                (_mixins = _mixins ?? new List<IMixin>()).Add(mixin);
-            }
-        }
-
-        public T GetMixinState<T>() where T : class, IMixin
-        {
-            if (_mixins != null)
-            {
-                for (int i = 0; i < _mixins.Count; i++)
-                {
-                    if (_mixins[i] is T mixin) return mixin;
-                }
-            }
-            return null;
-        }
 
         /// <summary>
         /// This should only be used if you're not using RadicalCoroutine. If you are, use StopAllRadicalCoroutines instead.

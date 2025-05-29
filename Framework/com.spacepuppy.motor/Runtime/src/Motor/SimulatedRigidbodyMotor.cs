@@ -18,7 +18,7 @@ namespace com.spacepuppy.Motor
     /// </summary>
     [RequireComponentInEntity(typeof(Rigidbody))]
     [Infobox("Velocity/Forces are used to move.")]
-    public class SimulatedRigidbodyMotor : SPComponent, IMotor, IUpdateable, ISignalEnabledMessageHandler, IOnCollisionStaySubscriber
+    public class SimulatedRigidbodyMotor : SPComponent, IMotor, IUpdateable, IOnCollisionStaySubscriber
     {
 
         #region Fields
@@ -277,6 +277,15 @@ namespace com.spacepuppy.Motor
             _rigidbody.MovePosition(pos);
         }
 
+        void IMotor.SetCollisionMessageDirty(bool validate)
+        {
+            _onCollisionMessage?.SetDirty();
+            if (validate)
+            {
+                this.ValidateCollisionHandler();
+            }
+        }
+
         #endregion
 
         #region IForceReceiver Interface
@@ -497,29 +506,12 @@ namespace com.spacepuppy.Motor
             if (_onCollisionMessage.Count > 0)
             {
                 if (_rigidbody && _rigidbody.gameObject == sender)
-                    _onCollisionMessage.Invoke(new MotorCollisionInfo(this, collision), MotorCollisionHandlerHelper.OnCollisionFunctor);
+                    _onCollisionMessage.Invoke(new MotorCollisionInfo(this, collision), (o, a) => o.OnCollision(a));
             }
             else if (_collisionHook != null)
             {
                 _collisionHook.Unsubscribe(this);
                 _collisionHook = null;
-            }
-        }
-
-        void ISignalEnabledMessageHandler.OnComponentEnabled(IEventfulComponent component)
-        {
-            if (component is IMotorCollisionMessageHandler)
-            {
-                _onCollisionMessage?.SetDirty();
-                this.ValidateCollisionHandler();
-            }
-        }
-
-        void ISignalEnabledMessageHandler.OnComponentDisabled(IEventfulComponent component)
-        {
-            if (component is IMotorCollisionMessageHandler)
-            {
-                _onCollisionMessage?.SetDirty();
             }
         }
 

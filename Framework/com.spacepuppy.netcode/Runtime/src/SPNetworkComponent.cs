@@ -16,13 +16,11 @@ namespace com.spacepuppy
         public event System.EventHandler OnStarted;
         public event System.EventHandler OnDisabled;
         public event System.EventHandler ComponentDestroyed;
+        public event System.EventHandler OnNetworkSpawned;
 
         #endregion
 
         #region Fields
-
-        [System.NonSerialized]
-        private List<IMixin> _mixins;
 
         #endregion
 
@@ -30,7 +28,7 @@ namespace com.spacepuppy
 
         protected virtual void Awake()
         {
-            if (this is IAutoMixinDecorator) this.RegisterMixins(MixinUtil.CreateAutoMixins(this as IAutoMixinDecorator));
+            if (this is IMixin mx) MixinUtil.InitializeMixins(mx);
         }
 
         protected virtual void Start()
@@ -118,6 +116,14 @@ namespace com.spacepuppy
         {
             base.OnNetworkSpawn();
 
+            try
+            {
+                this.OnNetworkSpawned?.Invoke(this, System.EventArgs.Empty);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogException(ex);
+            }
             if (this.started)
             {
                 try
@@ -161,40 +167,6 @@ namespace com.spacepuppy
         #endregion
 
         #region Methods
-
-        protected void RegisterMixins(IEnumerable<IMixin> mixins)
-        {
-            if (mixins == null) throw new System.ArgumentNullException(nameof(mixins));
-            foreach (var mixin in mixins)
-            {
-                if (mixin.Awake(this))
-                {
-                    (_mixins = _mixins ?? new List<IMixin>()).Add(mixin);
-                }
-            }
-        }
-
-        protected void RegisterMixin(IMixin mixin)
-        {
-            if (mixin == null) throw new System.ArgumentNullException(nameof(mixin));
-
-            if (mixin.Awake(this))
-            {
-                (_mixins = _mixins ?? new List<IMixin>()).Add(mixin);
-            }
-        }
-
-        public T GetMixinState<T>() where T : class, IMixin
-        {
-            if (_mixins != null)
-            {
-                for (int i = 0; i < _mixins.Count; i++)
-                {
-                    if (_mixins[i] is T) return _mixins[i] as T;
-                }
-            }
-            return null;
-        }
 
         /// <summary>
         /// This should only be used if you're not using RadicalCoroutine. If you are, use StopAllRadicalCoroutines instead.

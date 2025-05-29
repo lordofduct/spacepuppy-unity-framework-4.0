@@ -9,7 +9,7 @@ namespace com.spacepuppy.Events
     /// <summary>
     /// Perform an action on some interval.
     /// </summary>
-    public sealed class t_Interval : SPComponent, IObservableTrigger
+    public sealed class t_Interval : SPComponent, IMActivateOnReceiver, IObservableTrigger
     {
 
         #region Fields
@@ -47,52 +47,6 @@ namespace com.spacepuppy.Events
 
         #region CONSTRUCTOR
 
-        protected override void Awake()
-        {
-            base.Awake();
-
-            if ((_activateOn & ActivateEvent.Awake) != 0)
-            {
-                this.RestartTimer();
-            }
-        }
-
-        protected override void Start()
-        {
-            base.Start();
-
-            if ((_activateOn & ActivateEvent.OnLateStart) != 0 && !GameLoop.LateUpdateWasCalled)
-            {
-                GameLoop.LateUpdateHandle.BeginInvoke(() => this.RestartTimer());
-            }
-            else if ((_activateOn & ActivateEvent.OnStart) != 0 || (_activateOn & ActivateEvent.OnEnable) != 0)
-            {
-                this.RestartTimer();
-            }
-        }
-
-        protected override void OnEnable()
-        {
-            base.OnEnable();
-
-            if (!this.started) return;
-
-            if ((_activateOn & ActivateEvent.OnEnable) != 0)
-            {
-                if (GameLoop.LateUpdateWasCalled)
-                {
-                    this.RestartTimer();
-                }
-                else
-                {
-                    GameLoop.LateUpdateHandle.BeginInvoke(() =>
-                    {
-                        this.RestartTimer();
-                    });
-                }
-            }
-        }
-
         protected override void OnDisable()
         {
             base.OnDisable();
@@ -106,6 +60,12 @@ namespace com.spacepuppy.Events
         #endregion
 
         #region Properties
+
+        public ActivateEvent ActivateOn
+        {
+            get { return _activateOn; }
+            set { _activateOn = value; }
+        }
 
         public SPTimePeriod Interval
         {
@@ -219,6 +179,12 @@ namespace com.spacepuppy.Events
                 RadicalCoroutine.Release(ref _routine);
             }
         }
+
+        #endregion
+
+        #region IMActivateOnReceiver Interface
+
+        void IMActivateOnReceiver.Activate() => this.RestartTimer();
 
         #endregion
 

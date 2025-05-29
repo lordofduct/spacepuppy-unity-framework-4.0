@@ -33,7 +33,7 @@ namespace com.spacepuppy.DataBinding
     }
 
     [DisallowMultipleComponent()]
-    public class DataBindingContext : SPComponent, IDataBindingContext, IDataProvider
+    public class DataBindingContext : SPComponent, IDataBindingContext, IDataProvider, IMActivateOnReceiver
     {
 
         #region Fields
@@ -74,58 +74,13 @@ namespace com.spacepuppy.DataBinding
 
         #endregion
 
-        #region CONSTRUCTOR
-
-        protected override void Awake()
-        {
-            base.Awake();
-
-            if ((_activateOn & ActivateEvent.Awake) != 0 && _dataSource)
-            {
-                this.BindConfiguredDataSource();
-            }
-        }
-
-        protected override void Start()
-        {
-            base.Start();
-
-            if (_dataSource)
-            {
-                if ((_activateOn & ActivateEvent.OnLateStart) != 0 && !GameLoop.LateUpdateWasCalled)
-                {
-                    GameLoop.LateUpdateHandle.BeginInvoke(() => this.BindConfiguredDataSource());
-                }
-                else if ((_activateOn & ActivateEvent.OnStart) != 0 || (_activateOn & ActivateEvent.OnEnable) != 0)
-                {
-                    this.BindConfiguredDataSource();
-                }
-            }
-        }
-
-        protected override void OnEnable()
-        {
-            base.OnEnable();
-
-            if (!this.started) return;
-
-            if ((_activateOn & ActivateEvent.OnEnable) != 0 && _dataSource)
-            {
-                //this.BindConfiguredDataSource();
-                if (GameLoop.LateUpdateWasCalled)
-                {
-                    this.BindConfiguredDataSource();
-                }
-                else
-                {
-                    GameLoop.LateUpdateHandle.BeginInvoke(this.BindConfiguredDataSource);
-                }
-            }
-        }
-
-        #endregion
-
         #region Properties
+
+        public ActivateEvent ActivateOn
+        {
+            get { return _activateOn; }
+            set { _activateOn = value; }
+        }
 
         public int BindOrder
         {
@@ -267,6 +222,15 @@ namespace com.spacepuppy.DataBinding
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
             yield return this.DataSource;
+        }
+
+        #endregion
+
+        #region IMActivateOnReceiver Interface
+
+        void IMActivateOnReceiver.Activate()
+        {
+            if (_dataSource) this.BindConfiguredDataSource();
         }
 
         #endregion

@@ -17,7 +17,7 @@ namespace com.spacepuppy.Motor
     /// </summary>
     [RequireComponentInEntity(typeof(Rigidbody))]
     [Infobox("Rigidbody.MovePosition is used to move the Rigidbody around.")]
-    public class RigidbodyMotor : SPComponent, IMotor, IUpdateable, ISignalEnabledMessageHandler, IOnCollisionStaySubscriber
+    public class RigidbodyMotor : SPComponent, IMotor, IUpdateable, IOnCollisionStaySubscriber
     {
 
         #region Fields
@@ -250,6 +250,15 @@ namespace com.spacepuppy.Motor
             _talliedMove += mv;
             _vel = _talliedMove / Time.deltaTime;
             _moveCalledLastFrame = true;
+        }
+
+        void IMotor.SetCollisionMessageDirty(bool validate)
+        {
+            _onCollisionMessage?.SetDirty();
+            if (validate)
+            {
+                this.ValidateCollisionHandler();
+            }
         }
 
         #endregion
@@ -495,29 +504,12 @@ namespace com.spacepuppy.Motor
             if (_onCollisionMessage.Count > 0)
             {
                 if (_rigidbody && _rigidbody.gameObject == sender)
-                    _onCollisionMessage.Invoke(new MotorCollisionInfo(this, collision), MotorCollisionHandlerHelper.OnCollisionFunctor);
+                    _onCollisionMessage.Invoke(new MotorCollisionInfo(this, collision), (o, a) => o.OnCollision(a));
             }
             else if (_collisionHook != null)
             {
                 _collisionHook.Unsubscribe(this);
                 _collisionHook = null;
-            }
-        }
-
-        void ISignalEnabledMessageHandler.OnComponentEnabled(IEventfulComponent component)
-        {
-            if (component is IMotorCollisionMessageHandler)
-            {
-                _onCollisionMessage?.SetDirty();
-                this.ValidateCollisionHandler();
-            }
-        }
-
-        void ISignalEnabledMessageHandler.OnComponentDisabled(IEventfulComponent component)
-        {
-            if (component is IMotorCollisionMessageHandler)
-            {
-                _onCollisionMessage?.SetDirty();
             }
         }
 

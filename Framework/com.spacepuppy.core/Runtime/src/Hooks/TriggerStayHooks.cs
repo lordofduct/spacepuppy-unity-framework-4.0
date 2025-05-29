@@ -10,6 +10,7 @@ namespace com.spacepuppy.Hooks
         void OnTriggerStay(GameObject sender, Collider otherCollider);
     }
 
+    //NOTE - due to how OnXXXStay works if you unregister then reregister mid 'stay', that collision will stop firing until you exit and re-enter it.
     public class TriggerStayHooks : TriggerHooks, Messaging.ISubscribableMessageHook<IOnTriggerStaySubscriber>
     {
 
@@ -46,20 +47,38 @@ namespace com.spacepuppy.Hooks
         public void Signal(System.Action<IOnTriggerStaySubscriber> functor)
         {
             if (functor == null) return;
-            var e = this.GetSubscriberEnumerator();
-            while (e.MoveNext())
+            try
             {
-                if (e.Current is IOnTriggerStaySubscriber h) functor(h);
+                this.LockObservers();
+                var e = this.GetSubscriberEnumerator();
+                while (e.MoveNext())
+                {
+                    if (e.Current is IOnTriggerStaySubscriber h) functor(h);
+                }
+            }
+            finally
+            {
+                this.UnlockObservers();
+                this.ValidateContinueUpdateLoop();
             }
         }
 
         public void Signal<TArg>(TArg arg, System.Action<IOnTriggerStaySubscriber, TArg> functor)
         {
             if (functor == null) return;
-            var e = this.GetSubscriberEnumerator();
-            while (e.MoveNext())
+            try
             {
-                if (e.Current is IOnTriggerStaySubscriber h) functor(h, arg);
+                this.LockObservers();
+                var e = this.GetSubscriberEnumerator();
+                while (e.MoveNext())
+                {
+                    if (e.Current is IOnTriggerStaySubscriber h) functor(h, arg);
+                }
+            }
+            finally
+            {
+                this.UnlockObservers();
+                this.ValidateContinueUpdateLoop();
             }
         }
 

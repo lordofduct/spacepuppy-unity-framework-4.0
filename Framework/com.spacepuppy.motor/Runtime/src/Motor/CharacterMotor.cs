@@ -12,7 +12,7 @@ namespace com.spacepuppy.Motor
     /// Treats a CharacterController as an IMotor for a more uniform interface.
     /// </summary>
     [RequireComponentInEntity(typeof(CharacterController))]
-    public class CharacterMotor : SPComponent, IMotor, IUpdateable, ISignalEnabledMessageHandler, IOnControllerColliderHitSubscriber
+    public class CharacterMotor : SPComponent, IMotor, IUpdateable, IMotorCollisionMessageDispatcher, IOnControllerColliderHitSubscriber
     {
 
         #region Fields
@@ -362,7 +362,7 @@ namespace com.spacepuppy.Motor
             if (_onCollisionMessage.Count > 0)
             {
                 if (this.gameObject == sender)
-                    _onCollisionMessage.Invoke(new MotorCollisionInfo(this, hit), MotorCollisionHandlerHelper.OnCollisionFunctor);
+                    _onCollisionMessage.Invoke(new MotorCollisionInfo(this, hit), (o,a) => o.OnCollision(a));
             }
             else if (_collisionHook != null)
             {
@@ -371,20 +371,12 @@ namespace com.spacepuppy.Motor
             }
         }
 
-        void ISignalEnabledMessageHandler.OnComponentEnabled(IEventfulComponent component)
+        void IMotorCollisionMessageDispatcher.SetDirty(IMotorCollisionMessageHandler handler)
         {
-            if (component is IMotorCollisionMessageHandler)
+            _onCollisionMessage?.SetDirty();
+            if (handler.enabled)
             {
-                _onCollisionMessage?.SetDirty();
                 this.ValidateCollisionHandler();
-            }
-        }
-
-        void ISignalEnabledMessageHandler.OnComponentDisabled(IEventfulComponent component)
-        {
-            if (component is IMotorCollisionMessageHandler)
-            {
-                _onCollisionMessage?.SetDirty();
             }
         }
 

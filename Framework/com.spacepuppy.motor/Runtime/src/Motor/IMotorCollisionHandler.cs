@@ -1,18 +1,31 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
+using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.Motor
 {
 
-    [MSignalEnabled.Config(EntityRelativity = EntityRelativity.Entity, IncludeDisabledComponents = false, IncludeInactiveObjects = false)]
-    public interface IMotorCollisionMessageHandler : MSignalEnabled.IAutoDecorator
+    [AutoInitMixin]
+    public interface IMotorCollisionMessageHandler : IMixin, IEventfulComponent
     {
+        sealed void OnInitMixin()
+        {
+            this.OnEnabled += (s,e) =>
+            {
+                this.gameObject.FindRoot().Broadcast<IMotorCollisionMessageDispatcher, IMotorCollisionMessageHandler>(this, (o, a) => o.SetDirty(a));
+            };
+            this.OnDisabled += (s, e) =>
+            {
+                this.gameObject.FindRoot().Broadcast<IMotorCollisionMessageDispatcher, IMotorCollisionMessageHandler>(this, (o, a) => o.SetDirty(a));
+            };
+        }
+
         void OnCollision(MotorCollisionInfo info);
     }
 
-    public static class MotorCollisionHandlerHelper
+    internal interface IMotorCollisionMessageDispatcher
     {
-        public static readonly System.Action<IMotorCollisionMessageHandler, MotorCollisionInfo> OnCollisionFunctor = (c, d) => c.OnCollision(d);
+        void SetDirty(IMotorCollisionMessageHandler handler);
     }
 
     public enum MotorCollisionType

@@ -15,7 +15,7 @@ namespace com.spacepuppy.Motor
     /// IMotor interface that directly positions a Transform.
     /// </summary>
     [Infobox("A motor the directly translates the transform.position property. While this does not require a Rigidbody, one attached and configured as kinematic is useful for accurate collision events.")]
-    public class TransformMotor : SPComponent, IMotor, IUpdateable, ISignalEnabledMessageHandler, IOnCollisionStaySubscriber
+    public class TransformMotor : SPComponent, IMotor, IUpdateable, IMotorCollisionMessageDispatcher, IOnCollisionStaySubscriber
     {
 
         #region Fields
@@ -469,7 +469,7 @@ namespace com.spacepuppy.Motor
             if (_onCollisionMessage.Count > 0)
             {
                 if (_rigidbody && _rigidbody.gameObject == sender)
-                    _onCollisionMessage.Invoke(new MotorCollisionInfo(this, collision), MotorCollisionHandlerHelper.OnCollisionFunctor);
+                    _onCollisionMessage.Invoke(new MotorCollisionInfo(this, collision), (o, a) => o.OnCollision(a));
             }
             else if (_collisionHook != null)
             {
@@ -478,20 +478,12 @@ namespace com.spacepuppy.Motor
             }
         }
 
-        void ISignalEnabledMessageHandler.OnComponentEnabled(IEventfulComponent component)
+        void IMotorCollisionMessageDispatcher.SetDirty(IMotorCollisionMessageHandler handler)
         {
-            if (component is IMotorCollisionMessageHandler)
+            _onCollisionMessage?.SetDirty();
+            if (handler.enabled)
             {
-                _onCollisionMessage?.SetDirty();
                 this.ValidateCollisionHandler();
-            }
-        }
-
-        void ISignalEnabledMessageHandler.OnComponentDisabled(IEventfulComponent component)
-        {
-            if (component is IMotorCollisionMessageHandler)
-            {
-                _onCollisionMessage?.SetDirty();
             }
         }
 

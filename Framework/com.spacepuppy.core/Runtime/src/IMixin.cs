@@ -11,11 +11,6 @@ namespace com.spacepuppy
 
     }
 
-    public interface IMixinState
-    {
-
-    }
-
     public class AutoInitMixinAttribute : System.Attribute
     {
 

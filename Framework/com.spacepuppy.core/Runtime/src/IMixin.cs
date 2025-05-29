@@ -29,20 +29,49 @@ namespace com.spacepuppy
     public static class MixinUtil
     {
 
-        private static System.Type _rootMixinType = typeof(IMixin);
+        private static readonly System.Type _rootMixinType = typeof(IMixin);
+        private static readonly List<System.Type> _knownMixinTypes = new();
+        private static readonly Dictionary<System.Type, AutoInitMixinAttribute> _autoMixinTypeAttribTable = new();
+        private static bool _useAutoTableForInitialization;
+
+        static MixinUtil()
+        {
+            foreach (var tp in TypeUtil.GetTypes())
+            {
+                if (tp != _rootMixinType && tp.IsInterface && _rootMixinType.IsAssignableFrom(tp))
+                {
+                    _knownMixinTypes.Add(tp);
+                    var attrib = tp.GetCustomAttribute<AutoInitMixinAttribute>(false);
+                    if (attrib != null) _autoMixinTypeAttribTable[tp] = attrib;
+                }
+            }
+            _useAutoTableForInitialization = _autoMixinTypeAttribTable.Count < 128;
+        }
+
+        public static IEnumerable<System.Type> GetKnownMixinTypes() => _knownMixinTypes;
 
         public static void InitializeMixins(IMixin target)
         {
             if (target == null) return;
 
-            foreach (var tp in target.GetType().GetInterfaces())
+            if (_useAutoTableForInitialization)
             {
-                if (tp != _rootMixinType && tp.IsInterface && _rootMixinType.IsAssignableFrom(tp))
+                foreach (var pair in _autoMixinTypeAttribTable)
                 {
-                    var attrib = tp.GetCustomAttribute<AutoInitMixinAttribute>(false);
-                    if (attrib == null) continue;
-
-                    attrib.Initialize(target, tp);
+                    if (pair.Key.IsInstanceOfType(target))
+                    {
+                        pair.Value.Initialize(target, pair.Key);
+                    }
+                }
+            }
+            else
+            {
+                foreach (var tp in target.GetType().GetInterfaces())
+                {
+                    if (_autoMixinTypeAttribTable.TryGetValue(tp, out AutoInitMixinAttribute attrib))
+                    {
+                        attrib.Initialize(target, tp);
+                    }
                 }
             }
         }

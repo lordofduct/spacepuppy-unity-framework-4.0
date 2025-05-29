@@ -11,52 +11,42 @@ namespace com.spacepuppy.UI
         void OnSelectedUIElementChanged();
     }
 
-    [MBubbledOnSelected]
-    public interface IMBubbledOnSelected : IAutoMixinDecorator, IEventfulComponent
+    [AutoInitMixin]
+    public interface IMBubbledOnSelected : IMixin, IEventfulComponent
     {
+
+        sealed void OnInitMixin()
+        {
+            this.OnEnabled += (s, e) =>
+            {
+                StandardSelectedUIElementChangedProcessor.IncrementSelectionBubblingListenerCount();
+            };
+            this.OnDisabled += (s, e) =>
+            {
+                StandardSelectedUIElementChangedProcessor.DecrementSelectionBubblingListenerCount();
+            };
+        }
+
         void OnBubbledSelected(GameObject deselected, GameObject selected);
     }
-    internal class MBubbledOnSelectedAttribute : StatelessAutoMixinConfigAttribute
+
+    [AutoInitMixin]
+    public interface IMBubbledOnDeselected : IMixin, IEventfulComponent
     {
 
-        protected override void OnAutoCreated(object obj, System.Type mixinType)
+        sealed void OnInitMixin()
         {
-            var c = obj as IEventfulComponent;
-            if (c == null) return;
-
-            c.OnEnabled += (s,e) =>
+            this.OnEnabled += (s, e) =>
             {
                 StandardSelectedUIElementChangedProcessor.IncrementSelectionBubblingListenerCount();
             };
-            c.OnDisabled += (s, e) =>
+            this.OnDisabled += (s, e) =>
             {
                 StandardSelectedUIElementChangedProcessor.DecrementSelectionBubblingListenerCount();
             };
         }
-    }
 
-    [MBubbledOnDeselected]
-    public interface IMBubbledOnDeselected : IAutoMixinDecorator, IEventfulComponent
-    {
         void OnBubbledDeselected(GameObject deselected, GameObject selected);
-    }
-    internal class MBubbledOnDeselectedAttribute : StatelessAutoMixinConfigAttribute
-    {
-
-        protected override void OnAutoCreated(object obj, System.Type mixinType)
-        {
-            var c = obj as IEventfulComponent;
-            if (c == null) return;
-
-            c.OnEnabled += (s, e) =>
-            {
-                StandardSelectedUIElementChangedProcessor.IncrementSelectionBubblingListenerCount();
-            };
-            c.OnDisabled += (s, e) =>
-            {
-                StandardSelectedUIElementChangedProcessor.DecrementSelectionBubblingListenerCount();
-            };
-        }
     }
     
     public sealed class StandardSelectedUIElementChangedProcessor : ISPDisposable, IUpdateable

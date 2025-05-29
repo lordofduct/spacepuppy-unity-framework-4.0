@@ -7,48 +7,34 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Netcode
 {
 
-    [MOnNetworkSpawnReceiver]
-    public interface IMOnNetworkSpawnReceiver : IAutoMixinDecorator, IComponent
+    [AutoInitMixin]
+    public interface IMOnNetworkSpawnReceiver : IMixin, IComponent
     {
-        void OnNetworkSpawn();
-    }
-    internal class MOnNetworkSpawnReceiverAttribute : StatelessAutoMixinConfigAttribute
-    {
-        protected override void OnAutoCreated(object obj, System.Type mixinType)
-        {
-            var c = obj as IMOnNetworkSpawnReceiver;
-            if (c == null || c.gameObject == null) return;
 
-            var no = c.gameObject.GetComponentInParent<NetworkObject>();
+        sealed void OnInitMixin()
+        {
+            if (this.gameObject == null) return;
+
+            var no = this.gameObject.GetComponentInParent<NetworkObject>();
             if (no == null || no.IsSpawned) return;
 
-            no.AddOrGetComponent<OnNetworkSpawnReceiverHook>().RegisterReceiver(c);
+            no.AddOrGetComponent<OnNetworkSpawnReceiverHook>().OnSpawned += this.OnNetworkSpawn;
         }
+
+        void OnNetworkSpawn();
+
 
         internal class OnNetworkSpawnReceiverHook : NetworkBehaviour
         {
 
-            public System.EventHandler OnSpawned;
-
-            private HashSet<IMOnNetworkSpawnReceiver> receivers = new();
-            internal void RegisterReceiver(IMOnNetworkSpawnReceiver r)
-            {
-                if (this.IsSpawned) return;
-                receivers.Add(r);
-            }
+            public System.Action OnSpawned;
 
             public override void OnNetworkSpawn()
             {
                 base.OnNetworkSpawn();
 
-                var e = this.receivers.GetEnumerator();
-                while (e.MoveNext())
-                {
-                    e.Current.OnNetworkSpawn();
-                }
-                receivers.Clear();
-
-                this.OnSpawned?.Invoke(this, System.EventArgs.Empty);
+                this.OnSpawned?.Invoke();
+                this.OnSpawned = null;
 
                 //DO NOT DESTROY, it messes with netcode for gameobject's logic
             }
@@ -56,48 +42,43 @@ namespace com.spacepuppy.Netcode
 
     }
 
-
-    [MOnStartOrEnableOrNetworkSpawnReceiver]
-    public interface IMStartOrEnableOrNetworkSpawnReceiver : IAutoMixinDecorator, IEventfulComponent
+    [AutoInitMixin]
+    public interface IMStartOrEnableOrNetworkSpawnReceiver : IMixin, IEventfulComponent
     {
 
-        void OnStartOrEnableOrNetworkSpawn();
-
-    }
-    internal class MOnStartOrEnableOrNetworkSpawnReceiverAttribute : StatelessAutoMixinConfigAttribute
-    {
-        protected override void OnAutoCreated(object obj, System.Type mixinType)
+        sealed void OnInitMixin()
         {
-            var c = obj as IMStartOrEnableOrNetworkSpawnReceiver;
-            if (c == null || c.gameObject == null) return;
+            if (this.gameObject == null) return;
 
-            var no = c.gameObject.GetComponentInParent<NetworkObject>();
+            var no = this.gameObject.GetComponentInParent<NetworkObject>();
             if (no && !no.IsSpawned)
             {
-                no.AddOrGetComponent<MOnNetworkSpawnReceiverAttribute.OnNetworkSpawnReceiverHook>().OnSpawned += (s, e) =>
+                no.AddOrGetComponent<IMOnNetworkSpawnReceiver.OnNetworkSpawnReceiverHook>().OnSpawned += () =>
                 {
-                    if (c.started)
+                    if (this.started)
                     {
-                        c.OnStartOrEnableOrNetworkSpawn();
+                        this.OnStartOrEnableOrNetworkSpawn();
                     }
                 };
             }
 
-            c.OnStarted += (s, e) =>
+            this.OnStarted += (s, e) =>
             {
                 if (no == null || no.IsSpawned)
                 {
-                    c.OnStartOrEnableOrNetworkSpawn();
+                    this.OnStartOrEnableOrNetworkSpawn();
                 }
             };
-            c.OnEnabled += (s, e) =>
+            this.OnEnabled += (s, e) =>
             {
-                if (c.started)
+                if (this.started)
                 {
-                    c.OnStartOrEnableOrNetworkSpawn();
+                    this.OnStartOrEnableOrNetworkSpawn();
                 }
             };
         }
+
+        void OnStartOrEnableOrNetworkSpawn();
 
     }
 

@@ -3,7 +3,9 @@
     "rootNamespace": "com.spacepuppy",
     "references": [
         "GUID:ddd0eb9fc8f414a4d9750a013f135d36",
-        "GUID:ad6239a0379b2de43a4d9e723d51db80"
+        "GUID:ad6239a0379b2de43a4d9e723d51db80",
+        "GUID:1491147abca9d7d4bb7105af628b223e",
+        "GUID:3b8ed52f1b5c64994af4c4e0aa4b6c4b"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -12,6 +14,12 @@
     "precompiledReferences": [],
     "autoReferenced": true,
     "defineConstraints": [],
-    "versionDefines": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.netcode.gameobjects",
+            "expression": "",
+            "define": "UNITY_NETCODE"
+        }
+    ],
     "noEngineReferences": false
 }

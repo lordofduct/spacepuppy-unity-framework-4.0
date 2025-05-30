@@ -377,6 +377,90 @@ namespace com.spacepuppy.Utils
             return e;
         }
 
+        public static int Unpack<T>(this IEnumerable<T> e, out T a)
+        {
+            var en = e.GetEnumerator();
+            if (!en.MoveNext())
+            {
+                a = default; return 0;
+            }
+
+            a = en.Current;
+            return 1;
+        }
+
+        public static int Unpack<T>(this IEnumerable<T> e, out T a, out T b)
+        {
+            var en = e.GetEnumerator();
+            if (!en.MoveNext())
+            {
+                a = default; b = default; return 0;
+            }
+
+            a = en.Current;
+            if (!en.MoveNext())
+            {
+                b = default; return 1;
+            }
+
+            b = en.Current;
+            return 2;
+        }
+
+        public static int Unpack<T>(this IEnumerable<T> e, out T a, out T b, out T c)
+        {
+            var en = e.GetEnumerator();
+            if (!en.MoveNext())
+            {
+                a = default; b = default; c = default; return 0;
+            }
+
+            a = en.Current;
+            if (!en.MoveNext())
+            {
+                b = default; c = default; return 1;
+            }
+
+            b = en.Current;
+            if (!en.MoveNext())
+            {
+                c = default; return 2;
+            }
+
+            c = en.Current;
+            return 3;
+        }
+
+        public static int Unpack<T>(this IEnumerable<T> e, out T a, out T b, out T c, out T d)
+        {
+            var en = e.GetEnumerator();
+            if (!en.MoveNext())
+            {
+                a = default; b = default; c = default; d = default; return 0;
+            }
+
+            a = en.Current;
+            if (!en.MoveNext())
+            {
+                b = default; c = default; d = default; return 1;
+            }
+
+            b = en.Current;
+            if (!en.MoveNext())
+            {
+                c = default; d = default; return 2;
+            }
+
+            c = en.Current;
+            if (!en.MoveNext())
+            {
+                d = default; return 3;
+            }
+
+            d = en.Current;
+            return 4;
+        }
+
         #endregion
 
         #region Random Methods

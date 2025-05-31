@@ -191,7 +191,7 @@ namespace com.spacepuppy.Mecanim
 
 #pragma warning disable 0618
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsNameHash(this AnimatorStateInfo info, int hash) => info.fullPathHash == hash || info.shortNameHash == hash || info.nameHash == hash;
+        internal static bool IsNameHash(this AnimatorStateInfo info, int hash) => info.fullPathHash == hash || info.shortNameHash == hash || info.nameHash == hash;
 #pragma warning restore 0618
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -63,6 +63,12 @@ namespace com.spacepuppy.Mecanim
 
             _animator = this.GetComponent<Animator>();
             _baseRuntimeAnimatorController = _animator.runtimeAnimatorController;
+            //we need to extract the true base animator override controller if the initial one was an 'override'
+            if (_baseRuntimeAnimatorController is AnimatorOverrideController aoc)
+            {
+                if (_initialRuntimeAnimatorController == null) _initialRuntimeAnimatorController = aoc;
+                _baseRuntimeAnimatorController = _initialRuntimeAnimatorController.runtimeAnimatorController;
+            }
         }
 
         protected override void Start()

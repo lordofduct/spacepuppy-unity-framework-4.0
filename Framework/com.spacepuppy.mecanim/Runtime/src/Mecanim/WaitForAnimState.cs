@@ -214,14 +214,14 @@ namespace com.spacepuppy.Mecanim
 
         //WaitForExit
         private static KeepWaitingCallback _waitForExitByHash;
-        public static KeepWaitingCallback Callback_WaitForExitByHash => _waitForExitByHash ?? (_waitForExitByHash = (s) => s._animator && s._animator.GetCurrentAnimatorStateInfo(s._layerIndex).fullPathHash != s._hash);
+        public static KeepWaitingCallback Callback_WaitForExitByHash => _waitForExitByHash ?? (_waitForExitByHash = (s) => s._animator && !s._animator.GetCurrentAnimatorStateInfo(s._layerIndex).IsNameHash(s._hash));
 
         private static KeepWaitingCallback _waitForExitByName;
         public static KeepWaitingCallback Callback_WaitForExitByName => _waitForExitByName ?? (_waitForExitByName = (s) => s._animator && !s._animator.GetCurrentAnimatorStateIs(s._stateName, s._layerIndex));
 
         //WaitForEnter
         private static KeepWaitingCallback _waitForEnterByHash;
-        public static KeepWaitingCallback Callback_WaitForEnterByHash => _waitForEnterByHash ?? (_waitForEnterByHash = (s) => s._animator && s._animator.GetCurrentAnimatorStateInfo(s._layerIndex).fullPathHash == s._hash);
+        public static KeepWaitingCallback Callback_WaitForEnterByHash => _waitForEnterByHash ?? (_waitForEnterByHash = (s) => s._animator && s._animator.GetCurrentAnimatorStateInfo(s._layerIndex).IsNameHash(s._hash));
 
         private static KeepWaitingCallback _waitForEnterByName;
         public static KeepWaitingCallback Callback_WaitForEnterByName => _waitForEnterByName ?? (_waitForEnterByName = (s) => s._animator && s._animator.GetCurrentAnimatorStateIs(s._stateName, s._layerIndex));

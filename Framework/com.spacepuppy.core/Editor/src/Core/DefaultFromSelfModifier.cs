@@ -29,7 +29,7 @@ namespace com.spacepuppyeditor.Core
                 int hash = 0;
                 foreach (var c in go.GetComponents<Component>())
                 {
-                    hash = System.HashCode.Combine(hash, c.GetHashCode());
+                    if (c) hash = System.HashCode.Combine(hash, c.GetHashCode());
                 }
 
                 if (_handled.TryGetValue(key_hash, out int h) && h == hash) return;

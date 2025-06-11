@@ -45,6 +45,7 @@ namespace com.spacepuppyeditor.Core
         private bool _allowDragAndDropSceneObjects = true;
         private bool _showTooltipInHeader;
         private bool _hideLengthField;
+        private bool _elementLabelIsEditable;
 
         private PropertyDrawer _internalDrawer;
 
@@ -75,7 +76,7 @@ namespace com.spacepuppyeditor.Core
 
             if (property.arraySize > 0)
             {
-                if (this.DrawElementAtBottom)
+                if (this.ElementEntryIsForcedSingleLine)
                 {
                     lst.elementHeight = EditorGUIUtility.singleLineHeight;
                 }
@@ -123,9 +124,9 @@ namespace com.spacepuppyeditor.Core
             _lst = this.GetList(property, label);
             if (_lst.index >= _lst.count) _lst.index = -1;
 
-            if (this.fieldInfo != null)
+            if (this.fieldInfo != null && this.DragDropElementType == null) //validate if this hasn't already happened
             {
-                if (this.DragDropElementType == null) this.DragDropElementType = TypeUtil.GetElementTypeOfListType(this.fieldInfo.FieldType);
+                this.DragDropElementType = TypeUtil.GetElementTypeOfListType(this.fieldInfo.FieldType);
 
                 if (!string.IsNullOrEmpty(this.ChildPropertyAsEntry) && this.DragDropElementType != null)
                 {
@@ -135,6 +136,8 @@ namespace com.spacepuppyeditor.Core
                                                                    System.Reflection.BindingFlags.NonPublic |
                                                                    System.Reflection.BindingFlags.Instance).FirstOrDefault() as System.Reflection.FieldInfo;
                     if (field != null) this.DragDropElementType = field.FieldType;
+                    //HACK - add support for SceneRef cause of how weird they are
+                    if (string.Equals(this.DragDropElementType?.FullName, "com.spacepuppy.Scenes.SceneRef")) this.DragDropElementType = typeof(SceneAsset);
                 }
             }
         }
@@ -259,6 +262,12 @@ namespace com.spacepuppyeditor.Core
             set => _hideLengthField = value;
         }
 
+        public bool ElementLabelIsEditable
+        {
+            get => (this.attribute as ReorderableArrayAttribute)?.ElementLabelIsEditable ?? _elementLabelIsEditable;
+            set => _elementLabelIsEditable = value;
+        }
+
         /// <summary>
         /// The type of the element in the array/list, will effect drag & drop filtering (unless overriden).
         /// </summary>
@@ -269,6 +278,8 @@ namespace com.spacepuppyeditor.Core
         }
 
         public System.Func<UnityEngine.Object, UnityEngine.Object> DragDropElementFilter { get; set; }
+
+        public bool ElementEntryIsForcedSingleLine => this.DrawElementAtBottom || this.ElementLabelIsEditable;
 
         #endregion
 
@@ -513,23 +524,28 @@ namespace com.spacepuppyeditor.Core
         protected virtual void DrawElement(Rect area, SerializedProperty element, GUIContent label, int elementIndex)
         {
             this.CurrentDrawingArrayElementIndex = elementIndex;
-            if (this.DrawElementAtBottom)
+            if (this.ElementEntryIsForcedSingleLine)
             {
+                if (this.ElementLabelIsEditable && element.TryFindPropertyRelative(this.ChildPropertyAsLabel, out SerializedProperty labelprop))
+                {
+                    label = GUIContent.none;
+                    var rlabel = new Rect(area.xMin, area.yMin, EditorGUIUtility.labelWidth, EditorGUIUtility.singleLineHeight);
+                    area = new Rect(area.xMin + rlabel.width + 1, area.yMin, area.width - rlabel.width - 1, area.height);
+
+                    EditorGUI.PropertyField(rlabel, labelprop, GUIContent.none);
+                }
+
                 if (_internalDrawer is SerializeRefPickerPropertyDrawer pickerdrawer && pickerdrawer.RefType != null)
                 {
                     SerializeRefPickerPropertyDrawer.DrawRefPicker(area, element, label, pickerdrawer.RefType, pickerdrawer.AllowNull, pickerdrawer.NullLabel);
                 }
+                else if (element.TryFindPropertyRelative(this.ChildPropertyAsEntry, out SerializedProperty entryprop))
+                {
+                    SPEditorGUI.PropertyField(area, entryprop, label);
+                }
                 else
                 {
-                    SerializedProperty prop = string.IsNullOrEmpty(this.ChildPropertyAsEntry) ? null : element.FindPropertyRelative(this.ChildPropertyAsEntry);
-                    if (prop != null)
-                    {
-                        SPEditorGUI.PropertyField(area, prop, label);
-                    }
-                    else
-                    {
-                        EditorGUI.LabelField(area, label);
-                    }
+                    EditorGUI.LabelField(area, label);
                 }
             }
             else

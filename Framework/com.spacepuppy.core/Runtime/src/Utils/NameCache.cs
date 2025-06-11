@@ -59,7 +59,7 @@ namespace com.spacepuppy.Utils
             return go.name == name;
         }
 
-        public static string GetCachedName(UnityEngine.Object obj)
+        public static string GetCachedName(this UnityEngine.Object obj)
         {
             if (obj == null) return null;
             if (obj is INameable) return (obj as INameable).Name;
@@ -74,7 +74,7 @@ namespace com.spacepuppy.Utils
             return obj.name;
         }
 
-        public static string GetCachedName(UnityEngine.Object obj, bool respectProxy)
+        public static string GetCachedName(this UnityEngine.Object obj, bool respectProxy)
         {
             if (respectProxy && obj is IProxy) obj = obj.ReduceIfProxy() as UnityEngine.Object;
             if (obj == null) return null;
@@ -91,7 +91,7 @@ namespace com.spacepuppy.Utils
             return obj.name;
         }
 
-        public static string GetCachedName(GameObject go)
+        public static string GetCachedName(this GameObject go)
         {
 #if UNITY_EDITOR
             if (!Application.isPlaying) return go ? go.name : string.Empty;
@@ -99,7 +99,7 @@ namespace com.spacepuppy.Utils
             return go ? go.AddOrGetComponent<GameObjectNameCache>().Name : string.Empty;
         }
 
-        public static void SetCachedName(GameObject go, string name)
+        public static void SetCachedName(this GameObject go, string name)
         {
             if (!go) return;
 

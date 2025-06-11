@@ -313,14 +313,15 @@ namespace com.spacepuppy
         public bool HideElementLabel = false;
         public bool ShowTooltipInHeader = false;
         public bool HideLengthField = false;
+        public bool ElementLabelIsEditable = false;
 
         /// <summary>
-        /// If DrawElementAtBottom is true, this child element can be displayed as the label in the reorderable list.
+        /// If DrawElementAtBottom is true OR ElementLabelIsEditable is true, this child element can be displayed as the label in the reorderable list.
         /// </summary>
         public string ChildPropertyToDrawAsElementLabel;
 
         /// <summary>
-        /// If DrawElementAtBottom is true, this child element can be displayed as the modifiable entry in the reorderable list.
+        /// If DrawElementAtBottom is true OR ElementLabelIsEditable is true, this child element can be displayed as the modifiable entry in the reorderable list.
         /// </summary>
         public string ChildPropertyToDrawAsElementEntry;
 

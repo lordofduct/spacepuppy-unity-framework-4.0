@@ -13,6 +13,10 @@ namespace com.spacepuppy.Statistics
 
         #region Fields
 
+        [Space(10f)]
+        [SerializeField, DisplayFlat(DisplayBox = true)]
+        private Messaging.MessageSendCommand _onChangedMessageSettings;
+
         [System.NonSerialized]
         private Ledger _ledger = new Ledger();
 
@@ -60,7 +64,8 @@ namespace com.spacepuppy.Statistics
         private void _ledger_Changed(object sender, LedgerChangedEventArgs ev)
         {
             this.OnLedgerChanged();
-            Messaging.Broadcast<IStatisticsTokenLedgerChangedGlobalHandler, LedgerChangedEventArgs>(ev, (o, e) => o.OnChanged(this, e));
+            _onChangedMessageSettings.Send<IStatisticsTokenLedgerChangedHandler, System.ValueTuple<SimpleTokenLedgerService, LedgerChangedEventArgs>>(this.gameObject, (this, ev), (o, a) => o.OnChanged(a.Item1, a.Item2));
+            Messaging.Broadcast<IStatisticsTokenLedgerChangedGlobalHandler, System.ValueTuple<SimpleTokenLedgerService, LedgerChangedEventArgs>>((this, ev), (o, a) => o.OnChanged(a.Item1, a.Item2));
         }
 
         protected virtual void OnLedgerChanged()

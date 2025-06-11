@@ -64,12 +64,14 @@ namespace com.spacepuppyeditor.Statistics
             if (this.HideCustom)
             {
                 int index = Mathf.Max(0, StatisticsTokenLedgerCategories.FindIndexOfCategory(catprop.stringValue));
-                index = EditorGUI.Popup(r0, index, StatisticsTokenLedgerCategories.Categories.Select(o => o.Name).ToArray());
+                index = EditorGUI.Popup(r0, index, StatisticsTokenLedgerCategories.Categories.Select(o => o.PopupPath).ToArray());
                 selection = StatisticsTokenLedgerCategories.IndexInRange(index) ? StatisticsTokenLedgerCategories.Categories[index].Name : null;
             }
             else
             {
-                selection = SPEditorGUI.OptionPopupWithCustom(r0, GUIContent.none, catprop.stringValue, StatisticsTokenLedgerCategories.Categories.Select(o => o.Name).ToArray());
+                var options = StatisticsTokenLedgerCategories.Categories.Select(o => o.Name).ToArray();
+                var guioptions = StatisticsTokenLedgerCategories.Categories.Select(o => EditorHelper.TempContent(o.PopupPath)).ToArray();
+                selection = SPEditorGUI.OptionPopupWithCustom(r0, GUIContent.none, catprop.stringValue, options, guioptions);
             }
             if (EditorGUI.EndChangeCheck())
             {
@@ -124,12 +126,14 @@ namespace com.spacepuppyeditor.Statistics
             if (this.HideCustom)
             {
                 int index = Mathf.Max(0, StatisticsTokenLedgerCategories.FindIndexOfCategory(property.stringValue));
-                index = EditorGUI.Popup(position, index, StatisticsTokenLedgerCategories.Categories.Select(o => o.Name).ToArray());
+                index = EditorGUI.Popup(position, index, StatisticsTokenLedgerCategories.Categories.Select(o => o.PopupPath).ToArray());
                 selection = StatisticsTokenLedgerCategories.IndexInRange(index) ? StatisticsTokenLedgerCategories.Categories[index].Name : null;
             }
             else
             {
-                selection = SPEditorGUI.OptionPopupWithCustom(position, GUIContent.none, property.stringValue, StatisticsTokenLedgerCategories.Categories.Select(o => o.Name).ToArray());
+                var options = StatisticsTokenLedgerCategories.Categories.Select(o => o.Name).ToArray();
+                var guioptions = StatisticsTokenLedgerCategories.Categories.Select(o => EditorHelper.TempContent(o.PopupPath)).ToArray();
+                selection = SPEditorGUI.OptionPopupWithCustom(position, GUIContent.none, property.stringValue, options, guioptions);
             }
             if (EditorGUI.EndChangeCheck())
             {

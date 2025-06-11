@@ -9,6 +9,9 @@ namespace com.spacepuppyeditor.Statistics
     public class TokenLedgerCategory
     {
         public string Name { get; set; }
+        public string OverridePopupPath { get; set; }
+        internal string PopupPath => OverridePopupPath ?? Name;
+
         public System.Type DataStore { get; set; }
         public bool Permanent { get; set; }
 
@@ -18,7 +21,7 @@ namespace com.spacepuppyeditor.Statistics
             get => _entries;
             set
             {
-                switch(value)
+                switch (value)
                 {
                     case string str:
                         _entries = new string[] { str };
@@ -37,7 +40,7 @@ namespace com.spacepuppyeditor.Statistics
                         {
                             this.Entries = d.DynamicInvoke();
                         }
-                        catch( System.Exception ex)
+                        catch (System.Exception ex)
                         {
                             Debug.LogException(ex);
                         }

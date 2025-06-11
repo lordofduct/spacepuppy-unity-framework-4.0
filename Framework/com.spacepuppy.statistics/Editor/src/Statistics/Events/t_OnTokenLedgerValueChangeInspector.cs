@@ -29,7 +29,7 @@ namespace com.spacepuppyeditor.Statistics.Events
 
             SPEditorGUILayout.PropertyField(filterprop);
 
-            switch(filterprop.GetEnumValue<t_OnTokenLedgerValueChange.HitFilterOptions>())
+            switch (filterprop.GetEnumValue<t_OnTokenLedgerValueChange.HitFilterOptions>())
             {
                 case t_OnTokenLedgerValueChange.HitFilterOptions.Any:
                 case t_OnTokenLedgerValueChange.HitFilterOptions.MultiOnly:
@@ -39,7 +39,7 @@ namespace com.spacepuppyeditor.Statistics.Events
                 case t_OnTokenLedgerValueChange.HitFilterOptions.DirectOrMulti:
                     {
                         int selection = Mathf.Max(0, StatisticsTokenLedgerCategories.FindIndexOfCategory(catprop.stringValue));
-                        selection = EditorGUILayout.Popup("Category", selection, StatisticsTokenLedgerCategories.Categories.Select(o => o.Name).ToArray());
+                        selection = EditorGUILayout.Popup("Category", selection, StatisticsTokenLedgerCategories.Categories.Select(o => o.PopupPath).ToArray());
                         catprop.stringValue = StatisticsTokenLedgerCategories.IndexInRange(selection) ? StatisticsTokenLedgerCategories.Categories[selection].Name : null;
 
                         if (StatisticsTokenLedgerCategories.IndexInRange(selection))
@@ -56,7 +56,7 @@ namespace com.spacepuppyeditor.Statistics.Events
                 case t_OnTokenLedgerValueChange.HitFilterOptions.CategoryOrMulti:
                     {
                         int selection = Mathf.Max(0, StatisticsTokenLedgerCategories.FindIndexOfCategory(catprop.stringValue));
-                        selection = EditorGUILayout.Popup("Category", selection, StatisticsTokenLedgerCategories.Categories.Select(o => o.Name).ToArray());
+                        selection = EditorGUILayout.Popup("Category", selection, StatisticsTokenLedgerCategories.Categories.Select(o => o.PopupPath).ToArray());
                         catprop.stringValue = StatisticsTokenLedgerCategories.IndexInRange(selection) ? StatisticsTokenLedgerCategories.Categories[selection].Name : null;
                     }
                     break;

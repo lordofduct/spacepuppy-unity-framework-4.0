@@ -60,6 +60,10 @@ namespace com.spacepuppy.Scenes
 
         #region Methods
 
+        /// <summary>
+        /// Returns true if the scenename is a path ending in .unity as opposed to just the scene name or buildindex.
+        /// </summary>
+        /// <returns></returns>
         public bool IsScenePath() => !string.IsNullOrEmpty(_sceneName) && _sceneName.EndsWith(".unity");
 
         public bool SceneNameIsValidInBuildSettings()
@@ -122,7 +126,7 @@ namespace com.spacepuppy.Scenes
             {
                 return bi;
             }
-            else if (this.IsScenePath())
+            else if (!string.IsNullOrEmpty(_sceneName))
             {
                 return SceneUtility.GetBuildIndexByScenePath(_sceneName);
             }

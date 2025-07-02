@@ -4,8 +4,8 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
-using com.spacepuppy.Utils;
 using com.spacepuppy.Collections;
+using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.Project
 {
@@ -46,6 +46,9 @@ namespace com.spacepuppy.Project
         [System.NonSerialized]
         private bool _nested;
 
+        [System.NonSerialized]
+        private object _lastShallowFilteredCollection;
+
         #endregion
 
         #region CONSTRUCTOR
@@ -59,6 +62,13 @@ namespace com.spacepuppy.Project
         {
             _nameCache = new NameCache.UnityObjectNameCache(this);
             _assetType.Type = assetType ?? typeof(UnityEngine.Object);
+        }
+
+        protected virtual void OnDestroy()
+        {
+            _clean = false;
+            _table?.Clear();
+            _guidTable?.Clear();
         }
 
         #endregion
@@ -284,26 +294,15 @@ namespace com.spacepuppy.Project
 
         public IEnumerable<T> GetAllAssets<T>(bool shallow = false) where T : class
         {
-            if (!_clean && !this.SetupTable()) yield break;
+            if (!_clean && !this.SetupTable()) return Enumerable.Empty<T>();
 
             if (!shallow && _nested)
             {
-                foreach (var obj in this.GetAllAssets().Select(o => ObjUtil.GetAsFromSource<T>(o)).Where(o => !object.ReferenceEquals(o, null)))
-                {
-                    yield return obj;
-                }
+                return this.GetAllAssets().Select(o => ObjUtil.GetAsFromSource<T>(o)).Where(o => !object.ReferenceEquals(o, null));
             }
             else
             {
-                var e = _table.Values.GetEnumerator();
-                while (e.MoveNext())
-                {
-                    var obj = ObjUtil.GetAsFromSource<T>(e.Current);
-                    if (!object.ReferenceEquals(obj, null))
-                    {
-                        yield return obj;
-                    }
-                }
+                return new ShallowEnumerator<T>(this);
             }
         }
 
@@ -336,6 +335,29 @@ namespace com.spacepuppy.Project
             return cnt;
         }
 
+        public ShallowEnumerator<T> GetShallowEnumerator<T>() where T : class => new(this);
+
+        /// <summary>
+        /// Creates a ShallowFilteredCollection of type T.
+        /// </summary>
+        /// <remarks>
+        /// And any given time a single filteredcollection can be cached by passing in 'true' to the 'attemptToCache' parameter. 
+        /// The most recently T passed with the cache flag will be what is available. 
+        /// </remarks>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="attemptToCache"></param>
+        /// <returns></returns>
+        public ShallowFilteredCollection<T> GetShallowCollection<T>(bool attemptToCache = false) where T : class
+        {
+            if (_lastShallowFilteredCollection is ShallowFilteredCollection<T> cached)
+            {
+                return cached;
+            }
+            var result = new ShallowFilteredCollection<T>(this);
+            if (attemptToCache) _lastShallowFilteredCollection = result;
+            return result;
+        }
+
         /// <summary>
         /// Replaces the internal collection with a new set of assets.
         /// </summary>
@@ -352,18 +374,76 @@ namespace com.spacepuppy.Project
             }
         }
 
+        /// <summary>
+        /// Configures AssetType as T and then flattens all entries in the asset set. 
+        /// This is useful at start of the game to ensure the collection is faster to access 
+        /// for known types when combined with ShallowFilteredCollection. 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        public void Flatten<T>() where T : class
+        {
+            if (this.IsDestroyed()) return;
+
+            _assets = this.GetAllAssets<T>().OfType<UnityEngine.Object>().ToArray();
+            _assetType.Type = typeof(T);
+            this.SetupTable();
+        }
+
+        /// <summary>
+        /// Similar to Flatten but consumes an enumerable of assets that the asset set will be reset to.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        public void Flatten<T>(IEnumerable<T> assets) where T : class
+        {
+            if (assets == null) throw new System.ArgumentNullException(nameof(assets));
+            if (this.IsDestroyed()) return;
+
+            _assets = assets.OfType<UnityEngine.Object>().ToArray();
+            _assetType.Type = typeof(T);
+            this.SetupTable();
+        }
+
 
         public bool Contains(UnityEngine.Object asset)
         {
             if (!_clean && !this.SetupTable()) return false;
 
-            if (_table.Values.Contains(asset)) return true;
-
-            if (_nested)
+            foreach (var o in _assets)
             {
-                for (int i = 0; i < _assets.Length; i++)
+                if (object.ReferenceEquals(o, asset)) return true;
+                if (_nested && o is QueryableAssetSet bundle && bundle.ContainsIndirectly(asset)) return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Returns true if it's in the asset set or attached to something in the asset set.
+        /// </summary>
+        /// <param name="asset"></param>
+        /// <returns></returns>
+        public bool ContainsIndirectly(UnityEngine.Object asset, bool testIsChildOf = false)
+        {
+            if (!_clean && !this.SetupTable()) return false;
+
+            var ago = GameObjectUtil.GetGameObjectFromSource(asset);
+            if (ago != null)
+            {
+                foreach (var o in _assets)
                 {
-                    if (_assets[i] is QueryableAssetSet bundle && bundle.Contains(asset)) return true;
+                    if (object.ReferenceEquals(o, asset)) return true;
+
+                    var go = GameObjectUtil.GetGameObjectFromSource(o);
+                    if (go) return object.ReferenceEquals(go, ago) || (testIsChildOf && ago.transform.IsChildOf(go.transform));
+
+                    if (_nested && o is QueryableAssetSet bundle && bundle.ContainsIndirectly(asset)) return true;
+                }
+            }
+            else
+            {
+                foreach (var o in _assets)
+                {
+                    if (object.ReferenceEquals(o, asset)) return true;
+                    if (_nested && o is QueryableAssetSet bundle && bundle.ContainsIndirectly(asset)) return true;
                 }
             }
 
@@ -377,7 +457,6 @@ namespace com.spacepuppy.Project
                 Resources.UnloadAsset(asset);
             }
         }
-
 
 
 
@@ -797,12 +876,148 @@ namespace com.spacepuppy.Project
             return inst;
         }
 
-        public static QueryableAssetSet CreateAssetSet<T>(IEnumerable<T> coll)
+        public static QueryableAssetSet CreateAssetSet<T>(IEnumerable<T> coll) where T : class
         {
             var inst = CreateInstance<QueryableAssetSet>();
             inst.AssetType = typeof(T);
             inst.ResetAssets(coll.OfType<UnityEngine.Object>());
             return inst;
+        }
+
+        #endregion
+
+
+        #region Special Types
+
+        public class ShallowFilteredCollection<T> : IReadOnlyCollection<T>, IEnumerable<T> where T : class
+        {
+
+            #region Fields
+
+            protected QueryableAssetSet _assets;
+            private int _count = -1;
+
+            #endregion
+
+            #region CONSTRUCTOR
+
+            internal ShallowFilteredCollection(QueryableAssetSet assets)
+            {
+                if (assets == null) throw new System.ArgumentNullException(nameof(assets));
+                _assets = assets;
+            }
+
+            #endregion
+
+            #region Properties
+
+            public QueryableAssetSet AssetSet => _assets;
+
+            public int Count
+            {
+                get
+                {
+                    if (!_assets._clean || _count < 0)
+                    {
+                        if (!_assets._clean && !_assets.SetupTable()) return 0;
+                        _count = 0;
+                        var e = this.GetEnumerator();
+                        while (e.MoveNext()) _count++;
+                    }
+                    return _count;
+                }
+            }
+
+            public T this[string name] => _assets.GetAsset<T>(name);
+            public T this[System.Guid guid] => _assets.GetAsset<T>(guid);
+
+            #endregion
+
+            #region Methods
+
+            public bool TryGetAsset(string name, out T asset) => _assets.TryGetAsset<T>(name, out asset);
+            public T GetAsset(string name) => _assets.GetAsset<T>(name);
+
+            public bool TryGetAsset(System.Guid guid, out T asset) => _assets.TryGetAsset<T>(guid, out asset);
+            public T GetAsset(System.Guid guid) => _assets.GetAsset<T>(guid);
+
+            public bool Contains(T asset)
+            {
+                if (object.ReferenceEquals(asset, null)) return false;
+                if (!_assets._clean && !_assets.SetupTable()) return false;
+
+                var e = this.GetEnumerator();
+                while (e.MoveNext())
+                {
+                    if (object.ReferenceEquals(e.Current, asset)) return true;
+                }
+                return false;
+            }
+
+            #endregion
+
+            #region IEnumerable Interface
+
+            public ShallowEnumerator<T> GetEnumerator() => new(_assets);
+            IEnumerator<T> IEnumerable<T>.GetEnumerator() => this.GetEnumerator();
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => this.GetEnumerator();
+
+            #endregion
+
+        }
+
+        public struct ShallowEnumerator<T> : IEnumerator<T>, IEnumerable<T> where T : class
+        {
+
+            private Dictionary<string, UnityEngine.Object>.ValueCollection.Enumerator _e;
+            private T _current;
+            public ShallowEnumerator(QueryableAssetSet assets)
+            {
+                if (assets == null) throw new System.ArgumentNullException(nameof(assets));
+                if (!assets._clean && !assets.SetupTable())
+                {
+                    _e = default;
+                    _current = default;
+                }
+                else
+                {
+                    _e = assets._table.Values.GetEnumerator();
+                    _current = default;
+                }
+            }
+
+            public T Current => _current;
+
+            object System.Collections.IEnumerator.Current => Current;
+
+            public bool MoveNext()
+            {
+                while (_e.MoveNext())
+                {
+                    var obj = ObjUtil.GetAsFromSource<T>(_e.Current);
+                    if (!object.ReferenceEquals(obj, null))
+                    {
+                        _current = obj;
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            public void Dispose()
+            {
+                _e.Dispose();
+                _e = default;
+                _current = default;
+            }
+
+            void System.Collections.IEnumerator.Reset()
+            {
+                (_e as System.Collections.IEnumerator).Reset();
+            }
+
+            IEnumerator<T> IEnumerable<T>.GetEnumerator() => this;
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => this;
         }
 
         #endregion

@@ -16,7 +16,7 @@ namespace com.spacepuppy
 
     [System.Serializable]
     [StructLayout(LayoutKind.Sequential)]
-    public struct SerializableGuid
+    public struct SerializableGuid : System.IComparable, System.IComparable<SerializableGuid>, System.IComparable<System.Guid>, System.IEquatable<SerializableGuid>
     {
 
         #region Fields
@@ -136,6 +136,33 @@ namespace com.spacepuppy
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode() => this.ToGuid().GetHashCode();
+
+
+        int System.IComparable.CompareTo(object obj)
+        {
+            if (obj is SerializableGuid sg)
+            {
+                return this.ToGuid().CompareTo(sg.ToGuid());
+            }
+            else if (obj is System.Guid g)
+            {
+                return this.ToGuid().CompareTo(g);
+            }
+            else
+            {
+                return 1;
+            }
+        }
+
+        int System.IComparable<SerializableGuid>.CompareTo(SerializableGuid other)
+        {
+            return this.ToGuid().CompareTo(other.ToGuid());
+        }
+
+        int System.IComparable<System.Guid>.CompareTo(System.Guid other)
+        {
+            return this.ToGuid().CompareTo(other);
+        }
 
         #endregion
 

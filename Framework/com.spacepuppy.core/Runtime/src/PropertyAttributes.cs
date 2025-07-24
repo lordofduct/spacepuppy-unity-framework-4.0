@@ -175,6 +175,9 @@ namespace com.spacepuppy
 
         public bool AlwaysExpanded = true;
         public bool DisplayBox;
+        public bool DisplayHeader; //only pertains if not displaybox with intrinsicly has a header
+        public bool Indent; //only pertains if not displaybox
+        public float TrailingSpace;
         public bool IgnoreIfNoChildren;
 
     }

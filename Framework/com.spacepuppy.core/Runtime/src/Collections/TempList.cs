@@ -49,10 +49,10 @@ namespace com.spacepuppy.Collections
         public virtual void Dispose()
         {
             this.Clear();
-            if(_pool.Release(this))
+            if (_pool.Release(this))
             {
                 //we allow cached lists to grow, but if they get too out of hand we shrink them back down
-                if(this.Capacity > _maxCapacityOnRelease)
+                if (this.Capacity > _maxCapacityOnRelease)
                 {
                     this.Capacity = _maxCapacityOnRelease;
                     _version = 1;
@@ -82,11 +82,20 @@ namespace com.spacepuppy.Collections
                 cnt = rc.Count;
 
             TempList<T> result;
-            if(_pool.TryGetInstance(cnt, out result, (o,a) => o.Capacity >= a))
+            if (_pool.TryGetInstance(cnt, out result, (o, a) => o.Capacity >= a))
             {
                 //result.AddRange(e);
                 var e2 = new LightEnumerator<T>(e);
-                while(e2.MoveNext())
+                while (e2.MoveNext())
+                {
+                    result.Add(e2.Current);
+                }
+            }
+            else if (_pool.TryGetInstance(out result))
+            {
+                result.Capacity = cnt;
+                var e2 = new LightEnumerator<T>(e);
+                while (e2.MoveNext())
                 {
                     result.Add(e2.Current);
                 }

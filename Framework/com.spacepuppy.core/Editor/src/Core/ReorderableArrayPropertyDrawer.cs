@@ -395,6 +395,7 @@ namespace com.spacepuppyeditor.Core
                         property.isExpanded = EditorGUI.Foldout(foldoutRect, property.isExpanded, GUIContent.none);
                         //ReorderableListHelper.DrawRetractedHeader(EditorGUI.IndentedRect(position), label);
                         ReorderableListHelper.DrawRetractedHeader(position, label);
+                        _lst.DoHeaderContextMenu(position);
                     }
                 }
 

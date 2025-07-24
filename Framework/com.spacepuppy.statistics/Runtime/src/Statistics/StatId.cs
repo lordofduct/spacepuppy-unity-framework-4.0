@@ -69,6 +69,11 @@ namespace com.spacepuppy.Statistics
             };
         }
 
+        public StatId GetToken(string token)
+        {
+            return new StatId(Category, token);
+        }
+
         public StatId GetMeta(string metadata)
         {
             return new StatId(Category, Token, metadata);

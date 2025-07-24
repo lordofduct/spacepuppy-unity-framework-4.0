@@ -57,6 +57,8 @@ namespace com.spacepuppy.Statistics
 
         public Ledger Ledger => _ledger;
 
+        public bool SignalTokenLedgerChanged { get; set; } = true;
+
         #endregion
 
         #region Methods
@@ -64,8 +66,11 @@ namespace com.spacepuppy.Statistics
         private void _ledger_Changed(object sender, LedgerChangedEventArgs ev)
         {
             this.OnLedgerChanged();
-            _onChangedMessageSettings.Send<IStatisticsTokenLedgerChangedHandler, System.ValueTuple<SimpleTokenLedgerService, LedgerChangedEventArgs>>(this.gameObject, (this, ev), (o, a) => o.OnChanged(a.Item1, a.Item2));
-            Messaging.Broadcast<IStatisticsTokenLedgerChangedGlobalHandler, System.ValueTuple<SimpleTokenLedgerService, LedgerChangedEventArgs>>((this, ev), (o, a) => o.OnChanged(a.Item1, a.Item2));
+            if (this.SignalTokenLedgerChanged)
+            {
+                _onChangedMessageSettings.Send<IStatisticsTokenLedgerChangedHandler, System.ValueTuple<SimpleTokenLedgerService, LedgerChangedEventArgs>>(this.gameObject, (this, ev), (o, a) => o.OnChanged(a.Item1, a.Item2));
+                Messaging.Broadcast<IStatisticsTokenLedgerChangedGlobalHandler, System.ValueTuple<SimpleTokenLedgerService, LedgerChangedEventArgs>>((this, ev), (o, a) => o.OnChanged(a.Item1, a.Item2));
+            }
         }
 
         protected virtual void OnLedgerChanged()

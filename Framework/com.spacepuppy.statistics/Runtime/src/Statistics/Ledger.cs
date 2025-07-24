@@ -709,6 +709,11 @@ namespace com.spacepuppy.Statistics
             bool TryGetStat(Ledger ledger, StatId stat, out double? value);
         }
 
+        /// <summary>
+        /// A modifier where the category value is a sum of all token values. 
+        /// This is the design of the original TokenLedger when it was originally designed 
+        /// as a way to track stats in the game by category (i.e. bullets shot, enemies killed, etc with a breakdown of each type). 
+        /// </summary>
         public class StandardStatModifier : IStatModifier
         {
 
@@ -849,6 +854,11 @@ namespace com.spacepuppy.Statistics
             }
         }
 
+        /// <summary>
+        /// A modifier where every category and token entry are unique and are read/write. 
+        /// This is to facilitate a use of the TokenLedger in Andy's hack-ass approach where he just uses it as a global 
+        /// variable store for numbers that can be read/written at runtime and saved between sessions. 
+        /// </summary>
         public class ReadWriteStatModifier : IStatModifier
         {
 
@@ -904,6 +914,12 @@ namespace com.spacepuppy.Statistics
             }
         }
 
+        /// <summary>
+        /// A modifier where every category and token entry are unique and resolve as a cumulative average of themselves. 
+        /// Adjusting a given value will calculate the latest average of that value. This might be used where you're recording the 
+        /// average time it takes to beat some timed event. 
+        /// The average is = sum(adjustvalue) / count(adjustvalue)
+        /// </summary>
         public class CumulativeAverageStatModifier : IStatModifier
         {
 
@@ -988,6 +1004,13 @@ namespace com.spacepuppy.Statistics
             }
         }
 
+        /// <summary>
+        /// A modifier where every category and token entry are unique and resolve as an exponential moving average of themselves. 
+        /// This is similar to CumulativeAverageStatModifier, only instead of a true cumulative average. Instead it uses the 
+        /// exponential moving average algorithm.
+        /// average = adjustvalue * alpha + existingaverage * (1 - alpha)
+        /// where alpha is the inverse sample length
+        /// </summary>
         public class ExponentialMovingAverageStatModifier : IStatModifier
         {
 
@@ -1058,6 +1081,155 @@ namespace com.spacepuppy.Statistics
                 //we can read the individual stats for ExponentialMovingAverageStatModifier
                 return ledger._stats.TryGetValue(stat, out value);
             }
+        }
+
+        /// <summary>
+        /// A modifier where the category value reflects the maximum of all of its token values.
+        /// </summary>
+        public class MaximumStatModifier : IStatModifier
+        {
+            public static readonly StandardStatModifier Default = new();
+
+            public bool AdjustStat(Ledger ledger, StatId stat, double amount)
+            {
+                if (string.IsNullOrEmpty(stat.Category)) return false;
+
+                var _stats = ledger._stats;
+
+                var topkey = new StatId(stat.Category);
+                bool result = false;
+                //standard stat adjustment
+                double? current;
+                if (_stats.TryGetValue(topkey, out current))
+                {
+                    if (current == null || amount > current)
+                    {
+                        _stats[topkey] = amount;
+                        result = true;
+                    }
+                }
+                else if (!ledger.Locked)
+                {
+                    _stats[topkey] = amount;
+                    result = true;
+                }
+                else
+                {
+                    return false;
+                }
+
+                //adjust for token if any
+                if (!string.IsNullOrEmpty(stat.Token))
+                {
+                    //set join value
+                    if (_stats.TryGetValue(stat, out current))
+                    {
+                        if (current == null || amount > current)
+                        {
+                            _stats[stat] = amount;
+                            result = true;
+                        }
+                    }
+                    else
+                    {
+                        _stats[stat] = amount;
+                        result = true;
+                    }
+                }
+
+                if (result)
+                {
+                    ledger.SignalOnChanged(stat);
+                }
+                return result;
+            }
+
+            public bool ClearStat(Ledger ledger, StatId stat)
+            {
+                var _stats = ledger._stats;
+
+                if (string.IsNullOrEmpty(stat.Token))
+                {
+                    return ledger.ClearCategory(stat.Category);
+                }
+                else
+                {
+                    _stats.Remove(stat);
+                    _stats[new StatId(stat.Category)] = this.FindMaximumSubToken(ledger, stat.Category);
+                    ledger.SignalOnChanged(stat);
+                    return true;
+                }
+            }
+
+            public bool DeleteStat(Ledger ledger, StatId stat)
+            {
+                if (ledger.Locked) return this.ClearStat(ledger, stat);
+
+                var _stats = ledger._stats;
+                if (string.IsNullOrEmpty(stat.Token))
+                {
+                    return ledger.DeleteCategory(stat.Category);
+                }
+                else
+                {
+                    _stats.Remove(stat);
+                    _stats[new StatId(stat.Category)] = this.FindMaximumSubToken(ledger, stat.Category);
+                    ledger.SignalOnChanged(stat);
+                    return true;
+                }
+            }
+
+            public bool SetStat(Ledger ledger, StatId stat, double? value)
+            {
+                if (string.IsNullOrEmpty(stat.Category)) return false;
+
+                var _stats = ledger._stats;
+                if (string.IsNullOrEmpty(stat.Token))
+                {
+                    stat.Token = null;
+                    if (ledger.Locked && !_stats.ContainsKey(stat)) return false;
+
+                    _stats[stat] = value;
+                    ledger.SignalOnChanged(stat);
+                    return true;
+                }
+                else
+                {
+                    var topkey = new StatId(stat.Category);
+                    if (ledger.Locked && !_stats.ContainsKey(topkey)) return false;
+
+                    _stats[stat] = value;
+                    _stats[topkey] = this.FindMaximumSubToken(ledger, stat.Category);
+                    ledger.SignalOnChanged(stat);
+                    return true;
+                }
+            }
+
+            public bool TryGetStat(Ledger ledger, StatId stat, out double? value)
+            {
+                if (string.IsNullOrEmpty(stat.Token)) stat.Token = null;
+                return ledger._stats.TryGetValue(stat, out value);
+            }
+
+            /// <summary>
+            /// Finds Maximum of all subtokens in category.
+            /// </summary>
+            /// <param name="category"></param>
+            /// <returns></returns>
+            private double? FindMaximumSubToken(Ledger ledger, string category)
+            {
+                double result = float.NegativeInfinity;
+                var e = ledger._stats.GetEnumerator();
+                while (e.MoveNext())
+                {
+                    if (e.Current.Key.Category == category && !string.IsNullOrEmpty(e.Current.Key.Token) && e.Current.Value != null && e.Current.Value > result)
+                    {
+                        result = e.Current.Value.Value;
+                    }
+                }
+                return double.IsNegativeInfinity(result) ? null : result;
+            }
+
         }
 
         #endregion

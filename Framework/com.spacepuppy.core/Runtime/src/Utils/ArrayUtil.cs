@@ -539,6 +539,9 @@ namespace com.spacepuppy.Utils
             if (coll == null) throw new System.ArgumentNullException("coll");
             if (rng == null) rng = RandomUtil.Standard;
 
+            //NOTE - as long as the calling code uses this as part of a foreach, or in a linq statement, the IDisposable will be disposed properly
+            //otherwise this TempList will be lost to the heap and made available for GC when appropriate thus making the TempList pointless.
+            //But by using a TempList we get the benefit in most situations and lose nothing in the case of GC compared to a standard 'List'.
             using (var buffer = TempCollection.GetList<T>(coll))
             {
                 int j;
@@ -706,6 +709,44 @@ namespace com.spacepuppy.Utils
                 var result = coll.Shuffled(rng).Take(1).FirstOrDefault();
                 coll.Remove(result);
                 return result;
+            }
+        }
+
+        public static IEnumerable<T> PickRandomWithRepeat<T>(this IEnumerable<T> coll, int count, IRandom rng = null)
+        {
+            if (count == 0) yield break;
+            if (count == 1)
+            {
+                yield return PickRandom<T>(coll, rng);
+                yield break;
+            }
+
+            if (rng == null) rng = RandomUtil.Standard;
+
+            if (coll is IList<T> lst)
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    yield return lst[rng.Next(lst.Count)];
+                }
+            }
+            else if (coll is IReadOnlyList<T> rolst)
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    yield return rolst[rng.Next(rolst.Count)];
+                }
+            }
+            else
+            {
+                //NOTE - see Shuffled for dispose explanation
+                using (var buffer = TempCollection.GetList<T>(coll))
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        yield return buffer[rng.Next(buffer.Count)];
+                    }
+                }
             }
         }
 

@@ -32,9 +32,18 @@ namespace com.spacepuppy.Utils
             return new Color(r, g, b, a);
         }
 
+        public static Color ToColor(uint value)
+        {
+            var a = (float)(value >> 24 & 0xFF) / 255f;
+            var r = (float)(value >> 16 & 0xFF) / 255f;
+            var g = (float)(value >> 8 & 0xFF) / 255f;
+            var b = (float)(value & 0xFF) / 255f;
+            return new Color(r, g, b, a);
+        }
+
         public static Color ToColor(string value)
         {
-            return ToColor(ToInt(value));
+            return ToColor(ToUInt(value));
         }
 
         public static Color ToColor(Color32 value)
@@ -87,9 +96,18 @@ namespace com.spacepuppy.Utils
             return new Color32(r, g, b, a);
         }
 
+        public static Color32 ToColor32(uint value)
+        {
+            byte a = (byte)(value >> 24 & 0xFF);
+            byte r = (byte)(value >> 16 & 0xFF);
+            byte g = (byte)(value >> 8 & 0xFF);
+            byte b = (byte)(value & 0xFF);
+            return new Color32(r, g, b, a);
+        }
+
         public static Color32 ToColor32(string value)
         {
-            return ToColor32(ToInt(value));
+            return ToColor32(ToUInt(value));
         }
 
         public static Color32 ToColor32(Color value)

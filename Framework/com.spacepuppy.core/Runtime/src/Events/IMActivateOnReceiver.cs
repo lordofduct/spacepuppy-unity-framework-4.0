@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System;
+using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.Events
 {
@@ -53,13 +54,17 @@ namespace com.spacepuppy.Events
 
             if ((targ.ActivateOn & ActivateEvent.OnEnable) != 0)
             {
+                //NOTE - we use lateupdate here to manage timing for OnEnable which sometimes is ill-timed
                 if (GameLoop.LateUpdateWasCalled)
                 {
                     targ.Activate();
                 }
                 else
                 {
-                    GameLoop.LateUpdateHandle.BeginInvoke(targ.Activate);
+                    GameLoop.LateUpdateHandle.BeginInvoke(() =>
+                    {
+                        if (targ.IsAlive() && targ.isActiveAndEnabled) targ.Activate();
+                    });
                 }
             }
         }
@@ -72,7 +77,10 @@ namespace com.spacepuppy.Events
             var aoe = targ.ActivateOn;
             if ((aoe & ActivateEvent.OnLateStart) != 0 && !GameLoop.LateUpdateWasCalled)
             {
-                GameLoop.LateUpdateHandle.BeginInvoke(() => targ.Activate());
+                GameLoop.LateUpdateHandle.BeginInvoke(() =>
+                {
+                    if (targ.IsAlive() && targ.isActiveAndEnabled) targ.Activate();
+                });
             }
             else if ((aoe & ActivateEvent.OnStart) != 0 || (aoe & ActivateEvent.OnEnable) != 0)
             {

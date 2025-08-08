@@ -123,7 +123,10 @@ namespace com.spacepuppy.Netcode
                     }
                     else
                     {
-                        GameLoop.LateUpdateHandle.BeginInvoke(targ.Activate);
+                        GameLoop.LateUpdateHandle.BeginInvoke(() =>
+                        {
+                            if (targ.IsAlive() && targ.isActiveAndEnabled) targ.Activate();
+                        });
                     }
                 }
             }
@@ -139,7 +142,10 @@ namespace com.spacepuppy.Netcode
                 var aoe = targ.ActivateOn;
                 if ((aoe & ActivateEvent.OnLateStart) != 0 && !GameLoop.LateUpdateWasCalled)
                 {
-                    GameLoop.LateUpdateHandle.BeginInvoke(() => targ.Activate());
+                    GameLoop.LateUpdateHandle.BeginInvoke(() =>
+                    {
+                        if (targ.IsAlive() && targ.isActiveAndEnabled) targ.Activate();
+                    });
                 }
                 else if ((aoe & ActivateEvent.OnStart) != 0 || (aoe & ActivateEvent.OnEnable) != 0)
                 {
@@ -158,7 +164,10 @@ namespace com.spacepuppy.Netcode
                 var aoe = targ.ActivateOn;
                 if ((aoe & ActivateEvent.OnLateStart) != 0 && !GameLoop.LateUpdateWasCalled)
                 {
-                    GameLoop.LateUpdateHandle.BeginInvoke(() => targ.Activate());
+                    GameLoop.LateUpdateHandle.BeginInvoke(() =>
+                    {
+                        if (targ.IsAlive() && targ.isActiveAndEnabled) targ.Activate();
+                    });
                 }
                 else if ((aoe & ActivateEvent.OnStart) != 0 || (aoe & ActivateEvent.OnEnable) != 0)
                 {

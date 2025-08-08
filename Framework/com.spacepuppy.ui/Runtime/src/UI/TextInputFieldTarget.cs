@@ -116,6 +116,21 @@ namespace com.spacepuppy.UI
 
         public UnityEngine.Object ReduceTarget() => StringUtil.GetAsTextBindingTarget(_target, false);
 
+        public bool IsFocused()
+        {
+            switch (StringUtil.GetAsTextBindingTarget(_target, false))
+            {
+                case UnityEngine.UI.InputField uif:
+                    return uif.isFocused;
+#if SP_TMPRO
+                case TMPro.TMP_InputField tmpif:
+                    return tmpif.isFocused;
+#endif
+                default:
+                    return false;
+            }
+        }
+
         public void SelectUIElement()
         {
             switch (StringUtil.GetAsTextBindingTarget(_target, false))

@@ -141,7 +141,7 @@ namespace com.spacepuppy
             public SPEntity GetFromSource(GameObject obj) => obj ? obj.GetComponentInParent<SPEntity>() : null;
             public SPEntity GetFromSource(Component obj) => obj ? obj.gameObject.GetComponentInParent<SPEntity>() : null;
 #else
-            public SPEntity GetFromSource(object obj) => obj is SPEntity e ? e : GameObjectUtil.GetGameObjectFromSource(obj).AddOrGetComponent<SPEntityHook>().GetEntity();
+            public SPEntity GetFromSource(object obj) => obj is SPEntity e ? e : GameObjectUtil.GetGameObjectFromSource(obj)?.AddOrGetComponent<SPEntityHook>().GetEntity();
 
             public SPEntity GetFromSource(GameObject obj) => obj ? obj.AddOrGetComponent<SPEntityHook>().GetEntity() : null;
             public SPEntity GetFromSource(Component obj) => obj is SPEntity e ? e : (obj ? obj.gameObject.AddOrGetComponent<SPEntityHook>().GetEntity() : null);
@@ -174,7 +174,7 @@ namespace com.spacepuppy
             public TSub GetFromSource<TSub>(GameObject obj) where TSub : SPEntity => obj ? obj.GetComponentInParent<TSub>() : null;
             public TSub GetFromSource<TSub>(Component obj) where TSub : SPEntity => obj ? obj.gameObject.GetComponentInParent<TSub>() : null;
 #else
-            public TSub GetFromSource<TSub>(object obj) where TSub : SPEntity => obj is SPEntity e ? e as TSub : GameObjectUtil.GetGameObjectFromSource(obj).AddOrGetComponent<SPEntityHook>().GetEntity() as TSub;
+            public TSub GetFromSource<TSub>(object obj) where TSub : SPEntity => obj is SPEntity e ? e as TSub : GameObjectUtil.GetGameObjectFromSource(obj)?.AddOrGetComponent<SPEntityHook>().GetEntity() as TSub;
 
             public TSub GetFromSource<TSub>(GameObject obj) where TSub : SPEntity => obj ? GameObjectUtil.GetGameObjectFromSource(obj).AddOrGetComponent<SPEntityHook>().GetEntity() as TSub : null;
 

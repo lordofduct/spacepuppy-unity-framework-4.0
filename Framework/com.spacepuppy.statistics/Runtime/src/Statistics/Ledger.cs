@@ -864,7 +864,7 @@ namespace com.spacepuppy.Statistics
 
             public static readonly ReadWriteStatModifier Default = new();
 
-            public bool AdjustStat(Ledger ledger, StatId stat, double amount)
+            public virtual bool AdjustStat(Ledger ledger, StatId stat, double amount)
             {
                 if (string.IsNullOrEmpty(stat.Category)) return false;
 
@@ -875,7 +875,7 @@ namespace com.spacepuppy.Statistics
                 return true;
             }
 
-            public bool ClearStat(Ledger ledger, StatId stat)
+            public virtual bool ClearStat(Ledger ledger, StatId stat)
             {
                 if (ledger._stats.TryGetValue(stat, out double? value) && value != null)
                 {
@@ -886,7 +886,7 @@ namespace com.spacepuppy.Statistics
                 return false;
             }
 
-            public bool DeleteStat(Ledger ledger, StatId stat)
+            public virtual bool DeleteStat(Ledger ledger, StatId stat)
             {
                 if (ledger._stats.Remove(stat))
                 {
@@ -896,7 +896,7 @@ namespace com.spacepuppy.Statistics
                 return false;
             }
 
-            public bool SetStat(Ledger ledger, StatId stat, double? value)
+            public virtual bool SetStat(Ledger ledger, StatId stat, double? value)
             {
                 if (string.IsNullOrEmpty(stat.Category)) return false;
 
@@ -908,7 +908,7 @@ namespace com.spacepuppy.Statistics
                 return true;
             }
 
-            public bool TryGetStat(Ledger ledger, StatId stat, out double? value)
+            public virtual bool TryGetStat(Ledger ledger, StatId stat, out double? value)
             {
                 return ledger._stats.TryGetValue(stat, out value);
             }

@@ -66,16 +66,35 @@ namespace com.spacepuppyeditor.Core.Project
                 var objref = p.objectReferenceValue;
                 if (objref != null)
                 {
-                    var sguid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(objref));
-                    if (EditorGUIUtility.currentViewWidth < 375f)
+                    //var sguid = ObjUtil.GetAsFromSource<IAssetGuidIdentifiable>(objref)?.AssetId.ToString();
+                    //if (string.IsNullOrEmpty(sguid)) sguid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(objref));
+
+                    string sguid = string.Empty;
+                    if (this.serializedObject.isEditingMultipleObjects)
                     {
-                        sguid = sguid.Substring(0, 11) + "...";
+                        sguid = ObjUtil.GetAsFromSource<IAssetGuidIdentifiable>(objref)?.AssetId.ToString();
+                        if (sguid == null) sguid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(objref));
                     }
-                    else if (EditorGUIUtility.currentViewWidth < 640f)
+                    else if ((this.serializedObject.targetObject as QueryableAssetSet)?.TrySlowLookupGuid(objref, out System.Guid guid) ?? false)
                     {
-                        int cnt = Mathf.Clamp(Mathf.FloorToInt((EditorGUIUtility.currentViewWidth - 390) / 14) + 11, 0, sguid.Length);
-                        sguid = sguid.Substring(0, cnt) + "...";
+                        sguid = guid.ToString("n");
                     }
+                    else
+                    {
+                        sguid = ObjUtil.GetAsFromSource<IAssetGuidIdentifiable>(objref)?.AssetId.ToString();
+                        if (sguid == null) sguid = "(asset is not guid identifiable at runtime)";
+                    }
+
+                    //if (EditorGUIUtility.currentViewWidth < 375f)
+                    //{
+                    //    sguid = sguid.Substring(0, 11) + "...";
+                    //}
+                    //else if (EditorGUIUtility.currentViewWidth < 640f)
+                    //{
+                    //    int cnt = Mathf.Clamp(Mathf.FloorToInt((EditorGUIUtility.currentViewWidth - 390) / 14) + 11, 0, sguid.Length);
+                    //    sguid = sguid.Substring(0, cnt) + "...";
+                    //}
+
                     return $"{i:00} - {sguid}";
                 }
                 else
@@ -207,7 +226,8 @@ namespace com.spacepuppyeditor.Core.Project
                     if (EditorGUI.EndChangeCheck())
                     {
                         obj = _owner._reorderableArrayDrawer.DragDropElementFilter(obj);
-                        if (obj) property.objectReferenceValue = obj;
+                        //if (obj) property.objectReferenceValue = obj;
+                        property.objectReferenceValue = obj;
                     }
                 }
                 else

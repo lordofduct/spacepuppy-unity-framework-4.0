@@ -10,6 +10,11 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Project
 {
 
+    /// <summary>
+    /// An AssetSet of assets that can be queried by name or asset id. Asset id querying only supported by those 
+    /// types that implement 'IAssetGuidIdentifiable'. Or if the collection was configured with asset guids at 
+    /// editor time. 
+    /// </summary>
     [CreateAssetMenu(fileName = "AssetSet", menuName = "Spacepuppy/Asset Set")]
     public class QueryableAssetSet : ScriptableObject, IAssetSet, IGuidAssetSet, IAssetGuidIdentifiable, IReadOnlyDictionary<string, UnityEngine.Object>, IReadOnlyDictionary<System.Guid, UnityEngine.Object>, IEnumerable<UnityEngine.Object>
     {
@@ -30,12 +35,16 @@ namespace com.spacepuppy.Project
         [SerializeField]
         private bool _supportNestedGroups;
 
+        [SerializeField, Tooltip("EditorOnly - attempts to generate a lookup table of the asset guids if it can at editor time if the asset isn't an 'IAssetGuidIdentifiable'.")]
+        private bool _tryForceAssetGuids;
+
         [SerializeField]
         private TypeReference _assetType = new TypeReference(typeof(UnityEngine.Object));
 
-        [SerializeField]
-        [ReorderableArray()]
+        [SerializeField, ReorderableArray()]
         private UnityEngine.Object[] _assets = ArrayUtil.Empty<UnityEngine.Object>();
+        [SerializeField, HideInInspector]
+        private string[] _forcedAssetGuids;
 
         [System.NonSerialized]
         private Dictionary<string, UnityEngine.Object> _table;
@@ -48,6 +57,9 @@ namespace com.spacepuppy.Project
 
         [System.NonSerialized]
         private object _lastShallowFilteredCollection;
+
+        [System.NonSerialized]
+        private int _version;
 
         #endregion
 
@@ -98,6 +110,32 @@ namespace com.spacepuppy.Project
         }
 
         /// <summary>
+        /// Defines if at editor time this attempts to force asset guids. 
+        /// Warning - can not be set at runtime.
+        /// </summary>
+        public bool TryForceAssetGuids
+        {
+            get => _tryForceAssetGuids;
+#if UNITY_EDITOR
+            set => _tryForceAssetGuids = value;
+#else
+            set {}
+#endif
+        }
+
+        /// <summary>
+        /// Returns true if some assets are queryably by asset id. Not all assets are guaranteed to be queryable by asset id.
+        /// </summary>
+        public bool SupportsGuidLookup
+        {
+            get
+            {
+                if (!_clean && !this.SetupTable()) return false;
+                return _guidTable.Count > 0;
+            }
+        }
+
+        /// <summary>
         /// Internal access to the asset array. You should use this only for reading. 
         /// If you need to manipulate the collection use the public methods to ensure 
         /// lookup tables are synced correctly.
@@ -106,6 +144,8 @@ namespace com.spacepuppy.Project
         {
             get => _assets;
         }
+
+        public int Version => _version;
 
         #endregion
 
@@ -124,14 +164,23 @@ namespace com.spacepuppy.Project
                 _table[_assets[i].name] = _assets[i];
                 if (_supportNestedGroups && _assets[i] is IAssetSet) _nested = true;
 
-                var agid = ObjUtil.GetAsFromSource<IAssetGuidIdentifiable>(_assets[i]);
-                if (agid != null && agid.AssetId != System.Guid.Empty)
+                if (i < _forcedAssetGuids?.Length && !string.IsNullOrEmpty(_forcedAssetGuids[i]) && System.Guid.TryParse(_forcedAssetGuids[i], out System.Guid forcedguid) && forcedguid != System.Guid.Empty)
                 {
                     if (_guidTable == null) _guidTable = new Dictionary<System.Guid, Object>();
-                    _guidTable[agid.AssetId] = _assets[i];
+                    _guidTable[forcedguid] = _assets[i];
+                }
+                else
+                {
+                    var agid = ObjUtil.GetAsFromSource<IAssetGuidIdentifiable>(_assets[i]);
+                    if (agid != null && agid.AssetId != System.Guid.Empty)
+                    {
+                        if (_guidTable == null) _guidTable = new Dictionary<System.Guid, Object>();
+                        _guidTable[agid.AssetId] = _assets[i];
+                    }
                 }
             }
             _clean = true;
+            _version++;
             return true;
         }
 
@@ -366,7 +415,76 @@ namespace com.spacepuppy.Project
         {
             if (this.IsDestroyed()) return;
 
-            _assets = assets.ToArray();
+            this.ResetAssetsDirect(assets?.ToArray() ?? ArrayUtil.Empty<UnityEngine.Object>());
+        }
+        void ResetAssetsDirect(UnityEngine.Object[] assets)
+        {
+            _assets = assets;
+#if UNITY_EDITOR
+            if (_tryForceAssetGuids)
+            {
+                _forcedAssetGuids = _assets.Select(o =>
+                {
+                    //only store the guids of those assets that require it
+                    if (o == null) return string.Empty;
+                    var aid = ObjUtil.GetAsFromSource<IAssetGuidIdentifiable>(o);
+                    if (aid != null) return string.Empty;
+
+                    var path = UnityEditor.AssetDatabase.GetAssetPath(o);
+                    return !string.IsNullOrEmpty(path) ? UnityEditor.AssetDatabase.AssetPathToGUID(path) : string.Empty;
+                }).ToArray();
+            }
+            else
+            {
+                _forcedAssetGuids = ArrayUtil.Empty<string>();
+            }
+#else
+            _forcedAssetGuids = ArrayUtil.Empty<string>();
+#endif
+            if (_table != null)
+            {
+                _table.Clear();
+                this.SetupTable();
+            }
+        }
+
+        /// <summary>
+        /// Replaces the internal collection with a new set of assets.
+        /// </summary>
+        /// <param name="assets"></param>
+        public virtual void ResetAssets(IEnumerable<KeyValuePair<System.Guid, UnityEngine.Object>> assets)
+        {
+            if (this.IsDestroyed()) return;
+
+            if (assets != null)
+            {
+                using (var lst_a = TempCollection.GetList<UnityEngine.Object>())
+                using (var lst_b = TempCollection.GetList<string>())
+                {
+                    foreach (var pair in assets)
+                    {
+                        lst_a.Add(pair.Value);
+                        //only store the guids of those assets that require it
+                        var aid = ObjUtil.GetAsFromSource<IAssetGuidIdentifiable>(pair.Value);
+                        if (aid == null || (aid.AssetId != pair.Key && pair.Key != System.Guid.Empty))
+                        {
+                            lst_b.Add(pair.Key.ToString("N"));
+                        }
+                        else
+                        {
+                            lst_b.Add(string.Empty);
+                        }
+                    }
+                    _assets = lst_a.ToArray();
+                    _forcedAssetGuids = lst_b.ToArray();
+                }
+            }
+            else
+            {
+                _assets = ArrayUtil.Empty<UnityEngine.Object>();
+                _forcedAssetGuids = ArrayUtil.Empty<string>();
+            }
+
             if (_table != null)
             {
                 _table.Clear();
@@ -458,6 +576,41 @@ namespace com.spacepuppy.Project
             }
         }
 
+        public bool TrySlowLookupGuid(UnityEngine.Object asset, out System.Guid guid)
+        {
+            if (object.ReferenceEquals(asset, null) ||
+                (!_clean && !this.SetupTable()))
+            {
+                guid = default;
+                return false;
+            }
+
+            if (_guidTable != null)
+            {
+                foreach (var pair in _guidTable)
+                {
+                    if (pair.Value == asset)
+                    {
+                        guid = pair.Key;
+                        return true;
+                    }
+                }
+            }
+
+            if (_nested)
+            {
+                foreach (var o in _assets)
+                {
+                    if (o is QueryableAssetSet qas && qas.TrySlowLookupGuid(asset, out guid))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            guid = default;
+            return false;
+        }
 
 
 
@@ -1021,6 +1174,13 @@ namespace com.spacepuppy.Project
         }
 
         #endregion
+
+#if UNITY_EDITOR
+        protected virtual void OnValidate()
+        {
+            this.ResetAssetsDirect(_assets); //this force resets the guids
+        }
+#endif
 
     }
 

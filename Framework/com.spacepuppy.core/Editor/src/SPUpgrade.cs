@@ -460,6 +460,39 @@ namespace com.spacepuppyeditor
             File.WriteAllLines(path, _lines);
         }
 
+        public string Peek(int lines = 0)
+        {
+            int pos = _position + lines;
+            if (pos < 0) return null;
+
+            if (pos < _lines.Count)
+            {
+                return _lines[pos];
+            }
+            else if (_reachedEnd)
+            {
+                return null;
+            }
+            else
+            {
+                for (int i = 0; i <= lines; i++)
+                {
+                    var ln = _reader.ReadLine();
+                    if (ln == null)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        _lines.Push(ln);
+                    }
+                }
+
+                return pos < _lines.Count ? _lines[pos] : null;
+            }
+
+        }
+
         #endregion
 
         #region Complex Read/Write Methods

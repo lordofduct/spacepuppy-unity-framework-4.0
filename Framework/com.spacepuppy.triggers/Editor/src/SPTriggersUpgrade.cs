@@ -26,10 +26,9 @@ namespace com.spacepuppyeditor
                 string ln;
                 while ((ln = reader.ReadUntilScript(typeof(TriggerStateMachineMirror))) != null)
                 {
-                    edited = true;
-
                     if (reader.SeekUntilSerializedField("_targetStateMachine", out field, true) && !string.IsNullOrEmpty(field.fieldData)) //the data is completely empty if and only if we've previously updated
                     {
+                        edited = true;
                         reader.DeleteLine();
                         reader.InsertLine("  _targetStateMachine:");
                         reader.InsertLine("    _obj:" + field.fieldData);
@@ -37,6 +36,7 @@ namespace com.spacepuppyeditor
                     }
                     if (reader.SeekUntilSerializedField("_sourceStateMachine", out field, true) && !string.IsNullOrEmpty(field.fieldData)) //the data is completely empty if and only if we've previously updated
                     {
+                        edited = true;
                         reader.DeleteLine();
                         reader.InsertLine("  _sourceStateMachine:");
                         reader.InsertLine("    _obj:" + field.fieldData);
@@ -63,13 +63,16 @@ namespace com.spacepuppyeditor
                 string ln;
                 while ((ln = reader.ReadUntilScript(typeof(TriggerStateMachineProxyLink))) != null)
                 {
-                    edited = true;
-
-                    if (reader.SeekUntilSerializedField("_stateMachine", out field, true)) //the field is no longer named this so this is our test for re-processing
+                    if (reader.SeekUntilSerializedField("_stateMachine", out field, true) && !(reader.Peek(1)?.Contains("_obj:") ?? false)) //the field is no longer named this so this is our test for re-processing
                     {
+                        edited = true;
                         reader.DeleteLine();
                         reader.InsertLine("  _stateMachine:");
                         reader.InsertLine("    _obj:" + field.fieldData);
+                        reader.SeekToNextObject();
+                    }
+                    else
+                    {
                         reader.SeekToNextObject();
                     }
                 }

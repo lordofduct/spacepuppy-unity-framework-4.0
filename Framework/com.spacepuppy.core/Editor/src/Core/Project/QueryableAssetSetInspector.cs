@@ -75,7 +75,7 @@ namespace com.spacepuppyeditor.Core.Project
                         sguid = ObjUtil.GetAsFromSource<IAssetGuidIdentifiable>(objref)?.AssetId.ToString();
                         if (sguid == null) sguid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(objref));
                     }
-                    else if ((this.serializedObject.targetObject as QueryableAssetSet)?.TrySlowLookupGuid(objref, out System.Guid guid) ?? false)
+                    else if (this.serializedObject.targetObject is QueryableAssetSet assetSet && assetSet.TrySlowLookupGuid(objref, out System.Guid guid))
                     {
                         sguid = guid.ToString("n");
                     }

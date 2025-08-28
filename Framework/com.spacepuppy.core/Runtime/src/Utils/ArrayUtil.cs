@@ -934,6 +934,24 @@ namespace com.spacepuppy.Utils
             return result;
         }
 
+        public static T AtIndexOrDefault<T>(this IList<T> lst, int index)
+        {
+            if (index >= 0 && index < lst?.Count)
+            {
+                return lst[index];
+            }
+            return default;
+        }
+
+        public static T AtIndexOrDefault<T>(this IReadOnlyList<T> lst, int index)
+        {
+            if (index >= 0 && index < lst?.Count)
+            {
+                return lst[index];
+            }
+            return default;
+        }
+
         #endregion
 
         #region HashSet Methods

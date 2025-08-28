@@ -1,4 +1,4 @@
-#if (UNITY_EDITOR || DEBUG || UNITY_DEBUG) && !DISABLE_GAMELOGGER
+#if (UNITY_EDITOR || DEBUG || UNITY_DEBUG || ENABLE_GAMELOGGER) && !DISABLE_GAMELOGGER
 #define GAMELOGGER_ENABLED
 #endif
 
@@ -8,10 +8,11 @@ using System.Diagnostics;
 
 namespace com.spacepuppy
 {
+
     public static class GameLogger
     {
 
-        [Conditional("GAMELOGGER_ENABLED")]
+        [Conditional("UNITY_EDITOR"), Conditional("DEBUG"), Conditional("UNITY_DEBUG"), Conditional("ENABLE_GAMELOGGER")]
         public static void Log(object message)
         {
 #if GAMELOGGER_ENABLED
@@ -19,7 +20,7 @@ namespace com.spacepuppy
 #endif
         }
 
-        [Conditional("GAMELOGGER_ENABLED")]
+        [Conditional("UNITY_EDITOR"), Conditional("DEBUG"), Conditional("UNITY_DEBUG"), Conditional("ENABLE_GAMELOGGER")]
         public static void Log(object message, UnityEngine.Object context)
         {
 #if GAMELOGGER_ENABLED
@@ -27,7 +28,7 @@ namespace com.spacepuppy
 #endif
         }
 
-        [Conditional("GAMELOGGER_ENABLED")]
+        [Conditional("UNITY_EDITOR"), Conditional("DEBUG"), Conditional("UNITY_DEBUG"), Conditional("ENABLE_GAMELOGGER")]
         public static void LogWarning(object message)
         {
 #if GAMELOGGER_ENABLED
@@ -35,7 +36,7 @@ namespace com.spacepuppy
 #endif
         }
 
-        [Conditional("GAMELOGGER_ENABLED")]
+        [Conditional("UNITY_EDITOR"), Conditional("DEBUG"), Conditional("UNITY_DEBUG"), Conditional("ENABLE_GAMELOGGER")]
         public static void LogWarning(object message, UnityEngine.Object context)
         {
 #if GAMELOGGER_ENABLED
@@ -43,7 +44,7 @@ namespace com.spacepuppy
 #endif
         }
 
-        [Conditional("GAMELOGGER_ENABLED")]
+        [Conditional("UNITY_EDITOR"), Conditional("DEBUG"), Conditional("UNITY_DEBUG"), Conditional("ENABLE_GAMELOGGER")]
         public static void LogError(object message)
         {
 #if GAMELOGGER_ENABLED
@@ -51,7 +52,7 @@ namespace com.spacepuppy
 #endif
         }
 
-        [Conditional("GAMELOGGER_ENABLED")]
+        [Conditional("UNITY_EDITOR"), Conditional("DEBUG"), Conditional("UNITY_DEBUG"), Conditional("ENABLE_GAMELOGGER")]
         public static void LogError(object message, UnityEngine.Object context)
         {
 #if GAMELOGGER_ENABLED
@@ -59,7 +60,7 @@ namespace com.spacepuppy
 #endif
         }
 
-        [Conditional("GAMELOGGER_ENABLED")]
+        [Conditional("UNITY_EDITOR"), Conditional("DEBUG"), Conditional("UNITY_DEBUG"), Conditional("ENABLE_GAMELOGGER")]
         public static void LogException(System.Exception exception)
         {
 #if GAMELOGGER_ENABLED
@@ -67,7 +68,7 @@ namespace com.spacepuppy
 #endif
         }
 
-        [Conditional("GAMELOGGER_ENABLED")]
+        [Conditional("UNITY_EDITOR"), Conditional("DEBUG"), Conditional("UNITY_DEBUG"), Conditional("ENABLE_GAMELOGGER")]
         public static void LogException(System.Exception exception, UnityEngine.Object context)
         {
 #if GAMELOGGER_ENABLED
@@ -75,7 +76,7 @@ namespace com.spacepuppy
 #endif
         }
 
-        [Conditional("GAMELOGGER_ENABLED")]
+        [Conditional("UNITY_EDITOR"), Conditional("DEBUG"), Conditional("UNITY_DEBUG"), Conditional("ENABLE_GAMELOGGER")]
         public static void Assert(bool assertion)
         {
 #if GAMELOGGER_ENABLED

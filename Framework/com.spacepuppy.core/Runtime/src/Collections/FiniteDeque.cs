@@ -175,7 +175,7 @@ namespace com.spacepuppy.Collections
         public void Shift(T item)
         {
             int index = _rear - 1;
-            if (_rear < 0) _rear += _buffer.Length;
+            if (index < 0) index += _buffer.Length;
             _buffer[index] = item;
             _rear = index;
             if (_count < _buffer.Length)

@@ -1272,7 +1272,7 @@ namespace com.spacepuppy.Utils
 
         public static float Damp(float a, float b, float damping, float dt)
         {
-            return Mathf.Lerp(a, b, (float)Math.Pow(damping, dt));
+            return Mathf.Lerp(a, b, 1f - (float)Math.Pow(damping, dt));
         }
 
         /// <summary>
@@ -1284,7 +1284,7 @@ namespace com.spacepuppy.Utils
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float CalculateDampingLerpT(float damping, float deltaTime)
         {
-            return (float)Math.Pow(damping, deltaTime);
+            return 1f - (float)Math.Pow(damping, deltaTime);
         }
 
         /// <summary>
@@ -1298,7 +1298,7 @@ namespace com.spacepuppy.Utils
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float FrameRectifyLerpT(float t, float deltaTime, float targetFrameTime = 0.02f)
         {
-            return (float)Math.Pow(t, deltaTime / targetFrameTime);
+            return (float)(1d - Math.Pow(1d - t, deltaTime / targetFrameTime));
         }
 
         #endregion

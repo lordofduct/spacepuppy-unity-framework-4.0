@@ -160,7 +160,10 @@ namespace com.spacepuppy
             public void Update()
             {
                 GameLoop.LateUpdatePump.Remove(this);
-                target.OnLateStartOrEnable();
+                if (target.enabled)
+                {
+                    target.OnLateStartOrEnable();
+                }
             }
 
         }

@@ -34,6 +34,7 @@ namespace com.spacepuppy.UI
                 }
             }
         }
+        public EventHandlerRef<TempEventArgs> OnSubmit_ref() => EventHandlerRef<TempEventArgs>.Create(this, (o, l) => o.OnSubmit += l, (o, l) => o.OnSubmit -= l);
 
         #region Fields
 
@@ -104,6 +105,70 @@ namespace com.spacepuppy.UI
 #if SP_TMPRO
                     case TMPro.TMP_InputField tmpif:
                         tmpif.caretPosition = value;
+                        break;
+#endif
+                }
+            }
+        }
+
+        public int selectionAnchorPosition
+        {
+            get
+            {
+                switch (StringUtil.GetAsTextBindingTarget(_target, false))
+                {
+                    case UnityEngine.UI.InputField uif:
+                        return uif.selectionAnchorPosition;
+#if SP_TMPRO
+                    case TMPro.TMP_InputField tmpif:
+                        return tmpif.selectionAnchorPosition;
+#endif
+                    default:
+                        return -1;
+                }
+            }
+            set
+            {
+                switch (StringUtil.GetAsTextBindingTarget(_target, false))
+                {
+                    case UnityEngine.UI.InputField uif:
+                        uif.selectionAnchorPosition = value;
+                        break;
+#if SP_TMPRO
+                    case TMPro.TMP_InputField tmpif:
+                        tmpif.selectionAnchorPosition = value;
+                        break;
+#endif
+                }
+            }
+        }
+
+        public bool targetEnabled
+        {
+            get
+            {
+                switch (StringUtil.GetAsTextBindingTarget(_target, false))
+                {
+                    case UnityEngine.UI.InputField uif:
+                        return uif.enabled;
+#if SP_TMPRO
+                    case TMPro.TMP_InputField tmpif:
+                        return tmpif.enabled;
+#endif
+                    default:
+                        return false;
+                }
+            }
+            set
+            {
+                switch (StringUtil.GetAsTextBindingTarget(_target, false))
+                {
+                    case UnityEngine.UI.InputField uif:
+                        uif.enabled = value;
+                        break;
+#if SP_TMPRO
+                    case TMPro.TMP_InputField tmpif:
+                        tmpif.enabled = value;
                         break;
 #endif
                 }

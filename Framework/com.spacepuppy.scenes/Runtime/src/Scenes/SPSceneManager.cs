@@ -64,6 +64,12 @@ namespace com.spacepuppy.Scenes
 
         #endregion
 
+        #region Properties
+
+        protected IReadOnlyCollection<LoadSceneOptions> ActiveLoadOptions => _implementation.ActivateLoadOptions;
+
+        #endregion
+
         #region ISceneManager Interface
 
         public event System.EventHandler<LoadSceneOptions> BeforeSceneLoaded
@@ -186,6 +192,8 @@ namespace com.spacepuppy.Scenes
             set => _owner = value;
         }
 
+        public IReadOnlyCollection<LoadSceneOptions> ActivateLoadOptions => _activeLoadOptions;
+
         public virtual bool DispatchGlobalHandlerMessages => true;
 
         #endregion
@@ -248,12 +256,17 @@ namespace com.spacepuppy.Scenes
                     options.BeforeSceneLoadCalled += _sceneLoadOptionsBeforeLoadSceneCalledCallback;
                     options.Complete += _sceneLoadOptionsCompleteCallback;
                     this.OnBeganLoad(options);
-                    options.Begin(_owner);
+                    this.SignalBeginOnOptions(options);
                 }
             }
         }
 
-        public AsyncWaitHandle UnloadScene(Scene scene)
+        protected virtual void SignalBeginOnOptions(LoadSceneOptions options)
+        {
+            options?.Begin(_owner);
+        }
+
+        public virtual AsyncWaitHandle UnloadScene(Scene scene)
         {
             if (_disposed) return default;
             this.OnBeforeSceneUnloaded(scene);

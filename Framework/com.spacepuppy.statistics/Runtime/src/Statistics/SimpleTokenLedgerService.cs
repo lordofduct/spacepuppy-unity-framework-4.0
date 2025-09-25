@@ -65,7 +65,7 @@ namespace com.spacepuppy.Statistics
 
         private void _ledger_Changed(object sender, LedgerChangedEventArgs ev)
         {
-            this.OnLedgerChanged();
+            this.OnLedgerChanged(ev);
             if (this.SignalTokenLedgerChanged)
             {
                 _onChangedMessageSettings.Send<IStatisticsTokenLedgerChangedHandler, System.ValueTuple<SimpleTokenLedgerService, LedgerChangedEventArgs>>(this.gameObject, (this, ev), (o, a) => o.OnChanged(a.Item1, a.Item2));
@@ -73,7 +73,7 @@ namespace com.spacepuppy.Statistics
             }
         }
 
-        protected virtual void OnLedgerChanged()
+        protected virtual void OnLedgerChanged(LedgerChangedEventArgs ev)
         {
 
         }

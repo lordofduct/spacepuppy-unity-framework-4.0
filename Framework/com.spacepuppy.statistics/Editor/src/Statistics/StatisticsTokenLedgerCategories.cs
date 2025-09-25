@@ -33,7 +33,8 @@ namespace com.spacepuppyeditor.Statistics
                         _entries = e.ToArray();
                         break;
                     case System.Type tp:
-                        _entries = tp.IsEnum ? System.Enum.GetNames(tp) : new string[] { tp.Name };
+                        //_entries = tp.IsEnum ? System.Enum.GetNames(tp) : new string[] { tp.Name };
+                        _entries = tp.IsEnum ? EnumUtil.GetEnumData(tp).Select(o => o.Descriptor()).ToArray() : new string[] { tp.Name };
                         break;
                     case System.Delegate d:
                         try

@@ -360,7 +360,7 @@ namespace com.spacepuppy.Utils
         {
             if (!enumType.IsEnum) throw new System.ArgumentException("Type must be an enum.", "enumType");
 
-            return enumType.GetFields(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public).OrderBy(fi => fi.GetValue(null)).Select(fi =>
+            return enumType.GetFields(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic).OrderBy(fi => fi.GetValue(null)).Select(fi =>
             {
                 var desc = fi.GetCustomAttributes(typeof(System.ComponentModel.DescriptionAttribute), false).FirstOrDefault() as System.ComponentModel.DescriptionAttribute;
                 return desc != null ? desc.Description : StringUtil.NicifyVariableName(fi.Name);
@@ -371,7 +371,7 @@ namespace com.spacepuppy.Utils
         {
             if (!enumType.IsEnum) throw new System.ArgumentException("Type must be an enum.", "enumType");
 
-            return enumType.GetFields(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public).OrderBy(fi => fi.GetValue(null)).Select(fi =>
+            return enumType.GetFields(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic).OrderBy(fi => fi.GetValue(null)).Select(fi =>
             {
                 var desc = fi.GetCustomAttributes(typeof(System.ComponentModel.DescriptionAttribute), false).FirstOrDefault() as System.ComponentModel.DescriptionAttribute;
                 return new KeyValuePair<System.Enum, string>((System.Enum)fi.GetValue(null), desc != null ? desc.Description : StringUtil.NicifyVariableName(fi.Name));
@@ -380,7 +380,7 @@ namespace com.spacepuppy.Utils
 
         public static IEnumerable<KeyValuePair<T, string>> GetFriendlyNamePairs<T>() where T : struct, System.Enum
         {
-            return typeof(T).GetFields(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public).OrderBy(fi => fi.GetValue(null)).Select(fi =>
+            return typeof(T).GetFields(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic).OrderBy(fi => fi.GetValue(null)).Select(fi =>
             {
                 var desc = fi.GetCustomAttributes(typeof(System.ComponentModel.DescriptionAttribute), false).FirstOrDefault() as System.ComponentModel.DescriptionAttribute;
                 return new KeyValuePair<T, string>((T)fi.GetValue(null), desc != null ? desc.Description : StringUtil.NicifyVariableName(fi.Name));
@@ -398,6 +398,101 @@ namespace com.spacepuppy.Utils
 
             var desc = fi.GetCustomAttributes(typeof(System.ComponentModel.DescriptionAttribute), false).FirstOrDefault() as System.ComponentModel.DescriptionAttribute;
             return desc != null ? desc.Description : StringUtil.NicifyVariableName(nm);
+        }
+
+        public static IEnumerable<EnumData> GetEnumData(System.Type enumType)
+        {
+            if (!enumType.IsEnum) throw new System.ArgumentException("Type must be an enum.", "enumType");
+
+            return enumType.GetFields(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic).OrderBy(fi => fi.GetValue(null)).Select(fi =>
+            {
+                var desc = fi.GetCustomAttributes(typeof(System.ComponentModel.DescriptionAttribute), false).FirstOrDefault() as System.ComponentModel.DescriptionAttribute;
+                return new EnumData()
+                {
+                    value = (System.Enum)fi.GetValue(null),
+                    name = fi.Name,
+                    description = desc?.Description,
+                };
+            });
+        }
+        public static IEnumerable<EnumData<T>> GetEnumData<T>() where T : struct, System.Enum
+        {
+            return typeof(T).GetFields(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic).OrderBy(fi => fi.GetValue(null)).Select(fi =>
+            {
+                var desc = fi.GetCustomAttributes(typeof(System.ComponentModel.DescriptionAttribute), false).FirstOrDefault() as System.ComponentModel.DescriptionAttribute;
+                return new EnumData<T>()
+                {
+                    value = (T)fi.GetValue(null),
+                    name = fi.Name,
+                    description = desc?.Description,
+                };
+            });
+        }
+
+        public static EnumData GetEnumData(System.Enum enumValue)
+        {
+            if (enumValue == null) throw new ArgumentNullException(nameof(enumValue));
+
+            //this looks slow, but technically the System.Enum.GetName method does a similar long long search as well
+            var enumType = enumValue.GetType();
+            var value = ConvertUtil.ToULong(enumValue);
+            var field = enumType.GetFields(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic).FirstOrDefault(fi =>
+            {
+                return ConvertUtil.ToULong(fi.GetValue(null)) == value;
+            });
+            if (field == null) return new()
+            {
+                value = enumValue,
+            };
+
+            var desc = field.GetCustomAttributes(typeof(System.ComponentModel.DescriptionAttribute), false).FirstOrDefault() as System.ComponentModel.DescriptionAttribute;
+            return new()
+            {
+                value = enumValue,
+                name = field.Name,
+                description = desc?.Description,
+            };
+        }
+        public static EnumData<T> GetEnumData<T>(T enumValue) where T : struct, System.Enum
+        {
+            //this looks slow, but technically the System.Enum.GetName method does a similar long long search as well
+            var enumType = enumValue.GetType();
+            var value = ConvertUtil.ToULong(enumValue);
+            var field = enumType.GetFields(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic).FirstOrDefault(fi =>
+            {
+                return ConvertUtil.ToULong(fi.GetValue(null)) == value;
+            });
+            if (field == null) return new()
+            {
+                value = enumValue,
+            };
+
+            var desc = field.GetCustomAttributes(typeof(System.ComponentModel.DescriptionAttribute), false).FirstOrDefault() as System.ComponentModel.DescriptionAttribute;
+            return new()
+            {
+                value = enumValue,
+                name = field.Name,
+                description = desc?.Description,
+            };
+        }
+
+        public struct EnumData
+        {
+            public System.Enum value;
+            public string name;
+            public string description;
+
+            public string Nicify() => string.IsNullOrEmpty(description) ? StringUtil.NicifyVariableName(name) : description;
+            public string Descriptor() => string.IsNullOrEmpty(description) ? name : description;
+        }
+        public struct EnumData<T> where T : struct, System.Enum
+        {
+            public T value;
+            public string name;
+            public string description;
+
+            public string Nicify() => string.IsNullOrEmpty(description) ? StringUtil.NicifyVariableName(name) : description;
+            public string Descriptor() => string.IsNullOrEmpty(description) ? name : description;
         }
 
     }

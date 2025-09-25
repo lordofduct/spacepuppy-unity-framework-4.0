@@ -57,6 +57,7 @@ namespace com.spacepuppy.Statistics
             this.MetaData = metadata;
         }
 
+        public bool IsEmpty => string.IsNullOrEmpty(Category) && string.IsNullOrEmpty(Token) && string.IsNullOrEmpty(MetaData);
 
         public LedgerStatData CreateData(double? value)
         {

@@ -94,7 +94,7 @@ namespace com.spacepuppy.UI
                 {
                     int v = _onSelectionStateChanged.ActivationToken;
                     this.EvaluateCurrentStateAndSync(false);
-                    if (v != _onSelectionStateChanged.ActivationToken && _onSelectionStateChanged.HasReceivers) _onSelectionStateChanged.ActivateTrigger(this, null);
+                    if (v == _onSelectionStateChanged.ActivationToken && _onSelectionStateChanged.HasReceivers) _onSelectionStateChanged.ActivateTrigger(this, null);
                 }
             }
         }

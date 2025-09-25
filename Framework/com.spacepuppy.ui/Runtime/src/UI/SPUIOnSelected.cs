@@ -152,8 +152,9 @@ namespace com.spacepuppy.UI
         #endregion
 
 #if UNITY_EDITOR
-        void OnValidate()
+        protected override void OnValidate()
         {
+            base.OnValidate();
             if (Application.isPlaying)
             {
                 this.SyncMessageHandler();

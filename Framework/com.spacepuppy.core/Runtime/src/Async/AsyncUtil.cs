@@ -84,37 +84,7 @@ namespace com.spacepuppy.Async
             return new AsyncWaitHandle(AsyncOperationAsyncWaitHandleProvider.Default, op).AsTask();
         }
 
-        /// <summary>
-        /// Returns a SemaphoreSlim that upon calling 'Dispose' will release all waiting threads and return it to a cache pool for reuse.
-        /// This semaphore always starts with a CurrentCount of 0 and is intended for very simple semaphore/wait scenarios.
-        /// </summary>
-        /// <returns></returns>
-        public static SemaphoreSlim GetTempSemaphore()
-        {
-            return _semaphores.GetInstance();
-        }
-
         #region Special Types
-
-        private static readonly ObjectCachePool<ReusableSemaphore> _semaphores = new ObjectCachePool<ReusableSemaphore>(-1);
-
-        private class ReusableSemaphore : SemaphoreSlim
-        {
-
-            public ReusableSemaphore() : base(0)
-            {
-
-            }
-
-            protected override void Dispose(bool disposing)
-            {
-                this.Release();
-                if (!_semaphores.Release(this))
-                {
-                    base.Dispose();
-                }
-            }
-        }
 
         private class TaskAsyncWaitHandleProvider<T> : IAsyncWaitHandleProvider<T>
         {
@@ -268,22 +238,22 @@ namespace com.spacepuppy.Async
                 {
                     if (GameLoop.InvokeRequired)
                     {
-                        var s = AsyncUtil.GetTempSemaphore();
+                        var signal = new TaskCompletionSource<bool>();
                         GameLoop.UpdateHandle.BeginInvoke(() =>
                         {
                             if (op.isDone)
                             {
-                                s.Dispose();
+                                signal.SetResult(true);
                             }
                             else
                             {
                                 op.completed += (o) =>
                                 {
-                                    s.Dispose();
+                                    signal.SetResult(true);
                                 };
                             }
                         });
-                        return s.WaitAsync();
+                        return signal.Task;
                     }
                     else if (op.isDone)
                     {
@@ -291,12 +261,12 @@ namespace com.spacepuppy.Async
                     }
                     else
                     {
-                        var s = AsyncUtil.GetTempSemaphore();
+                        var signal = new TaskCompletionSource<bool>();
                         op.completed += (o) =>
                         {
-                            s.Dispose();
+                            signal.SetResult(true);
                         };
-                        return s.WaitAsync();
+                        return signal.Task;
                     }
                 }
                 else

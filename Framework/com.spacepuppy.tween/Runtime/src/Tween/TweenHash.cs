@@ -199,14 +199,12 @@ namespace com.spacepuppy.Tween
             tween.WrapCount = _wrapCount;
             tween.Reverse = _reverse;
             tween.Delay = _delay;
-            if (_onStep != null) tween.OnStep += _onStep;
-            if (_onWrap != null) tween.OnWrap += _onWrap;
-            if (_onFinish != null) tween.OnFinish += _onFinish;
-            if (_onStopped != null) tween.OnStopped += _onStopped;
 
             if (_prevNode != null)
             {
                 var seq = new TweenSequence(tween.Id);
+                seq.UpdateType = _updateType;
+                seq.TimeSupplier = _timeSupplier;
                 seq.Tweens.Add(tween);
 
                 var node = _prevNode;
@@ -218,6 +216,11 @@ namespace com.spacepuppy.Tween
 
                 tween = seq;
             }
+
+            if (_onStep != null) tween.OnStep += _onStep;
+            if (_onWrap != null) tween.OnWrap += _onWrap;
+            if (_onFinish != null) tween.OnFinish += _onFinish;
+            if (_onStopped != null) tween.OnStopped += _onStopped;
 
             return tween;
         }

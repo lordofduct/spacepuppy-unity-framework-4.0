@@ -325,7 +325,8 @@ namespace com.spacepuppyeditor
 
             private void SetValue(string key, object value)
             {
-                var sval = StringUtil.ToLower(ConvertUtil.ToString(value));
+                //var sval = StringUtil.ToLower(ConvertUtil.ToString(value));
+                var sval = ConvertUtil.ToString(value);
 
                 var xel = (from x in _xdoc.Root.Elements(NODE_NAME) where x.Attribute("id").Value == key select x).FirstOrDefault();
                 if (xel == null)

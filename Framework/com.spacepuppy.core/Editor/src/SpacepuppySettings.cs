@@ -8,6 +8,8 @@ namespace com.spacepuppyeditor
     public static class SpacepuppySettings
     {
 
+
+        private const string SETTING_LOCALUSERID = "Spaceuppy.LocalUserId";
         private const string SETTING_STORESETTINGSLOCAL_OLD = "Spacepuppy.StoreSettingsLocal";
         private const string SETTING_SETTINGSLOCATION = "Spacepuppy.SettingsLocation";
 
@@ -25,6 +27,17 @@ namespace com.spacepuppyeditor
         private const string SETTING_MODELIMPORT_SETANIMSETTINGS = "ModelImportManager.SetAnimationSettings";
         private const string SETTING_MODELIMPORT_ANIMRIGTYPE = "ModelImportManager.AnimRigType";
 
+        public static string LocalUserId
+        {
+            get
+            {
+                return EditorProjectPrefs.LocalProject.GetString(SETTING_LOCALUSERID, string.Empty);
+            }
+            set
+            {
+                EditorProjectPrefs.LocalProject.SetString(SETTING_LOCALUSERID, value);
+            }
+        }
 
         public static bool StoreSettingsLocal
         {

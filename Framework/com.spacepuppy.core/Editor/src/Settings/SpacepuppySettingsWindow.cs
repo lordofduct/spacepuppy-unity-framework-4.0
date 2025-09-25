@@ -81,6 +81,10 @@ namespace com.spacepuppyeditor.Settings
             EditorGUILayout.Space();
 
             EditorGUI.BeginChangeCheck();
+            string localUserId = EditorGUILayout.DelayedTextField("Local UserId", SpacepuppySettings.LocalUserId);
+            if (EditorGUI.EndChangeCheck()) SpacepuppySettings.LocalUserId = localUserId;
+
+            EditorGUI.BeginChangeCheck();
             bool storeLocal = EditorGUILayout.ToggleLeft("Store As User Settings", SpacepuppySettings.StoreSettingsLocal);
             if (EditorGUI.EndChangeCheck()) SpacepuppySettings.StoreSettingsLocal = storeLocal;
 

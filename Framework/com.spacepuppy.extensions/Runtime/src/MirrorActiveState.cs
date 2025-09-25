@@ -3,7 +3,7 @@ using UnityEngine;
 namespace com.spacepuppy
 {
 
-    [Infobox("Sets target to the same active/enabled state as this during the enable/disable events.\r\n\r\nNote - this doesn't start syncing until the first time it has been enabled, the Sync method can be called to premptively sync it.")]
+    [Infobox("Sets targets to the same active/enabled state as this during the enable/disable events.\r\n\r\nNote - this doesn't start syncing until the first time it has been enabled, the Sync method can be called to premptively sync it.")]
     public class MirrorActiveState : SPComponent
     {
 

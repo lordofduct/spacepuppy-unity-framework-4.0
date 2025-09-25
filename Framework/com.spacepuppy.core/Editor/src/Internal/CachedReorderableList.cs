@@ -42,6 +42,8 @@ namespace com.spacepuppyeditor.Internal
 
         public System.Action<ReorderableList> onClearContextMenu { get; set; } = null;
 
+        public System.Func<GenericMenu> contextMenuFactoryMethod { get; set; } = null;
+
         #endregion
 
         #region Methods
@@ -76,73 +78,79 @@ namespace com.spacepuppyeditor.Internal
             {
                 Event.current.Use();
 
-                var menu = new GenericMenu();
-
-                if (this.serializedProperty != null)
-                {
-                    menu.AddItem(new GUIContent("Copy Property Path"), false, () =>
-                    {
-                        GUIUtility.systemCopyBuffer = this.serializedProperty?.propertyPath;
-                    });
-                    menu.AddSeparator("");
-                }
-
-#if UNITY_2022_2_OR_NEWER
-                if (this.serializedProperty != null)
-                {
-                    menu.AddItem(new GUIContent("Copy"), false, () =>
-                    {
-                        GUIUtility.systemCopyBuffer = CopyPasteJsonEmulator.Stringify(this.serializedProperty);
-                    });
-                    if (CopyPasteJsonEmulator.Validate(this.serializedProperty.propertyType, GUIUtility.systemCopyBuffer))
-                    {
-                        menu.AddItem(new GUIContent("Paste"), false, () =>
-                        {
-                            if (CopyPasteJsonEmulator.TryPaste(GUIUtility.systemCopyBuffer, this.serializedProperty))
-                            {
-                                this.serializedProperty.isExpanded = true;
-                            }
-                        });
-                    }
-                    else
-                    {
-                        menu.AddDisabledItem(new GUIContent("Paste"));
-                    }
-                    menu.AddSeparator("");
-                }
-#endif
-
-                if (this.onClearContextMenu != null)
-                {
-                    var lst = this.list;
-                    menu.AddItem(new GUIContent("Clear"), false, () =>
-                    {
-                        onClearContextMenu?.Invoke(this);
-                    });
-                }
-                else if (this.serializedProperty != null)
-                {
-                    var prop = this.serializedProperty;
-                    menu.AddItem(new GUIContent("Clear"), false, () =>
-                    {
-                        prop.serializedObject.Update();
-                        prop.arraySize = 0;
-                        prop.serializedObject.ApplyModifiedProperties();
-                        this.index = -1;
-                    });
-                }
-                else if (this.list != null)
-                {
-                    var lst = this.list;
-                    menu.AddItem(new GUIContent("Clear"), false, () =>
-                    {
-                        lst.Clear();
-                        this.index = -1;
-                    });
-                }
-
+                var menu = this.contextMenuFactoryMethod?.Invoke() ?? this.CreateCommonContextMenu();
                 menu.ShowAsContext();
             }
+        }
+
+        public GenericMenu CreateCommonContextMenu()
+        {
+            var menu = new GenericMenu();
+
+            if (this.serializedProperty != null)
+            {
+                menu.AddItem(new GUIContent("Copy Property Path"), false, () =>
+                {
+                    GUIUtility.systemCopyBuffer = this.serializedProperty?.propertyPath;
+                });
+                menu.AddSeparator("");
+            }
+
+#if UNITY_2022_2_OR_NEWER
+            if (this.serializedProperty != null)
+            {
+                menu.AddItem(new GUIContent("Copy"), false, () =>
+                {
+                    GUIUtility.systemCopyBuffer = CopyPasteJsonEmulator.Stringify(this.serializedProperty);
+                });
+                if (CopyPasteJsonEmulator.Validate(this.serializedProperty.propertyType, GUIUtility.systemCopyBuffer))
+                {
+                    menu.AddItem(new GUIContent("Paste"), false, () =>
+                    {
+                        if (CopyPasteJsonEmulator.TryPaste(GUIUtility.systemCopyBuffer, this.serializedProperty))
+                        {
+                            this.serializedProperty.isExpanded = true;
+                        }
+                    });
+                }
+                else
+                {
+                    menu.AddDisabledItem(new GUIContent("Paste"));
+                }
+                menu.AddSeparator("");
+            }
+#endif
+
+            if (this.onClearContextMenu != null)
+            {
+                var lst = this.list;
+                menu.AddItem(new GUIContent("Clear"), false, () =>
+                {
+                    onClearContextMenu?.Invoke(this);
+                });
+            }
+            else if (this.serializedProperty != null)
+            {
+                var prop = this.serializedProperty;
+                menu.AddItem(new GUIContent("Clear"), false, () =>
+                {
+                    prop.serializedObject.Update();
+                    prop.arraySize = 0;
+                    prop.serializedObject.ApplyModifiedProperties();
+                    this.index = -1;
+                });
+            }
+            else if (this.list != null)
+            {
+                var lst = this.list;
+                menu.AddItem(new GUIContent("Clear"), false, () =>
+                {
+                    lst.Clear();
+                    this.index = -1;
+                });
+            }
+
+            return menu;
         }
 
         #endregion

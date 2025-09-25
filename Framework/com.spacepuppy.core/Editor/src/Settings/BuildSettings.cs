@@ -1,17 +1,18 @@
 ﻿#pragma warning disable 0649 // variable declared but not used.
 using UnityEngine;
 using UnityEditor;
+using UnityEditor.Compilation;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
+using System.Threading.Tasks;
 
 using com.spacepuppy;
 using com.spacepuppy.Collections;
 using com.spacepuppy.Utils;
-using System.Threading.Tasks;
-using UnityEngine.UI;
-using UnityEditor.Compilation;
+
 using com.spacepuppyeditor.Internal;
+using UnityEditor.SearchService;
 
 namespace com.spacepuppyeditor.Settings
 {
@@ -697,7 +698,7 @@ namespace com.spacepuppyeditor.Settings
 
         #region Fields
 
-        private com.spacepuppyeditor.Core.ReorderableArrayPropertyDrawer _scenesDrawer = new com.spacepuppyeditor.Core.ReorderableArrayPropertyDrawer(typeof(SceneAsset));
+        private SceneArrayPropertyDrawer _scenesDrawer = new();
         private UnityEditorInternal.ReorderableList _symbolsListDrawer;
 
         #endregion
@@ -897,6 +898,43 @@ namespace com.spacepuppyeditor.Settings
                 lst.Add(new EditorBuildSettingsScene(sc, true));
             }
             EditorBuildSettings.scenes = lst.ToArray();
+        }
+
+        #endregion
+
+        #region Special Types
+
+        class SceneArrayPropertyDrawer : com.spacepuppyeditor.Core.ReorderableArrayPropertyDrawer
+        {
+
+            public SceneArrayPropertyDrawer() : base(typeof(SceneAsset))
+            {
+
+            }
+
+            protected override CachedReorderableList GetList(SerializedProperty property, GUIContent label)
+            {
+                var lst = base.GetList(property, label);
+                lst.contextMenuFactoryMethod = () =>
+                {
+                    var menu = lst.CreateCommonContextMenu();
+                    menu.AddItem(new GUIContent("Copy Scenes From Global"), false, () =>
+                    {
+                        var scenes = EditorBuildSettings.scenes;
+                        int cnt = scenes?.Length ?? 0;
+                        property.arraySize = cnt;
+                        for (int i = 0; i < cnt; i++)
+                        {
+                            property.GetArrayElementAtIndex(i).objectReferenceValue = AssetDatabase.LoadAssetAtPath<SceneAsset>(scenes[i].path);
+                        }
+                        property.serializedObject.ApplyModifiedProperties();
+                        lst.index = -1;
+                    });
+                    return menu;
+                };
+                return lst;
+            }
+
         }
 
         #endregion

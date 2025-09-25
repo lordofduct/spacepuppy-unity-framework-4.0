@@ -581,7 +581,10 @@ namespace com.spacepuppyeditor.Windows
                     return new AssetInfo() { guid = s, path = spath, type = AssetDatabase.GetMainAssetTypeAtPath(spath) };
                 }));
             }
-            static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths) => InitializeDatabase();
+            static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
+            {
+                InitializeDatabase();
+            }
 
             public static IEnumerable<AssetInfo> GetAssetInfos() => _assets;
 
@@ -594,15 +597,22 @@ namespace com.spacepuppyeditor.Windows
             public System.Type type;
             private System.Type[] _alternativeTypes;
 
+            /// <summary>
+            /// Returns list of component types of asset if its a Prefab/GameObject.
+            /// </summary>
+            /// <returns></returns>
             public IEnumerable<System.Type> GetAlternativeTypes() => _alternativeTypes != null ? _alternativeTypes : this.SyncAltTypes();
 
             public bool SupportsType(System.Type tp)
             {
                 if (TypeUtil.IsType(type, tp)) return true;
 
-                foreach (var alt in this.GetAlternativeTypes())
+                if (ComponentUtil.IsComponentType(tp) || tp.IsInterface)
                 {
-                    if (TypeUtil.IsType(alt, tp)) return true;
+                    foreach (var alt in this.GetAlternativeTypes())
+                    {
+                        if (TypeUtil.IsType(alt, tp)) return true;
+                    }
                 }
 
                 return false;

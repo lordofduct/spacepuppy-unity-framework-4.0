@@ -23,6 +23,8 @@ namespace com.spacepuppy.Render
 
         [System.NonSerialized()]
         private bool _unique;
+        [System.NonSerialized]
+        private Material _uniqueMaterial;
 
         #endregion
 
@@ -53,9 +55,9 @@ namespace com.spacepuppy.Render
         {
             base.OnDestroy();
 
-            if (_unique)
+            if (_uniqueMaterial)
             {
-                UnityEngine.Object.Destroy(this.Material);
+                UnityEngine.Object.Destroy(_uniqueMaterial);
             }
         }
 
@@ -88,14 +90,6 @@ namespace com.spacepuppy.Render
                     case MaterialSourceUniquessModes.UseSharedMaterial:
                         return _graphics.material ?? _graphics.defaultMaterial;
                     case MaterialSourceUniquessModes.MakeUniqueOnStart:
-                        if (!this.started)
-                        {
-                            return this.GetUniqueMaterial();
-                        }
-                        else
-                        {
-                            return _graphics.material ?? _graphics.defaultMaterial;
-                        }
                     case MaterialSourceUniquessModes.MakeUniqueOnAccess:
                         return this.GetUniqueMaterial();
                 }
@@ -103,6 +97,8 @@ namespace com.spacepuppy.Render
             }
             set
             {
+                //note this doesn't necessarily destroy any 'unique material'. That material is preserved until the next time
+                //'Material getter' or 'GetUniqueMaterial' is accessed or this is destroyed just in case the user is in the middle of configuring
                 if (_graphics) _graphics.material = value;
             }
         }
@@ -129,12 +125,13 @@ namespace com.spacepuppy.Render
             if (!_graphics) return null;
 
             var mat = _graphics.material ?? _graphics.defaultMaterial;
-            if (_unique) return mat;
+            if (_uniqueMaterial == mat) return _uniqueMaterial; //if it already exists, return it
 
+            if (_uniqueMaterial) Destroy(_uniqueMaterial); //if this exists that means something else change the material of the Grahics and so we should destroy the old one since it's no longer used
             _unique = true;
-            mat = new Material(mat);
-            _graphics.material = mat;
-            return mat;
+            _uniqueMaterial = new Material(mat);
+            _graphics.material = _uniqueMaterial;
+            return _uniqueMaterial;
         }
 
         #endregion

@@ -161,7 +161,9 @@ namespace com.spacepuppyeditor
                                 value = SPEditorGUILayout.DefaultPropertyField(info.Label, value, DynamicUtil.GetReturnType(info.MemberInfo));
                                 if (EditorGUI.EndChangeCheck() && !info.Attrib.Readonly)
                                 {
+                                    Undo.RecordObject(this.target, $"Modified Read-Write Property: {info.MemberInfo.Name}");
                                     DynamicUtil.SetValue(this.target, info.MemberInfo, value);
+                                    EditorUtility.SetDirty(this.target);
                                 }
 
                                 cache.Reset();
@@ -206,7 +208,9 @@ namespace com.spacepuppyeditor
                                     value = SPEditorGUILayout.DefaultPropertyField(info.Label, value, DynamicUtil.GetReturnType(info.MemberInfo));
                                     if (EditorGUI.EndChangeCheck() && !info.Attrib.Readonly)
                                     {
+                                        Undo.RecordObject(this.target, $"Modified Read-Write Property: {info.MemberInfo.Name}");
                                         DynamicUtil.SetValue(this.target, info.MemberInfo, value);
+                                        EditorUtility.SetDirty(this.target);
                                     }
 
                                     cache.Reset();

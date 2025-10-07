@@ -52,8 +52,12 @@ namespace com.spacepuppy.Collections
             get
             {
                 if (index < 0 || index >= _count) throw new IndexOutOfRangeException();
-
                 return _buffer[(_rear + index) % _buffer.Length];
+            }
+            set
+            {
+                if (index < 0 || index >= _count) throw new IndexOutOfRangeException();
+                _buffer[(_rear + index) % _buffer.Length] = value;
             }
         }
 
@@ -171,10 +175,10 @@ namespace com.spacepuppy.Collections
         public void Shift(T item)
         {
             int index = _rear - 1;
-            if (_rear < 0) _rear += _buffer.Length;
+            if (index < 0) index += _buffer.Length;
             _buffer[index] = item;
             _rear = index;
-            if(_count < _buffer.Length)
+            if (_count < _buffer.Length)
             {
                 _count++;
             }
@@ -193,6 +197,45 @@ namespace com.spacepuppy.Collections
             return result;
         }
 
+        public bool Remove(T item)
+        {
+            int index = this.IndexOf(item);
+            if (index >= 0)
+            {
+                this.RemoveAt(index);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public void RemoveAt(int index)
+        {
+            if (index < 0 || index >= _count) throw new IndexOutOfRangeException();
+
+            if (index == 0)
+            {
+                this.Unshift();
+            }
+            else if (index == _count - 1)
+            {
+                this.Pop();
+            }
+            else if (index > 0 && index < _count)
+            {
+                int cnt = _count;
+                _count = cnt - 1;
+                _buffer[(_rear + index) % _buffer.Length] = default;
+                for (int i = index + 1; i < cnt; i++)
+                {
+                    _buffer[(_rear + i - 1) % _buffer.Length] = _buffer[(_rear + i) % _buffer.Length];
+                }
+                _buffer[(_rear + cnt - 1) % _buffer.Length] = default;
+                _version++;
+            }
+        }
         #endregion
 
         #region ICollection Interface
@@ -202,12 +245,6 @@ namespace com.spacepuppy.Collections
         void ICollection<T>.Add(T item)
         {
             this.Push(item);
-        }
-
-        bool ICollection<T>.Remove(T item)
-        {
-            //not supported
-            return false;
         }
 
         #endregion

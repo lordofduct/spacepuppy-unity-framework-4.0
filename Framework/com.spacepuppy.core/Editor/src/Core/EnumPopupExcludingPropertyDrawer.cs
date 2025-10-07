@@ -22,20 +22,23 @@ namespace com.spacepuppyeditor.Core
                 return;
             }
 
+            EditorGUI.BeginChangeCheck();
             System.Enum evalue = property.GetEnumValue(enumType);
             var attrib = this.attribute as EnumPopupExcludingAttribute;
+            System.Enum value;
             if(attrib != null && attrib.excludedValues != null && attrib.excludedValues.Length > 0)
             {
                 var excludedValues = (from i in attrib.excludedValues select ConvertUtil.ToEnumOfType(enumType, i)).ToArray();
-                //property.enumValueIndex = ConvertUtil.ToInt(SPEditorGUI.EnumPopupExcluding(position, label, evalue, excludedValues));
-                property.SetEnumValue(SPEditorGUI.EnumPopupExcluding(position, label, evalue, excludedValues));
+                value = SPEditorGUI.EnumPopupExcluding(position, label, evalue, excludedValues);
             }
             else
             {
-                //property.enumValueIndex = ConvertUtil.ToInt(EditorGUI.EnumPopup(position, label, evalue));
-                property.SetEnumValue(EditorGUI.EnumPopup(position, label, evalue));
+                value = EditorGUI.EnumPopup(position, label, evalue);
             }
-
+            if (EditorGUI.EndChangeCheck())
+            {
+                property.SetEnumValue(value);
+            }
         }
 
     }

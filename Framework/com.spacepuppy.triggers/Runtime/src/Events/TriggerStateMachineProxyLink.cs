@@ -1,5 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
+
+using com.spacepuppy.Project;
 using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.Events
@@ -11,13 +13,14 @@ namespace com.spacepuppy.Events
 
         #region Fields
 
-        [SerializeField]
-        [ForceFromSelf]
-        private i_TriggerStateMachine _stateMachine;
+        [SerializeField, ForceFromSelf]
+        private InterfaceRef<IStateMachine> _stateMachine = new();
 
-        [SerializeField]
-        [ReorderableArray]
+        [SerializeField, ReorderableArray]
         private List<ProxyLink> _links = new List<ProxyLink>();
+
+        [System.NonSerialized]
+        private MultiTrackedListenerToken _eventTokens;
 
         #endregion
 
@@ -25,10 +28,10 @@ namespace com.spacepuppy.Events
 
         void IMStartOrEnableReceiver.OnStartOrEnable()
         {
-            if (!_stateMachine) _stateMachine = this.GetComponent<i_TriggerStateMachine>();
+            if (_stateMachine.Value == null) _stateMachine.Value = this.GetComponent<IStateMachine>();
             for (int i = 0; i < _links.Count; i++)
             {
-                if (_links[i].Proxy) _links[i].Proxy.OnTriggered += Proxy_OnTriggered;
+                if (_links[i].Proxy) _eventTokens += _links[i].Proxy.OnTriggered_ref().AddTrackedListener(Proxy_OnTriggered);
             }
         }
 
@@ -36,11 +39,20 @@ namespace com.spacepuppy.Events
         {
             base.OnDisable();
 
-            for (int i = 0; i < _links.Count; i++)
-            {
-                if (_links[i].Proxy) _links[i].Proxy.OnTriggered -= Proxy_OnTriggered;
-            }
+            _eventTokens.Dispose();
         }
+
+        #endregion
+
+        #region Properties
+
+        public IStateMachine StateMachine
+        {
+            get => _stateMachine.Value;
+            set => _stateMachine.Value = value;
+        }
+
+        public IReadOnlyList<ProxyLink> Links => _links; //TODO - for now this is read-only so, need to implement a simple way to update listeners at runtime efficiently
 
         #endregion
 
@@ -49,7 +61,7 @@ namespace com.spacepuppy.Events
         private void Proxy_OnTriggered(object sender, TempEventArgs e)
         {
             var m = sender as ProxyMediator;
-            if (m == null || !_stateMachine) return;
+            if (m == null || this.StateMachine.IsNullOrDestroyed()) return;
 
             bool found = false;
             if (this.isActiveAndEnabled)
@@ -59,7 +71,7 @@ namespace com.spacepuppy.Events
                     if (link.Proxy == m)
                     {
                         found = true;
-                        _stateMachine.GoToStateById(link.Id);
+                        this.StateMachine.GoToStateById(link.Id);
                         break;
                     }
                 }

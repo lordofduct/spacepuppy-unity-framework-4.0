@@ -141,6 +141,21 @@ namespace com.spacepuppy.Utils
             return rng.OnUnitCircle() * rng.Next();
         }
 
+        public static UnityEngine.Vector3 InsideUnitBox(this IRandom rng)
+        {
+            return new Vector3(rng.Next() - 0.5f, rng.Next() - 0.5f, rng.Next() - 0.5f);
+        }
+
+        public static UnityEngine.Vector3 InsideBox(this IRandom rng, Vector3 size)
+        {
+            return new Vector3(rng.Next() * size.x - size.x * 0.5f, rng.Next() * size.y - size.y * 0.5f, rng.Next() * size.z - size.z * 0.5f);
+        }
+
+        public static UnityEngine.Vector3 InsideBoxExtents(this IRandom rng, Vector3 extents)
+        {
+            return new Vector3(rng.Next() * extents.x * 2f - extents.x, rng.Next() * extents.y * 2f - extents.y, rng.Next() * extents.z * 2f - extents.z);
+        }
+
         public static UnityEngine.Vector3 AroundAxis(this IRandom rng, Vector3 axis)
         {
             var a = rng.Angle();

@@ -5,8 +5,6 @@ using System.Linq;
 
 using com.spacepuppy;
 using com.spacepuppy.Utils;
-using System.Reflection;
-using com.spacepuppy.Dynamic;
 
 namespace com.spacepuppyeditor.Windows
 {
@@ -292,20 +290,23 @@ namespace com.spacepuppyeditor.Windows
 
             if (string.IsNullOrEmpty(window.CurrentSearch))
             {
-                return _retrieveObjectsCallback().Select(o => new SearchDropDownElement()
-                {
-                    Content = GetLabel(o),
-                    Element = o
-                }).Prepend(new SearchDropDownElement()
-                {
-                    Content = GetLabel(null),
-                    Element = null,
-                });
+                return _retrieveObjectsCallback()
+                    .OrderBy(o => this.TargetType?.IsInstanceOfType(o) ?? false ? 0 : 1).ThenBy(o => o != null ? o.name : string.Empty)
+                    .Select(o => new SearchDropDownElement()
+                    {
+                        Content = GetLabel(o),
+                        Element = o
+                    }).Prepend(new SearchDropDownElement()
+                    {
+                        Content = GetLabel(null),
+                        Element = null,
+                    });
             }
             else
             {
                 return _retrieveObjectsCallback()
                     .Where(o => (o is UnityEngine.Object uo) && uo.name.IndexOf(window.CurrentSearch, 0, System.StringComparison.OrdinalIgnoreCase) >= 0)
+                    .OrderBy(o => this.TargetType?.IsInstanceOfType(o) ?? false ? 0 : 1).ThenBy(o => o != null ? o.name : string.Empty)
                     .Select(o => new SearchDropDownElement()
                     {
                         Content = GetLabel(o),
@@ -366,7 +367,7 @@ namespace com.spacepuppyeditor.Windows
 
         #region Special Object Field
 
-        public static UnityEngine.Object ObjectField(Rect position, GUIContent label, UnityEngine.Object asset, System.Type objType, bool allowSceneObjects, bool allowProxy, System.Func<UnityEngine.Object, bool> filter = null, int maxVisibleCount = DEFAULT_MAXCOUNT)
+        public static UnityEngine.Object ObjectField(Rect position, GUIContent label, UnityEngine.Object asset, System.Type objType, bool allowSceneObjects, bool allowProxy, SearchFilter<UnityEngine.Object> filter = null, int maxVisibleCount = DEFAULT_MAXCOUNT)
         {
             if (objType == null) throw new System.ArgumentNullException(nameof(objType));
             if (!objType.IsInterface && !TypeUtil.IsType(objType, typeof(UnityEngine.Object))) throw new System.ArgumentException("Type must be an interface or UnityEngine.Object", nameof(objType));
@@ -374,7 +375,7 @@ namespace com.spacepuppyeditor.Windows
             return DoObjectField<UnityEngine.Object>(position, label, asset, objType, allowSceneObjects, allowProxy, null, filter, maxVisibleCount);
         }
 
-        public static T ObjectField<T>(Rect position, GUIContent label, SerializedProperty property, bool allowSceneObjects, System.Func<T, bool> filter = null, int maxVisibleCount = DEFAULT_MAXCOUNT) where T : class
+        public static T ObjectField<T>(Rect position, GUIContent label, SerializedProperty property, bool allowSceneObjects, SearchFilter<T> filter = null, int maxVisibleCount = DEFAULT_MAXCOUNT) where T : class
         {
             return DoObjectField<T>(position, label, property.objectReferenceValue as T, typeof(T), allowSceneObjects, false, (o) =>
             {
@@ -384,12 +385,12 @@ namespace com.spacepuppyeditor.Windows
             }, filter, maxVisibleCount);
         }
 
-        public static T ObjectField<T>(Rect position, GUIContent label, T asset, bool allowSceneObjects, System.Func<T, bool> filter = null, int maxVisibleCount = DEFAULT_MAXCOUNT) where T : class
+        public static T ObjectField<T>(Rect position, GUIContent label, T asset, bool allowSceneObjects, SearchFilter<T> filter = null, int maxVisibleCount = DEFAULT_MAXCOUNT) where T : class
         {
             return DoObjectField<T>(position, label, asset, typeof(T), allowSceneObjects, false, null, filter, maxVisibleCount);
         }
 
-        private static T DoObjectField<T>(Rect position, GUIContent label, T asset, System.Type objType, bool allowSceneObjects, bool allowProxy, System.Action<T> dropdownselectedcallback, System.Func<T, bool> filter = null, int maxVisibleCount = DEFAULT_MAXCOUNT) where T : class
+        private static T DoObjectField<T>(Rect position, GUIContent label, T asset, System.Type objType, bool allowSceneObjects, bool allowProxy, System.Action<T> dropdownselectedcallback, SearchFilter<T> filter = null, int maxVisibleCount = DEFAULT_MAXCOUNT) where T : class
         {
             var helper = new GenericSearchDropDownObjectFieldHelper<T>()
             {
@@ -417,38 +418,17 @@ namespace com.spacepuppyeditor.Windows
                             }
                         }
 
-                        IEnumerable<UnityEngine.Object> results = Enumerable.Empty<UnityEngine.Object>();
-                        /*
-                         * This is the slow way of doing it... we changed to this load all assets and leave the array active approach. 
-                         * I don't know the long-term implications of it so I'm leaving both here to easily swap back and forth for testing.
-                         * 
+                        var infos = SpaceuppyAssetDatabase.GetAssetInfos();
                         if (allowProxy)
                         {
-                            results = AssetDatabase.FindAssets("a:assets")
-                                                   .Select(s => ObjUtil.GetAsFromSource(types, AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(s), typeof(UnityEngine.Object))) as UnityEngine.Object)
-                                                   .OrderBy(o => !(objType.IsInstanceOfType(o)))
-                                                   .Where(o => o != null);
+                            infos = infos.Where(o => o.SupportsType(objType) || o.SupportsType(typeof(IProxy)));
                         }
                         else
                         {
-                            results = AssetDatabase.FindAssets("a:assets")
-                                                   .Select(s => ObjUtil.GetAsFromSource(objType, AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(s), typeof(UnityEngine.Object))) as UnityEngine.Object)
-                                                   .Where(o => o != null);
+                            infos = infos.Where(o => o.SupportsType(objType));
                         }
-                        */
-                        if (allowProxy)
-                        {
-                            results = UnsafeLoadedAssets.GetUnsafeLoadedAssets()
-                                                   .Select(o => ObjUtil.GetAsFromSource(types, o) as UnityEngine.Object)
-                                                   .OrderBy(o => !(objType.IsInstanceOfType(o)))
-                                                   .Where(o => o != null);
-                        }
-                        else
-                        {
-                            results = UnsafeLoadedAssets.GetUnsafeLoadedAssets()
-                                                   .Select(o => ObjUtil.GetAsFromSource(objType, o) as UnityEngine.Object)
-                                                   .Where(o => o != null);
-                        }
+
+                        var results = infos.Select(o => o.GetAsset());
 
                         if (sceneresults != null)
                         {
@@ -459,14 +439,43 @@ namespace com.spacepuppyeditor.Windows
                         {
                             if (typeof(T) == typeof(UnityEngine.Object))
                             {
-                                results = results.Where(o => filter(o as T));
+                                //results = results.Where(o =>
+                                //{
+                                //    var ot = o as T;
+                                //    return filter(ref ot);
+                                //});
+                                results = results.Select(o =>
+                                {
+                                    var ot = o as T;
+                                    if (filter(ref ot))
+                                    {
+                                        return ot as UnityEngine.Object;
+                                    }
+                                    else
+                                    {
+                                        return null;
+                                    }
+                                }).Where(o => o != null);
                             }
                             else
                             {
-                                results = (from o in results
-                                           let x = ObjUtil.GetAsFromSource<T>(o)
-                                           where x != null && filter(x)
-                                           select x as UnityEngine.Object);
+                                //results = results.Where(o =>
+                                //{
+                                //    var ot = ObjUtil.GetAsFromSource<T>(o);
+                                //    return ot != null && filter(ref ot);
+                                //});
+                                results = results.Select(o =>
+                                {
+                                    var ot = ObjUtil.GetAsFromSource<T>(o);
+                                    if (filter(ref ot))
+                                    {
+                                        return ot as UnityEngine.Object;
+                                    }
+                                    else
+                                    {
+                                        return null;
+                                    }
+                                }).Where(o => o != null);
                             }
                         }
                         else if (typeof(T) != typeof(UnityEngine.Object))
@@ -498,6 +507,7 @@ namespace com.spacepuppyeditor.Windows
 
         #region UnsafeAssetDatabase
 
+        /*
         class UnsafeLoadedAssets : AssetPostprocessor
         {
             private static int _hash;
@@ -550,7 +560,80 @@ namespace com.spacepuppyeditor.Windows
                 }
             }
         }
+        */
 
+        class SpaceuppyAssetDatabase : AssetPostprocessor
+        {
+            static List<AssetInfo> _assets = new();
+            static System.Threading.CancellationTokenSource _cancellationSource;
+
+            [InitializeOnLoadMethod]
+            static void InitializeDatabase()
+            {
+                _cancellationSource?.Cancel();
+                _cancellationSource = new();
+
+                var token = _cancellationSource.Token;
+                _assets.Clear();
+                _assets.AddRange(AssetDatabase.FindAssets("a:assets").Select(s =>
+                {
+                    var spath = AssetDatabase.GUIDToAssetPath(s);
+                    return new AssetInfo() { guid = s, path = spath, type = AssetDatabase.GetMainAssetTypeAtPath(spath) };
+                }));
+            }
+            static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
+            {
+                InitializeDatabase();
+            }
+
+            public static IEnumerable<AssetInfo> GetAssetInfos() => _assets;
+
+        }
+
+        class AssetInfo
+        {
+            public string guid;
+            public string path;
+            public System.Type type;
+            private System.Type[] _alternativeTypes;
+
+            /// <summary>
+            /// Returns list of component types of asset if its a Prefab/GameObject.
+            /// </summary>
+            /// <returns></returns>
+            public IEnumerable<System.Type> GetAlternativeTypes() => _alternativeTypes != null ? _alternativeTypes : this.SyncAltTypes();
+
+            public bool SupportsType(System.Type tp)
+            {
+                if (TypeUtil.IsType(type, tp)) return true;
+
+                if (ComponentUtil.IsComponentType(tp) || tp.IsInterface)
+                {
+                    foreach (var alt in this.GetAlternativeTypes())
+                    {
+                        if (TypeUtil.IsType(alt, tp)) return true;
+                    }
+                }
+
+                return false;
+            }
+
+            System.Type[] SyncAltTypes()
+            {
+                if (type == typeof(GameObject) && (path?.EndsWith(".prefab") ?? false))
+                {
+                    var asset = this.GetAsset() as GameObject;
+                    _alternativeTypes = asset ? asset.GetComponents().Select(o => o.GetType()).ToArray() : ArrayUtil.Empty<System.Type>();
+                }
+                else
+                {
+                    _alternativeTypes = ArrayUtil.Empty<System.Type>();
+                }
+                return _alternativeTypes;
+            }
+
+            public UnityEngine.Object GetAsset() => !string.IsNullOrEmpty(path) ? AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path) : null;
+        }
 
         #endregion
 

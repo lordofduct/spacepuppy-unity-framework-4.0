@@ -36,7 +36,7 @@ namespace com.spacepuppy.Events
 
     }
 
-    public abstract class AutoTriggerable : Triggerable
+    public abstract class AutoTriggerable : Triggerable, IMActivateOnReceiver
     {
 
         #region Fields
@@ -48,50 +48,10 @@ namespace com.spacepuppy.Events
 
         #region CONSTRUCTOR
 
-        protected override void Awake()
+        public AutoTriggerable() { }
+        public AutoTriggerable(ActivateEvent defaultActiveOn)
         {
-            base.Awake();
-
-            if ((_activateOn & ActivateEvent.Awake) != 0)
-            {
-                this.Trigger(this, null);
-            }
-        }
-
-        protected override void Start()
-        {
-            base.Start();
-
-            if ((_activateOn & ActivateEvent.OnLateStart) != 0 && !GameLoop.LateUpdateWasCalled)
-            {
-                GameLoop.LateUpdateHandle.BeginInvoke(() => this.Trigger(this, null));
-            }
-            else if ((_activateOn & ActivateEvent.OnStart) != 0 || (_activateOn & ActivateEvent.OnEnable) != 0)
-            {
-                this.Trigger(this, null);
-            }
-        }
-
-        protected override void OnEnable()
-        {
-            base.OnEnable();
-
-            if (!this.started) return;
-
-            if ((_activateOn & ActivateEvent.OnEnable) != 0)
-            {
-                if (GameLoop.LateUpdateWasCalled)
-                {
-                    this.Trigger(this, null);
-                }
-                else
-                {
-                    GameLoop.LateUpdateHandle.BeginInvoke(() =>
-                    {
-                        this.Trigger(this, null);
-                    });
-                }
-            }
+            _activateOn = defaultActiveOn;
         }
 
         #endregion
@@ -103,6 +63,12 @@ namespace com.spacepuppy.Events
             get { return _activateOn; }
             set { _activateOn = value; }
         }
+
+        #endregion
+
+        #region IMActivateOnReceiver Interface
+
+        void IMActivateOnReceiver.Activate() => this.Trigger(this, null);
 
         #endregion
 

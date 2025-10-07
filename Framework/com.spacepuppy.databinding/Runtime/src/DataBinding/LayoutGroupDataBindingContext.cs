@@ -15,7 +15,7 @@ using Cysharp.Threading.Tasks;
 namespace com.spacepuppy.DataBinding
 {
 
-    public class LayoutGroupDataBindingContext : SPComponent, IDataBindingContext, IDataProvider
+    public class LayoutGroupDataBindingContext : SPComponent, IDataBindingContext, IDataProvider, IMActivateOnReceiver
     {
 
         #region Fields
@@ -49,57 +49,8 @@ namespace com.spacepuppy.DataBinding
             IncludeInactiveObjects = true,
         };
 
-        [SerializeReference]
-        [SerializeRefPicker(typeof(IStampSource), AllowNull = false, AlwaysExpanded = true, DisplayBox = true)]
+        [SerializeReference, SerializeRefPicker(typeof(IStampSource), AllowNull = false, AlwaysExpanded = true, DisplayBox = true)]
         private IStampSource _stampSource = new GameObjectStampSource();
-
-        #endregion
-
-        #region CONSTRUCTOR
-
-        protected override void Awake()
-        {
-            base.Awake();
-
-            if ((_activateOn & ActivateEvent.Awake) != 0)
-            {
-                this.BindConfiguredDataSource();
-            }
-        }
-
-        protected override void Start()
-        {
-            base.Start();
-
-            if ((_activateOn & ActivateEvent.OnLateStart) != 0 && !GameLoop.LateUpdateWasCalled)
-            {
-                GameLoop.LateUpdateHandle.BeginInvoke(() => this.BindConfiguredDataSource());
-            }
-            else if ((_activateOn & ActivateEvent.OnStart) != 0 || (_activateOn & ActivateEvent.OnEnable) != 0)
-            {
-                this.BindConfiguredDataSource();
-            }
-        }
-
-        protected override void OnEnable()
-        {
-            base.OnEnable();
-
-            if (!this.started) return;
-
-            if ((_activateOn & ActivateEvent.OnEnable) != 0)
-            {
-                //this.BindConfiguredDataSource();
-                if (GameLoop.LateUpdateWasCalled)
-                {
-                    this.BindConfiguredDataSource();
-                }
-                else
-                {
-                    GameLoop.LateUpdateHandle.BeginInvoke(this.BindConfiguredDataSource);
-                }
-            }
-        }
 
         #endregion
 
@@ -257,6 +208,15 @@ namespace com.spacepuppy.DataBinding
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
             return DataProviderUtils.GetAsDataProvider(this.DataSource)?.GetEnumerator() ?? Enumerable.Empty<object>().GetEnumerator();
+        }
+
+        #endregion
+
+        #region IMActivateOnReceiver Interface
+
+        void IMActivateOnReceiver.Activate()
+        {
+            if (_dataSource) this.BindConfiguredDataSource();
         }
 
         #endregion

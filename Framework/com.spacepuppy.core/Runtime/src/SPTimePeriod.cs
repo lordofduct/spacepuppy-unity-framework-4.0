@@ -104,11 +104,18 @@ namespace com.spacepuppy
             return (time.TotalPrecise - startTime) >= _seconds;
         }
 
+        public float ElapsedTime(double startTime)
+        {
+            var time = this.TimeSupplier;
+            if (time == null) return 0f;
+            return (float)(time.TotalPrecise - startTime);
+        }
+
         #endregion
 
         #region Special Types
 
-        [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple=false)]
+        [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
         public class Config : SPTime.Config
         {
             public string DefaultUnits;

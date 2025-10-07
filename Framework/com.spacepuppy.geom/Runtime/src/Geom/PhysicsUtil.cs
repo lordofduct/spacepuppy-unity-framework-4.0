@@ -1118,7 +1118,7 @@ namespace com.spacepuppy.Geom
         /// <returns></returns>
         public static Collider[] GetNonAllocColliderBuffer(int minsize = MAX_COLLIDER_BUFFER)
         {
-            var arr = _colliderBuffer ?? new Collider[Mathf.Max(1024, minsize)];
+            var arr = _colliderBuffer ?? new Collider[Mathf.Max(MAX_COLLIDER_BUFFER, minsize)];
             _colliderBuffer = null;
             if (arr.Length < minsize) arr = new Collider[minsize];
             return arr;

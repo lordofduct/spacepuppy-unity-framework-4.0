@@ -34,10 +34,6 @@ namespace com.spacepuppyeditor.Core
             try
             {
                 var attrib = this.fieldInfo.GetCustomAttribute<SerializableGuid.ConfigAttribute>();
-                bool resetOnZero = attrib == null || !attrib.AllowZero;
-                bool linkToAsset = attrib != null && attrib.LinkToAsset;
-                bool linkToGlobalObjectId = attrib != null && attrib.LinkToGlobalObjectId;
-
                 System.Guid guid = FromSerializedProperty(property);
                 if (Application.isPlaying)
                 {
@@ -45,25 +41,23 @@ namespace com.spacepuppyeditor.Core
                     EditorGUI.EndProperty();
                     return;
                 }
-                else
-                {
-                    if (TryGetLinkedGuid(property.serializedObject.targetObject, out System.Guid newguid, linkToAsset, linkToGlobalObjectId))
-                    {
-                        if (newguid != guid)
-                        {
-                            guid = newguid;
-                            ToSerializedProperty(property, guid);
-                        }
 
-                        DrawGuidField(position, guid, attrib);
-                        EditorGUI.EndProperty();
-                        return;
-                    }
-                }
-                
-                if(attrib?.ObjectRefField ?? false)
+                System.Guid newguid;
+                if (EditorHelper.TryGetLinkedGuid(property.serializedObject.targetObject, out newguid, attrib?.mode ?? LinkedGuidMode.None))
                 {
-                    var newguid = DrawGuidField(position, guid, attrib);
+                    if (newguid != guid)
+                    {
+                        guid = newguid;
+                        ToSerializedProperty(property, guid);
+                    }
+
+                    DrawGuidField(position, guid, attrib);
+                    EditorGUI.EndProperty();
+                    return;
+                }
+                else if (attrib?.ObjectRefField ?? false)
+                {
+                    newguid = DrawGuidField(position, guid, attrib);
                     if (newguid != guid)
                     {
                         ToSerializedProperty(property, newguid);
@@ -79,6 +73,7 @@ namespace com.spacepuppyeditor.Core
 
                 DrawGuidField(r1, guid, null);
 
+                bool resetOnZero = attrib == null || !attrib.AllowZero;
                 if (GUI.Button(r2, "New Id") || (resetOnZero && guid == System.Guid.Empty))
                 {
                     guid = System.Guid.NewGuid();
@@ -92,7 +87,7 @@ namespace com.spacepuppyeditor.Core
             }
         }
 
-        private System.Guid DrawGuidField(Rect position, System.Guid guid, SerializableGuid.ConfigAttribute attrib)
+        private static System.Guid DrawGuidField(Rect position, System.Guid guid, SerializableGuid.ConfigAttribute attrib)
         {
             if (attrib?.ObjectRefField ?? false)
             {
@@ -109,7 +104,7 @@ namespace com.spacepuppyeditor.Core
                     {
                         return System.Guid.Empty;
                     }
-                    else if (newobj != obj && TryGetLinkedGuid(newobj, out System.Guid newguid, true, false))
+                    else if (newobj != obj && EditorHelper.TryGetLinkedGuid(newobj, out System.Guid newguid, LinkedGuidMode.Asset))
                     {
                         return newguid;
                     }
@@ -139,7 +134,7 @@ namespace com.spacepuppyeditor.Core
                                 if (DragAndDrop.objectReferences.Count() > 0 && ev.type == EventType.DragPerform)
                                 {
                                     var newobj = DragAndDrop.objectReferences.FirstOrDefault();
-                                    if (newobj && TryGetLinkedGuid(newobj, out System.Guid newguid, true, false))
+                                    if (newobj && EditorHelper.TryGetLinkedGuid(newobj, out System.Guid newguid, LinkedGuidMode.Asset))
                                     {
                                         return newguid;
                                     }
@@ -157,26 +152,13 @@ namespace com.spacepuppyeditor.Core
                 return guid;
             }
         }
-
-        public static bool TryGetLinkedGuid(UnityEngine.Object obj, out System.Guid guid, bool linkToAsset, bool linkToGlobalObjectId)
+        public static System.Guid DrawGuidField(Rect position, GUIContent label, System.Guid guid, SerializableGuid.ConfigAttribute attrib = null)
         {
-            if (linkToAsset && EditorHelper.TryGetNearestAssetGuid(obj, out guid) && guid != default)
+            if (label.HasContent())
             {
-                return true;
+                position = EditorGUI.PrefixLabel(position, label);
             }
-
-            if (linkToGlobalObjectId)
-            {
-                var gid = GlobalObjectId.GetGlobalObjectIdSlow(obj);
-                if (gid.targetObjectId != 0UL)
-                {
-                    guid = (new SerializableGuid(gid.targetObjectId, gid.targetPrefabId)).ToGuid();
-                    return true;
-                }
-            }
-
-            guid = default;
-            return false;
+            return DrawGuidField(position, guid, attrib);
         }
 
         public static System.Guid FromSerializedProperty(SerializedProperty prop)
@@ -221,7 +203,7 @@ namespace com.spacepuppyeditor.Core
                         if (field.FieldType != guidtp) continue;
 
                         var attrib = field.GetCustomAttribute<SerializableGuid.ConfigAttribute>();
-                        if (attrib != null && (attrib.LinkToAsset || attrib.LinkToGlobalObjectId))
+                        if (attrib != null && attrib.mode != LinkedGuidMode.None)
                         {
                             if (TypeUtil.IsType(field.DeclaringType, sotp))
                             {
@@ -276,7 +258,7 @@ namespace com.spacepuppyeditor.Core
                         {
                             var guid = (SerializableGuid)field.GetValue(c);
                             System.Guid newguid;
-                            if (SerializableGuidPropertyDrawer.TryGetLinkedGuid(c, out newguid, attrib.LinkToAsset, attrib.LinkToGlobalObjectId))
+                            if (EditorHelper.TryGetLinkedGuid(c, out newguid, attrib.mode))
                             {
                                 if (newguid != guid)
                                 {
@@ -315,7 +297,7 @@ namespace com.spacepuppyeditor.Core
                         {
                             var guid = (SerializableGuid)field.GetValue(so);
                             System.Guid newguid;
-                            if (SerializableGuidPropertyDrawer.TryGetLinkedGuid(so, out newguid, attrib.LinkToAsset, attrib.LinkToGlobalObjectId))
+                            if (EditorHelper.TryGetLinkedGuid(so, out newguid, attrib.mode))
                             {
                                 if (newguid != guid)
                                 {

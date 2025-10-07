@@ -16,6 +16,7 @@ namespace com.spacepuppy.Spawn
         public const string PROP_WEIGHT = nameof(_weight);
         public const string PROP_PREFAB = nameof(_prefab);
 
+
         [SerializeField]
         [UnityEngine.Serialization.FormerlySerializedAs("Weight")]
         private float _weight;

@@ -194,9 +194,17 @@ namespace com.spacepuppy.Motor
                         return _charController.velocity;
                     case UpdateMode.DumbRigidbody:
                         if (_rigidbody.isKinematic)
+                        {
                             return _dumbVel;
+                        }
                         else
+                        {
+#if UNITY_2023_3_OR_NEWER
+                            return _rigidbody.linearVelocity;
+#else
                             return _rigidbody.velocity;
+#endif
+                        }
                     case UpdateMode.DumbTransformOnly:
                         return _dumbVel;
                     default:
@@ -216,9 +224,17 @@ namespace com.spacepuppy.Motor
                         break;
                     case UpdateMode.DumbRigidbody:
                         if (_rigidbody.isKinematic)
+                        {
                             _dumbVel = value;
+                        }
                         else
+                        {
+#if UNITY_2023_3_OR_NEWER
+                            _rigidbody.linearVelocity = value;
+#else
                             _rigidbody.velocity = value;
+#endif
+                        }
                         break;
                     case UpdateMode.DumbTransformOnly:
                         _dumbVel = value;
@@ -502,7 +518,11 @@ namespace com.spacepuppy.Motor
                     }
                     else
                     {
+#if UNITY_2023_3_OR_NEWER
+                        _rigidbody.linearVelocity = mv / Time.deltaTime;
+#else
                         _rigidbody.velocity = mv / Time.deltaTime;
+#endif
                     }
                     break;
                 case UpdateMode.DumbTransformOnly:

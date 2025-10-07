@@ -14,6 +14,14 @@ namespace com.spacepuppy.UI
     public class SPUIButton : Selectable, IUIComponent, IPointerClickHandler, ISubmitHandler, IObservableTrigger
     {
 
+        [System.Flags]
+        public enum ButtonMask
+        {
+            Left = 1 << PointerEventData.InputButton.Left,
+            Right = 1 << PointerEventData.InputButton.Right,
+            Middle = 1 << PointerEventData.InputButton.Middle,
+        }
+
         #region Fields
 
         [SerializeField]
@@ -22,6 +30,9 @@ namespace com.spacepuppy.UI
         [SerializeField]
         [TimeUnitsSelector("Seconds")]
         private float _clickDuration = float.PositiveInfinity;
+
+        [SerializeField, EnumFlags]
+        private ButtonMask _acceptedButtons = ButtonMask.Left;
 
         [System.NonSerialized]
         private double _lastDownTime;
@@ -49,6 +60,12 @@ namespace com.spacepuppy.UI
 
         public SPEvent OnClick => _onClick;
 
+        /// <summary>
+        /// Reflects which mouse button effected the click. This is only set if during a click event.
+        /// OnSubmit signaling a click does not set this.
+        /// </summary>
+        public PointerEventData.InputButton? CurrentClickButton { get; private set; }
+
         #endregion
 
         #region Methods
@@ -62,18 +79,55 @@ namespace com.spacepuppy.UI
 
         public override void OnPointerDown(PointerEventData eventData)
         {
-            base.OnPointerDown(eventData);
-            _lastDownTime = Time.unscaledTimeAsDouble;
+            var ebtn = eventData.button;
+            if (((1 << (int)ebtn) & (int)_acceptedButtons) == 0) return;
+
+            try
+            {
+                eventData.button = PointerEventData.InputButton.Left; //Selectable only responds to leftclick, this fakes that
+                base.OnPointerDown(eventData);
+                _lastDownTime = Time.unscaledTimeAsDouble;
+            }
+            finally
+            {
+                eventData.button = ebtn; //reset the button so any other IPointerXXX message receivers get the correct info
+            }
+        }
+
+        public override void OnPointerUp(PointerEventData eventData)
+        {
+            var ebtn = eventData.button;
+            if (((1 << (int)ebtn) & (int)_acceptedButtons) == 0) return;
+
+            try
+            {
+                eventData.button = PointerEventData.InputButton.Left; //Selectable only responds to leftclick, this fakes that
+                base.OnPointerUp(eventData);
+            }
+            finally
+            {
+                eventData.button = ebtn; //reset the button so any other IPointerXXX message receivers get the correct info
+            }
         }
 
         public virtual void OnPointerClick(PointerEventData eventData)
         {
-            if (eventData.button != PointerEventData.InputButton.Left) return;
+            var ebtn = eventData.button;
+            if (((1 << (int)ebtn) & (int)_acceptedButtons) == 0) return;
+            //if (eventData.button != PointerEventData.InputButton.Left) return;
 
-            double delta = Time.unscaledTimeAsDouble - _lastDownTime;
-            if (delta >= 0f && delta <= _clickDuration)
+            try
             {
-                SignalOnClick();
+                this.CurrentClickButton = ebtn;
+                double delta = Time.unscaledTimeAsDouble - _lastDownTime;
+                if (delta >= 0f && delta <= _clickDuration)
+                {
+                    SignalOnClick();
+                }
+            }
+            finally
+            {
+                this.CurrentClickButton = null;
             }
         }
 

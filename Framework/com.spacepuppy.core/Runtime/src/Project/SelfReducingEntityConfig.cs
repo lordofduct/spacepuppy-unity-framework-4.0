@@ -34,7 +34,7 @@ namespace com.spacepuppy.Project
 
     }
 
-    public abstract class SelfReducingEntityConfigRef<T> : SerializableInterfaceRef<T> where T : class, ISelfReducingEntityConfig<T>
+    public abstract class SelfReducingEntityConfigRef<T> : InterfaceRef<T> where T : class, ISelfReducingEntityConfig<T>
     {
 
         public enum Source

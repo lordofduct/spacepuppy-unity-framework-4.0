@@ -59,9 +59,11 @@ namespace com.spacepuppyeditor.Statistics.Events
             _tokenDrawer.CategoryFilter = catprop.stringValue;
             _tokenDrawer.OnGUILayout(idprop);
 
+            this.DrawPropertyField(i_TriggerHighestBidByTokenValue.PROP_CASCADE);
+
             this.ListDrawer.DoLayoutList();
 
-            this.DrawDefaultInspectorExcept(EditorHelper.PROP_SCRIPT, EditorHelper.PROP_ORDER, EditorHelper.PROP_ACTIVATEON, i_TriggerHighestBidByTokenValue.PROP_CATEGORY, i_TriggerHighestBidByTokenValue.PROP_TOKEN, i_TriggerHighestBidByTokenValue.PROP_BIDS);
+            this.DrawDefaultInspectorExcept(EditorHelper.PROP_SCRIPT, EditorHelper.PROP_ORDER, EditorHelper.PROP_ACTIVATEON, i_TriggerHighestBidByTokenValue.PROP_CATEGORY, i_TriggerHighestBidByTokenValue.PROP_TOKEN, i_TriggerHighestBidByTokenValue.PROP_BIDS, i_TriggerHighestBidByTokenValue.PROP_CASCADE);
 
             this.serializedObject.ApplyModifiedProperties();
         }

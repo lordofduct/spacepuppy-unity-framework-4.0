@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 
 using com.spacepuppy;
 using com.spacepuppy.Dynamic.Accessors;
@@ -22,6 +23,15 @@ namespace com.spacepuppy.Tween
             factory.RegisterPerminentlyCachedAccessor(typeof(RectTransform).GetProperty(nameof(RectTransform.sizeDelta)), FindAccessor.RectTransformSizeDelta);
             factory.RegisterPerminentlyCachedAccessor(typeof(UnityEngine.UI.Text).GetProperty(nameof(UnityEngine.UI.Text.text)), FindAccessor.TextGraphicText);
             factory.RegisterPerminentlyCachedAccessor(typeof(CanvasGroup).GetProperty(nameof(CanvasGroup.alpha)), FindAccessor.CanvasGroupAlpha);
+            factory.RegisterPerminentlyCachedAccessor(typeof(Image).GetProperty(nameof(Image.color)), FindAccessor.ImageColor);
+
+            //TODO - add support for nested properties
+            //factory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("position.x"), FindAccessor.TransformPositionX);
+            //factory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("position.y"), FindAccessor.TransformPositionY);
+            //factory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("position.z"), FindAccessor.TransformPositionZ);
+            //factory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("localPosition.x"), FindAccessor.TransformLocalPositionX);
+            //factory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("localPosition.y"), FindAccessor.TransformLocalPositionY);
+            //factory.RegisterPerminentlyCachedAccessor(typeof(Transform).GetProperty("localPosition.z"), FindAccessor.TransformLocalPositionZ);
         }
 
         #region Transform
@@ -29,11 +39,29 @@ namespace com.spacepuppy.Tween
         private static IMemberAccessor<Vector3> _transformPosition;
         public static IMemberAccessor<Vector3> TransformPosition { get { return _transformPosition ?? (_transformPosition = new GetterSetterMemberAccessor<Transform, Vector3>(t => t.position, (t, v) => t.position = v)); } }
         public static IMemberAccessor<Vector3> position_ref(this Transform t) { return TransformPosition; }
+        private static IMemberAccessor<float> _transformPositionX;
+        public static IMemberAccessor<float> TransformPositionX { get { return _transformPositionX ?? (_transformPositionX = new GetterSetterMemberAccessor<Transform, float>(t => t.position.x, (t, v) => t.position = t.position.SetX(v))); } }
+        public static IMemberAccessor<float> positionX_ref(this Transform t) { return TransformPositionX; }
+        private static IMemberAccessor<float> _transformPositionY;
+        public static IMemberAccessor<float> TransformPositionY { get { return _transformPositionY ?? (_transformPositionY = new GetterSetterMemberAccessor<Transform, float>(t => t.position.y, (t, v) => t.position = t.position.SetY(v))); } }
+        public static IMemberAccessor<float> positionY_ref(this Transform t) { return TransformPositionY; }
+        private static IMemberAccessor<float> _transformPositionZ;
+        public static IMemberAccessor<float> TransformPositionZ { get { return _transformPositionZ ?? (_transformPositionZ = new GetterSetterMemberAccessor<Transform, float>(t => t.position.z, (t, v) => t.position = t.position.SetZ(v))); } }
+        public static IMemberAccessor<float> positionZ_ref(this Transform t) { return TransformPositionZ; }
 
 
         private static IMemberAccessor<Vector3> _transformLocalPosition;
         public static IMemberAccessor<Vector3> TransformLocalPosition { get { return _transformLocalPosition ?? (_transformLocalPosition = new GetterSetterMemberAccessor<Transform, Vector3>(t => t.localPosition, (t, v) => t.localPosition = v)); } }
         public static IMemberAccessor<Vector3> localPosition_ref(this Transform t) { return TransformLocalPosition; }
+        private static IMemberAccessor<float> _transformLocalPositionX;
+        public static IMemberAccessor<float> TransformLocalPositionX { get { return _transformLocalPositionX ?? (_transformLocalPositionX = new GetterSetterMemberAccessor<Transform, float>(t => t.localPosition.x, (t, v) => t.localPosition = t.localPosition.SetX(v))); } }
+        public static IMemberAccessor<float> localPositionX_ref(this Transform t) { return TransformLocalPositionX; }
+        private static IMemberAccessor<float> _transformLocalPositionY;
+        public static IMemberAccessor<float> TransformLocalPositionY { get { return _transformLocalPositionY ?? (_transformLocalPositionY = new GetterSetterMemberAccessor<Transform, float>(t => t.localPosition.y, (t, v) => t.localPosition = t.localPosition.SetY(v))); } }
+        public static IMemberAccessor<float> localPositionY_ref(this Transform t) { return TransformLocalPositionY; }
+        private static IMemberAccessor<float> _transformLocalPositionZ;
+        public static IMemberAccessor<float> TransformLocalPositionZ { get { return _transformLocalPositionZ ?? (_transformLocalPositionZ = new GetterSetterMemberAccessor<Transform, float>(t => t.localPosition.z, (t, v) => t.localPosition = t.localPosition.SetZ(v))); } }
+        public static IMemberAccessor<float> localPositionZ_ref(this Transform t) { return TransformLocalPositionZ; }
 
 
         private static IMemberAccessor<Quaternion> _transformRotation;
@@ -68,6 +96,14 @@ namespace com.spacepuppy.Tween
         public static IMemberAccessor<Vector2> RectTransformSizeDelta { get { return _rectTransformSizeDelta ?? (_rectTransformSizeDelta = new GetterSetterMemberAccessor<RectTransform, Vector2>(t => t.sizeDelta, (t, v) => t.sizeDelta = v)); } }
         public static IMemberAccessor<Vector2> sizeDelta_ref(this RectTransform t) { return RectTransformSizeDelta; }
 
+        private static IMemberAccessor<Vector2> _rectTransformOffsetMax;
+        public static IMemberAccessor<Vector2> RectTransformOffsetMax { get { return _rectTransformOffsetMax ?? (_rectTransformOffsetMax = new GetterSetterMemberAccessor<RectTransform, Vector2>(t => t.offsetMax, (t, v) => t.offsetMax = v)); } }
+        public static IMemberAccessor<Vector2> offsetMax_ref(this RectTransform t) { return RectTransformOffsetMax; }
+
+        private static IMemberAccessor<Vector2> _rectTransformOffsetMin;
+        public static IMemberAccessor<Vector2> RectTransformOffsetMin { get { return _rectTransformOffsetMin ?? (_rectTransformOffsetMin = new GetterSetterMemberAccessor<RectTransform, Vector2>(t => t.offsetMin, (t, v) => t.offsetMin = v)); } }
+        public static IMemberAccessor<Vector2> offsetMin_ref(this RectTransform t) { return RectTransformOffsetMin; }
+
         #endregion
 
         #region UnityEngine.UI.Text
@@ -83,6 +119,14 @@ namespace com.spacepuppy.Tween
         private static IMemberAccessor<float> _canvasGroupAlpha;
         public static IMemberAccessor<float> CanvasGroupAlpha { get { return _canvasGroupAlpha ?? (_canvasGroupAlpha = new GetterSetterMemberAccessor<CanvasGroup, float>(c => c.alpha, (c, v) => c.alpha = v)); } }
         public static IMemberAccessor<float> alpha_ref(this CanvasGroup c) { return CanvasGroupAlpha; }
+
+        #endregion
+
+        #region Image
+
+        private static IMemberAccessor<Color> _imageColor;
+        public static IMemberAccessor<Color> ImageColor { get { return _imageColor ?? (_imageColor = new GetterSetterMemberAccessor<Image, Color>(img => img.color, (img, v) => img.color = v)); } }
+        public static IMemberAccessor<Color> color_ref(this Image img) { return ImageColor; }
 
         #endregion
 

@@ -17,11 +17,15 @@ namespace com.spacepuppyeditor.Core
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
+            float h;
+            if (EditorHelper.AssertMultiObjectEditingNotSupportedHeight(property, label, out h)) return h;
             return EditorGUIUtility.singleLineHeight * 3f + BOTTOM_PAD + TOP_PAD;
         }
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
+
             var drawArea = new Rect(position.xMin, position.yMin + TOP_PAD, position.width - MARGIN, position.height - TOP_PAD);
 
             var targtp = property.serializedObject.GetTargetType();

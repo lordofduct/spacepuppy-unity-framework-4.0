@@ -103,6 +103,19 @@ namespace com.spacepuppyeditor.Core.Geom
             EditorGUI.EndProperty();
         }
 
+        public static Interval DrawInterval(Rect rect, Interval interval, GUIContent label)
+        {
+            rect = EditorGUI.PrefixLabel(rect, label);
+
+            float w = Mathf.Round(rect.width / 2f - 1f);
+            var r0 = new Rect(rect.xMin, rect.yMin, w, rect.height);
+            var r1 = new Rect(rect.xMax - w, rect.yMin, w, rect.height);
+
+            float min = EditorGUI.FloatField(r0, interval.Min);
+            float max = EditorGUI.FloatField(r1, interval.Max);
+            return new Interval(min, max);
+        }
+
     }
 
 }

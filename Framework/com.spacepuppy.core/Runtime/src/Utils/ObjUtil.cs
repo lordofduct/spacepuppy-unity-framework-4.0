@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 using com.spacepuppy.Collections;
 
@@ -980,6 +981,7 @@ namespace com.spacepuppy.Utils
 
         public static System.Func<UnityEngine.Object, bool> IsObjectAlive
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return _isObjectAlive; }
         }
 
@@ -1067,8 +1069,13 @@ namespace com.spacepuppy.Utils
         /// <returns></returns>
         public static bool IsInvalidObject(UnityEngine.Object obj)
         {
-            //note - we use 'GetHashCode' because it returns the instanceId BUT doesn't do the stupid main thread test
+#if UNITY_EDITOR
+            //note - we use 'GetHashCode' because it returns the instanceId BUT doesn't do the stupid main thread test. This only works at editor time since GetHashCode behaves differently at runtime.
             return !object.ReferenceEquals(obj, null) && obj.GetHashCode() == 0;
+#else
+            //at runtime there are no invalid objects... unity only does this dumb thing at editor time
+            return false;
+#endif
         }
 
         /// <summary>
@@ -1081,11 +1088,16 @@ namespace com.spacepuppy.Utils
         /// <returns></returns>
         public static bool IsValidObject(UnityEngine.Object obj)
         {
-            //note - we use 'GetHashCode' because it returns the instanceId BUT doesn't do the stupid main thread test
+#if UNITY_EDITOR
+            //note - we use 'GetHashCode' because it returns the instanceId BUT doesn't do the stupid main thread test. This only works at editor time since GetHashCode behaves differently at runtime.
             return !object.ReferenceEquals(obj, null) && obj.GetHashCode() != 0;
+#else
+            //at runtime there are no invalid objects... unity only does this dumb thing at editor time
+            return !object.ReferenceEquals(obj, null);
+#endif
         }
 
-#endregion
+        #endregion
 
         #region Misc
 

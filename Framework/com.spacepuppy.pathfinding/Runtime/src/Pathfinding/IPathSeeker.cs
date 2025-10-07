@@ -73,12 +73,12 @@ namespace com.spacepuppy.Pathfinding
     }
 
     [System.Serializable]
-    public class PathSeekerRef : SerializableInterfaceRef<IPathSeeker> { }
+    public class PathSeekerRef : InterfaceRef<IPathSeeker> { }
 
     [System.Serializable]
-    public class PathFollowerRef : SerializableInterfaceRef<IPathFollower> { }
+    public class PathFollowerRef : InterfaceRef<IPathFollower> { }
 
     [System.Serializable]
-    public class PathAgentRef : SerializableInterfaceRef<IPathAgent> { }
+    public class PathAgentRef : InterfaceRef<IPathAgent> { }
 
 }

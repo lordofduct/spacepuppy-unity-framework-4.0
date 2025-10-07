@@ -36,7 +36,7 @@ namespace com.spacepuppy
         internal static void FindAll(string tag, ICollection<GameObject> coll)
         {
             var e = Pool.GetEnumerator();
-            while(e.MoveNext())
+            while (e.MoveNext())
             {
                 if (e.Current.HasTag(tag)) coll.Add(e.Current.gameObject);
             }
@@ -45,7 +45,7 @@ namespace com.spacepuppy
         internal static MultiTag Find(string tag)
         {
             var e = Pool.GetEnumerator();
-            while(e.MoveNext())
+            while (e.MoveNext())
             {
                 if (e.Current.HasTag(tag)) return e.Current;
             }
@@ -71,7 +71,7 @@ namespace com.spacepuppy
         {
             base.Awake();
 
-            if(!this.gameObject.CompareTag(SPConstants.TAG_MULTITAG))
+            if (!this.gameObject.CompareTag(SPConstants.TAG_MULTITAG))
                 this.gameObject.tag = SPConstants.TAG_MULTITAG;
         }
 
@@ -121,7 +121,7 @@ namespace com.spacepuppy
             else
             {
                 _tags.Clear();
-                foreach(var s in tags)
+                foreach (var s in tags)
                 {
                     if (IsValidTag(s)) _tags.Add(s);
                 }
@@ -142,13 +142,29 @@ namespace com.spacepuppy
         public bool ContainsTag(params string[] tags)
         {
             if (_tags == null || _tags.Count == 0) return tags.Contains(SPConstants.TAG_UNTAGGED);
-            return _tags.ContainsAny(tags);
+            switch (tags?.Length ?? 0)
+            {
+                case 0:
+                    return false;
+                case 1:
+                    return _tags.Contains(tags[0]);
+                default:
+                    return _tags.ContainsAny(tags);
+            }
         }
 
         public bool ContainsTag(IEnumerable<string> tags)
         {
             if (_tags == null || _tags.Count == 0) return tags.Contains(SPConstants.TAG_UNTAGGED);
-            return _tags.ContainsAny(tags);
+            switch ((tags as IList<string>)?.Count ?? 2)
+            {
+                case 0:
+                    return false;
+                case 1:
+                    return _tags.Contains((tags as IList<string>)[0]);
+                default:
+                    return _tags.ContainsAny(tags);
+            }
         }
 
         public bool AddTag(string tag)
@@ -289,36 +305,17 @@ namespace com.spacepuppy
 
             public override void AddReference(MultiTag obj)
             {
-                if (object.ReferenceEquals(obj, null)) throw new System.ArgumentNullException();
-
-                if (this.IsQuerying)
-                {
-                    if (!_table.Values.Contains(obj)) this.QueryCompleteAction += () => _table[obj.gameObject] = obj;
-                }
-                else
-                {
-                    _table[obj.gameObject] = obj;
-                }
+                if (object.ReferenceEquals(obj, null)) throw new System.ArgumentNullException(nameof(obj));
 
                 base.AddReference(obj);
+                _table[obj.gameObject] = obj;
             }
 
             public override bool RemoveReference(MultiTag obj)
             {
-                if (object.ReferenceEquals(obj, null)) throw new System.ArgumentNullException();
+                if (object.ReferenceEquals(obj, null)) throw new System.ArgumentNullException(nameof(obj));
 
-                if (this.IsQuerying)
-                {
-                    if (_table.Values.Contains(obj))
-                    {
-                        this.QueryCompleteAction += () => _table.Remove(obj.gameObject);
-                    }
-                }
-                else
-                {
-                    _table.Remove(obj.gameObject);
-                }
-
+                _table.Remove(obj.gameObject);
                 return base.RemoveReference(obj);
             }
 
@@ -339,6 +336,16 @@ namespace com.spacepuppy
         }
 
         #endregion
+
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            if (!this.gameObject.CompareTag(SPConstants.TAG_MULTITAG))
+            {
+                this.gameObject.tag = SPConstants.TAG_MULTITAG;
+            }
+        }
+#endif
 
     }
 
@@ -361,7 +368,7 @@ namespace com.spacepuppy
             if (go == null) return false;
 
             if (go.CompareTag(SPConstants.TAG_UNTAGGED)) return false;
-            
+
             MultiTag c;
             if (MultiTag.TryGetMultiTag(go, out c))
                 return c.Count > 0;
@@ -384,7 +391,7 @@ namespace com.spacepuppy
         {
             if (go == null) return false;
             if (go.CompareTag(stag)) return true;
-            
+
             MultiTag c;
             if (MultiTag.TryGetMultiTag(go, out c))
                 return c.ContainsTag(stag);
@@ -460,14 +467,14 @@ namespace com.spacepuppy
             {
                 return multitag.AddTag(stag);
             }
-            else if(TagData.IsValidTag(stag))
+            else if (TagData.IsValidTag(stag))
             {
                 //if (MultiTag.IsEmptyTag(go.tag))
-                if(go.CompareTag(SPConstants.TAG_UNTAGGED))
+                if (go.CompareTag(SPConstants.TAG_UNTAGGED))
                 {
                     go.tag = stag;
                 }
-                else if(!go.CompareTag(stag))
+                else if (!go.CompareTag(stag))
                 {
                     var oldtag = go.tag;
                     multitag = go.AddComponent<MultiTag>();
@@ -571,7 +578,7 @@ namespace com.spacepuppy
         public static void ClearTags(this GameObject go, bool bDestroyMultiTagComponent = false)
         {
             if (go == null) throw new System.ArgumentNullException("go");
-            
+
             MultiTag multitag;
             if (MultiTag.TryGetMultiTag(go, out multitag))
             {
@@ -601,7 +608,7 @@ namespace com.spacepuppy
         /**
          * GetTags
          */
-        
+
         public static IEnumerable<string> GetTags(this GameObject go)
         {
             if (go == null) throw new System.ArgumentNullException("go");
@@ -632,7 +639,7 @@ namespace com.spacepuppy
         {
             if (go == null) throw new System.ArgumentNullException("go");
             if (tags == null) throw new System.ArgumentNullException("tags");
-            
+
             MultiTag multitag;
             if (MultiTag.TryGetMultiTag(go, out multitag))
             {
@@ -661,7 +668,7 @@ namespace com.spacepuppy
             MultiTag multitag;
             if (MultiTag.TryGetMultiTag(go, out multitag))
             {
-                foreach(var t in tags)
+                foreach (var t in tags)
                 {
                     multitag.AddTag(t);
                 }
@@ -712,7 +719,7 @@ namespace com.spacepuppy
                 MultiTag otherMultiTag;
                 if (MultiTag.TryGetMultiTag(source, out otherMultiTag))
                 {
-                    if(otherMultiTag.Count > 1 || !go.CompareTag(SPConstants.TAG_UNTAGGED))
+                    if (otherMultiTag.Count > 1 || !go.CompareTag(SPConstants.TAG_UNTAGGED))
                     {
                         var oldtag = go.tag;
                         multitag = go.AddComponent<MultiTag>();
@@ -728,7 +735,7 @@ namespace com.spacepuppy
                         go.tag = otherMultiTag[0];
                     }
                 }
-                else if(!source.CompareTag(SPConstants.TAG_UNTAGGED))
+                else if (!source.CompareTag(SPConstants.TAG_UNTAGGED))
                 {
                     if (go.CompareTag(SPConstants.TAG_UNTAGGED))
                     {

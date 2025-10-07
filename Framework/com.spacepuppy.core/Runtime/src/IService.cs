@@ -55,6 +55,7 @@ namespace com.spacepuppy
             DoNothing = 0,
             DestroySelf = 1,
             DestroyGameObject = 2,
+            DisableSelf = 3,
         }
 
         #region Fields
@@ -817,7 +818,7 @@ namespace com.spacepuppy
     /// should be accessed when calling Service.Get&ltT&gt.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public abstract class ServiceComponent<T> : SPComponent, IService where T : class, IService
+    public abstract class ServiceComponent<T> : SPComponent, IOnKillHandler, IService where T : class, IService
     {
 
         #region Fields
@@ -882,6 +883,10 @@ namespace com.spacepuppy
 
             if (this is T s) Services.TryUnregister<T>(s);
         }
+        void IOnKillHandler.OnKill(KillableEntityToken token)
+        {
+            if (this is T s) Services.TryUnregister<T>(s);
+        }
 
         #endregion
 
@@ -944,6 +949,9 @@ namespace com.spacepuppy
                     break;
                 case Services.UnregisterResolutionOption.DestroyGameObject:
                     ObjUtil.SmartDestroy(this.gameObject);
+                    break;
+                case Services.UnregisterResolutionOption.DisableSelf:
+                    this.enabled = false;
                     break;
             }
         }
@@ -1079,7 +1087,7 @@ namespace com.spacepuppy
     /// should be accessed when calling Service.Get&ltT&gt.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public abstract class ServiceScriptableObject<T> : ScriptableObject, IService where T : class, IService
+    public abstract class ServiceScriptableObject<T> : ScriptableObject, IOnKillHandler, IService where T : class, IService
     {
 
         #region Fields
@@ -1142,6 +1150,10 @@ namespace com.spacepuppy
         }
 
         protected virtual void OnDestroy()
+        {
+            if (this is T s) Services.TryUnregister<T>(s);
+        }
+        void IOnKillHandler.OnKill(KillableEntityToken token)
         {
             if (this is T s) Services.TryUnregister<T>(s);
         }

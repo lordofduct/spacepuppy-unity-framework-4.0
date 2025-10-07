@@ -42,7 +42,7 @@ namespace com.spacepuppy
         {
             get
             {
-                if (_type == null) _type = TypeUtil.UnHashType(_typeHash);
+                if (_type == null) _type = TypeUtil.UnHashType(_typeHash) ?? typeof(void); // set type to void if the type is unfruitful, this way we're not constantly retesting this
                 return _type;
             }
             set

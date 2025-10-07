@@ -15,7 +15,7 @@ namespace com.spacepuppy.Anim.Legacy
     }
 
     [System.Serializable]
-    public sealed class SPAnimMaskSerializedRef : com.spacepuppy.Project.SerializableInterfaceRef<ISPAnimationMask>
+    public sealed class SPAnimMaskSerializedRef : com.spacepuppy.Project.InterfaceRef<ISPAnimationMask>
     {
 
     }

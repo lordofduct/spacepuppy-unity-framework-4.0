@@ -42,6 +42,7 @@ namespace com.spacepuppy.Pathfinding
             internal Coroutine routine;
             internal bool _complete;
             private System.Action<AsyncWaitHandle> _callback;
+            private TaskCompletionSource<bool> _completionTask;
 
             #endregion
 
@@ -69,8 +70,12 @@ namespace com.spacepuppy.Pathfinding
                 if (_currentScan == this) _currentScan = null;
 
                 _complete = true;
+                var s = _completionTask;
+                s = null;
                 var d = _callback;
                 _callback = null;
+
+                s?.SetResult(true);
                 if (d != null)
                 {
                     try
@@ -98,9 +103,7 @@ namespace com.spacepuppy.Pathfinding
                     }
                     else
                     {
-                        var s = AsyncUtil.GetTempSemaphore();
-                        _callback += (h) => s.Dispose();
-                        return s.WaitAsync();
+                        return (_completionTask ??= new TaskCompletionSource<bool>()).Task;
                     }
                 }
             }
@@ -382,6 +385,7 @@ namespace com.spacepuppy.Pathfinding
             }
         }
 
+#if !AGASTAR_5_ORGREATER
         public static bool TryGetNearest(this AstarPath path, Vector3 position, NNConstraint constraint, GraphNode hint, out NNInfo result)
         {
             try
@@ -395,6 +399,7 @@ namespace com.spacepuppy.Pathfinding
                 return false;
             }
         }
+#endif
 
         public static bool TryGetNearest(this AstarPath path, Ray ray, out GraphNode result)
         {
@@ -410,7 +415,7 @@ namespace com.spacepuppy.Pathfinding
             }
         }
 
-        #endregion
+#endregion
 
     }
 

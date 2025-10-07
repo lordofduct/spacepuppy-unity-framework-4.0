@@ -437,6 +437,14 @@ namespace com.spacepuppy.Utils
             return result;
         }
 
+        public static void ReleaseSilently(StringBuilder b)
+        {
+            if (b == null) return;
+
+            b.Length = 0;
+            _pool.Release(b);
+        }
+
         public static string ToStringHax(this StringBuilder sb)
         {
             var info = typeof(StringBuilder).GetField("_str",
@@ -457,7 +465,7 @@ namespace com.spacepuppy.Utils
         private static readonly System.Type[] _availableTextTargTypes = new System.Type[] { typeof(UnityEngine.TextAsset), typeof(UnityEngine.UI.Text), typeof(UnityEngine.UI.InputField), typeof(TMPro.TMP_Text), typeof(TMPro.TMP_InputField) };
         private static readonly System.Type[] _availableTextInputTargTypes = new System.Type[] { typeof(UnityEngine.UI.InputField), typeof(TMPro.TMP_InputField) };
 #else
-        private static readonly System.Type[] _availableTextTargTypes = new System.Type[] { typeof(TextAsset), typeof(UnityEngine.UI.Text), typeof(UnityEngine.UI.InputField) };
+        private static readonly System.Type[] _availableTextTargTypes = new System.Type[] { typeof(UnityEngine.TextAsset), typeof(UnityEngine.UI.Text), typeof(UnityEngine.UI.InputField) };
         private static readonly System.Type[] _availableTextInputTargTypes = new System.Type[] { typeof(UnityEngine.UI.InputField) };
 #endif
 
@@ -465,7 +473,7 @@ namespace com.spacepuppy.Utils
         private static readonly System.Type[] _availableTextTargTypes_WithProxy = new System.Type[] { typeof(UnityEngine.TextAsset), typeof(UnityEngine.UI.Text), typeof(UnityEngine.UI.InputField), typeof(TMPro.TMP_Text), typeof(TMPro.TMP_InputField), typeof(IProxy) };
         private static readonly System.Type[] _availableTextInputTargTypes_WithProxy = new System.Type[] { typeof(UnityEngine.UI.InputField), typeof(TMPro.TMP_InputField), typeof(IProxy) };
 #else
-        private static readonly System.Type[] _availableTextTargTypes_WithProxy  = new System.Type[] {typeof(TextAsset), typeof(UnityEngine.UI.Text), typeof(UnityEngine.UI.InputField), typeof(IProxy) };
+        private static readonly System.Type[] _availableTextTargTypes_WithProxy  = new System.Type[] {typeof(UnityEngine.TextAsset), typeof(UnityEngine.UI.Text), typeof(UnityEngine.UI.InputField), typeof(IProxy) };
         private static readonly System.Type[] _availableTextInputTargTypes_WithProxy  = new System.Type[] { typeof(UnityEngine.UI.InputField), typeof(IProxy) };
 #endif
 

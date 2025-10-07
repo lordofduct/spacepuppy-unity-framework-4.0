@@ -24,7 +24,12 @@ namespace com.spacepuppyeditor.Core
             {
                 case SerializedPropertyType.AnimationCurve:
                     {
-                        property.animationCurveValue = CurveField(position, label, property.animationCurveValue);
+                        EditorGUI.BeginChangeCheck();
+                        var value = CurveField(position, label, property.animationCurveValue);
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            property.animationCurveValue = value;
+                        }
                     }
                     break;
                 case SerializedPropertyType.ManagedReference:
@@ -51,13 +56,13 @@ namespace com.spacepuppyeditor.Core
             {
                 var attrib = this.attribute as AnimationCurveConstraintAttribute;
                 var ranges = new Rect(attrib.x, attrib.y, attrib.width, attrib.height);
-                return EditorGUI.CurveField(position, label, curve, attrib.color, ranges);
+                return EditorGUI.CurveField(position, label, curve, attrib.GetColor(), ranges);
             }
             else if (this.attribute is AnimationCurveEaseScaleAttribute)
             {
                 var attrib = this.attribute as AnimationCurveEaseScaleAttribute;
                 var ranges = new Rect(0f, -Mathf.Max(0f, attrib.overscan), 1f, Mathf.Max(1f, 1f + attrib.overscan * 2f));
-                return EditorGUI.CurveField(position, label, curve, attrib.color, ranges);
+                return EditorGUI.CurveField(position, label, curve, attrib.GetColor(), ranges);
             }
             else
             {

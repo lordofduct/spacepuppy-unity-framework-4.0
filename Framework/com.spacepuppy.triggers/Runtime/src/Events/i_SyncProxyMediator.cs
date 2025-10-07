@@ -12,7 +12,18 @@ namespace com.spacepuppy
     public sealed class i_SyncProxyMediator : AutoTriggerable
     {
 
+        public enum Modes : sbyte
+        {
+            Clear = -1,
+            Set = 0,
+            Push = 1,
+            Pop = 2,
+        }
+
         #region Fields
+
+        [SerializeField]
+        private Modes _mode;
 
         [SerializeField]
         [DisableOnPlay]
@@ -28,6 +39,12 @@ namespace com.spacepuppy
         #endregion
 
         #region Properties
+
+        public Modes Mode
+        {
+            get => _mode;
+            set => _mode = value;
+        }
 
         public TriggerableTargetObject Target
         {
@@ -56,7 +73,25 @@ namespace com.spacepuppy
         {
             if (_mediator)
             {
-                _mediator.SetProxyTarget(IProxyExtensions.ReduceIfProxy(_target.GetTarget(typeof(object), arg)));
+                switch (_mode)
+                {
+                    case Modes.Clear:
+                        _mediator.SetProxyTarget(null);
+                        break;
+                    case Modes.Set:
+                        _mediator.SetProxyTarget(IProxyExtensions.ReduceIfProxy(_target.GetTarget(typeof(object), arg)));
+                        break;
+                    case Modes.Push:
+                        {
+                            var targ = IProxyExtensions.ReduceIfProxy(_target.GetTarget(typeof(object), arg));
+                            if (targ != null) _mediator.PushProxyTarget(targ);
+                        }
+                        break;
+                    case Modes.Pop:
+                        _mediator.PopProxyTarget();
+                        break;
+
+                }
                 if (_triggerMediatorOnSync) _mediator.Trigger(this, arg);
             }
         }

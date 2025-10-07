@@ -9,6 +9,8 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppyeditor.Windows
 {
 
+    public delegate bool SearchFilter<T>(ref T obj);
+
     public interface ISearchDropDownSelector : IEqualityComparer<object>
     {
         int MaxCount { get; }
@@ -595,7 +597,7 @@ namespace com.spacepuppyeditor.Windows
         /// </summary>
         public virtual System.Type ObjectType { get; set; } = typeof(T);
 
-        public System.Func<T, bool> Filter { get; set; }
+        public SearchFilter<T> Filter { get; set; }
 
         public virtual ShowDropDownCallbackDelegate ShowDropDownCallback { get; set; }
 
@@ -697,7 +699,7 @@ namespace com.spacepuppyeditor.Windows
 #endif
         }
 
-        private static UnityEngine.Object HandleDragAndDrop(bool isDragging, bool isDropping, UnityEngine.Object asset, System.Type objType, System.Func<T, bool> filter, bool allowSceneObjects, bool allowProxy)
+        private static UnityEngine.Object HandleDragAndDrop(bool isDragging, bool isDropping, UnityEngine.Object asset, System.Type objType, SearchFilter<T> filter, bool allowSceneObjects, bool allowProxy)
         {
             if (!isDragging && !isDropping) return asset;
 
@@ -709,14 +711,14 @@ namespace com.spacepuppyeditor.Windows
                 {
                     validDrag = DragAndDrop.objectReferences.Any(o => {
                         var ot = ObjUtil.GetAsFromSource(types, o);
-                        return ot != null && (filter == null || (ot is T ott && filter(ott)));
+                        return ot != null && (filter == null || (ot is T ott && filter(ref ott)));
                     });
                 }
                 else
                 {
                     validDrag = DragAndDrop.objectReferences.Any(o => {
                         var ot = ObjUtil.GetAsFromSource(types, o);
-                        return ot != null && !string.IsNullOrEmpty(AssetDatabase.GetAssetPath(o)) && (filter == null || (ot is T ott && filter(ott)));
+                        return ot != null && !string.IsNullOrEmpty(AssetDatabase.GetAssetPath(o)) && (filter == null || (ot is T ott && filter(ref ott)));
                     });
                 }
 
@@ -737,7 +739,14 @@ namespace com.spacepuppyeditor.Windows
                         entry = DragAndDrop.objectReferences.Select(o =>
                         {
                             o = ObjUtil.GetAsFromSource(types, o) as UnityEngine.Object;
-                            return (o is T ot && filter(ot)) ? o : null;
+                            if (o is T ot && filter(ref ot))
+                            {
+                                return ot as UnityEngine.Object;
+                            }
+                            else
+                            {
+                                return null;
+                            }
                         }).FirstOrDefault(o => o != null);
                     }
 

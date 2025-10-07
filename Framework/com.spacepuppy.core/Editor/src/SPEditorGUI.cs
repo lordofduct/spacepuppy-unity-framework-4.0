@@ -10,6 +10,7 @@ using com.spacepuppy.Dynamic;
 
 using com.spacepuppyeditor.Windows;
 using com.spacepuppyeditor.Internal;
+using com.spacepuppyeditor.Core;
 
 namespace com.spacepuppyeditor
 {
@@ -434,6 +435,23 @@ namespace com.spacepuppyeditor
                             }
                         }
                     }
+                    else if (valueType.IsInterface)
+                    {
+                        if (value is UnityEngine.Object || value.IsNullOrDestroyed())
+                        {
+                            EditorGUI.BeginChangeCheck();
+                            object obj = EditorGUI.ObjectField(position, label, value as UnityEngine.Object, valueType, true);
+                            if (EditorGUI.EndChangeCheck())
+                            {
+                                return obj;
+                            }
+                        }
+                        else
+                        {
+                            EditorGUI.LabelField(position, label, EditorHelper.TempContent($"ref:({value.GetType().Name})"));
+                            return value;
+                        }
+                    }
                     else
                     {
                         EditorGUI.LabelField(position, label, EditorHelper.TempContent("* Unsupported Value Type *"));
@@ -577,9 +595,18 @@ namespace com.spacepuppyeditor
                             return ts;
                         }
                     }
+                    else if (valueType == typeof(System.Guid) || valueType == typeof(SerializableGuid))
+                    {
+                        EditorGUI.BeginChangeCheck();
+                        var guid = SerializableGuidPropertyDrawer.DrawGuidField(position, label, (System.Guid)value);
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            return guid;
+                        }
+                    }
                     else
                     {
-                        EditorGUI.PrefixLabel(position, label);
+                        SPEditorGUI.SafePrefixLabel(position, label);
                     }
                     break;
             }
@@ -1537,7 +1564,91 @@ namespace com.spacepuppyeditor
         #endregion
 
 
+        #region AdvancedObjectField
 
+        public static UnityEngine.Object AdvancedObjectField(Rect position, GUIContent label, UnityEngine.Object asset, System.Type objType, bool allowSceneObjects, bool allowProxy, SearchFilter<UnityEngine.Object> filter = null, int maxVisibleCount = UnityObjectDropDownWindowSelector.DEFAULT_MAXCOUNT)
+        {
+            UnityEngine.Object result;
+            if (SpacepuppySettings.UseAdvancedObjectField)
+            {
+                result = UnityObjectDropDownWindowSelector.ObjectField(position, label, asset, objType, allowSceneObjects, allowProxy, filter, maxVisibleCount);
+            }
+            else
+            {
+                if (label != null && !string.IsNullOrEmpty(label.text)) label = EditorHelper.TempContent($"{label.text}   ({objType.Name})", label.tooltip);
+                EditorGUI.BeginChangeCheck();
+                var tp = TypeUtil.IsType(objType, typeof(UnityEngine.Object)) && !allowProxy ? objType : typeof(UnityEngine.Object);
+                result = EditorGUI.ObjectField(position, label, asset, tp, allowSceneObjects);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    if (allowProxy && ObjUtil.GetAsFromSource(result, out IProxy p, false) && p is UnityEngine.Object po)
+                    {
+                        result = po;
+                    }
+                    else
+                    {
+                        result = ObjUtil.GetAsFromSource(objType, result, false) as UnityEngine.Object;
+                    }
+                    if (result && filter != null && !filter(ref result)) result = null;
+                }
+            }
+
+            return result;
+        }
+
+        public static T AdvancedObjectField<T>(Rect position, GUIContent label, SerializedProperty property, bool allowSceneObjects, SearchFilter<T> filter = null, int maxVisibleCount = UnityObjectDropDownWindowSelector.DEFAULT_MAXCOUNT) where T : class
+        {
+            T result = property.objectReferenceValue as T;
+            if (SpacepuppySettings.UseAdvancedObjectField)
+            {
+                result = UnityObjectDropDownWindowSelector.ObjectField<T>(position, label, property, allowSceneObjects, filter, maxVisibleCount);
+            }
+            else
+            {
+                if (label != null && !string.IsNullOrEmpty(label.text)) label = EditorHelper.TempContent($"{label.text}   ({typeof(T).Name})", label.tooltip);
+                EditorGUI.BeginChangeCheck();
+                var tp = TypeUtil.IsType(typeof(T), typeof(UnityEngine.Object)) ? typeof(T) : typeof(UnityEngine.Object);
+                var oresult = EditorGUI.ObjectField(position, label, property.objectReferenceValue, tp, allowSceneObjects);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    var ot = ObjUtil.GetAsFromSource<T>(oresult);
+                    if (ot.IsNullOrDestroyed() || (filter != null && !filter(ref ot))) ot = null;
+
+                    result = ot;
+                    property.objectReferenceValue = oresult;
+                }
+            }
+
+            return result;
+        }
+
+        public static T AdvancedObjectField<T>(Rect position, GUIContent label, T asset, bool allowSceneObjects, SearchFilter<T> filter = null, int maxVisibleCount = UnityObjectDropDownWindowSelector.DEFAULT_MAXCOUNT) where T : class
+        {
+
+            T result = asset;
+            if (SpacepuppySettings.UseAdvancedObjectField)
+            {
+                result = UnityObjectDropDownWindowSelector.ObjectField<T>(position, label, asset, allowSceneObjects, filter, maxVisibleCount);
+            }
+            else
+            {
+                if (label != null && !string.IsNullOrEmpty(label.text)) label = EditorHelper.TempContent($"{label.text}   ({typeof(T).Name})", label.tooltip);
+                EditorGUI.BeginChangeCheck();
+                var tp = TypeUtil.IsType(typeof(T), typeof(UnityEngine.Object)) ? typeof(T) : typeof(UnityEngine.Object);
+                var oresult = EditorGUI.ObjectField(position, label, asset as UnityEngine.Object, tp, allowSceneObjects);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    var ot = ObjUtil.GetAsFromSource<T>(oresult);
+                    if (ot.IsNullOrDestroyed() || (filter != null && !filter(ref ot))) ot = null;
+
+                    result = ot;
+                }
+            }
+
+            return result;
+        }
+
+        #endregion
 
 
         #region Curve Swatch

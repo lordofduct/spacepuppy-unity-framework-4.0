@@ -5,15 +5,23 @@ using System.Collections.Generic;
 namespace com.spacepuppy.Tween
 {
 
+    /// <remarks>
+    /// At this time sequences do not support 'reverse'. 
+    /// 
+    /// If/When we upgrade this we need to go into the TweenHash.Create method and make sure it sets it up this sequence correctly.
+    /// </remarks>
     public class TweenSequence : Tweener
     {
 
         #region Fields
 
         private TweenSequenceCollection _sequence;
+        private int _currentIndex = -1;
+        private float _currentStartT;
+        private float _currentEndT;
 
         #endregion
-        
+
         #region CONSTRUCTOR
 
         public TweenSequence(object id)
@@ -34,6 +42,11 @@ namespace com.spacepuppy.Tween
 
         #region Tweener Interface
 
+        public override void Play(float playHeadPosition)
+        {
+            base.Play(playHeadPosition);
+        }
+
         protected internal override bool GetTargetIsDestroyed()
         {
             for (int i = 0; i < _sequence.Count; i++)
@@ -48,33 +61,84 @@ namespace com.spacepuppy.Tween
         {
             float dur = 0f;
             var e = _sequence.GetEnumerator();
-            while(e.MoveNext())
+            while (e.MoveNext())
             {
-                dur += e.Current.GetPlayHeadLength();
+                dur += e.Current.TotalTime + e.Current.Delay;
             }
             return dur;
         }
 
         protected internal override void DoUpdate(float dt, float t)
         {
-
-            float _lastT = 0f;
-            float totalTime = 0f;
-            var e = _sequence.GetEnumerator();
-            while(e.MoveNext())
+            if (_sequence.Count == 0 || _currentIndex >= _sequence.Count)
             {
-                totalTime = e.Current.TotalTime;
-                if (t < _lastT + totalTime)
+                return;
+            }
+
+            float totalTime = 0f;
+            float subt = 0f;
+            Tweener current;
+            if (_currentIndex < 0)
+            {
+                _currentStartT = 0f;
+                for (int i = 0; i < _sequence.Count; i++)
                 {
-                    e.Current.DoUpdate(dt, t - _lastT);
-                    break;
+                    current = _sequence[i];
+                    totalTime = current.TotalTime + current.Delay;
+                    if (t < _currentStartT + totalTime)
+                    {
+                        _currentIndex = i;
+                        _currentEndT = _currentStartT + totalTime;
+                        subt = t - _currentStartT;
+                        if (subt > current.Delay)
+                        {
+                            current.DoUpdate(dt, t - (_currentStartT + current.Delay));
+                        }
+                        break;
+                    }
+                    else
+                    {
+                        _currentStartT += totalTime;
+                        _currentEndT = _currentStartT;
+                    }
+                }
+            }
+            else
+            {
+                current = _sequence[_currentIndex];
+                if (t >= _currentEndT)
+                {
+                    float dt0 = System.Math.Max(0f, _currentEndT - (t - dt));
+                    float dt1 = System.Math.Max(0f, t - _currentEndT);
+                    current.DoUpdate(dt0, current.TotalTime);
+
+                    _currentIndex++;
+                    _currentStartT = _currentEndT;
+                    if (_currentIndex < _sequence.Count)
+                    {
+                        current = _sequence[_currentIndex];
+                        _currentEndT = _currentStartT + current.TotalTime + current.Delay;
+                        subt = t - _currentStartT;
+                        if (subt > current.Delay)
+                        {
+                            current.DoUpdate(dt1, t - (_currentStartT + current.Delay));
+                        }
+                    }
+                    else
+                    {
+                        current = null;
+                        _currentEndT = _currentStartT;
+                    }
                 }
                 else
                 {
-                    _lastT += totalTime;
+                    subt = t - _currentStartT;
+                    if (subt > current.Delay)
+                    {
+                        current.DoUpdate(dt, t - (_currentStartT + current.Delay));
+                    }
                 }
             }
-
         }
 
         #endregion

@@ -7,8 +7,7 @@ namespace com.spacepuppy.Collections
     public class TempList<T> : List<T>, ITempCollection<T>
     {
 
-        //private const int MAX_SIZE_INBYTES = 1024;
-        private const int MAX_SIZE = 256;
+        private const int MAX_SIZE = 2048;
         private const int MIN_SIZE = 8;
 
         #region Fields
@@ -25,9 +24,6 @@ namespace com.spacepuppy.Collections
         public TempList()
             : base()
         {
-            //var tp = typeof(T);
-            //int sz = Math.Max((tp.IsValueType && !tp.IsEnum) ? System.Runtime.InteropServices.Marshal.SizeOf(tp) : 4, 4);
-            //_maxCapacityOnRelease = MAX_SIZE_INBYTES / sz;
             _maxCapacityOnRelease = MAX_SIZE;
             _version = 1;
         }
@@ -35,9 +31,6 @@ namespace com.spacepuppy.Collections
         public TempList(IEnumerable<T> e)
             : base(e)
         {
-            //var tp = typeof(T);
-            //int sz = Math.Max((tp.IsValueType && !tp.IsEnum) ? System.Runtime.InteropServices.Marshal.SizeOf(tp) : 4, 4);
-            //_maxCapacityOnRelease = MAX_SIZE_INBYTES / sz;
             _maxCapacityOnRelease = MAX_SIZE;
             _version = 1;
         }
@@ -45,9 +38,6 @@ namespace com.spacepuppy.Collections
         public TempList(int count)
             : base(count)
         {
-            //var tp = typeof(T);
-            //int sz = Math.Max((tp.IsValueType && !tp.IsEnum) ? System.Runtime.InteropServices.Marshal.SizeOf(tp) : 4, 4);
-            //_maxCapacityOnRelease = MAX_SIZE_INBYTES / sz;
             _maxCapacityOnRelease = MAX_SIZE;
             _version = 1;
         }
@@ -59,11 +49,12 @@ namespace com.spacepuppy.Collections
         public virtual void Dispose()
         {
             this.Clear();
-            if(_pool.Release(this))
+            if (_pool.Release(this))
             {
-                if(this.Capacity > _maxCapacityOnRelease / Math.Min(_version, 4))
+                //we allow cached lists to grow, but if they get too out of hand we shrink them back down
+                if (this.Capacity > _maxCapacityOnRelease)
                 {
-                    this.Capacity = _maxCapacityOnRelease / Math.Min(_version, 4);
+                    this.Capacity = _maxCapacityOnRelease;
                     _version = 1;
                 }
                 else
@@ -84,12 +75,27 @@ namespace com.spacepuppy.Collections
 
         public static TempList<T> GetList(IEnumerable<T> e)
         {
+            int cnt = MIN_SIZE;
+            if (e is ICollection<T> ic)
+                cnt = ic.Count;
+            else if (e is IReadOnlyCollection<T> rc)
+                cnt = rc.Count;
+
             TempList<T> result;
-            if(_pool.TryGetInstance(out result))
+            if (_pool.TryGetInstance(cnt, out result, (o, a) => o.Capacity >= a))
             {
                 //result.AddRange(e);
                 var e2 = new LightEnumerator<T>(e);
-                while(e2.MoveNext())
+                while (e2.MoveNext())
+                {
+                    result.Add(e2.Current);
+                }
+            }
+            else if (_pool.TryGetInstance(out result))
+            {
+                result.Capacity = cnt;
+                var e2 = new LightEnumerator<T>(e);
+                while (e2.MoveNext())
                 {
                     result.Add(e2.Current);
                 }
@@ -104,7 +110,7 @@ namespace com.spacepuppy.Collections
         public static TempList<T> GetList(int count)
         {
             TempList<T> result;
-            if (_pool.TryGetInstance(out result))
+            if (_pool.TryGetInstance(count, out result, (o, a) => o.Capacity >= a))
             {
                 if (result.Capacity < count) result.Capacity = count;
                 return result;

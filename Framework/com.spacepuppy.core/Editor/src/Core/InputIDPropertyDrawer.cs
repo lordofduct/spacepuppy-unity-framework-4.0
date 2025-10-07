@@ -28,7 +28,12 @@ namespace com.spacepuppyeditor.Core
             {
                 if (_inputIds == null) this.Init();
 
-                property.stringValue = SPEditorGUI.OptionPopupWithCustom(position, label, property.stringValue, _inputIds);
+                EditorGUI.BeginChangeCheck();
+                var value = SPEditorGUI.OptionPopupWithCustom(position, label, property.stringValue, _inputIds);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    property.stringValue = value;
+                }
             }
             else
             {

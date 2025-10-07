@@ -12,7 +12,7 @@ namespace com.spacepuppy
     /// Place on the root of a GameObject hierarchy, or a prefab, to signify that it is a complete entity.
     /// </summary>
     [DisallowMultipleComponent()]
-    [DefaultExecutionOrder(SPEntity.DEFAULT_EXECUTION_ORDER)]
+    [DefaultExecutionOrder(SPEntity.DEFAULT_EXECUTION_ORDER)] //yes, this inherits
     public class SPEntity : SPComponent, INameable
     {
         public const int DEFAULT_EXECUTION_ORDER = 31990;
@@ -52,7 +52,7 @@ namespace com.spacepuppy
                 });
             }
         }
-        
+
         protected override void OnDestroy()
         {
             base.OnDestroy();
@@ -65,7 +65,57 @@ namespace com.spacepuppy
         #region Properties
 
         public bool IsAwake { get { return _isAwake; } }
-        
+
+        #endregion
+
+        #region Methods
+
+        public SPEntity GetParentEntity()
+        {
+            if (this.transform.parent)
+            {
+                Pool.GetFromSource(this.transform.parent);
+            }
+
+            return null;
+        }
+
+        public bool TryGetParentEntity<T>(out SPEntity parent)
+        {
+            if (this.transform.parent)
+            {
+                return Pool.GetFromSource(this.transform.parent, out parent);
+            }
+            else
+            {
+                parent = null;
+                return false;
+            }
+        }
+
+        public T GetParentEntity<T>() where T : SPEntity
+        {
+            if (this.transform.parent)
+            {
+                Pool.GetFromSource<T>(this.transform.parent);
+            }
+
+            return null;
+        }
+
+        public bool TryGetParentEntity<T>(out T parent) where T : SPEntity
+        {
+            if (this.transform.parent)
+            {
+                return Pool.GetFromSource<T>(this.transform.parent, out parent);
+            }
+            else
+            {
+                parent = null;
+                return false;
+            }
+        }
+
         #endregion
 
         #region Special Types
@@ -91,7 +141,7 @@ namespace com.spacepuppy
             public SPEntity GetFromSource(GameObject obj) => obj ? obj.GetComponentInParent<SPEntity>() : null;
             public SPEntity GetFromSource(Component obj) => obj ? obj.gameObject.GetComponentInParent<SPEntity>() : null;
 #else
-            public SPEntity GetFromSource(object obj) => obj is SPEntity e ? e : GameObjectUtil.GetGameObjectFromSource(obj).AddOrGetComponent<SPEntityHook>().GetEntity();
+            public SPEntity GetFromSource(object obj) => obj is SPEntity e ? e : GameObjectUtil.GetGameObjectFromSource(obj)?.AddOrGetComponent<SPEntityHook>().GetEntity();
 
             public SPEntity GetFromSource(GameObject obj) => obj ? obj.AddOrGetComponent<SPEntityHook>().GetEntity() : null;
             public SPEntity GetFromSource(Component obj) => obj is SPEntity e ? e : (obj ? obj.gameObject.AddOrGetComponent<SPEntityHook>().GetEntity() : null);
@@ -124,7 +174,7 @@ namespace com.spacepuppy
             public TSub GetFromSource<TSub>(GameObject obj) where TSub : SPEntity => obj ? obj.GetComponentInParent<TSub>() : null;
             public TSub GetFromSource<TSub>(Component obj) where TSub : SPEntity => obj ? obj.gameObject.GetComponentInParent<TSub>() : null;
 #else
-            public TSub GetFromSource<TSub>(object obj) where TSub : SPEntity => obj is SPEntity e ? e as TSub : GameObjectUtil.GetGameObjectFromSource(obj).AddOrGetComponent<SPEntityHook>().GetEntity() as TSub;
+            public TSub GetFromSource<TSub>(object obj) where TSub : SPEntity => obj is SPEntity e ? e as TSub : GameObjectUtil.GetGameObjectFromSource(obj)?.AddOrGetComponent<SPEntityHook>().GetEntity() as TSub;
 
             public TSub GetFromSource<TSub>(GameObject obj) where TSub : SPEntity => obj ? GameObjectUtil.GetGameObjectFromSource(obj).AddOrGetComponent<SPEntityHook>().GetEntity() as TSub : null;
 
@@ -149,7 +199,7 @@ namespace com.spacepuppy
                 return comp != null;
             }
 
-#endregion
+            #endregion
 
         }
 
@@ -198,7 +248,7 @@ namespace com.spacepuppy
 
         }
 
-#endregion
+        #endregion
 
 #if UNITY_EDITOR
 

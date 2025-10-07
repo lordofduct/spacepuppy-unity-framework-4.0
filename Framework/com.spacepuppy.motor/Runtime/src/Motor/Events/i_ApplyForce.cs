@@ -68,11 +68,9 @@ namespace com.spacepuppy.Motor.Events
 
         private void DoApplyForce(GameObject targ)
         {
-            IMotor controller;
-            if (targ.GetComponentInChildren<IMotor>(out controller))
+            if (targ.GetComponentInChildren(out IForceReceiver receiver))
             {
-                //controller.AddForce(this.Force.GetForce(this.transform), this.Force.ForceMode);
-                this.Force.ApplyForce(this.transform, controller);
+                this.Force.ApplyForce(this.transform, receiver);
                 return;
             }
             Rigidbody body;

@@ -37,7 +37,7 @@ namespace com.spacepuppy.IAP
     }
 
     [System.Serializable]
-    public class IProductInfoRef : SerializableInterfaceRef<IProductInfo>
+    public class IProductInfoRef : InterfaceRef<IProductInfo>
     {
 
     }

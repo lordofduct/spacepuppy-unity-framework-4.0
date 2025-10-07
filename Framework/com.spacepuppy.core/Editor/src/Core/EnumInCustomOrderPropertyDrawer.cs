@@ -26,10 +26,14 @@ namespace com.spacepuppyeditor.Core
             var attrib = this.attribute as EnumInCustomOrderAttribute;
             if (attrib != null && attrib.customOrder != null)
             {
+                EditorGUI.BeginChangeCheck();
                 var values = attrib.customOrder.Select(i => EditorHelper.TempContent(EnumUtil.GetFriendlyName(System.Enum.ToObject(enumType, i) as System.Enum))).ToArray();
                 int index = System.Array.IndexOf(attrib.customOrder, property.intValue);
                 index = EditorGUI.Popup(position, label, index, values);
-                property.intValue = index >= 0 && index < attrib.customOrder.Length ? attrib.customOrder[index] : -1;
+                if (EditorGUI.EndChangeCheck())
+                {
+                    property.intValue = index >= 0 && index < attrib.customOrder.Length ? attrib.customOrder[index] : -1;
+                }
             }
             else
             {

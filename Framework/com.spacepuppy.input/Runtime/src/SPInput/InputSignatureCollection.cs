@@ -62,6 +62,25 @@ namespace com.spacepuppy.SPInput
             _sortedList.Sort(SortOnPrecedence);
         }
 
+        public void Update(bool isFixed)
+        {
+            var e = _table.GetEnumerator();
+            if (isFixed)
+            {
+                while (e.MoveNext())
+                {
+                    e.Current.Value.FixedUpdate();
+                }
+            }
+            else
+            {
+                while (e.MoveNext())
+                {
+                    e.Current.Value.Update();
+                }
+            }
+        }
+
         #endregion
 
         #region ICollection Interface

@@ -1,14 +1,18 @@
 ﻿#pragma warning disable 0649 // variable declared but not used.
 using UnityEngine;
 using UnityEditor;
+using UnityEditor.Compilation;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
+using System.Threading.Tasks;
 
 using com.spacepuppy;
 using com.spacepuppy.Collections;
 using com.spacepuppy.Utils;
-using System.Threading.Tasks;
+
+using com.spacepuppyeditor.Internal;
+using UnityEditor.SearchService;
 
 namespace com.spacepuppyeditor.Settings
 {
@@ -36,6 +40,9 @@ namespace com.spacepuppyeditor.Settings
         public string BuildDirectory;
 
         [SerializeField]
+        public bool PurgeBuildDirectory;
+
+        [SerializeField]
         public VersionInfo Version;
 
         [SerializeField]
@@ -59,8 +66,7 @@ namespace com.spacepuppyeditor.Settings
         [SerializeField]
         private bool _defineSymbols;
 
-        [SerializeField]
-        [Tooltip("Semi-colon delimited symbols.")]
+        [SerializeField, TextArea(3, 10), Tooltip("Semi-colon delimited symbols.")]
         private string _symbols;
 
         [SerializeField]
@@ -153,20 +159,28 @@ namespace com.spacepuppyeditor.Settings
             }
         }
 
-        public virtual Task<bool> BuildAsync(PostBuildOption option)
+        /// <summary>
+        /// Returns true if the pipeline was started, false if it failed to start. 
+        /// This does not mean the build succeeded since building may recompile and we don't know if tha that happened or not.
+        /// </summary>
+        /// <param name="option"></param>
+        /// <returns></returns>
+        public virtual bool Build(PostBuildOption option) => Build(option, default);
+        internal bool Build(PostBuildOption option, BulkBuildCallback callback)
         {
             string path;
+            bool purge = false;
             try
             {
                 //get output directory
-                var dir = EditorProjectPrefs.Local.GetString("LastBuildDirectory", string.Empty);
+                var dir = EditorProjectPrefs.LocalProject.GetString("LastBuildDirectory", string.Empty);
                 if (string.IsNullOrEmpty(this.BuildFileName))
                 {
                     string extension = GetExtension(this.BuildTarget);
                     path = EditorUtility.SaveFilePanel("Build", dir, string.IsNullOrEmpty(extension) ? Application.productName + "." + extension : Application.productName, extension);
                     if (string.IsNullOrEmpty(path))
                     {
-                        return Task.FromResult(false);
+                        return false;
                     }
                 }
                 else
@@ -177,6 +191,7 @@ namespace com.spacepuppyeditor.Settings
                     {
                         path = System.IO.Path.Combine(possiblePath, this.GetBuildFileNameWithExtension());
                         path = System.IO.Path.GetFullPath(path);
+                        purge = this.PurgeBuildDirectory;
                     }
                     else
                     {
@@ -187,159 +202,28 @@ namespace com.spacepuppyeditor.Settings
                         }
                         else
                         {
-                            return Task.FromResult(false);
+                            return false;
                         }
                     }
                 }
-
             }
             catch (System.Exception ex)
             {
                 Debug.LogException(ex);
-                return Task.FromResult(false);
+                return false;
             }
 
-            return this.BuildAsync(path, option);
-        }
+            //return this.BuildAsync(path, option, purge);
 
-        public async virtual Task<bool> BuildAsync(string path, PostBuildOption option)
-        {
-            try
+            var command = new BuildCommand()
             {
-                var scenes = this.GetScenePaths();
-                var buildGroup = BuildPipeline.GetBuildTargetGroup(this.BuildTarget);
-
-                //set version
-                Undo.RecordObject(this, "Build - Version Increment");
-                this.Version.Build++;
-                EditorHelper.CommitDirectChanges(this, true);
-                PlayerSettings.bundleVersion = this.Version.ToString();
-                AssetDatabase.SaveAssets();
-
-                //build
-                if (!string.IsNullOrEmpty(path))
-                {
-                    //save last build directory
-                    EditorProjectPrefs.Local.SetString("LastBuildDirectory", System.IO.Path.GetDirectoryName(path));
-
-
-                    //do build
-                    InputSettings cacheInputs = null;
-                    string cacheSymbols = null;
-                    Dictionary<BuildSettings.PlayerSettingOverride, object> cachePlayerSettings = null;
-
-                    if (this.InputSettings != null)
-                    {
-                        cacheInputs = InputSettings.LoadGlobalInputSettings(false);
-                        this.InputSettings.ApplyToGlobal();
-                    }
-                    if (this.DefineSymbols)
-                    {
-#if UNITY_2021_2_OR_NEWER
-                        cacheSymbols = PlayerSettings.GetScriptingDefineSymbols(UnityEditor.Build.NamedBuildTarget.FromBuildTargetGroup(buildGroup)) ?? string.Empty;
-#else
-                        cacheSymbols = PlayerSettings.GetScriptingDefineSymbolsForGroup(buildGroup) ?? string.Empty;
-#endif
-
-                        if (cacheSymbols != this.Symbols)
-                        {
-#if UNITY_2021_2_OR_NEWER
-                            PlayerSettings.SetScriptingDefineSymbols(UnityEditor.Build.NamedBuildTarget.FromBuildTargetGroup(buildGroup), this.Symbols);
-#else
-                            PlayerSettings.SetScriptingDefineSymbolsForGroup(buildGroup, this.Symbols);
-#endif
-
-                            //EditorUtility.DisplayDialog("Spacepuppy Build Pipeline", "There are distinct custom defines for this build, unity will take a couple seconds to recompile before continuing.", "Ok");
-                            Debug.Log("Spacepuppy Build Pipeline - There are distinct custom defines for this build, unity will take a couple seconds to recompile before continuing.");
-                            await Task.Delay(2000);
-                        }
-                        else
-                        {
-                            cacheSymbols = null;
-                        }
-
-                    }
-
-                    if (_playerSettingOverrides.Count > 0)
-                    {
-                        cachePlayerSettings = new Dictionary<PlayerSettingOverride, object>();
-                        foreach (var setting in _playerSettingOverrides)
-                        {
-                            if (setting.SettingInfo != null)
-                            {
-                                cachePlayerSettings[setting] = setting.SettingInfo.GetValue(null, null);
-                                try
-                                {
-                                    setting.SettingInfo.SetValue(null, setting.SettingValue, null);
-                                }
-                                catch (System.Exception)
-                                { }
-                            }
-                        }
-                    }
-
-                    var report = BuildPipeline.BuildPlayer(scenes, path, this.BuildTarget, this.BuildOptions);
-
-                    if (cacheInputs != null)
-                    {
-                        cacheInputs.ApplyToGlobal();
-                        DestroyImmediate(cacheInputs);
-                    }
-                    if (cacheSymbols != null)
-                    {
-#if UNITY_2021_2_OR_NEWER
-                        PlayerSettings.SetScriptingDefineSymbols(UnityEditor.Build.NamedBuildTarget.FromBuildTargetGroup(buildGroup), cacheSymbols);
-#else
-                        PlayerSettings.SetScriptingDefineSymbolsForGroup(buildGroup, cacheSymbols);
-#endif
-                    }
-                    if (cachePlayerSettings != null)
-                    {
-                        //loop backwards when resetting from cache
-                        for (int i = _playerSettingOverrides.Count - 1; i >= 0; i--)
-                        {
-                            var setting = _playerSettingOverrides[i];
-                            if (setting.SettingInfo != null)
-                            {
-                                try
-                                {
-                                    setting.SettingInfo.SetValue(null, cachePlayerSettings[setting], null);
-                                }
-                                catch (System.Exception)
-                                { }
-                            }
-                        }
-                    }
-
-                    if (report != null && report.summary.result == UnityEditor.Build.Reporting.BuildResult.Succeeded)
-                    {
-                        //save
-                        if ((option & PostBuildOption.OpenFolder) != 0)
-                        {
-                            EditorUtility.RevealInFinder(path);
-                        }
-                        if ((option & PostBuildOption.Run) != 0)
-                        {
-                            var proc = new System.Diagnostics.Process();
-                            proc.StartInfo.FileName = path;
-                            proc.Start();
-                        }
-
-                        return true;
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                }
-
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogException(ex);
-            }
-
-            return false;
+                path = path,
+                postBuildOption = option,
+                purgeBuildPath = purge,
+                callback = callback,
+            };
+            command.StartBuild(this);
+            return true;
         }
 
         #endregion
@@ -473,6 +357,324 @@ namespace com.spacepuppyeditor.Settings
             }
         }
 
+        public static string GetCurrentSymbols(BuildTargetGroup buildGroup)
+        {
+#if UNITY_2021_2_OR_NEWER
+            return PlayerSettings.GetScriptingDefineSymbols(UnityEditor.Build.NamedBuildTarget.FromBuildTargetGroup(buildGroup)) ?? string.Empty;
+#else
+            return PlayerSettings.GetScriptingDefineSymbolsForGroup(buildGroup) ?? string.Empty;
+#endif
+        }
+
+        #endregion
+
+        #region BuildCommand
+
+        [System.Serializable]
+        class BuildCommand
+        {
+            internal const string FILENAME_BUILDCOMMAND = "BuildCommand.json";
+            const string TEMP_SUFFIX = ".spbuild.bak";
+            const string PATH_PROJECTSETTINGS = "ProjectSettings/ProjectSettings.asset";
+            const string PATH_INPUTSETTINGS = "ProjectSettings/InputManager.asset";
+
+            enum States
+            {
+                FailedBuild = -1,
+                Initial = 0,
+                Building = 1,
+                SuccessfulBuild = 2,
+            }
+
+            public string path;
+            public BuildSettings.PostBuildOption postBuildOption;
+            public bool purgeBuildPath;
+            public BulkBuildCallback callback;
+
+            [SerializeField]
+            string[] scenes;
+            [SerializeField]
+            BuildTargetGroup buildGroup;
+            [SerializeField]
+            bool cachedInputSettings;
+            [SerializeField]
+            bool shouldForceRecompileAtEnd;
+
+            [SerializeField]
+            States state;
+            [SerializeField]
+            private long timestamp;
+            [SerializeField]
+            private string buildSettingsGuid;
+
+
+            internal void StartBuild(BuildSettings settings)
+            {
+                try
+                {
+                    state = States.Initial;
+                    if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(settings, out buildSettingsGuid, out long _)) return;
+                    scenes = settings.GetScenePaths();
+                    buildGroup = BuildPipeline.GetBuildTargetGroup(settings.BuildTarget);
+
+                    //set version
+                    Undo.RecordObject(settings, "Build - Version Increment");
+                    settings.Version.Build++;
+                    EditorHelper.CommitDirectChanges(settings, true);
+                    PlayerSettings.bundleVersion = settings.Version.ToString();
+                    AssetDatabase.SaveAssets();
+
+                    //build
+                    if (!string.IsNullOrEmpty(path))
+                    {
+                        //save last build directory
+                        EditorProjectPrefs.LocalProject.SetString("LastBuildDirectory", System.IO.Path.GetDirectoryName(path));
+
+                        //do build
+                        SPTempFolder.BackupFile(PATH_PROJECTSETTINGS, TEMP_SUFFIX);
+
+                        if (settings.InputSettings != null)
+                        {
+                            cachedInputSettings = true;
+
+                            SPTempFolder.BackupFile(PATH_INPUTSETTINGS, TEMP_SUFFIX);
+                            settings.InputSettings.ApplyToGlobal();
+                        }
+                        else
+                        {
+                            cachedInputSettings = false;
+                            SPTempFolder.PurgeBackup(PATH_INPUTSETTINGS, TEMP_SUFFIX);
+                        }
+
+                        if (settings.DefineSymbols && GetCurrentSymbols(buildGroup) != settings.Symbols)
+                        {
+                            shouldForceRecompileAtEnd = true;
+                            this.PrepForCompilation(States.Building);
+                            //EditorUtility.DisplayDialog("Spacepuppy Build Pipeline", "There are distinct custom defines for this build, unity will take a couple seconds to recompile before continuing.", "Ok");
+                            Debug.Log("Spacepuppy Build Pipeline - There are distinct custom defines for this build, unity will take a couple seconds to recompile before continuing.");
+#if UNITY_2021_2_OR_NEWER
+                            PlayerSettings.SetScriptingDefineSymbols(UnityEditor.Build.NamedBuildTarget.FromBuildTargetGroup(buildGroup), settings.Symbols);
+                            CompilationPipeline.RequestScriptCompilation();
+                            return; //technically this should never get reached
+#else
+                            PlayerSettings.SetScriptingDefineSymbolsForGroup(buildGroup, settings.Symbols);
+                            this.ContinueBuild(settings);
+                            return;
+#endif
+                        }
+                        else
+                        {
+                            shouldForceRecompileAtEnd = false;
+                        }
+
+                        this.ContinueBuild(settings);
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogException(ex);
+                    //TODO - callback
+                }
+            }
+
+            void ContinueBuild(BuildSettings settings)
+            {
+                state = States.Building;
+                try
+                {
+                    state = States.Building;
+                    if (settings._playerSettingOverrides.Count > 0)
+                    {
+                        foreach (var setting in settings._playerSettingOverrides)
+                        {
+                            if (setting.SettingInfo != null)
+                            {
+                                try
+                                {
+                                    setting.SettingInfo.SetValue(null, setting.SettingValue, null);
+                                }
+                                catch (System.Exception)
+                                { }
+                            }
+                        }
+                    }
+
+                    if (purgeBuildPath)
+                    {
+                        var dir = System.IO.Directory.GetParent(path);
+                        if (dir != null)
+                        {
+                            foreach (var f in dir.EnumerateFiles()) f.Delete();
+                            foreach (var d in dir.EnumerateDirectories()) d.Delete(true);
+                        }
+                    }
+
+                    var report = BuildPipeline.BuildPlayer(scenes, path, settings.BuildTarget, settings.BuildOptions);
+                    bool success = (report != null && report.summary.result == UnityEditor.Build.Reporting.BuildResult.Succeeded);
+
+                    if (cachedInputSettings)
+                    {
+                        SPTempFolder.ResetFromBackupAndPurge(PATH_INPUTSETTINGS, TEMP_SUFFIX);
+                    }
+
+                    if (shouldForceRecompileAtEnd)
+                    {
+                        this.PrepForCompilation(success ? States.SuccessfulBuild : States.FailedBuild);
+                        Debug.Log($"Spacepuppy Build Pipeline - resetting project settings and compiler defines.");
+
+                        SPTempFolder.ResetFromBackupAndPurge(PATH_PROJECTSETTINGS, TEMP_SUFFIX);
+
+#if UNITY_2021_2_OR_NEWER
+                        Unity.CodeEditor.CodeEditor.CurrentEditor.SyncAll();
+                        CompilationPipeline.RequestScriptCompilation();
+                        return; //should technically never reach here
+#else
+                        CompilationPipeline.RequestScriptCompilation();
+                        this.CompleteBuild(settings, success);
+#endif
+                    }
+                    else
+                    {
+                        SPTempFolder.ResetFromBackupAndPurge(PATH_PROJECTSETTINGS, TEMP_SUFFIX);
+                        this.CompleteBuild(settings, success);
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogException(ex);
+                    //TODO - callback
+                }
+            }
+
+            void CompleteBuild(BuildSettings settings, bool success)
+            {
+                state = success ? States.SuccessfulBuild : States.FailedBuild;
+                try
+                {
+                    if (success)
+                    {
+                        //save
+                        if ((postBuildOption & PostBuildOption.OpenFolder) != 0)
+                        {
+                            EditorUtility.RevealInFinder(path);
+                        }
+                        if ((postBuildOption & PostBuildOption.Run) != 0)
+                        {
+                            var proc = new System.Diagnostics.Process();
+                            proc.StartInfo.FileName = path;
+                            proc.Start();
+                        }
+
+                        this.callback.bulkBuildSettings?.ContinueBuild(this.callback, true);
+                    }
+                    else
+                    {
+                        this.callback.bulkBuildSettings?.ContinueBuild(this.callback, false);
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogException(ex);
+                }
+            }
+
+            internal bool TryCompleteBuild()
+            {
+                var settings = AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(this.buildSettingsGuid), typeof(BuildSettings)) as BuildSettings;
+                if (!settings) return false;
+
+                var ts = new System.DateTime(this.timestamp);
+                var delta = System.DateTime.UtcNow - ts;
+                if (delta.TotalMinutes > 15d) return false; //this is to make sure we're not reloading stupid late
+
+                switch (this.state)
+                {
+                    case States.Building:
+                        this.ContinueBuild(settings);
+                        return true;
+                    case States.SuccessfulBuild:
+                        this.CompleteBuild(settings, true);
+                        return true;
+                    case States.FailedBuild:
+                        this.CompleteBuild(settings, false);
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+
+            void PrepForCompilation(States nextstate)
+            {
+                this.state = nextstate;
+                this.timestamp = System.DateTime.UtcNow.Ticks;
+                SPTempFolder.WriteAllText(FILENAME_BUILDCOMMAND, JsonUtility.ToJson(this));
+            }
+
+        }
+
+        [System.Serializable]
+        internal struct BulkBuildCallback : ISerializationCallbackReceiver
+        {
+            public BulkBuildSettings bulkBuildSettings;
+            public PostBuildOption postBuildOption;
+            public int pass;
+            public bool failed;
+            [SerializeField] private string bulkBuildSettingsGuid;
+
+            public BulkBuildCallback(BulkBuildSettings settings, PostBuildOption option, int pass)
+            {
+                this.bulkBuildSettings = settings;
+                this.postBuildOption = option;
+                this.pass = pass;
+                this.failed = false;
+                this.bulkBuildSettingsGuid = null;
+            }
+
+            void ISerializationCallbackReceiver.OnAfterDeserialize()
+            {
+                this.bulkBuildSettings = !string.IsNullOrEmpty(bulkBuildSettingsGuid) ? AssetDatabase.LoadAssetAtPath<BulkBuildSettings>(AssetDatabase.GUIDToAssetPath(this.bulkBuildSettingsGuid)) : null;
+            }
+
+            void ISerializationCallbackReceiver.OnBeforeSerialize()
+            {
+                if (this.bulkBuildSettings)
+                {
+                    AssetDatabase.TryGetGUIDAndLocalFileIdentifier(this.bulkBuildSettings, out this.bulkBuildSettingsGuid, out long _);
+                }
+                else
+                {
+                    this.bulkBuildSettingsGuid = null;
+                }
+            }
+        }
+
+#if UNITY_2021_2_OR_NEWER
+        [InitializeOnLoadMethod]
+        static async void InitializeOnLoad()
+        {
+            try
+            {
+                var json = SPTempFolder.Exists(BuildCommand.FILENAME_BUILDCOMMAND) ? SPTempFolder.ReadAllText(BuildCommand.FILENAME_BUILDCOMMAND) : null;
+                if (!string.IsNullOrEmpty(json))
+                {
+                    SPTempFolder.Delete(BuildCommand.FILENAME_BUILDCOMMAND);
+                    var command = JsonUtility.FromJson<BuildCommand>(json);
+
+                    Debug.Log("Spacepuppy Build Pipeline - continuing build after recompile.");
+                    await Task.Delay(1000); //just wait a little
+                    if (!command.TryCompleteBuild())
+                    {
+                        Debug.LogWarning("Spacepuppy Build Pipeline - there was an error attempting to continue build.");
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+        }
+#endif
+
         #endregion
 
     }
@@ -483,6 +685,7 @@ namespace com.spacepuppyeditor.Settings
 
         public const string PROP_BUILDFILENAME = "BuildFileName";
         public const string PROP_BUILDDIR = "BuildDirectory";
+        public const string PROP_PURGEBUILDDIR = "PurgeBuildDirectory";
         public const string PROP_VERSION = "Version";
         public const string PROP_BOOTSCENE = "_bootScene";
         public const string PROP_SCENES = "_scenes";
@@ -495,7 +698,8 @@ namespace com.spacepuppyeditor.Settings
 
         #region Fields
 
-        private com.spacepuppyeditor.Core.ReorderableArrayPropertyDrawer _scenesDrawer = new com.spacepuppyeditor.Core.ReorderableArrayPropertyDrawer(typeof(SceneAsset));
+        private SceneArrayPropertyDrawer _scenesDrawer = new();
+        private UnityEditorInternal.ReorderableList _symbolsListDrawer;
 
         #endregion
 
@@ -532,6 +736,8 @@ namespace com.spacepuppyeditor.Settings
             {
                 var propBuildDir = this.serializedObject.FindProperty(PROP_BUILDDIR);
                 propBuildDir.stringValue = SPEditorGUILayout.FolderPathTextfield(EditorHelper.TempContent(propBuildDir.displayName, propBuildDir.tooltip), propBuildDir.stringValue, "Build Directory");
+
+                this.DrawPropertyField(PROP_PURGEBUILDDIR);
             }
             this.DrawPropertyField(PROP_VERSION);
 
@@ -576,8 +782,51 @@ namespace com.spacepuppyeditor.Settings
             SPEditorGUILayout.PropertyField(propDefineSymbols);
             if (propDefineSymbols.boolValue)
             {
-                this.DrawPropertyField(PROP_SYMBOLS);
+                if (_symbolsListDrawer == null)
+                {
+                    _symbolsListDrawer = new UnityEditorInternal.ReorderableList(new List<string>(), typeof(string));
+                    _symbolsListDrawer.drawHeaderCallback = (r) => EditorGUI.LabelField(r, "Defined Symbols");
+                    _symbolsListDrawer.drawElementCallback = (Rect rect, int index, bool isActive, bool isFocused) =>
+                    {
+                        if (index < 0 || index >= _symbolsListDrawer.list.Count) return;
+                        _symbolsListDrawer.list[index] = EditorGUI.TextField(new Rect(rect.xMin, rect.yMin, rect.width, EditorGUIUtility.singleLineHeight), _symbolsListDrawer.list[index] as string);
+                    };
+                    _symbolsListDrawer.onAddCallback = (listdrawer) =>
+                    {
+                        (_symbolsListDrawer.list as List<string>).Add(string.Empty);
+                    };
+                    _symbolsListDrawer.onRemoveCallback = (listdrawer) =>
+                    {
+                        if (listdrawer.index >= 0 && listdrawer.index < _symbolsListDrawer.list.Count)
+                        {
+                            (_symbolsListDrawer.list as List<string>).RemoveAt(_symbolsListDrawer.index);
+                        }
+                        else if (_symbolsListDrawer.list.Count > 0)
+                        {
+                            (_symbolsListDrawer.list as List<string>).RemoveAt(_symbolsListDrawer.list.Count - 1);
+                        }
+                    };
+                }
+
+                var propSymbols = this.serializedObject.FindProperty(PROP_SYMBOLS);
+                var lst = _symbolsListDrawer.list as List<string>;
+                lst.Clear();
+                lst.AddRange(propSymbols.stringValue.Split(';'));
+                EditorGUI.BeginChangeCheck();
+                _symbolsListDrawer.DoLayoutList();
+                if (EditorGUI.EndChangeCheck())
+                {
+                    propSymbols.stringValue = string.Join(';', lst);
+                }
             }
+        }
+        void _symbolsListDrawer_Header(Rect area)
+        {
+
+        }
+        void _symbolsListDrawer_DrawElement(Rect rect, int index, bool isActive, bool isFocused)
+        {
+
         }
 
         public virtual void DrawInputSettings()
@@ -611,7 +860,7 @@ namespace com.spacepuppyeditor.Settings
             var settings = this.target as BuildSettings;
             if (settings != null)
             {
-                _ = settings.BuildAsync(postBuildOption);
+                settings.Build(postBuildOption);
             }
         }
 
@@ -649,6 +898,43 @@ namespace com.spacepuppyeditor.Settings
                 lst.Add(new EditorBuildSettingsScene(sc, true));
             }
             EditorBuildSettings.scenes = lst.ToArray();
+        }
+
+        #endregion
+
+        #region Special Types
+
+        class SceneArrayPropertyDrawer : com.spacepuppyeditor.Core.ReorderableArrayPropertyDrawer
+        {
+
+            public SceneArrayPropertyDrawer() : base(typeof(SceneAsset))
+            {
+
+            }
+
+            protected override CachedReorderableList GetList(SerializedProperty property, GUIContent label)
+            {
+                var lst = base.GetList(property, label);
+                lst.contextMenuFactoryMethod = () =>
+                {
+                    var menu = lst.CreateCommonContextMenu();
+                    menu.AddItem(new GUIContent("Copy Scenes From Global"), false, () =>
+                    {
+                        var scenes = EditorBuildSettings.scenes;
+                        int cnt = scenes?.Length ?? 0;
+                        property.arraySize = cnt;
+                        for (int i = 0; i < cnt; i++)
+                        {
+                            property.GetArrayElementAtIndex(i).objectReferenceValue = AssetDatabase.LoadAssetAtPath<SceneAsset>(scenes[i].path);
+                        }
+                        property.serializedObject.ApplyModifiedProperties();
+                        lst.index = -1;
+                    });
+                    return menu;
+                };
+                return lst;
+            }
+
         }
 
         #endregion

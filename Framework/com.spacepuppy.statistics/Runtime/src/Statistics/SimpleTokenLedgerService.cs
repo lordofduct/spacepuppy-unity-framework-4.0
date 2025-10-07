@@ -13,6 +13,10 @@ namespace com.spacepuppy.Statistics
 
         #region Fields
 
+        [Space(10f)]
+        [SerializeField, DisplayFlat(DisplayBox = true)]
+        private Messaging.MessageSendCommand _onChangedMessageSettings;
+
         [System.NonSerialized]
         private Ledger _ledger = new Ledger();
 
@@ -53,13 +57,25 @@ namespace com.spacepuppy.Statistics
 
         public Ledger Ledger => _ledger;
 
+        public bool SignalTokenLedgerChanged { get; set; } = true;
+
         #endregion
 
         #region Methods
 
         private void _ledger_Changed(object sender, LedgerChangedEventArgs ev)
         {
-            Messaging.Broadcast<IStatisticsTokenLedgerChangedGlobalHandler, LedgerChangedEventArgs>(ev, (o, e) => o.OnChanged(this, e));
+            this.OnLedgerChanged(ev);
+            if (this.SignalTokenLedgerChanged)
+            {
+                _onChangedMessageSettings.Send<IStatisticsTokenLedgerChangedHandler, System.ValueTuple<SimpleTokenLedgerService, LedgerChangedEventArgs>>(this.gameObject, (this, ev), (o, a) => o.OnChanged(a.Item1, a.Item2));
+                Messaging.Broadcast<IStatisticsTokenLedgerChangedGlobalHandler, System.ValueTuple<SimpleTokenLedgerService, LedgerChangedEventArgs>>((this, ev), (o, a) => o.OnChanged(a.Item1, a.Item2));
+            }
+        }
+
+        protected virtual void OnLedgerChanged(LedgerChangedEventArgs ev)
+        {
+
         }
 
         #endregion
@@ -91,9 +107,9 @@ namespace com.spacepuppy.Statistics
             _ledger.Reset();
         }
 
-        public IEnumerable<LedgerStatData> EnumerateStats(string filterstat = null)
+        public IEnumerable<LedgerStatData> EnumerateStats(string filtercategory = null)
         {
-            return string.IsNullOrEmpty(filterstat) ? _ledger.GetAllStatAndTokenEntries() : _ledger.GetStatAndTokenEntries(filterstat);
+            return string.IsNullOrEmpty(filtercategory) ? _ledger.GetAllStatTokenEntries() : _ledger.GetStatTokenEntries(filtercategory);
         }
 
         #endregion

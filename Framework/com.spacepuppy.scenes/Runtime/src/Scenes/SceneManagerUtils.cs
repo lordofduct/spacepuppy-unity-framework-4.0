@@ -1,7 +1,12 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine.SceneManagement;
 using com.spacepuppy.Async;
+using com.spacepuppy.Utils;
+using com.spacepuppy.Collections;
+
+
 
 #if SP_UNITASK
 using Cysharp.Threading.Tasks;
@@ -231,6 +236,108 @@ namespace com.spacepuppy.Scenes
             return (sceneinst, result);
         }
 #endif
+
+        #endregion
+
+        #region Scene Extensions
+
+        public static T FindObjectOfType<T>(this Scene scene) where T : class
+        {
+            using (var roots = TempCollection.GetList<GameObject>())
+            {
+                scene.GetRootGameObjects(roots);
+                if (roots.Count == 0) return null;
+
+                if (TypeUtil.IsType(typeof(T), typeof(GameObject)))
+                {
+                    return roots.First() as T;
+                }
+                else
+                {
+                    foreach (var go in roots)
+                    {
+                        if (go.GetComponentInChildren(out T c))
+                        {
+                            return c;
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        public static T[] FindObjectsOfType<T>(this Scene scene) where T : class
+        {
+            using (var roots = TempCollection.GetList<GameObject>())
+            {
+                scene.GetRootGameObjects(roots);
+                if (roots.Count == 0) return ArrayUtil.Empty<T>();
+
+                using (var outputs = TempCollection.GetList<T>())
+                {
+                    if (TypeUtil.IsType(typeof(T), typeof(GameObject)))
+                    {
+                        foreach (var go in roots)
+                        {
+                            var arr = go.GetComponentsInChildren<Transform>();
+                            foreach (var t in arr)
+                            {
+                                outputs.Add(t.gameObject as T);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        foreach (var go in roots)
+                        {
+                            var arr = go.GetComponentsInChildren<T>();
+                            outputs.AddRange(arr);
+                        }
+                    }
+
+                    return outputs.ToArray();
+                }
+            }
+        }
+
+        public static int FindObjectsOfType<T>(this Scene scene, ICollection<T> buffer) where T : class
+        {
+            if (buffer == null) throw new System.ArgumentNullException(nameof(buffer));
+
+            using (var roots = TempCollection.GetList<GameObject>())
+            {
+                scene.GetRootGameObjects(roots);
+                if (roots.Count == 0) return 0;
+
+                int cnt = 0;
+                if (TypeUtil.IsType(typeof(T), typeof(GameObject)))
+                {
+                    foreach (var go in roots)
+                    {
+                        var arr = go.GetComponentsInChildren<Transform>();
+                        cnt += arr.Length;
+                        foreach (var t in arr)
+                        {
+                            buffer.Add(t.gameObject as T);
+                        }
+                    }
+                }
+                else
+                {
+                    foreach (var go in roots)
+                    {
+                        var arr = go.GetComponentsInChildren<T>();
+                        cnt += arr.Length;
+                        foreach (var c in arr)
+                        {
+                            buffer.Add(c);
+                        }
+                    }
+                }
+                return cnt;
+            }
+        }
 
         #endregion
 

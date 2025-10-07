@@ -455,6 +455,8 @@ namespace com.spacepuppy.Utils
 
         public static bool HasRegisteredGlobalListener<T>() where T : class => GlobalMessagePool<T>.Count > 0;
 
+        public static bool IsExecutingGlobal<T>() where T : class => GlobalMessagePool<T>.IsExecuting;
+
         /// <summary>
         /// Register a listener for a global Broadcast.
         /// </summary>
@@ -512,11 +514,39 @@ namespace com.spacepuppy.Utils
         }
 
         /// <summary>
+        /// Broadcast a message globally to all registered for T. This is faster than FindAndBroadcast, but requires manual registering/unregistering.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="functor"></param>
+        /// <param name="includeDisabledComponents"></param>
+        public static void Broadcast<T>(System.Action<T> functor, System.Comparison<T> sort) where T : class
+        {
+            if (functor == null) throw new System.ArgumentNullException("functor");
+
+            GlobalMessagePool<T>.Signal(functor, sort);
+        }
+
+        /// <summary>
+        /// Broadcast a message globally to all registered for T. This is faster than FindAndBroadcast, but requires manual registering/unregistering.
+        /// </summary>
+        /// <typeparam name="TInterface"></typeparam>
+        /// <typeparam name="TArg"></typeparam>
+        /// <param name="arg"></param>
+        /// <param name="functor"></param>
+        /// <param name="includeDisabledComponents"></param>
+        public static void Broadcast<TInterface, TArg>(TArg arg, System.Action<TInterface, TArg> functor, System.Comparison<TInterface> sort) where TInterface : class
+        {
+            if (functor == null) throw new System.ArgumentNullException("functor");
+
+            GlobalMessagePool<TInterface>.Signal<TArg>(arg, functor, sort);
+        }
+
+        /// <summary>
         /// Broadcast a message globally to all that match T. This can be slow, use sparingly.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="functor"></param>
-        public static void FindAndBroadcast<T>(System.Action<T> functor, bool includeDisabledComponents = false) where T : class
+        public static void FindAndBroadcast<T>(System.Action<T> functor, bool includeDisabledComponents = false, System.Comparison<T> sort = null) where T : class
         {
             if (functor == null) throw new System.ArgumentNullException("functor");
 
@@ -524,14 +554,16 @@ namespace com.spacepuppy.Utils
             {
                 ObjUtil.FindObjectsOfInterface<T>(coll);
                 GlobalMessagePool<T>.CopyReceivers(coll);
-                var e = coll.GetEnumerator();
-                while (e.MoveNext())
+                IEnumerable<T> iter = coll;
+                if (sort != null) iter = iter.OrderBy(o => o, Comparer<T>.Create(sort));
+
+                foreach (var o in iter)
                 {
-                    if (includeDisabledComponents || TargetIsValid(e.Current))
+                    if (includeDisabledComponents || TargetIsValid(o))
                     {
                         try
                         {
-                            functor(e.Current);
+                            functor(o);
                         }
                         catch (System.Exception ex)
                         {
@@ -549,7 +581,7 @@ namespace com.spacepuppy.Utils
         /// <typeparam name="TArg"></typeparam>
         /// <param name="arg"></param>
         /// <param name="functor"></param>
-        public static void FindAndBroadcast<TInterface, TArg>(TArg arg, System.Action<TInterface, TArg> functor, bool includeDisabledComponents = false) where TInterface : class
+        public static void FindAndBroadcast<TInterface, TArg>(TArg arg, System.Action<TInterface, TArg> functor, bool includeDisabledComponents = false, System.Comparison<TInterface> sort = null) where TInterface : class
         {
             if (functor == null) throw new System.ArgumentNullException("functor");
 
@@ -557,14 +589,16 @@ namespace com.spacepuppy.Utils
             {
                 ObjUtil.FindObjectsOfInterface<TInterface>(coll);
                 GlobalMessagePool<TInterface>.CopyReceivers(coll);
-                var e = coll.GetEnumerator();
-                while (e.MoveNext())
+                IEnumerable<TInterface> iter = coll;
+                if (sort != null) iter = iter.OrderBy(o => o, Comparer<TInterface>.Create(sort));
+
+                foreach (var o in iter)
                 {
-                    if (includeDisabledComponents || TargetIsValid(e.Current))
+                    if (includeDisabledComponents || TargetIsValid(o))
                     {
                         try
                         {
-                            functor(e.Current, arg);
+                            functor(o, arg);
                         }
                         catch (System.Exception ex)
                         {
@@ -585,11 +619,18 @@ namespace com.spacepuppy.Utils
         /// <typeparam name="T"></typeparam>
         /// <param name="go"></param>
         /// <returns></returns>
-        public static MessageToken<T> CreateSignalToken<T>(GameObject go) where T : class
+        public static MessageToken<T> CreateSignalToken<T>(GameObject go, bool includeDisabledComponents = false) where T : class
         {
             if (object.ReferenceEquals(go, null)) throw new System.ArgumentNullException("go");
 
-            return new MessageToken<T>(() => go.GetComponents<T>());
+            if (includeDisabledComponents)
+            {
+                return new MessageToken<T>(() => go.GetComponents<T>());
+            }
+            else
+            {
+                return new MessageToken<T>(() => go.GetComponents<T>().Where(o => TargetIsValid(o)).ToArray());
+            } 
         }
 
         /// <summary>
@@ -598,24 +639,18 @@ namespace com.spacepuppy.Utils
         /// <typeparam name="T"></typeparam>
         /// <param name="go"></param>
         /// <returns></returns>
-        public static MessageToken<T> CreateSignalUpwardsToken<T>(GameObject go) where T : class
+        public static MessageToken<T> CreateSignalUpwardsToken<T>(GameObject go, bool includeDisabledComponents = false) where T : class
         {
             if (object.ReferenceEquals(go, null)) throw new System.ArgumentNullException("go");
 
-            return new MessageToken<T>(() =>
+            if (includeDisabledComponents)
             {
-                using (var lst = TempCollection.GetList<T>())
-                {
-                    var p = go.transform;
-                    while (p != null)
-                    {
-                        p.GetComponents<T>(lst);
-                        p = p.parent;
-                    }
-
-                    return lst.ToArray();
-                }
-            });
+                return new MessageToken<T>(() => go.GetComponentsInParent<T>());
+            }
+            else
+            {
+                return new MessageToken<T>(() => go.GetComponentsInParent<T>().Where(o => TargetIsValid(o)).ToArray());
+            }
         }
 
         /// <summary>
@@ -626,23 +661,39 @@ namespace com.spacepuppy.Utils
         /// <param name="includeInactiveObjects"></param>
         /// <param name="includeDisabledComponents"></param>
         /// <returns></returns>
-        public static MessageToken<T> CreateBroadcastToken<T>(GameObject go, bool includeInactiveObjects = false) where T : class
+        public static MessageToken<T> CreateBroadcastToken<T>(GameObject go, bool includeInactiveObjects = false, bool includeDisabledComponents = false) where T : class
         {
             if (object.ReferenceEquals(go, null)) throw new System.ArgumentNullException("go");
 
-            return new MessageToken<T>(() => go.GetComponentsInChildren<T>(includeInactiveObjects));
+            if (includeDisabledComponents)
+            {
+                return new MessageToken<T>(() => go.GetComponentsInChildren<T>(includeInactiveObjects));
+            }
+            else
+            {
+                return new MessageToken<T>(() => go.GetComponentsInChildren<T>(includeInactiveObjects).Where(o => TargetIsValid(o)).ToArray());
+            }
         }
 
-        public static MessageToken<T> CreateBroadcastTokenIfReceiversExist<T>(GameObject go, bool includeInactiveObjects = false) where T : class
+        public static MessageToken<T> CreateBroadcastTokenIfReceiversExist<T>(GameObject go, bool includeInactiveObjects = false, bool includeDisabledComponents = false) where T : class
         {
             if (object.ReferenceEquals(go, null)) throw new System.ArgumentNullException("go");
 
             using (var lst = TempCollection.GetList<T>())
             {
                 go.GetComponentsInChildren<T>(includeInactiveObjects, lst);
-                if (lst.Count > 0)
+                int cnt = includeDisabledComponents ? lst.Count : lst.Count(o => TargetIsValid(o));
+
+                if (cnt > 0)
                 {
-                    return new MessageToken<T>(() => go.GetComponentsInChildren<T>(includeInactiveObjects));
+                    if (includeDisabledComponents)
+                    {
+                        return new MessageToken<T>(() => go.GetComponentsInChildren<T>(includeInactiveObjects));
+                    }
+                    else
+                    {
+                        return new MessageToken<T>(() => go.GetComponentsInChildren<T>(includeInactiveObjects).Where(o => TargetIsValid(o)).ToArray());
+                    }
                 }
             }
 
@@ -856,6 +907,8 @@ namespace com.spacepuppy.Utils
                 get { return _receivers?.Count ?? 0; }
             }
 
+            public static bool IsExecuting => _state != ExecutingState.None;
+
             public static void Add(T listener)
             {
                 if (_receivers == null) _receivers = new HashSet<T>();
@@ -1058,6 +1111,82 @@ namespace com.spacepuppy.Utils
                 }
             }
 
+            public static void Signal(System.Action<T> functor, System.Comparison<T> sort)
+            {
+                if (_state != ExecutingState.None) throw new System.InvalidOperationException("Can not globally broadcast a message currently executing.");
+                if (_receivers == null || _receivers.Count == 0) return;
+
+                _state = ExecutingState.Executing;
+                try
+                {
+                    using (var lst = TempCollection.GetList<T>(_receivers))
+                    {
+                        lst.Sort(sort);
+                        foreach (var o in lst)
+                        {
+                            if (o is UnityEngine.Object uo && uo == null)
+                            {
+                                _receivers.Remove(o);
+                            }
+                            else
+                            {
+                                try
+                                {
+                                    functor(o);
+                                }
+                                catch (System.Exception ex)
+                                {
+                                    Debug.LogException(ex);
+                                }
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    _state = ExecutingState.None;
+                    if (_receivers.Count == 0) HasReceiversChanged?.Invoke();
+                }
+            }
+
+            public static void Signal<TArg>(TArg arg, System.Action<T, TArg> functor, System.Comparison<T> sort)
+            {
+                if (_state != ExecutingState.None) throw new System.InvalidOperationException("Can not globally broadcast a message currently executing.");
+                if (_receivers == null || _receivers.Count == 0) return;
+
+                _state = ExecutingState.Executing;
+                try
+                {
+                    using (var lst = TempCollection.GetList<T>(_receivers))
+                    {
+                        lst.Sort(sort);
+                        foreach (var o in lst)
+                        {
+                            if (o is UnityEngine.Object uo && uo == null)
+                            {
+                                _receivers.Remove(o);
+                            }
+                            else
+                            {
+                                try
+                                {
+                                    functor(o, arg);
+                                }
+                                catch (System.Exception ex)
+                                {
+                                    Debug.LogException(ex);
+                                }
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    _state = ExecutingState.None;
+                    if (_receivers.Count == 0) HasReceiversChanged?.Invoke();
+                }
+            }
+
         }
 
         #endregion
@@ -1082,7 +1211,7 @@ namespace com.spacepuppy.Utils
             /// Set true if you'd like this hook to not auto destroy when no subscribers.
             /// </summary>
             [System.NonSerialized]
-            private HashSet<T> _observers = new HashSet<T>();
+            private LockingHashSet<T> _observers = new();
 
             protected virtual void OnDestroy()
             {
@@ -1098,29 +1227,98 @@ namespace com.spacepuppy.Utils
             public int SubscriberCount => _observers?.Count ?? 0;
 
             [Preserve]
-            public bool Subscribe(T observer) => observer != null && ObjUtil.IsObjectAlive(this) && this.enabled && _observers.Add(observer);
+            public bool Subscribe(T observer)
+            {
+                if (observer == null || !ObjUtil.IsObjectAlive(this)) return false;
+
+                if (_observers.Locked)
+                {
+                    if (_observers.Contains(observer)) return false;
+                    _observers.Add(observer);
+                    return true;
+                }
+                else
+                {
+                    return _observers.InnerCollection.Add(observer);
+                }
+            }
+
             [Preserve]
             public bool Unsubscribe(T observer)
             {
                 if (!ObjUtil.IsObjectAlive(this)) return false;
 
-                bool result = observer != null && this.enabled && _observers.Remove(observer);
-                if (this.SubscriberCount == 0 && !this.PreserveOnUnsubscribe()) Destroy(this);
-                return result;
+                if (_observers.Locked)
+                {
+                    return observer != null && _observers.Remove(observer);
+                }
+                else
+                {
+                    bool result = observer != null && _observers.Remove(observer);
+                    this.ValidateContinueUpdateLoop();
+                    return result;
+                }
             }
 
             public void Signal(System.Action<T> functor)
             {
                 if (_observers == null || _observers.Count == 0) return;
-                foreach (var o in _observers) functor(o);
+
+                try
+                {
+                    _observers.Lock();
+                    foreach (var o in _observers)
+                    {
+                        functor(o);
+                    }
+                }
+                finally
+                {
+                    _observers.Unlock();
+                    this.ValidateContinueUpdateLoop();
+                }
             }
 
             public void Signal<TArg>(TArg arg, System.Action<T, TArg> functor)
             {
                 if (_observers == null || _observers.Count == 0) return;
-                foreach (var o in _observers) functor(o, arg);
+
+                try
+                {
+                    _observers.Lock();
+                    foreach (var o in _observers)
+                    {
+                        functor(o, arg);
+                    }
+                }
+                finally
+                {
+                    _observers.Unlock();
+                    this.ValidateContinueUpdateLoop();
+                }
             }
 
+            protected virtual void ValidateContinueUpdateLoop()
+            {
+                if (this.SubscriberCount == 0 && !this.PreserveOnUnsubscribe())
+                {
+                    //we only destroy at the end of the frame if no new subscribers pick this up
+                    if (GameLoop.LateUpdateWasCalled)
+                    {
+                        Destroy(this);
+                    }
+                    else
+                    {
+                        GameLoop.LateUpdateHandle.BeginInvoke(() =>
+                        {
+                            if (this.SubscriberCount == 0) Destroy(this);
+                        });
+                    }
+                }
+            }
+
+            protected void LockObservers() { _observers.Lock(); }
+            protected void UnlockObservers() { _observers.Unlock(); }
             protected HashSet<T>.Enumerator GetSubscriberEnumerator() => _observers != null ? _observers.GetEnumerator() : default;
 
             static readonly System.Type _hookType;
@@ -1140,7 +1338,7 @@ namespace com.spacepuppy.Utils
                 if (go)
                 {
                     hook = go.GetComponent<ISubscribableMessageHook<T>>();
-                    if (hook == null && _hookType != null) hook = go.AddComponent(_hookType) as ISubscribableMessageHook<T>;
+                    if (hook.IsNullOrDestroyed() && _hookType != null) hook = go.AddComponent(_hookType) as ISubscribableMessageHook<T>;
                     return hook != null ? hook.Subscribe(observer) : false;
                 }
                 else

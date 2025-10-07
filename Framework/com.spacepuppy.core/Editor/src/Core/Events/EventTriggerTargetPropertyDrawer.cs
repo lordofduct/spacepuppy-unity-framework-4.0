@@ -5,12 +5,12 @@ using System.Collections.Generic;
 using System.Linq;
 
 using com.spacepuppy;
+using com.spacepuppy.Collections;
 using com.spacepuppy.Events;
 using com.spacepuppy.Dynamic;
 using com.spacepuppy.Utils;
 
 using com.spacepuppyeditor.Core;
-using com.spacepuppy.Collections;
 
 namespace com.spacepuppyeditor.Events
 {
@@ -54,9 +54,11 @@ namespace com.spacepuppyeditor.Events
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
+            float h;
+            if (EditorHelper.AssertMultiObjectEditingNotSupportedHeight(property, label, out h)) return h;
+
             var actProp = property.FindPropertyRelative(EventTriggerTargetPropertyDrawer.PROP_ACTIVATIONTYPE);
 
-            float h = 0f;
             switch (actProp.GetEnumValue<TriggerActivationType>())
             {
                 case TriggerActivationType.TriggerAllOnTarget:
@@ -84,6 +86,8 @@ namespace com.spacepuppyeditor.Events
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
+
             EditorGUI.BeginProperty(position, label, property);
 
             ////Draw ActivationType Popup
@@ -479,15 +483,14 @@ namespace com.spacepuppyeditor.Events
                 arr[6] = string.Format("Toggle Target [{0}]", nm);
                 if (result.ActivationType == TriggerActivationType.CallMethodOnSelectedTarget && !string.IsNullOrEmpty(methodNameProp?.stringValue))
                 {
-                    arr[3] = string.Format("Call Method [{0}->{1}]", nm, methodNameProp.stringValue);
+                    arr[3] = $"Call Method [{nm}.{methodNameProp.stringValue}]";
                 }
                 result.DropdownDisplayNames = arr;
             }
             else if (result.ActivationType == TriggerActivationType.CallMethodOnSelectedTarget && !string.IsNullOrEmpty(methodNameProp?.stringValue))
             {
                 var arr = result.DropdownDisplayNames.ToArray();
-                var nm = targ?.GetType().Name ?? "null";
-                arr[3] = string.Format("Call Method [{0}->{1}]", nm, methodNameProp.stringValue);
+                arr[3] = targ ? $"Call Method [{targ.GetType().Name}]" : "Call Method [null]";
                 result.DropdownDisplayNames = arr;
             }
 
@@ -639,8 +642,8 @@ namespace com.spacepuppyeditor.Events
                                     elements.AddRange(GetCallableMethodsOnTarget(target, true).Select(m => new System.ValueTuple<UnityEngine.Object, int, System.Reflection.MemberInfo>(target, 0, m)));
                                 }
 
-                                var elementLabels = elements.Select(t => EditorHelper.TempContent(string.Format("{0} : {1} [{2}] / {3}", target.name, t.Item1.GetType().Name, t.Item2, t.Item3.Name)))
-                                                            .Prepend(EditorHelper.TempContent(string.Format("{0} --no selection--", target.name)))
+                                var elementLabels = elements.Select(t => EditorHelper.TempContent($"{target.name} : {t.Item1.GetType().Name}[{t.Item2}]/{t.Item3.Name}", $"{t.Item1.GetType().Name}[{t.Item2}].{t.Item3.Name}"))
+                                                            .Prepend(EditorHelper.TempContent($"{target.name} --no selection--"))
                                                             .ToArray();
 
                                 var methodNameProp = property.FindPropertyRelative(PROP_METHODNAME);

@@ -52,7 +52,7 @@ namespace com.spacepuppy.Spawn
     }
 
     [System.Serializable]
-    public class SpawnPoolRef : SerializableInterfaceRef<ISpawnPool>
+    public class SpawnPoolRef : InterfaceRef<ISpawnPool>
     {
         public ISpawnPool ValueOrDefault => this.Value.IsAlive() ? this.Value : SpawnPool.DefaultPool;
     }
@@ -145,7 +145,7 @@ namespace com.spacepuppy.Spawn
         [ReorderableArray(DrawElementAtBottom = true, ChildPropertyToDrawAsElementLabel = "Name", ChildPropertyToDrawAsElementEntry = "_prefab")]
         private List<PrefabCache> _registeredPrefabs = new List<PrefabCache>();
 
-        [Space(20f)]
+        [Space(5f)]
         [SerializeField]
         [ReorderableArray(DrawElementAtBottom = true, ChildPropertyToDrawAsElementEntry = "_assetSet")]
         private AssetSetCache[] _registeredAssetSets;

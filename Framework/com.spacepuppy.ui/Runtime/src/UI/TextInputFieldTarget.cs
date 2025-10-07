@@ -1,14 +1,40 @@
 using UnityEngine;
 using System.Collections.Generic;
 
+using com.spacepuppy.Dynamic;
 using com.spacepuppy.Utils;
+using System;
 
 namespace com.spacepuppy.UI
 {
 
     [System.Serializable]
-    public sealed class TextInputFieldTarget
+    public sealed class TextInputFieldTarget : IDynamicProperty, System.IDisposable
     {
+
+        private System.EventHandler<TempEventArgs> _onSubmit;
+        public event System.EventHandler<TempEventArgs> OnSubmit
+        {
+            add
+            {
+                bool check = _onSubmit == null;
+                _onSubmit += value;
+                if (check)
+                {
+                    this.AddEventHandlerHook();
+                }
+            }
+            remove
+            {
+                bool check = _onSubmit != null;
+                _onSubmit -= value;
+                if (check && _onSubmit == null)
+                {
+                    this.RemoveEventHandlerHook();
+                }
+            }
+        }
+        public EventHandlerRef<TempEventArgs> OnSubmit_ref() => EventHandlerRef<TempEventArgs>.Create(this, (o, l) => o.OnSubmit += l, (o, l) => o.OnSubmit -= l);
 
         #region Fields
 
@@ -21,6 +47,9 @@ namespace com.spacepuppy.UI
 #endif
         private UnityEngine.Object _target;
 
+        [System.NonSerialized]
+        private System.IDisposable _onSendHook;
+
         #endregion
 
         #region Properties
@@ -30,7 +59,18 @@ namespace com.spacepuppy.UI
         public UnityEngine.Object Target
         {
             get => _target;
-            set => _target = StringUtil.GetAsTextInputFieldBindingTarget(value, true);
+            set
+            {
+                var targ = StringUtil.GetAsTextInputFieldBindingTarget(value, true);
+                if (targ == _target) return;
+
+                this.RemoveEventHandlerHook();
+                _target = targ;
+                if (_onSubmit != null)
+                {
+                    AddEventHandlerHook();
+                }
+            }
         }
 
         public string text
@@ -39,11 +79,122 @@ namespace com.spacepuppy.UI
             set => StringUtil.TrySetText(_target, value);
         }
 
+        public int caretPosition
+        {
+            get
+            {
+                switch (StringUtil.GetAsTextBindingTarget(_target, false))
+                {
+                    case UnityEngine.UI.InputField uif:
+                        return uif.caretPosition;
+#if SP_TMPRO
+                    case TMPro.TMP_InputField tmpif:
+                        return tmpif.caretPosition;
+#endif
+                    default:
+                        return -1;
+                }
+            }
+            set
+            {
+                switch (StringUtil.GetAsTextBindingTarget(_target, false))
+                {
+                    case UnityEngine.UI.InputField uif:
+                        uif.caretPosition = value;
+                        break;
+#if SP_TMPRO
+                    case TMPro.TMP_InputField tmpif:
+                        tmpif.caretPosition = value;
+                        break;
+#endif
+                }
+            }
+        }
+
+        public int selectionAnchorPosition
+        {
+            get
+            {
+                switch (StringUtil.GetAsTextBindingTarget(_target, false))
+                {
+                    case UnityEngine.UI.InputField uif:
+                        return uif.selectionAnchorPosition;
+#if SP_TMPRO
+                    case TMPro.TMP_InputField tmpif:
+                        return tmpif.selectionAnchorPosition;
+#endif
+                    default:
+                        return -1;
+                }
+            }
+            set
+            {
+                switch (StringUtil.GetAsTextBindingTarget(_target, false))
+                {
+                    case UnityEngine.UI.InputField uif:
+                        uif.selectionAnchorPosition = value;
+                        break;
+#if SP_TMPRO
+                    case TMPro.TMP_InputField tmpif:
+                        tmpif.selectionAnchorPosition = value;
+                        break;
+#endif
+                }
+            }
+        }
+
+        public bool targetEnabled
+        {
+            get
+            {
+                switch (StringUtil.GetAsTextBindingTarget(_target, false))
+                {
+                    case UnityEngine.UI.InputField uif:
+                        return uif.enabled;
+#if SP_TMPRO
+                    case TMPro.TMP_InputField tmpif:
+                        return tmpif.enabled;
+#endif
+                    default:
+                        return false;
+                }
+            }
+            set
+            {
+                switch (StringUtil.GetAsTextBindingTarget(_target, false))
+                {
+                    case UnityEngine.UI.InputField uif:
+                        uif.enabled = value;
+                        break;
+#if SP_TMPRO
+                    case TMPro.TMP_InputField tmpif:
+                        tmpif.enabled = value;
+                        break;
+#endif
+                }
+            }
+        }
+
         #endregion
 
         #region Methods
 
         public UnityEngine.Object ReduceTarget() => StringUtil.GetAsTextBindingTarget(_target, false);
+
+        public bool IsFocused()
+        {
+            switch (StringUtil.GetAsTextBindingTarget(_target, false))
+            {
+                case UnityEngine.UI.InputField uif:
+                    return uif.isFocused;
+#if SP_TMPRO
+                case TMPro.TMP_InputField tmpif:
+                    return tmpif.isFocused;
+#endif
+                default:
+                    return false;
+            }
+        }
 
         public void SelectUIElement()
         {
@@ -70,34 +221,55 @@ namespace com.spacepuppy.UI
             }
         }
 
-        public void OnSubmit_AddListener(UnityEngine.Events.UnityAction<string> callback)
+        private void AddEventHandlerHook()
         {
             switch (StringUtil.GetAsTextBindingTarget(_target, false))
             {
                 case UnityEngine.UI.InputField uif:
-                    uif.onSubmit.AddListener(callback);
+                    _onSendHook = uif.onSubmit.AddTrackedListener(Target_OnSubmit);
                     break;
 #if SP_TMPRO
                 case TMPro.TMP_InputField tmpif:
-                    tmpif.onSubmit.AddListener(callback);
+                    _onSendHook = tmpif.onSubmit.AddTrackedListener(Target_OnSubmit);
                     break;
 #endif
             }
         }
 
-        public void OnSubmit_RemoveListener(UnityEngine.Events.UnityAction<string> callback)
+        private void RemoveEventHandlerHook()
         {
-            switch (StringUtil.GetAsTextBindingTarget(_target, false))
+            _onSendHook?.Dispose();
+            _onSendHook = null;
+        }
+
+        private void Target_OnSubmit(string value)
+        {
+            if (_onSubmit != null)
             {
-                case UnityEngine.UI.InputField uif:
-                    uif.onSubmit.RemoveListener(callback);
-                    break;
-#if SP_TMPRO
-                case TMPro.TMP_InputField tmpif:
-                    tmpif.onSubmit.RemoveListener(callback);
-                    break;
-#endif
+                var te = TempEventArgs.Create(value);
+                _onSubmit.Invoke(this, te);
+                TempEventArgs.Release(te);
             }
+        }
+
+        #endregion
+
+        #region IDynamicProperty Interface
+
+        object IDynamicProperty.Get() => this.Target;
+
+        void IDynamicProperty.Set(object value) => this.Target = value as UnityEngine.Object;
+
+        System.Type IDynamicProperty.GetType() => typeof(UnityEngine.Object);
+
+        #endregion
+
+        #region IDisposable Interface
+
+        public void Dispose()
+        {
+            this.RemoveEventHandlerHook();
+            _target = null;
         }
 
         #endregion

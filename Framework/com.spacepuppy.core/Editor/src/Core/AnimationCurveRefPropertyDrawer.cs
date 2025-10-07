@@ -75,7 +75,7 @@ namespace com.spacepuppyeditor.Core
                 case CurveType.Null:
                 case CurveType.Asset:
                     EditorGUI.BeginChangeCheck();
-                    obj = UnityObjectDropDownWindowSelector.ObjectField(drawArea, GUIContent.none, obj as UnityEngine.Object, typeof(IAnimationCurve), true, false);
+                    obj = SPEditorGUI.AdvancedObjectField(drawArea, GUIContent.none, obj as UnityEngine.Object, typeof(IAnimationCurve), true, false);
                     if (EditorGUI.EndChangeCheck())
                     {
                         curveProp.managedReferenceValue = AnimationCurveRef.CreateInnerValuewrapper(obj);

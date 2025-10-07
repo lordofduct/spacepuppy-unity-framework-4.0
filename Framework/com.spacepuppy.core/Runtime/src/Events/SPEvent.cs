@@ -7,38 +7,76 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppy.Events
 {
 
-    public struct SPEventTrackedListenerToken : System.IDisposable
+    public struct SPEventTrackedListenerToken : ITrackedListenerToken<System.EventHandler<TempEventArgs>>
     {
         private BaseSPEvent _spevent;
-        private System.EventHandler<TempEventArgs> _handler;
+        private System.EventHandler<TempEventArgs> _listener;
 
         public BaseSPEvent SPEvent => _spevent;
+        ITrackableEvent<System.EventHandler<TempEventArgs>> ITrackedListenerToken<System.EventHandler<TempEventArgs>>.Target => _spevent;
+        System.EventHandler<TempEventArgs> ITrackedListenerToken<System.EventHandler<TempEventArgs>>.Listener => _listener;
 
         public void Dispose()
         {
-            if (_spevent != null && _handler != null)
+            if (_spevent != null && _listener != null)
             {
-                _spevent.TriggerActivated -= _handler;
+                _spevent.TriggerActivated -= _listener;
             }
             _spevent = null;
-            _handler = null;
+            _listener = null;
         }
 
-        internal static SPEventTrackedListenerToken Create(BaseSPEvent spevent, System.EventHandler<TempEventArgs> handler)
+        internal static SPEventTrackedListenerToken AddListener(BaseSPEvent spevent, System.EventHandler<TempEventArgs> listener)
         {
-            if (spevent == null || handler == null) return default;
-            spevent.TriggerActivated += handler;
+            if (spevent == null || listener == null) return default;
+            spevent.TriggerActivated += listener;
             return new SPEventTrackedListenerToken()
             {
                 _spevent = spevent,
-                _handler = handler
+                _listener = listener
             };
+        }
+
+        public static implicit operator TrackedListenerToken<System.EventHandler<TempEventArgs>>(SPEventTrackedListenerToken token)
+        {
+            return new TrackedListenerToken<System.EventHandler<TempEventArgs>>(token._spevent, token._listener);
         }
 
     }
 
+    public static class SPEventExtensions
+    {
+
+
+        [System.Obsolete("Use MultiTrackedListenerToken instead.")]
+        public static IEnumerable<SPEventTrackedListenerToken> AddTrackedListeners(this IEnumerable<SPEvent> targets, System.EventHandler<TempEventArgs> handler)
+        {
+            if (handler == null) throw new System.ArgumentNullException(nameof(handler));
+            if (targets == null) yield break;
+
+            foreach (var t in targets)
+            {
+                if (t == null) continue;
+                yield return t.AddTrackedListener(handler);
+            }
+        }
+
+        [System.Obsolete("Use MultiTrackedListenerToken instead.")]
+        public static void Dispose(this IEnumerable<SPEventTrackedListenerToken> hooks)
+        {
+            if (hooks == null) return;
+
+            foreach (var h in hooks)
+            {
+                h.Dispose();
+            }
+        }
+
+    }
+
+
     [System.Serializable()]
-    public abstract class BaseSPEvent
+    public abstract class BaseSPEvent : ITrackableEvent<System.EventHandler<TempEventArgs>>
     {
 
         public const string ID_DEFAULT = "Trigger";
@@ -61,6 +99,7 @@ namespace com.spacepuppy.Events
         {
             try
             {
+                _activationToken++;
                 if (_triggerActivated != null)
                 {
                     var e = TempEventArgs.Create(arg);
@@ -90,6 +129,9 @@ namespace com.spacepuppy.Events
 
         [System.NonSerialized]
         private HashSet<object> _hijackTokens;
+
+        [System.NonSerialized]
+        private int _activationToken;
 
         #endregion
 
@@ -141,6 +183,13 @@ namespace com.spacepuppy.Events
             get { return _hijackTokens != null && _hijackTokens.Count > 0; }
         }
 
+        /// <summary>
+        /// This value changes every time the event is triggered.
+        /// </summary>
+        public int ActivationToken => _activationToken;
+
+        public bool Activating { get; protected set; }
+
         #endregion
 
         #region Methods
@@ -189,29 +238,68 @@ namespace com.spacepuppy.Events
 
         protected void ActivateTrigger(object sender, object arg)
         {
-            if (_targets.Count > 0 && !this.CurrentlyHijacked)
+            try
             {
-                var e = _targets.GetEnumerator();
-                while (e.MoveNext())
+                this.Activating = true;
+                if (_targets.Count > 0 && !this.CurrentlyHijacked)
                 {
-                    e.Current?.Trigger(sender, arg);
+                    var e = _targets.GetEnumerator();
+                    while (e.MoveNext())
+                    {
+                        e.Current?.Trigger(sender, arg);
+                    }
                 }
-            }
 
-            this.OnTriggerActivated(sender, arg);
+                this.OnTriggerActivated(sender, arg);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+            finally
+            {
+                this.Activating = false;
+            }
         }
 
         protected void ActivateTriggerAt(int index, object sender, object arg)
         {
-            if (index >= 0 && index < _targets.Count && !this.CurrentlyHijacked)
+            try
             {
-                _targets[index]?.Trigger(sender, arg);
-            }
+                this.Activating = true;
+                if (index >= 0 && index < _targets.Count && !this.CurrentlyHijacked)
+                {
+                    _targets[index]?.Trigger(sender, arg);
+                }
 
-            this.OnTriggerActivated(sender, arg);
+                this.OnTriggerActivated(sender, arg);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+            finally
+            {
+                this.Activating = false;
+            }
         }
 
-        public SPEventTrackedListenerToken AddTrackedListener(System.EventHandler<TempEventArgs> handler) => SPEventTrackedListenerToken.Create(this, handler);
+        #endregion
+
+        #region ITrackableEvent Interface
+
+        void ITrackableEvent<System.EventHandler<TempEventArgs>>.AddListener(System.EventHandler<com.spacepuppy.TempEventArgs> listener)
+        {
+
+        }
+
+        void ITrackableEvent<System.EventHandler<TempEventArgs>>.RemoveListener(System.EventHandler<com.spacepuppy.TempEventArgs> listener)
+        {
+
+        }
+
+        public SPEventTrackedListenerToken AddTrackedListener(System.EventHandler<TempEventArgs> listener) => SPEventTrackedListenerToken.AddListener(this, listener);
+        ITrackedListenerToken<System.EventHandler<TempEventArgs>> ITrackableEvent<System.EventHandler<TempEventArgs>>.AddTrackedListener(System.EventHandler<com.spacepuppy.TempEventArgs> listener) => SPEventTrackedListenerToken.AddListener(this, listener);
 
         #endregion
 
@@ -424,7 +512,19 @@ namespace com.spacepuppy.Events
         public virtual void ActivateTrigger(object sender)
         {
             if (this.TargetCount > 0 || this.HasTriggerActivatedListeners) base.ActivateTrigger(sender, null);
-            this.Trigger?.Invoke();
+            try
+            {
+                this.Activating = true;
+                this.Trigger?.Invoke();
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+            finally
+            {
+                this.Activating = false;
+            }
         }
 
     }
@@ -448,7 +548,19 @@ namespace com.spacepuppy.Events
         public virtual void ActivateTrigger(object sender, T arg)
         {
             if (this.TargetCount > 0 || this.HasTriggerActivatedListeners) base.ActivateTrigger(sender, arg);
-            this.Trigger?.Invoke(arg);
+            try
+            {
+                this.Activating = true;
+                this.Trigger?.Invoke(arg);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+            finally
+            {
+                this.Activating = false;
+            }
         }
 
     }
@@ -471,27 +583,38 @@ namespace com.spacepuppy.Events
 
         public virtual void ActivateTrigger(object sender, T1 arg1, T2 arg2)
         {
-            int targcnt = this.TargetCount;
-            if (targcnt > 0)
+            try
             {
-                object boxedArg1 = arg1;
-                for (int i = 0; i < targcnt; i++)
+                this.Activating = true;
+                int targcnt = this.TargetCount;
+                if (targcnt > 0)
                 {
-                    var targ = this.Targets[i];
-                    if (targ.IsMultiArgMethod())
+                    object boxedArg1 = arg1;
+                    for (int i = 0; i < targcnt; i++)
                     {
-                        targ.TryTriggerAsMultiArgMethod(sender, arg1, arg2);
-                    }
-                    else
-                    {
-                        targ.Trigger(sender, boxedArg1);
+                        var targ = this.Targets[i];
+                        if (targ.IsMultiArgMethod())
+                        {
+                            targ.TryTriggerAsMultiArgMethod(sender, arg1, arg2);
+                        }
+                        else
+                        {
+                            targ.Trigger(sender, boxedArg1);
+                        }
                     }
                 }
+                if (this.HasTriggerActivatedListeners) this.OnTriggerActivated(sender, arg1);
+                this.Trigger?.Invoke(arg1, arg2);
             }
-            if (this.HasTriggerActivatedListeners) this.OnTriggerActivated(sender, arg1);
-            this.Trigger?.Invoke(arg1, arg2);
+            catch (System.Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+            finally
+            {
+                this.Activating = false;
+            }
         }
-
     }
 
     [System.Serializable]
@@ -512,25 +635,38 @@ namespace com.spacepuppy.Events
 
         public virtual void ActivateTrigger(object sender, T1 arg1, T2 arg2, T3 arg3)
         {
-            int targcnt = this.TargetCount;
-            if (targcnt > 0)
+            try
             {
-                object boxedArg1 = arg1;
-                for (int i = 0; i < targcnt; i++)
+                this.Activating = true;
+
+                int targcnt = this.TargetCount;
+                if (targcnt > 0)
                 {
-                    var targ = this.Targets[i];
-                    if (targ.IsMultiArgMethod())
+                    object boxedArg1 = arg1;
+                    for (int i = 0; i < targcnt; i++)
                     {
-                        targ.TryTriggerAsMultiArgMethod(sender, arg1, arg2, arg3);
-                    }
-                    else
-                    {
-                        targ.Trigger(sender, boxedArg1);
+                        var targ = this.Targets[i];
+                        if (targ.IsMultiArgMethod())
+                        {
+                            targ.TryTriggerAsMultiArgMethod(sender, arg1, arg2, arg3);
+                        }
+                        else
+                        {
+                            targ.Trigger(sender, boxedArg1);
+                        }
                     }
                 }
+                if (this.HasTriggerActivatedListeners) this.OnTriggerActivated(sender, arg1);
+                this.Trigger?.Invoke(arg1, arg2, arg3);
             }
-            if (this.HasTriggerActivatedListeners) this.OnTriggerActivated(sender, arg1);
-            this.Trigger?.Invoke(arg1, arg2, arg3);
+            catch (System.Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+            finally
+            {
+                this.Activating = false;
+            }
         }
 
     }
@@ -553,25 +689,38 @@ namespace com.spacepuppy.Events
 
         public virtual void ActivateTrigger(object sender, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
         {
-            int targcnt = this.TargetCount;
-            if (targcnt > 0)
+            try
             {
-                object boxedArg1 = arg1;
-                for (int i = 0; i < targcnt; i++)
+                this.Activating = true;
+
+                int targcnt = this.TargetCount;
+                if (targcnt > 0)
                 {
-                    var targ = this.Targets[i];
-                    if (targ.IsMultiArgMethod())
+                    object boxedArg1 = arg1;
+                    for (int i = 0; i < targcnt; i++)
                     {
-                        targ.TryTriggerAsMultiArgMethod(sender, arg1, arg2, arg3, arg4);
-                    }
-                    else
-                    {
-                        targ.Trigger(sender, boxedArg1);
+                        var targ = this.Targets[i];
+                        if (targ.IsMultiArgMethod())
+                        {
+                            targ.TryTriggerAsMultiArgMethod(sender, arg1, arg2, arg3, arg4);
+                        }
+                        else
+                        {
+                            targ.Trigger(sender, boxedArg1);
+                        }
                     }
                 }
+                if (this.HasTriggerActivatedListeners) this.OnTriggerActivated(sender, arg1);
+                this.Trigger?.Invoke(arg1, arg2, arg3, arg4);
             }
-            if (this.HasTriggerActivatedListeners) this.OnTriggerActivated(sender, arg1);
-            this.Trigger?.Invoke(arg1, arg2, arg3, arg4);
+            catch (System.Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+            finally
+            {
+                this.Activating = false;
+            }
         }
 
     }
@@ -610,6 +759,8 @@ namespace com.spacepuppy.Events
         {
             try
             {
+                this.Activating = true;
+
                 bool result = false;
                 if (this.Targets.Count > 0 && !this.CurrentlyHijacked)
                 {
@@ -645,6 +796,10 @@ namespace com.spacepuppy.Events
             {
                 Debug.LogException(ex);
                 return false;
+            }
+            finally
+            {
+                this.Activating = false;
             }
         }
 
@@ -713,8 +868,20 @@ namespace com.spacepuppy.Events
 
         public virtual void ActivateTrigger(object sender, T e)
         {
-            base.ActivateTrigger(sender, e);
-            this.Trigger?.Invoke(sender, e);
+            try
+            {
+                base.ActivateTrigger(sender, e);
+                this.Activating = true;
+                this.Trigger?.Invoke(sender, e);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+            finally
+            {
+                this.Activating = false;
+            }
         }
 
         #endregion

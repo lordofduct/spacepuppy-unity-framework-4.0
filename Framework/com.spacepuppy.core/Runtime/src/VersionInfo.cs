@@ -119,20 +119,55 @@ namespace com.spacepuppy
         #region Static Accessors
 
         private static VersionInfo _unityVersion;
+        private static VersionInfo _applicationVersion;
         public static VersionInfo GetUnityVersion()
         {
-            if(_unityVersion.GetHashCode() == 0)
+            if (_unityVersion.GetHashCode() == 0)
             {
-                var m = Regex.Match(Application.unityVersion, @"^(\d+)\.(\d+)\.(\d+)");
-                _unityVersion = new VersionInfo()
-                {
-                    Major = Convert.ToInt32(m.Groups[1].Value),
-                    Minor = Convert.ToInt32(m.Groups[2].Value),
-                    Patch = Convert.ToInt32(m.Groups[3].Value),
-                    Build = 0
-                };
+                TryParse(Application.unityVersion, out _unityVersion);
             }
             return _unityVersion;
+        }
+
+        public static VersionInfo GetApplicationVersion()
+        {
+            if (_applicationVersion.GetHashCode() == 0)
+            {
+                TryParse(Application.version, out _applicationVersion);
+            }
+            return _applicationVersion;
+        }
+
+        public static VersionInfo Parse(string version)
+        {
+            if (TryParse(version, out VersionInfo result))
+            {
+                return result;
+            }
+            else
+            {
+                throw new System.FormatException("Version should be in format 0.#.#.#");
+            }
+        }
+        public static bool TryParse(string version, out VersionInfo info)
+        {
+            var m = Regex.Match(version, @"^(?:v|ver)?(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:\.(\d+))?$");
+            if (m.Success && m.Groups[1].Success)
+            {
+                info = new VersionInfo()
+                {
+                    Major = Convert.ToInt32(m.Groups[1].Value),
+                    Minor = m.Groups[2].Success ? Convert.ToInt32(m.Groups[2].Value) : 0,
+                    Patch = m.Groups[3].Success ? Convert.ToInt32(m.Groups[3].Value) : 0,
+                    Build = m.Groups[4].Success ? Convert.ToInt32(m.Groups[4].Value) : 0,
+                };
+                return true;
+            }
+            else
+            {
+                info = default;
+                return false;
+            }
         }
 
         #endregion

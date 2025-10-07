@@ -5,6 +5,7 @@ using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.Pathfinding
 {
+
     public static class PathUtil
     {
 
@@ -50,11 +51,55 @@ namespace com.spacepuppy.Pathfinding
 
             var dir1 = targ - currentPosition;
             var dir2 = waypoints[currentIndex + 1] - targ;
-
-            if (Vector3.Dot(dir1, dir2) < MathUtil.EPSILON)
+            float dot = Vector3.Dot(dir1, dir2);
+            if (dot < MathUtil.EPSILON)
             {
                 currentIndex++;
                 targ = path.Waypoints[currentIndex];
+            }
+
+            return targ;
+        }
+
+
+        /// <summary>
+        /// Gets the next target waypoint after currentIndex. Updating currentIndex if you've passed it.
+        /// </summary>
+        /// <param name="path">The path to find the next target on.</param>
+        /// <param name="currentPosition">The current position of the agent</param>
+        /// <param name="currentIndex">The index of the waypoint that was last targeted, 0 starts at beginning, <0 will find the best target</param>
+        /// <returns>Returns the target position or a NaN vector if no target found.</returns>
+        public static Vector3 GetNextTarget(this IPath path, Vector3 currentPosition, ref int currentIndex, float nearEnoughDistance)
+        {
+            if (path == null) throw new System.ArgumentNullException(nameof(path));
+
+            var waypoints = path.Waypoints;
+            if (waypoints == null || waypoints.Count == 0) return VectorUtil.NaNVector3;
+            if (currentIndex >= waypoints.Count - 1) return path.Waypoints[path.Waypoints.Count - 1];
+
+            if (currentIndex < 0) return GetBestTarget(path, currentPosition, ref currentIndex);
+
+            var targ = path.Waypoints[currentIndex];
+            if (currentIndex == path.Waypoints.Count - 1)
+            {
+                return targ;
+            }
+
+            var dir1 = targ - currentPosition;
+            if (dir1.sqrMagnitude < (nearEnoughDistance * nearEnoughDistance))
+            {
+                currentIndex++;
+                targ = path.Waypoints[currentIndex];
+            }
+            else
+            {
+                var dir2 = waypoints[currentIndex + 1] - targ;
+                float dot = Vector3.Dot(dir1, dir2);
+                if (dot < MathUtil.EPSILON)
+                {
+                    currentIndex++;
+                    targ = path.Waypoints[currentIndex];
+                }
             }
 
             return targ;
@@ -153,4 +198,5 @@ namespace com.spacepuppy.Pathfinding
         }
 
     }
+
 }

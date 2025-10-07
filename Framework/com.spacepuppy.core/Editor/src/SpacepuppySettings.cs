@@ -8,7 +8,12 @@ namespace com.spacepuppyeditor
     public static class SpacepuppySettings
     {
 
-        private const string SETTING_STORESETTINGSLOCAL = "Spacepuppy.StoreSettingsLocal";
+
+        private const string SETTING_LOCALUSERID = "Spaceuppy.LocalUserId";
+        private const string SETTING_STORESETTINGSLOCAL_OLD = "Spacepuppy.StoreSettingsLocal";
+        private const string SETTING_SETTINGSLOCATION = "Spacepuppy.SettingsLocation";
+
+        private const string SETTING_AUTOSYNCGLOBALDEFINES = "AutoSyncGlobalDefines.Active"; //always local!!!
 
         private const string SETTING_SPEDITOR_ISDEFAULT_ACTIVE = "UseSPEditor.IsDefault.Active";
         private const string SETTING_ADVANCEDANIMINSPECTOR_ACTIVE = "AdvancedAnimationInspector.Active";
@@ -22,24 +27,51 @@ namespace com.spacepuppyeditor
         private const string SETTING_MODELIMPORT_SETANIMSETTINGS = "ModelImportManager.SetAnimationSettings";
         private const string SETTING_MODELIMPORT_ANIMRIGTYPE = "ModelImportManager.AnimRigType";
 
+        public static string LocalUserId
+        {
+            get
+            {
+                return EditorProjectPrefs.LocalProject.GetString(SETTING_LOCALUSERID, string.Empty);
+            }
+            set
+            {
+                EditorProjectPrefs.LocalProject.SetString(SETTING_LOCALUSERID, value);
+            }
+        }
 
         public static bool StoreSettingsLocal
         {
             get
             {
-                return EditorProjectPrefs.Local.GetBool(SETTING_STORESETTINGSLOCAL, false);
+                return EditorProjectPrefs.LocalProject.GetBool(SETTING_STORESETTINGSLOCAL_OLD, false);
             }
             set
             {
-                EditorProjectPrefs.Local.SetBool(SETTING_STORESETTINGSLOCAL, value);
+                EditorProjectPrefs.LocalProject.SetBool(SETTING_STORESETTINGSLOCAL_OLD, value);
             }
+        }
+
+        /*
+         * GLOBAL SETTINGS
+         */
+
+        public static bool UseAdvancedObjectField
+        {
+            get => EditorProjectPrefs.Global.GetBool("UseAdvancedObjectField", true);
+            set => EditorProjectPrefs.Global.SetBool("UseAdvancedObjectField", value);
+        }
+
+        public static bool AutoSyncGlobalDefines
+        {
+            get => EditorProjectPrefs.Global.GetBool(SETTING_AUTOSYNCGLOBALDEFINES, false);
+            set => EditorProjectPrefs.Global.SetBool(SETTING_AUTOSYNCGLOBALDEFINES, value);
         }
 
         /*
          * EDITOR SETTINGS
          */
 
-        public static EditorProjectPrefs.ISettings ProjectPrefs => StoreSettingsLocal ? EditorProjectPrefs.Local : EditorProjectPrefs.Group;
+        public static EditorProjectPrefs.ISettings ProjectPrefs => StoreSettingsLocal ? EditorProjectPrefs.LocalProject : EditorProjectPrefs.SharedProject;
 
         public static bool UseSPEditorAsDefaultEditor
         {

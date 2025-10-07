@@ -34,6 +34,19 @@ namespace com.spacepuppy
         Remote = 4,
     }
 
+    [System.Flags]
+    public enum NetworkStatus
+    {
+        Unkown = 0,
+        Offline = 1, //if NetworkBehaviour.IsOffline() would return true
+        Server = 2, //if NetworkBehaviour.NetworkManager.IsServer would return true
+        Client = 4, //if NetworkBehaviour.NetworkManager.IsClient would return true
+        Owner = 8, //if NetworkBehaviour.IsOwner would return true
+
+        ServerOrOffline = Offline | Server,
+        OwnerOrOffline = Offline | Owner,
+    }
+
     public static class NetcodeExtensions
     {
 
@@ -98,9 +111,9 @@ namespace com.spacepuppy
             return owner;
         }
 
-        public static NetworkOwner GetNetworkOwner(this NetworkBehaviour behavior)
+        public static NetworkOwner GetNetworkOwner(this NetworkBehaviour behaviour)
         {
-            var nobj = behavior ? behavior.NetworkObject : null;
+            var nobj = behaviour ? behaviour.NetworkObject : null;
             NetworkOwner owner = NetworkOwner.Unknown;
             if (nobj)
             {
@@ -119,6 +132,62 @@ namespace com.spacepuppy
             }
             return owner;
         }
+
+        public static bool Intersects(this NetworkOwner e, NetworkOwner mask) => ((int)e & (int)mask) != 0;
+
+        public static NetworkStatus GetNetworkStatus(this NetworkObject nobj)
+        {
+            var result = NetworkStatus.Unkown;
+            if (nobj)
+            {
+                if (nobj.NetworkManager?.IsServer ?? false)
+                {
+                    result |= NetworkStatus.Server;
+                }
+                if (nobj.NetworkManager?.IsClient ?? false)
+                {
+                    result |= NetworkStatus.Client;
+                }
+                if (result == NetworkStatus.Unkown)
+                {
+                    result |= NetworkStatus.Offline;
+                }
+                if (nobj.IsOwner)
+                {
+                    result |= NetworkStatus.Owner;
+                }
+            }
+            return result;
+        }
+
+        public static NetworkStatus GetNetworkStatus(this NetworkBehaviour behaviour)
+        {
+            var nobj = behaviour ? behaviour.NetworkObject : null;
+
+            var result = NetworkStatus.Unkown;
+            if (nobj)
+            {
+                if (nobj.NetworkManager?.IsServer ?? false)
+                {
+                    result |= NetworkStatus.Server;
+                }
+                if (nobj.NetworkManager?.IsClient ?? false)
+                {
+                    result |= NetworkStatus.Client;
+                }
+                if (result == NetworkStatus.Unkown)
+                {
+                    result |= NetworkStatus.Offline;
+                }
+                if (nobj.IsOwner)
+                {
+                    result |= NetworkStatus.Owner;
+                }
+            }
+            return result;
+        }
+
+        public static bool Intersects(this NetworkStatus e, NetworkStatus mask) => ((int)e & (int)mask) != 0;
 
         #region NetworkManager Async Extensions
 

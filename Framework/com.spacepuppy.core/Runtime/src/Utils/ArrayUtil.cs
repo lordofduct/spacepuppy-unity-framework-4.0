@@ -59,6 +59,18 @@ namespace com.spacepuppy.Utils
             }
         }
 
+        public static int Count<T, TArg>(this IEnumerable<T> e, TArg arg, System.Func<T, TArg, bool> predicate)
+        {
+            if (predicate == null) throw new System.ArgumentNullException(nameof(predicate));
+
+            int cnt = 0;
+            foreach (var o in e)
+            {
+                if (predicate(o, arg)) cnt++;
+            }
+            return cnt;
+        }
+
         public static T LastOrDefault<T>(this IEnumerable<T> e, T defaultvalue)
         {
             if (e is IList<T> ilst)
@@ -136,7 +148,7 @@ namespace com.spacepuppy.Utils
             int i = 0;
             foreach (var v in lst)
             {
-                if (object.Equals(v, value)) return i;
+                if (EqualityComparer<T>.Default.Equals(v, value)) return i;
                 i++;
             }
             return -1;
@@ -155,7 +167,7 @@ namespace com.spacepuppy.Utils
 
                 if (b1 && b2)
                 {
-                    if (!object.Equals(e1.Current, e2.Current)) return false;
+                    if (!EqualityComparer<T>.Default.Equals(e1.Current, e2.Current)) return false;
                 }
                 else
                 {
@@ -178,15 +190,20 @@ namespace com.spacepuppy.Utils
             return first.Except(second).Count() + second.Except(first).Count() == 0;
         }
 
-        public static bool ContainsAny<T>(this IEnumerable<T> lst, params T[] objs)
-        {
-            if (objs == null) return false;
-            return lst.Intersect(objs).Count() > 0;
-        }
-
         public static bool ContainsAny<T>(this IEnumerable<T> lst, IEnumerable<T> objs)
         {
-            return lst.Intersect(objs).Count() > 0;
+            if (lst is ISet<T> set)
+            {
+                foreach (var o in objs)
+                {
+                    if (set.Contains(o)) return true;
+                }
+                return false;
+            }
+            else
+            {
+                return lst.Intersect(objs).Any();
+            }
         }
 
         public static bool Contains<T>(this T[,] arr, T value)
@@ -318,6 +335,132 @@ namespace com.spacepuppy.Utils
             }
         }
 
+        public static T MinOrDefault<T>(this IEnumerable<T> e)
+        {
+            if (e?.Any() ?? false)
+            {
+                return e.Min();
+            }
+            else
+            {
+                return default(T);
+            }
+        }
+
+        public static T MaxOrDefault<T>(this IEnumerable<T> e)
+        {
+            if (e?.Any() ?? false)
+            {
+                return e.Max();
+            }
+            else
+            {
+                return default(T);
+            }
+        }
+
+        public static IEnumerable ForEach(this IEnumerable e, System.Action<object> callback)
+        {
+            foreach (var o in e)
+            {
+                callback?.Invoke(o);
+            }
+            return e;
+        }
+
+        public static IEnumerable<T> ForEach<T>(this IEnumerable<T> e, System.Action<T> callback)
+        {
+            foreach (var o in e)
+            {
+                callback?.Invoke(o);
+            }
+            return e;
+        }
+
+        public static int Unpack<T>(this IEnumerable<T> e, out T a)
+        {
+            var en = e.GetEnumerator();
+            if (!en.MoveNext())
+            {
+                a = default; return 0;
+            }
+
+            a = en.Current;
+            return 1;
+        }
+
+        public static int Unpack<T>(this IEnumerable<T> e, out T a, out T b)
+        {
+            var en = e.GetEnumerator();
+            if (!en.MoveNext())
+            {
+                a = default; b = default; return 0;
+            }
+
+            a = en.Current;
+            if (!en.MoveNext())
+            {
+                b = default; return 1;
+            }
+
+            b = en.Current;
+            return 2;
+        }
+
+        public static int Unpack<T>(this IEnumerable<T> e, out T a, out T b, out T c)
+        {
+            var en = e.GetEnumerator();
+            if (!en.MoveNext())
+            {
+                a = default; b = default; c = default; return 0;
+            }
+
+            a = en.Current;
+            if (!en.MoveNext())
+            {
+                b = default; c = default; return 1;
+            }
+
+            b = en.Current;
+            if (!en.MoveNext())
+            {
+                c = default; return 2;
+            }
+
+            c = en.Current;
+            return 3;
+        }
+
+        public static int Unpack<T>(this IEnumerable<T> e, out T a, out T b, out T c, out T d)
+        {
+            var en = e.GetEnumerator();
+            if (!en.MoveNext())
+            {
+                a = default; b = default; c = default; d = default; return 0;
+            }
+
+            a = en.Current;
+            if (!en.MoveNext())
+            {
+                b = default; c = default; d = default; return 1;
+            }
+
+            b = en.Current;
+            if (!en.MoveNext())
+            {
+                c = default; d = default; return 2;
+            }
+
+            c = en.Current;
+            if (!en.MoveNext())
+            {
+                d = default; return 3;
+            }
+
+            d = en.Current;
+            return 4;
+        }
+
         #endregion
 
         #region Random Methods
@@ -396,6 +539,9 @@ namespace com.spacepuppy.Utils
             if (coll == null) throw new System.ArgumentNullException("coll");
             if (rng == null) rng = RandomUtil.Standard;
 
+            //NOTE - as long as the calling code uses this as part of a foreach, or in a linq statement, the IDisposable will be disposed properly
+            //otherwise this TempList will be lost to the heap and made available for GC when appropriate thus making the TempList pointless.
+            //But by using a TempList we get the benefit in most situations and lose nothing in the case of GC compared to a standard 'List'.
             using (var buffer = TempCollection.GetList<T>(coll))
             {
                 int j;
@@ -408,24 +554,24 @@ namespace com.spacepuppy.Utils
             }
         }
 
-        public static T PickRandom<T>(this IEnumerable<T> lst, IRandom rng = null)
+        public static T PickRandom<T>(this IEnumerable<T> e, IRandom rng = null)
         {
-            //return lst.PickRandom(1).FirstOrDefault();
-            if (lst is IList<T> ilst)
+            if (rng == null) rng = RandomUtil.Standard;
+
+            if (e is IList<T> ilst)
             {
-                if (rng == null) rng = RandomUtil.Standard;
-                if (ilst.Count == 0) return default(T);
-                return ilst[rng.Range(ilst.Count)];
+                return ilst.Count > 0 ? ilst[rng.Range(ilst.Count)] : default;
             }
-            else if (lst is IList<T> rlst)
+            else if (e is IReadOnlyList<T> rlst)
             {
-                if (rng == null) rng = RandomUtil.Standard;
-                if (rlst.Count == 0) return default(T);
-                return rlst[rng.Range(rlst.Count)];
+                return rlst.Count > 0 ? rlst[rng.Range(rlst.Count)] : default;
             }
             else
             {
-                return lst.PickRandom(1, rng).FirstOrDefault();
+                using (var tlst = TempCollection.GetList<T>(e))
+                {
+                    return tlst.Count > 0 ? tlst[rng.Range(tlst.Count)] : default;
+                }
             }
         }
 
@@ -478,8 +624,6 @@ namespace com.spacepuppy.Utils
         public static T[] PickRandom<T>(this IEnumerable<T> lst, System.Func<T, float> weightPredicate, int count, IRandom rng = null)
         {
             if (count <= 0) return ArrayUtil.Empty<T>();
-            if (count == 1) return new T[] { PickRandom<T>(lst, weightPredicate, rng) };
-
 
             using (var arr = TempCollection.GetList<T>(lst))
             {
@@ -565,6 +709,44 @@ namespace com.spacepuppy.Utils
                 var result = coll.Shuffled(rng).Take(1).FirstOrDefault();
                 coll.Remove(result);
                 return result;
+            }
+        }
+
+        public static IEnumerable<T> PickRandomWithRepeat<T>(this IEnumerable<T> coll, int count, IRandom rng = null)
+        {
+            if (count == 0) yield break;
+            if (count == 1)
+            {
+                yield return PickRandom<T>(coll, rng);
+                yield break;
+            }
+
+            if (rng == null) rng = RandomUtil.Standard;
+
+            if (coll is IList<T> lst)
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    yield return lst[rng.Next(lst.Count)];
+                }
+            }
+            else if (coll is IReadOnlyList<T> rolst)
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    yield return rolst[rng.Next(rolst.Count)];
+                }
+            }
+            else
+            {
+                //NOTE - see Shuffled for dispose explanation
+                using (var buffer = TempCollection.GetList<T>(coll))
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        yield return buffer[rng.Next(buffer.Count)];
+                    }
+                }
             }
         }
 
@@ -686,12 +868,19 @@ namespace com.spacepuppy.Utils
         {
             return System.Array.IndexOf(lst, obj);
         }
-
         public static int IndexOf<T>(this IList<T> lst, System.Func<T, bool> predicate)
         {
             for (int i = 0; i < lst.Count; i++)
             {
                 if (predicate(lst[i])) return i;
+            }
+            return -1;
+        }
+        public static int IndexOf<T, TArg>(this IList<T> lst, TArg arg, System.Func<T, TArg, bool> predicate)
+        {
+            for (int i = 0; i < lst.Count; i++)
+            {
+                if (predicate(lst[i], arg)) return i;
             }
             return -1;
         }
@@ -722,6 +911,46 @@ namespace com.spacepuppy.Utils
             }
         }
 
+
+        #endregion
+
+        #region List Methods
+
+        public static T Pop<T>(this List<T> lst)
+        {
+            if (lst.Count == 0) throw new System.ArgumentException("List is empty.", nameof(lst));
+
+            var result = lst[lst.Count - 1];
+            lst.RemoveAt(lst.Count - 1);
+            return result;
+        }
+
+        public static T Shift<T>(this List<T> lst)
+        {
+            if (lst.Count == 0) throw new System.ArgumentException("List is empty.", nameof(lst));
+
+            var result = lst[0];
+            lst.RemoveAt(0);
+            return result;
+        }
+
+        public static T AtIndexOrDefault<T>(this IList<T> lst, int index)
+        {
+            if (index >= 0 && index < lst?.Count)
+            {
+                return lst[index];
+            }
+            return default;
+        }
+
+        public static T AtIndexOrDefault<T>(this IReadOnlyList<T> lst, int index)
+        {
+            if (index >= 0 && index < lst?.Count)
+            {
+                return lst[index];
+            }
+            return default;
+        }
 
         #endregion
 

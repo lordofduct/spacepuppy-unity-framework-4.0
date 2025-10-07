@@ -6,7 +6,12 @@ using System.Linq;
 namespace com.spacepuppy.Collections
 {
 
-    public class BinaryHeap<T> : ICollection<T>
+    /// <summary>
+    /// BinaryHeap implementation sorted ascending with "largest" as the top element returned by Peek or Pop. 
+    /// Use a Comparer to invert the collection if desired.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public class BinaryHeap<T> : IList<T>, IReadOnlyList<T>
     {
 
         #region Fields
@@ -265,7 +270,7 @@ namespace com.spacepuppy.Collections
 
         #endregion
 
-        #region ICollection Interface
+        #region IList Interface
 
         void ICollection<T>.Add(T item)
         {
@@ -302,6 +307,12 @@ namespace com.spacepuppy.Collections
         bool ICollection<T>.IsReadOnly
         {
             get { return false; }
+        }
+
+        void IList<T>.Insert(int index, T item)
+        {
+            //we technically don't allow insert, but to support 'IList' we treat this as an 'Add'
+            this.Add(item);
         }
 
         #endregion

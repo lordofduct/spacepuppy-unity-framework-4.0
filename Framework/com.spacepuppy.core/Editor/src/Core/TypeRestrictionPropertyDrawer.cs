@@ -106,6 +106,9 @@ namespace com.spacepuppyeditor.Core
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
+            float h;
+            if (EditorHelper.AssertMultiObjectEditingNotSupportedHeight(property, label, out h)) return h;
+
             if (this.HideTypeDropDown)
             {
                 return EditorGUIUtility.singleLineHeight;
@@ -120,6 +123,8 @@ namespace com.spacepuppyeditor.Core
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
+
             if (!this.ValidateFieldType())
             {
                 EditorGUI.PropertyField(position, property, label);
@@ -145,24 +150,68 @@ namespace com.spacepuppyeditor.Core
                 UnityEngine.Object targ;
                 if (allInheritableTypes.Length > 1 || isNonStandardUnityType || this.AllowProxy)
                 {
-                    System.Func<UnityEngine.Object, bool> filter = null;
+                    SearchFilter<UnityEngine.Object> filter = null;
                     if (this.AllowProxy)
                     {
                         if (this.RestrictProxyResolvedType)
                         {
-                            filter = o => o && ((TypeUtil.IsType(o.GetType(), allInheritableTypes) || ObjUtil.GetAsFromSource(allInheritableTypes, o) != null)) || (o is IProxy p && TypeUtil.IsType(p.GetTargetType(), allInheritableTypes));
+                            //filter = o => o && ((TypeUtil.IsType(o.GetType(), allInheritableTypes) || ObjUtil.GetAsFromSource(allInheritableTypes, o) != null)) || (o is IProxy p && TypeUtil.IsType(p.GetTargetType(), allInheritableTypes));
+                            filter = (ref UnityEngine.Object o) =>
+                            {
+                                if (!o) return false;
+                                if (TypeUtil.IsType(o.GetType(), allInheritableTypes)) return true;
+                                if (o is IProxy p && TypeUtil.IsType(p.GetTargetType(), allInheritableTypes)) return true;
+
+                                var ot = ObjUtil.GetAsFromSource(allInheritableTypes, o) as UnityEngine.Object;
+                                if (ot)
+                                {
+                                    o = ot;
+                                    return true;
+                                }
+
+                                return false;
+                            };
                         }
                         else
                         {
-                            filter = o => o && ((TypeUtil.IsType(o.GetType(), allInheritableTypes) || ObjUtil.GetAsFromSource(allInheritableTypes, o) != null)) || (o is IProxy);
+                            //filter = o => o && ((TypeUtil.IsType(o.GetType(), allInheritableTypes) || ObjUtil.GetAsFromSource(allInheritableTypes, o) != null)) || (o is IProxy);
+                            filter = (ref UnityEngine.Object o) =>
+                            {
+                                if (!o) return false;
+                                if (TypeUtil.IsType(o.GetType(), allInheritableTypes)) return true;
+                                if (o is IProxy) return true;
+
+                                var ot = ObjUtil.GetAsFromSource(allInheritableTypes, o) as UnityEngine.Object;
+                                if (ot)
+                                {
+                                    o = ot;
+                                    return true;
+                                }
+
+                                return false;
+                            };
                         }
                     }
                     else
                     {
-                        filter = o => o && (TypeUtil.IsType(o.GetType(), allInheritableTypes) || ObjUtil.GetAsFromSource(allInheritableTypes, o) != null);
+                        //filter = o => o && (TypeUtil.IsType(o.GetType(), allInheritableTypes) || ObjUtil.GetAsFromSource(allInheritableTypes, o) != null);
+                        filter = (ref UnityEngine.Object o) =>
+                        {
+                            if (!o) return false;
+                            if (TypeUtil.IsType(o.GetType(), allInheritableTypes)) return true;
+
+                            var ot = ObjUtil.GetAsFromSource(allInheritableTypes, o) as UnityEngine.Object;
+                            if (ot)
+                            {
+                                o = ot;
+                                return true;
+                            }
+
+                            return false;
+                        };
                     }
 
-                    targ = UnityObjectDropDownWindowSelector.ObjectField(position,
+                    targ = SPEditorGUI.AdvancedObjectField(position,
                         label,
                         property.objectReferenceValue,
                         (allInheritableTypes.Length == 1) ? allInheritableTypes[0] : fieldType,
@@ -174,25 +223,15 @@ namespace com.spacepuppyeditor.Core
                 {
                     var fieldCompType = (TypeUtil.IsType(fieldType, typeof(Component))) ? fieldType : typeof(Component);
                     targ = SPEditorGUI.ComponentField(position, label, property.objectReferenceValue as Component, inheritsFromType, this.AllowSceneObjects, fieldCompType);
+                    targ = (allInheritableTypes.Length > 1 ? ObjUtil.GetAsFromSource(allInheritableTypes, targ) : ObjUtil.GetAsFromSource(inheritsFromType, targ)) as UnityEngine.Object;
                 }
                 else
                 {
                     targ = EditorGUI.ObjectField(position, label, property.objectReferenceValue, inheritsFromType, this.AllowSceneObjects);
+                    targ = (allInheritableTypes.Length > 1 ? ObjUtil.GetAsFromSource(allInheritableTypes, targ) : ObjUtil.GetAsFromSource(inheritsFromType, targ)) as UnityEngine.Object;
                 }
 
-                if (targ == null)
-                {
-                    property.objectReferenceValue = null;
-                }
-                else
-                {
-                    var o = (allInheritableTypes.Length > 1 ? ObjUtil.GetAsFromSource(allInheritableTypes, targ) : ObjUtil.GetAsFromSource(inheritsFromType, targ)) as UnityEngine.Object;
-                    if (this.AllowProxy && o == null)
-                    {
-                        o = ObjUtil.GetAsFromSource<IProxy>(targ) as UnityEngine.Object;
-                    }
-                    property.objectReferenceValue = o;
-                }
+                property.objectReferenceValue = targ;
             }
             else
             {

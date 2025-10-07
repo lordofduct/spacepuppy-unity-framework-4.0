@@ -1,7 +1,7 @@
-using UnityEngine;
 using UnityEngine.SceneManagement;
 using com.spacepuppy.Scenes;
 using com.spacepuppy.Async;
+using AsyncOperation = UnityEngine.AsyncOperation;
 
 #if SP_UNITASK
 using Cysharp.Threading.Tasks;
@@ -36,6 +36,30 @@ namespace com.spacepuppy.Scenes
 
         #region Methods
 
+        public async System.Threading.Tasks.Task<LoadSceneInternalResult> WaitForActivationTask()
+        {
+            if (Op == null) return this;
+
+            while (!Op.isDone && Op.progress < 0.9f)
+            {
+                await System.Threading.Tasks.Task.Yield();
+            }
+            return this;
+        }
+
+#if SP_UNITASK
+        public async UniTask<LoadSceneInternalResult> WaitForActivationUniTask()
+        {
+            if (Op == null) return this;
+
+            while (!Op.isDone && Op.progress < 0.9f)
+            {
+                await UniTask.Yield();
+            }
+            return this;
+        }
+#endif
+
         public async System.Threading.Tasks.Task<LoadSceneInternalResult> AsTask()
         {
             if (Op == null) return this;
@@ -59,7 +83,7 @@ namespace com.spacepuppy.Scenes
             return Op;
         }
 
-        public void OnComplete(System.Action<LoadSceneInternalResult> callback)
+        public LoadSceneInternalResult OnComplete(System.Action<LoadSceneInternalResult> callback)
         {
             if (Op != null)
             {
@@ -70,6 +94,13 @@ namespace com.spacepuppy.Scenes
             {
                 callback(this);
             }
+            return this;
+        }
+
+        public LoadSceneInternalResult ResumeActivation()
+        {
+            if (Op != null && !Op.isDone) Op.allowSceneActivation = true;
+            return this;
         }
 
         #endregion

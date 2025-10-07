@@ -5,9 +5,9 @@ namespace com.spacepuppy.UI
 {
 
     [RequireComponent(typeof(RectTransform))]
-    public class Touchable : Text, IUIComponent
+    public class Touchable : MaskableGraphic, IUIComponent
     {
-        protected override void Awake() { base.Awake(); }
+        //protected override void Awake() { base.Awake(); }
 
         #region IUIComponent Interface
 
@@ -18,6 +18,11 @@ namespace com.spacepuppy.UI
         Component IComponent.component => this;
 
         #endregion
+
+        protected override void OnPopulateMesh(VertexHelper vh)
+        {
+            vh.Clear();
+        }
 
     }
 

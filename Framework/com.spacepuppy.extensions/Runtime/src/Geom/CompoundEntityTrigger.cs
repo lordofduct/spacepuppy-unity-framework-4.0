@@ -13,44 +13,49 @@ namespace com.spacepuppy.Geom
     public class CompoundEntityTrigger : CompoundTrigger
     {
 
+        #region Fields
+
         private HashSet<SPEntity> _activeEntities = new HashSet<SPEntity>();
+        private ActiveEntityCollection _activeEntitiesWrapper;
 
-        protected override void OnDisable()
-        {
-            base.OnDisable();
+        #endregion
 
-            _activeEntities.Clear();
-        }
+        #region CONSTRUCTOR
 
+        #endregion
+
+        #region Properties
+
+        /// <summary>
+        /// This value is an estimate of the active entity count, while this number is never < the real number, it may be larger.
+        /// Accessing GetActiveEntities or other methods that enumerate the overlapped colliders will reduce this to the real value 
+        // and will remain accurate until the next physics event.
+        /// </summary>
+        public int EstimatedActiveEntityCount => _activeEntities.Count;
+
+        public ActiveEntityCollection ActiveEntities => (_activeEntitiesWrapper ??= new(this));
+
+        #endregion
+
+        #region Methods
 
         public bool ContainsActive(SPEntity entity)
         {
-            if (!entity) return false;
+            if (!ObjUtil.IsObjectAlive(entity)) return false;
 
             return _activeEntities.Contains(entity);
         }
 
-        public SPEntity[] GetActiveEntities()
+        public IEnumerable<SPEntity> GetActiveEntities()
         {
-            if (_activeEntities.Count == 0) return ArrayUtil.Empty<SPEntity>();
+            if (_isDirty) this.CleanActive();
+            return _activeEntities.Where(this.ValidateEntryOrSetDirty);
+        }
 
-            bool doclean = false;
-            try
-            {
-                return _activeEntities.Where(o =>
-                {
-                    if (!ObjUtil.IsObjectAlive(o))
-                    {
-                        doclean = true;
-                        return false;
-                    }
-                    return true;
-                }).ToArray();
-            }
-            finally
-            {
-                if (doclean) this.CleanActive();
-            }
+        public IEnumerable<T> GetActiveEntities<T>() where T : SPEntity
+        {
+            if (_isDirty) this.CleanActive();
+            return _activeEntities.Where(this.ValidateEntryOrSetDirty).OfType<T>();
         }
 
         public int GetActiveEntities<T>(ICollection<T> output) where T : SPEntity
@@ -58,23 +63,18 @@ namespace com.spacepuppy.Geom
             if (_active.Count == 0) return 0;
 
             var e = _active.GetEnumerator();
-            bool doclean = false;
             int cnt = 0;
             try
             {
                 while (e.MoveNext())
                 {
-                    if (!ObjUtil.IsObjectAlive(e.Current))
-                    {
-                        doclean = true;
-                        continue;
-                    }
+                    if (!this.ValidateEntryOrSetDirty(e.Current)) continue;
                     if (e.Current is T ent) output.Add(ent);
                 }
             }
             finally
             {
-                if (doclean) this.CleanActive();
+                if (_isDirty) this.CleanActive();
             }
             return cnt;
         }
@@ -85,9 +85,14 @@ namespace com.spacepuppy.Geom
             var entity = SPEntity.Pool.GetFromSource(other);
             if (!entity || !(this.Mask?.Intersects(other) ?? true)) return;
 
-            if (_active.Add(other) && _activeEntities.Add(entity))
+            if (_active.Add(other))
             {
-                _messageSettings.Send(this.gameObject, (this, other), OnEnterFunctor);
+                _activeTargetsChanged?.Invoke(this, System.EventArgs.Empty);
+                if (_activeEntities.Add(entity))
+                {
+                    _messageSettings.Send(this.gameObject, (this, other), OnEnterFunctor);
+                    if ((this.Configuration & ConfigurationOptions.SendMessageToOtherCollider) != 0) _otherColliderMessageSettings.Send(other.gameObject, (this, member.Collider), OnEnterFunctor);
+                }
             }
         }
 
@@ -100,6 +105,8 @@ namespace com.spacepuppy.Geom
 
             if (!_active.Remove(other)) return;
 
+            _activeTargetsChanged?.Invoke(this, System.EventArgs.Empty);
+
             //test if any of our other active colliders are related to this entity
             var e = _active.GetEnumerator();
             while (e.MoveNext())
@@ -110,6 +117,7 @@ namespace com.spacepuppy.Geom
             if (_activeEntities.Remove(entity))
             {
                 _messageSettings.Send(this.gameObject, (this, other), OnExitFunctor);
+                if ((this.Configuration & ConfigurationOptions.SendMessageToOtherCollider) != 0) _otherColliderMessageSettings.Send(other.gameObject, (this, member.Collider), OnExitFunctor);
             }
         }
 
@@ -135,6 +143,9 @@ namespace com.spacepuppy.Geom
                     }
                 }
             }
+            _active.Clear();
+            _activeEntities.Clear();
+            _activeTargetsChanged?.Invoke(this, System.EventArgs.Empty);
         }
 
         protected override void CleanActive()
@@ -146,6 +157,83 @@ namespace com.spacepuppy.Geom
                 _activeEntities.RemoveWhere(o => !ObjUtil.IsObjectAlive(o) || !o.isActiveAndEnabled);
             }
         }
+
+        protected bool ValidateEntryOrSetDirty(SPEntity o)
+        {
+            if (ObjUtil.IsObjectAlive(o) && o.isActiveAndEnabled)
+            {
+                return true;
+            }
+            else
+            {
+                _isDirty = true;
+                return false;
+            }
+        }
+
+        #endregion
+
+        #region Special Types
+
+        public class ActiveEntityCollection : IEnumerable<SPEntity>
+        {
+
+            private CompoundEntityTrigger _owner;
+            internal ActiveEntityCollection(CompoundEntityTrigger owner)
+            {
+                _owner = owner;
+            }
+
+            public bool Contains(SPEntity item)
+            {
+                if (!item) return false;
+                if (_owner._isDirty) _owner.CleanActive();
+                return _owner._activeEntities.Contains(item);
+            }
+            public void CopyTo(SPEntity[] array, int arrayIndex)
+            {
+                var e = new ActiveEntityEnumerator(_owner);
+                while (e.MoveNext() && arrayIndex < array.Length)
+                {
+                    array[arrayIndex] = e.Current;
+                    arrayIndex++;
+                }
+            }
+
+            public ActiveEntityEnumerator GetEnumerator() => new ActiveEntityEnumerator(_owner);
+            IEnumerator<SPEntity> IEnumerable<SPEntity>.GetEnumerator() => new ActiveEntityEnumerator(_owner);
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => new ActiveEntityEnumerator(_owner);
+
+        }
+
+        public struct ActiveEntityEnumerator : IEnumerator<SPEntity>
+        {
+            private CompoundEntityTrigger _owner;
+            private HashSet<SPEntity>.Enumerator _e;
+            internal ActiveEntityEnumerator(CompoundEntityTrigger owner)
+            {
+                _owner = owner;
+                if (_owner._isDirty) _owner.CleanActive();
+                _e = owner._activeEntities.GetEnumerator();
+            }
+
+            public SPEntity Current => _e.Current;
+            object System.Collections.IEnumerator.Current => _e.Current;
+
+            public void Dispose() => _e.Dispose();
+            public bool MoveNext()
+            {
+                while (_e.MoveNext())
+                {
+                    if (_owner.ValidateEntryOrSetDirty(_e.Current)) return true;
+                }
+                return false;
+            }
+            void System.Collections.IEnumerator.Reset() => (_e as System.Collections.IEnumerator).Reset();
+
+        }
+
+        #endregion
 
     }
 }

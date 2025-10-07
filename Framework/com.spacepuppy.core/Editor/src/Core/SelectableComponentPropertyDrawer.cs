@@ -91,11 +91,14 @@ namespace com.spacepuppyeditor.Core
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
+            float h;
+            if (EditorHelper.AssertMultiObjectEditingNotSupportedHeight(property, label, out h)) return h;
             return EditorGUIUtility.singleLineHeight;
         }
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
             position = EditorGUI.PrefixLabel(position, label);
             EditorHelper.SuppressIndentLevel();
             this.OnGUI(position, property);
@@ -104,6 +107,7 @@ namespace com.spacepuppyeditor.Core
 
         public void OnGUI(Rect position, SerializedProperty property)
         {
+            if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, GUIContent.none)) return;
             //if (property.propertyType != SerializedPropertyType.ObjectReference || !TypeUtil.IsType(_restrictionType, typeof(Component), typeof(IComponent)))
             if (property.propertyType != SerializedPropertyType.ObjectReference || (!this.AllowNonComponents && !ComponentUtil.IsAcceptableComponentType(this.RestrictionType)))
             {
@@ -156,7 +160,6 @@ namespace com.spacepuppyeditor.Core
                 else
                 {
                     this.ChoiceSelector.BeforeGUI(this, property, this.RestrictionType, this.AllowProxy);
-                    var components = this.ChoiceSelector.GetComponents();
 
                     var fullsize = position;
                     if (this.ShowXButton && SPEditorGUI.XButton(ref position, "Clear Selected Object", this.XButtonOnRightSide))
@@ -180,14 +183,9 @@ namespace com.spacepuppyeditor.Core
                         if (oi != ni)
                         {
                             if (ni == names.Length - 1)
-                                property.objectReferenceValue = targGo;
+                                property.objectReferenceValue = this.RestrictionType.IsInstanceOfType(targGo) ? targGo : property.objectReferenceValue;
                             else
                                 property.objectReferenceValue = this.ChoiceSelector.GetComponentAtPopupIndex(ni);
-
-                            //if (ni < components.Length)
-                            //    property.objectReferenceValue = this.ChoiceSelector.GetComponentAtPopupIndex(ni);
-                            //else
-                            //    property.objectReferenceValue = targGo;
                         }
 
                         this.ChoiceSelector.GUIComplete(property, ni);
@@ -270,7 +268,7 @@ namespace com.spacepuppyeditor.Core
             {
                 if (this.AllowProxy || (this.RestrictionType != null && !TypeUtil.IsType(this.RestrictionType, typeof(UnityEngine.Object))))
                 {
-                    nextobj = UnityObjectDropDownWindowSelector.ObjectField(position, GUIContent.none, property.objectReferenceValue, this.RestrictionType, this.AllowSceneObjects, this.AllowProxy);
+                    nextobj = SPEditorGUI.AdvancedObjectField(position, GUIContent.none, property.objectReferenceValue, this.RestrictionType, this.AllowSceneObjects, this.AllowProxy);
                 }
                 else
                 {

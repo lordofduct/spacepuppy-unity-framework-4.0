@@ -63,6 +63,12 @@ namespace com.spacepuppy.Mecanim
 
             _animator = this.GetComponent<Animator>();
             _baseRuntimeAnimatorController = _animator.runtimeAnimatorController;
+            //we need to extract the true base animator override controller if the initial one was an 'override'
+            if (_baseRuntimeAnimatorController is AnimatorOverrideController aoc)
+            {
+                if (_initialRuntimeAnimatorController == null) _initialRuntimeAnimatorController = aoc;
+                _baseRuntimeAnimatorController = _initialRuntimeAnimatorController.runtimeAnimatorController;
+            }
         }
 
         protected override void Start()
@@ -541,6 +547,7 @@ namespace com.spacepuppy.Mecanim
         public int GetInitialAnimationOverrides(IList<KeyValuePair<AnimationClip, AnimationClip>> lst)
         {
             if (!ObjUtil.IsObjectAlive(this)) return 0;
+            if (object.ReferenceEquals(_overrideAnimatorController, null)) this.InitializeOverrideController();
 
             if (lst is List<KeyValuePair<AnimationClip, AnimationClip>> rlst)
             {
@@ -585,6 +592,7 @@ namespace com.spacepuppy.Mecanim
         public int GetInitialAnimationOverrides(IDictionary<AnimationClip, AnimationClip> dict)
         {
             if (!ObjUtil.IsObjectAlive(this)) return 0;
+            if (object.ReferenceEquals(_overrideAnimatorController, null)) this.InitializeOverrideController();
 
             dict.Clear();
             using (var lst = AnimatorOverrideCollection.GetTemp())
@@ -696,6 +704,20 @@ namespace com.spacepuppy.Mecanim
             }
 
             return 0;
+        }
+
+        public int GetOverridesCount()
+        {
+            if (object.ReferenceEquals(_overrideAnimatorController, null)) this.InitializeOverrideController();
+
+            if (_initialRuntimeAnimatorController != null)
+            {
+                return _initialRuntimeAnimatorController.overridesCount;
+            }
+            else
+            {
+                return _overrideAnimatorController.overridesCount;
+            }
         }
 
         public int IndexOf(object token)

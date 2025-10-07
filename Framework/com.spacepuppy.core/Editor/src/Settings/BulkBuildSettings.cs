@@ -2,12 +2,18 @@
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 using com.spacepuppy;
+using static com.spacepuppyeditor.Settings.BuildSettings;
 
 namespace com.spacepuppyeditor.Settings
 {
+
+    [System.AttributeUsage(System.AttributeTargets.Method, AllowMultiple = false)]
+    public class BulkBuildPostBuildCallbackAttribute : System.Attribute
+    {
+
+    }
 
     [CreateAssetMenu(fileName = "BulkBuildSettings", menuName = "Spacepuppy Build Pipeline/Bulk Build Settings")]
     public class BulkBuildSettings : ScriptableObject
@@ -28,12 +34,13 @@ namespace com.spacepuppyeditor.Settings
         [ReorderableArray]
         private List<BuildSettings> _builds;
 
-        [SerializeField]
-        [EnumFlags]
-        private ScriptOptions _postBuildScriptRunOptions;
+        [SerializeField, EnumFlags, UnityEngine.Serialization.FormerlySerializedAs("_postBuildScriptRunOptions")]
+        private ScriptOptions _buildScriptRunOptions;
 
-        [SerializeField]
-        [ReorderableArray]
+        [SerializeField, ReorderableArray]
+        private List<string> _preBuildScripts;
+
+        [SerializeField, ReorderableArray]
         private List<string> _postBuildScripts;
 
         #endregion
@@ -47,8 +54,8 @@ namespace com.spacepuppyeditor.Settings
 
         public ScriptOptions PostBuildScriptRunOptions
         {
-            get { return _postBuildScriptRunOptions; }
-            set { _postBuildScriptRunOptions = value; }
+            get { return _buildScriptRunOptions; }
+            set { _buildScriptRunOptions = value; }
         }
 
         public List<string> PostBuildScripts
@@ -60,32 +67,59 @@ namespace com.spacepuppyeditor.Settings
 
         #region Methods
 
-        public async Task BuildAsync(BuildSettings.PostBuildOption postBuildOption = BuildSettings.PostBuildOption.Nothing)
+        public void Build(BuildSettings.PostBuildOption postBuildOption = BuildSettings.PostBuildOption.Nothing)
         {
-            await Task.Delay(10);
-
-            bool failed = false;
-            foreach (var settings in _builds)
+            if ((_buildScriptRunOptions & ScriptOptions.Run) != 0)
             {
-                if (settings != null)
+                this.RunScripts(_preBuildScripts);
+            }
+
+            if (_builds.Count > 0)
+            {
+                _builds[0].Build(postBuildOption, new BuildSettings.BulkBuildCallback(this, postBuildOption, 0));
+            }
+        }
+
+        internal async void ContinueBuild(BuildSettings.BulkBuildCallback callback, bool success)
+        {
+            callback.pass++;
+            if (!success) callback.failed = true;
+
+            await System.Threading.Tasks.Task.Delay(1000);
+
+            if (callback.pass < _builds.Count)
+            {
+                _builds[callback.pass].Build(callback.postBuildOption, callback);
+            }
+            else
+            {
+                this.CompleteBuild(callback.failed);
+            }
+        }
+
+        void CompleteBuild(bool failed)
+        {
+            foreach (var m in TypeCache.GetMethodsWithAttribute<BulkBuildPostBuildCallbackAttribute>())
+            {
+                try
                 {
-                    if (!(await settings.BuildAsync(postBuildOption)))
-                    {
-                        failed = true;
-                    }
-                    await Task.Delay(1000);
+                    m.Invoke(null, new object[] { this });
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogException(ex);
                 }
             }
 
-            if ((_postBuildScriptRunOptions & ScriptOptions.Run) == 0) return;
-            if ((_postBuildScriptRunOptions & ScriptOptions.CancelIfBuildFails) != 0 && failed) return;
+            if ((_buildScriptRunOptions & ScriptOptions.Run) == 0) return;
+            if ((_buildScriptRunOptions & ScriptOptions.CancelIfBuildFails) != 0 && failed) return;
 
-            this.RunScripts();
+            this.RunScripts(_postBuildScripts);
         }
 
-        private void RunScripts()
+        private void RunScripts(IList<string> scripts)
         {
-            foreach (var str in _postBuildScripts)
+            foreach (var str in scripts)
             {
                 if (string.IsNullOrEmpty(str)) continue;
 
@@ -106,7 +140,7 @@ namespace com.spacepuppyeditor.Settings
                         proc.StartInfo.CreateNoWindow = false;
                         proc.Start();
 
-                        if ((_postBuildScriptRunOptions & ScriptOptions.BlockUntilComplete) != 0)
+                        if ((_buildScriptRunOptions & ScriptOptions.BlockUntilComplete) != 0)
                         {
                             proc.WaitForExit();
                         }
@@ -131,6 +165,29 @@ namespace com.spacepuppyeditor.Settings
         {
             base.OnSPInspectorGUI();
 
+            EditorGUILayout.Space(5f);
+
+            var arr = TypeCache.GetMethodsWithAttribute<BulkBuildPostBuildCallbackAttribute>();
+            if (arr.Count > 0)
+            {
+                if (GUILayout.Button("Run Only BulkBuildPostBuildCallbacks"))
+                {
+                    foreach (var m in arr)
+                    {
+                        try
+                        {
+                            m.Invoke(null, new object[] { this.target });
+                        }
+                        catch (System.Exception ex)
+                        {
+                            Debug.LogException(ex);
+                        }
+                    }
+                }
+
+                EditorGUILayout.Space(5f);
+            }
+
             if (GUILayout.Button("Build"))
             {
                 if (EditorUtility.DisplayDialog("Build?", "Confirm that you want to perform a bulk build.", "Yes", "Cancel"))
@@ -138,7 +195,7 @@ namespace com.spacepuppyeditor.Settings
                     var settings = this.target as BulkBuildSettings;
                     if (settings == null) return;
 
-                    _ = settings.BuildAsync();
+                    settings.Build();
                 }
             }
         }

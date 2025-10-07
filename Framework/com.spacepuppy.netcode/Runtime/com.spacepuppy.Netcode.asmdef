@@ -5,11 +5,13 @@
         "GUID:ddd0eb9fc8f414a4d9750a013f135d36",
         "GUID:1491147abca9d7d4bb7105af628b223e",
         "GUID:ad6239a0379b2de43a4d9e723d51db80",
+        "GUID:e0cd26848372d4e5c891c569017e11f1",
+        "GUID:d8b63aba1907145bea998dd612889d6b",
         "GUID:f51ebe6a0ceec4240a699833d6309b23"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
-    "allowUnsafeCode": false,
+    "allowUnsafeCode": true,
     "overrideReferences": false,
     "precompiledReferences": [],
     "autoReferenced": true,
@@ -24,6 +26,11 @@
             "name": "com.unity.netcode.gameobjects",
             "expression": "1.4.0",
             "define": "NETCODE_1_4_ORNEWER"
+        },
+        {
+            "name": "com.unity.netcode.gameobjects",
+            "expression": "1.5.0",
+            "define": "NETCODE_1_5_ORNEWER"
         }
     ],
     "noEngineReferences": false

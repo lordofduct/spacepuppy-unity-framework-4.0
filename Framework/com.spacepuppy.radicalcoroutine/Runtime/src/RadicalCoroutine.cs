@@ -170,11 +170,7 @@ namespace com.spacepuppy
             if (routine == null) throw new System.ArgumentNullException(nameof(routine));
             _stack = new RadicalOperationStack(this);
 
-            var e = routine.GetEnumerator();
-            if (e is IRadicalYieldInstruction)
-                _stack.Push(e as IRadicalYieldInstruction);
-            else
-                _stack.Push(EnumWrapper.Create(e));
+            this.Initialize(routine.GetEnumerator());
         }
 
         public RadicalCoroutine(System.Collections.IEnumerator routine)
@@ -1529,7 +1525,6 @@ namespace com.spacepuppy
 
 
             internal IEnumerator _e;
-            private bool _complete;
 
             private EnumWrapper()
             {
@@ -1538,32 +1533,9 @@ namespace com.spacepuppy
 
             public bool Tick(out object yieldObject)
             {
-                if (_e == null)
-                {
-                    yieldObject = null;
-                    return false;
-                }
-
-                if (_e.MoveNext())
-                {
-                    if (_e == null)
-                    {
-                        yieldObject = null;
-                        return false;
-                    }
-                    else
-                    {
-                        yieldObject = _e.Current;
-                        return true;
-                    }
-                }
-                else
-                {
-                    yieldObject = null;
-                    if (_e is System.IDisposable d) d.Dispose();
-                    _e = null;
-                    return false;
-                }
+                bool result = _e?.MoveNext() ?? false;
+                yieldObject = _e?.Current;
+                return result;
             }
 
             public bool IsComplete
@@ -1584,7 +1556,7 @@ namespace com.spacepuppy
 
             public bool MoveNext()
             {
-                return _e != null ? _e.MoveNext() : false;
+                return _e?.MoveNext() ?? false;
             }
 
             public void Reset()
@@ -1667,8 +1639,9 @@ namespace com.spacepuppy
 
                 if (old != null)
                 {
-                    if (old is IImmediatelyResumingYieldInstruction) (old as IImmediatelyResumingYieldInstruction).Signal -= _owner.OnImmediatelyResumingYieldInstructionSignaled;
-                    if (old is IPooledYieldInstruction) (old as IPooledYieldInstruction).Dispose();
+                    if (old is IImmediatelyResumingYieldInstruction imry) imry.Signal -= _owner.OnImmediatelyResumingYieldInstructionSignaled;
+                    //if (old is IPooledYieldInstruction py) py.Dispose();
+                    if (old is System.IDisposable disp) disp.Dispose();
                 }
 
                 return _currentOperation;
@@ -1678,8 +1651,9 @@ namespace com.spacepuppy
             {
                 if (_currentOperation != null)
                 {
-                    if (_currentOperation is IImmediatelyResumingYieldInstruction) (_currentOperation as IImmediatelyResumingYieldInstruction).Signal -= _owner.OnImmediatelyResumingYieldInstructionSignaled;
-                    if (_currentOperation is IPooledYieldInstruction) (_currentOperation as IPooledYieldInstruction).Dispose();
+                    if (_currentOperation is IImmediatelyResumingYieldInstruction imry) imry.Signal -= _owner.OnImmediatelyResumingYieldInstructionSignaled;
+                    //if (_currentOperation is IPooledYieldInstruction py) py.Dispose();
+                    if (_currentOperation is System.IDisposable disp) disp.Dispose();
                 }
 
                 if (_stack != null && _stack.Count > 0)
@@ -1687,8 +1661,9 @@ namespace com.spacepuppy
                     var e = _stack.GetEnumerator();
                     while (e.MoveNext())
                     {
-                        if (e.Current is IImmediatelyResumingYieldInstruction) (e.Current as IImmediatelyResumingYieldInstruction).Signal -= _owner.OnImmediatelyResumingYieldInstructionSignaled;
-                        if (e.Current is IPooledYieldInstruction) (e.Current as IPooledYieldInstruction).Dispose();
+                        if (e.Current is IImmediatelyResumingYieldInstruction imry) imry.Signal -= _owner.OnImmediatelyResumingYieldInstructionSignaled;
+                        //if (e.Current is IPooledYieldInstruction py) py.Dispose();
+                        if (e.Current is System.IDisposable disp) disp.Dispose();
                     }
                     _stack.Clear();
                 }
@@ -1719,8 +1694,9 @@ namespace com.spacepuppy
                 var old = _stack.Pop();
                 if (old != null)
                 {
-                    if (old is IImmediatelyResumingYieldInstruction) (old as IImmediatelyResumingYieldInstruction).Signal -= _owner.OnImmediatelyResumingYieldInstructionSignaled;
-                    if (old is IPooledYieldInstruction) (old as IPooledYieldInstruction).Dispose();
+                    if (old is IImmediatelyResumingYieldInstruction imry) imry.Signal -= _owner.OnImmediatelyResumingYieldInstructionSignaled;
+                    //if (old is IPooledYieldInstruction py) py.Dispose();
+                    if (old is System.IDisposable disp) disp.Dispose();
                 }
                 return old;
             }
@@ -1732,8 +1708,9 @@ namespace com.spacepuppy
                     var e = _stack.GetEnumerator();
                     while (e.MoveNext())
                     {
-                        if (e.Current is IImmediatelyResumingYieldInstruction) (e.Current as IImmediatelyResumingYieldInstruction).Signal -= _owner.OnImmediatelyResumingYieldInstructionSignaled;
-                        if (e.Current is IPooledYieldInstruction) (e.Current as IPooledYieldInstruction).Dispose();
+                        if (e.Current is IImmediatelyResumingYieldInstruction imry) imry.Signal -= _owner.OnImmediatelyResumingYieldInstructionSignaled;
+                        //if (e.Current is IPooledYieldInstruction py) py.Dispose();
+                        if (e.Current is System.IDisposable disp) disp.Dispose();
                     }
                     _stack.Clear();
                 }

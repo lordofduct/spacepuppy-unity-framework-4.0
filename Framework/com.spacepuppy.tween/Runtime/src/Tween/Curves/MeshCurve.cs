@@ -2,6 +2,12 @@
 
 namespace com.spacepuppy.Tween.Curves
 {
+
+    /// <summary>
+    /// This will access the 'mesh' property of the target MeshFilter. This may auto-generate a 'Mesh' on the 'MeshFilter' 
+    /// since that's the behaviour Unity gives 'MeshFilter.mesh'. You are expected to clean up this auto-generated mesh if 
+    /// you use this MeshCurve.
+    /// </summary>
     public class MeshCurve : TweenCurve
     {
 

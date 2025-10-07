@@ -275,6 +275,14 @@ namespace com.spacepuppy.Utils
             return StartRadicalCoroutine(behaviour, RadicalInvokeRedirect(method, delay, -1f, time), disableMode);
         }
 
+        public static RadicalCoroutine Invoke(this MonoBehaviour behaviour, System.Action method, SPTimePeriod period, RadicalCoroutineDisableMode disableMode = RadicalCoroutineDisableMode.CancelOnDisable)
+        {
+            if (behaviour == null) throw new System.ArgumentNullException("behaviour");
+            if (method == null) throw new System.ArgumentNullException("method");
+
+            return StartRadicalCoroutine(behaviour, RadicalInvokeRedirect(method, period.Seconds, -1f, period.TimeSupplier), disableMode);
+        }
+
         public static InvokeHandle InvokeGuaranteed(this MonoBehaviour behaviour, System.Action method, float delay, ITimeSupplier time = null)
         {
             if (method == null) throw new System.ArgumentNullException("method");

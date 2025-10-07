@@ -65,7 +65,7 @@ namespace com.spacepuppy.Geom
     }
 
     [System.Serializable]
-    public class PlanarSurfaceRef : SerializableInterfaceRef<IPlanarSurface> { }
+    public class PlanarSurfaceRef : InterfaceRef<IPlanarSurface> { }
 
     public static class PlanarSurfaceExtensions
     {

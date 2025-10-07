@@ -50,6 +50,8 @@ namespace com.spacepuppy.SPInput
         IInputSignature GetSignature(string id);
         bool Remove(string id);
         void Sort();
+
+        void Update(bool isFixed);
     }
 
 }

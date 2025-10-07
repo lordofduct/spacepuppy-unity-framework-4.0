@@ -5,8 +5,9 @@ using System.Reflection;
 using System.Linq;
 
 using com.spacepuppy;
-using com.spacepuppy.Utils;
+using com.spacepuppy.Collections;
 using com.spacepuppy.Dynamic;
+using com.spacepuppy.Utils;
 
 namespace com.spacepuppyeditor.Core
 {
@@ -27,6 +28,7 @@ namespace com.spacepuppyeditor.Core
         private bool _allowNull;
         private bool _displayBox;
         private bool _alwaysExpanded;
+        private string _nullLabel;
 
         #region Properties
 
@@ -56,6 +58,12 @@ namespace com.spacepuppyeditor.Core
 
         public string NullLabel
         {
+            get => (this.attribute as SerializeRefPickerAttribute)?.NullLabel ?? _nullLabel;
+            set => _nullLabel = value;
+        }
+
+        public bool DrawOnlyPicker
+        {
             get;
             set;
         }
@@ -64,34 +72,41 @@ namespace com.spacepuppyeditor.Core
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
+            float h;
+            if (EditorHelper.AssertMultiObjectEditingNotSupportedHeight(property, label, out h)) return h;
+
             bool cache = property.isExpanded;
             if (this.AlwaysExpanded) property.isExpanded = true;
 
+            bool hasref = !string.IsNullOrEmpty(property.managedReferenceFullTypename);
             try
             {
-                //float objheight = !string.IsNullOrEmpty(property.managedReferenceFullTypename) ? EditorGUI.GetPropertyHeight(property, label, true) + 4f : EditorGUIUtility.singleLineHeight * 2f;
-                float objheight = 0f;
-                if (string.IsNullOrEmpty(property.managedReferenceFieldTypename))
+                if (this.DrawOnlyPicker)
                 {
-                    objheight = EditorGUIUtility.singleLineHeight;
-                }
-                else if (property.isExpanded)
-                {
-                    foreach (var child in property.GetChildren())
-                    {
-                        objheight += SPEditorGUI.GetPropertyHeight(child);
-                    }
-                }
-
-                objheight += EditorGUIUtility.singleLineHeight + SELECTOR_VER_MARGIN;
-
-                if (this.DisplayBox)
-                {
-                    return objheight + BOTTOM_PAD + TOP_PAD;
+                    return EditorGUIUtility.singleLineHeight;
                 }
                 else
                 {
-                    return objheight;
+                    //float objheight = !string.IsNullOrEmpty(property.managedReferenceFullTypename) ? EditorGUI.GetPropertyHeight(property, label, true) + 4f : EditorGUIUtility.singleLineHeight * 2f;
+                    float objheight = EditorGUIUtility.singleLineHeight + SELECTOR_VER_MARGIN;
+
+                    if (!hasref) //this means nothing is referenced currently
+                    {
+                        //all good on height
+                    }
+                    else if (property.isExpanded)
+                    {
+                        objheight += FindPropertyDrawer(EditorHelper.GetManagedReferenceType(property)).GetPropertyHeight(property, GUIContent.none);
+                    }
+
+                    if (this.DisplayBox)
+                    {
+                        return objheight + BOTTOM_PAD + TOP_PAD;
+                    }
+                    else
+                    {
+                        return objheight;
+                    }
                 }
             }
             finally
@@ -102,82 +117,98 @@ namespace com.spacepuppyeditor.Core
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-            bool cache = property.isExpanded;
-            if (this.AlwaysExpanded) property.isExpanded = true;
+            if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
 
-            Rect selectorArea;
-            bool drawSelector;
-            try
+            bool hasref = !string.IsNullOrEmpty(property.managedReferenceFullTypename);
+            if (!this.DrawOnlyPicker)
             {
-                if (this.DisplayBox)
+                bool cache = property.isExpanded;
+                if (this.AlwaysExpanded) property.isExpanded = true;
+
+                Rect selectorArea;
+                bool drawSelector;
+
+                try
                 {
-                    if (!this.AlwaysExpanded) cache = SPEditorGUI.PrefixFoldoutLabel(position, property.isExpanded, GUIContent.none);
-
-                    if (property.isExpanded)
+                    if (this.DisplayBox)
                     {
-                        //float h = SPEditorGUI.GetDefaultPropertyHeight(property, label, true) + BOTTOM_PAD + TOP_PAD - EditorGUIUtility.singleLineHeight;
-                        //var area = new Rect(position.xMin, position.yMax - h, position.width, h);
-                        var area = position;
-                        var drawArea = new Rect(area.xMin + MARGIN, area.yMin + TOP_PAD + SELECTOR_VER_MARGIN + EditorGUIUtility.singleLineHeight, area.width - MARGIN_DBL, area.height - TOP_PAD - EditorGUIUtility.singleLineHeight);
+                        if (!this.AlwaysExpanded) cache = SPEditorGUI.PrefixFoldoutLabel(position, property.isExpanded, GUIContent.none);
 
-                        GUI.BeginGroup(area, label, GUI.skin.box);
-                        GUI.EndGroup();
-
-                        EditorGUI.indentLevel++;
-                        SPEditorGUI.FlatChildPropertyField(drawArea, property);
-                        EditorGUI.indentLevel--;
-
-                        selectorArea = new Rect(position.xMin + SELECTOR_HOR_MARGIN, position.yMin + TOP_PAD, position.width - SELECTOR_HOR_MARGIN_DBL, EditorGUIUtility.singleLineHeight);
-                        drawSelector = true;
-                    }
-                    else
-                    {
-                        GUI.BeginGroup(position, label, GUI.skin.box);
-                        GUI.EndGroup();
-
-                        selectorArea = default(Rect);
-                        drawSelector = false;
-                    }
-                }
-                else
-                {
-                    var drawArea = new Rect(position.xMin, position.yMin + SELECTOR_VER_MARGIN + EditorGUIUtility.singleLineHeight, position.width, Mathf.Max(position.height - EditorGUIUtility.singleLineHeight - SELECTOR_VER_MARGIN, 0f));
-                    if (this.AlwaysExpanded)
-                    {
-                        property.isExpanded = true;
-                        EditorGUI.PrefixLabel(new Rect(position.xMin, position.yMin, position.width, EditorGUIUtility.singleLineHeight), label);
-                        SPEditorGUI.FlatChildPropertyField(drawArea, property);
-                    }
-                    else
-                    {
-                        cache = SPEditorGUI.PrefixFoldoutLabel(new Rect(position.xMin, position.yMin, position.width, EditorGUIUtility.singleLineHeight), property.isExpanded, label);
                         if (property.isExpanded)
                         {
-                            SPEditorGUI.FlatChildPropertyField(drawArea, property);
+                            //float h = SPEditorGUI.GetDefaultPropertyHeight(property, label, true) + BOTTOM_PAD + TOP_PAD - EditorGUIUtility.singleLineHeight;
+                            //var area = new Rect(position.xMin, position.yMax - h, position.width, h);
+                            var area = position;
+                            var drawArea = new Rect(area.xMin + MARGIN, area.yMin + TOP_PAD + SELECTOR_VER_MARGIN + EditorGUIUtility.singleLineHeight, area.width - MARGIN_DBL, area.height - TOP_PAD - EditorGUIUtility.singleLineHeight);
+
+                            GUI.BeginGroup(area, label, GUI.skin.box);
+                            GUI.EndGroup();
+
+                            EditorGUI.indentLevel++;
+                            FindPropertyDrawer(EditorHelper.GetManagedReferenceType(property)).OnGUI(drawArea, property, GUIContent.none);
+                            EditorGUI.indentLevel--;
+
+                            selectorArea = new Rect(position.xMin + SELECTOR_HOR_MARGIN, position.yMin + TOP_PAD, position.width - SELECTOR_HOR_MARGIN_DBL, EditorGUIUtility.singleLineHeight);
+                            drawSelector = true;
+                        }
+                        else
+                        {
+                            GUI.BeginGroup(position, label, GUI.skin.box);
+                            GUI.EndGroup();
+
+                            selectorArea = default(Rect);
+                            drawSelector = false;
+                        }
+                    }
+                    else
+                    {
+                        selectorArea = new Rect(position.xMin, position.yMin, position.width, EditorGUIUtility.singleLineHeight);
+                        var drawArea = new Rect(position.xMin, position.yMin + SELECTOR_VER_MARGIN + EditorGUIUtility.singleLineHeight, position.width, Mathf.Max(position.height - EditorGUIUtility.singleLineHeight - SELECTOR_VER_MARGIN, 0f));
+                        if (this.AlwaysExpanded || !hasref)
+                        {
+                            property.isExpanded = true;
+                            if (label.HasContent())
+                            {
+                                selectorArea = EditorGUI.PrefixLabel(selectorArea, label);
+                            }
+                            FindPropertyDrawer(EditorHelper.GetManagedReferenceType(property)).OnGUI(drawArea, property, GUIContent.none);
+                        }
+                        else
+                        {
+                            cache = SPEditorGUI.PrefixFoldoutLabel(ref selectorArea, property.isExpanded, label);
+                            if (property.isExpanded)
+                            {
+                                FindPropertyDrawer(EditorHelper.GetManagedReferenceType(property)).OnGUI(drawArea, property, GUIContent.none);
+                            }
                         }
 
+                        drawSelector = true;
                     }
+                }
+                finally
+                {
+                    property.isExpanded = cache;
+                }
 
-                    selectorArea = new Rect(position.xMin + EditorGUIUtility.labelWidth, position.yMin, Mathf.Max(0f, position.width - EditorGUIUtility.labelWidth), EditorGUIUtility.singleLineHeight);
-                    drawSelector = true;
+                if (!drawSelector || Application.isPlaying) return;
+
+
+                if (this.RefType != null)
+                {
+                    DrawRefPicker(selectorArea, property, GUIContent.none, this.RefType, this.AllowNull, this.NullLabel);
                 }
             }
-            finally
+            else
             {
-                property.isExpanded = cache;
+                if (Application.isPlaying) return;
+
+                if (this.RefType != null)
+                {
+                    DrawRefPicker(position, property, label, this.RefType, this.AllowNull, this.NullLabel);
+                }
             }
 
-
-
-
-            if (!drawSelector || Application.isPlaying) return;
-
-            if (this.RefType != null)
-            {
-                DrawRefPicker(selectorArea, property, GUIContent.none, this.RefType, this.AllowNull, this.NullLabel);
-            }
         }
-
 
         #region Static Entries
 
@@ -217,11 +248,13 @@ namespace com.spacepuppyeditor.Core
                             token.CopyTo(newobj);
                             StateToken.ReleaseTempToken(token);
                         }
-                        property.managedReferenceValue = newobj;
+                        //property.managedReferenceValue = newobj;
+                        EditorHelper.SetTargetObjectOfProperty(property, newobj);
                     }
                     else
                     {
-                        property.managedReferenceValue = null;
+                        //property.managedReferenceValue = null;
+                        EditorHelper.SetTargetObjectOfProperty(property, null);
                     }
                     com.spacepuppyeditor.Internal.ScriptAttributeUtility.ResetPropertyHandler(property, true);
                     return true;
@@ -241,12 +274,24 @@ namespace com.spacepuppyeditor.Core
                 return info;
             }
 
+            var types = TypeUtil.GetTypesAssignableFrom(reftp).Where(o => !o.IsAbstract && !o.IsInterface && (o.IsValueType || o.GetConstructor(System.Type.EmptyTypes) != null) && !TypeUtil.IsType(o, typeof(UnityEngine.Object)) && o.IsSerializable).ToList();
+            types.Sort((a, b) =>
+            {
+                var ap = a.GetCustomAttribute<SerializeRefLabelAttribute>();
+                var bp = b.GetCustomAttribute<SerializeRefLabelAttribute>();
+                var albl = string.IsNullOrEmpty(ap?.Label) ? a.Name : ap.Label;
+                var blbl = string.IsNullOrEmpty(bp?.Label) ? b.Name : bp.Label;
+                int aord = ap?.Order ?? 0;
+                int bord = bp?.Order ?? 0;
+                return aord == bord ? albl.CompareTo(blbl) : aord.CompareTo(bord);
+            });
+
             info = new TypeInfo();
-            info.AvailableTypes = TypeUtil.GetTypesAssignableFrom(reftp).Where(o => !o.IsAbstract && !o.IsInterface && (o.IsValueType || o.GetConstructor(System.Type.EmptyTypes) != null) && !TypeUtil.IsType(o, typeof(UnityEngine.Object)) && o.IsSerializable).OrderBy(o => o.Name).ToArray();
+            info.AvailableTypes = types.ToArray();
             info.AvailableTypeNames = info.AvailableTypes.Select(tp =>
             {
                 var attrib = tp.GetCustomAttribute<SerializeRefLabelAttribute>();
-                if (attrib != null) return new GUIContent(attrib.Label ?? string.Empty);
+                if (!string.IsNullOrEmpty(attrib?.Label)) return new GUIContent(attrib.Label);
 
                 if (info.AvailableTypes.Count(o => string.Equals(o.Name, tp.Name)) > 1)
                 {
@@ -272,6 +317,87 @@ namespace com.spacepuppyeditor.Core
 
             public System.Type[] AvailableTypesWithNull;
             public GUIContent[] AvailableTypeNamesWithNull;
+        }
+
+        #endregion
+
+        #region Static PropertryDrawer Cache
+
+        private static readonly Dictionary<System.Type, PropertyDrawer> _cachedPropertyDrawers = new();
+        private static System.Type FindPropertyDrawerTypeFor(System.Type tp)
+        {
+            TempList<System.Type> useForChildTypes = null;
+            foreach (var drawerType in TypeUtil.GetTypesAssignableFrom(typeof(PropertyDrawer)))
+            {
+                if (drawerType.GetConstructor(System.Type.EmptyTypes) == null) continue;
+
+                foreach (var attrib in drawerType.GetCustomAttributes<CustomPropertyDrawer>(false))
+                {
+                    var atp = DynamicUtil.GetValue(attrib, "m_Type") as System.Type;
+                    if (atp == tp)
+                    {
+                        return drawerType;
+                    }
+                    else if (System.Convert.ToBoolean(DynamicUtil.GetValue(attrib, "m_UseForChildren")) && TypeUtil.IsType(tp, atp))
+                    {
+                        (useForChildTypes ??= TempCollection.GetList<System.Type>()).Add(drawerType);
+                    }
+                }
+            }
+
+            if (useForChildTypes != null)
+            {
+                var result = useForChildTypes.FirstOrDefault();
+                useForChildTypes.Dispose();
+                return result;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        public static PropertyDrawer FindPropertyDrawer(System.Type tp)
+        {
+            if (tp == null) return SimpleClassDrawer.Default;
+
+            PropertyDrawer result;
+            if (_cachedPropertyDrawers.TryGetValue(tp, out result)) return result;
+
+            var drawerType = FindPropertyDrawerTypeFor(tp);
+            if (drawerType != null)
+            {
+                result = System.Activator.CreateInstance(drawerType) as PropertyDrawer;
+            }
+
+            if (result == null)
+            {
+                result = SimpleClassDrawer.Default;
+            }
+
+            _cachedPropertyDrawers[tp] = result;
+            return result;
+        }
+
+        private class SimpleClassDrawer : PropertyDrawer
+        {
+
+            internal static readonly SimpleClassDrawer Default = new();
+
+            public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+            {
+                float h = 0;
+                foreach (var child in property.GetChildren())
+                {
+                    h += SPEditorGUI.GetPropertyHeight(child, label, true);
+                }
+                return h;
+            }
+
+            public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+            {
+                SPEditorGUI.FlatChildPropertyField(position, property);
+            }
         }
 
         #endregion

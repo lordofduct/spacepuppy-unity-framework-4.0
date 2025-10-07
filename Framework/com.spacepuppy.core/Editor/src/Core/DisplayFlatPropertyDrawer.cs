@@ -18,8 +18,11 @@ namespace com.spacepuppyeditor.Core
         private const float MARGIN = 2f;
 
         private bool _displayBox;
+        private bool _displayHeader;
         private bool _alwaysExpanded;
         private bool _ignoreIfNoChildren;
+        private bool _indent;
+        private float _trailingSpace;
 
         #region Properties
 
@@ -27,6 +30,12 @@ namespace com.spacepuppyeditor.Core
         {
             get => (this.attribute as DisplayFlatAttribute)?.DisplayBox ?? _displayBox;
             set => _displayBox = value;
+        }
+
+        public bool DisplayHeader
+        {
+            get => (this.attribute as DisplayFlatAttribute)?.DisplayHeader ?? _displayHeader;
+            set => _displayHeader = value;
         }
 
         public bool AlwaysExpanded
@@ -39,6 +48,18 @@ namespace com.spacepuppyeditor.Core
         {
             get => (this.attribute as DisplayFlatAttribute)?.IgnoreIfNoChildren ?? _ignoreIfNoChildren;
             set => _ignoreIfNoChildren = value;
+        }
+
+        public bool Indent
+        {
+            get => (this.attribute as DisplayFlatAttribute)?.Indent ?? _indent;
+            set => _indent = value;
+        }
+
+        public float TrailingSpace
+        {
+            get => (this.attribute as DisplayFlatAttribute)?.TrailingSpace ?? _trailingSpace;
+            set => _trailingSpace = value;
         }
 
         #endregion
@@ -55,32 +76,37 @@ namespace com.spacepuppyeditor.Core
 
             try
             {
+                float h = 0f;
                 if (property.isExpanded)
                 {
                     if (property.hasChildren)
                     {
-                        if(this.DisplayBox)
+                        if (this.DisplayBox)
                         {
-                            return SPEditorGUI.GetDefaultPropertyHeight(property, label, true) + BOTTOM_PAD + TOP_PAD - EditorGUIUtility.singleLineHeight;
+                            h = SPEditorGUI.GetDefaultPropertyHeight(property, label, true) + BOTTOM_PAD + TOP_PAD - EditorGUIUtility.singleLineHeight;
                         }
                         else
                         {
-                            return Mathf.Max(SPEditorGUI.GetDefaultPropertyHeight(property, label, true) - EditorGUIUtility.singleLineHeight, 0f);
+                            h = Mathf.Max(SPEditorGUI.GetDefaultPropertyHeight(property, label, true) - EditorGUIUtility.singleLineHeight, 0f);
+                            if (this.DisplayHeader) h += EditorGUIUtility.singleLineHeight;
                         }
                     }
                     else
                     {
-                        return SPEditorGUI.GetDefaultPropertyHeight(property, label);
+                        h = SPEditorGUI.GetDefaultPropertyHeight(property, label);
                     }
                 }
                 else if (this.DisplayBox)
                 {
-                    return EditorGUIUtility.singleLineHeight + BOTTOM_PAD;
+                    h = EditorGUIUtility.singleLineHeight + BOTTOM_PAD;
                 }
                 else
                 {
-                    return EditorGUIUtility.singleLineHeight;
+                    h = EditorGUIUtility.singleLineHeight;
                 }
+
+                if (this.TrailingSpace > 0f) h += this.TrailingSpace;
+                return h;
             }
             finally
             {
@@ -100,6 +126,8 @@ namespace com.spacepuppyeditor.Core
 
             try
             {
+                if (this.TrailingSpace > 0f) position = new Rect(position.xMin, position.yMin, position.width, position.height - this.TrailingSpace);
+
                 if (!property.hasChildren)
                 {
                     SPEditorGUI.DefaultPropertyField(position, property, label);
@@ -110,7 +138,7 @@ namespace com.spacepuppyeditor.Core
 
                 if (property.isExpanded)
                 {
-                    if(this.DisplayBox)
+                    if (this.DisplayBox)
                     {
                         //float h = SPEditorGUI.GetDefaultPropertyHeight(property, label, true) + BOTTOM_PAD + TOP_PAD - EditorGUIUtility.singleLineHeight;
                         //var area = new Rect(position.xMin, position.yMax - h, position.width, h);
@@ -126,10 +154,26 @@ namespace com.spacepuppyeditor.Core
                     }
                     else
                     {
-                        SPEditorGUI.FlatChildPropertyField(position, property);
+                        if (this.DisplayHeader)
+                        {
+                            var rheader = new Rect(position.xMin, position.yMin, position.width, EditorGUIUtility.singleLineHeight);
+                            position = new Rect(position.xMin, rheader.yMax, position.width, position.height - rheader.height);
+                            EditorGUI.LabelField(rheader, label, EditorStyles.boldLabel);
+                        }
+
+                        if (this.Indent)
+                        {
+                            EditorGUI.indentLevel++;
+                            SPEditorGUI.FlatChildPropertyField(position, property);
+                            EditorGUI.indentLevel--;
+                        }
+                        else
+                        {
+                            SPEditorGUI.FlatChildPropertyField(position, property);
+                        }
                     }
                 }
-                else if(this.DisplayBox)
+                else if (this.DisplayBox)
                 {
                     GUI.BeginGroup(position, label, GUI.skin.box);
                     GUI.EndGroup();

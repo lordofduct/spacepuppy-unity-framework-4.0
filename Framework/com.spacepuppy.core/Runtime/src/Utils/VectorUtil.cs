@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace com.spacepuppy.Utils
 {
@@ -18,19 +19,22 @@ namespace com.spacepuppy.Utils
         public static Vector2 NegInfVector2 { get { return new Vector2(float.NegativeInfinity, float.NegativeInfinity); } }
         public static Vector3 NegInfVector3 { get { return new Vector3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity); } }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNaN(Vector2 v)
         {
-            return float.IsNaN(v.sqrMagnitude);
+            return float.IsNaN(v.x + v.y);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNaN(Vector3 v)
         {
-            return float.IsNaN(v.sqrMagnitude);
+            return float.IsNaN(v.x + v.y + v.z);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNaN(Vector4 v)
         {
-            return float.IsNaN(v.sqrMagnitude);
+            return float.IsNaN(v.x + v.y + v.z + v.w);
         }
 
         public static float SqrDistance(Vector2 a, Vector2 b)

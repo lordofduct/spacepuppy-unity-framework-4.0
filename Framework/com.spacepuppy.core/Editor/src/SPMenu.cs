@@ -33,13 +33,13 @@ namespace com.spacepuppyeditor
 
         #region Special Menu Entries
 
-        [MenuItem(SPMenu.MENU_NAME_SETTINGS + "/Sync TagData", priority = MENU_PRIORITY_SETTINGS)]
+        [MenuItem(SPMenu.MENU_NAME_SETTINGS + "/Sync TagData", priority = SPMenu.MENU_PRIORITY_SETTINGS)]
         public static void SyncTagData()
         {
             var tagData = (TagData)AssetDatabase.LoadAssetAtPath(@"Assets/Resources/TagData.asset", typeof(TagData));
             if (tagData == null)
             {
-                if(!System.IO.Directory.Exists(Application.dataPath + "/Resources"))
+                if (!System.IO.Directory.Exists(Application.dataPath + "/Resources"))
                 {
                     System.IO.Directory.CreateDirectory(Application.dataPath + "/Resources");
                 }
@@ -68,7 +68,7 @@ namespace com.spacepuppyeditor
                         tags.Add(SPConstants.TAG_ROOT);
                         added = true;
                     }
-                    if(added)
+                    if (added)
                     {
                         try
                         {
@@ -77,7 +77,7 @@ namespace com.spacepuppyeditor
 
                             var arr = (from st in tags where !string.IsNullOrEmpty(st) && !TagData.IsDefaultUnityTag(st) select st).ToArray();
                             tagsProp.arraySize = arr.Length;
-                            for(int i = 0; i < arr.Length; i++)
+                            for (int i = 0; i < arr.Length; i++)
                             {
                                 tagsProp.GetArrayElementAtIndex(i).stringValue = arr[i];
                             }
@@ -94,6 +94,27 @@ namespace com.spacepuppyeditor
                     EditorHelper.CommitDirectChanges(tagData, true);
                     AssetDatabase.SaveAssets();
                 }
+            }
+        }
+
+        public static void SaveTagData(IEnumerable<string> tags)
+        {
+            try
+            {
+                SerializedObject tagManager = new SerializedObject(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset")[0]);
+                SerializedProperty tagsProp = tagManager.FindProperty("tags");
+
+                var arr = (from st in tags where !string.IsNullOrEmpty(st) && !TagData.IsDefaultUnityTag(st) select st).ToArray();
+                tagsProp.arraySize = arr.Length;
+                for (int i = 0; i < arr.Length; i++)
+                {
+                    tagsProp.GetArrayElementAtIndex(i).stringValue = arr[i];
+                }
+                tagManager.ApplyModifiedProperties();
+            }
+            catch
+            {
+                Debug.LogWarning("Failed to save TagManager when syncing tags.");
             }
         }
 

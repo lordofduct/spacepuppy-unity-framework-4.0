@@ -29,7 +29,7 @@ namespace com.spacepuppyeditor.Statistics.Events
 
             SPEditorGUILayout.PropertyField(filterprop);
 
-            switch(filterprop.GetEnumValue<t_OnTokenLedgerValueChange.HitFilterOptions>())
+            switch (filterprop.GetEnumValue<t_OnTokenLedgerValueChange.HitFilterOptions>())
             {
                 case t_OnTokenLedgerValueChange.HitFilterOptions.Any:
                 case t_OnTokenLedgerValueChange.HitFilterOptions.MultiOnly:
@@ -39,16 +39,16 @@ namespace com.spacepuppyeditor.Statistics.Events
                 case t_OnTokenLedgerValueChange.HitFilterOptions.DirectOrMulti:
                     {
                         int selection = Mathf.Max(0, StatisticsTokenLedgerCategories.FindIndexOfCategory(catprop.stringValue));
-                        selection = EditorGUILayout.Popup("Category", selection, StatisticsTokenLedgerCategories.Categories.Select(o => o.Name).ToArray());
+                        selection = EditorGUILayout.Popup("Category", selection, StatisticsTokenLedgerCategories.Categories.Select(o => o.PopupPath).ToArray());
                         catprop.stringValue = StatisticsTokenLedgerCategories.IndexInRange(selection) ? StatisticsTokenLedgerCategories.Categories[selection].Name : null;
 
                         if (StatisticsTokenLedgerCategories.IndexInRange(selection))
                         {
                             var category = StatisticsTokenLedgerCategories.Categories[selection];
 
-                            selection = category.Entries.IndexOf(idprop.stringValue);
-                            selection = EditorGUILayout.Popup("Token", selection, category.Entries);
-                            idprop.stringValue = selection >= 0 ? category.Entries[selection] : null;
+                            selection = category.EntriesArray.IndexOf(idprop.stringValue);
+                            selection = EditorGUILayout.Popup("Token", selection, category.EntriesArray);
+                            idprop.stringValue = selection >= 0 ? category.EntriesArray[selection] : null;
                         }
                     }
                     break;
@@ -56,7 +56,7 @@ namespace com.spacepuppyeditor.Statistics.Events
                 case t_OnTokenLedgerValueChange.HitFilterOptions.CategoryOrMulti:
                     {
                         int selection = Mathf.Max(0, StatisticsTokenLedgerCategories.FindIndexOfCategory(catprop.stringValue));
-                        selection = EditorGUILayout.Popup("Category", selection, StatisticsTokenLedgerCategories.Categories.Select(o => o.Name).ToArray());
+                        selection = EditorGUILayout.Popup("Category", selection, StatisticsTokenLedgerCategories.Categories.Select(o => o.PopupPath).ToArray());
                         catprop.stringValue = StatisticsTokenLedgerCategories.IndexInRange(selection) ? StatisticsTokenLedgerCategories.Categories[selection].Name : null;
                     }
                     break;

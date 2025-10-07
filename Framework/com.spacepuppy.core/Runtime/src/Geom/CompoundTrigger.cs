@@ -20,7 +20,7 @@ namespace com.spacepuppy.Geom
     }
 
     [System.Serializable]
-    public class ICompoundTriggerRef : SerializableInterfaceRef<ICompoundTrigger> { }
+    public class ICompoundTriggerRef : InterfaceRef<ICompoundTrigger> { }
 
     public interface ICompoundTriggerEnterHandler
     {
@@ -73,6 +73,13 @@ namespace com.spacepuppy.Geom
     public class CompoundTrigger : SPComponent, ICompoundTrigger
     {
 
+        protected System.EventHandler _activeTargetsChanged;
+        public event System.EventHandler ActiveTargetsChanged
+        {
+            add { _activeTargetsChanged += value; }
+            remove { _activeTargetsChanged -= value; }
+        }
+
         [System.Flags]
         public enum ConfigurationOptions
         {
@@ -120,6 +127,10 @@ namespace com.spacepuppy.Geom
             IncludeInactiveObjects = false,
         };
 
+        protected bool _isDirty;
+
+        private ActiveColliderCollection _activeCollidersWrapper;
+
         #endregion
 
         #region CONSTRUCTOR
@@ -153,6 +164,7 @@ namespace com.spacepuppy.Geom
             }
             _active.Clear();
             _signaled?.Clear();
+            _isDirty = false;
         }
 
         #endregion
@@ -192,6 +204,8 @@ namespace com.spacepuppy.Geom
             get => _otherColliderMessageSettings;
             set => _otherColliderMessageSettings = value;
         }
+
+        public ActiveColliderCollection ActiveCollider => (_activeCollidersWrapper ??= new(this));
 
         #endregion
 
@@ -248,17 +262,31 @@ namespace com.spacepuppy.Geom
             }
         }
 
+        public CompoundTriggerMember GetMember(Collider collider) => collider && _colliders.TryGetValue(collider, out var m) ? m : null;
+
         /// <summary>
         /// The colliders that make up this compoundtrigger
         /// </summary>
         /// <returns></returns>
-        public IEnumerable<Collider> GetMemberColliders() => _colliders.Keys;
+        public IReadOnlyCollection<CompoundTriggerMember> GetMembers() => _colliders.Values;
+
+        /// <summary>
+        /// The colliders that make up this compoundtrigger
+        /// </summary>
+        /// <returns></returns>
+        public IReadOnlyCollection<Collider> GetMemberColliders() => _colliders.Keys;
 
         /// <summary>
         /// The 'other' colliders that are currently inside this compoundtrigger
         /// </summary>
         /// <returns></returns>
-        public IEnumerable<Collider> GetActiveColliders() => _active.Where(o => ObjUtil.IsObjectAlive(o));
+        public IEnumerable<Collider> GetActiveColliders()
+        {
+            if (_isDirty) this.CleanActive();
+            if (_active.Count == 0) return Enumerable.Empty<Collider>();
+
+            return _active.Where(this.ValidateEntryOrSetDirty);
+        }
 
         public bool Contains(Vector3 position)
         {
@@ -272,7 +300,28 @@ namespace com.spacepuppy.Geom
             return false;
         }
 
-        public bool ContainsActive() => _active.Count > 0 && _active.Count(o => ObjUtil.IsObjectAlive(o)) > 0;
+        public bool ContainsActive()
+        {
+            if (_active.Count == 0) return false;
+
+            var e = _active.GetEnumerator();
+            try
+            {
+                while (e.MoveNext())
+                {
+                    if (this.ValidateEntryOrSetDirty(e.Current))
+                    {
+                        return true;
+                    }
+                }
+            }
+            finally
+            {
+                if (_isDirty) this.CleanActive();
+            }
+
+            return false;
+        }
 
         public bool ContainsActive(Collider c) => c != null && _active.Contains(c);
 
@@ -282,24 +331,20 @@ namespace com.spacepuppy.Geom
 
             var e = _active.GetEnumerator();
             int cnt = 0;
-            bool doclean = false;
             try
             {
                 while (e.MoveNext())
                 {
-                    if (!ObjUtil.IsObjectAlive(e.Current))
+                    if (this.ValidateEntryOrSetDirty(e.Current))
                     {
-                        doclean = true;
-                        continue;
+                        cnt++;
+                        output.Add(e.Current);
                     }
-
-                    cnt++;
-                    output.Add(e.Current);
                 }
             }
             finally
             {
-                if (doclean) this.CleanActive();
+                if (_isDirty) this.CleanActive();
             }
             return cnt;
         }
@@ -311,6 +356,7 @@ namespace com.spacepuppy.Geom
             var e = _active.GetEnumerator();
             while (e.MoveNext())
             {
+                if (!this.ValidateEntryOrSetDirty(e.Current)) continue;
                 if (ObjUtil.GetAsFromSource(e.Current, out T o)) yield return o;
             }
         }
@@ -322,6 +368,7 @@ namespace com.spacepuppy.Geom
             var e = _active.GetEnumerator();
             while (e.MoveNext())
             {
+                if (!this.ValidateEntryOrSetDirty(e.Current)) continue;
                 if (ObjUtil.GetAsFromSource(e.Current, out T o) && (filter?.Invoke(o) ?? true)) yield return o;
             }
         }
@@ -335,7 +382,7 @@ namespace com.spacepuppy.Geom
             {
                 while (e.MoveNext())
                 {
-                    if (!ObjUtil.IsObjectAlive(e.Current)) continue;
+                    if (!this.ValidateEntryOrSetDirty(e.Current)) continue;
                     var o = cast(e.Current);
                     if (o != null && (filter?.Invoke(o) ?? true)) yield return o;
                 }
@@ -344,6 +391,7 @@ namespace com.spacepuppy.Geom
             {
                 while (e.MoveNext())
                 {
+                    if (!this.ValidateEntryOrSetDirty(e.Current)) continue;
                     if (ObjUtil.GetAsFromSource(e.Current, out T o) && (filter?.Invoke(o) ?? true)) yield return o;
                 }
             }
@@ -355,17 +403,11 @@ namespace com.spacepuppy.Geom
 
             var e = _active.GetEnumerator();
             int cnt = 0;
-            bool doclean = false;
             try
             {
                 while (e.MoveNext())
                 {
-                    if (!ObjUtil.IsObjectAlive(e.Current))
-                    {
-                        doclean = true;
-                        continue;
-                    }
-                    else if (ObjUtil.GetAsFromSource(e.Current, out T o))
+                    if (this.ValidateEntryOrSetDirty(e.Current) && ObjUtil.GetAsFromSource(e.Current, out T o))
                     {
                         cnt++;
                         output.Add(o);
@@ -374,7 +416,7 @@ namespace com.spacepuppy.Geom
             }
             finally
             {
-                if (doclean) this.CleanActive();
+                if (_isDirty) this.CleanActive();
             }
             return cnt;
         }
@@ -385,17 +427,11 @@ namespace com.spacepuppy.Geom
 
             var e = _active.GetEnumerator();
             int cnt = 0;
-            bool doclean = false;
             try
             {
                 while (e.MoveNext())
                 {
-                    if (!ObjUtil.IsObjectAlive(e.Current))
-                    {
-                        doclean = true;
-                        continue;
-                    }
-                    else if (ObjUtil.GetAsFromSource(e.Current, out T o) && (filter?.Invoke(o) ?? true))
+                    if (this.ValidateEntryOrSetDirty(e.Current) && ObjUtil.GetAsFromSource(e.Current, out T o) && (filter?.Invoke(o) ?? true))
                     {
                         cnt++;
                         output.Add(o);
@@ -404,7 +440,7 @@ namespace com.spacepuppy.Geom
             }
             finally
             {
-                if (doclean) this.CleanActive();
+                if (_isDirty) this.CleanActive();
             }
             return cnt;
         }
@@ -415,16 +451,11 @@ namespace com.spacepuppy.Geom
 
             var e = _active.GetEnumerator();
             int cnt = 0;
-            bool doclean = false;
             try
             {
                 while (e.MoveNext())
                 {
-                    if (!ObjUtil.IsObjectAlive(e.Current))
-                    {
-                        doclean = true;
-                        continue;
-                    }
+                    if (!this.ValidateEntryOrSetDirty(e.Current)) continue;
 
                     var o = cast != null ? cast(e.Current) : ObjUtil.GetAsFromSource<T>(e.Current);
                     if (o != null && (filter?.Invoke(o) ?? true))
@@ -436,7 +467,7 @@ namespace com.spacepuppy.Geom
             }
             finally
             {
-                if (doclean) this.CleanActive();
+                if (_isDirty) this.CleanActive();
             }
             return cnt;
         }
@@ -446,7 +477,7 @@ namespace com.spacepuppy.Geom
             var e = _colliders.GetEnumerator();
             while (e.MoveNext())
             {
-                if (e.Current.Value.Active.Contains(c))
+                if (e.Current.Value.ActiveRaw.Contains(c))
                 {
                     member = e.Current.Value;
                     return true;
@@ -460,6 +491,7 @@ namespace com.spacepuppy.Geom
         {
             if (this.isActiveAndEnabled && (_mask.Value?.Intersects(other) ?? true) && _active.Add(other))
             {
+                _activeTargetsChanged?.Invoke(this, System.EventArgs.Empty);
                 _messageSettings.Send(this.gameObject, (this, other), OnEnterFunctor);
                 if ((_configuration & ConfigurationOptions.SendMessageToOtherCollider) != 0) _otherColliderMessageSettings.Send(other.gameObject, (this, member.Collider), OnEnterFunctor);
             }
@@ -472,6 +504,7 @@ namespace com.spacepuppy.Geom
 
             if (_active.Remove(other))
             {
+                _activeTargetsChanged?.Invoke(this, System.EventArgs.Empty);
                 _messageSettings.Send(this.gameObject, (this, other), OnExitFunctor);
                 if ((_configuration & ConfigurationOptions.SendMessageToOtherCollider) != 0) _otherColliderMessageSettings.Send(other.gameObject, (this, member.Collider), OnExitFunctor);
             }
@@ -492,6 +525,8 @@ namespace com.spacepuppy.Geom
                     _otherColliderMessageSettings.Send(other.gameObject, (this, membercoll), OnExitFunctor);
                 }
             }
+            _active.Clear();
+            _activeTargetsChanged?.Invoke(this, System.EventArgs.Empty);
         }
 
         protected virtual void SignalTriggerStay(CompoundTriggerStayMember member, Collider other)
@@ -520,9 +555,9 @@ namespace com.spacepuppy.Geom
             while (ed.MoveNext())
             {
                 ed.Current.Value.CleanActive();
-                if (ed.Current.Value.Active.Count > 0)
+                if (ed.Current.Value.ActiveRaw.Count > 0)
                 {
-                    foreach (var a in ed.Current.Value.Active)
+                    foreach (var a in ed.Current.Value.ActiveRaw)
                     {
                         this.SignalTriggerEnter(ed.Current.Value, a);
                     }
@@ -541,6 +576,20 @@ namespace com.spacepuppy.Geom
             {
                 pair.Value.CleanActive();
             }
+            _isDirty = false;
+        }
+
+        protected bool ValidateEntryOrSetDirty(Collider o)
+        {
+            if (ObjUtil.IsObjectAlive(o) && o.IsActiveAndEnabled())
+            {
+                return true;
+            }
+            else
+            {
+                _isDirty = true;
+                return false;
+            }
         }
 
         #endregion
@@ -556,7 +605,7 @@ namespace com.spacepuppy.Geom
 
         #region Special Types
 
-        protected class CompoundTriggerMember : MonoBehaviour
+        public class CompoundTriggerMember : MonoBehaviour
         {
 
             [System.NonSerialized]
@@ -576,10 +625,8 @@ namespace com.spacepuppy.Geom
                 get { return _collider; }
             }
 
-            public HashSet<Collider> Active
-            {
-                get { return _active; }
-            }
+            public IReadOnlyCollection<Collider> Active => _active;
+            protected internal HashSet<Collider> ActiveRaw => _active;
 
             internal void Init(CompoundTrigger owner, Collider collider)
             {
@@ -632,6 +679,64 @@ namespace com.spacepuppy.Geom
                     if (_owner != null) _owner.SignalTriggerStay(this, other);
                 }
             }
+
+        }
+
+        public class ActiveColliderCollection : IEnumerable<Collider>
+        {
+
+            private CompoundTrigger _owner;
+            internal ActiveColliderCollection(CompoundTrigger owner)
+            {
+                _owner = owner;
+            }
+
+            public bool Contains(Collider item)
+            {
+                if (!item) return false;
+                if (_owner._isDirty) _owner.CleanActive();
+                return _owner._active.Contains(item);
+            }
+            public void CopyTo(Collider[] array, int arrayIndex)
+            {
+                var e = new ActiveColliderEnumerator(_owner);
+                while (e.MoveNext() && arrayIndex < array.Length)
+                {
+                    array[arrayIndex] = e.Current;
+                    arrayIndex++;
+                }
+            }
+
+            public ActiveColliderEnumerator GetEnumerator() => new ActiveColliderEnumerator(_owner);
+            IEnumerator<Collider> IEnumerable<Collider>.GetEnumerator() => new ActiveColliderEnumerator(_owner);
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => new ActiveColliderEnumerator(_owner);
+
+        }
+
+        public struct ActiveColliderEnumerator : IEnumerator<Collider>
+        {
+            private CompoundTrigger _owner;
+            private HashSet<Collider>.Enumerator _e;
+            internal ActiveColliderEnumerator(CompoundTrigger owner)
+            {
+                _owner = owner;
+                if (_owner._isDirty) _owner.CleanActive();
+                _e = owner._active.GetEnumerator();
+            }
+
+            public Collider Current => _e.Current;
+            object System.Collections.IEnumerator.Current => _e.Current;
+
+            public void Dispose() => _e.Dispose();
+            public bool MoveNext()
+            {
+                while (_e.MoveNext())
+                {
+                    if (_owner.ValidateEntryOrSetDirty(_e.Current)) return true;
+                }
+                return false;
+            }
+            void System.Collections.IEnumerator.Reset() => (_e as System.Collections.IEnumerator).Reset();
 
         }
 

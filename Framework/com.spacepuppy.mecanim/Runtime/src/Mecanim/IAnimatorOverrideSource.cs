@@ -1,8 +1,8 @@
 using UnityEngine;
 using System.Collections.Generic;
+
 using com.spacepuppy.Collections;
 using com.spacepuppy.Utils;
-using System.Linq;
 
 namespace com.spacepuppy.Mecanim
 {
@@ -39,6 +39,16 @@ namespace com.spacepuppy.Mecanim
             source.GetOverrides(animator, this);
         }
 
+        public AnimatorOverrideCollection(AnimatorOverrideController controller) : base(controller.overridesCount)
+        {
+            controller.GetOverrides(this);
+        }
+
+        public AnimatorOverrideCollection(SPAnimatorOverrideLayers layers) : base(layers.GetOverridesCount())
+        {
+            layers.GetOverrides(this);
+        }
+
         #endregion
 
         #region Methods
@@ -47,6 +57,19 @@ namespace com.spacepuppy.Mecanim
         {
             lst.AddRange(this);
             return this.Count;
+        }
+
+        public void SetOverride(string name, AnimationClip clip)
+        {
+            for (int i = 0; i < this.Count; i++)
+            {
+                var pair = this[i];
+                if (pair.Key && pair.Key.name.Equals(name))
+                {
+                    this[i] = new KeyValuePair<AnimationClip, AnimationClip>(pair.Key, clip);
+                    return;
+                }
+            }
         }
 
         #endregion
@@ -88,17 +111,28 @@ namespace com.spacepuppy.Mecanim
             return result;
         }
 
+        public static AnimatorOverrideCollection GetTemp(SPAnimatorOverrideLayers layers)
+        {
+            var result = _pool.GetInstance();
+            layers.GetOverrides(result);
+            return result;
+        }
+
+        public static AnimatorOverrideCollection GetTemp(AnimatorOverrideController overrideController)
+        {
+            var result = _pool.GetInstance();
+            overrideController.GetOverrides(result);
+            return result;
+        }
+
         private class TempAnimatorOverrideCollection : AnimatorOverrideCollection
         {
             protected override void Dispose()
             {
                 this.Clear();
-                if (_pool.Release(this))
+                if (this.Capacity < 128) //we only pool small collections
                 {
-                    if(this.Capacity > 64)
-                    {
-                        this.Capacity = 64;
-                    }
+                    _pool.Release(this);
                 }
             }
         }
@@ -130,7 +164,7 @@ namespace com.spacepuppy.Mecanim
             get { return _runtimeRef ?? _obj; }
             set
             {
-                if(value is IAnimatorOverrideSource || value is AnimatorOverrideController || value is IProxy)
+                if (value is IAnimatorOverrideSource || value is AnimatorOverrideController || value is IProxy)
                 {
                     _runtimeRef = value;
                     _obj = value as UnityEngine.Object;
@@ -142,6 +176,8 @@ namespace com.spacepuppy.Mecanim
                 }
             }
         }
+
+        public bool HasOverrideSource => _runtimeRef != null || _obj != null;
 
         #endregion
 

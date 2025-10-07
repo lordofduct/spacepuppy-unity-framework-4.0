@@ -22,10 +22,35 @@ namespace com.spacepuppy.Geom
     {
 
         bool TestOverlap(int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal);
-        int Overlap(ICollection<Collider> results, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal);
+        int OverlapNonAlloc(Collider[] buffer, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal);
+        int Overlap(ICollection<Collider> results, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
+        {
+            if (results is Collider[] arr)
+            {
+                return this.OverlapNonAlloc(arr, layerMask, query);
+            }
+            else
+            {
+                var buffer = PhysicsUtil.GetNonAllocColliderBuffer();
+                try
+                {
+                    int cnt = this.OverlapNonAlloc(buffer, layerMask, query);
+                    for (int i = 0; i < cnt; i++)
+                    {
+                        results.Add(buffer[i]);
+                    }
+                    return cnt;
+                }
+                finally
+                {
+                    PhysicsUtil.ReleaseNonAllocColliderBuffer(buffer);
+                }
+            }
+        }
         bool Cast(Vector3 direction, out RaycastHit hitinfo, float distance, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal);
         int CastAll(Vector3 direction, ICollection<RaycastHit> results, float distance, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal);
 
+        bool ContainsPoint(Vector3 point);
     }
 
     public interface IPhysicsGeom : IGeom, IPhysicsObject

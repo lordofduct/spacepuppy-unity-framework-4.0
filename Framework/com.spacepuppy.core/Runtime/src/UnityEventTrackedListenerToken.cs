@@ -4,11 +4,24 @@ using UnityEngine.Events;
 namespace com.spacepuppy
 {
 
-    public struct UnityEventTrackedListenerToken : System.IDisposable
+    public struct TrackableUnityEvent : ITrackableEvent<UnityAction>
+    {
+        private UnityEvent _event;
+        public TrackableUnityEvent(UnityEvent ev) { this._event = ev; }
+        public void AddListener(UnityAction listener) => _event?.AddListener(listener);
+        public void RemoveListener(UnityAction listener) => _event?.RemoveListener(listener);
+        public UnityEventTrackedListenerToken AddTrackedListener(UnityAction listener) => UnityEventTrackedListenerToken.Create(_event, listener);
+        public static implicit operator TrackableUnityEvent(UnityEvent ev) => new() { _event = ev };
+    }
+    public struct UnityEventTrackedListenerToken : ITrackedListenerToken<UnityAction>
     {
 
         private UnityEvent _event;
         private UnityAction _listener;
+
+        TrackableUnityEvent Target => new TrackableUnityEvent(_event);
+        ITrackableEvent<UnityAction> ITrackedListenerToken<UnityAction>.Target => new TrackableUnityEvent(_event);
+        UnityAction ITrackedListenerToken<UnityAction>.Listener => _listener;
 
         public void Dispose()
         {
@@ -33,11 +46,24 @@ namespace com.spacepuppy
 
     }
 
-    public struct UnityEventTrackedListenerToken<T0> : System.IDisposable
+    public struct TrackableUnityEvent<T0> : ITrackableEvent<UnityAction<T0>>
+    {
+        private UnityEvent<T0> _event;
+        public TrackableUnityEvent(UnityEvent<T0> ev) { this._event = ev; }
+        public void AddListener(UnityAction<T0> listener) => _event?.AddListener(listener);
+        public void RemoveListener(UnityAction<T0> listener) => _event?.RemoveListener(listener);
+        public UnityEventTrackedListenerToken<T0> AddTrackedListener(UnityAction<T0> listener) => UnityEventTrackedListenerToken<T0>.Create(_event, listener);
+        public static implicit operator TrackableUnityEvent<T0>(UnityEvent<T0> ev) => new() { _event = ev };
+    }
+    public struct UnityEventTrackedListenerToken<T0> : ITrackedListenerToken<UnityAction<T0>>
     {
 
         private UnityEvent<T0> _event;
         private UnityAction<T0> _listener;
+
+        TrackableUnityEvent<T0> Target => new TrackableUnityEvent<T0>(_event);
+        ITrackableEvent<UnityAction<T0>> ITrackedListenerToken<UnityAction<T0>>.Target => new TrackableUnityEvent<T0>(_event);
+        UnityAction<T0> ITrackedListenerToken<UnityAction<T0>>.Listener => _listener;
 
         public void Dispose()
         {
@@ -62,11 +88,24 @@ namespace com.spacepuppy
 
     }
 
-    public struct UnityEventTrackedListenerToken<T0, T1> : System.IDisposable
+    public struct TrackableUnityEvent<T0, T1> : ITrackableEvent<UnityAction<T0, T1>>
+    {
+        private UnityEvent<T0, T1> _event;
+        public TrackableUnityEvent(UnityEvent<T0, T1> ev) { this._event = ev; }
+        public void AddListener(UnityAction<T0, T1> listener) => _event?.AddListener(listener);
+        public void RemoveListener(UnityAction<T0, T1> listener) => _event?.RemoveListener(listener);
+        public UnityEventTrackedListenerToken<T0, T1> AddTrackedListener(UnityAction<T0, T1> listener) => UnityEventTrackedListenerToken<T0, T1>.Create(_event, listener);
+        public static implicit operator TrackableUnityEvent<T0, T1>(UnityEvent<T0, T1> ev) => new() { _event = ev };
+    }
+    public struct UnityEventTrackedListenerToken<T0, T1> : ITrackedListenerToken<UnityAction<T0, T1>>
     {
 
         private UnityEvent<T0, T1> _event;
         private UnityAction<T0, T1> _listener;
+
+        TrackableUnityEvent<T0, T1> Target => new TrackableUnityEvent<T0, T1>(_event);
+        ITrackableEvent<UnityAction<T0, T1>> ITrackedListenerToken<UnityAction<T0, T1>>.Target => new TrackableUnityEvent<T0, T1>(_event);
+        UnityAction<T0, T1> ITrackedListenerToken<UnityAction<T0, T1>>.Listener => _listener;
 
         public void Dispose()
         {
@@ -91,11 +130,24 @@ namespace com.spacepuppy
 
     }
 
-    public struct UnityEventTrackedListenerToken<T0, T1, T2> : System.IDisposable
+    public struct TrackableUnityEvent<T0, T1, T2> : ITrackableEvent<UnityAction<T0, T1, T2>>
+    {
+        private UnityEvent<T0, T1, T2> _event;
+        public TrackableUnityEvent(UnityEvent<T0, T1, T2> ev) { this._event = ev; }
+        public void AddListener(UnityAction<T0, T1, T2> listener) => _event?.AddListener(listener);
+        public void RemoveListener(UnityAction<T0, T1, T2> listener) => _event?.RemoveListener(listener);
+        public UnityEventTrackedListenerToken<T0, T1, T2> AddTrackedListener(UnityAction<T0, T1, T2> listener) => UnityEventTrackedListenerToken<T0, T1, T2>.Create(_event, listener);
+        public static implicit operator TrackableUnityEvent<T0, T1, T2>(UnityEvent<T0, T1, T2> ev) => new() { _event = ev };
+    }
+    public struct UnityEventTrackedListenerToken<T0, T1, T2> : ITrackedListenerToken<UnityAction<T0, T1, T2>>
     {
 
         private UnityEvent<T0, T1, T2> _event;
         private UnityAction<T0, T1, T2> _listener;
+
+        TrackableUnityEvent<T0, T1, T2> Target => new TrackableUnityEvent<T0, T1, T2>(_event);
+        ITrackableEvent<UnityAction<T0, T1, T2>> ITrackedListenerToken<UnityAction<T0, T1, T2>>.Target => new TrackableUnityEvent<T0, T1, T2>(_event);
+        UnityAction<T0, T1, T2> ITrackedListenerToken<UnityAction<T0, T1, T2>>.Listener => _listener;
 
         public void Dispose()
         {
@@ -120,11 +172,24 @@ namespace com.spacepuppy
 
     }
 
-    public struct UnityEventTrackedListenerToken<T0, T1, T2, T3> : System.IDisposable
+    public struct TrackableUnityEvent<T0, T1, T2, T3> : ITrackableEvent<UnityAction<T0, T1, T2, T3>>
+    {
+        private UnityEvent<T0, T1, T2, T3> _event;
+        public TrackableUnityEvent(UnityEvent<T0, T1, T2, T3> ev) { this._event = ev; }
+        public void AddListener(UnityAction<T0, T1, T2, T3> listener) => _event?.AddListener(listener);
+        public void RemoveListener(UnityAction<T0, T1, T2, T3> listener) => _event?.RemoveListener(listener);
+        public UnityEventTrackedListenerToken<T0, T1, T2, T3> AddTrackedListener(UnityAction<T0, T1, T2, T3> listener) => UnityEventTrackedListenerToken<T0, T1, T2, T3>.Create(_event, listener);
+        public static implicit operator TrackableUnityEvent<T0, T1, T2, T3>(UnityEvent<T0, T1, T2, T3> ev) => new() { _event = ev };
+    }
+    public struct UnityEventTrackedListenerToken<T0, T1, T2, T3> : ITrackedListenerToken<UnityAction<T0, T1, T2, T3>>
     {
 
         private UnityEvent<T0, T1, T2, T3> _event;
         private UnityAction<T0, T1, T2, T3> _listener;
+
+        TrackableUnityEvent<T0, T1, T2, T3> Target => new TrackableUnityEvent<T0, T1, T2, T3>(_event);
+        ITrackableEvent<UnityAction<T0, T1, T2, T3>> ITrackedListenerToken<UnityAction<T0, T1, T2, T3>>.Target => new TrackableUnityEvent<T0, T1, T2, T3>(_event);
+        UnityAction<T0, T1, T2, T3> ITrackedListenerToken<UnityAction<T0, T1, T2, T3>>.Listener => _listener;
 
         public void Dispose()
         {
@@ -149,7 +214,7 @@ namespace com.spacepuppy
 
     }
 
-    public static class UnityEventExtensions
+    public static partial class SPExtensions
     {
         public static UnityEventTrackedListenerToken AddTrackedListener(this UnityEvent ev, UnityAction action) => UnityEventTrackedListenerToken.Create(ev, action);
         public static UnityEventTrackedListenerToken<T0> AddTrackedListener<T0>(this UnityEvent<T0> ev, UnityAction<T0> action) => UnityEventTrackedListenerToken<T0>.Create(ev, action);

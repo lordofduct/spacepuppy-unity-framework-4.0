@@ -7,7 +7,6 @@ using com.spacepuppy;
 using com.spacepuppy.Collections;
 using com.spacepuppy.Project;
 using com.spacepuppy.Utils;
-using com.spacepuppyeditor.Windows;
 
 namespace com.spacepuppyeditor.Core.Project
 {
@@ -67,16 +66,35 @@ namespace com.spacepuppyeditor.Core.Project
                 var objref = p.objectReferenceValue;
                 if (objref != null)
                 {
-                    var sguid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(objref));
-                    if (EditorGUIUtility.currentViewWidth < 375f)
+                    //var sguid = ObjUtil.GetAsFromSource<IAssetGuidIdentifiable>(objref)?.AssetId.ToString();
+                    //if (string.IsNullOrEmpty(sguid)) sguid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(objref));
+
+                    string sguid = string.Empty;
+                    if (this.serializedObject.isEditingMultipleObjects)
                     {
-                        sguid = sguid.Substring(0, 11) + "...";
+                        sguid = ObjUtil.GetAsFromSource<IAssetGuidIdentifiable>(objref)?.AssetId.ToString();
+                        if (sguid == null) sguid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(objref));
                     }
-                    else if (EditorGUIUtility.currentViewWidth < 640f)
+                    else if (this.serializedObject.targetObject is QueryableAssetSet assetSet && assetSet.TrySlowLookupGuid(objref, out System.Guid guid))
                     {
-                        int cnt = Mathf.Clamp(Mathf.FloorToInt((EditorGUIUtility.currentViewWidth - 390) / 14) + 11, 0, sguid.Length);
-                        sguid = sguid.Substring(0, cnt) + "...";
+                        sguid = guid.ToString("n");
                     }
+                    else
+                    {
+                        sguid = ObjUtil.GetAsFromSource<IAssetGuidIdentifiable>(objref)?.AssetId.ToString();
+                        if (sguid == null) sguid = "(asset is not guid identifiable at runtime)";
+                    }
+
+                    //if (EditorGUIUtility.currentViewWidth < 375f)
+                    //{
+                    //    sguid = sguid.Substring(0, 11) + "...";
+                    //}
+                    //else if (EditorGUIUtility.currentViewWidth < 640f)
+                    //{
+                    //    int cnt = Mathf.Clamp(Mathf.FloorToInt((EditorGUIUtility.currentViewWidth - 390) / 14) + 11, 0, sguid.Length);
+                    //    sguid = sguid.Substring(0, cnt) + "...";
+                    //}
+
                     return $"{i:00} - {sguid}";
                 }
                 else
@@ -108,6 +126,10 @@ namespace com.spacepuppyeditor.Core.Project
 
         protected virtual void DrawAssetTypeProperty()
         {
+            bool canEditAssetType = !this.serializedObject.isEditingMultipleObjects && ((this.serializedObject.targetObject as QueryableAssetSet)?.CanEditAssetType ?? false);
+            bool cache = GUI.enabled;
+            if (!canEditAssetType) GUI.enabled = false;
+
             var prop_assettype = this.serializedObject.FindProperty(QueryableAssetSet.PROP_ASSETTYPE);
             var prop_assets = this.serializedObject.FindProperty(QueryableAssetSet.PROP_ASSETS);
             _restrictedType = TypeReferencePropertyDrawer.GetTypeFromTypeReference(prop_assettype) ?? typeof(UnityEngine.Object);
@@ -132,6 +154,8 @@ namespace com.spacepuppyeditor.Core.Project
                     }
                 }
             }
+
+            GUI.enabled = cache;
         }
 
         protected virtual void DrawAssetsProperty()
@@ -146,32 +170,12 @@ namespace com.spacepuppyeditor.Core.Project
 
             if (GUILayout.Button(EditorHelper.TempContent("Scan Project", "Scans the entire project and adds the matching assets to this AssetSet.")))
             {
-                var targ = this.target as QueryableAssetSet;
-                if (!targ) return;
-
-                var assets = AssetDatabase.FindAssets(GetBestSearchStringForType(_restrictedType))
-                                        .Select(s => ObjUtil.GetAsFromSource(_restrictedType, AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(s), typeof(UnityEngine.Object))) as UnityEngine.Object)
-                                        .Where(o => o != null && o != targ);
-                targ.ResetAssets(assets);
+                UpdateContentsByScanProject(this.target as QueryableAssetSet, _restrictedType);
             }
             EditorGUILayout.Space(2f);
             if (GUILayout.Button(EditorHelper.TempContent("Scan Local Folder", "Scans the folder this asset is in, and sub folders, and adds the matching assets to this AssetSet.")))
             {
-                var targ = this.target as QueryableAssetSet;
-                if (!targ) return;
-
-                var path = System.IO.Path.GetDirectoryName(AssetDatabase.GetAssetPath(targ));
-                var assetguids = AssetDatabase.FindAssets(GetBestSearchStringForType(_restrictedType), new string[] { path });
-                IEnumerable<UnityEngine.Object> assets;
-                if (TypeUtil.IsType(_restrictedType, typeof(UnityEngine.Object)))
-                {
-                    assets = assetguids.Select(s => AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(s), _restrictedType));
-                }
-                else
-                {
-                    assets = assetguids.Select(s => ObjUtil.GetAsFromSource(_restrictedType, AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(s), typeof(UnityEngine.Object))) as UnityEngine.Object);
-                }
-                targ.ResetAssets(assets.Where(o => o != null && o != targ));
+                UpdateContentsByScanLocalFolder(this.target as QueryableAssetSet, _restrictedType);
             }
         }
 
@@ -212,17 +216,18 @@ namespace com.spacepuppyeditor.Core.Project
                 if (_owner._supportNestedAssetSet || _owner._restrictedType.IsInterface)
                 {
                     EditorGUI.BeginChangeCheck();
-                    var obj = UnityObjectDropDownWindowSelector.ObjectField(position,
+                    var obj = SPEditorGUI.AdvancedObjectField(position,
                         label,
                         property.objectReferenceValue,
                         typeof(UnityEngine.Object),
                         false,
                         true,
-                        (o) => _owner._reorderableArrayDrawer.DragDropElementFilter(o) != null);
+                        (ref UnityEngine.Object o) => _owner._reorderableArrayDrawer.DragDropElementFilter(o) != null);
                     if (EditorGUI.EndChangeCheck())
                     {
                         obj = _owner._reorderableArrayDrawer.DragDropElementFilter(obj);
-                        if (obj) property.objectReferenceValue = obj;
+                        //if (obj) property.objectReferenceValue = obj;
+                        property.objectReferenceValue = obj;
                     }
                 }
                 else
@@ -232,6 +237,46 @@ namespace com.spacepuppyeditor.Core.Project
                 }
             }
 
+        }
+
+        #endregion
+
+        #region Static Helpers
+
+        public static void UpdateContentsByScanProject(QueryableAssetSet assetset, System.Type restrictedType)
+        {
+            if (!assetset) return;
+
+            if (restrictedType == null) restrictedType = assetset.AssetType;
+
+            var assets = AssetDatabase.FindAssets(GetBestSearchStringForType(restrictedType))
+                                    .Select(s => ObjUtil.GetAsFromSource(restrictedType, AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(s), typeof(UnityEngine.Object))) as UnityEngine.Object)
+                                    .Where(o => o != null && o != assetset);
+            Undo.RecordObject(assetset, "QueryableAssetSet - Scan Project");
+            assetset.ResetAssets(assets);
+            EditorHelper.CommitDirectChanges(assetset, true);
+        }
+
+        public static void UpdateContentsByScanLocalFolder(QueryableAssetSet assetset, System.Type restrictedType)
+        {
+            if (!assetset) return;
+
+            if (restrictedType == null) restrictedType = assetset.AssetType;
+
+            var path = System.IO.Path.GetDirectoryName(AssetDatabase.GetAssetPath(assetset));
+            var assetguids = AssetDatabase.FindAssets(GetBestSearchStringForType(restrictedType), new string[] { path });
+            IEnumerable<UnityEngine.Object> assets;
+            if (TypeUtil.IsType(restrictedType, typeof(UnityEngine.Object)))
+            {
+                assets = assetguids.Select(s => AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(s), restrictedType));
+            }
+            else
+            {
+                assets = assetguids.Select(s => ObjUtil.GetAsFromSource(restrictedType, AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(s), typeof(UnityEngine.Object))) as UnityEngine.Object);
+            }
+            Undo.RecordObject(assetset, "QueryableAssetSet - Scan Local Folder");
+            assetset.ResetAssets(assets.Where(o => o != null && o != assetset));
+            EditorHelper.CommitDirectChanges(assetset, true);
         }
 
         #endregion

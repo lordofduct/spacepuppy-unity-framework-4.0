@@ -69,7 +69,12 @@ namespace com.spacepuppyeditor.AI
                 property.stringValue = (index >= 0 && index < names.Length) ? names[index] : null;
             }
             */
-            property.stringValue = SPEditorGUI.OptionPopupWithCustom(position, label, property.stringValue, names);
+            EditorGUI.BeginChangeCheck();
+            var value = SPEditorGUI.OptionPopupWithCustom(position, label, property.stringValue, names);
+            if (EditorGUI.EndChangeCheck())
+            {
+                property.stringValue = value;
+            }
         }
 
         #endregion

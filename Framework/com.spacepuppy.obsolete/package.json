@@ -1,0 +1,19 @@
+{
+  "name": "com.spacepuppy.obsolete",
+  "version": "4.0.0",
+  "displayName": "Spacepuppy Framework Obsoleted",
+  "description": "Various libraries/code that has been marked for obsolete but various project has dependencies on.",
+  "unity": "2021.3",
+  "unityRelease": "9f1",
+  "documentationUrl": "https://github.com/lordofduct/spacepuppy-unity-framework-4.0",
+  "changelogUrl": "https://github.com/lordofduct/spacepuppy-unity-framework-4.0",
+  "licensesUrl": "https://github.com/lordofduct/spacepuppy-unity-framework-4.0/blob/master/LICENSE",
+  "dependencies": {
+    "com.spacepuppy.core": "4.0.0"
+  },
+  "author": {
+    "name": "Jupiter Lighthouse",
+    "email": "dylan@jupiterlighthouse.com",
+    "url": "https://github.com/lordofduct"
+  }
+}

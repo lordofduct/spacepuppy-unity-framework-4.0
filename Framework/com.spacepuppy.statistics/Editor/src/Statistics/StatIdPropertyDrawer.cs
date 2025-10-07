@@ -14,7 +14,7 @@ namespace com.spacepuppyeditor.Statistics
     public class StatIdPropertyDrawer : PropertyDrawer
     {
 
-        public const string PROP_STAT = nameof(StatId.Stat);
+        public const string PROP_CATEGORY = nameof(StatId.Category);
         public const string PROP_TOKEN = nameof(StatId.Token);
 
         private bool _hideCustom;
@@ -26,11 +26,16 @@ namespace com.spacepuppyeditor.Statistics
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
+            float h;
+            if (EditorHelper.AssertMultiObjectEditingNotSupportedHeight(property, label, out h)) return h;
+
             return EditorGUIUtility.singleLineHeight;
         }
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
+
             if (property.propertyType == SerializedPropertyType.String)
             {
                 DrawAsString(position, property, label);
@@ -47,7 +52,7 @@ namespace com.spacepuppyeditor.Statistics
 
         void DrawAsStatId(Rect position, SerializedProperty property, GUIContent label)
         {
-            var catprop = property.FindPropertyRelative(PROP_STAT);
+            var catprop = property.FindPropertyRelative(PROP_CATEGORY);
             var tokenprop = property.FindPropertyRelative(PROP_TOKEN);
 
             position = SPEditorGUI.SafePrefixLabel(position, label);
@@ -59,12 +64,14 @@ namespace com.spacepuppyeditor.Statistics
             if (this.HideCustom)
             {
                 int index = Mathf.Max(0, StatisticsTokenLedgerCategories.FindIndexOfCategory(catprop.stringValue));
-                index = EditorGUI.Popup(r0, index, StatisticsTokenLedgerCategories.Categories.Select(o => o.Name).ToArray());
+                index = EditorGUI.Popup(r0, index, StatisticsTokenLedgerCategories.Categories.Select(o => o.PopupPath).ToArray());
                 selection = StatisticsTokenLedgerCategories.IndexInRange(index) ? StatisticsTokenLedgerCategories.Categories[index].Name : null;
             }
             else
             {
-                selection = SPEditorGUI.OptionPopupWithCustom(r0, GUIContent.none, catprop.stringValue, StatisticsTokenLedgerCategories.Categories.Select(o => o.Name).ToArray());
+                var options = StatisticsTokenLedgerCategories.Categories.Select(o => o.Name).ToArray();
+                var guioptions = StatisticsTokenLedgerCategories.Categories.Select(o => EditorHelper.TempContent(o.PopupPath)).ToArray();
+                selection = SPEditorGUI.OptionPopupWithCustom(r0, GUIContent.none, catprop.stringValue, options, guioptions);
             }
             if (EditorGUI.EndChangeCheck())
             {
@@ -81,13 +88,13 @@ namespace com.spacepuppyeditor.Statistics
                     selection = tokenprop.stringValue;
                     if (this.HideCustom)
                     {
-                        int index = category.Entries.IndexOf(tokenprop.stringValue);
-                        index = EditorGUI.Popup(r1, index, category.Entries);
-                        selection = index >= 0 ? category.Entries[index] : null;
+                        int index = category.EntriesArray.IndexOf(tokenprop.stringValue);
+                        index = EditorGUI.Popup(r1, index, category.EntriesArray);
+                        selection = index >= 0 ? category.EntriesArray[index] : null;
                     }
                     else
                     {
-                        selection = SPEditorGUI.OptionPopupWithCustom(r1, GUIContent.none, tokenprop.stringValue, category.Entries);
+                        selection = SPEditorGUI.OptionPopupWithCustom(r1, GUIContent.none, tokenprop.stringValue, category.EntriesArray);
                     }
                     if (EditorGUI.EndChangeCheck())
                     {
@@ -119,12 +126,14 @@ namespace com.spacepuppyeditor.Statistics
             if (this.HideCustom)
             {
                 int index = Mathf.Max(0, StatisticsTokenLedgerCategories.FindIndexOfCategory(property.stringValue));
-                index = EditorGUI.Popup(position, index, StatisticsTokenLedgerCategories.Categories.Select(o => o.Name).ToArray());
+                index = EditorGUI.Popup(position, index, StatisticsTokenLedgerCategories.Categories.Select(o => o.PopupPath).ToArray());
                 selection = StatisticsTokenLedgerCategories.IndexInRange(index) ? StatisticsTokenLedgerCategories.Categories[index].Name : null;
             }
             else
             {
-                selection = SPEditorGUI.OptionPopupWithCustom(position, GUIContent.none, property.stringValue, StatisticsTokenLedgerCategories.Categories.Select(o => o.Name).ToArray());
+                var options = StatisticsTokenLedgerCategories.Categories.Select(o => o.Name).ToArray();
+                var guioptions = StatisticsTokenLedgerCategories.Categories.Select(o => EditorHelper.TempContent(o.PopupPath)).ToArray();
+                selection = SPEditorGUI.OptionPopupWithCustom(position, GUIContent.none, property.stringValue, options, guioptions);
             }
             if (EditorGUI.EndChangeCheck())
             {
@@ -205,13 +214,13 @@ namespace com.spacepuppyeditor.Statistics
                 string selection = property.stringValue;
                 if (this.HideCustom)
                 {
-                    int index = category.Entries.IndexOf(property.stringValue);
-                    index = EditorGUI.Popup(position, index, category.Entries);
-                    selection = index >= 0 ? category.Entries[index] : null;
+                    int index = category.EntriesArray.IndexOf(property.stringValue);
+                    index = EditorGUI.Popup(position, index, category.EntriesArray);
+                    selection = index >= 0 ? category.EntriesArray[index] : null;
                 }
                 else
                 {
-                    selection = SPEditorGUI.OptionPopupWithCustom(position, GUIContent.none, property.stringValue, category.Entries);
+                    selection = SPEditorGUI.OptionPopupWithCustom(position, GUIContent.none, property.stringValue, category.EntriesArray);
                 }
                 if (EditorGUI.EndChangeCheck())
                 {

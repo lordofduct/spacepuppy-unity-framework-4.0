@@ -143,7 +143,7 @@ namespace com.spacepuppy.Spawn
             token.ProposeKillCandidate(this, _killableEntityPriority);
         }
 
-        void IKillableEntity.OnKill(KillableEntityToken token)
+        void IOnKillHandler.OnKill(KillableEntityToken token)
         {
             if (_pool != null && !object.ReferenceEquals(token.Candidate, this)) _pool.Purge(this);
 
@@ -172,7 +172,11 @@ namespace com.spacepuppy.Spawn
                 var e = lst.GetEnumerator();
                 while (e.MoveNext())
                 {
+#if UNITY_2023_3_OR_NEWER
+                    e.Current.linearVelocity = Vector3.zero;
+#else
                     e.Current.velocity = Vector3.zero;
+#endif
                     e.Current.angularVelocity = Vector3.zero;
                 }
             }
@@ -182,7 +186,11 @@ namespace com.spacepuppy.Spawn
                 var e = lst.GetEnumerator();
                 while (e.MoveNext())
                 {
+#if UNITY_2023_3_OR_NEWER
+                    e.Current.linearVelocity = Vector2.zero;
+#else
                     e.Current.velocity = Vector2.zero;
+#endif
                     e.Current.angularVelocity = 0f;
                 }
             }

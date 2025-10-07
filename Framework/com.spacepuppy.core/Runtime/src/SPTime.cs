@@ -35,6 +35,10 @@ namespace com.spacepuppy
     public struct SPTime : ITimeSupplier
     {
 
+        public const string ID_NORMAL = "time.default.normal";
+        public const string ID_REAL = "time.default.real";
+        public const string ID_SMOOTH = "time.default.smooth";
+
         #region Fields
 
         [SerializeField()]
@@ -529,7 +533,7 @@ namespace com.spacepuppy
 
             public event System.EventHandler TimeScaleChanged;
 
-            public string Id { get { return "time.default.normal"; } }
+            public string Id { get { return SPTime.ID_NORMAL; } }
 
             public float Total
             {
@@ -580,7 +584,7 @@ namespace com.spacepuppy
             public void SetScale(string id, float scale)
             {
                 _scales[id] = scale;
-                if(!_paused)
+                if (!_paused)
                 {
                     this.SyncTimeScale();
                 }
@@ -589,7 +593,7 @@ namespace com.spacepuppy
             public float GetScale(string id)
             {
                 float result;
-                if(_scales.TryGetValue(id, out result))
+                if (_scales.TryGetValue(id, out result))
                 {
                     return result;
                 }
@@ -623,7 +627,7 @@ namespace com.spacepuppy
             private void SyncTimeScale()
             {
                 float result = this.GetTimeScale();
-                
+
                 if (Mathf.Approximately(result, UnityEngine.Time.timeScale))
                 {
                     UnityEngine.Time.timeScale = result;
@@ -634,7 +638,7 @@ namespace com.spacepuppy
                     if (this.TimeScaleChanged != null) this.TimeScaleChanged(this, System.EventArgs.Empty);
                 }
 
-                if(Mathf.Approximately(result, UnityEngine.Time.timeScale))
+                if (Mathf.Approximately(result, UnityEngine.Time.timeScale))
                 {
                     UnityEngine.Time.timeScale = result;
                 }
@@ -664,7 +668,7 @@ namespace com.spacepuppy
         private class RealTimeSupplier : ITimeSupplier
         {
 
-            public string Id { get { return "time.default.real"; } }
+            public string Id { get { return SPTime.ID_REAL; } }
 
             public float Total
             {
@@ -694,7 +698,7 @@ namespace com.spacepuppy
         private class SmoothTimeSupplier : IScalableTimeSupplier
         {
 
-            public string Id { get { return "time.default.smooth"; } }
+            public string Id { get { return SPTime.ID_SMOOTH; } }
 
             public float Total
             {
@@ -781,11 +785,11 @@ namespace com.spacepuppy
         public class Config : System.Attribute
         {
 
-#region Fields
+            #region Fields
 
             public string[] AvailableCustomTimeNames;
 
-#endregion
+            #endregion
 
             public Config(params string[] availableCustomTimeNames)
             {
@@ -794,7 +798,7 @@ namespace com.spacepuppy
 
         }
 
-#endregion
+        #endregion
 
     }
 

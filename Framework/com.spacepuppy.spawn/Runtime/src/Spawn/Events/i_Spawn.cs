@@ -15,6 +15,12 @@ namespace com.spacepuppy.Spawn.Events
 
         public const string TRG_ONSPAWNED = "OnSpawned";
 
+        public enum PositioningMode
+        {
+            AtSpawner = 0,
+            AtSpawnedObjectParent = 1,
+        }
+
         #region Fields
 
         [SerializeField]
@@ -28,6 +34,9 @@ namespace com.spacepuppy.Spawn.Events
         [RespectsIProxy()]
         [TypeRestriction(typeof(Transform), AllowProxy = true, HideTypeDropDown = false)]
         private UnityEngine.Object _spawnedObjectParent;
+
+        [SerializeField]
+        private PositioningMode _positioning;
 
         [SerializeField()]
         //[WeightedValueCollection("Weight", "_prefab")]
@@ -50,6 +59,18 @@ namespace com.spacepuppy.Spawn.Events
         {
             get { return _spawnPool.Value; }
             set { _spawnPool.Value = value; }
+        }
+
+        public UnityEngine.Object SpawnedObjectParent
+        {
+            get => _spawnedObjectParent;
+            set => _spawnedObjectParent = value;
+        }
+
+        public PositioningMode Positioning
+        {
+            get => _positioning;
+            set => _positioning = value;
         }
 
         public List<SpawnablePrefabEntry> Prefabs
@@ -165,7 +186,21 @@ namespace com.spacepuppy.Spawn.Events
             }
 
             var pool = _spawnPool.ValueOrDefault;
-            if (!entry.Spawn(out instance, pool, this.transform.position, this.transform.rotation, ObjUtil.GetAsFromSource<Transform>(_spawnedObjectParent, true)))
+            var parent = ObjUtil.GetAsFromSource<Transform>(_spawnedObjectParent, true);
+            Vector3 pos;
+            Quaternion rot;
+            if (_positioning == PositioningMode.AtSpawnedObjectParent && parent)
+            {
+                pos = parent.position;
+                rot = parent.rotation;
+            }
+            else
+            {
+                pos = this.transform.position;
+                rot = this.transform.rotation;
+            }
+
+            if (!entry.Spawn(out instance, pool, pos, rot, parent))
             {
                 instance = null;
                 return false;

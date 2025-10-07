@@ -5,6 +5,7 @@ using com.spacepuppy.Utils;
 using System.Linq;
 using System.Threading.Tasks;
 using System.IO;
+using UnityEngine.Rendering;
 
 namespace com.spacepuppyeditor
 {
@@ -25,6 +26,7 @@ namespace com.spacepuppyeditor
     {
 
         private static Dictionary<GUID, ScriptInfo> _lookupTable = new Dictionary<GUID, ScriptInfo>();
+        private static Dictionary<System.Type, GUID> _guidLookupTable = new();
 
         static ScriptDatabase()
         {
@@ -33,11 +35,19 @@ namespace com.spacepuppyeditor
             {
                 var guid = new GUID(sguid);
                 var path = AssetDatabase.GUIDToAssetPath(guid);
-                _lookupTable[guid] = new ScriptInfo()
+                var script = AssetDatabase.LoadAssetAtPath<MonoScript>(path);
+                var type = script ? script.GetClass() : null;
+                if (type != null)
                 {
-                    guid = guid,
-                    path = path,
-                };
+                    _lookupTable[guid] = new ScriptInfo()
+                    {
+                        guid = guid,
+                        path = path,
+                        name = type.Name,
+                        type = type,
+                    };
+                    _guidLookupTable[type] = guid;
+                }
             }
 
         }
@@ -58,13 +68,19 @@ namespace com.spacepuppyeditor
         public static bool TryGUIDToScriptInfo(string sguid, out ScriptInfo info) => TryGUIDToScriptInfo(new GUID(sguid), out info);
         public static bool TryGUIDToScriptInfo(GUID guid, out ScriptInfo info)
         {
+            return _lookupTable.TryGetValue(guid, out info);
+            /*
             if (_lookupTable.TryGetValue(guid, out info))
             {
                 if (string.IsNullOrEmpty(info.name))
                 {
                     info.name = System.IO.Path.GetFileNameWithoutExtension(info.path);
-                    info.type = TypeUtil.FindType(info.name, typeof(UnityEngine.Object));
+                    info.type = TypeUtil.FindType(info.name, typeof(object));
                     _lookupTable[guid] = info;
+                    if (info.type != typeof(object) && !_guidLookupTable.ContainsKey(info.type))
+                    {
+                        _guidLookupTable[info.type] = info.guid;
+                    }
                 }
                 return true;
             }
@@ -73,6 +89,31 @@ namespace com.spacepuppyeditor
                 info = default;
                 return false;
             }
+            */
+        }
+
+        public static ScriptInfo GetScriptInfo(System.Type scriptType)
+        {
+            if (TryGetScriptInfo(scriptType, out ScriptInfo info))
+            {
+                return info;
+            }
+            else
+            {
+                return default;
+            }
+        }
+
+        public static bool TryGetScriptInfo(System.Type scriptType, out ScriptInfo info)
+        {
+            if (scriptType == null) throw new System.ArgumentNullException(nameof(scriptType));
+            if (_guidLookupTable.TryGetValue(scriptType, out GUID guid))
+            {
+                return TryGUIDToScriptInfo(guid, out info);
+            }
+
+            info = default;
+            return false;
         }
 
     }

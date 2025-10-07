@@ -101,6 +101,23 @@ namespace com.spacepuppy
     }
 
     [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+    public class RequireTagAttribute : ComponentHeaderAttribute
+    {
+        public string[] Tags;
+        public bool HideInfoBox;
+
+        public RequireTagAttribute(string tag)
+        {
+            this.Tags = new string[] { tag };
+        }
+
+        public RequireTagAttribute(params string[] tags)
+        {
+            this.Tags = tags ?? new string[] { }; 
+        }
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
     public class UniqueToEntityAttribute : ComponentHeaderAttribute
     {
 
@@ -119,13 +136,22 @@ namespace com.spacepuppy
 
     #region Property Drawer Attributes
 
-    public class SerializeRefPickerAttribute : SPPropertyAttribute
+    [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
+    public class RefPickerConfigAttribute : SPPropertyAttribute
     {
-        public readonly System.Type RefType;
         public bool AllowNull;
         public bool AlwaysExpanded;
         public bool DisplayBox;
+        public string NullLabel;
+    }
 
+    [System.Obsolete("User InterfaceRef, InterfaceRefOrPicker, or InterfacePicker in place of this combined with the 'RefPickerConfigAttribute' for configuration.")]
+    [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
+    public class SerializeRefPickerAttribute : RefPickerConfigAttribute
+    {
+        public readonly System.Type RefType;
+
+        public SerializeRefPickerAttribute() { }
         public SerializeRefPickerAttribute(System.Type tp)
         {
             this.RefType = tp;
@@ -135,7 +161,9 @@ namespace com.spacepuppy
     public class SerializeRefLabelAttribute : System.Attribute
     {
         public string Label { get; set; }
+        public int Order { get; set; }
 
+        public SerializeRefLabelAttribute() { }
         public SerializeRefLabelAttribute(string label)
         {
             this.Label = label;
@@ -147,6 +175,9 @@ namespace com.spacepuppy
 
         public bool AlwaysExpanded = true;
         public bool DisplayBox;
+        public bool DisplayHeader; //only pertains if not displaybox with intrinsicly has a header
+        public bool Indent; //only pertains if not displaybox
+        public float TrailingSpace;
         public bool IgnoreIfNoChildren;
 
     }
@@ -276,6 +307,7 @@ namespace com.spacepuppy
     {
 
         public string ElementLabelFormatString = null;
+        public bool OneBasedLabelIndex = false;
         public bool AlwaysExpanded;
         public bool RemoveBackgroundWhenCollapsed;
         public bool Draggable = true;
@@ -284,14 +316,15 @@ namespace com.spacepuppy
         public bool HideElementLabel = false;
         public bool ShowTooltipInHeader = false;
         public bool HideLengthField = false;
+        public bool ElementLabelIsEditable = false;
 
         /// <summary>
-        /// If DrawElementAtBottom is true, this child element can be displayed as the label in the reorderable list.
+        /// If DrawElementAtBottom is true OR ElementLabelIsEditable is true, this child element can be displayed as the label in the reorderable list.
         /// </summary>
         public string ChildPropertyToDrawAsElementLabel;
 
         /// <summary>
-        /// If DrawElementAtBottom is true, this child element can be displayed as the modifiable entry in the reorderable list.
+        /// If DrawElementAtBottom is true OR ElementLabelIsEditable is true, this child element can be displayed as the modifiable entry in the reorderable list.
         /// </summary>
         public string ChildPropertyToDrawAsElementEntry;
 
@@ -445,13 +478,18 @@ namespace com.spacepuppy
         public float y;
         public float width = float.PositiveInfinity;
         public float height = float.PositiveInfinity;
-        public Color color = Color.green;
+        public uint color = Color.green.ToARGB();
+
+        public Color GetColor() => ColorUtil.ARGBToColor(color);
     }
 
+    [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
     public class AnimationCurveEaseScaleAttribute : PropertyAttribute
     {
         public float overscan = 1f;
-        public Color color = Color.green;
+        public uint color = Color.green.ToARGB();
+
+        public Color GetColor() => ColorUtil.ARGBToColor(color);
     }
 
     /// <summary>
@@ -642,7 +680,7 @@ namespace com.spacepuppy
 
     #region DecoratorDrawer Attributes
 
-    [System.AttributeUsage(System.AttributeTargets.Field | System.AttributeTargets.Class, AllowMultiple = true)]
+    [System.AttributeUsage(System.AttributeTargets.Field | System.AttributeTargets.Class | System.AttributeTargets.Method, AllowMultiple = true)]
     public class InsertButtonAttribute : SPPropertyAttribute
     {
 
@@ -653,9 +691,16 @@ namespace com.spacepuppy
         public bool SupportsMultiObjectEditing;
         public bool Validate;
         public string ValidateMessage;
+        public string ValidateShowCallback;
         public bool RecordUndo;
         public string UndoLabel;
         public float Space;
+
+        public InsertButtonAttribute(string label)
+        {
+            this.Label = label;
+            this.OnClick = string.Empty;
+        }
 
         public InsertButtonAttribute(string label, string onClick)
         {

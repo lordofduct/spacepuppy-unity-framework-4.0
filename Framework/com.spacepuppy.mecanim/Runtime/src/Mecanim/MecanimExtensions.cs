@@ -109,8 +109,18 @@ namespace com.spacepuppy.Mecanim
                     animator.SetBool(param.nameHash, value != 0f);
                     break;
                 case AnimatorControllerParameterType.Trigger:
-                    if (value != 0f) animator.SetTrigger(param.nameHash);
-                    else animator.ResetTrigger(param.nameHash);
+#if UNITY_NETCODE
+                    if (animator.GetComponent(out Unity.Netcode.Components.NetworkAnimator netanimator) && (netanimator.IsOwner || netanimator.IsServer))
+                    {
+                        if (value != 0f) netanimator.SetTrigger(param.nameHash);
+                        else netanimator.ResetTrigger(param.nameHash);
+                    }
+                    else
+#endif
+                    {
+                        if (value != 0f) animator.SetTrigger(param.nameHash);
+                        else animator.ResetTrigger(param.nameHash);
+                    }
                     break;
             }
         }
@@ -131,6 +141,14 @@ namespace com.spacepuppy.Mecanim
                     animator.SetBool(param.nameHash, value != 0);
                     break;
                 case AnimatorControllerParameterType.Trigger:
+#if UNITY_NETCODE
+                    if (animator.GetComponent(out Unity.Netcode.Components.NetworkAnimator netanimator) && (netanimator.IsOwner || netanimator.IsServer))
+                    {
+                        if (value != 0) netanimator.SetTrigger(param.nameHash);
+                        else netanimator.ResetTrigger(param.nameHash);
+                    }
+                    else
+#endif
                     if (value != 0) animator.SetTrigger(param.nameHash);
                     else animator.ResetTrigger(param.nameHash);
                     break;
@@ -153,6 +171,14 @@ namespace com.spacepuppy.Mecanim
                     animator.SetBool(param.nameHash, value);
                     break;
                 case AnimatorControllerParameterType.Trigger:
+#if UNITY_NETCODE
+                    if (animator.GetComponent(out Unity.Netcode.Components.NetworkAnimator netanimator) && (netanimator.IsOwner || netanimator.IsServer))
+                    {
+                        if (value) netanimator.SetTrigger(param.nameHash);
+                        else netanimator.ResetTrigger(param.nameHash);
+                    }
+                    else
+#endif
                     if (value) animator.SetTrigger(param.nameHash);
                     else animator.ResetTrigger(param.nameHash);
                     break;
@@ -165,7 +191,7 @@ namespace com.spacepuppy.Mecanim
 
 #pragma warning disable 0618
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsNameHash(this AnimatorStateInfo info, int hash) => info.fullPathHash == hash || info.shortNameHash == hash || info.nameHash == hash;
+        internal static bool IsNameHash(this AnimatorStateInfo info, int hash) => info.fullPathHash == hash || info.shortNameHash == hash || info.nameHash == hash;
 #pragma warning restore 0618
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

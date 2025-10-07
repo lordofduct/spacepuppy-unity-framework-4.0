@@ -81,7 +81,11 @@ namespace com.spacepuppyeditor.Settings
             EditorGUILayout.Space();
 
             EditorGUI.BeginChangeCheck();
-            bool storeLocal = EditorGUILayout.ToggleLeft("Store Settings Local", SpacepuppySettings.StoreSettingsLocal);
+            string localUserId = EditorGUILayout.DelayedTextField("Local UserId", SpacepuppySettings.LocalUserId);
+            if (EditorGUI.EndChangeCheck()) SpacepuppySettings.LocalUserId = localUserId;
+
+            EditorGUI.BeginChangeCheck();
+            bool storeLocal = EditorGUILayout.ToggleLeft("Store As User Settings", SpacepuppySettings.StoreSettingsLocal);
             if (EditorGUI.EndChangeCheck()) SpacepuppySettings.StoreSettingsLocal = storeLocal;
 
             /*
@@ -165,6 +169,13 @@ namespace com.spacepuppyeditor.Settings
             EditorGUILayout.Space();
             EditorGUILayout.Space();
 
+            if (GUILayout.Button("Sync Spacepuppy Global Define Symbols", GUILayout.Width(BTN_WIDTH)) && EditorUtility.DisplayDialog("Spacepuppy Settings", "This will create/modify the csc.rsp file associated with this project, are you sure?", "Yes", "No"))
+            {
+                SPPackage.SyncGlobalDefineSymbolsForSpacepuppy();
+            }
+
+            EditorGUILayout.Space();
+
 #if UNITY_2021_2_OR_NEWER
             var currentBuildTarget = UnityEditor.Build.NamedBuildTarget.FromBuildTargetGroup(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget));
             string defines = PlayerSettings.GetScriptingDefineSymbols(currentBuildTarget);
@@ -187,10 +198,22 @@ namespace com.spacepuppyeditor.Settings
 
             GUILayout.EndVertical();
 
-
             EditorGUILayout.Space();
             EditorGUILayout.Space();
             this.DrawScenes();
+
+            /*
+             * Global Editor Use
+             */
+
+            EditorGUILayout.Space();
+            GUILayout.BeginVertical("Global Settings - these settings are stored across all projects", boxStyle);
+            EditorGUILayout.Space();
+            EditorGUILayout.Space();
+
+            DrawSpecialGlobalSettingsGroup();
+
+            GUILayout.EndVertical();
 
 
             EditorGUILayout.EndScrollView();
@@ -202,7 +225,6 @@ namespace com.spacepuppyeditor.Settings
 
         protected virtual void DrawEditorSettingsGroup()
         {
-
             EditorGUI.BeginChangeCheck();
             bool useSPEditor = EditorGUILayout.ToggleLeft(SpacepuppySettings.UseSPEditorAsDefaultEditor ? "Use SPEditor as default editor for MonoBehaviour" : "Use SPEditor as default editor for MonoBehaviour (Optional: place SPEDITOR_IGNORE or DISABLE_GLOBAL_SPEDITOR as a compiler directive in the com.spacepuppyeditor assemblydefinition)", SpacepuppySettings.UseSPEditorAsDefaultEditor);
             if (EditorGUI.EndChangeCheck()) SpacepuppySettings.UseSPEditorAsDefaultEditor = useSPEditor;
@@ -238,7 +260,16 @@ namespace com.spacepuppyeditor.Settings
             DrawExtraEditorSettings?.Invoke();
         }
 
+        protected virtual void DrawSpecialGlobalSettingsGroup()
+        {
+            EditorGUI.BeginChangeCheck();
+            bool useAdvancedObjectField = EditorGUILayout.ToggleLeft("Use Advanced Object Field", SpacepuppySettings.UseAdvancedObjectField);
+            if (EditorGUI.EndChangeCheck()) SpacepuppySettings.UseAdvancedObjectField = useAdvancedObjectField;
 
+            EditorGUI.BeginChangeCheck();
+            bool autoSyncGlobalDefines = EditorGUILayout.ToggleLeft("Auto Sync Global Defines", SpacepuppySettings.AutoSyncGlobalDefines);
+            if (EditorGUI.EndChangeCheck()) SpacepuppySettings.AutoSyncGlobalDefines = autoSyncGlobalDefines;
+        }
 
 
 

@@ -136,7 +136,15 @@ namespace com.spacepuppy.Async
         /// <param name="callback"></param>
         public void OnComplete(System.Action<AsyncWaitHandle> callback)
         {
-            _provider?.OnComplete(this, callback);
+            if (callback == null) throw new System.ArgumentNullException(nameof(callback));
+            if (_provider != null && !_provider.IsComplete(this))
+            {
+                _provider.OnComplete(this, callback);
+            }
+            else
+            {
+                callback.Invoke(this);
+            }
         }
         void IAsyncWaitHandle.OnComplete(System.Action<IAsyncWaitHandle> callback) => _provider?.OnComplete(this, (a) => callback(a));
 
@@ -311,13 +319,14 @@ namespace com.spacepuppy.Async
         /// <param name="callback"></param>
         public void OnComplete(System.Action<AsyncWaitHandle<T>> callback)
         {
-            if (_provider == null)
+            if (callback == null) throw new System.ArgumentNullException(nameof(callback));
+            if (_provider != null && !_provider.IsComplete(this))
             {
-                callback(this);
+                _provider.OnComplete(this, callback);
             }
             else
             {
-                _provider.OnComplete(this, callback);
+                callback.Invoke(this);
             }
         }
         void IAsyncWaitHandle.OnComplete(System.Action<IAsyncWaitHandle> callback) => _provider?.OnComplete(this, (a) => callback(a));

@@ -18,8 +18,7 @@ namespace com.spacepuppy.Scenes.Events
 
         #region Fields
 
-        [SerializeReference]
-        [SerializeRefPicker(typeof(LoadSceneOptions), AllowNull = false, AlwaysExpanded = true, DisplayBox = true)]
+        [SerializeReference, SerializeRefPicker(typeof(LoadSceneOptions), AllowNull = false, AlwaysExpanded = true, DisplayBox = true)]
         private LoadSceneOptions _options;
 
         [Infobox("If the targets of this complete event get destroyed during the load they will not activate.")]

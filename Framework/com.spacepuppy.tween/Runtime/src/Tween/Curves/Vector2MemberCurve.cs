@@ -159,7 +159,7 @@ namespace com.spacepuppy.Tween.Curves
 
     }
 
-    public class Vector2ScaleMemberCurve : MemberCurve<Vector2>
+    public class Vector2ScaleInMemberCurve : MemberCurve<Vector2>
     {
 
         #region Fields
@@ -171,18 +171,18 @@ namespace com.spacepuppy.Tween.Curves
 
         #region CONSTRUCTOR
 
-        protected internal Vector2ScaleMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor) : base(accessor)
+        protected internal Vector2ScaleInMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor) : base(accessor)
         {
 
         }
 
-        public Vector2ScaleMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, float dur, Vector2 start, Vector2 end) : base(accessor, null, dur)
+        public Vector2ScaleInMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, float dur, Vector2 start, Vector2 end) : base(accessor, null, dur)
         {
             _start = start;
             _end = end;
         }
 
-        public Vector2ScaleMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, Ease ease, float dur, Vector2 start, Vector2 end) : base(accessor, ease, dur)
+        public Vector2ScaleInMemberCurve(com.spacepuppy.Dynamic.Accessors.IMemberAccessor accessor, Ease ease, float dur, Vector2 start, Vector2 end) : base(accessor, ease, dur)
         {
             _start = start;
             _end = end;

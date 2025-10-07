@@ -36,7 +36,12 @@ namespace com.spacepuppyeditor.Anim
             }
 
             var knownParams = GetKnownParameters(behaviour, attrib).Select(o => o.name).ToArray();
-            property.stringValue = SPEditorGUI.OptionPopupWithCustom(position, label, property.stringValue, knownParams);
+            EditorGUI.BeginChangeCheck();
+            var value = SPEditorGUI.OptionPopupWithCustom(position, label, property.stringValue, knownParams);
+            if (EditorGUI.EndChangeCheck())
+            {
+                property.stringValue = value;
+            }
         }
 
         private IEnumerable<AnimatorControllerParameter> GetKnownParameters(StateMachineBehaviour behaviour, AnimatorParameterNameAttribute attrib)

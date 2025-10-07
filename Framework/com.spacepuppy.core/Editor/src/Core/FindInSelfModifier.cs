@@ -21,12 +21,12 @@ namespace com.spacepuppyeditor.Core
 
             if (property.isArray && TypeUtil.IsListType(fieldInfo.FieldType, true))
             {
-                var elementType = EditorHelper.GetRestrictedFieldType(this.fieldInfo, true) ?? TypeUtil.GetElementTypeOfListType(this.fieldInfo.FieldType);
+                var elementType = DefaultFromSelfModifier.GetRestrictedPropertyType(property, this.fieldInfo) ?? TypeUtil.GetElementTypeOfListType(this.fieldInfo.FieldType);
                 ApplyDefaultAsList(property, elementType, name, bUseEntity);
             }
             else
             {
-                var elementType = EditorHelper.GetRestrictedFieldType(this.fieldInfo);
+                var elementType = DefaultFromSelfModifier.GetRestrictedPropertyType(property, this.fieldInfo);
                 ApplyDefaultAsSingle(property, elementType, name, bUseEntity);
             }
         }

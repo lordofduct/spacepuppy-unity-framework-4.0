@@ -2,6 +2,7 @@
 using UnityEditor;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 using com.spacepuppy;
 using com.spacepuppy.Collections;
@@ -14,15 +15,26 @@ namespace com.spacepuppyeditor.Core
     public class DefaultFromSelfModifier : PropertyModifier
     {
 
-        private HashSet<int> _handled = new HashSet<int>();
+        private Dictionary<int, int> _handled = new();
 
         protected internal override void OnBeforeGUI(SerializedProperty property, ref bool cancelDraw)
         {
             if (property.serializedObject.isEditingMultipleObjects) return;
 
-            int hash = com.spacepuppyeditor.Internal.PropertyHandlerCache.GetIndexRespectingPropertyHash(property);
-            if (_handled.Contains(hash)) return;
-            if ((this.attribute as DefaultFromSelfAttribute).HandleOnce) _handled.Add(hash);
+            int key_hash = com.spacepuppyeditor.Internal.PropertyHandlerCache.GetIndexRespectingPropertyHash(property);
+            if ((this.attribute as DefaultFromSelfAttribute).HandleOnce)
+            {
+                //this logic validates if the component list on the gameobject has changed, and if it has will rescan for potential 'defaults'
+                var go = GameObjectUtil.GetGameObjectFromSource(property.serializedObject.targetObject);
+                int hash = 0;
+                foreach (var c in go.GetComponents<Component>())
+                {
+                    if (c) hash = System.HashCode.Combine(hash, c.GetHashCode());
+                }
+
+                if (_handled.TryGetValue(key_hash, out int h) && h == hash) return;
+                _handled[key_hash] = hash;
+            }
 
             var relativity = (this.attribute as DefaultFromSelfAttribute).Relativity;
 
@@ -30,12 +42,12 @@ namespace com.spacepuppyeditor.Core
             {
                 //TODO - make list support SerializedInterfaceRef
                 var elementType = TypeUtil.GetElementTypeOfListType(this.fieldInfo.FieldType);
-                var restrictionType = EditorHelper.GetRestrictedFieldType(this.fieldInfo, true) ?? elementType;
+                var restrictionType = DefaultFromSelfModifier.GetRestrictedPropertyType(property, this.fieldInfo) ?? elementType;
                 ApplyDefaultAsList(property, elementType, restrictionType, relativity);
             }
             else
             {
-                ApplyDefaultAsSingle(property, EditorHelper.GetRestrictedFieldType(this.fieldInfo, true) ?? property.GetPropertyValueType(), relativity);
+                ApplyDefaultAsSingle(property, DefaultFromSelfModifier.GetRestrictedPropertyType(property, this.fieldInfo) ?? property.GetPropertyValueType(), relativity);
             }
         }
 
@@ -48,7 +60,7 @@ namespace com.spacepuppyeditor.Core
                         targ = targ.FindRoot();
 
                         var obj = ObjUtil.GetAsFromSource(restrictionType, targ);
-                        if (object.ReferenceEquals(obj, null) && ComponentUtil.IsAcceptableComponentType(restrictionType)) obj = targ.GetComponentInChildren(restrictionType);
+                        if (obj.IsNullOrDestroyed() && ComponentUtil.IsAcceptableComponentType(restrictionType)) obj = targ.GetComponentInChildren(restrictionType);
                         return obj;
                     }
                 case EntityRelativity.Self:
@@ -58,13 +70,13 @@ namespace com.spacepuppyeditor.Core
                 case EntityRelativity.SelfAndChildren:
                     {
                         var obj = ObjUtil.GetAsFromSource(restrictionType, targ);
-                        if (object.ReferenceEquals(targ, null) && ComponentUtil.IsAcceptableComponentType(restrictionType)) obj = targ.GetComponentInChildren(restrictionType);
+                        if (obj.IsNullOrDestroyed() && ComponentUtil.IsAcceptableComponentType(restrictionType)) obj = targ.GetComponentInChildren(restrictionType);
                         return obj;
                     }
                 case EntityRelativity.SelfAndParents:
                     {
                         var obj = ObjUtil.GetAsFromSource(restrictionType, targ);
-                        if (object.ReferenceEquals(targ, null) && ComponentUtil.IsAcceptableComponentType(restrictionType)) obj = targ.GetComponentInParent(restrictionType);
+                        if (obj.IsNullOrDestroyed() && ComponentUtil.IsAcceptableComponentType(restrictionType)) obj = targ.GetComponentInParent(restrictionType);
                         return obj;
                     }
                 default:
@@ -78,7 +90,7 @@ namespace com.spacepuppyeditor.Core
             if (value != null) return;
 
             var targ = GameObjectUtil.GetGameObjectFromSource(property.serializedObject.targetObject);
-            if (object.ReferenceEquals(targ, null))
+            if (targ.IsNullOrDestroyed())
             {
                 value = ObjUtil.GetAsFromSource(restrictionType, property.serializedObject.targetObject);
             }
@@ -103,7 +115,7 @@ namespace com.spacepuppyeditor.Core
                 if (property.arraySize == 1 && EditorHelper.GetTargetObjectOfProperty(property.GetArrayElementAtIndex(0)) is VariantReference vr && vr.Value != null) return;
 
                 var targ = GameObjectUtil.GetGameObjectFromSource(property.serializedObject.targetObject);
-                if (object.ReferenceEquals(targ, null))
+                if (targ.IsNullOrDestroyed())
                 {
                     var obj = ObjUtil.GetAsFromSource(restrictionType, property.serializedObject.targetObject);
                     if (obj != null)
@@ -189,7 +201,7 @@ namespace com.spacepuppyeditor.Core
                 if (property.arraySize == 1 && (property.GetArrayElementAtIndex(0).objectReferenceValue != null)) return;
 
                 var targ = GameObjectUtil.GetGameObjectFromSource(property.serializedObject.targetObject);
-                if (object.ReferenceEquals(targ, null))
+                if (targ.IsNullOrDestroyed())
                 {
                     var obj = ObjUtil.GetAsFromSource(restrictionType, property.serializedObject.targetObject) as UnityEngine.Object;
                     if (obj != null)
@@ -255,6 +267,33 @@ namespace com.spacepuppyeditor.Core
                         break;
                 }
             }
+        }
+
+
+
+
+        public static System.Type GetRestrictedPropertyType(SerializedProperty prop, FieldInfo field)
+        {
+            if (field == null) return null;
+
+            var a_tpr = field.GetCustomAttribute<TypeRestrictionAttribute>();
+            if (a_tpr?.InheritsFromTypes?.Length > 0)
+            {
+                return a_tpr.InheritsFromTypes[0];
+            }
+
+            var a_scr = field.GetCustomAttribute<SelectableComponentAttribute>();
+            if (a_scr?.InheritsFromType != null)
+            {
+                return a_scr.InheritsFromType;
+            }
+
+            var tp = EditorHelper.GetPropertyValueType(prop);
+            if (TypeUtil.IsListType(tp))
+            {
+                tp = TypeUtil.GetElementTypeOfListType(tp);
+            }
+            return tp;
         }
 
     }

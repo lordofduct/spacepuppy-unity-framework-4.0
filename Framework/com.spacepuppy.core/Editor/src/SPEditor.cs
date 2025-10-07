@@ -16,7 +16,7 @@ namespace com.spacepuppyeditor
 #if !SPEDITOR_IGNORE && !DISABLE_GLOBAL_SPEDITOR
     [CustomEditor(typeof(MonoBehaviour), true)]
 #else
-    [CustomEditor(typeof(SPComponent), true)]
+    [CustomEditor(typeof(SPMonoBehaviour), true)]
 #endif
     [CanEditMultipleObjects()]
     public class SPEditor : Editor
@@ -93,7 +93,7 @@ namespace com.spacepuppyeditor
 
         public sealed override void OnInspectorGUI()
         {
-            if (!(this.target is SPComponent) && (!SpacepuppySettings.UseSPEditorAsDefaultEditor || (this.target?.GetType().Assembly.FullName.Contains("UnityEngine.") ?? false)))
+            if (!(this.target is SPMonoBehaviour) && (!SpacepuppySettings.UseSPEditorAsDefaultEditor || (this.target?.GetType().Assembly.FullName.Contains("UnityEngine.") ?? false)))
             {
                 base.OnInspectorGUI();
                 return;
@@ -161,7 +161,9 @@ namespace com.spacepuppyeditor
                                 value = SPEditorGUILayout.DefaultPropertyField(info.Label, value, DynamicUtil.GetReturnType(info.MemberInfo));
                                 if (EditorGUI.EndChangeCheck() && !info.Attrib.Readonly)
                                 {
+                                    Undo.RecordObject(this.target, $"Modified Read-Write Property: {info.MemberInfo.Name}");
                                     DynamicUtil.SetValue(this.target, info.MemberInfo, value);
+                                    EditorUtility.SetDirty(this.target);
                                 }
 
                                 cache.Reset();
@@ -206,7 +208,9 @@ namespace com.spacepuppyeditor
                                     value = SPEditorGUILayout.DefaultPropertyField(info.Label, value, DynamicUtil.GetReturnType(info.MemberInfo));
                                     if (EditorGUI.EndChangeCheck() && !info.Attrib.Readonly)
                                     {
+                                        Undo.RecordObject(this.target, $"Modified Read-Write Property: {info.MemberInfo.Name}");
                                         DynamicUtil.SetValue(this.target, info.MemberInfo, value);
+                                        EditorUtility.SetDirty(this.target);
                                     }
 
                                     cache.Reset();

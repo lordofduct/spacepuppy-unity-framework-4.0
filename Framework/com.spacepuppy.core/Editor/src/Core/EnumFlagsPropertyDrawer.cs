@@ -21,14 +21,20 @@ namespace com.spacepuppyeditor.Core
             var tp = (attrib.EnumType != null && attrib.EnumType.IsEnum) ? attrib.EnumType : this.fieldInfo.FieldType;
             if (tp.IsEnum)
             {
+                int value;
+                EditorGUI.BeginChangeCheck();
                 if (attrib.excluded?.Length > 0)
                 {
                     var accepted = (from e in EnumUtil.GetUniqueEnumFlags(tp) select System.Convert.ToInt32(e)).Except(attrib.excluded).ToArray();
-                    property.intValue = SPEditorGUI.EnumFlagField(position, tp, accepted, label, property.intValue, false);
+                    value = SPEditorGUI.EnumFlagField(position, tp, accepted, label, property.intValue, false);
                 }
                 else
                 {
-                    property.intValue = SPEditorGUI.EnumFlagField(position, tp, label, property.intValue);
+                    value = SPEditorGUI.EnumFlagField(position, tp, label, property.intValue);
+                }
+                if (EditorGUI.EndChangeCheck())
+                {
+                    property.intValue = value;
                 }
             }
             else

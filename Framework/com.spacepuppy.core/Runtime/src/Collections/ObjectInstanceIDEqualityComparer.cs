@@ -4,8 +4,7 @@ namespace com.spacepuppy.Collections
 {
 
     /// <summary>
-    /// Tests for equality based solely on if the references are equal. This is useful for UnityEngine.Objects that overrides the default Equals 
-    /// operator returning false if it's been destroyed.
+    /// Tests for equality based solely on if the instanceId's are equal.
     /// </summary>
     /// <typeparam name="T"></typeparam>
     public class ObjectInstanceIDEqualityComparer<T> : EqualityComparer<T> where T : UnityEngine.Object

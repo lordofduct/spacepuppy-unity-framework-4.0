@@ -1,23 +1,16 @@
 using UnityEngine;
 using UnityEngine.UI;
-using System.Reflection;
 
+using com.spacepuppy.Events;
 using com.spacepuppy.Utils;
+
+using SelectionState = com.spacepuppy.UI.SelectableOverride.SelectionState;
 
 namespace com.spacepuppy.UI
 {
 
     public class UISelectableStateMachine : SPComponent
     {
-
-        enum SelectionState
-        {
-            Normal,
-            Highlighted,
-            Pressed,
-            Selected,
-            Disabled,
-        }
 
 
         #region Fields
@@ -40,7 +33,9 @@ namespace com.spacepuppy.UI
         [System.NonSerialized]
         private SelectionState _lastKnownState;
         [System.NonSerialized]
-        private Coroutine _routine;
+        private UpdateHook _updateHook;
+        [System.NonSerialized]
+        private SPEventTrackedListenerToken _selectableOverrideOnStateChangedToken;
 
         #endregion
 
@@ -50,18 +45,16 @@ namespace com.spacepuppy.UI
         {
             base.OnEnable();
 
-            this.TestStartRoutine();
+            this.Sync();
+            this.TestStartUpdater();
         }
 
         protected override void OnDisable()
         {
             base.OnDisable();
 
-            if (_routine != null)
-            {
-                StopCoroutine(_routine);
-                _routine = null;
-            }
+            _selectableOverrideOnStateChangedToken.Dispose();
+            _updateHook?.Deinitialize();
         }
 
         #endregion
@@ -75,7 +68,11 @@ namespace com.spacepuppy.UI
             {
                 if (_target == value) return;
                 _target = value;
-                if (this.isActiveAndEnabled) this.TestStartRoutine();
+#if UNITY_EDITOR
+                if (Application.isPlaying && this.isActiveAndEnabled) this.TestStartUpdater();
+#else
+                if (this.isActiveAndEnabled) this.TestStartUpdater();
+#endif
             }
         }
 
@@ -113,7 +110,7 @@ namespace com.spacepuppy.UI
 
         #region Methods
 
-        public void Sync() => this.Sync( _target ? SelectableProtectedHook.GetCurrentSelectionState(_target) : SelectionState.Normal);
+        public void Sync() => this.Sync(_target ? SelectableOverride.GetCurrentSelectionState(_target) : SelectionState.Normal);
         void Sync(SelectionState state)
         {
             _lastKnownState = state;
@@ -157,50 +154,70 @@ namespace com.spacepuppy.UI
             }
         }
 
-        private void TestStartRoutine()
+        private void TestStartUpdater()
         {
             if (_target)
             {
-                if (_routine != null) StopCoroutine(_routine);
-                _routine = this.StartCoroutine(this.UpdateRoutine(_target));
+                if (_target.TryGetComponent(out SelectableOverride sover))
+                {
+                    _updateHook?.Deinitialize();
+                    _selectableOverrideOnStateChangedToken.Dispose();
+                    _selectableOverrideOnStateChangedToken = sover.OnSelectStateChanged.AddTrackedListener((s, e) =>
+                    {
+                        this.Sync();
+                    });
+                }
+                else
+                {
+                    _selectableOverrideOnStateChangedToken.Dispose();
+                    (_updateHook ??= new UpdateHook()).Initialize(this, _target);
+                }
             }
-            else if (_routine != null)
+            else
             {
-                StopCoroutine(_routine);
-                _routine = null;
+                _selectableOverrideOnStateChangedToken.Dispose();
+                _updateHook?.Deinitialize();
             }
-        }
-
-        private System.Collections.IEnumerator UpdateRoutine(Selectable selectable)
-        {
-            if (!selectable) yield break;
-
-            var del = SelectableProtectedHook.CreateCurrentSelectionStateGetterDelegate(selectable);
-            SelectionState e;
-            while (_target)
-            {
-                e = (SelectionState)del();
-                if (e != _lastKnownState) this.Sync(e);
-                yield return null;
-            }
-
-            _routine = null;
         }
 
         #endregion
 
         #region Static Utils
 
-        class SelectableProtectedHook : Selectable
+        class UpdateHook : IUpdateable
         {
-            const string PROP_CURRENTSELECTIONSTATE = nameof(SelectableProtectedHook.currentSelectionState);
-            static readonly PropertyInfo CurrentSelectoinStatePropertyInfo = typeof(Selectable).GetProperty(PROP_CURRENTSELECTIONSTATE, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.GetProperty);
 
-            public static com.spacepuppy.UI.UISelectableStateMachine.SelectionState GetCurrentSelectionState(Selectable selectable) => (com.spacepuppy.UI.UISelectableStateMachine.SelectionState)((int)CurrentSelectoinStatePropertyInfo.GetValue(selectable));
-
-            public static System.Func<int> CreateCurrentSelectionStateGetterDelegate(Selectable selectable)
+            public UISelectableStateMachine owner;
+            public Selectable target;
+            public void Initialize(UISelectableStateMachine owner, Selectable target)
             {
-                return CurrentSelectoinStatePropertyInfo.GetMethod.CreateDelegate(typeof(System.Func<int>), selectable) as System.Func<int>;
+                this.owner = owner;
+                this.target = target;
+                if (target)
+                {
+                    GameLoop.TardyUpdatePump.Add(this);
+                }
+                else
+                {
+                    GameLoop.TardyUpdatePump.Remove(this);
+                }
+            }
+            public void Deinitialize()
+            {
+                GameLoop.TardyUpdatePump.Remove(this);
+            }
+
+            void IUpdateable.Update()
+            {
+                if (this.target)
+                {
+                    var e = SelectableOverride.GetCurrentSelectionState(target);
+                    if (e != owner._lastKnownState) owner.Sync(e);
+                }
+                else
+                {
+                    this.Deinitialize();
+                }
             }
 
         }
@@ -212,7 +229,7 @@ namespace com.spacepuppy.UI
         {
             if (this.isActiveAndEnabled && Application.isPlaying)
             {
-                this.TestStartRoutine();
+                this.TestStartUpdater();
             }
         }
 #endif

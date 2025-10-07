@@ -60,6 +60,12 @@ namespace com.spacepuppy.UI
             }
         }
 
+        public GameObject GetGameObject()
+        {
+            var targ = StringUtil.GetAsTextBindingTarget(_target, false);
+            return GameObjectUtil.GetGameObjectFromSource(targ);
+        }
+
         #endregion
 
         #region IDynamicProperty Interface

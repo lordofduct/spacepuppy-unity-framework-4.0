@@ -669,13 +669,45 @@ namespace com.spacepuppy.Dynamic
             }
             else if ((binding & BindingFlags.NonPublic) != 0)
             {
-                binding = binding & ~BindingFlags.Public;
+                binding = binding & ~BindingFlags.Public | BindingFlags.DeclaredOnly;
 
                 while (tp != null)
                 {
                     foreach (var m in tp.GetMembers(binding))
                     {
                         yield return m;
+                    }
+                    tp = tp.BaseType;
+                }
+            }
+        }
+
+        public static IEnumerable<MemberInfo> EnumerateAllMembers(System.Type tp, BindingFlags binding, MemberTypes mask)
+        {
+            foreach (var m in tp.GetMembers(binding & ~BindingFlags.NonPublic))
+            {
+                if ((m.MemberType & mask) != 0) yield return m;
+            }
+
+            if (tp.IsInterface)
+            {
+                foreach (var itp in tp.GetInterfaces())
+                {
+                    foreach (var m in itp.GetMembers(binding & ~BindingFlags.NonPublic))
+                    {
+                        if ((m.MemberType & mask) != 0) yield return m;
+                    }
+                }
+            }
+            else if ((binding & BindingFlags.NonPublic) != 0)
+            {
+                binding = binding & ~BindingFlags.Public | BindingFlags.DeclaredOnly;
+
+                while (tp != null)
+                {
+                    foreach (var m in tp.GetMembers(binding))
+                    {
+                        if ((m.MemberType & mask) != 0) yield return m;
                     }
                     tp = tp.BaseType;
                 }

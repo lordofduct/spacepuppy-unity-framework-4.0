@@ -26,8 +26,6 @@ namespace com.spacepuppyeditor.Internal
 
         private static TypeAccessWrapper _accessWrapper;
 
-        private static System.Func<System.Type, System.Type> _imp_getDrawerTypeForType;
-
         private delegate System.Reflection.FieldInfo GetFieldInfoFromPropertyDelegate(SerializedProperty property, out System.Type type);
         private static GetFieldInfoFromPropertyDelegate _imp_getFieldInfoFromProperty;
 
@@ -75,11 +73,41 @@ namespace com.spacepuppyeditor.Internal
         //#######################
         // GetDrawerTypeForType
 
+#if UNITY_2023_3_OR_NEWER
+        private static System.Func<System.Type, System.Type[], bool, System.Type> _imp_getDrawerTypeForType;
+        public static System.Type GetDrawerTypeForType(System.Type tp)
+        {
+            if (_imp_getDrawerTypeForType == null) _imp_getDrawerTypeForType = _accessWrapper.GetStaticMethod("GetDrawerTypeForType", typeof(System.Func<System.Type, System.Type[], bool, System.Type>)) as System.Func<System.Type, System.Type[], bool, System.Type>;
+            return _imp_getDrawerTypeForType(tp, null, false);
+        }
+#elif UNITY_2022_3_OR_NEWER
+        private static System.Func<System.Type, bool, System.Type> _imp_getDrawerTypeForType;
+        public static System.Type GetDrawerTypeForType(System.Type tp)
+        {
+            if (_imp_getDrawerTypeForType == null)
+            {
+                if (!_accessWrapper.TryGetStaticMethod<System.Func<System.Type, bool, System.Type>>("GetDrawerTypeForType", out _imp_getDrawerTypeForType))
+                {
+                    if (_accessWrapper.TryGetStaticMethod<System.Func<System.Type, System.Type>>("GetDrawerTypeForType", out System.Func<System.Type, System.Type> olddel)) //depending how old the version of 2022_3 you're in, it might still be the older version
+                    {
+                        _imp_getDrawerTypeForType = (t, b) => olddel(t);
+                    }
+                    else
+                    {
+                        _imp_getDrawerTypeForType = (t, b) => null;
+                    }
+                }
+            }
+            return _imp_getDrawerTypeForType(tp, false);
+        }
+#else
+        private static System.Func<System.Type, System.Type> _imp_getDrawerTypeForType;
         public static System.Type GetDrawerTypeForType(System.Type tp)
         {
             if (_imp_getDrawerTypeForType == null) _imp_getDrawerTypeForType = _accessWrapper.GetStaticMethod("GetDrawerTypeForType", typeof(System.Func<System.Type, System.Type>)) as System.Func<System.Type, System.Type>;
             return _imp_getDrawerTypeForType(tp);
         }
+#endif
 
         //#######################
         // GetHandler

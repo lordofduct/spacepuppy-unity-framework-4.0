@@ -68,60 +68,69 @@ namespace com.spacepuppy.Async
 
             public System.Threading.Tasks.Task GetTask(AsyncWaitHandle handle)
             {
-                bool complete = false;
-
+                TaskCompletionSource<bool> signal;
                 if (handle.Token is IRadicalWaitHandle h)
                 {
                     if (GameLoop.InvokeRequired)
                     {
-                        GameLoop.UpdateHandle.Invoke(() => complete = h.IsComplete);
+                        signal = new TaskCompletionSource<bool>();
+                        GameLoop.UpdateHandle.BeginInvoke(() =>
+                        {
+                            if (h.IsComplete)
+                            {
+                                signal.SetResult(true);
+                            }
+                            else
+                            {
+                                h.OnComplete((r) =>
+                                {
+                                    signal.SetResult(true);
+                                });
+                            }
+                        });
+                        return signal.Task;
                     }
-                    else
-                    {
-                        complete = h.IsComplete;
-                    }
-
-                    if (complete)
+                    else if (h.IsComplete)
                     {
                         return Task.CompletedTask;
                     }
                     else
                     {
-                        var s = AsyncUtil.GetTempSemaphore();
+                        signal = new TaskCompletionSource<bool>();
                         h.OnComplete((r) =>
                         {
-                            s.Dispose();
+                            signal.SetResult(true);
                         });
-                        return s.WaitAsync();
+                        return signal.Task;
                     }
                 }
                 else if (handle.Token is IRadicalYieldInstruction inst)
                 {
                     if (GameLoop.InvokeRequired)
                     {
-                        GameLoop.UpdateHandle.Invoke(() => complete = inst.IsComplete);
+                        signal = new TaskCompletionSource<bool>();
+                        GameLoop.UpdateHandle.BeginInvoke(() =>
+                        {
+                            if (inst.IsComplete)
+                            {
+                                signal.SetResult(true);
+                            }
+                            else
+                            {
+                                GameLoop.Hook.StartPooledRadicalCoroutine(WaitUntilHandleIsDone(inst, (a) => signal.SetResult(true)));
+                            }
+                        });
+                        return signal.Task;
                     }
-                    else
-                    {
-                        complete = inst.IsComplete;
-                    }
-
-                    if (complete)
+                    else if (inst.IsComplete)
                     {
                         return Task.CompletedTask;
                     }
                     else
                     {
-                        var s = AsyncUtil.GetTempSemaphore();
-                        if (GameLoop.InvokeRequired)
-                        {
-                            GameLoop.UpdateHandle.BeginInvoke(() => GameLoop.Hook.StartPooledRadicalCoroutine(WaitUntilHandleIsDone(inst, (a) => s.Dispose())));
-                        }
-                        else
-                        {
-                            GameLoop.Hook.StartPooledRadicalCoroutine(WaitUntilHandleIsDone(inst, (a) => s.Dispose()));
-                        }
-                        return s.WaitAsync();
+                        signal = new TaskCompletionSource<bool>();
+                        GameLoop.Hook.StartPooledRadicalCoroutine(WaitUntilHandleIsDone(inst, (a) => signal.SetResult(true)));
+                        return signal.Task;
                     }
                 }
                 else
@@ -426,32 +435,38 @@ namespace com.spacepuppy.Async
 
             private async Task<T> WaitForComplete(RadicalWaitHandle<T> handle)
             {
-                var s = AsyncUtil.GetTempSemaphore();
                 if (GameLoop.InvokeRequired)
                 {
+                    var signal = new TaskCompletionSource<bool>();
                     GameLoop.UpdateHandle.BeginInvoke(() =>
                     {
                         if (handle.IsComplete)
                         {
-                            s.Dispose();
+                            signal.SetResult(true);
                         }
                         else
                         {
                             handle.OnComplete((r) =>
                             {
-                                s.Dispose();
+                                signal.SetResult(true);
                             });
                         }
                     });
+                    await signal.Task;
+                }
+                else if (handle.IsComplete)
+                {
+                    return handle.Result;
                 }
                 else
                 {
+                    var signal = new TaskCompletionSource<bool>();
                     handle.OnComplete((r) =>
                     {
-                        s.Dispose();
+                        signal.SetResult(true);
                     });
+                    await signal.Task;
                 }
-                await s.WaitAsync();
                 return handle.Result;
             }
 

@@ -5,7 +5,9 @@ using com.spacepuppy;
 using com.spacepuppy.Utils;
 
 using Pathfinding;
-using System;
+#if AGASTAR_5_2_ORGREATER
+using Pathfinding.Pooling;
+#endif
 
 namespace com.spacepuppy.Pathfinding
 {
@@ -61,7 +63,7 @@ namespace com.spacepuppy.Pathfinding
             }
         }
 
-        PathCalculateStatus IPath.Status
+        public PathCalculateStatus Status
         {
             get
             {

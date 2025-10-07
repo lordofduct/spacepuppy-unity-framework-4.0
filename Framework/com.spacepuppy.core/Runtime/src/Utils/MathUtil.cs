@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using UnityEngine;
+using System.Runtime.CompilerServices;
+using Mathf = UnityEngine.Mathf;
 
 namespace com.spacepuppy.Utils
 {
@@ -514,6 +515,18 @@ namespace com.spacepuppy.Utils
             return avg / values.Length;
         }
 
+        public static float ExponentialMovingAverage(float newvalue, float runningAverage, float sampleLength)
+        {
+            float alpha = 2f / (sampleLength + 1);
+            return newvalue * alpha + runningAverage * (1f - alpha);
+        }
+
+        public static double ExponentialMovingAverage(double newvalue, double runningAverage, double sampleLength)
+        {
+            double alpha = 2d / (sampleLength + 1);
+            return newvalue * alpha + runningAverage * (1d - alpha);
+        }
+
         /// <summary>
         /// The percentage a value is from min to max
         /// 
@@ -856,6 +869,29 @@ namespace com.spacepuppy.Utils
         {
             switch (mode)
             {
+                case WrapMode.Clamp:
+                    return max > 0 ? Mathf.Clamp(value, 0, max - 1) : 0;
+                case WrapMode.Loop:
+                    return max > 0 ? MathUtil.Wrap(value, max) : 0;
+                case WrapMode.PingPong:
+                    return max > 0 ? (int)Mathf.PingPong(value, max - 1) : 0;
+                default:
+                    return value;
+            }
+        }
+
+        /// <summary>
+        /// Same as WrapIndex but forced oblivion to be clamped
+        /// </summary>
+        /// <param name="mode"></param>
+        /// <param name="value"></param>
+        /// <param name="max"></param>
+        /// <returns></returns>
+        public static int WrapIndexClamped(WrapMode mode, int value, int max)
+        {
+            switch (mode)
+            {
+                case WrapMode.Oblivion:
                 case WrapMode.Clamp:
                     return max > 0 ? Mathf.Clamp(value, 0, max - 1) : 0;
                 case WrapMode.Loop:
@@ -1227,6 +1263,42 @@ namespace com.spacepuppy.Utils
             if (value < min) return MathUtil.Lerp(value, min, t);
             else if (value > max) return MathUtil.Lerp(value, max, t);
             return value;
+        }
+
+        public static float Damp(float a, float damping, float dt)
+        {
+            return a * (float)Math.Pow(damping, dt);
+        }
+
+        public static float Damp(float a, float b, float damping, float dt)
+        {
+            return Mathf.Lerp(a, b, 1f - (float)Math.Pow(damping, dt));
+        }
+
+        /// <summary>
+        /// Calculate the value of t for a lerp method to match the behaviour of 'Damp'.
+        /// </summary>
+        /// <param name="damping"></param>
+        /// <param name="deltaTime"></param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float CalculateDampingLerpT(float damping, float deltaTime)
+        {
+            return 1f - (float)Math.Pow(damping, deltaTime);
+        }
+
+        /// <summary>
+        /// Returns a value that can be passed as 't' to a lerp method rectified to the framerate. This way the 't' 
+        /// behaves similary to targetFrameTime regardless of true frame time.
+        /// </summary>
+        /// <param name="t"></param>
+        /// <param name="deltaTime"></param>
+        /// <param name="targetFrameTime"></param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float FrameRectifyLerpT(float t, float deltaTime, float targetFrameTime = 0.02f)
+        {
+            return (float)(1d - Math.Pow(1d - t, deltaTime / targetFrameTime));
         }
 
         #endregion

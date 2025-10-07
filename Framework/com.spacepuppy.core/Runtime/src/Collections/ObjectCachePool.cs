@@ -16,7 +16,7 @@ namespace com.spacepuppy.Collections
         public const int DEFAULT_CACHESIZE = 64; //1024;
 
         #region Fields
-        
+
         private HashSet<T> _inactive;
 
         private int _cacheSize;
@@ -34,6 +34,7 @@ namespace com.spacepuppy.Collections
             //_inactive = (_cacheSize <= 0) ? new Bag<T>() : new Bag<T>(_cacheSize);
             _inactive = new HashSet<T>();
             _constructorDelegate = this.SimpleConstructor;
+            _resetObjectDelegate = null;
         }
 
         public ObjectCachePool(int cacheSize, Func<T> constructorDelegate)
@@ -42,6 +43,7 @@ namespace com.spacepuppy.Collections
             //_inactive = (_cacheSize <= 0) ? new Bag<T>() : new Bag<T>(_cacheSize);
             _inactive = new HashSet<T>();
             _constructorDelegate = (constructorDelegate != null) ? constructorDelegate : this.SimpleConstructor;
+            _resetObjectDelegate = null;
         }
 
         public ObjectCachePool(int cacheSize, Func<T> constructorDelegate, Action<T> resetObjectDelegate)
@@ -99,16 +101,60 @@ namespace com.spacepuppy.Collections
         public bool TryGetInstance(out T result)
         {
             result = null;
-            lock(_inactive)
+            lock (_inactive)
             {
-                if(_inactive.Count > 0)
+                if (_inactive.Count > 0)
                 {
                     result = _inactive.Pop();
                 }
             }
             if (result != null)
             {
-                if(_resetOnGet && _resetObjectDelegate != null)
+                if (_resetOnGet && _resetObjectDelegate != null)
+                    _resetObjectDelegate(result);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Tries to filter out candidates based on some filter, otherwise returns the last available.
+        /// </summary>
+        /// <typeparam name="TArg"></typeparam>
+        /// <param name="arg"></param>
+        /// <param name="result"></param>
+        /// <param name="filterpredicate"></param>
+        /// <returns></returns>
+        public bool TryGetInstance<TArg>(TArg arg, out T result, System.Func<T, TArg, bool> filterpredicate)
+        {
+            if (filterpredicate == null) throw new System.ArgumentNullException(nameof(filterpredicate));
+
+            result = null;
+            lock (_inactive)
+            {
+                if (_inactive.Count > 0)
+                {
+                    var e = _inactive.GetEnumerator();
+                    while (e.MoveNext())
+                    {
+                        if (filterpredicate(e.Current, arg))
+                        {
+                            result = e.Current;
+                            _inactive.Remove(result);
+                            goto ElectedCandidate;
+                        }
+                    }
+                    result = _inactive.Pop();
+                }
+            }
+
+        ElectedCandidate:
+            if (result != null)
+            {
+                if (_resetOnGet && _resetObjectDelegate != null)
                     _resetObjectDelegate(result);
                 return true;
             }
@@ -121,9 +167,9 @@ namespace com.spacepuppy.Collections
         public T GetInstance()
         {
             T result = null;
-            lock(_inactive)
+            lock (_inactive)
             {
-                if(_inactive.Count > 0)
+                if (_inactive.Count > 0)
                 {
                     result = _inactive.Pop();
                 }
@@ -140,15 +186,51 @@ namespace com.spacepuppy.Collections
             }
         }
 
+        public T GetInstance<TArg>(TArg arg, System.Func<T, TArg, bool> filterpredicate)
+        {
+            if (filterpredicate == null) throw new System.ArgumentNullException(nameof(filterpredicate));
+
+            T result = null;
+            lock (_inactive)
+            {
+                if (_inactive.Count > 0)
+                {
+                    var e = _inactive.GetEnumerator();
+                    while (e.MoveNext())
+                    {
+                        if (filterpredicate(e.Current, arg))
+                        {
+                            result = e.Current;
+                            _inactive.Remove(result);
+                            goto ElectedCandidate;
+                        }
+                    }
+                    result = _inactive.Pop();
+                }
+            }
+
+        ElectedCandidate:
+            if (result != null)
+            {
+                if (_resetOnGet && _resetObjectDelegate != null)
+                    _resetObjectDelegate(result);
+                return result;
+            }
+            else
+            {
+                return _constructorDelegate();
+            }
+        }
+
         public bool Release(T obj)
         {
             if (obj == null) throw new System.ArgumentNullException("obj");
-            
+
             if (!_resetOnGet && _resetObjectDelegate != null && _inactive.Count < _cacheSize) _resetObjectDelegate(obj);
 
-            lock(_inactive)
+            lock (_inactive)
             {
-                if(_inactive.Count < _cacheSize)
+                if (_inactive.Count < _cacheSize)
                 {
                     _inactive.Add(obj);
                     return true;

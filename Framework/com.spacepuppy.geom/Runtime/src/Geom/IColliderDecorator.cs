@@ -113,6 +113,11 @@ namespace com.spacepuppy.Geom
                 return Capsule.FromCollider(_collider).CastAll(direction, results, distance, layerMask, query);
             }
 
+            public int OverlapNonAlloc(Collider[] buffer, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
+            {
+                return Capsule.FromCollider(_collider).OverlapNonAlloc(buffer, layerMask, query);
+            }
+
             public int Overlap(ICollection<Collider> results, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
             {
                 return Capsule.FromCollider(_collider).Overlap(results, layerMask, query);
@@ -121,6 +126,11 @@ namespace com.spacepuppy.Geom
             public bool TestOverlap(int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
             {
                 return Capsule.FromCollider(_collider).TestOverlap(layerMask, query);
+            }
+
+            public bool ContainsPoint(Vector3 point)
+            {
+                return _collider.ContainsPoint(point);
             }
 
             #endregion
@@ -172,6 +182,11 @@ namespace com.spacepuppy.Geom
                 return Box.FromCollider(_collider).CastAll(direction, results, distance, layerMask, query);
             }
 
+            public int OverlapNonAlloc(Collider[] buffer, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
+            {
+                return Box.FromCollider(_collider).OverlapNonAlloc(buffer, layerMask, query);
+            }
+
             public int Overlap(ICollection<Collider> results, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
             {
                 return Box.FromCollider(_collider).Overlap(results, layerMask, query);
@@ -180,6 +195,11 @@ namespace com.spacepuppy.Geom
             public bool TestOverlap(int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
             {
                 return Box.FromCollider(_collider).TestOverlap(layerMask, query);
+            }
+
+            public bool ContainsPoint(Vector3 point)
+            {
+                return _collider.ContainsPoint(point);
             }
 
             #endregion
@@ -231,6 +251,11 @@ namespace com.spacepuppy.Geom
                 return Sphere.FromCollider(_collider).CastAll(direction, results, distance, layerMask, query);
             }
 
+            public int OverlapNonAlloc(Collider[] buffer, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
+            {
+                return Sphere.FromCollider(_collider).OverlapNonAlloc(buffer, layerMask, query);
+            }
+
             public int Overlap(ICollection<Collider> results, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
             {
                 return Sphere.FromCollider(_collider).Overlap(results, layerMask, query);
@@ -239,6 +264,11 @@ namespace com.spacepuppy.Geom
             public bool TestOverlap(int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
             {
                 return Sphere.FromCollider(_collider).TestOverlap(layerMask, query);
+            }
+
+            public bool ContainsPoint(Vector3 point)
+            {
+                return _collider.ContainsPoint(point);
             }
 
             #endregion
@@ -290,6 +320,11 @@ namespace com.spacepuppy.Geom
                 return Capsule.FromCollider(_collider).CastAll(direction, results, distance, layerMask, query);
             }
 
+            public int OverlapNonAlloc(Collider[] buffer, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
+            {
+                return Capsule.FromCollider(_collider).OverlapNonAlloc(buffer, layerMask, query);
+            }
+
             public int Overlap(ICollection<Collider> results, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
             {
                 return Capsule.FromCollider(_collider).Overlap(results, layerMask, query);
@@ -298,6 +333,11 @@ namespace com.spacepuppy.Geom
             public bool TestOverlap(int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
             {
                 return Capsule.FromCollider(_collider).TestOverlap(layerMask, query);
+            }
+
+            public bool ContainsPoint(Vector3 point)
+            {
+                return _collider.ContainsPoint(point);
             }
 
             #endregion
@@ -370,6 +410,18 @@ namespace com.spacepuppy.Geom
                 }
             }
 
+            public int OverlapNonAlloc(Collider[] buffer, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
+            {
+                if (GeomUtil.DefaultBoundingSphereAlgorithm == BoundingSphereAlgorithm.FromBounds)
+                {
+                    return AABBox.FromCollider(_collider).OverlapNonAlloc(buffer, layerMask, query);
+                }
+                else
+                {
+                    return Sphere.FromMesh(_collider.sharedMesh, GeomUtil.DefaultBoundingSphereAlgorithm, Trans.GetGlobal(this.transform)).OverlapNonAlloc(buffer, layerMask, query);
+                }
+            }
+
             public int Overlap(ICollection<Collider> results, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
             {
                 if (GeomUtil.DefaultBoundingSphereAlgorithm == BoundingSphereAlgorithm.FromBounds)
@@ -392,6 +444,11 @@ namespace com.spacepuppy.Geom
                 {
                     return Sphere.FromMesh(_collider.sharedMesh, GeomUtil.DefaultBoundingSphereAlgorithm, Trans.GetGlobal(this.transform)).TestOverlap(layerMask, query);
                 }
+            }
+
+            public bool ContainsPoint(Vector3 point)
+            {
+                return _collider.ContainsPoint(point);
             }
 
             #endregion
@@ -443,6 +500,11 @@ namespace com.spacepuppy.Geom
                 return AABBox.FromCollider(_collider).CastAll(direction, results, distance, layerMask, query);
             }
 
+            public int OverlapNonAlloc(Collider[] buffer, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
+            {
+                return AABBox.FromCollider(_collider).OverlapNonAlloc(buffer, layerMask, query);
+            }
+
             public int Overlap(ICollection<Collider> results, int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
             {
                 return AABBox.FromCollider(_collider).Overlap(results, layerMask, query);
@@ -451,6 +513,11 @@ namespace com.spacepuppy.Geom
             public bool TestOverlap(int layerMask, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
             {
                 return AABBox.FromCollider(_collider).TestOverlap(layerMask, query);
+            }
+
+            public bool ContainsPoint(Vector3 point)
+            {
+                return AABBox.FromCollider(_collider).Contains(point);
             }
 
             #endregion

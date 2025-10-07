@@ -12,7 +12,7 @@ namespace com.spacepuppy.Motor
     /// Treats a CharacterController as an IMotor for a more uniform interface.
     /// </summary>
     [RequireComponentInEntity(typeof(CharacterController))]
-    public class CharacterMotor : SPComponent, IMotor, IUpdateable, ISignalEnabledMessageHandler, IOnControllerColliderHitSubscriber
+    public class CharacterMotor : SPComponent, IMotor, IUpdateable, IOnControllerColliderHitSubscriber
     {
 
         #region Fields
@@ -252,6 +252,15 @@ namespace com.spacepuppy.Motor
             }
         }
 
+        void IMotor.SetCollisionMessageDirty(bool validate)
+        {
+            _onCollisionMessage?.SetDirty();
+            if (validate)
+            {
+                this.ValidateCollisionHandler();
+            }
+        }
+
         #endregion
 
         #region IForceReceiver Interface
@@ -312,6 +321,11 @@ namespace com.spacepuppy.Motor
             return Capsule.FromCollider(_controller).TestOverlap(layerMask, query);
         }
 
+        public int OverlapNonAlloc(Collider[] buffer, int layerMask, QueryTriggerInteraction query)
+        {
+            return Capsule.FromCollider(_controller).OverlapNonAlloc(buffer, layerMask, query);
+        }
+
         public int Overlap(ICollection<Collider> results, int layerMask, QueryTriggerInteraction query)
         {
             return Capsule.FromCollider(_controller).Overlap(results, layerMask, query);
@@ -326,6 +340,8 @@ namespace com.spacepuppy.Motor
         {
             return Capsule.FromCollider(_controller).CastAll(direction, results, distance, layerMask, query);
         }
+
+        bool IPhysicsObject.ContainsPoint(Vector3 point) => _controller.ContainsPoint(point);
 
         #endregion
 
@@ -355,29 +371,12 @@ namespace com.spacepuppy.Motor
             if (_onCollisionMessage.Count > 0)
             {
                 if (this.gameObject == sender)
-                    _onCollisionMessage.Invoke(new MotorCollisionInfo(this, hit), MotorCollisionHandlerHelper.OnCollisionFunctor);
+                    _onCollisionMessage.Invoke(new MotorCollisionInfo(this, hit), (o,a) => o.OnCollision(a));
             }
             else if (_collisionHook != null)
             {
                 _collisionHook.Unsubscribe(this);
                 _collisionHook = null;
-            }
-        }
-
-        void ISignalEnabledMessageHandler.OnComponentEnabled(IEventfulComponent component)
-        {
-            if (component is IMotorCollisionMessageHandler)
-            {
-                _onCollisionMessage?.SetDirty();
-                this.ValidateCollisionHandler();
-            }
-        }
-
-        void ISignalEnabledMessageHandler.OnComponentDisabled(IEventfulComponent component)
-        {
-            if (component is IMotorCollisionMessageHandler)
-            {
-                _onCollisionMessage?.SetDirty();
             }
         }
 

@@ -34,7 +34,7 @@ namespace com.spacepuppy.Addressables
             token.ProposeKillCandidate(this, _killableEntityPriority);
         }
 
-        void IKillableEntity.OnKill(KillableEntityToken token)
+        void IOnKillHandler.OnKill(KillableEntityToken token)
         {
             //do nothing
         }

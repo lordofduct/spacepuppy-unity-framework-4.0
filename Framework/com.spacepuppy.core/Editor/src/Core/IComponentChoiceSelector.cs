@@ -139,10 +139,15 @@ namespace com.spacepuppyeditor.Core
             var go = GetGameObjectFromSource(property, forceSelfOnly);
             if (go == null) return ArrayUtil.Empty<Component>();
 
-            if (allowProxy || !ComponentUtil.IsAcceptableComponentType(restrictionType))
+            if (allowProxy)
             {
                 var e = searchChildren ? go.GetComponentsInChildren<Component>() : go.GetComponents<Component>();
-                return e.Where(c => ObjUtil.IsType(c, restrictionType, allowProxy)).ToArray();
+                return e.Where(c => c is IProxy || ObjUtil.IsType(c, restrictionType)).ToArray();
+            }
+            else if (!ComponentUtil.IsAcceptableComponentType(restrictionType))
+            {
+                var e = searchChildren ? go.GetComponentsInChildren<Component>() : go.GetComponents<Component>();
+                return e.Where(c => ObjUtil.IsType(c, restrictionType)).ToArray();
             }
             else
             {

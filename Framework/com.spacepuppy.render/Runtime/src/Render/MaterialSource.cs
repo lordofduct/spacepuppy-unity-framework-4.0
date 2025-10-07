@@ -23,7 +23,7 @@ namespace com.spacepuppy.Render
     }
 
     [System.Serializable]
-    public class MaterialSourceRef : SerializableInterfaceRef<IMaterialSource> { }
+    public class MaterialSourceRef : InterfaceRef<IMaterialSource> { }
 
     public abstract class MaterialSource : SPComponent, IMaterialSource, IDynamic
     {

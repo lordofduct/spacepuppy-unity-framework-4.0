@@ -23,12 +23,15 @@ namespace com.spacepuppyeditor.Core
 
         public override void OnGUI(Rect position, SerializedObject serializedObject)
         {
-            var attrib = this.Attribute as RequireLayerAttribute;
+            if (serializedObject.isEditingMultipleObjects) return;
 
-            if (attrib != null)
+            var attrib = this.Attribute as RequireLayerAttribute;
+            if (attrib == null) return;
+
+            foreach (var c in serializedObject.targetObjects)
             {
-                var go = (serializedObject.targetObject as Component).gameObject;
-                if(go.layer != attrib.Layer)
+                var go = (c as Component)?.gameObject;
+                if (go && go.layer != attrib.Layer)
                 {
                     go.layer = attrib.Layer;
                     EditorHelper.CommitDirectChanges(go, false);

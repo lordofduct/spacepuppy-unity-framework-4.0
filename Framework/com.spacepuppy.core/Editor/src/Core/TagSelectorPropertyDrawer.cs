@@ -28,6 +28,8 @@ namespace com.spacepuppyeditor.Core
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
+
             if (property.propertyType == SerializedPropertyType.String)
             {
                 EditorGUI.BeginChangeCheck();

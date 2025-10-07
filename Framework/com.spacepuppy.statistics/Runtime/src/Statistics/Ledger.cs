@@ -6,6 +6,7 @@ using System.Linq;
 using com.spacepuppy;
 using com.spacepuppy.Collections;
 using com.spacepuppy.Utils;
+using System.Text;
 
 namespace com.spacepuppy.Statistics
 {
@@ -14,7 +15,10 @@ namespace com.spacepuppy.Statistics
     {
         public string Stat;
         public string Token;
+        public string MetaData;
         public double? Value;
+
+        public StatId ToStatId() => new StatId(this.Stat, this.Token, this.MetaData);
     }
 
     /// <summary>
@@ -30,7 +34,7 @@ namespace com.spacepuppy.Statistics
     {
 
         public event System.EventHandler<LedgerChangedEventArgs> Changed;
-        private void OnChanged(StatId stat)
+        public void SignalOnChanged(StatId stat)
         {
             this.Dirty = true;
 
@@ -44,7 +48,7 @@ namespace com.spacepuppy.Statistics
             }
         }
 
-        private void OnChanged_Multi()
+        public void SignalOnChanged_Multi()
         {
             this.Dirty = true;
 
@@ -61,6 +65,8 @@ namespace com.spacepuppy.Statistics
         #region Fields
 
         private Dictionary<StatId, double?> _stats = new Dictionary<StatId, double?>(StatIdComparer.Default);
+        private Dictionary<string, IStatModifier> _modifiers = new();
+        private IStatModifier _defaultModifier;
 
         #endregion
 
@@ -68,12 +74,23 @@ namespace com.spacepuppy.Statistics
 
         public Ledger()
         {
+            _defaultModifier = StandardStatModifier.Default;
+        }
 
+        public Ledger(IStatModifier defaultmodifier)
+        {
+            _defaultModifier = defaultmodifier ?? StandardStatModifier.Default;
         }
 
         #endregion
 
         #region Properties
+
+        public IStatModifier DefaultStatModifier
+        {
+            get => _defaultModifier;
+            set => _defaultModifier = value ?? StandardStatModifier.Default;
+        }
 
         /// <summary>
         /// If locked, then can only adjust stats which have been defined.
@@ -85,7 +102,31 @@ namespace com.spacepuppy.Statistics
             set;
         }
 
-        public double this[string stat]
+        public double this[string category]
+        {
+            get
+            {
+                return this.GetStatOrDefault(category);
+            }
+            set
+            {
+                this.SetStat(category, value);
+            }
+        }
+
+        public double this[string category, string token]
+        {
+            get
+            {
+                return this.GetStatOrDefault(category, token);
+            }
+            set
+            {
+                this.SetStat(category, token, value);
+            }
+        }
+
+        public double this[StatId stat]
         {
             get
             {
@@ -94,18 +135,6 @@ namespace com.spacepuppy.Statistics
             set
             {
                 this.SetStat(stat, value);
-            }
-        }
-
-        public double this[string stat, string token]
-        {
-            get
-            {
-                return this.GetStatOrDefault(stat, token);
-            }
-            set
-            {
-                this.SetStat(stat, token, value);
             }
         }
 
@@ -131,42 +160,72 @@ namespace com.spacepuppy.Statistics
 
         #region Methods
 
-        public void DefineStat(string stat, double? defaultValue = null)
+        public bool Contains(string category) => _stats.ContainsKey(new StatId(category)) || _stats.Keys.Contains(new StatId(category), StatIdCategoryComparer.Default);
+        public bool Contains(StatId stat) => _stats.ContainsKey(stat);
+
+        public void DefineCategory(string category, double? defaultValue = null)
         {
-            var key = new StatId(stat);
+            var key = new StatId(category);
             if (!_stats.ContainsKey(key))
             {
                 _stats.Add(key, defaultValue);
-                this.OnChanged(new StatId(stat, null));
+                this.SignalOnChanged(new StatId(category, null));
             }
         }
 
-        public bool TryGetStat(string stat, out double? value) => _stats.TryGetValue(new StatId(stat), out value);
-        public bool TryGetStat(string stat, string token, out double? value) => _stats.TryGetValue(new StatId(stat, token), out value);
-        public bool TryGetStat(StatId stat, out double? value) => _stats.TryGetValue(stat, out value);
-
-        public double? GetStat(string stat) => GetStat(new StatId(stat, null));
-        public double? GetStat(string stat, string token) => GetStat(new StatId(stat, token));
-        public double? GetStat(StatId stat) => _stats.TryGetValue(stat, out double? value) ? value : null;
-
-        public double GetStatOrDefault(string stat) => GetStatOrDefault(new StatId(stat, null));
-        public double GetStatOrDefault(string stat, string token) => GetStatOrDefault(new StatId(stat, token));
-        public double GetStatOrDefault(StatId stat) => _stats.TryGetValue(stat, out double? value) ? value.GetValueOrDefault() : 0d;
-
-        public bool GetStatAsBool(string stat) => GetStatAsBool(new StatId(stat, null));
-        public bool GetStatAsBool(string stat, string token) => GetStatAsBool(new StatId(stat, token));
-        public bool GetStatAsBool(StatId stat) => _stats.TryGetValue(stat, out double? value) && value != null && value.Value != 0d;
-
-        public int CountStatTokens(string stat)
+        public void SetCategoryModifier(string category, IStatModifier modifier)
         {
-            if (string.IsNullOrEmpty(stat)) return 0;
+            if (string.IsNullOrEmpty(category)) throw new System.ArgumentException("Category must not be null or empty.", nameof(category));
+
+            if (modifier == null)
+            {
+                _modifiers.Remove(category);
+            }
+            else
+            {
+                _modifiers[category] = modifier;
+            }
+        }
+        public IStatModifier GetCategoryModifier(string category)
+        {
+            if (string.IsNullOrEmpty(category)) throw new System.ArgumentException("Category must not be null or empty.", nameof(category));
+
+            if (_modifiers.TryGetValue(category, out IStatModifier result))
+            {
+                return result;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        public bool TryGetStat(string category, out double? value) => this.GetOperator(category).TryGetStat(this, new StatId(category), out value);
+        public bool TryGetStat(string category, string token, out double? value) => this.GetOperator(category).TryGetStat(this, new StatId(category, token), out value);
+        public bool TryGetStat(StatId stat, out double? value) => this.GetOperator(stat.Category).TryGetStat(this, stat, out value);
+
+        public double? GetStat(string category) => this.GetOperator(category).TryGetStat(this, new StatId(category, null), out double? result) ? result : null;
+        public double? GetStat(string category, string token) => this.GetOperator(category).TryGetStat(this, new StatId(category, token), out double? result) ? result : null;
+        public double? GetStat(StatId stat) => this.GetOperator(stat.Category).TryGetStat(this, stat, out double? result) ? result : null;
+
+        public double GetStatOrDefault(string category) => this.GetOperator(category).TryGetStat(this, new StatId(category, null), out double? result) ? result.GetValueOrDefault() : 0d;
+        public double GetStatOrDefault(string category, string token) => this.GetOperator(category).TryGetStat(this, new StatId(category, token), out double? result) ? result.GetValueOrDefault() : 0d;
+        public double GetStatOrDefault(StatId stat) => this.GetOperator(stat.Category).TryGetStat(this, stat, out double? result) ? result.GetValueOrDefault() : 0d;
+
+        public bool GetStatAsBool(string category) => this.GetOperator(category).TryGetStat(this, new StatId(category, null), out double? result) && result != null && result.Value != 0d;
+        public bool GetStatAsBool(string category, string token) => this.GetOperator(category).TryGetStat(this, new StatId(category, token), out double? result) && result != null && result.Value != 0d;
+        public bool GetStatAsBool(StatId stat) => this.GetOperator(stat.Category).TryGetStat(this, stat, out double? result) && result != null && result.Value != 0d;
+
+        public int CountStatTokens(string category)
+        {
+            if (string.IsNullOrEmpty(category)) return 0;
 
             int cnt = 0;
             var e = _stats.GetEnumerator();
             while (e.MoveNext())
             {
                 var token = e.Current.Key;
-                if (e.Current.Value != null && token.Stat == stat && token.Token != null)
+                if (e.Current.Value != null && token.Category == category && token.Token != null)
                 {
                     cnt++;
                 }
@@ -180,17 +239,17 @@ namespace com.spacepuppy.Statistics
         /// <param name="stat"></param>
         /// <param name="tokenStartsWith"></param>
         /// <returns></returns>
-        public int CountStatTokens(string stat, string tokenStartsWith)
+        public int CountStatTokens(string category, string tokenStartsWith)
         {
-            if (string.IsNullOrEmpty(tokenStartsWith)) return CountStatTokens(stat);
-            if (string.IsNullOrEmpty(stat)) return 0;
+            if (string.IsNullOrEmpty(tokenStartsWith)) return CountStatTokens(category);
+            if (string.IsNullOrEmpty(category)) return 0;
 
             int cnt = 0;
             var e = _stats.GetEnumerator();
             while (e.MoveNext())
             {
                 var token = e.Current.Key;
-                if (e.Current.Value != null && token.Stat == stat && token.Token != null)
+                if (e.Current.Value != null && token.Category == category && token.Token != null)
                 {
                     if (token.Token.StartsWith(tokenStartsWith)) cnt++;
                 }
@@ -203,84 +262,41 @@ namespace com.spacepuppy.Statistics
         /// </summary>
         /// <param name="stat"></param>
         /// <param name="value"></param>
-        public bool SetStat(string stat, double? value)
-        {
-            if (string.IsNullOrEmpty(stat)) return false;
-
-            var token = new StatId(stat);
-            if (this.Locked && !_stats.ContainsKey(token)) return false;
-
-            _stats[token] = value;
-            this.OnChanged(new StatId(stat, null));
-            return true;
-        }
+        public bool SetStat(string category, double? value) => this.GetOperator(category).SetStat(this, new StatId(category, null), value);
+        public bool SetStat(string category, string token, double? value, bool recalcParentStat = false) => this.GetOperator(category).SetStat(this, new StatId(category, token), value);
+        public bool SetStat(StatId stat, double? value, bool recalcParentStat = false) => this.GetOperator(stat.Category).SetStat(this, stat, value);
 
         /// <summary>
         /// Should only be used for resetting stats, such as from a reload.
         /// </summary>
         /// <param name="stat"></param>
         /// <param name="value"></param>
-        public bool SetStat(string stat, string token, double? value, bool recalcParentStat = false) => SetStat(new StatId(stat, token), value, recalcParentStat);
-        public bool SetStat(StatId stat, double? value, bool recalcParentStat = false)
-        {
-            if (string.IsNullOrEmpty(stat.Stat)) return false;
-            if (string.IsNullOrEmpty(stat.Token)) return this.SetStat(stat.Stat, value);
-
-            var topkey = new StatId(stat.Stat);
-            if (this.Locked && !_stats.ContainsKey(topkey)) return false;
-
-            if (recalcParentStat)
-            {
-                _stats[stat] = value;
-                _stats[topkey] = SumStatTokens(stat.Stat);
-            }
-            else
-            {
-                if (!_stats.ContainsKey(topkey)) _stats[topkey] = null;
-                _stats[stat] = value;
-            }
-            this.OnChanged(stat);
-            return true;
-        }
-
-        /// <summary>
-        /// Should only be used for resetting stats, such as from a reload.
-        /// </summary>
-        /// <param name="stat"></param>
-        /// <param name="value"></param>
-        public bool SetStat(string stat, bool value)
-        {
-            if (string.IsNullOrEmpty(stat)) return false;
-
-            var key = new StatId(stat);
-            if (this.Locked && !_stats.ContainsKey(key)) return false;
-
-            if (value)
-                _stats[key] = 1d;
-            else
-                _stats[key] = 0d;
-            this.OnChanged(new StatId(stat, null));
-            return true;
-        }
+        public bool SetStat(string category, bool value) => this.SetStat(new StatId(category, null), value ? 1d : 0d);
 
         /// <summary>
         /// Sets the stat to null and removes any tokens associated with it.
         /// </summary>
         /// <param name="stat"></param>
         /// <returns></returns>
-        public bool ClearStat(string stat)
+        public bool ClearStat(string category) => this.GetOperator(category).ClearStat(this, new StatId(category, null));
+        public bool ClearStat(StatId stat) => this.GetOperator(stat.Category).ClearStat(this, stat);
+
+        public bool ClearCategory(string category)
         {
-            if (string.IsNullOrEmpty(stat)) return false;
+            if (string.IsNullOrEmpty(category)) return false;
 
-            var topkey = new StatId(stat);
-            if (!_stats.ContainsKey(topkey)) return false;
-
-            _stats[topkey] = null;
+            var topkey = new StatId(category);
+            bool success = false;
+            if (_stats.ContainsKey(topkey))
+            {
+                _stats[topkey] = null;
+                success = true;
+            }
             using (var set = TempCollection.GetSet<StatId>())
             {
                 foreach (var key in _stats.Keys)
                 {
-                    if (key.Stat == topkey.Stat && !string.IsNullOrEmpty(key.Token))
+                    if (key.Category == topkey.Category && !string.IsNullOrEmpty(key.Token))
                     {
                         set.Add(key);
                     }
@@ -292,47 +308,11 @@ namespace com.spacepuppy.Statistics
                     {
                         _stats.Remove(key);
                     }
+                    success = true;
                 }
             }
-            this.OnChanged(new StatId(stat, null));
-            return true;
-        }
-
-        public bool ClearStat(StatId stat)
-        {
-            if (stat.Token == null)
-            {
-                if (!_stats.ContainsKey(stat)) return false;
-
-                _stats[stat] = null;
-                using (var set = TempCollection.GetSet<StatId>())
-                {
-                    foreach (var key in _stats.Keys)
-                    {
-                        if (key.Stat == stat.Stat)
-                        {
-                            set.Add(key);
-                        }
-                    }
-
-                    if (set.Count > 0)
-                    {
-                        foreach (var key in set)
-                        {
-                            _stats.Remove(key);
-                        }
-                    }
-                }
-                this.OnChanged(stat);
-                return true;
-            }
-            else
-            {
-                _stats.Remove(stat);
-                _stats[new StatId(stat.Stat)] = SumStatTokens(stat.Stat);
-                this.OnChanged(stat);
-                return true;
-            }
+            if (success) this.SignalOnChanged(topkey);
+            return success;
         }
 
         /// <summary>
@@ -340,19 +320,18 @@ namespace com.spacepuppy.Statistics
         /// </summary>
         /// <param name="stat"></param>
         /// <returns></returns>
-        public bool DeleteStat(string stat)
+        public bool DeleteStat(string category) => this.GetOperator(category).DeleteStat(this, new StatId(category, null));
+        public bool DeleteStat(StatId stat) => this.GetOperator(stat.Category).DeleteStat(this, stat);
+
+        public bool DeleteCategory(string category)
         {
-            if (string.IsNullOrEmpty(stat)) return false;
-
-            var topkey = new StatId(stat);
-            if (!_stats.ContainsKey(topkey)) return false;
-
-            _stats.Remove(topkey);
+            var topkey = new StatId(category);
+            bool success = _stats.Remove(topkey);
             using (var set = TempCollection.GetSet<StatId>())
             {
                 foreach (var key in _stats.Keys)
                 {
-                    if (key.Stat == topkey.Stat)
+                    if (key.Category == topkey.Category)
                     {
                         set.Add(key);
                     }
@@ -364,49 +343,11 @@ namespace com.spacepuppy.Statistics
                     {
                         _stats.Remove(key);
                     }
+                    success = true;
                 }
             }
-            this.OnChanged(new StatId(stat, null));
-            return true;
-        }
-
-        public bool DeleteStat(StatId stat)
-        {
-            if (this.Locked) return ClearStat(stat);
-
-            if (stat.Token == null)
-            {
-                if (!_stats.ContainsKey(stat)) return false;
-
-                _stats.Remove(stat);
-                using (var set = TempCollection.GetSet<StatId>())
-                {
-                    foreach (var key in _stats.Keys)
-                    {
-                        if (key.Stat == stat.Stat)
-                        {
-                            set.Add(key);
-                        }
-                    }
-
-                    if (set.Count > 0)
-                    {
-                        foreach (var key in set)
-                        {
-                            _stats.Remove(key);
-                        }
-                    }
-                }
-                this.OnChanged(stat);
-                return true;
-            }
-            else
-            {
-                _stats.Remove(stat);
-                _stats[new StatId(stat.Stat)] = SumStatTokens(stat.Stat);
-                this.OnChanged(stat);
-                return true;
-            }
+            if (success) this.SignalOnChanged(topkey);
+            return success;
         }
 
 
@@ -417,70 +358,28 @@ namespace com.spacepuppy.Statistics
         /// <param name="amount"></param>
         /// <param name="token">A token for breaking up the stat into parts, see the class descrition for more.</param>
         /// <returns></returns>
-        public bool AdjustStat(string stat, double amount, string token = null) => AdjustStat(new StatId(stat, token), amount);
-        public bool AdjustStat(StatId stat, double amount)
+        public bool AdjustStat(string category, double amount, string token = null) => this.GetOperator(category).AdjustStat(this, new StatId(category, token), amount);
+        public bool AdjustStat(StatId stat, double amount) => this.GetOperator(stat.Category).AdjustStat(this, stat, amount);
+
+        public IEnumerable<string> GetCategoryNames()
         {
-            if (string.IsNullOrEmpty(stat.Stat)) return false;
-
-            var topkey = new StatId(stat.Stat);
-            bool result = false;
-            //standard stat adjustment
-            double? current;
-            if (_stats.TryGetValue(topkey, out current))
-            {
-                if (current != null)
-                    _stats[topkey] = current + amount;
-                else
-                    _stats[topkey] = amount;
-                result = true;
-            }
-            else if (!this.Locked)
-            {
-                _stats[topkey] = amount;
-                result = true;
-            }
-            else
-            {
-                return false;
-            }
-
-            //adjust for token if any
-            if (!string.IsNullOrEmpty(stat.Token))
-            {
-                //set join value
-                if (_stats.TryGetValue(stat, out current) && current != null)
-                    current += amount;
-                else
-                    current = amount;
-                _stats[stat] = current;
-            }
-
-            if (result)
-            {
-                this.OnChanged(stat);
-            }
-            return result;
+            return _stats.Keys.Select(o => o.Category).Distinct();
         }
 
-        public IEnumerable<string> GetStatNames()
-        {
-            return _stats.Keys.Select(o => o.Stat).Distinct();
-        }
-
-        public IEnumerable<LedgerStatData> GetAllStatAndTokenEntries() => _stats.Select(o => o.Key.CreateData(o.Value));
+        public IEnumerable<LedgerStatData> GetAllStatTokenEntries() => _stats.Select(o => o.Key.CreateData(o.Value));
 
         /// <summary>
-        /// Returns all stats including token entries for a give stat.
+        /// Returns all tokens for a given category
         /// </summary>
         /// <param name="statPrefix"></param>
         /// <returns></returns>
-        public IEnumerable<LedgerStatData> GetStatAndTokenEntries(string stat)
+        public IEnumerable<LedgerStatData> GetStatTokenEntries(string category)
         {
-            if (string.IsNullOrEmpty(stat)) yield break;
+            if (string.IsNullOrEmpty(category)) yield break;
 
             foreach (var pair in _stats)
             {
-                if (pair.Key.Stat == stat)
+                if (pair.Key.Category == category)
                 {
                     yield return pair.Key.CreateData(pair.Value);
                 }
@@ -502,12 +401,12 @@ namespace com.spacepuppy.Statistics
             }
         }
 
-        public void CopyStat(Ledger ledger, string stat)
+        public void CopyCategory(Ledger ledger, string category)
         {
-            if (string.IsNullOrEmpty(stat)) return;
+            if (string.IsNullOrEmpty(category)) return;
 
-            this.ClearStat(stat);
-            foreach (var pair in ledger.GetStatAndTokenEntries(stat))
+            this.ClearCategory(category);
+            foreach (var pair in ledger.GetStatTokenEntries(category))
             {
                 this.SetStat(pair.Stat, pair.Token, pair.Value);
             }
@@ -534,31 +433,59 @@ namespace com.spacepuppy.Statistics
                         }
                     }
                 }
-                this.OnChanged_Multi();
+                this.SignalOnChanged_Multi();
             }
             else
             {
                 _stats.Clear();
-                this.OnChanged_Multi();
+                this.SignalOnChanged_Multi();
             }
         }
 
 
-
-        private double? SumStatTokens(string stat)
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+        private IStatModifier GetOperator(string stat)
         {
-            double total = 0d;
-            int cnt = 0;
-            var e = _stats.GetEnumerator();
-            while (e.MoveNext())
+            return !string.IsNullOrEmpty(stat) && _modifiers.TryGetValue(stat, out IStatModifier result) ? result : _defaultModifier;
+        }
+
+        #endregion
+
+        #region Raw Access
+
+        public double? GetStatRaw(StatId stat)
+        {
+            if (_stats.TryGetValue(stat, out double? value))
             {
-                if (e.Current.Key.Stat == stat && !string.IsNullOrEmpty(e.Current.Key.Token) && e.Current.Value != null)
-                {
-                    total += e.Current.Value.Value;
-                    cnt++;
-                }
+                return value;
             }
-            return cnt > 0 ? total : null;
+            else
+            {
+                return null;
+            }
+        }
+
+        public bool TryGetStatRaw(StatId stat, out double? value)
+        {
+            return _stats.TryGetValue(stat, out value);
+        }
+
+        /// <summary>
+        /// This should only ever be called from within a IStatModifier for raw modification based on that modifiers rules. Use at your own risk.
+        /// </summary>
+        /// <param name="stat"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public bool SetStatRaw(StatId stat, double? value)
+        {
+            if (string.IsNullOrEmpty(stat.Category)) return false;
+            _stats[stat] = value;
+            return true;
+        }
+
+        public bool RemoveStatRaw(StatId stat)
+        {
+            return _stats.Remove(stat);
         }
 
         #endregion
@@ -601,6 +528,710 @@ namespace com.spacepuppy.Statistics
             }
         }
 
+        public string ToJson()
+        {
+            var sb = StringUtil.GetTempStringBuilder();
+            try
+            {
+                sb.AppendLine("{");
+                int cnt = 0;
+                foreach (var pair in _stats)
+                {
+                    if (this.WriteNullEntries || pair.Value != null)
+                    {
+                        cnt++;
+                        if (pair.Value.HasValue)
+                        {
+                            sb.AppendLine($"\"{pair.Key.ToString()}\":{pair.Value.Value},");
+                        }
+                        else
+                        {
+                            sb.AppendLine($"\"{pair.Key.ToString()}\":null,");
+                        }
+                    }
+                }
+                if (cnt > 0)
+                {
+                    while (char.IsWhiteSpace(sb[sb.Length - 1])) sb.Length--;
+                    sb.Length--;
+                }
+
+                sb.AppendLine();
+                sb.Append("}");
+                return sb.ToString();
+            }
+            finally
+            {
+                StringUtil.ReleaseSilently(sb);
+            }
+        }
+
+        public void FromJson(string json)
+        {
+            bool ReadThruWhitespace(System.IO.StringReader reader)
+            {
+                while (reader.Peek() != -1 && char.IsWhiteSpace((char)reader.Peek()))
+                {
+                    reader.Read();
+                }
+                return reader.Peek() != -1;
+            }
+
+            bool ReadKey(System.IO.StringReader reader, StringBuilder sb)
+            {
+                if (!ReadThruWhitespace(reader)) return false;
+                if (reader.Read() != '"') return false;
+
+                while (true)
+                {
+                    int i = reader.Read();
+                    if (i == -1) return false;
+
+                    char c = (char)i;
+                    if (c == '"') return true;
+
+                    sb.Append(c);
+                }
+            }
+
+            int ReadValue(System.IO.StringReader reader, StringBuilder sb)
+            {
+                if (!ReadThruWhitespace(reader)) return -1;
+
+                int i = reader.Read();
+                if (i == -1) return -1;
+
+                char c = (char)i;
+                if (c != ':') return -1;
+
+                if (!ReadThruWhitespace(reader)) return -1;
+
+                bool reachedEndOfNum = false;
+                while (true)
+                {
+                    i = reader.Read();
+                    if (i == -1) return -1;
+
+                    c = (char)i;
+                    if (c == ',') return 0;
+                    if (c == '}') return 1;
+                    if (char.IsWhiteSpace(c))
+                    {
+                        reachedEndOfNum = true;
+                    }
+                    else if (!reachedEndOfNum)
+                    {
+                        sb.Append(c);
+                    }
+                }
+            }
+
+            using (var reader = new System.IO.StringReader(json))
+            {
+                _stats.Clear();
+                var sb = StringUtil.GetTempStringBuilder();
+                try
+                {
+                    if (!ReadThruWhitespace(reader)) return; //reached end of empty json
+
+                    if ((char)reader.Read() != '{')
+                    {
+                        //malformed - not an object
+                        throw new System.ArgumentException("Malformed json string.");
+                    }
+
+                    if (!ReadThruWhitespace(reader))
+                    {
+                        //malformed - json cuts off
+                        throw new System.ArgumentException("Malformed json string.");
+                    }
+
+                    if (reader.Peek() == '}')
+                    {
+                        //it's an empty json object
+                        return;
+                    }
+
+                    while (true)
+                    {
+                        //read string
+                        sb.Clear();
+                        if (!ReadKey(reader, sb))
+                        {
+                            //malformed - json cuts off
+                            throw new System.ArgumentException("Malformed json string.");
+                        }
+
+                        var key = sb.ToString();
+                        sb.Clear();
+
+                        bool reachedEnd = false; ;
+                        switch (ReadValue(reader, sb))
+                        {
+                            case -1:
+                                //malformed - json cuts off
+                                throw new System.ArgumentException("Malformed json string.");
+                            case 0:
+                                //end of line
+                                reachedEnd = false;
+                                break;
+                            case 1:
+                                //end of file
+                                reachedEnd = true;
+                                break;
+                        }
+                        var value = sb.ToString();
+                        _stats[StatId.Parse(key)] = (value != null && !string.Equals(value, "null", System.StringComparison.OrdinalIgnoreCase)) ? (double?)ConvertUtil.ToDouble(value) : null;
+
+                        if (reachedEnd) break;
+                    }
+                }
+                finally
+                {
+                    StringUtil.ReleaseSilently(sb);
+                }
+            }
+        }
+
+        #endregion
+
+        #region Stat Operators
+
+        /// <summary>
+        /// When implementing one must call 'SignalOnChanged' manually.
+        /// </summary>
+        public interface IStatModifier
+        {
+            bool AdjustStat(Ledger ledger, StatId stat, double amount);
+            bool ClearStat(Ledger ledger, StatId stat);
+            bool DeleteStat(Ledger ledger, StatId stat);
+            bool SetStat(Ledger ledger, StatId stat, double? value);
+            bool TryGetStat(Ledger ledger, StatId stat, out double? value);
+        }
+
+        /// <summary>
+        /// A modifier where the category value is a sum of all token values. 
+        /// This is the design of the original TokenLedger when it was originally designed 
+        /// as a way to track stats in the game by category (i.e. bullets shot, enemies killed, etc with a breakdown of each type). 
+        /// </summary>
+        public class StandardStatModifier : IStatModifier
+        {
+
+            public static readonly StandardStatModifier Default = new();
+
+            public bool AdjustStat(Ledger ledger, StatId stat, double amount)
+            {
+                if (string.IsNullOrEmpty(stat.Category)) return false;
+
+                var _stats = ledger._stats;
+
+                var topkey = new StatId(stat.Category);
+                bool result = false;
+                //standard stat adjustment
+                double? current;
+                if (_stats.TryGetValue(topkey, out current))
+                {
+                    if (current != null)
+                        _stats[topkey] = current + amount;
+                    else
+                        _stats[topkey] = amount;
+                    result = true;
+                }
+                else if (!ledger.Locked)
+                {
+                    _stats[topkey] = amount;
+                    result = true;
+                }
+                else
+                {
+                    return false;
+                }
+
+                //adjust for token if any
+                if (!string.IsNullOrEmpty(stat.Token))
+                {
+                    //set join value
+                    if (_stats.TryGetValue(stat, out current) && current != null)
+                        current += amount;
+                    else
+                        current = amount;
+                    _stats[stat] = current;
+                }
+
+                if (result)
+                {
+                    ledger.SignalOnChanged(stat);
+                }
+                return result;
+            }
+
+            public bool ClearStat(Ledger ledger, StatId stat)
+            {
+                var _stats = ledger._stats;
+
+                if (string.IsNullOrEmpty(stat.Token))
+                {
+                    return ledger.ClearCategory(stat.Category);
+                }
+                else
+                {
+                    _stats.Remove(stat);
+                    _stats[new StatId(stat.Category)] = this.SumCategorySubTokens(ledger, stat.Category);
+                    ledger.SignalOnChanged(stat);
+                    return true;
+                }
+            }
+
+            public bool DeleteStat(Ledger ledger, StatId stat)
+            {
+                if (ledger.Locked) return this.ClearStat(ledger, stat);
+
+                var _stats = ledger._stats;
+                if (string.IsNullOrEmpty(stat.Token))
+                {
+                    return ledger.DeleteCategory(stat.Category);
+                }
+                else
+                {
+                    _stats.Remove(stat);
+                    _stats[new StatId(stat.Category)] = this.SumCategorySubTokens(ledger, stat.Category);
+                    ledger.SignalOnChanged(stat);
+                    return true;
+                }
+            }
+
+            public bool SetStat(Ledger ledger, StatId stat, double? value)
+            {
+                if (string.IsNullOrEmpty(stat.Category)) return false;
+
+                var _stats = ledger._stats;
+                if (string.IsNullOrEmpty(stat.Token))
+                {
+                    stat.Token = null;
+                    if (ledger.Locked && !_stats.ContainsKey(stat)) return false;
+
+                    _stats[stat] = value;
+                    ledger.SignalOnChanged(stat);
+                    return true;
+                }
+                else
+                {
+                    var topkey = new StatId(stat.Category);
+                    if (ledger.Locked && !_stats.ContainsKey(topkey)) return false;
+
+                    _stats[stat] = value;
+                    _stats[topkey] = this.SumCategorySubTokens(ledger, stat.Category);
+                    ledger.SignalOnChanged(stat);
+                    return true;
+                }
+            }
+
+            public bool TryGetStat(Ledger ledger, StatId stat, out double? value)
+            {
+                if (string.IsNullOrEmpty(stat.Token)) stat.Token = null;
+                return ledger._stats.TryGetValue(stat, out value);
+            }
+
+            /// <summary>
+            /// Sums all tokens in a category except the topkey. Usually used to set the topkey in the Standard modifier.
+            /// </summary>
+            /// <param name="category"></param>
+            /// <returns></returns>
+            private double? SumCategorySubTokens(Ledger ledger, string category)
+            {
+                double total = 0d;
+                int cnt = 0;
+                var e = ledger._stats.GetEnumerator();
+                while (e.MoveNext())
+                {
+                    if (e.Current.Key.Category == category && !string.IsNullOrEmpty(e.Current.Key.Token) && e.Current.Value != null)
+                    {
+                        total += e.Current.Value.Value;
+                        cnt++;
+                    }
+                }
+                return cnt > 0 ? total : null;
+            }
+        }
+
+        /// <summary>
+        /// A modifier where every category and token entry are unique and are read/write. 
+        /// This is to facilitate a use of the TokenLedger in Andy's hack-ass approach where he just uses it as a global 
+        /// variable store for numbers that can be read/written at runtime and saved between sessions. 
+        /// </summary>
+        public class ReadWriteStatModifier : IStatModifier
+        {
+
+            public static readonly ReadWriteStatModifier Default = new();
+
+            public virtual bool AdjustStat(Ledger ledger, StatId stat, double amount)
+            {
+                if (string.IsNullOrEmpty(stat.Category)) return false;
+
+                var current = ledger._stats.TryGetValue(stat, out double? v) ? v.GetValueOrDefault() : 0d;
+                current += amount;
+                ledger._stats[stat] = current;
+                ledger.SignalOnChanged(stat);
+                return true;
+            }
+
+            public virtual bool ClearStat(Ledger ledger, StatId stat)
+            {
+                if (ledger._stats.TryGetValue(stat, out double? value) && value != null)
+                {
+                    ledger._stats[stat] = null;
+                    ledger.SignalOnChanged(stat);
+                    return true;
+                }
+                return false;
+            }
+
+            public virtual bool DeleteStat(Ledger ledger, StatId stat)
+            {
+                if (ledger._stats.Remove(stat))
+                {
+                    ledger.SignalOnChanged(stat);
+                    return true;
+                }
+                return false;
+            }
+
+            public virtual bool SetStat(Ledger ledger, StatId stat, double? value)
+            {
+                if (string.IsNullOrEmpty(stat.Category)) return false;
+
+                if (!ledger._stats.TryGetValue(stat, out double? exist) || exist != value)
+                {
+                    ledger._stats[stat] = value;
+                    ledger.SignalOnChanged(stat);
+                }
+                return true;
+            }
+
+            public virtual bool TryGetStat(Ledger ledger, StatId stat, out double? value)
+            {
+                return ledger._stats.TryGetValue(stat, out value);
+            }
+        }
+
+        /// <summary>
+        /// A modifier where every category and token entry are unique and resolve as a cumulative average of themselves. 
+        /// Adjusting a given value will calculate the latest average of that value. This might be used where you're recording the 
+        /// average time it takes to beat some timed event. 
+        /// The average is = sum(adjustvalue) / count(adjustvalue)
+        /// </summary>
+        public class CumulativeAverageStatModifier : IStatModifier
+        {
+
+            const string META_COUNT = "Count";
+            const string META_SUM = "Sum";
+
+            public bool AdjustStat(Ledger ledger, StatId stat, double amount)
+            {
+                if (string.IsNullOrEmpty(stat.Category)) return false;
+
+                var tk_token = stat.GetMeta(null);
+                var tk_cnt = stat.GetMeta(META_COUNT);
+                var tk_sum = stat.GetMeta(META_SUM);
+                double cnt = ledger._stats.TryGetValue(tk_cnt, out double? d1) ? d1.GetValueOrDefault() : 0d;
+                double sum = ledger._stats.TryGetValue(tk_sum, out double? d2) ? d2.GetValueOrDefault() : 0d;
+                cnt += 1d;
+                sum += amount;
+                ledger._stats[tk_cnt] = cnt;
+                ledger._stats[tk_sum] = sum;
+                ledger._stats[tk_token] = sum / cnt;
+
+                ledger.SignalOnChanged(tk_token);
+                return true;
+            }
+
+            public bool ClearStat(Ledger ledger, StatId stat)
+            {
+                if (string.IsNullOrEmpty(stat.Category)) return false;
+
+                var tk_token = stat.GetMeta(null);
+                var tk_cnt = stat.GetMeta(META_COUNT);
+                var tk_sum = stat.GetMeta(META_SUM);
+                if (ledger.Contains(tk_token))
+                {
+                    ledger.SetStatRaw(tk_token, null);
+                    ledger.RemoveStatRaw(tk_cnt);
+                    ledger.RemoveStatRaw(tk_sum);
+                    ledger.SignalOnChanged(tk_token);
+                    return true;
+                }
+
+                return false;
+            }
+
+            public bool DeleteStat(Ledger ledger, StatId stat)
+            {
+                if (string.IsNullOrEmpty(stat.Category)) return false;
+
+                var tk_token = stat.GetMeta(null);
+                var tk_cnt = stat.GetMeta(META_COUNT);
+                var tk_sum = stat.GetMeta(META_SUM);
+
+                if (ledger.RemoveStatRaw(tk_token))
+                {
+                    ledger.RemoveStatRaw(tk_cnt);
+                    ledger.RemoveStatRaw(tk_sum);
+                    ledger.SignalOnChanged(tk_token);
+                    return true;
+                }
+
+                return false;
+            }
+
+            public bool SetStat(Ledger ledger, StatId stat, double? value)
+            {
+                if (string.IsNullOrEmpty(stat.Category)) return false;
+
+                var tk_token = stat.GetMeta(null);
+                var tk_cnt = stat.GetMeta(META_COUNT);
+                var tk_sum = stat.GetMeta(META_SUM);
+                ledger.SetStatRaw(tk_token, value ?? 0d);
+                ledger.SetStatRaw(tk_cnt, 1);
+                ledger.SetStatRaw(tk_sum, value ?? 0d);
+                ledger.SignalOnChanged(tk_token);
+                return true;
+            }
+
+            public bool TryGetStat(Ledger ledger, StatId stat, out double? value)
+            {
+                //we can read the individual stats for CumulativeAverageStatModifier
+                return ledger._stats.TryGetValue(stat, out value);
+            }
+        }
+
+        /// <summary>
+        /// A modifier where every category and token entry are unique and resolve as an exponential moving average of themselves. 
+        /// This is similar to CumulativeAverageStatModifier, only instead of a true cumulative average. Instead it uses the 
+        /// exponential moving average algorithm.
+        /// average = adjustvalue * alpha + existingaverage * (1 - alpha)
+        /// where alpha is the inverse sample length
+        /// </summary>
+        public class ExponentialMovingAverageStatModifier : IStatModifier
+        {
+
+            private int _sampleLength;
+            private double _alpha;
+
+            public ExponentialMovingAverageStatModifier(int samplelength = 10)
+            {
+                this.SampleLength = samplelength;
+            }
+
+            public int SampleLength
+            {
+                get => _sampleLength;
+                set
+                {
+                    _sampleLength = System.Math.Max(1, value);
+                    _alpha = 2d / (_sampleLength + 1);
+                }
+            }
+
+            public bool AdjustStat(Ledger ledger, StatId stat, double amount)
+            {
+                if (string.IsNullOrEmpty(stat.Category)) return false;
+
+                double avg = ledger._stats.TryGetValue(stat, out double? d) ? d.GetValueOrDefault() : 0d;
+                avg = amount * _alpha + avg * (1d - _alpha);
+                ledger._stats[stat] = avg;
+                ledger.SignalOnChanged(stat);
+                return true;
+            }
+
+            public bool ClearStat(Ledger ledger, StatId stat)
+            {
+                if (ledger._stats.TryGetValue(stat, out double? value) && value != null)
+                {
+                    ledger._stats[stat] = null;
+                    ledger.SignalOnChanged(stat);
+                    return true;
+                }
+                return false;
+            }
+
+            public bool DeleteStat(Ledger ledger, StatId stat)
+            {
+                if (ledger._stats.Remove(stat))
+                {
+                    ledger.SignalOnChanged(stat);
+                    return true;
+                }
+                return false;
+            }
+
+            public bool SetStat(Ledger ledger, StatId stat, double? value)
+            {
+                if (string.IsNullOrEmpty(stat.Category)) return false;
+
+                if (!ledger._stats.TryGetValue(stat, out double? exist) || exist != value)
+                {
+                    ledger._stats[stat] = value;
+                    ledger.SignalOnChanged(stat);
+                }
+                return true;
+            }
+
+            public bool TryGetStat(Ledger ledger, StatId stat, out double? value)
+            {
+                //we can read the individual stats for ExponentialMovingAverageStatModifier
+                return ledger._stats.TryGetValue(stat, out value);
+            }
+        }
+
+        /// <summary>
+        /// A modifier where the category value reflects the maximum of all of its token values.
+        /// </summary>
+        public class MaximumStatModifier : IStatModifier
+        {
+            public static readonly StandardStatModifier Default = new();
+
+            public bool AdjustStat(Ledger ledger, StatId stat, double amount)
+            {
+                if (string.IsNullOrEmpty(stat.Category)) return false;
+
+                var _stats = ledger._stats;
+
+                var topkey = new StatId(stat.Category);
+                bool result = false;
+                //standard stat adjustment
+                double? current;
+                if (_stats.TryGetValue(topkey, out current))
+                {
+                    if (current == null || amount > current)
+                    {
+                        _stats[topkey] = amount;
+                        result = true;
+                    }
+                }
+                else if (!ledger.Locked)
+                {
+                    _stats[topkey] = amount;
+                    result = true;
+                }
+                else
+                {
+                    return false;
+                }
+
+                //adjust for token if any
+                if (!string.IsNullOrEmpty(stat.Token))
+                {
+                    //set join value
+                    if (_stats.TryGetValue(stat, out current))
+                    {
+                        if (current == null || amount > current)
+                        {
+                            _stats[stat] = amount;
+                            result = true;
+                        }
+                    }
+                    else
+                    {
+                        _stats[stat] = amount;
+                        result = true;
+                    }
+                }
+
+                if (result)
+                {
+                    ledger.SignalOnChanged(stat);
+                }
+                return result;
+            }
+
+            public bool ClearStat(Ledger ledger, StatId stat)
+            {
+                var _stats = ledger._stats;
+
+                if (string.IsNullOrEmpty(stat.Token))
+                {
+                    return ledger.ClearCategory(stat.Category);
+                }
+                else
+                {
+                    _stats.Remove(stat);
+                    _stats[new StatId(stat.Category)] = this.FindMaximumSubToken(ledger, stat.Category);
+                    ledger.SignalOnChanged(stat);
+                    return true;
+                }
+            }
+
+            public bool DeleteStat(Ledger ledger, StatId stat)
+            {
+                if (ledger.Locked) return this.ClearStat(ledger, stat);
+
+                var _stats = ledger._stats;
+                if (string.IsNullOrEmpty(stat.Token))
+                {
+                    return ledger.DeleteCategory(stat.Category);
+                }
+                else
+                {
+                    _stats.Remove(stat);
+                    _stats[new StatId(stat.Category)] = this.FindMaximumSubToken(ledger, stat.Category);
+                    ledger.SignalOnChanged(stat);
+                    return true;
+                }
+            }
+
+            public bool SetStat(Ledger ledger, StatId stat, double? value)
+            {
+                if (string.IsNullOrEmpty(stat.Category)) return false;
+
+                var _stats = ledger._stats;
+                if (string.IsNullOrEmpty(stat.Token))
+                {
+                    stat.Token = null;
+                    if (ledger.Locked && !_stats.ContainsKey(stat)) return false;
+
+                    _stats[stat] = value;
+                    ledger.SignalOnChanged(stat);
+                    return true;
+                }
+                else
+                {
+                    var topkey = new StatId(stat.Category);
+                    if (ledger.Locked && !_stats.ContainsKey(topkey)) return false;
+
+                    _stats[stat] = value;
+                    _stats[topkey] = this.FindMaximumSubToken(ledger, stat.Category);
+                    ledger.SignalOnChanged(stat);
+                    return true;
+                }
+            }
+
+            public bool TryGetStat(Ledger ledger, StatId stat, out double? value)
+            {
+                if (string.IsNullOrEmpty(stat.Token)) stat.Token = null;
+                return ledger._stats.TryGetValue(stat, out value);
+            }
+
+            /// <summary>
+            /// Finds Maximum of all subtokens in category.
+            /// </summary>
+            /// <param name="category"></param>
+            /// <returns></returns>
+            private double? FindMaximumSubToken(Ledger ledger, string category)
+            {
+                double result = float.NegativeInfinity;
+                var e = ledger._stats.GetEnumerator();
+                while (e.MoveNext())
+                {
+                    if (e.Current.Key.Category == category && !string.IsNullOrEmpty(e.Current.Key.Token) && e.Current.Value != null && e.Current.Value > result)
+                    {
+                        result = e.Current.Value.Value;
+                    }
+                }
+                return double.IsNegativeInfinity(result) ? null : result;
+            }
+
+        }
+
         #endregion
 
     }
@@ -620,7 +1251,7 @@ namespace com.spacepuppy.Statistics
 
         private StatId _statid;
         public StatId StatId => _statid;
-        public string Stat => _statid.Stat;
+        public string Stat => _statid.Category;
         public string Token => _statid.Token;
 
         #endregion

@@ -17,7 +17,7 @@ namespace com.spacepuppy.Motor
     /// </summary>
     [RequireComponentInEntity(typeof(Rigidbody))]
     [Infobox("Rigidbody.MovePosition is used to move the Rigidbody around.")]
-    public class RigidbodyMotor : SPComponent, IMotor, IUpdateable, ISignalEnabledMessageHandler, IOnCollisionStaySubscriber
+    public class RigidbodyMotor : SPComponent, IMotor, IUpdateable, IOnCollisionStaySubscriber
     {
 
         #region Fields
@@ -252,6 +252,15 @@ namespace com.spacepuppy.Motor
             _moveCalledLastFrame = true;
         }
 
+        void IMotor.SetCollisionMessageDirty(bool validate)
+        {
+            _onCollisionMessage?.SetDirty();
+            if (validate)
+            {
+                this.ValidateCollisionHandler();
+            }
+        }
+
         #endregion
 
         #region IForceReceiver Interface
@@ -316,29 +325,71 @@ namespace com.spacepuppy.Motor
             return false;
         }
 
+        public int OverlapNonAlloc(Collider[] buffer, int layerMask, QueryTriggerInteraction query)
+        {
+            if (buffer == null) throw new System.ArgumentNullException(nameof(buffer));
+
+            switch (_colliders.Length)
+            {
+                case 0:
+                    return 0;
+                case 1:
+                    return _colliders[0].AsColliderDecorator().Overlap(buffer, layerMask, query);
+                default:
+                    using (var set = TempCollection.GetSet<Collider>())
+                    {
+                        foreach (var c in _colliders)
+                        {
+                            c.AsColliderDecorator().Overlap(set, layerMask, query);
+                        }
+
+                        if (set.Count > 0)
+                        {
+                            int cnt = Mathf.Max(set.Count, buffer.Length);
+                            int i = 0;
+                            var e = set.GetEnumerator();
+                            while (e.MoveNext() && i < cnt)
+                            {
+                                buffer[i] = e.Current;
+                                i++;
+                            }
+                            return set.Count;
+                        }
+                    }
+                    return 0;
+            }
+        }
+
         public int Overlap(ICollection<Collider> results, int layerMask, QueryTriggerInteraction query)
         {
-            if (results == null) throw new System.ArgumentNullException("results");
+            if (results == null) throw new System.ArgumentNullException(nameof(results));
 
-            using (var set = TempCollection.GetSet<Collider>())
+            switch (_colliders.Length)
             {
-                foreach (var c in _colliders)
-                {
-                    GeomUtil.GetGeom(c).Overlap(set, layerMask, query);
-                }
-
-                if (set.Count > 0)
-                {
-                    var e = set.GetEnumerator();
-                    while (e.MoveNext())
+                case 0:
+                    return 0;
+                case 1:
+                    return _colliders[0].AsColliderDecorator().Overlap(results, layerMask, query);
+                default:
+                    using (var set = TempCollection.GetSet<Collider>())
                     {
-                        results.Add(e.Current);
-                    }
-                    return set.Count;
-                }
-            }
+                        foreach (var c in _colliders)
+                        {
+                            c.AsColliderDecorator().Overlap(set, layerMask, query);
+                        }
 
-            return 0;
+                        if (set.Count > 0)
+                        {
+                            var e = set.GetEnumerator();
+                            while (e.MoveNext())
+                            {
+                                results.Add(e.Current);
+                            }
+                            return set.Count;
+                        }
+                    }
+                    return 0;
+            }
         }
 
         public bool Cast(Vector3 direction, out RaycastHit hitinfo, float distance, int layerMask, QueryTriggerInteraction query)
@@ -389,6 +440,15 @@ namespace com.spacepuppy.Motor
             return 0;
         }
 
+        bool IPhysicsObject.ContainsPoint(Vector3 point)
+        {
+            foreach (var c in _colliders)
+            {
+                if (c.ContainsPoint(point)) return true;
+            }
+            return false;
+        }
+
         #endregion
 
         #region IUpdatable Interface
@@ -405,7 +465,11 @@ namespace com.spacepuppy.Motor
 
             if (_constrainSimulatedRigidbodyVelocity)
             {
+#if UNITY_2023_3_OR_NEWER
+                _rigidbody.linearVelocity = Vector3.zero;
+#else
                 _rigidbody.velocity = Vector3.zero;
+#endif
                 _rigidbody.angularVelocity = Vector3.zero;
             }
 
@@ -440,29 +504,12 @@ namespace com.spacepuppy.Motor
             if (_onCollisionMessage.Count > 0)
             {
                 if (_rigidbody && _rigidbody.gameObject == sender)
-                    _onCollisionMessage.Invoke(new MotorCollisionInfo(this, collision), MotorCollisionHandlerHelper.OnCollisionFunctor);
+                    _onCollisionMessage.Invoke(new MotorCollisionInfo(this, collision), (o, a) => o.OnCollision(a));
             }
             else if (_collisionHook != null)
             {
                 _collisionHook.Unsubscribe(this);
                 _collisionHook = null;
-            }
-        }
-
-        void ISignalEnabledMessageHandler.OnComponentEnabled(IEventfulComponent component)
-        {
-            if (component is IMotorCollisionMessageHandler)
-            {
-                _onCollisionMessage?.SetDirty();
-                this.ValidateCollisionHandler();
-            }
-        }
-
-        void ISignalEnabledMessageHandler.OnComponentDisabled(IEventfulComponent component)
-        {
-            if (component is IMotorCollisionMessageHandler)
-            {
-                _onCollisionMessage?.SetDirty();
             }
         }
 

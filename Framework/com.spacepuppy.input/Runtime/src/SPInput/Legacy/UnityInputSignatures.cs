@@ -607,6 +607,9 @@ namespace com.spacepuppy.SPInput.Legacy
 
     }
 
+    /// <summary>
+    /// InputSignature mapped to Input.mousePosition.
+    /// </summary>
     public class MouseCursorInputSignature : BaseInputSignature, ICursorInputSignature
     {
 

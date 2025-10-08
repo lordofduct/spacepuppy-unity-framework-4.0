@@ -508,7 +508,8 @@ namespace com.spacepuppy.Anim.Legacy
         {
             string id = string.IsNullOrEmpty(auxId) ? "aux*" + clip.GetInstanceID() : auxId;
             var a = _animation[id];
-            if (a == null || a.clip != clip)
+            //if (a == null || a.clip != clip)
+            if (a == null || a.clip == null) //aux clips with the same id are assumed to be a previously instanced version. This avoids memory leaks
             {
                 _animation.AddClip(clip, id);
             }

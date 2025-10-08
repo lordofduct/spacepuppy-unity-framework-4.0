@@ -148,7 +148,8 @@ namespace com.spacepuppy.Anim.Events
             var animController = controller as Animation;
             var id = "aux*" + clip.GetInstanceID();
             var a = animController[id];
-            if (a == null || a.clip != clip)
+            //if (a == null || a.clip != clip)
+            if (a == null || a.clip == null) //aux clips with the same id are assumed to be a previously instanced version. This avoids memory leaks
             {
                 animController.AddClip(clip, id);
             }

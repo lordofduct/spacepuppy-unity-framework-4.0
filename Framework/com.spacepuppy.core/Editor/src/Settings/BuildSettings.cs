@@ -514,6 +514,7 @@ namespace com.spacepuppyeditor.Settings
                     buildPlayerOptions.locationPathName = path;
                     buildPlayerOptions.target = settings.BuildTarget;
                     buildPlayerOptions.options = settings.BuildOptions;
+#if UNITY_2022_3_OR_NEWER
                     switch (buildPlayerOptions.target)
                     {
                         case BuildTarget.StandaloneOSX:
@@ -530,6 +531,7 @@ namespace com.spacepuppyeditor.Settings
                             //do nothing
                             break;
                     }
+#endif
                     var report = BuildPipeline.BuildPlayer(buildPlayerOptions);
                     //var report = BuildPipeline.BuildPlayer(scenes, path, settings.BuildTarget, settings.BuildOptions);
 

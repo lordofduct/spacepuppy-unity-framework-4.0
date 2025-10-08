@@ -676,6 +676,64 @@ namespace com.spacepuppyeditor
             }
         }
 
+        public bool SeekUntilScriptField(System.Type tp, out ObjectIdentifier result)
+        {
+            var test = this.ReadUntilScriptField(tp, out result);
+            if (test) _position = System.Math.Max(0, _position - 1);
+            return test;
+        }
+        public bool ReadUntilScriptField(System.Type tp, out ObjectIdentifier result)
+        {
+            var guid = ScriptDatabase.GetScriptInfo(tp).guid;
+            if (guid.Empty())
+            {
+                this.ReadToEnd();
+                result = default;
+                return false;
+            }
+
+            var sguid = guid.ToString();
+            var rx = new Regex(@"^\s*m_Script: {fileID: (?<fileid>-?\d+), guid: " + sguid + @", type: 3}\s*$");
+            var m = this.ReadUntilMatch(rx);
+            if (m != null)
+            {
+                result = new ObjectIdentifier()
+                {
+                    fileId = long.Parse(m.Groups["fileid"].Value),
+                    guid = sguid.ToLower(),
+                    type = 3,
+                };
+                return true;
+            }
+            result = default;
+            return false;
+        }
+
+        public bool SeekUntilScriptField(string sguid, out ObjectIdentifier result)
+        {
+            var test = this.ReadUntilScriptField(sguid, out result);
+            if (test) _position = System.Math.Max(0, _position - 1);
+            return test;
+        }
+        public bool ReadUntilScriptField(string sguid, out ObjectIdentifier result)
+        {
+            sguid = sguid.ToLower();
+            var rx = new Regex(@"^\s*m_Script: {fileID: (?<fileid>-?\d+), guid: " + sguid + @", type: 3}\s*$");
+            var m = this.ReadUntilMatch(rx);
+            if (m != null)
+            {
+                result = new ObjectIdentifier()
+                {
+                    fileId = long.Parse(m.Groups["fileid"].Value),
+                    guid = sguid,
+                    type = 3,
+                };
+                return true;
+            }
+            result = default;
+            return false;
+        }
+
         public bool SeekUntilSerializedField(string name, out SerailizedFieldResult result, bool stopAtEndOfCurrentObject = false)
         {
             var b = this.ReadUntilSerializedField(name, out result, stopAtEndOfCurrentObject);
@@ -792,6 +850,18 @@ namespace com.spacepuppyeditor
             public string fieldName;
             public string line;
             public string fieldData;
+        }
+
+        public struct ObjectIdentifier
+        {
+            public long fileId;
+            public string guid;
+            public int type;
+
+            public override string ToString()
+            {
+                return $"{{ fileID: {fileId}, guid: {guid}, type: {type}}}";
+            }
         }
 
         #endregion

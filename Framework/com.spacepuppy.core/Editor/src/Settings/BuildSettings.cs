@@ -514,7 +514,7 @@ namespace com.spacepuppyeditor.Settings
                     buildPlayerOptions.locationPathName = path;
                     buildPlayerOptions.target = settings.BuildTarget;
                     buildPlayerOptions.options = settings.BuildOptions;
-#if UNITY_2022_3_OR_NEWER
+#if UNITY_2022_3_OR_NEWER && HAS_OSX_EXTENSIONS
                     switch (buildPlayerOptions.target)
                     {
                         case BuildTarget.StandaloneOSX:

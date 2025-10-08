@@ -509,7 +509,30 @@ namespace com.spacepuppyeditor.Settings
                         }
                     }
 
-                    var report = BuildPipeline.BuildPlayer(scenes, path, settings.BuildTarget, settings.BuildOptions);
+                    var buildPlayerOptions = new BuildPlayerOptions();
+                    buildPlayerOptions.scenes = scenes;
+                    buildPlayerOptions.locationPathName = path;
+                    buildPlayerOptions.target = settings.BuildTarget;
+                    buildPlayerOptions.options = settings.BuildOptions;
+                    switch (buildPlayerOptions.target)
+                    {
+                        case BuildTarget.StandaloneOSX:
+                            //case BuildTarget.StandaloneOSXUniversal:
+                            UnityEditor.OSXStandalone.UserBuildSettings.architecture = UnityEditor.Build.OSArchitecture.x64ARM64; //TODO - make this configurable???
+                            break;
+                        case BuildTarget.StandaloneOSXIntel:
+                        case BuildTarget.StandaloneOSXIntel64:
+                            Debug.LogWarning("Attempting to build for OSX Intel which is not supported. Instead targeting StandaloneOSX with x64 support.");
+                            buildPlayerOptions.target = BuildTarget.StandaloneOSX;
+                            UnityEditor.OSXStandalone.UserBuildSettings.architecture = UnityEditor.Build.OSArchitecture.x64;
+                            break;
+                        default:
+                            //do nothing
+                            break;
+                    }
+                    var report = BuildPipeline.BuildPlayer(buildPlayerOptions);
+                    //var report = BuildPipeline.BuildPlayer(scenes, path, settings.BuildTarget, settings.BuildOptions);
+
                     bool success = (report != null && report.summary.result == UnityEditor.Build.Reporting.BuildResult.Succeeded);
 
                     if (cachedInputSettings)

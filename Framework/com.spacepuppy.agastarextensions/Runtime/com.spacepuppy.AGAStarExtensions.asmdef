@@ -29,6 +29,11 @@
             "name": "com.arongranberg.astar",
             "expression": "5.2",
             "define": "AGASTAR_5_2_ORGREATER"
+        },
+        {
+            "name": "com.arongranberg.astar",
+            "expression": "5.4",
+            "define": "AGASTAR_5_4_ORGREATER"
         }
     ],
     "noEngineReferences": false

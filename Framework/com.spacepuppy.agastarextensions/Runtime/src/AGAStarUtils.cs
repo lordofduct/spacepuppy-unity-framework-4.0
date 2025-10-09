@@ -341,6 +341,15 @@ namespace com.spacepuppy.Pathfinding
                 guo.shape = shape;
             }
 
+#if AGASTAR_5_4_ORGREATER
+            guo.graphMask = GraphMask.everything;
+            guo.modifyWalkability = gus.modifyWalkability;
+            guo.setWalkability = gus.setWalkability;
+            guo.addPenalty = gus.penaltyDelta;
+            guo.updatePhysics = gus.updatePhysics;
+            guo.updateErosion = gus.updateErosion;
+            guo.resetPenaltyOnPhysics = gus.resetPenaltyOnPhysics;
+#else
             guo.nnConstraint = NNConstraint.None;
             guo.modifyWalkability = gus.modifyWalkability;
             guo.setWalkability = gus.setWalkability;
@@ -348,12 +357,13 @@ namespace com.spacepuppy.Pathfinding
             guo.updatePhysics = gus.updatePhysics;
             guo.updateErosion = gus.updateErosion;
             guo.resetPenaltyOnPhysics = gus.resetPenaltyOnPhysics;
+#endif
 
             guo.modifyTag = gus.modifyTag;
             guo.setTag = gus.setTag;
         }
 
-        #endregion
+#endregion
 
         #region TryGetNearest
 

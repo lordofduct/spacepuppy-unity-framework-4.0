@@ -7,7 +7,7 @@ using com.spacepuppy.Collections;
 namespace com.spacepuppy
 {
 
-    [Infobox("Sets 'Targets' to the same active/enabled state as the 'Observed Targets' during any 'Observed Targets' enabled or disable events.\r\n\r\nNote - this doesn't start syncing until the first time it has been enabled, the Sync method can be called to premptively sync it.")]
+    [Infobox("Mirrors enable/disable from 'Observed Targets' onto two lists:\n - TargetsMatch: set to SAME state\n - TargetsInvert: set to OPPOSITE state\n\nNote: Syncing begins once this component is enabled. Call Sync() to pre-sync.")]
     public sealed class MirrorActiveStateOfTargets : SPComponent
     {
 
@@ -24,14 +24,22 @@ namespace com.spacepuppy
         [SerializeField]
         private Modes _mode;
 
+        // Applies the computed state as-is
         [SerializeField, DefaultFromSelf, ReorderableArray]
-        private GameObject[] _targets;
+        private GameObject[] _targets; // Matches state
+
+        // Applies the inverse of the computed state
+        [SerializeField, ReorderableArray]
+        private GameObject[] _targetsInverted; // Inverts state
 
         [SerializeField, ReorderableArray]
         private GameObject[] _observedTargets;
 
         [System.NonSerialized]
         private HashSet<Hook> _activeObservedTargets = new();
+
+        [System.NonSerialized]
+        private bool _scheduled;
 
         #endregion
 
@@ -71,17 +79,28 @@ namespace com.spacepuppy
 
         public GameObject[] Targets
         {
+            get => _targets;
+            set
+            {
+                _targets = value;
+            }
+        }
+
+        public GameObject[] TargetsInverted
+        {
+            get => _targetsInverted;
+            set
+            {
+                _targetsInverted = value;
+            }
+        }
+
+        public GameObject[] ObservedTargets
+        {
             get => _observedTargets;
             set
             {
                 _observedTargets = value;
-#if UNITY_EDITOR
-                if (Application.isPlaying)
-#endif
-                {
-                    this.SyncHooks();
-                    this.Sync_Imp();
-                }
             }
         }
 
@@ -91,41 +110,54 @@ namespace com.spacepuppy
 
         void SyncHooks()
         {
-            using (var hash = TempCollection.GetSet<GameObject>())
+            try
             {
-                if (_activeObservedTargets.Count > 0)
+                _scheduled = true;
+                using (var hash = TempCollection.GetSet<GameObject>())
                 {
-                    using (var lst = TempCollection.GetList<Hook>(_activeObservedTargets))
+                    if (_activeObservedTargets.Count > 0)
                     {
-                        foreach (var h in lst)
+                        using (var lst = TempCollection.GetList<Hook>(_activeObservedTargets))
                         {
-                            if (!h)
+                            foreach (var h in lst)
                             {
-                                _activeObservedTargets.Remove(h); //already dead
-                            }
-                            if (!_observedTargets.Contains(h.gameObject))
-                            {
-                                h.target = null;
-                                _activeObservedTargets.Remove(h);
-                                Destroy(h);
-                            }
-                            else
-                            {
-                                hash.Add(h.gameObject);
+                                if (!h)
+                                {
+                                    _activeObservedTargets.Remove(h); // already dead
+                                    continue;
+                                }
+
+                                if (_observedTargets == null || !_observedTargets.Contains(h.gameObject))
+                                {
+                                    h.target = null;
+                                    _activeObservedTargets.Remove(h);
+                                    Destroy(h);
+                                }
+                                else
+                                {
+                                    hash.Add(h.gameObject);
+                                }
                             }
                         }
                     }
-                }
 
-                foreach (var t in _observedTargets)
-                {
-                    if (!t || hash.Contains(t)) continue;
+                    if (_observedTargets != null)
+                    {
+                        foreach (var t in _observedTargets)
+                        {
+                            if (!t || hash.Contains(t)) continue;
 
-                    hash.Add(t);
-                    var h = t.AddComponent<Hook>();
-                    h.target = this;
-                    _activeObservedTargets.Add(h);
+                            hash.Add(t);
+                            var h = t.AddComponent<Hook>();
+                            h.target = this;
+                            _activeObservedTargets.Add(h);
+                        }
+                    }
                 }
+            }
+            finally
+            {
+                _scheduled = false;
             }
         }
 
@@ -133,17 +165,27 @@ namespace com.spacepuppy
         {
             if (_activeObservedTargets.Count == 0) return;
 
-            using (var lst = TempCollection.GetList<Hook>(_activeObservedTargets))
+            try
             {
-                _activeObservedTargets.Clear();
-                foreach (var h in lst)
+                _scheduled = true;
+                using (var lst = TempCollection.GetList<Hook>(_activeObservedTargets))
                 {
-                    h.target = null;
-                    Destroy(h);
+                    _activeObservedTargets.Clear();
+                    foreach (var h in lst)
+                    {
+                        if (!h) continue;
+                        h.target = null;
+                        Destroy(h);
+                    }
                 }
+            }
+            finally
+            {
+                _scheduled = false;
             }
         }
 
+        [InsertButton("Sync", RuntimeOnly = true)]
         public void Sync()
         {
             if (_observedTargets == null || _observedTargets.Length == 0)
@@ -152,24 +194,41 @@ namespace com.spacepuppy
                 {
                     this.PurgeHooks();
                 }
-                return;
             }
-            else if (_activeObservedTargets.Count != _observedTargets.Length)
+            else if (_activeObservedTargets.Count != _observedTargets.Length ||
+                     !ArrayUtil.SimilarTo(_activeObservedTargets.Select(o => o.gameObject), _observedTargets))
             {
                 this.SyncHooks();
             }
+
             this.Sync_Imp();
         }
+
         void Sync_Imp()
         {
             bool state = this.GetState();
-            foreach (var t in _targets)
+
+            if (_targets != null)
             {
-                t.TrySetActive(state);
+                foreach (var t in _targets)
+                {
+                    t.TrySetActive(state);
+                }
+            }
+
+            if (_targetsInverted != null)
+            {
+                foreach (var t in _targetsInverted)
+                {
+                    t.TrySetActive(!state);
+                }
             }
         }
+
         bool GetState()
         {
+            if (_observedTargets == null || _observedTargets.Length == 0) return false;
+
             switch (_mode)
             {
                 case Modes.AllOn:
@@ -185,6 +244,19 @@ namespace com.spacepuppy
             }
         }
 
+        void ScheduleSync()
+        {
+            if (!_scheduled && this)
+            {
+                _scheduled = true;
+                GameLoop.LateUpdateHandle.BeginInvoke(() =>
+                {
+                    _scheduled = false;
+                    this.Sync();
+                });
+            }
+        }
+
         #endregion
 
         #region Special Types
@@ -195,11 +267,11 @@ namespace com.spacepuppy
 
             private void OnEnable()
             {
-                if (target) target.Sync();
+                if (target) target.ScheduleSync();
             }
             private void OnDisable()
             {
-                if (target) target.Sync();
+                if (target) target.ScheduleSync();
             }
             private void OnDestroy()
             {

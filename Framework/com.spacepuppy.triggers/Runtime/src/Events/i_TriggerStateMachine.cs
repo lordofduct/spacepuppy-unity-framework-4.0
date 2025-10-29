@@ -55,7 +55,7 @@ namespace com.spacepuppy.Events
 
         protected override void Awake()
         {
-            _states.GoToState(-1);
+            if (_states.CurrentStateIndex == null) _states.GoToState(-1); //we check this because maybe something set its state before awake
             _states.ExitingState += (s, e) => _onExitState.ActivateTrigger(this, _states.CurrentState?.Target);
             _states.EnteringState += (s, e) => _onEnterState.ActivateTrigger(this, _states.CurrentState?.Target);
             _states.Owner = this;

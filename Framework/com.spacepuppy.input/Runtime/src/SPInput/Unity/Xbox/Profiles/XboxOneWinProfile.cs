@@ -10,6 +10,7 @@ namespace com.spacepuppy.SPInput.Unity.Xbox.Profiles
     [InputProfileJoystickName(XboxInputProfile.GENERIC_XBOXONE)]
     [InputProfileJoystickName("Controller (XBOX One For Windows)")]
     [InputProfileJoystickName("Controller (Xbox One For Windows)")]
+    [InputProfileJoystickName("Steam Virtual Gamepad")]
     public class XboxOneWinProfile : XboxInputProfile
     {
 

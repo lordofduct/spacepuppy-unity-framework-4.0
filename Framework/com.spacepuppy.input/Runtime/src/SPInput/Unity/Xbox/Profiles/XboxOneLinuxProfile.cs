@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,17 +6,14 @@ using System.Text;
 namespace com.spacepuppy.SPInput.Unity.Xbox.Profiles
 {
 
-    /// <summary>
-    /// InputName: "XInput Controller"
-    /// InputName (per InControl): "Microsoft X-Box 360 pad", "Generic X-Box pad"
-    /// </summary>
-    [InputProfileDescription("Xbox 360 Controller", TargetPlatform.Linux, Description = "Xbox 360 Controller (Linux)")]
-    [InputProfileJoystickName(XboxInputProfile.GENERIC_XBOX360)]
-    [InputProfileJoystickName("Microsoft X-Box 360 pad")]
-    public class Xbox360LinuxProfile : XboxInputProfile
+    [InputProfileDescription("Xbox One Controller", TargetPlatform.Linux, Description = "Xbox One Controller (Linux)")]
+    [InputProfileJoystickName(XboxInputProfile.GENERIC_XBOXONE)]
+    [InputProfileJoystickName("Xbox One Elite 2 Controller")]
+    [InputProfileJoystickName("Generic X-Box pad")]
+    public class XboxOneLinuxProfile : XboxInputProfile
     {
 
-        public Xbox360LinuxProfile()
+        public XboxOneLinuxProfile()
         {
             this.RegisterAxis(XboxInputId.LStickX, SPInputId.Axis1);
             this.RegisterAxis(XboxInputId.LStickY, SPInputId.Axis2, true);
@@ -37,11 +34,6 @@ namespace com.spacepuppy.SPInput.Unity.Xbox.Profiles
             this.RegisterButton(XboxInputId.Start, SPInputId.Button7);
             this.RegisterButton(XboxInputId.LStickPress, SPInputId.Button9);
             this.RegisterButton(XboxInputId.RStickPress, SPInputId.Button10);
-            //this.RegisterButton(XboxInputId.DPadRight, SPInputId.Button12);
-            //this.RegisterButton(XboxInputId.DPadLeft, SPInputId.Button11);
-            //this.RegisterButton(XboxInputId.DPadUp, SPInputId.Button13);
-            //this.RegisterButton(XboxInputId.DPadDown, SPInputId.Button14);
-            // //NOTE - changed to better support across different versions of linux where the buttons above don't always work
             this.RegisterAxleButton(XboxInputId.DPadRight, SPInputId.Axis7, AxleValueConsideration.Positive);
             this.RegisterAxleButton(XboxInputId.DPadLeft, SPInputId.Axis7, AxleValueConsideration.Negative);
             this.RegisterAxleButton(XboxInputId.DPadUp, SPInputId.Axis8, AxleValueConsideration.Negative);
@@ -49,5 +41,4 @@ namespace com.spacepuppy.SPInput.Unity.Xbox.Profiles
         }
 
     }
-
 }

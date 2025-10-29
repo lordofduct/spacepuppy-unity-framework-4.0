@@ -8,6 +8,7 @@ namespace com.spacepuppy.SPInput.Unity.Xbox
     public abstract class XboxInputProfile : IXboxInputProfile
     {
 
+        public const string STEAMVIRTUALPAD = "Steam Virtual Gamepad";
         public const string GENERIC_XBOX360 = "Xbox 360 Controller";
         public const string GENERIC_XBOXONE = "Xbox One Controller";
         public const string GENERIC_PS3 = "PS3 Controller";

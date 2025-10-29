@@ -21,6 +21,7 @@ namespace com.spacepuppy.Collections
         T[] FindAll(System.Func<T, bool> predicate);
         int FindAll(ICollection<T> coll, System.Func<T, bool> predicate);
         int FindAll<TSub>(ICollection<TSub> coll, System.Func<TSub, bool> predicate) where TSub : class, T;
+        void ForEach(System.Action<T> action);
 
         /// <summary>
         /// Use for linq if you want to enumerate a specific subtype.
@@ -333,6 +334,42 @@ namespace com.spacepuppy.Collections
                 {
                     _version++;
                 }
+            }
+        }
+
+        public void ForEach(System.Action<T> action)
+        {
+            if (action == null) throw new System.ArgumentNullException(nameof(action));
+
+            _pool.Lock();
+            try
+            {
+                foreach (var o in _pool)
+                {
+                    action(o);
+                }
+            }
+            finally
+            {
+                _pool.Unlock();
+            }
+        }
+
+        public void ForEach<TArg>(TArg arg, System.Action<T, TArg> action)
+        {
+            if (action == null) throw new System.ArgumentNullException(nameof(action));
+
+            _pool.Lock();
+            try
+            {
+                foreach (var o in _pool)
+                {
+                    action(o, arg);
+                }
+            }
+            finally
+            {
+                _pool.Unlock();
             }
         }
 

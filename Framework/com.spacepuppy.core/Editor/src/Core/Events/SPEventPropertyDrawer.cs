@@ -23,6 +23,7 @@ namespace com.spacepuppyeditor.Events
         private const float BOTTOM_MARGIN = 4f; //margin at the bottom of the drawer
         private const float MARGIN = 2.0f;
         private const float BTN_ACTIVATE_HEIGHT = 24f;
+        private const float BTN_FINDHIJACK_HEIGHT = 24f;
 
         public const string PROP_TARGETS = "_targets";
         private const string PROP_WEIGHT = "_weight";
@@ -42,12 +43,17 @@ namespace com.spacepuppyeditor.Events
 
         private System.Reflection.ParameterInfo[] _spdelegateParameters;
 
+        //NOTE - set to a target in 'Init' if and only if we're editing a single target. Otherwise this is null.
+        private BaseSPEvent _targetSPEvent;
+
         #endregion
 
         #region CONSTRUCTOR
 
         private void Init(SerializedProperty prop, GUIContent label)
         {
+            _targetSPEvent = !prop.serializedObject.isEditingMultipleObjects ? EditorHelper.GetTargetObjectOfProperty(prop) as BaseSPEvent : null;
+
             _currentLabel = label;
 
             _targetList = CachedReorderableList.GetListDrawer(prop.FindPropertyRelative(PROP_TARGETS), _targetList_DrawHeader, _targetList_DrawElement, _targetList_OnAdd);
@@ -55,7 +61,7 @@ namespace com.spacepuppyeditor.Events
             _triggerTargetDrawer.DrawWeight = this.DrawWeight;
 
             var sptp = this.fieldInfo?.FieldType;
-            if(TypeUtil.IsType(sptp, typeof(BaseSPDelegate<>)))
+            if (TypeUtil.IsType(sptp, typeof(BaseSPDelegate<>)))
             {
                 int argcount = 1;
                 while (sptp != null)
@@ -135,6 +141,10 @@ namespace com.spacepuppyeditor.Events
                 if (Application.isPlaying)
                 {
                     h += BTN_ACTIVATE_HEIGHT;
+                    if (_targetSPEvent?.CurrentlyHijacked ?? false)
+                    {
+                        h += BTN_FINDHIJACK_HEIGHT;
+                    }
                 }
             }
             else
@@ -150,8 +160,12 @@ namespace com.spacepuppyeditor.Events
             if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
 
             if (!this.DoNotDrawParensOnLabel) label.text += " ( )";
-
             this.Init(property, label);
+
+            if (Application.isPlaying && (_targetSPEvent?.CurrentlyHijacked ?? false))
+            {
+                label.text += $" [Hijacked]";
+            }
 
             bool alwaysExpanded = this.AlwaysExpanded;
             //const float WIDTH_FOLDOUT = 5f;
@@ -171,15 +185,42 @@ namespace com.spacepuppyeditor.Events
 
                 EditorGUI.EndProperty();
 
-                if (Application.isPlaying && !property.serializedObject.isEditingMultipleObjects)
+                if (Application.isPlaying && _targetSPEvent != null)
                 {
                     var w = position.width * 0.6f;
                     var pad = (position.width - w) / 2f;
-                    var rect = new Rect(position.xMin + pad, position.yMax + -BTN_ACTIVATE_HEIGHT + 2f, w, 20f);
+                    var rect = new Rect(position.xMin + pad, position.yMin + 2f, w, BTN_ACTIVATE_HEIGHT - 4f);
                     if (GUI.Button(rect, "Activate Trigger"))
                     {
-                        var targ = EditorHelper.GetTargetObjectOfProperty(property) as SPEvent;
-                        if (targ != null) targ.ActivateTrigger(property.serializedObject.targetObject, null);
+                        switch (_targetSPEvent)
+                        {
+                            case SPEvent spev:
+                                spev.ActivateTrigger(property.serializedObject.targetObject, null);
+                                break;
+                            case SPDelegate spdel:
+                                spdel.ActivateTrigger(property.serializedObject.targetObject);
+                                break;
+                            default:
+                                UnityEngine.Debug.Log($"Unable to activate an SPEvent of type: {_targetSPEvent.GetType().FullName}", property.serializedObject.targetObject);
+                                break;
+                        }
+                    }
+
+                    if (_targetSPEvent.CurrentlyHijacked)
+                    {
+                        rect = new Rect(rect.xMin, rect.yMax + 2f, w, BTN_FINDHIJACK_HEIGHT - 4f);
+                        if (GUI.Button(rect, "Find Hijacker"))
+                        {
+                            var hijacker = _targetSPEvent.HijackTokens.OfType<ObservableTargetData>().FirstOrDefault()?.Hijacker as UnityEngine.Object;
+                            if (hijacker)
+                            {
+                                EditorGUIUtility.PingObject(hijacker);
+                            }
+                            else
+                            {
+                                UnityEngine.Debug.Log($"Unable to locate hijacker of SPEvent.", property.serializedObject.targetObject);
+                            }
+                        }
                     }
                 }
             }
@@ -296,7 +337,7 @@ namespace com.spacepuppyeditor.Events
             var str = this.ArgumentDescription;
             if (string.IsNullOrEmpty(str))
             {
-                if(_spdelegateParameters != null && _spdelegateParameters.Length > 0)
+                if (_spdelegateParameters != null && _spdelegateParameters.Length > 0)
                 {
                     return EditorHelper.TempContent(string.Join(", ", _spdelegateParameters.Select(p => string.Format("{0} ({1})", p.Name, p.ParameterType.Name))));
                 }

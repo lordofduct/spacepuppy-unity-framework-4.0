@@ -23,7 +23,7 @@ namespace com.spacepuppy.Events
         private bool _initialized;
         [System.NonSerialized]
         private SPEventTrackedListenerToken _eventHook;
-        
+
         #endregion
 
         #region Properties
@@ -62,6 +62,11 @@ namespace com.spacepuppy.Events
             }
         }
 
+        /// <summary>
+        /// A reference to the hijacker passed during 'BeginHijack'.
+        /// </summary>
+        public object Hijacker { get; private set; }
+
         #endregion
 
         #region Methods
@@ -90,12 +95,13 @@ namespace com.spacepuppy.Events
             _initialized = false;
         }
 
-        public bool BeginHijack()
+        public bool BeginHijack(object hijacker)
         {
             if (!_initialized) this.Init();
 
             if (_eventHook.SPEvent == null) return false;
 
+            this.Hijacker = hijacker;
             _eventHook.SPEvent.BeginHijack(this);
             return true;
         }

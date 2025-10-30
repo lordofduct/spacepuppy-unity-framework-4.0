@@ -183,6 +183,8 @@ namespace com.spacepuppy.Events
             get { return _hijackTokens != null && _hijackTokens.Count > 0; }
         }
 
+        public IReadOnlyCollection<object> HijackTokens => _hijackTokens;
+
         /// <summary>
         /// This value changes every time the event is triggered.
         /// </summary>

@@ -20,7 +20,7 @@ namespace com.spacepuppy.Events
         private SPEvent _onHijacked = new SPEvent("OnHijacked");
 
         [SerializeField]
-        [Tooltip("If true the target won't be purged of its listeners when hijacked.")]
+        [Tooltip("If true the target will still signal its targets.")]
         private bool _dontOverrideTargets;
 
         #endregion
@@ -33,7 +33,7 @@ namespace com.spacepuppy.Events
             {
                 t.Init();
                 t.TriggerActivated += this.OnHijackedEventActivated;
-                if (!_dontOverrideTargets) t.BeginHijack();
+                if (!_dontOverrideTargets) t.BeginHijack(this);
             }
         }
 

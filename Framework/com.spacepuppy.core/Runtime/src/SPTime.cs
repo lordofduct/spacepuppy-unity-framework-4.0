@@ -36,7 +36,7 @@ namespace com.spacepuppy
     {
 
         public const string ID_NORMAL = "time.default.normal";
-        public const string ID_REAL = "time.default.real";
+        public const string ID_REAL = "time.default.real"; //TODO - refactor name to be 'unscaled', needs some special case handling to ensure existing projects don't break
         public const string ID_SMOOTH = "time.default.smooth";
 
         #region Fields

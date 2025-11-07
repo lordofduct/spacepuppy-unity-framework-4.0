@@ -118,7 +118,7 @@ namespace com.spacepuppy.UI
             if (this.CurrentSelectionState != state)
             {
                 this.CurrentSelectionState = state;
-                this.Transition.PerformTransition(_selectable, state, instant);
+                this.Transition?.PerformTransition(_selectable, state, instant);
 #if UNITY_EDITOR
                 if (Application.isPlaying && _onSelectionStateChanged.HasReceivers) _onSelectionStateChanged.ActivateTrigger(this, null);
 #else
@@ -130,7 +130,7 @@ namespace com.spacepuppy.UI
         public void ForceSetCurrentSelectionState(SelectionState state, bool instant)
         {
             this.CurrentSelectionState = state;
-            this.Transition.PerformTransition(_selectable, state, instant);
+            this.Transition?.PerformTransition(_selectable, state, instant);
 #if UNITY_EDITOR
             if (Application.isPlaying && _onSelectionStateChanged.HasReceivers) _onSelectionStateChanged.ActivateTrigger(this, null);
 #else

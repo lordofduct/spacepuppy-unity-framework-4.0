@@ -943,7 +943,7 @@ namespace com.spacepuppy.Utils
             return default;
         }
 
-        public static T AtIndexOrDefault<T>(this IReadOnlyList<T> lst, int index)
+        public static T AtIndexOrDefault_RO<T>(this IReadOnlyList<T> lst, int index)
         {
             if (index >= 0 && index < lst?.Count)
             {

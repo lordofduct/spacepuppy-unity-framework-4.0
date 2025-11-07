@@ -25,7 +25,7 @@ namespace com.spacepuppy
         private Modes _mode;
 
         // Applies the computed state as-is
-        [SerializeField, DefaultFromSelf, ReorderableArray]
+        [SerializeField, ReorderableArray]
         private GameObject[] _targets; // Matches state
 
         // Applies the inverse of the computed state

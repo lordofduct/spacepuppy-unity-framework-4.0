@@ -773,8 +773,23 @@ namespace com.spacepuppy.Events
                         {
                             for (int i = 0; i < this.Targets.Count; i++)
                             {
-                                var go = GameObjectUtil.GetGameObjectFromSource(this.Targets[i].CalculateTarget(arg));
-                                if (object.ReferenceEquals(go, null) || go.IsAliveAndActive()) lst.Add(this.Targets[i]);
+                                GameObject go;
+                                var targ = this.Targets[i]?.CalculateTarget(arg);
+                                if (object.ReferenceEquals(targ, null))
+                                {
+                                    continue; //null objects are skipped
+                                }
+                                else if (targ is Behaviour b)
+                                {
+                                    if (!b.IsActiveAndEnabled()) continue; //disabled/inactive behaviours are skipped
+                                }
+                                else if (!object.ReferenceEquals(go = GameObjectUtil.GetGameObjectFromSource(targ), null))
+                                {
+                                    if (!go.IsAliveAndActive()) continue; //disabled/inactive gameobjects are skipped
+                                }
+                                //all others are included as they don't have active/enabled states to confirm
+
+                                lst.Add(this.Targets[i]);
                             }
                             trig = (considerWeights) ? lst.PickRandom((t) => { return t.Weight; }, rng) : lst.PickRandom(rng);
                         }

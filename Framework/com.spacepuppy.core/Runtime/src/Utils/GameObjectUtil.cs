@@ -41,7 +41,7 @@ namespace com.spacepuppy.Utils
 
             return null;
         }
-
+        
         public static Transform GetTransformFromSource(object obj, bool respectProxy = false)
         {
             if (respectProxy) obj = obj.ReduceIfProxyAs(typeof(Transform));

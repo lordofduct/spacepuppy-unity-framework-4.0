@@ -10,6 +10,12 @@ namespace com.spacepuppyeditor.Settings
 {
 
     [System.AttributeUsage(System.AttributeTargets.Method, AllowMultiple = false)]
+    public class BulkBuildPreBuildCallbackAttribute : System.Attribute
+    {
+
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Method, AllowMultiple = false)]
     public class BulkBuildPostBuildCallbackAttribute : System.Attribute
     {
 
@@ -69,6 +75,18 @@ namespace com.spacepuppyeditor.Settings
 
         public void Build(BuildSettings.PostBuildOption postBuildOption = BuildSettings.PostBuildOption.Nothing)
         {
+            foreach (var m in TypeCache.GetMethodsWithAttribute<BulkBuildPreBuildCallbackAttribute>())
+            {
+                try
+                {
+                    m.Invoke(null, new object[] { this });
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogException(ex);
+                }
+            }
+
             if ((_buildScriptRunOptions & ScriptOptions.Run) != 0)
             {
                 this.RunScripts(_preBuildScripts);

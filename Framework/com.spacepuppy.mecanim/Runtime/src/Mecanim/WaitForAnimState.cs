@@ -3,7 +3,7 @@ using UnityEngine;
 namespace com.spacepuppy.Mecanim
 {
 
-    public sealed class WaitForAnimState : IRadicalEnumerator, IPooledYieldInstruction
+    public sealed class WaitForAnimState : IRadicalEnumerator, IDisposableYieldInstruction
     {
 
         private enum Mode

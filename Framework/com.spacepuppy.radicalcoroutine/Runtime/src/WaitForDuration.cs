@@ -111,7 +111,7 @@ namespace com.spacepuppy
                         _tally = this.CurrentTime;
                         _state = States.Complete;
                         _startTime = 0d;
-                        if (this is IPooledYieldInstruction)
+                        if (this is IDisposableYieldInstruction)
                         {
                             Release(this);
                         }
@@ -240,7 +240,7 @@ namespace com.spacepuppy
             }
         };
 
-        private class PooledWaitForDuration : WaitForDuration, IPooledYieldInstruction
+        private class PooledWaitForDuration : WaitForDuration, IDisposableYieldInstruction
         {
 
             public override void Dispose()

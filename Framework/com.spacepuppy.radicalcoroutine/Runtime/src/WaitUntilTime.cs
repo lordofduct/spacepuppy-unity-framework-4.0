@@ -92,7 +92,7 @@ namespace com.spacepuppy
         #region Static Factory
 
         private static com.spacepuppy.Collections.ObjectCachePool<PooledWaitForNextInterval> _pool = new com.spacepuppy.Collections.ObjectCachePool<PooledWaitForNextInterval>(-1, () => new PooledWaitForNextInterval());
-        private class PooledWaitForNextInterval : WaitUntilTime, IPooledYieldInstruction
+        private class PooledWaitForNextInterval : WaitUntilTime, IDisposableYieldInstruction
         {
 
             void System.IDisposable.Dispose()

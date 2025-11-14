@@ -18,6 +18,9 @@ namespace com.spacepuppy.Events
 
         #region Fields
 
+        [SerializeField, Tooltip("Tests the sender against this mask and if it fails it doens't trigger (the sender must be a UnityEngine.Object to succeed).")]
+        private EventActivatorMaskRef _senderMask = new();
+
         [SerializeField()]
         [SPEvent.Config("daisy chained arg (object)")]
         private SPEvent _trigger = new SPEvent("Trigger");
@@ -29,7 +32,7 @@ namespace com.spacepuppy.Events
         private bool _useProxyMediatorAsDaisyChainedArg;
 
         [System.NonSerialized]
-        private TrackedEventHandlerToken<TempEventArgs> _onTriggerHook;
+        private TrackedEventHandlerToken<ProxyMediator.OnTriggeredTempEventArgs> _onTriggerHook;
 
         #endregion
 
@@ -95,8 +98,8 @@ namespace com.spacepuppy.Events
             _trigger.ActivateTrigger(this, _useProxyMediatorAsDaisyChainedArg ? _mediator : tempEventArgValue);
         }
 
-        private System.EventHandler<TempEventArgs> _onMediatorTriggeredCallback;
-        private System.EventHandler<TempEventArgs> OnMediatorTriggeredCallback
+        private System.EventHandler<ProxyMediator.OnTriggeredTempEventArgs> _onMediatorTriggeredCallback;
+        private System.EventHandler<ProxyMediator.OnTriggeredTempEventArgs> OnMediatorTriggeredCallback
         {
             get
             {
@@ -104,9 +107,11 @@ namespace com.spacepuppy.Events
                 return _onMediatorTriggeredCallback;
             }
         }
-        protected virtual void ReceivedMediatorTriggeredMessage(object sender, TempEventArgs e)
+        protected virtual void ReceivedMediatorTriggeredMessage(object sender, ProxyMediator.OnTriggeredTempEventArgs e)
         {
-            _trigger.ActivateTrigger(this, _useProxyMediatorAsDaisyChainedArg ? _mediator : e?.Value);
+            if (_senderMask.Value != null && !_senderMask.Value.Intersects(e.originalSender as UnityEngine.Object)) return;
+
+            _trigger.ActivateTrigger(this, _useProxyMediatorAsDaisyChainedArg ? _mediator : e?.arg);
         }
 
         #endregion

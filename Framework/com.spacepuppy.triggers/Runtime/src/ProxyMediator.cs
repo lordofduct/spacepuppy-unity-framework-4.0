@@ -124,7 +124,7 @@ namespace com.spacepuppy
         #endregion
 
 
-        public event System.EventHandler<TempEventArgs> OnTriggered
+        public event System.EventHandler<OnTriggeredTempEventArgs> OnTriggered
         {
             add
             {
@@ -143,7 +143,7 @@ namespace com.spacepuppy
                 }
             }
         }
-        public EventHandlerRef<TempEventArgs> OnTriggered_ref() => EventHandlerRef<TempEventArgs>.Create(this, (o, l) => o.OnTriggered += l, (o, l) => o.OnTriggered -= l);
+        public EventHandlerRef<OnTriggeredTempEventArgs> OnTriggered_ref() => EventHandlerRef<OnTriggeredTempEventArgs>.Create(this, (o, l) => o.OnTriggered += l, (o, l) => o.OnTriggered -= l);
 
         #region Fields
 
@@ -166,6 +166,9 @@ namespace com.spacepuppy
 
         [System.NonSerialized]
         private bool _initialized;
+
+        [System.NonSerialized]
+        private OnTriggeredTempEventArgs _cachedEventArgs;
 
         #endregion
 
@@ -271,10 +274,11 @@ namespace com.spacepuppy
                 var d = hook.OnTriggered;
                 if (d != null)
                 {
-                    using (var ev = TempEventArgs.Create(arg))
-                    {
-                        d(this, ev);
-                    }
+                    var ev = (_cachedEventArgs ?? new OnTriggeredTempEventArgs());
+                    ev.mediator = this;
+                    ev.originalSender = sender;
+                    ev.arg = arg;
+                    d(this, ev);
                 }
                 if (_triggerSyncedTargetWhenTriggered && hook.Targets?.Count > 0)
                 {
@@ -386,7 +390,7 @@ namespace com.spacepuppy
 
         private class CrossDomainHook
         {
-            public System.EventHandler<TempEventArgs> OnTriggered;
+            public System.EventHandler<OnTriggeredTempEventArgs> OnTriggered;
             public RadicalWaitHandle Handle;
             public Deque<object> Targets;
             public int RefCount;
@@ -412,6 +416,13 @@ namespace com.spacepuppy
 
             public IRadicalWaitHandle WaitForNextTrigger() => ProxyMediator.WaitForNextTrigger(this.Guid);
 
+        }
+
+        public class OnTriggeredTempEventArgs : System.EventArgs
+        {
+            public ProxyMediator mediator;
+            public object originalSender;
+            public object arg;
         }
 
         #endregion

@@ -58,7 +58,7 @@ namespace com.spacepuppy.Events
 
         #region Methods
 
-        private void Proxy_OnTriggered(object sender, TempEventArgs e)
+        private void Proxy_OnTriggered(object sender, System.EventArgs e)
         {
             var m = sender as ProxyMediator;
             if (m == null || this.StateMachine.IsNullOrDestroyed()) return;

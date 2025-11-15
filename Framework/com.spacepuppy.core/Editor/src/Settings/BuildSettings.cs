@@ -683,10 +683,11 @@ namespace com.spacepuppyeditor.Settings
                 if (!string.IsNullOrEmpty(json))
                 {
                     SPTempFolder.Delete(BuildCommand.FILENAME_BUILDCOMMAND);
-                    var command = JsonUtility.FromJson<BuildCommand>(json);
 
                     Debug.Log("Spacepuppy Build Pipeline - continuing build after recompile.");
                     await Task.Delay(1000); //just wait a little
+
+                    var command = JsonUtility.FromJson<BuildCommand>(json);
                     if (!command.TryCompleteBuild())
                     {
                         Debug.LogWarning("Spacepuppy Build Pipeline - there was an error attempting to continue build.");

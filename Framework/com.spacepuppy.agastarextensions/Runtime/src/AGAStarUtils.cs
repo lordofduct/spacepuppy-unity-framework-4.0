@@ -395,6 +395,22 @@ namespace com.spacepuppy.Pathfinding
             }
         }
 
+#if AGASTAR_5_4_ORGREATER
+        public static bool TryGetNearest(this AstarPath path, Vector3 position, NearestNodeConstraint constraint, out NNInfo result)
+        {
+            try
+            {
+                result = path.GetNearest(position, constraint);
+                return result.node != null;
+            }
+            catch
+            {
+                result = default;
+                return false;
+            }
+        }
+#endif
+
 #if !AGASTAR_5_ORGREATER
         public static bool TryGetNearest(this AstarPath path, Vector3 position, NNConstraint constraint, GraphNode hint, out NNInfo result)
         {

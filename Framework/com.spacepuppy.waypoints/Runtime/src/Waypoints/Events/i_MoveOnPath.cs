@@ -47,6 +47,9 @@ namespace com.spacepuppy.Waypoints.Events
         [Tooltip("Should we move down the path in a backwards direction.")]
         private bool _reverse;
 
+        [SerializeField, Tooltip("Attempts to estimate the nearest point on the path and starts the playhead at that position.")]
+        private bool _startRelativeToPath;
+
         [SerializeField()]
         private AdvancedWaypointPathTweenCurve.TranslationOptions _updateTranslation = AdvancedWaypointPathTweenCurve.TranslationOptions.Position;
 
@@ -140,6 +143,12 @@ namespace com.spacepuppy.Waypoints.Events
             set { _reverse = value; }
         }
 
+        public bool StartRelativeToPath
+        {
+            get { return _startRelativeToPath; }
+            set { _startRelativeToPath = value; }
+        }
+
         public AdvancedWaypointPathTweenCurve.TranslationOptions UpdateTranslation
         {
             get { return _updateTranslation; }
@@ -203,13 +212,21 @@ namespace com.spacepuppy.Waypoints.Events
             var targ = _target.GetTarget<Transform>(arg);
             if (targ == null) return false;
 
+            float arclength = _path.Path.GetArcLength();
+            float dur = arclength / this._speed;
             //var curve = new WaypointPathTweenCurve("position", EaseMethods.GetEase(this._ease), _path.Path.GetArcLength() / this._speed, _path.Path);
-            var curve = new AdvancedWaypointPathTweenCurve(EaseMethods.GetEase(this._ease), _path.Path.GetArcLength() / this._speed, _path)
+            var curve = new AdvancedWaypointPathTweenCurve(EaseMethods.GetEase(this._ease), dur, _path)
             {
                 UpdateTranslation = _updateTranslation,
                 UpdateRotation = _updateRotation,
                 IgnoreModifiers = _ignoreModifiers,
             };
+            float playheadpos = 0f;
+            if (_startRelativeToPath)
+            {
+                _path.Path.EstimateNearestWaypoint(targ.position, arclength / 100, out playheadpos); //TODO - make segementlength configurable???
+                playheadpos *= dur;
+            }
 
             var tween = SPTween.Tween(targ)
                                .UseCurve(curve)
@@ -218,7 +235,7 @@ namespace com.spacepuppy.Waypoints.Events
                                .Use(_timeSupplier.TimeSupplier)
                                .Reverse(this._reverse)
                                .OnStopped(this.OnStoppedHandler)
-                               .Play(false);
+                               .Play(playheadpos, true);
             if (this._stopMovementOnDisable)
             {
                 if (_activeTweens == null) _activeTweens = new HashSet<Tweener>();

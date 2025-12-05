@@ -10,7 +10,7 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppyeditor.Waypoints.Events
 {
 
-    [CustomEditor(typeof(i_MoveOnPath))]
+    [CustomEditor(typeof(i_MoveOnPath)), CanEditMultipleObjects]
     public class i_MoveOnPathInspector : SPEditor
     {
 

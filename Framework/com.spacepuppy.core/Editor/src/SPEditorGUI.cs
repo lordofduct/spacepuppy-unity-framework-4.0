@@ -244,9 +244,10 @@ namespace com.spacepuppyeditor
             SerializedPropertyType propertyType = SerializedPropertyType.Generic;
             if (valueType != null) propertyType = (valueType.IsInterface) ? SerializedPropertyType.ObjectReference : EditorHelper.GetPropertyType(valueType);
 
-            if (propertyType == SerializedPropertyType.ObjectReference && !TypeUtil.IsType(valueType, typeof(UnityEngine.Object)) && TypeUtil.IsType(valueType, typeof(System.Collections.ICollection)) && value is System.Collections.ICollection coll)
+            if (propertyType == SerializedPropertyType.ObjectReference && !TypeUtil.IsType(valueType, typeof(UnityEngine.Object)) && TypeUtil.IsType(valueType, typeof(System.Collections.IEnumerable)) && value is System.Collections.IEnumerable coll)
             {
-                return (1f + Mathf.Min(1, coll.Count)) * EditorGUIUtility.singleLineHeight;
+                int cnt = coll.Cast<object>().Count();
+                return (cnt + 1) * EditorGUIUtility.singleLineHeight;
             }
             else
             {
@@ -423,7 +424,7 @@ namespace com.spacepuppyeditor
                         else
                         {
                             const float INDENT = 5f;
-                            EditorGUI.LabelField(position, label);
+                            EditorGUI.LabelField(new Rect(position.xMin, position.yMin, position.width, EditorGUIUtility.singleLineHeight), label);
 
                             var mtp = TypeUtil.GetElementTypeOfListType(valueType) ?? typeof(object);
                             int i = 0;

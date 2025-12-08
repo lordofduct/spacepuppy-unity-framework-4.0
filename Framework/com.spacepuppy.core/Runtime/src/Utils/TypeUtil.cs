@@ -411,6 +411,11 @@ namespace com.spacepuppy.Utils
                 if (tp.IsGenericType) return tp.GetGenericArguments()[0];
                 else return typeof(object);
             }
+            else if (Array.IndexOf(interfaces, typeof(System.Collections.IEnumerable)) >= 0 || Array.IndexOf(interfaces, typeof(IEnumerable<>)) >= 0)
+            {
+                if (tp.IsGenericType) return tp.GetGenericArguments()[0];
+                else return typeof(object);
+            }
 
             return null;
         }

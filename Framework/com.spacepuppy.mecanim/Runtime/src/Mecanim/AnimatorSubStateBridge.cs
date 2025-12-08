@@ -84,6 +84,26 @@ namespace com.spacepuppy.Mecanim
 
         public bool StateIdIsPath { get { return _complexId; } }
 
+        /// <summary>
+        /// The Animator for which this bridge is associated.
+        /// Only available once state is active.
+        /// </summary>
+        public Animator Animator => _animator;
+
+        /// <summary>
+        /// A reference to the AnimatorStateInfo this bridge is for.
+        /// Only available while state is active.
+        /// </summary>
+        public AnimatorStateInfo StateInfo => _stateInfo;
+
+        /// <summary>
+        /// The index of the state this bridge is for.
+        /// Only available once state is active.
+        /// </summary>
+        public int LayerIndex => _layerIndex;
+
+        public bool StateIsActive { get; private set; }
+
         #endregion
 
         #region Methods
@@ -100,6 +120,7 @@ namespace com.spacepuppy.Mecanim
             _animator = animator;
             _stateInfo = stateInfo;
             _layerIndex = layerIndex;
+            this.StateIsActive = true;
 
             switch (_mode)
             {
@@ -144,6 +165,7 @@ namespace com.spacepuppy.Mecanim
 
         protected internal virtual void SignalStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
         {
+            this.StateIsActive = false;
             switch (_mode)
             {
                 case Modes.TriggerEventOnly:

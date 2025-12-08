@@ -169,7 +169,7 @@
 
         #region Special Types
 
-        sealed class PooledRadicalWaitHandle : RadicalWaitHandle, IPooledYieldInstruction
+        sealed class PooledRadicalWaitHandle : RadicalWaitHandle, IDisposableYieldInstruction
         {
 
             #region IPooledYieldInstruction Interface

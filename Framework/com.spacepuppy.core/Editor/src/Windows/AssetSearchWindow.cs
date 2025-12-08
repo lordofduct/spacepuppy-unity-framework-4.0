@@ -609,6 +609,19 @@ namespace com.spacepuppyeditor.Windows
                                         {
                                             sb.AppendLine($"{linenum:000000} [{script}]: {ln}");
                                         }
+
+                                        //if (ln.Contains("propertyPath: "))
+                                        //{
+                                        //    ln = reader.ReadLine();
+                                        //    if (string.IsNullOrEmpty(script))
+                                        //    {
+                                        //        sb.AppendLine($"{linenum:000000}: {ln}");
+                                        //    }
+                                        //    else
+                                        //    {
+                                        //        sb.AppendLine($"{linenum:000000} [{script}]: {ln}");
+                                        //    }
+                                        //}
                                     }
                                 }
                             }

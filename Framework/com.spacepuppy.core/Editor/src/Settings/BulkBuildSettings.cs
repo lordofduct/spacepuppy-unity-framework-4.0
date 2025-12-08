@@ -10,6 +10,12 @@ namespace com.spacepuppyeditor.Settings
 {
 
     [System.AttributeUsage(System.AttributeTargets.Method, AllowMultiple = false)]
+    public class BulkBuildPreBuildCallbackAttribute : System.Attribute
+    {
+
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Method, AllowMultiple = false)]
     public class BulkBuildPostBuildCallbackAttribute : System.Attribute
     {
 
@@ -69,6 +75,18 @@ namespace com.spacepuppyeditor.Settings
 
         public void Build(BuildSettings.PostBuildOption postBuildOption = BuildSettings.PostBuildOption.Nothing)
         {
+            foreach (var m in TypeCache.GetMethodsWithAttribute<BulkBuildPreBuildCallbackAttribute>())
+            {
+                try
+                {
+                    m.Invoke(null, new object[] { this });
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogException(ex);
+                }
+            }
+
             if ((_buildScriptRunOptions & ScriptOptions.Run) != 0)
             {
                 this.RunScripts(_preBuildScripts);
@@ -167,12 +185,32 @@ namespace com.spacepuppyeditor.Settings
 
             EditorGUILayout.Space(5f);
 
-            var arr = TypeCache.GetMethodsWithAttribute<BulkBuildPostBuildCallbackAttribute>();
-            if (arr.Count > 0)
+            var arr_pre = TypeCache.GetMethodsWithAttribute<BulkBuildPreBuildCallbackAttribute>();
+            if (arr_pre.Count > 0)
+            {
+                if (GUILayout.Button("Run Only BulkBuildPreBuildCallbacks"))
+                {
+                    foreach (var m in arr_pre)
+                    {
+                        try
+                        {
+                            m.Invoke(null, new object[] { this.target });
+                        }
+                        catch (System.Exception ex)
+                        {
+                            Debug.LogException(ex);
+                        }
+                    }
+                }
+
+                EditorGUILayout.Space(5f);
+            }
+            var arr_post = TypeCache.GetMethodsWithAttribute<BulkBuildPostBuildCallbackAttribute>();
+            if (arr_post.Count > 0)
             {
                 if (GUILayout.Button("Run Only BulkBuildPostBuildCallbacks"))
                 {
-                    foreach (var m in arr)
+                    foreach (var m in arr_post)
                     {
                         try
                         {

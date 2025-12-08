@@ -638,9 +638,18 @@ namespace com.spacepuppyeditor.Settings
         }
 
         [System.Serializable]
-        internal struct BulkBuildCallback : ISerializationCallbackReceiver
+        internal struct BulkBuildCallback
         {
-            public BulkBuildSettings bulkBuildSettings;
+            private BulkBuildSettings _bulkBuildSettings;
+            public BulkBuildSettings bulkBuildSettings
+            {
+                get
+                {
+                    if (_bulkBuildSettings) return _bulkBuildSettings;
+                    _bulkBuildSettings = !string.IsNullOrEmpty(bulkBuildSettingsGuid) ? AssetDatabase.LoadAssetAtPath<BulkBuildSettings>(AssetDatabase.GUIDToAssetPath(this.bulkBuildSettingsGuid)) : null;
+                    return _bulkBuildSettings;
+                }
+            }
             public PostBuildOption postBuildOption;
             public int pass;
             public bool failed;
@@ -648,23 +657,13 @@ namespace com.spacepuppyeditor.Settings
 
             public BulkBuildCallback(BulkBuildSettings settings, PostBuildOption option, int pass)
             {
-                this.bulkBuildSettings = settings;
+                this._bulkBuildSettings = settings;
                 this.postBuildOption = option;
                 this.pass = pass;
                 this.failed = false;
-                this.bulkBuildSettingsGuid = null;
-            }
-
-            void ISerializationCallbackReceiver.OnAfterDeserialize()
-            {
-                this.bulkBuildSettings = !string.IsNullOrEmpty(bulkBuildSettingsGuid) ? AssetDatabase.LoadAssetAtPath<BulkBuildSettings>(AssetDatabase.GUIDToAssetPath(this.bulkBuildSettingsGuid)) : null;
-            }
-
-            void ISerializationCallbackReceiver.OnBeforeSerialize()
-            {
-                if (this.bulkBuildSettings)
+                if (settings)
                 {
-                    AssetDatabase.TryGetGUIDAndLocalFileIdentifier(this.bulkBuildSettings, out this.bulkBuildSettingsGuid, out long _);
+                    AssetDatabase.TryGetGUIDAndLocalFileIdentifier(settings, out this.bulkBuildSettingsGuid, out long _);
                 }
                 else
                 {
@@ -683,10 +682,11 @@ namespace com.spacepuppyeditor.Settings
                 if (!string.IsNullOrEmpty(json))
                 {
                     SPTempFolder.Delete(BuildCommand.FILENAME_BUILDCOMMAND);
-                    var command = JsonUtility.FromJson<BuildCommand>(json);
 
                     Debug.Log("Spacepuppy Build Pipeline - continuing build after recompile.");
                     await Task.Delay(1000); //just wait a little
+
+                    var command = JsonUtility.FromJson<BuildCommand>(json);
                     if (!command.TryCompleteBuild())
                     {
                         Debug.LogWarning("Spacepuppy Build Pipeline - there was an error attempting to continue build.");

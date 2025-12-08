@@ -41,7 +41,23 @@ namespace com.spacepuppy.Utils
 
             return null;
         }
-        
+
+        public static bool TryGetGameObjectFromSource(object obj, out GameObject go, bool respectProxy = false)
+        {
+            go = null;
+            if (respectProxy) obj = obj.ReduceIfProxyAs(typeof(GameObject));
+            if (obj.IsNullOrDestroyed()) return false;
+
+            if (obj is GameObject)
+                go = obj as GameObject;
+            if (obj is Component)
+                go = ObjUtil.IsObjectAlive(obj as Component) ? (obj as Component).gameObject : null;
+            if (obj is IGameObjectSource)
+                go = obj.IsNullOrDestroyed() ? null : (obj as IGameObjectSource).gameObject;
+
+            return go != null;
+        }
+
         public static Transform GetTransformFromSource(object obj, bool respectProxy = false)
         {
             if (respectProxy) obj = obj.ReduceIfProxyAs(typeof(Transform));

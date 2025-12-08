@@ -1397,7 +1397,7 @@ namespace com.spacepuppy
 
         #region Special Types
 
-        private class ManualWaitForGeneric : IPooledYieldInstruction, System.Collections.IEnumerator
+        private class ManualWaitForGeneric : IDisposableYieldInstruction, System.Collections.IEnumerator
         {
 
             private enum States : byte
@@ -1512,7 +1512,7 @@ namespace com.spacepuppy
 
         }
 
-        private class EnumWrapper : IRadicalYieldInstruction, IRadicalEnumerator, IPooledYieldInstruction
+        private class EnumWrapper : IRadicalYieldInstruction, IRadicalEnumerator, IDisposableYieldInstruction
         {
 
             private static com.spacepuppy.Collections.ObjectCachePool<EnumWrapper> _pool = new com.spacepuppy.Collections.ObjectCachePool<EnumWrapper>(-1, () => new EnumWrapper());
@@ -1640,8 +1640,7 @@ namespace com.spacepuppy
                 if (old != null)
                 {
                     if (old is IImmediatelyResumingYieldInstruction imry) imry.Signal -= _owner.OnImmediatelyResumingYieldInstructionSignaled;
-                    //if (old is IPooledYieldInstruction py) py.Dispose();
-                    if (old is System.IDisposable disp) disp.Dispose();
+                    if (old is IDisposableYieldInstruction py) py.Dispose();
                 }
 
                 return _currentOperation;
@@ -1652,8 +1651,7 @@ namespace com.spacepuppy
                 if (_currentOperation != null)
                 {
                     if (_currentOperation is IImmediatelyResumingYieldInstruction imry) imry.Signal -= _owner.OnImmediatelyResumingYieldInstructionSignaled;
-                    //if (_currentOperation is IPooledYieldInstruction py) py.Dispose();
-                    if (_currentOperation is System.IDisposable disp) disp.Dispose();
+                    if (_currentOperation is IDisposableYieldInstruction py) py.Dispose();
                 }
 
                 if (_stack != null && _stack.Count > 0)
@@ -1662,8 +1660,7 @@ namespace com.spacepuppy
                     while (e.MoveNext())
                     {
                         if (e.Current is IImmediatelyResumingYieldInstruction imry) imry.Signal -= _owner.OnImmediatelyResumingYieldInstructionSignaled;
-                        //if (e.Current is IPooledYieldInstruction py) py.Dispose();
-                        if (e.Current is System.IDisposable disp) disp.Dispose();
+                        if (e.Current is IDisposableYieldInstruction py) py.Dispose();
                     }
                     _stack.Clear();
                 }
@@ -1695,8 +1692,7 @@ namespace com.spacepuppy
                 if (old != null)
                 {
                     if (old is IImmediatelyResumingYieldInstruction imry) imry.Signal -= _owner.OnImmediatelyResumingYieldInstructionSignaled;
-                    //if (old is IPooledYieldInstruction py) py.Dispose();
-                    if (old is System.IDisposable disp) disp.Dispose();
+                    if (old is IDisposableYieldInstruction py) py.Dispose();
                 }
                 return old;
             }
@@ -1709,8 +1705,7 @@ namespace com.spacepuppy
                     while (e.MoveNext())
                     {
                         if (e.Current is IImmediatelyResumingYieldInstruction imry) imry.Signal -= _owner.OnImmediatelyResumingYieldInstructionSignaled;
-                        //if (e.Current is IPooledYieldInstruction py) py.Dispose();
-                        if (e.Current is System.IDisposable disp) disp.Dispose();
+                        if (e.Current is IDisposableYieldInstruction py) py.Dispose();
                     }
                     _stack.Clear();
                 }

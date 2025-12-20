@@ -52,6 +52,28 @@ namespace com.spacepuppy.Geom
             return mask;
         }
 
+        public static int CalculateLayerMaskAgainst(Collider collider)
+        {
+            if (!collider) return 0;
+            int mask = CalculateLayerMaskAgainst(collider.gameObject.layer);
+#if UNITY_2022_2_OR_NEWER
+            mask |= (int)collider.includeLayers;
+            mask &= ~(int)collider.excludeLayers;
+#endif
+            return mask;
+        }
+
+        public static int CalculateLayerMaskAgainst(Rigidbody rb)
+        {
+            if (!rb) return 0;
+            int mask = CalculateLayerMaskAgainst(rb.gameObject.layer);
+#if UNITY_2022_2_OR_NEWER
+            mask |= (int)rb.includeLayers;
+            mask &= ~(int)rb.excludeLayers;
+#endif
+            return mask;
+        }
+
         #endregion
 
 
@@ -566,7 +588,7 @@ namespace com.spacepuppy.Geom
             }
 
             var geom = GeomUtil.GetGeom(coll);
-            return geom.Cast(dir, out hitInfo, dist, CalculateLayerMaskAgainst(coll.gameObject.layer), query);
+            return geom.Cast(dir, out hitInfo, dist, CalculateLayerMaskAgainst(coll), query);
         }
 
         public static RaycastHit[] CastAll(Collider coll, Vector3 dir, float dist, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
@@ -580,7 +602,7 @@ namespace com.spacepuppy.Geom
             using (var lst = TempCollection.GetList<RaycastHit>())
             {
                 var geom = GeomUtil.GetGeom(coll);
-                geom.CastAll(dir, lst, dist, CalculateLayerMaskAgainst(coll.gameObject.layer), query);
+                geom.CastAll(dir, lst, dist, CalculateLayerMaskAgainst(coll), query);
                 return lst.ToArray();
             }
         }
@@ -598,7 +620,7 @@ namespace com.spacepuppy.Geom
             }
 
             var geom = GeomUtil.GetGeom(coll);
-            return geom.CastAll(dir, results, dist, CalculateLayerMaskAgainst(coll.gameObject.layer), query);
+            return geom.CastAll(dir, results, dist, CalculateLayerMaskAgainst(coll), query);
         }
 
         #endregion

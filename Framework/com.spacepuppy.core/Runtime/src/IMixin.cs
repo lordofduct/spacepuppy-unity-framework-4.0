@@ -118,10 +118,28 @@ namespace com.spacepuppy
         {
             this.OnStarted += (s, e) =>
             {
-                GameLoop.LateUpdateHandle.BeginInvoke(() =>
+                switch (GameLoop.CurrentSequence)
                 {
-                    this.OnLateStart();
-                });
+                    case UpdateSequence.None:
+                        GameLoop.UpdateHandle.BeginInvoke(() =>
+                        {
+                            this.OnLateStart();
+                        });
+                        break;
+                    case UpdateSequence.Update:
+                        GameLoop.LateUpdateHandle.BeginInvoke(() =>
+                        {
+                            this.OnLateStart();
+                        });
+                        break;
+                    case UpdateSequence.FixedUpdate:
+                    case UpdateSequence.LateUpdate:
+                        GameLoop.UpdateHandle.BeginInvoke(() =>
+                        {
+                            this.OnLateStart();
+                        });
+                        break;
+                }
             };
         }
 

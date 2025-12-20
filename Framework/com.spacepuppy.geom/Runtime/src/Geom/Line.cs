@@ -3,6 +3,7 @@
 namespace com.spacepuppy.Geom
 {
 
+    //TODO - this struct doesn't make any sense in its current state. It's more like a ray than a line. Where is this from and what is it meant for?
     [System.Serializable()]
     public struct Line
     {
@@ -109,7 +110,7 @@ namespace com.spacepuppy.Geom
 
             var v = point - line.Point;
             var t = Vector3.Dot(v, line.Direction);
-            return line.Point + line.Direction * t;
+            return line.Point + line.Direction * t; //TODO - this should be clamped to line's bounds
         }
 
         #endregion

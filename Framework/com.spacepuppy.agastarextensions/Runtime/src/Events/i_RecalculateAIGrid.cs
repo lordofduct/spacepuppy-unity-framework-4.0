@@ -11,6 +11,9 @@ using com.spacepuppy.Pathfinding;
 namespace com.spacepuppy.Events
 {
 
+    /// <summary>
+    /// Bounds related recalc modes are AABB's because AronGranberg A* only accepts AABB's for recalc regions.
+    /// </summary>
     public class i_RecalculateAIGrid : AutoTriggerable
     {
 
@@ -18,8 +21,11 @@ namespace com.spacepuppy.Events
         {
             AllAsync = -1,
             All = 0,
-            Region = 1,
-            BoundsOfCollider = 2
+            [System.ComponentModel.Description("Local Scale AABB")]
+            LocalScaleAABB = 1, //rotation is ignored
+            BoundsOfCollider = 2,
+            [System.ComponentModel.Description("Lossy Scale AABB")]
+            LossyScaleAABB, //rotation is ignored
         }
 
         #region Fields
@@ -56,25 +62,33 @@ namespace com.spacepuppy.Events
         {
             if (!this.CanTrigger) return false;
 
-            switch(_mode)
+            switch (_mode)
             {
                 case RecalculateMode.AllAsync:
                     {
                         if (_delay > 0)
+                        {
                             this.InvokeGuaranteed(() => AstarPath.active?.BeginScanAsync(), _delay);
+                        }
                         else
+                        {
                             AstarPath.active?.BeginScanAsync();
+                        }
                         return true;
                     }
                 case RecalculateMode.All:
                     {
                         if (_delay > 0f)
+                        {
                             this.InvokeGuaranteed(() => AstarPath.active?.TryScan(), _delay);
+                        }
                         else
+                        {
                             AstarPath.active?.TryScan();
+                        }
                         return true;
                     }
-                case RecalculateMode.Region:
+                case RecalculateMode.LocalScaleAABB:
                     {
                         var bounds = new Bounds(this.transform.position, this.transform.localScale);
                         var guo = new GraphUpdateObject(bounds)
@@ -82,9 +96,13 @@ namespace com.spacepuppy.Events
                             updatePhysics = true
                         };
                         if (_delay > 0f)
+                        {
                             this.InvokeGuaranteed(() => AstarPath.active?.UpdateGraphs(guo), _delay);
+                        }
                         else
+                        {
                             AstarPath.active?.UpdateGraphs(guo);
+                        }
                     }
                     break;
                 case RecalculateMode.BoundsOfCollider:
@@ -96,9 +114,30 @@ namespace com.spacepuppy.Events
                             updatePhysics = true
                         };
                         if (_delay > 0f)
+                        {
                             this.InvokeGuaranteed(() => AstarPath.active?.UpdateGraphs(guo), _delay);
+                        }
                         else
+                        {
                             AstarPath.active?.UpdateGraphs(guo);
+                        }
+                    }
+                    break;
+                case RecalculateMode.LossyScaleAABB:
+                    {
+                        var bounds = new Bounds(this.transform.position, this.transform.lossyScale);
+                        var guo = new GraphUpdateObject(bounds)
+                        {
+                            updatePhysics = true
+                        };
+                        if (_delay > 0f)
+                        {
+                            this.InvokeGuaranteed(() => AstarPath.active?.UpdateGraphs(guo), _delay);
+                        }
+                        else
+                        {
+                            AstarPath.active?.UpdateGraphs(guo);
+                        }
                     }
                     break;
             }

@@ -167,6 +167,13 @@ namespace com.spacepuppy.Geom
             }
         }
 
+        public static Vector3 ClosestPoint(this Ray ray, Vector3 point)
+        {
+            var v = point - ray.origin;
+            var t = Vector3.Dot(v, ray.direction);
+            return t > 0f ? ray.origin + ray.direction * t : ray.origin;
+        }
+
         #endregion
 
         #region Plane Extension Methods

@@ -26,17 +26,20 @@ namespace com.spacepuppyeditor.Events
 
             var modeProp = this.serializedObject.FindProperty(PROP_MODE);
             SPEditorGUILayout.PropertyField(modeProp);
-            switch(modeProp.GetEnumValue<i_RecalculateAIGrid.RecalculateMode>())
+            switch (modeProp.GetEnumValue<i_RecalculateAIGrid.RecalculateMode>())
             {
                 case i_RecalculateAIGrid.RecalculateMode.All:
                     //draw nothing else
                     break;
-                case i_RecalculateAIGrid.RecalculateMode.Region:
+                case i_RecalculateAIGrid.RecalculateMode.LocalScaleAABB:
                     //draw nothing else
                     break;
                 case i_RecalculateAIGrid.RecalculateMode.BoundsOfCollider:
                     var objProp = this.serializedObject.FindProperty(PROP_OBJREF);
                     objProp.objectReferenceValue = EditorGUILayout.ObjectField("Collider", objProp.objectReferenceValue, typeof(Collider), true);
+                    break;
+                case i_RecalculateAIGrid.RecalculateMode.LossyScaleAABB:
+                    //draw nothing else
                     break;
             }
 
@@ -44,13 +47,13 @@ namespace com.spacepuppyeditor.Events
 
             this.serializedObject.ApplyModifiedProperties();
         }
-        
+
         [DrawGizmo(GizmoType.Selected | GizmoType.Active | GizmoType.InSelectionHierarchy)]
         private static void DrawGizmoBounds(i_RecalculateAIGrid targ, GizmoType gizmoType)
         {
-            switch(targ.Mode)
+            switch (targ.Mode)
             {
-                case i_RecalculateAIGrid.RecalculateMode.Region:
+                case i_RecalculateAIGrid.RecalculateMode.LocalScaleAABB:
                     {
                         var pos = targ.transform.position;
                         var sc = targ.transform.localScale;
@@ -67,6 +70,15 @@ namespace com.spacepuppyeditor.Events
                         var bounds = c.bounds;
                         Gizmos.color = Color.red;
                         Gizmos.DrawWireCube(bounds.center, bounds.size);
+                    }
+                    break;
+                case i_RecalculateAIGrid.RecalculateMode.LossyScaleAABB:
+                    {
+                        var pos = targ.transform.position;
+                        var sc = targ.transform.lossyScale;
+
+                        Gizmos.color = Color.red;
+                        Gizmos.DrawWireCube(pos, sc);
                     }
                     break;
             }

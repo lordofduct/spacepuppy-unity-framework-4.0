@@ -117,6 +117,16 @@ namespace com.spacepuppy.Collections
             return TempQueue<T>.GetQueue(e);
         }
 
+        public static TempStack<T> GetStack<T>()
+        {
+            return TempStack<T>.GetStack();
+        }
+
+        public static TempStack<T> GetStack<T>(IEnumerable<T> e)
+        {
+            return TempStack<T>.GetStack(e);
+        }
+
         public static TempCallbackCollection<T> GetCallbackCollection<T>(Action<T> addCallback, Action<T> removeCallback = null)
         {
             return TempCallbackCollection<T>.GetCallbackCollection(addCallback, removeCallback);

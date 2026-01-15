@@ -248,7 +248,7 @@ namespace com.spacepuppy.Collections
             return _buffer[DequeIndexToBufferIndex(_count - 1)];
         }
 
-        public T PeekUnshift()
+        public T PeekShift()
         {
             if (_count == 0) throw new InvalidOperationException("Deque<T> is empty.");
 

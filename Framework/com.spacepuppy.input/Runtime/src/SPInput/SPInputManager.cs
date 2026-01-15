@@ -166,7 +166,7 @@ namespace com.spacepuppy.SPInput
 
         #region Collection Interface
 
-        public void Add(string id, IInputDevice dev)
+        public virtual void Add(string id, IInputDevice dev)
         {
             if (this.Contains(dev) && !(_dict.ContainsKey(id) && _dict[id] == dev)) throw new System.ArgumentException("Manager already contains input device for other player.");
 
@@ -174,7 +174,7 @@ namespace com.spacepuppy.SPInput
             _dict[id] = dev;
         }
 
-        public bool Remove(string id)
+        public virtual bool Remove(string id)
         {
             if (_default_main != null)
             {
@@ -202,13 +202,17 @@ namespace com.spacepuppy.SPInput
             }
         }
 
-        public bool Remove(IInputDevice device)
+        public virtual bool Remove(IInputDevice device)
         {
             foreach (var pair in _dict)
             {
                 if (pair.Value == device)
                 {
                     _dict.Remove(pair.Key);
+                    if (object.ReferenceEquals(device, _default_main))
+                    {
+                        _default_main = null;
+                    }
                     return true;
                 }
             }
@@ -216,23 +220,23 @@ namespace com.spacepuppy.SPInput
             return false;
         }
 
-        public bool Contains(string id)
+        public virtual bool Contains(string id)
         {
             return _dict.ContainsKey(id);
         }
 
-        public bool Contains(IInputDevice dev)
+        public virtual bool Contains(IInputDevice dev)
         {
             return (_dict.Values as ICollection<IInputDevice>).Contains(dev);
         }
 
-        public void ClearDevices()
+        public virtual void ClearDevices()
         {
             _default_main = null;
             _dict.Clear();
         }
 
-        public string GetId(IInputDevice dev)
+        public virtual string GetId(IInputDevice dev)
         {
             foreach (var pair in _dict)
             {

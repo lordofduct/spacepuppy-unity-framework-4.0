@@ -13,7 +13,8 @@ namespace com.spacepuppy.Motor
     /// <summary>
     /// IMotor interface for a Rigidbody that treats the Rigidbody with out forces.
     /// 
-    /// Rigidbody.MovePosition is used to move the Rigidbody around.
+    /// Rigidbody.MovePosition is used to move the Rigidbody around. You should control 
+    /// if the Rigidbody is kinematic or not.
     /// </summary>
     [RequireComponentInEntity(typeof(Rigidbody))]
     [Infobox("Rigidbody.MovePosition is used to move the Rigidbody around.")]
@@ -84,7 +85,6 @@ namespace com.spacepuppy.Motor
 
             base.OnEnable();
 
-            _rigidbody.isKinematic = false;
             _vel = Vector3.zero;
             _moveCalledLastFrame = false;
             _talliedMove = Vector3.zero;
@@ -459,7 +459,6 @@ namespace com.spacepuppy.Motor
 
             if (_moveCalledLastFrame)
             {
-                //_rigidbody.velocity = Vector3.zero;
                 _rigidbody.MovePosition(_rigidbody.position + _fullTalliedMove);
             }
 

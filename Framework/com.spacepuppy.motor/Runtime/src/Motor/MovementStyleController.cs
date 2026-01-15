@@ -75,6 +75,9 @@ namespace com.spacepuppy.Motor
         private System.Action<IMovementStyleModifier> __onUpdateCompleteFunctor;
         private System.Action<IMovementStyleModifier> _onUpdateCompleteFunctor => __onUpdateCompleteFunctor ?? (__onUpdateCompleteFunctor = (o) => o.OnUpdateMovementComplete(this));
 
+        [System.NonSerialized]
+        private bool _safeEnabled;
+
         #endregion
 
         #region CONSTRUCTOR
@@ -92,6 +95,7 @@ namespace com.spacepuppy.Motor
         }
         protected virtual void OnStartOrEnable()
         {
+            _safeEnabled = true;
             _movementStyleModifierMessageToken = Messaging.CreateSignalToken<IMovementStyleModifier>(this.gameObject);
 
             if (_defaultMovementStyle is IMovementStyle && _current == null && this.Contains(_defaultMovementStyle as IMovementStyle))
@@ -107,6 +111,7 @@ namespace com.spacepuppy.Motor
 
         protected override void OnDisable()
         {
+            _safeEnabled = false;
             base.OnDisable();
 
 #if !SP_MVSTYLECNTRL_RESPECTEXECORDER
@@ -118,6 +123,17 @@ namespace com.spacepuppy.Motor
             {
                 _current.OnDeactivate(null, ActivationReason.MotorPaused);
             }
+        }
+
+        protected override void OnDestroy()
+        {
+            _safeEnabled = false;
+            base.OnDestroy();
+
+#if !SP_MVSTYLECNTRL_RESPECTEXECORDER
+            _currentPump?.Remove(this);
+            _currentPump = null;
+#endif
         }
 
         #endregion
@@ -236,6 +252,8 @@ namespace com.spacepuppy.Motor
         public void ResolveUpdateLoopSequencing()
         {
             _currentPump?.Remove(this);
+            _currentPump = null;
+            if (!_safeEnabled) return;
 
             if (_current != null)
             {
@@ -255,10 +273,6 @@ namespace com.spacepuppy.Motor
                         break;
                 }
                 _currentPump.Add(this);
-            }
-            else
-            {
-                _currentPump = null;
             }
         }
 #endif

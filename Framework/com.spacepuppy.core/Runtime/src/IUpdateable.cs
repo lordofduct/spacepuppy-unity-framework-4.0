@@ -45,6 +45,7 @@ namespace com.spacepuppy
             if (_inUpdate)
             {
                 if (_set.Contains(obj) && !_toRemove.Contains(obj)) return;
+                _toRemove.Remove(obj);
                 _toAdd.Add(obj);
             }
             else
@@ -66,8 +67,11 @@ namespace com.spacepuppy
         {
             if (_inUpdate)
             {
+                _toAdd.Remove(obj);
                 if (_set.Contains(obj))
+                {
                     _toRemove.Add(obj);
+                }
             }
             else
             {
@@ -79,7 +83,7 @@ namespace com.spacepuppy
         {
             HashSet<IUpdateable>.Enumerator e;
 
-            if(_set.Count > 0)
+            if (_set.Count > 0)
             {
                 _inUpdate = true;
                 e = _set.GetEnumerator();
@@ -97,6 +101,7 @@ namespace com.spacepuppy
                 {
                     _set.Add(e.Current);
                 }
+                _toAdd.Clear();
             }
 
             if (_toRemove.Count > 0)

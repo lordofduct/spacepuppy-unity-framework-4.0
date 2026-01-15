@@ -109,7 +109,7 @@ namespace com.spacepuppy
 
                 if(_instructions.Count > 0)
                 {
-                    yield return _instructions.Unshift();
+                    yield return _instructions.Shift();
                 }
             }
 

@@ -203,7 +203,7 @@ namespace com.spacepuppy.Collections
 
             if (index == 0)
             {
-                this.Shift(item);
+                this.Unshift(item);
             }
             else if (index == Count)
             {
@@ -296,7 +296,7 @@ namespace com.spacepuppy.Collections
 
             if (index == 0)
             {
-                this.Unshift();
+                this.Shift();
             }
             else if (index == Count - 1)
             {
@@ -319,7 +319,7 @@ namespace com.spacepuppy.Collections
             _version++;
         }
 
-        public void Shift(T item)
+        public void Unshift(T item)
         {
             this.ResizeIfNecessary();
 
@@ -328,7 +328,7 @@ namespace com.spacepuppy.Collections
             _version++;
         }
 
-        public T Unshift()
+        public T Shift()
         {
             if (_count == 0) throw new InvalidOperationException("Deque<T> is empty.");
 

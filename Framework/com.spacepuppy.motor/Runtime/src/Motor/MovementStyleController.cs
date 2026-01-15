@@ -489,7 +489,7 @@ namespace com.spacepuppy.Motor
         {
             if (_styleStack.Count > 0)
             {
-                var style = _styleStack.Unshift(); //get the 0 entry, removing it from the deque
+                var style = _styleStack.Shift(); //get the 0 entry, removing it from the deque
                 if (!ReferenceEquals(style, null) && (style.IsDestroyed() || !this.Contains(style)))
                 {
                     style = null;

@@ -958,6 +958,37 @@ namespace com.spacepuppy.Geom
             }
         }
 
+        public static bool BoxCastIgnoring(Vector3 center, Vector3 halfExtents, Vector3 direction, out RaycastHit hit, IEnumerable<Collider> ignoredColliders) => BoxCastIgnoring(center, halfExtents, direction, out hit, ignoredColliders, Quaternion.identity, float.PositiveInfinity);
+        public static bool BoxCastIgnoring(Vector3 center, Vector3 halfExtents, Vector3 direction, out RaycastHit hit, IEnumerable<Collider> ignoredColliders, Quaternion orientation, float maxDistance = float.PositiveInfinity, int layerMask = Physics.AllLayers, QueryTriggerInteraction query = QueryTriggerInteraction.UseGlobal)
+        {
+            var buffer = GetNonAllocRaycastBuffer();
+            try
+            {
+                int cnt = Physics.BoxCastNonAlloc(center, halfExtents, direction, buffer, orientation, maxDistance, layerMask, query);
+
+                if (cnt > 0)
+                {
+                    System.Array.Sort<RaycastHit>(buffer, 0, cnt, RaycastHitDistanceComparer.Default);
+
+                    for (int i = 0; i < cnt; i++)
+                    {
+                        if (!ignoredColliders.Contains(buffer[i].collider))
+                        {
+                            hit = buffer[i];
+                            return true;
+                        }
+                    }
+                }
+
+                hit = default(RaycastHit);
+                return false;
+            }
+            finally
+            {
+                ReleaseNonAllocRaycastBuffer(buffer);
+            }
+        }
+
         #endregion
 
         #region Selective CastAll

@@ -25,6 +25,7 @@ namespace com.spacepuppyeditor.Tween.Events
         public const string PROP_WRAPMODE = "_wrapMode";
         public const string PROP_WRAPCOUNT = "_wrapCount";
         public const string PROP_TARGET = "_target";
+        public const string PROP_DELAY = "_delay";
         public const string PROP_TWEENDATA = "_data";
         public const string PROP_ONCOMPLETE = "_onComplete";
         public const string PROP_TWEENTOKEN = "_tweenToken";
@@ -40,6 +41,7 @@ namespace com.spacepuppyeditor.Tween.Events
         private SPReorderableList _dataList;
         private SerializedProperty _targetProp;
         private VariantReferencePropertyDrawer _variantDrawer = new VariantReferencePropertyDrawer();
+        private VariantReferencePropertyDrawer.EditorVariantReference _variantRefCopy = new VariantReferencePropertyDrawer.EditorVariantReference();
 
         protected override void OnEnable()
         {
@@ -67,12 +69,13 @@ namespace com.spacepuppyeditor.Tween.Events
             {
                 this.DrawPropertyField(PROP_WRAPCOUNT);
             }
+            this.DrawPropertyField(PROP_DELAY);
             this.DrawPropertyField(PROP_TWEENTOKEN);
             _dataList.DoLayoutList();
             this.DrawPropertyField(PROP_ONCOMPLETE);
 
 
-            this.DrawDefaultInspectorExcept(EditorHelper.PROP_SCRIPT, PROP_ORDER, PROP_ACTIVATEON, PROP_WRAPMODE, PROP_WRAPCOUNT, PROP_TARGET, PROP_TIMESUPPLIER, PROP_TWEENDATA, PROP_ONCOMPLETE, PROP_TWEENTOKEN);
+            this.DrawDefaultInspectorExcept(EditorHelper.PROP_SCRIPT, PROP_ORDER, PROP_ACTIVATEON, PROP_WRAPMODE, PROP_WRAPCOUNT, PROP_TARGET, PROP_TIMESUPPLIER, PROP_TWEENDATA, PROP_ONCOMPLETE, PROP_TWEENTOKEN, PROP_DELAY);
 
             this.serializedObject.ApplyModifiedProperties();
         }
@@ -140,7 +143,7 @@ namespace com.spacepuppyeditor.Tween.Events
                     case TweenHash.AnimMode.To:
                         {
                             position = CalcNextRect(ref area);
-                            this.DrawVariant(position, EditorHelper.TempContent("To Value"), propType, el.FindPropertyRelative(PROP_DATA_VALUES));
+                            this.DrawVariant(position, EditorHelper.TempContent("To Value"), targObj, memberProp.stringValue, propType, el.FindPropertyRelative(PROP_DATA_VALUES));
 
                             position = CalcNextRect(ref area);
                         }
@@ -148,42 +151,43 @@ namespace com.spacepuppyeditor.Tween.Events
                     case TweenHash.AnimMode.From:
                         {
                             position = CalcNextRect(ref area);
-                            this.DrawVariant(position, EditorHelper.TempContent("From Value"), propType, el.FindPropertyRelative(PROP_DATA_VALUES));
+                            this.DrawVariant(position, EditorHelper.TempContent("From Value"), targObj, memberProp.stringValue, propType, el.FindPropertyRelative(PROP_DATA_VALUES));
                         }
                         break;
                     case TweenHash.AnimMode.By:
                         {
                             position = CalcNextRect(ref area);
-                            this.DrawVariant(position, EditorHelper.TempContent("By Value"), propType, el.FindPropertyRelative(PROP_DATA_VALUES));
+                            this.DrawVariant(position, EditorHelper.TempContent("By Value"), targObj, memberProp.stringValue, propType, el.FindPropertyRelative(PROP_DATA_VALUES));
                         }
                         break;
                     case TweenHash.AnimMode.FromTo:
                         {
                             position = CalcNextRect(ref area);
-                            this.DrawVariant(position, EditorHelper.TempContent("Start Value"), propType, el.FindPropertyRelative(PROP_DATA_VALUES));
+                            this.DrawVariant(position, EditorHelper.TempContent("Start Value"), targObj, memberProp.stringValue, propType, el.FindPropertyRelative(PROP_DATA_VALUES));
 
                             position = CalcNextRect(ref area);
-                            this.DrawVariant(position, EditorHelper.TempContent("End Value"), propType, el.FindPropertyRelative(PROP_DATA_VALUEE));
+                            this.DrawVariant(position, EditorHelper.TempContent("End Value"), targObj, memberProp.stringValue, propType, el.FindPropertyRelative(PROP_DATA_VALUEE));
                         }
                         break;
                     case TweenHash.AnimMode.RedirectTo:
                         {
                             position = CalcNextRect(ref area);
-                            this.DrawVariant(position, EditorHelper.TempContent("Start Value"), propType, el.FindPropertyRelative(PROP_DATA_VALUES));
+                            this.DrawVariant(position, EditorHelper.TempContent("Start Value"), targObj, memberProp.stringValue, propType, el.FindPropertyRelative(PROP_DATA_VALUES));
 
                             position = CalcNextRect(ref area);
-                            this.DrawVariant(position, EditorHelper.TempContent("End Value"), propType, el.FindPropertyRelative(PROP_DATA_VALUEE));
+                            this.DrawVariant(position, EditorHelper.TempContent("End Value"), targObj, memberProp.stringValue, propType, el.FindPropertyRelative(PROP_DATA_VALUEE));
                         }
                         break;
                 }
             }
-
-
         }
 
-        private void DrawVariant(Rect position, GUIContent label, System.Type propType, SerializedProperty valueProp)
+        private void DrawVariant(Rect position, GUIContent label, object targObj, string targetPropName, System.Type targetPropType, SerializedProperty valueProp)
         {
-            if (com.spacepuppy.Dynamic.DynamicUtil.TypeIsVariantSupported(propType))
+            EditorGUI.BeginChangeCheck();
+            _variantRefCopy.CopyValuesToHelper(valueProp);
+
+            if (com.spacepuppy.Dynamic.DynamicUtil.TypeIsVariantSupported(targetPropType))
             {
                 //draw the default variant as the method accepts anything
                 _variantDrawer.RestrictVariantType = false;
@@ -193,9 +197,32 @@ namespace com.spacepuppyeditor.Tween.Events
             else
             {
                 _variantDrawer.RestrictVariantType = true;
-                _variantDrawer.TypeRestrictedTo = propType;
-                _variantDrawer.ForcedObjectType = (TypeUtil.IsType(propType, typeof(Component))) ? propType : null;
+                _variantDrawer.TypeRestrictedTo = targetPropType;
+                _variantDrawer.ForcedObjectType = (TypeUtil.IsType(targetPropType, typeof(Component))) ? targetPropType : null;
                 _variantDrawer.OnGUI(position, valueProp, label);
+            }
+
+            if (EditorGUI.EndChangeCheck() && !string.IsNullOrEmpty(targetPropName))
+            {
+                var oldmode = _variantRefCopy.Mode;
+                var oldtarg = _variantRefCopy._unityObjectReference;
+                _variantRefCopy.CopyValuesToHelper(valueProp);
+                var newmode = _variantRefCopy.Mode;
+                var newtarg = _variantRefCopy._unityObjectReference;
+
+                if (newmode == VariantReference.RefMode.Property && newtarg && newtarg != oldtarg)
+                {
+                    if (targObj != null)
+                    {
+                        newtarg = ObjUtil.GetAsFromSource(targObj.GetType(), newtarg) as UnityEngine.Object;
+                        if (newtarg)
+                        {
+                            _variantRefCopy.SetToProperty(newtarg, targetPropName);
+                            _variantRefCopy.CopyValuesFromHelper(valueProp);
+                            GUI.changed = true;
+                        }
+                    }
+                }
             }
         }
 

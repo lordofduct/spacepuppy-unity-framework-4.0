@@ -798,7 +798,7 @@ namespace com.spacepuppyeditor.Events
 
             public override void DrawValueField(Rect position, SerializedProperty property)
             {
-                CopyValuesToHelper(property, _helper);
+                _helper.CopyValuesToHelper(property);
 
                 //draw ref selection
                 position = this.DrawRefModeSelectionDropDown(position, property, _helper);
@@ -812,7 +812,7 @@ namespace com.spacepuppyeditor.Events
                             this.DrawValueFieldInValueMode(position, property, _helper);
                             if (EditorGUI.EndChangeCheck())
                             {
-                                CopyValuesFromHelper(property, _helper);
+                                _helper.CopyValuesFromHelper(property);
                             }
                         }
                         break;
@@ -831,7 +831,7 @@ namespace com.spacepuppyeditor.Events
                             {
                                 _helper.IntValue = argindex;
                                 _helper._mode = (VariantReference.RefMode)((int)EventTriggerTarget.RefMode.TriggerArg);
-                                CopyValuesFromHelper(property, _helper);
+                                _helper.CopyValuesFromHelper(property);
                             }
                         }
                         else
@@ -847,15 +847,15 @@ namespace com.spacepuppyeditor.Events
                 var r0 = new Rect(position.xMin, position.yMin, Mathf.Min(REF_SELECT_WIDTH, position.width), position.height);
 
                 EditorGUI.BeginChangeCheck();
-                var mode = (EventTriggerTarget.RefMode)EditorGUI.EnumPopup(r0, GUIContent.none, (EventTriggerTarget.RefMode)_helper._mode);
+                var mode = (EventTriggerTarget.RefMode)EditorGUI.EnumPopup(r0, GUIContent.none, (EventTriggerTarget.RefMode)helper._mode);
                 if (EditorGUI.EndChangeCheck())
                 {
-                    _helper.PrepareForRefModeChange((VariantReference.RefMode)mode);
+                    helper.PrepareForRefModeChange((VariantReference.RefMode)mode);
                     if (mode == EventTriggerTarget.RefMode.TriggerArg && this.TriggerArgCount > 1)
                     {
-                        _helper._w = Mathf.Clamp(this.CurrentTriggerArgIndex, 0, Mathf.Max(0, this.TriggerArgCount - 1));
+                        helper._w = Mathf.Clamp(this.CurrentTriggerArgIndex, 0, Mathf.Max(0, this.TriggerArgCount - 1));
                     }
-                    CopyValuesFromHelper(property, helper);
+                    helper.CopyValuesFromHelper(property);
                 }
 
                 return new Rect(r0.xMax, r0.yMin, position.width - r0.width, r0.height);

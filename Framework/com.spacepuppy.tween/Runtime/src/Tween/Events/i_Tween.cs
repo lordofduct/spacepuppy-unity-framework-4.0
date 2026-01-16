@@ -25,6 +25,9 @@ namespace com.spacepuppy.Tween.Events
         [DiscreteFloat.Positive()]
         private DiscreteFloat _wrapCount = DiscreteFloat.PositiveInfinity;
 
+        [SerializeField]
+        private float _delay;
+
         [SerializeReference()]
         private ITweenData[] _data;
 
@@ -138,6 +141,8 @@ namespace com.spacepuppy.Tween.Events
             {
                 if (_data[i] != null) _data[i].Apply(twn);
             }
+
+            twn.Delay(_delay);
             twn.Use(_timeSupplier.TimeSupplier);
             twn.SetId(target);
             if (_wrapMode != TweenWrapMode.Once)

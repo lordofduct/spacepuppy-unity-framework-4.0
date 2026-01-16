@@ -2,15 +2,12 @@
 using UnityEditor;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 using com.spacepuppy;
+using com.spacepuppy.Collections;
 using com.spacepuppy.Dynamic;
 using com.spacepuppy.Utils;
-
-using com.spacepuppyeditor.Core;
-using com.spacepuppy.Collections;
-using com.spacepuppy.Events;
-using System.Reflection;
 
 namespace com.spacepuppyeditor.Core
 {
@@ -108,7 +105,7 @@ namespace com.spacepuppyeditor.Core
 
         public virtual void DrawValueField(Rect position, SerializedProperty property)
         {
-            CopyValuesToHelper(property, _helper);
+            _helper.CopyValuesToHelper(property);
 
             //draw ref selection
             position = this.DrawRefModeSelectionDropDown(position, property, _helper);
@@ -122,7 +119,7 @@ namespace com.spacepuppyeditor.Core
                         this.DrawValueFieldInValueMode(position, property, _helper);
                         if (EditorGUI.EndChangeCheck())
                         {
-                            CopyValuesFromHelper(property, _helper);
+                            _helper.CopyValuesFromHelper(property);
                         }
                     }
                     break;
@@ -140,11 +137,11 @@ namespace com.spacepuppyeditor.Core
             var r0 = new Rect(position.xMin, position.yMin, Mathf.Min(REF_SELECT_WIDTH, position.width), position.height);
 
             EditorGUI.BeginChangeCheck();
-            var mode = (VariantReference.RefMode)EditorGUI.EnumPopup(r0, GUIContent.none, _helper._mode);
+            var mode = (VariantReference.RefMode)EditorGUI.EnumPopup(r0, GUIContent.none, helper._mode);
             if (EditorGUI.EndChangeCheck())
             {
-                _helper.PrepareForRefModeChange(mode);
-                CopyValuesFromHelper(property, helper);
+                helper.PrepareForRefModeChange(mode);
+                helper.CopyValuesFromHelper(property);
             }
 
             return new Rect(r0.xMax, r0.yMin, position.width - r0.width, r0.height);
@@ -496,14 +493,18 @@ namespace com.spacepuppyeditor.Core
                             switch (_helper._mode)
                             {
                                 case VariantReference.RefMode.Value:
+                                    _helper.PrepareForRefModeChange(VariantReference.RefMode.Property);
+                                    _helper.CopyValuesFromHelper(property);
                                     targProp.objectReferenceValue = draggedobj;
                                     memberProp.stringValue = string.Empty;
                                     vtypeProp.SetEnumValue(VariantReference.GetVariantType(draggedobj.GetType()));
+                                    GUI.changed = true;
                                     break;
                                 case VariantReference.RefMode.Property:
                                     targProp.objectReferenceValue = draggedobj;
                                     memberProp.stringValue = string.Empty;
                                     vtypeProp.SetEnumValue(VariantType.Null);
+                                    GUI.changed = true;
                                     break;
                             }
                         }
@@ -537,37 +538,13 @@ namespace com.spacepuppyeditor.Core
 
         #region Static Utils
 
-        public static void CopyValuesToHelper(SerializedProperty property, EditorVariantReference helper)
-        {
-            helper._mode = property.FindPropertyRelative(PROP_MODE).GetEnumValue<VariantReference.RefMode>();
-            helper._type = property.FindPropertyRelative(PROP_TYPE).GetEnumValue<VariantType>();
-            helper._x = property.FindPropertyRelative(PROP_X).floatValue;
-            helper._y = property.FindPropertyRelative(PROP_Y).floatValue;
-            helper._z = property.FindPropertyRelative(PROP_Z).floatValue;
-            helper._w = property.FindPropertyRelative(PROP_W).doubleValue;
-            helper._string = property.FindPropertyRelative(PROP_STRING).stringValue;
-            helper._unityObjectReference = property.FindPropertyRelative(PROP_OBJREF).objectReferenceValue;
-        }
-
-        public static void CopyValuesFromHelper(SerializedProperty property, EditorVariantReference helper)
-        {
-            property.FindPropertyRelative(PROP_MODE).SetEnumValue(helper._mode);
-            property.FindPropertyRelative(PROP_TYPE).SetEnumValue(helper._type);
-            property.FindPropertyRelative(PROP_X).floatValue = helper._x;
-            property.FindPropertyRelative(PROP_Y).floatValue = helper._y;
-            property.FindPropertyRelative(PROP_Z).floatValue = helper._z;
-            property.FindPropertyRelative(PROP_W).doubleValue = helper._w;
-            property.FindPropertyRelative(PROP_STRING).stringValue = helper._string;
-            property.FindPropertyRelative(PROP_OBJREF).objectReferenceValue = helper._unityObjectReference;
-        }
-
         public static void SetSerializedProperty(SerializedProperty property, object obj)
         {
             if (property == null) throw new System.ArgumentNullException(nameof(property));
 
             var variant = new EditorVariantReference();
             variant.Value = obj;
-            CopyValuesFromHelper(property, variant);
+            variant.CopyValuesFromHelper(property);
         }
 
         public static object GetFromSerializedProperty(SerializedProperty property)
@@ -575,13 +552,13 @@ namespace com.spacepuppyeditor.Core
             if (property == null) throw new System.ArgumentNullException(nameof(property));
 
             var helper = new EditorVariantReference();
-            CopyValuesToHelper(property, helper);
+            helper.CopyValuesToHelper(property);
             return helper.Value;
         }
 
         #endregion
 
-        #region Specail Types
+        #region Special Types
 
         public class EditorVariantReference : VariantReference
         {
@@ -696,6 +673,30 @@ namespace com.spacepuppyeditor.Core
                 }
             }
 
+
+            public void CopyValuesToHelper(SerializedProperty property)
+            {
+                this._mode = property.FindPropertyRelative(PROP_MODE).GetEnumValue<VariantReference.RefMode>();
+                this._type = property.FindPropertyRelative(PROP_TYPE).GetEnumValue<VariantType>();
+                this._x = property.FindPropertyRelative(PROP_X).floatValue;
+                this._y = property.FindPropertyRelative(PROP_Y).floatValue;
+                this._z = property.FindPropertyRelative(PROP_Z).floatValue;
+                this._w = property.FindPropertyRelative(PROP_W).doubleValue;
+                this._string = property.FindPropertyRelative(PROP_STRING).stringValue;
+                this._unityObjectReference = property.FindPropertyRelative(PROP_OBJREF).objectReferenceValue;
+            }
+
+            public void CopyValuesFromHelper(SerializedProperty property)
+            {
+                property.FindPropertyRelative(PROP_MODE).SetEnumValue(this._mode);
+                property.FindPropertyRelative(PROP_TYPE).SetEnumValue(this._type);
+                property.FindPropertyRelative(PROP_X).floatValue = this._x;
+                property.FindPropertyRelative(PROP_Y).floatValue = this._y;
+                property.FindPropertyRelative(PROP_Z).floatValue = this._z;
+                property.FindPropertyRelative(PROP_W).doubleValue = this._w;
+                property.FindPropertyRelative(PROP_STRING).stringValue = this._string;
+                property.FindPropertyRelative(PROP_OBJREF).objectReferenceValue = this._unityObjectReference;
+            }
 
         }
 

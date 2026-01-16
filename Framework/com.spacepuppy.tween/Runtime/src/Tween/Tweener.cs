@@ -441,7 +441,7 @@ namespace com.spacepuppy.Tween
                             _normalizedPlayHeadPosition = Mathf.Repeat(_unwrappedPlayHeadPosition - _delay, totalDur);
                         break;
                     case TweenWrapMode.PingPong:
-                        if (_normalizedPlayHeadPosition < _delay)
+                        if (_unwrappedPlayHeadPosition < _delay)
                             _normalizedPlayHeadPosition = 0f;
                         else
                             _normalizedPlayHeadPosition = Mathf.PingPong(_unwrappedPlayHeadPosition - _delay, totalDur);

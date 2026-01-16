@@ -16,7 +16,7 @@
         ITweenHash OnFinish(System.EventHandler d);
         ITweenHash OnStopped(System.EventHandler d);
         
-        Tweener Create();
+        Tweener Create(bool preserve = false);
 
     }
 
@@ -51,9 +51,8 @@
         /// <returns></returns>
         public static Tweener Play(this ITweenHash hash)
         {
-            var tween = hash.Create();
+            var tween = hash.Create(false);
             tween.Play();
-            hash.Dispose();
             return tween;
         }
 
@@ -64,9 +63,8 @@
         /// <returns></returns>
         public static Tweener Play(this ITweenHash hash, float playHeadPos)
         {
-            var tween = hash.Create();
+            var tween = hash.Create(false);
             tween.Play(playHeadPos);
-            hash.Dispose();
             return tween;
         }
 
@@ -77,7 +75,7 @@
         /// <returns></returns>
         public static Tweener Play(this ITweenHash hash, bool autoKill, object autoKillToken = null)
         {
-            var tween = hash.Create();
+            var tween = hash.Create(false);
             if (autoKill)
             {
                 tween.AutoKillToken = autoKillToken;
@@ -88,7 +86,6 @@
             {
                 tween.Play();
             }
-            hash.Dispose();
             return tween;
         }
 
@@ -99,7 +96,7 @@
         /// <returns></returns>
         public static Tweener Play(this ITweenHash hash, float playHeadPos, bool autoKill, object autoKillToken = null)
         {
-            var tween = hash.Create();
+            var tween = hash.Create(false);
             if (autoKill)
             {
                 tween.AutoKillToken = autoKillToken;
@@ -110,7 +107,6 @@
             {
                 tween.Play(playHeadPos);
             }
-            hash.Dispose();
             return tween;
         }
 
@@ -121,7 +117,7 @@
         /// <returns></returns>
         public static Tweener PlayPreserved(this ITweenHash hash)
         {
-            var tween = hash.Create();
+            var tween = hash.Create(true);
             tween.Play();
             return tween;
         }
@@ -133,7 +129,7 @@
         /// <returns></returns>
         public static Tweener PlayPreserved(this ITweenHash hash, float playHeadPos)
         {
-            var tween = hash.Create();
+            var tween = hash.Create(true);
             tween.Play(playHeadPos);
             return tween;
         }
@@ -145,7 +141,7 @@
         /// <returns></returns>
         public static Tweener PlayPreserved(this ITweenHash hash, bool autoKill, object autoKillToken = null)
         {
-            var tween = hash.Create();
+            var tween = hash.Create(true);
             if (autoKill)
             {
                 tween.AutoKillToken = autoKillToken;
@@ -166,7 +162,7 @@
         /// <returns></returns>
         public static Tweener PlayPreserved(this ITweenHash hash, float playHeadPos, bool autoKill, object autoKillToken = null)
         {
-            var tween = hash.Create();
+            var tween = hash.Create(true);
             if (autoKill)
             {
                 tween.AutoKillToken = autoKillToken;

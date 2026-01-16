@@ -198,7 +198,7 @@ namespace com.spacepuppy.Tween
             return this;
         }
 
-        public Tweener Create()
+        public Tweener Create(bool preserve = false)
         {
             var tweener = new CallbackTweener(_id, _callback, _dur)
             {
@@ -215,6 +215,9 @@ namespace com.spacepuppy.Tween
             if (_onWrap != null) tweener.OnWrap += _onWrap;
             if (_onFinish != null) tweener.OnFinish += _onFinish;
             if (_onStopped != null) tweener.OnStep += _onStopped;
+
+            if (!preserve) this.Dispose();
+
             return tweener;
         }
 

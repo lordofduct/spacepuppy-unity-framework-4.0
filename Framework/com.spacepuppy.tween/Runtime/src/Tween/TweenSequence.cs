@@ -1,6 +1,9 @@
-﻿using System;
+﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+
+using com.spacepuppy.Collections;
+using com.spacepuppy.Utils;
 
 namespace com.spacepuppy.Tween
 {
@@ -314,6 +317,109 @@ namespace com.spacepuppy.Tween
 
             #endregion
 
+        }
+
+        #endregion
+
+    }
+
+    /// <remarks>
+    /// At this time sequences do not support 'reverse'. 
+    /// 
+    /// If/When we upgrade this we need to go into the TweenHash.Create method and make sure it sets it up this sequence correctly.
+    /// </remarks>
+    public class FollowOnTweenSequence : Tweener
+    {
+
+        #region Fields
+
+        private Deque<TweenHash> _sequence = new();
+        private Tweener _current;
+        private float _abandonedDurations;
+
+        #endregion
+
+        #region CONSTRUCTOR
+
+        public FollowOnTweenSequence(object id)
+        {
+            this.Id = id;
+        }
+
+        #endregion
+
+        #region Properties
+
+        public override object Id { get; set; }
+
+        #endregion
+
+        #region Methods
+
+        public void Prepend(TweenHash hash)
+        {
+            if (hash == null) throw new System.ArgumentNullException(nameof(hash));
+            _sequence.Unshift(hash);
+        }
+
+        public void Append(TweenHash hash)
+        {
+            if (hash == null) throw new System.ArgumentNullException(nameof(hash));
+            _sequence.Push(hash);
+        }
+
+        #endregion
+
+        #region Tweener Interface
+
+        protected internal override bool GetTargetIsDestroyed()
+        {
+            if (_current != null) return _current.GetTargetIsDestroyed();
+            if (_sequence.Count == 0) return false;
+
+            return _sequence.PeekShift().Target.IsNullOrDestroyed();
+        }
+
+        protected internal override float GetPlayHeadLength()
+        {
+            float dur = _abandonedDurations;
+            if (_current != null) dur += _current.GetPlayHeadLength();
+
+            var e = _sequence.GetEnumerator();
+            while (e.MoveNext())
+            {
+                dur += e.Current.EstimateDuration();
+            }
+            return dur;
+        }
+
+        protected internal override void DoUpdate(float dt, float t)
+        {
+            if (_current == null)
+            {
+                if (_sequence.Count == 0) return;
+
+                _current = _sequence.Shift().Create();
+            }
+            else if (_current.IsComplete || _current.IsDead)
+            {
+                float f = _current.GetPlayHeadLength();
+                if (float.IsFinite(f)) _abandonedDurations += f;
+
+                dt += t - _abandonedDurations;
+                if (_sequence.Count == 0)
+                {
+                    _current = null;
+                    return;
+                }
+
+                _current = _sequence.Shift().Create();
+            }
+
+            if (_current != null)
+            {
+                _current.Scrub(dt);
+            }
         }
 
         #endregion

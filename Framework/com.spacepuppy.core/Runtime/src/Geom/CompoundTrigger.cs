@@ -205,7 +205,7 @@ namespace com.spacepuppy.Geom
             set => _otherColliderMessageSettings = value;
         }
 
-        public ActiveColliderCollection ActiveCollider => (_activeCollidersWrapper ??= new(this));
+        public ActiveColliderCollection ActiveColliders => (_activeCollidersWrapper ??= new(this));
 
         #endregion
 
@@ -690,6 +690,8 @@ namespace com.spacepuppy.Geom
             {
                 _owner = owner;
             }
+
+            public int Count => _owner._active.Count;
 
             public bool Contains(Collider item)
             {

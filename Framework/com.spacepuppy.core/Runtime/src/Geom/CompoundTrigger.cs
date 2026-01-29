@@ -293,8 +293,14 @@ namespace com.spacepuppy.Geom
             Vector3 p;
             foreach (var c in _colliders.Keys)
             {
-                p = c.ClosestPoint(position);
-                if (Vector3.SqrMagnitude(p - position) < MathUtil.EPSILON_SQR) return true;
+                if (c.enabled && c.gameObject.activeInHierarchy)
+                {
+                    p = c.ClosestPoint(position);
+                    if (Vector3.SqrMagnitude(p - position) < MathUtil.EPSILON_SQR)
+                    {
+                        return true;
+                    }
+                }
             }
 
             return false;
@@ -521,7 +527,7 @@ namespace com.spacepuppy.Geom
                     CompoundTriggerMember member;
                     Collider membercoll;
                     if (this.AnyRelatedColliderOverlaps(other, out member)) membercoll = member.Collider;
-                    else membercoll = _colliders.Keys.FirstOrDefault();
+                    else membercoll = _colliders.Keys.FirstOrDefault(c => c.enabled && c.gameObject.activeInHierarchy);
                     _otherColliderMessageSettings.Send(other.gameObject, (this, membercoll), OnExitFunctor);
                 }
             }

@@ -138,7 +138,7 @@ namespace com.spacepuppy.Geom
                         CompoundTriggerMember member;
                         Collider membercoll;
                         if (this.AnyRelatedColliderOverlaps(other, out member)) membercoll = member.Collider;
-                        else membercoll = _colliders.Keys.FirstOrDefault();
+                        else membercoll = _colliders.Keys.FirstOrDefault(c => c.enabled && c.gameObject.activeInHierarchy);
                         _otherColliderMessageSettings.Send(other.gameObject, (this, membercoll), OnExitFunctor);
                     }
                 }

@@ -147,6 +147,26 @@ namespace com.spacepuppy.Utils
                 return sender.Subscribe<T>(target);
             }
 
+            public bool SubscribeIfNecessary<T>(GameObject sender, T target, out ISubscribableMessageHook<T> hook) where T : class
+            {
+                var go_target = GameObjectUtil.GetGameObjectFromSource(target);
+                if (go_target && this.IsInMessagePath(sender, go_target))
+                {
+                    hook = null;
+                    return false;
+                }
+
+                return sender.Subscribe<T>(target, out hook);
+            }
+
+            public bool SubscribeIfNecessary<T>(GameObject sender, T target, ref MultiTrackedListenerToken token) where T : class
+            {
+                var go_target = GameObjectUtil.GetGameObjectFromSource(target);
+                if (go_target && this.IsInMessagePath(sender, go_target)) return false;
+
+                return sender.Subscribe<T>(target, ref token);
+            }
+
         }
 
         #endregion
@@ -630,7 +650,7 @@ namespace com.spacepuppy.Utils
             else
             {
                 return new MessageToken<T>(() => go.GetComponents<T>().Where(o => TargetIsValid(o)).ToArray());
-            } 
+            }
         }
 
         /// <summary>
@@ -861,6 +881,16 @@ namespace com.spacepuppy.Utils
         public static bool Subscribe<T>(this GameObject go, T observer, out ISubscribableMessageHook<T> hook) where T : class => SubscribableMessageHook<T>.Subscribe(go, observer, out hook);
 
         public static bool Subscribe<T, THook>(this GameObject go, T observer, out THook hook) where T : class where THook : Component, ISubscribableMessageHook<T> => SubscribableMessageHook<T>.Subscribe<THook>(go, observer, out hook);
+
+        public static bool Subscribe<T>(this GameObject go, T observer, ref MultiTrackedListenerToken token) where T : class
+        {
+            if (SubscribableMessageHook<T>.Subscribe(go, observer, out ISubscribableMessageHook<T> hook))
+            {
+                token += new SubscribableMessageHookUnsubscriber<T>(observer, hook);
+                return true;
+            }
+            return false;
+        }
 
         /// <summary>
         /// Removes a subscription for a message on a gameobject.
@@ -1202,6 +1232,9 @@ namespace com.spacepuppy.Utils
         {
             bool Subscribe(T observer);
             bool Unsubscribe(T observer);
+
+
+
         }
 
         public abstract class SubscribableMessageHook<T> : MonoBehaviour, ISubscribableMessageHook<T> where T : class
@@ -1362,6 +1395,26 @@ namespace com.spacepuppy.Utils
                 }
             }
             internal static bool Unsubscribe(GameObject go, T observer) => _hookType != null && go && ((go.GetComponent(_hookType) as ISubscribableMessageHook<T>)?.Unsubscribe(observer) ?? false);
+
+        }
+
+        class SubscribableMessageHookUnsubscriber<T> : System.IDisposable where T : class
+        {
+            private T _observer;
+            private ISubscribableMessageHook<T> _hook;
+
+            public SubscribableMessageHookUnsubscriber(T observer, ISubscribableMessageHook<T> hook)
+            {
+                _observer = observer;
+                _hook = hook;
+            }
+
+            public void Dispose()
+            {
+                _hook?.Unsubscribe(_observer);
+                _hook = null;
+                _observer = default;
+            }
 
         }
 

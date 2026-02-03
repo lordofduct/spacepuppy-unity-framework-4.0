@@ -43,7 +43,7 @@ namespace com.spacepuppy
         /// </summary>
         event System.EventHandler<LoadSceneOptions> CompletedLoad;
 
-        void LoadScene(LoadSceneOptions options);
+        LoadSceneOptions LoadScene(LoadSceneOptions options);
 
         AsyncWaitHandle UnloadScene(Scene scene);
 

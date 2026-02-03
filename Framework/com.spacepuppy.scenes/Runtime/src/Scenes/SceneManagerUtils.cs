@@ -31,10 +31,10 @@ namespace com.spacepuppy.Scenes
             return value == LoadSceneBehaviour.AsyncAndWait ? LoadSceneBehaviour.Async : value;
         }
 
-        public static void LoadScene(LoadSceneOptions options)
+        public static LoadSceneOptions LoadScene(LoadSceneOptions options)
         {
             var manager = Services.Get<ISceneManager>() ?? InternalSceneManager.Instance;
-            manager.LoadScene(options);
+            return manager.LoadScene(options);
         }
 
         /// <summary>

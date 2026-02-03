@@ -348,6 +348,12 @@ namespace com.spacepuppy.Scenes
             }
         }
 
+
+        public AsyncWaitHandle<LoadSceneOptions> AsAsyncWaitHandle()
+        {
+            return new AsyncWaitHandle<LoadSceneOptions>(LoadSceneOptionsWaitHandleProvider.Default, this);
+        }
+
         #endregion
 
         #region Abstract Interface
@@ -519,6 +525,297 @@ namespace com.spacepuppy.Scenes
         }
 
         #endregion
+
+    }
+
+
+
+    class LoadSceneOptionsWaitHandleProvider : IAsyncWaitHandleProvider<LoadSceneOptions>
+#if SP_UNITASK
+        , IUniTaskAsyncWaitHandleProvider<LoadSceneOptions>
+#endif
+    {
+
+        public static readonly LoadSceneOptionsWaitHandleProvider Default = new LoadSceneOptionsWaitHandleProvider();
+
+        public float GetProgress(AsyncWaitHandle handle)
+        {
+            if (handle.Token is LoadSceneOptions p)
+            {
+                return p.IsComplete ? 1f : p.Progress;
+            }
+            else
+            {
+                //this should never be reached as long as it remains private and is used appropriately like that in RadicalWaitHandleExtensions.AsAsyncWaitHandle
+                throw new System.InvalidOperationException("An instance of LoadSceneOptionsWaitHandleProvider was associated with a token that was not a LoadSceneOptions.");
+            }
+        }
+
+        public System.Threading.Tasks.Task<LoadSceneOptions> GetTask(AsyncWaitHandle<LoadSceneOptions> handle)
+        {
+            if (handle.Token is LoadSceneOptions h)
+            {
+                bool complete = false;
+                if (GameLoop.InvokeRequired)
+                {
+                    GameLoop.UpdateHandle.Invoke(() => complete = h.IsComplete);
+                }
+                else
+                {
+                    complete = h.IsComplete;
+                }
+
+                if (complete)
+                {
+                    return System.Threading.Tasks.Task.FromResult(h);
+                }
+                else
+                {
+                    return WaitForComplete(h);
+                }
+            }
+            else
+            {
+                //this should never be reached as long as it remains private and is used appropriately like that in RadicalWaitHandleExtensions.AsAsyncWaitHandle
+                throw new System.InvalidOperationException("An instance of LoadSceneOptionsWaitHandleProvider was associated with a token that was not a LoadSceneOptions.");
+            }
+        }
+
+        System.Threading.Tasks.Task IAsyncWaitHandleProvider.GetTask(AsyncWaitHandle handle)
+        {
+            if (handle.Token is LoadSceneOptions h)
+            {
+                bool complete = false;
+                if (GameLoop.InvokeRequired)
+                {
+                    GameLoop.UpdateHandle.Invoke(() => complete = h.IsComplete);
+                }
+                else
+                {
+                    complete = h.IsComplete;
+                }
+
+                if (complete)
+                {
+                    return System.Threading.Tasks.Task.FromResult(h);
+                }
+                else
+                {
+                    return WaitForComplete(h);
+                }
+            }
+            else
+            {
+                //this should never be reached as long as it remains private and is used appropriately like that in RadicalWaitHandleExtensions.AsAsyncWaitHandle
+                throw new System.InvalidOperationException("An instance of LoadSceneOptionsWaitHandleProvider was associated with a token that was not a LoadSceneOptions.");
+            }
+        }
+
+#if SP_UNITASK
+        public UniTask GetUniTask(AsyncWaitHandle handle)
+        {
+            if (handle.Token is LoadSceneOptions h)
+            {
+                bool complete = false;
+                if (GameLoop.InvokeRequired)
+                {
+                    GameLoop.UpdateHandle.Invoke(() => complete = h.IsComplete);
+                }
+                else
+                {
+                    complete = h.IsComplete;
+                }
+
+                if (complete)
+                {
+                    return UniTask.FromResult(h);
+                }
+                else
+                {
+                    return WaitForComplete_UT(h);
+                }
+            }
+            else
+            {
+                //this should never be reached as long as it remains private and is used appropriately like that in RadicalWaitHandleExtensions.AsAsyncWaitHandle
+                throw new System.InvalidOperationException("An instance of LoadSceneOptionsWaitHandleProvider was associated with a token that was not a LoadSceneOptions.");
+            }
+        }
+
+        public UniTask<LoadSceneOptions> GetUniTask(AsyncWaitHandle<LoadSceneOptions> handle)
+        {
+            if (handle.Token is LoadSceneOptions h)
+            {
+                bool complete = false;
+                if (GameLoop.InvokeRequired)
+                {
+                    GameLoop.UpdateHandle.Invoke(() => complete = h.IsComplete);
+                }
+                else
+                {
+                    complete = h.IsComplete;
+                }
+
+                if (complete)
+                {
+                    return UniTask.FromResult(h);
+                }
+                else
+                {
+                    return WaitForComplete_UT(h);
+                }
+            }
+            else
+            {
+                //this should never be reached as long as it remains private and is used appropriately like that in RadicalWaitHandleExtensions.AsAsyncWaitHandle
+                throw new System.InvalidOperationException("An instance of LoadSceneOptionsWaitHandleProvider was associated with a token that was not a LoadSceneOptions.");
+            }
+        }
+        private async UniTask<LoadSceneOptions> WaitForComplete_UT(LoadSceneOptions handle)
+        {
+            while (!handle.IsComplete)
+            {
+                await UniTask.Yield();
+            }
+            return handle;
+        }
+#endif
+
+        public object GetYieldInstruction(AsyncWaitHandle handle)
+        {
+            if (handle.Token is LoadSceneOptions h)
+            {
+                return h;
+            }
+            else
+            {
+                //this should never be reached as long as it remains private and is used appropriately like that in RadicalWaitHandleExtensions.AsAsyncWaitHandle
+                throw new System.InvalidOperationException("An instance of LoadSceneOptionsWaitHandleProvider was associated with a token that was not a LoadSceneOptions.");
+            }
+        }
+
+        public bool IsComplete(AsyncWaitHandle handle)
+        {
+            if (handle.Token is LoadSceneOptions h)
+            {
+                return h.IsComplete;
+            }
+            else
+            {
+                //this should never be reached as long as it remains private and is used appropriately like that in RadicalWaitHandleExtensions.AsAsyncWaitHandle
+                throw new System.InvalidOperationException("An instance of LoadSceneOptionsWaitHandleProvider was associated with a token that was not a LoadSceneOptions.");
+            }
+        }
+
+        public void OnComplete(AsyncWaitHandle handle, System.Action<AsyncWaitHandle> callback)
+        {
+            if (handle.Token is LoadSceneOptions h)
+            {
+                if (callback != null)
+                {
+                    if (GameLoop.InvokeRequired)
+                    {
+                        GameLoop.UpdateHandle.BeginInvoke(() =>
+                        {
+                            if (h.IsComplete)
+                            {
+                                callback(h.AsAsyncWaitHandle());
+                            }
+                            else
+                            {
+                                h.Complete += (s, e) => callback((s as LoadSceneOptions).AsAsyncWaitHandle());
+                            }
+                        });
+                    }
+                    else if (h.IsComplete)
+                    {
+                        callback(h.AsAsyncWaitHandle());
+                    }
+                    else
+                    {
+                        h.Complete += (s, e) => callback((s as LoadSceneOptions).AsAsyncWaitHandle());
+                    }
+                }
+            }
+            else
+            {
+                //this should never be reached as long as it remains private and is used appropriately like that in RadicalWaitHandleExtensions.AsAsyncWaitHandle
+                throw new System.InvalidOperationException("An instance of LoadSceneOptionsWaitHandleProvider was associated with a token that was not a LoadSceneOptions.");
+            }
+        }
+
+        public void OnComplete(AsyncWaitHandle<LoadSceneOptions> handle, System.Action<AsyncWaitHandle<LoadSceneOptions>> callback)
+        {
+            if (handle.Token is LoadSceneOptions h)
+            {
+                if (callback != null)
+                {
+                    if (GameLoop.InvokeRequired)
+                    {
+                        GameLoop.UpdateHandle.BeginInvoke(() =>
+                        {
+                            if (h.IsComplete)
+                            {
+                                callback(h.AsAsyncWaitHandle());
+                            }
+                            else
+                            {
+                                h.Complete += (s, e) => callback((s as LoadSceneOptions).AsAsyncWaitHandle());
+                            }
+                        });
+                    }
+                    else if (h.IsComplete)
+                    {
+                        callback(h.AsAsyncWaitHandle());
+                    }
+                    else
+                    {
+                        h.Complete += (s, e) => callback((s as LoadSceneOptions).AsAsyncWaitHandle());
+                    }
+                }
+            }
+            else
+            {
+                //this should never be reached as long as it remains private and is used appropriately like that in RadicalWaitHandleExtensions.AsAsyncWaitHandle
+                throw new System.InvalidOperationException("An instance of LoadSceneOptionsWaitHandleProvider was associated with a token that was not a LoadSceneOptions.");
+            }
+        }
+
+        public LoadSceneOptions GetResult(AsyncWaitHandle<LoadSceneOptions> handle)
+        {
+            if (handle.Token is LoadSceneOptions h)
+            {
+                return h;
+            }
+            else
+            {
+                //this should never be reached as long as it remains private and is used appropriately like that in RadicalWaitHandleExtensions.AsAsyncWaitHandle
+                throw new System.InvalidOperationException("An instance of LoadSceneOptionsWaitHandleProvider was associated with a token that was not a LoadSceneOptions.");
+            }
+        }
+
+        object IAsyncWaitHandleProvider.GetResult(AsyncWaitHandle handle)
+        {
+            if (handle.Token is LoadSceneOptions h)
+            {
+                return h;
+            }
+            else
+            {
+                //this should never be reached as long as it remains private and is used appropriately like that in RadicalWaitHandleExtensions.AsAsyncWaitHandle
+                throw new System.InvalidOperationException("An instance of LoadSceneOptionsWaitHandleProvider was associated with a token that was not a LoadSceneOptions.");
+            }
+        }
+
+
+        private async System.Threading.Tasks.Task<LoadSceneOptions> WaitForComplete(LoadSceneOptions handle)
+        {
+            while (!handle.IsComplete)
+            {
+                await System.Threading.Tasks.Task.Yield();
+            }
+            return handle;
+        }
 
     }
 

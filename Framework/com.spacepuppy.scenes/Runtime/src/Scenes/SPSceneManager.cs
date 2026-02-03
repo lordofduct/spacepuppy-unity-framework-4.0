@@ -109,18 +109,11 @@ namespace com.spacepuppy.Scenes
             remove => _implementation.CompletedLoad -= value;
         }
 
-        public virtual void LoadScene(LoadSceneOptions options)
+        public virtual LoadSceneOptions LoadScene(LoadSceneOptions options)
         {
             if (options == null) throw new System.ArgumentNullException(nameof(options));
 
-            if (GameLoop.InvokeRequired)
-            {
-                GameLoop.UpdateHandle.Invoke(() => this.LoadScene(options));
-            }
-            else
-            {
-                _implementation.LoadScene(options);
-            }
+            return _implementation.LoadScene(options);
         }
 
         public virtual AsyncWaitHandle UnloadScene(Scene scene)
@@ -228,14 +221,15 @@ namespace com.spacepuppy.Scenes
         public event System.EventHandler<LoadSceneOptions> BeganLoad;
         public event System.EventHandler<LoadSceneOptions> CompletedLoad;
 
-        public void LoadScene(LoadSceneOptions options)
+        public LoadSceneOptions LoadScene(LoadSceneOptions options)
         {
-            if (_disposed) return;
+            if (_disposed) throw new System.ObjectDisposedException(nameof(StandardSPSceneManagerImplementation));
             if (options == null) throw new System.ArgumentNullException(nameof(options));
 
             if (GameLoop.InvokeRequired)
             {
                 GameLoop.UpdateHandle.Invoke(() => this.LoadScene(options));
+                return options;
             }
             else
             {
@@ -258,6 +252,7 @@ namespace com.spacepuppy.Scenes
                     this.OnBeganLoad(options);
                     this.SignalBeginOnOptions(options);
                 }
+                return options;
             }
         }
 

@@ -418,7 +418,7 @@ namespace com.spacepuppy.Scenes
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSplashScreen)]
         static void Init()
         {
-            if (Services.SPInternal_GetDefaultService<IEventSystem>() == null)
+            if (Services.SPInternal_GetDefaultService<ISceneManager>() == null)
             {
                 Services.SPInternal_RegisterDefaultService<ISceneManager>(Instance);
             }

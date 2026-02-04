@@ -1,16 +1,15 @@
 {
   "name": "com.spacepuppy.audio",
   "version": "4.0.0",
-  "displayName": "Spacepuppy Framework Audio",
-  "description": "AudioManager Service built on Spacepuppy Framework.",
-  "unity": "2021.3",
-  "unityRelease": "9f1",
+  "displayName": "Spacepuppy Framework QualitySettings",
+  "description": "QualitySettings Service built on Spacepuppy Framework.",
+  "unity": "2022.3",
+  "unityRelease": "62f2",
   "documentationUrl": "https://github.com/lordofduct/spacepuppy-unity-framework-4.0",
   "changelogUrl": "https://github.com/lordofduct/spacepuppy-unity-framework-4.0",
   "licensesUrl": "https://github.com/lordofduct/spacepuppy-unity-framework-4.0/blob/master/LICENSE",
   "dependencies": {
-    "com.spacepuppy.core": "4.0.0",
-    "com.spacepuppy.radicalcoroutine": "4.0.0"
+    "com.spacepuppy.core": "4.0.0"
   },
   "author": {
     "name": "Jupiter Lighthouse",

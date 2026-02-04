@@ -598,6 +598,25 @@ namespace com.spacepuppy.Geom
             }
         }
 
+        /// <summary>
+        /// Forcibly purge all active overlapping colliders. 
+        /// This exists for extreme scenarios where you're modifying the underling colliders 
+        /// in a manner that causes OnTriggerExit/OnCollisionExit to not work correctly. 
+        /// 
+        /// This is for emergency scenarios that requires understanding of the physics events. 
+        /// It is advisable to avoid using.
+        /// </summary>
+        /// <param name="signalOnTriggerExit">Should 'OnTriggerExit' be called on the active colliders.</param>
+        public virtual void PurgeActive(bool signalOnTriggerExit)
+        {
+            foreach (var pair in _colliders)
+            {
+                pair.Value.PurgeActive(signalOnTriggerExit);
+            }
+            _active.Clear();
+            _isDirty = false;
+        }
+
         #endregion
 
         #region ICompoundTrigger Interface
@@ -645,6 +664,38 @@ namespace com.spacepuppy.Geom
                 if (_active.Count > 0)
                 {
                     _active.RemoveWhere(o => !ObjUtil.IsObjectAlive(o) || !o.IsActiveAndEnabled());
+                }
+            }
+
+            /// <summary>
+            /// Forcibly purge all active overlapping colliders. 
+            /// This exists for extreme scenarios where you're modifying the underling colliders 
+            /// in a manner that causes OnTriggerExit/OnCollisionExit to not work correctly. 
+            /// 
+            /// This is for emergency scenarios that requires understanding of the physics events. 
+            /// It is advisable to avoid using.
+            /// </summary>
+            /// <param name="signalOnTriggerExit">Should 'OnTriggerExit' be called on the active colliders.</param>
+            public void PurgeActive(bool signalOnTriggerExit)
+            {
+                if (_active.Count > 0)
+                {
+                    using (var lst = TempCollection.GetList<Collider>(_active))
+                    {
+                        foreach (var c in lst)
+                        {
+                            if (!ObjUtil.IsObjectAlive(c) || !c.IsActiveAndEnabled())
+                            {
+                                _active.Remove(c);
+                            }
+                            else
+                            {
+                                if (_owner != null) _owner.SignalTriggerExit(this, c);
+                                if (signalOnTriggerExit) c.gameObject.SendMessage(nameof(OnTriggerExit), _collider, SendMessageOptions.DontRequireReceiver);
+                            }
+                        }
+                        _active.Clear();
+                    }
                 }
             }
 

@@ -2,9 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
-using com.spacepuppy.Collections;
 using com.spacepuppy.Utils;
-using com.spacepuppy.Dynamic;
 
 namespace com.spacepuppy.Geom
 {
@@ -169,6 +167,12 @@ namespace com.spacepuppy.Geom
                 _isDirty = true;
                 return false;
             }
+        }
+
+        public override void PurgeActive(bool signalOnTriggerExit)
+        {
+            base.PurgeActive(signalOnTriggerExit);
+            _activeEntities.Clear();
         }
 
         #endregion

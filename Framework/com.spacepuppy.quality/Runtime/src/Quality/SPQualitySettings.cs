@@ -256,6 +256,9 @@ namespace com.spacepuppy.Quality
     }
 
 #else
+    /// <summary>
+    /// SPQualitySettings does not support all features in Unity 2022.2 or earlier since Unity does not make the required API calls available.
+    /// </summary>
     public class SPQualitySettings : ServiceComponent<IQualitySettings>, IQualitySettings
     {
 
@@ -388,12 +391,12 @@ namespace com.spacepuppy.Quality
 
         QualitySettingsProfile IQualitySettings.GetProfile(string name)
         {
-            throw new System.NotSupportedException();
+            throw new System.NotSupportedException("IQualitySettings.GetProfile is not supported in Unity 2022.2 or earlier.");
         }
 
         QualitySettingsProfile IQualitySettings.GetProfile(int index)
         {
-            throw new System.NotSupportedException();
+            throw new System.NotSupportedException("IQualitySettings.GetProfile is not supported in Unity 2022.2 or earlier.");
         }
 
         public virtual int SetProfile(string name)

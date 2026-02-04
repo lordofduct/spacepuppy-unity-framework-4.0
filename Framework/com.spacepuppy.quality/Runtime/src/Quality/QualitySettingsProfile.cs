@@ -143,7 +143,7 @@ namespace com.spacepuppy.Quality
             }
             else
             {
-                if (_profileIndex >= 0 && _profileIndex < QualitySettings.count)
+                if (_profileIndex >= 0 && _profileIndex < QualitySettingsHelper.ProfileCount)
                 {
                     QualitySettings.SetQualityLevel(_profileIndex);
                 }
@@ -179,6 +179,7 @@ namespace com.spacepuppy.Quality
 
         #region Static Utils
 
+#if UNITY_2022_2_OR_NEWER
         public static QualitySettingsProfile[] CreateAllProfilesFromQualitySettings() => CreateAllProfilesFromQualitySettings(null);
         public static QualitySettingsProfile[] CreateAllProfilesFromQualitySettings(string[] trackedSettings)
         {
@@ -212,6 +213,7 @@ namespace com.spacepuppy.Quality
             });
             return profiles;
         }
+#endif
 
         #endregion
 

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Reflection;
 
 using com.spacepuppy.Utils;
-using System;
 
 namespace com.spacepuppy.Quality
 {
@@ -33,8 +32,8 @@ namespace com.spacepuppy.Quality
 
         public const string SETTING_SHADOWSETTINGS = nameof(QualitySettingsInterpreterWrapper.shadowSettings);
 
-        private static Dictionary<string, QualitySettingAccessor> _allPropertyAccessors = new(StringComparer.CurrentCultureIgnoreCase);
-        private static Dictionary<string, QualitySettingAccessor> _preferredPropertyAccessors = new(StringComparer.CurrentCultureIgnoreCase);
+        private static Dictionary<string, QualitySettingAccessor> _allPropertyAccessors = new(System.StringComparer.CurrentCultureIgnoreCase);
+        private static Dictionary<string, QualitySettingAccessor> _preferredPropertyAccessors = new(System.StringComparer.CurrentCultureIgnoreCase);
         static QualitySettingsHelper()
         {
             foreach (var info in typeof(QualitySettings).GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static))
@@ -62,6 +61,22 @@ namespace com.spacepuppy.Quality
             }
             _preferredPropertyAccessors[SETTING_SHADOWSETTINGS] = ShadowSettingsAccessor;
         }
+
+
+#if UNITY_2022_2_OR_NEWER
+        public static int ProfileCount => QualitySettings.count;
+#else
+        private static int _profileCount = -1;
+        public static int ProfileCount
+        {
+            get
+            {
+                if (_profileCount < 0) _profileCount = QualitySettings.names.Length;
+                return _profileCount;
+            }
+        }
+#endif
+
 
         //exists to make above dicts simpler to setup
         static class QualitySettingsInterpreterWrapper
@@ -128,7 +143,7 @@ namespace com.spacepuppy.Quality
         {
             switch (name)
             {
-                case string s when string.Equals(s, SETTING_SHADOWSETTINGS, StringComparison.OrdinalIgnoreCase):
+                case string s when string.Equals(s, SETTING_SHADOWSETTINGS, System.StringComparison.OrdinalIgnoreCase):
                     if (value is ShadowSettings shadowsettings)
                     {
                         shadowsettings.WriteToCurrentQualitySettings();
@@ -153,7 +168,7 @@ namespace com.spacepuppy.Quality
         {
             switch (name)
             {
-                case string s when string.Equals(s, SETTING_SHADOWSETTINGS, StringComparison.OrdinalIgnoreCase):
+                case string s when string.Equals(s, SETTING_SHADOWSETTINGS, System.StringComparison.OrdinalIgnoreCase):
                     value = ShadowSettings.ReadFromCurrentQualitySettings();
                     return true;
                 default:

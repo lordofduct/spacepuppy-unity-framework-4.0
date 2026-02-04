@@ -93,11 +93,6 @@ namespace com.spacepuppy.Scenes
         #region Methods
 
 #if SP_UNITASK
-        public UniTask.Awaiter GetAwaiter()
-        {
-            return this.AsUniTask().GetAwaiter();
-        }
-
         protected override void DoBegin(ISceneManager manager)
         {
             _ = this.DoBeginUniTask(manager);
@@ -106,11 +101,6 @@ namespace com.spacepuppy.Scenes
         private async UniTaskVoid DoBeginUniTask(ISceneManager manager)
         {
 #else
-        public System.Runtime.CompilerServices.TaskAwaiter GetAwaiter()
-        {
-            return this.AsTask().GetAwaiter();
-        }
-
         protected override async void DoBegin(ISceneManager manager)
         {
 #endif

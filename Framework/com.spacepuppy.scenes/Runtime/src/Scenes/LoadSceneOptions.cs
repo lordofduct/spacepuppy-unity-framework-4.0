@@ -348,11 +348,51 @@ namespace com.spacepuppy.Scenes
             }
         }
 
+        #endregion
+
+        #region Async Interface
 
         public AsyncWaitHandle<LoadSceneOptions> AsAsyncWaitHandle()
         {
             return new AsyncWaitHandle<LoadSceneOptions>(LoadSceneOptionsWaitHandleProvider.Default, this);
         }
+
+        public async System.Threading.Tasks.Task<LoadSceneOptions> AsTask()
+        {
+            while (!this.IsComplete)
+            {
+                await System.Threading.Tasks.Task.Yield();
+            }
+            return this;
+        }
+
+#if SP_UNITASK
+        public async UniTask<LoadSceneOptions> AsUniTask()
+        {
+            while (!this.IsComplete)
+            {
+                await UniTask.Yield();
+            }
+            return this;
+        }
+
+        public UniTask<LoadSceneOptions>.Awaiter GetAwaiter()
+        {
+            if (this.IsComplete)
+            {
+                return new UniTask<LoadSceneOptions>(this).GetAwaiter();
+            }
+            else
+            {
+                return this.AsUniTask().GetAwaiter();
+            }
+        }
+#else
+        public System.Runtime.CompilerServices.TaskAwaiter<LoadSceneOptions> GetAwaiter()
+        {
+            return this.AsTask().GetAwaiter();
+        }
+#endif
 
         #endregion
 
@@ -571,7 +611,7 @@ namespace com.spacepuppy.Scenes
                 }
                 else
                 {
-                    return WaitForComplete(h);
+                    return h.AsTask();
                 }
             }
             else
@@ -601,7 +641,7 @@ namespace com.spacepuppy.Scenes
                 }
                 else
                 {
-                    return WaitForComplete(h);
+                    return h.AsTask();
                 }
             }
             else
@@ -805,16 +845,6 @@ namespace com.spacepuppy.Scenes
                 //this should never be reached as long as it remains private and is used appropriately like that in RadicalWaitHandleExtensions.AsAsyncWaitHandle
                 throw new System.InvalidOperationException("An instance of LoadSceneOptionsWaitHandleProvider was associated with a token that was not a LoadSceneOptions.");
             }
-        }
-
-
-        private async System.Threading.Tasks.Task<LoadSceneOptions> WaitForComplete(LoadSceneOptions handle)
-        {
-            while (!handle.IsComplete)
-            {
-                await System.Threading.Tasks.Task.Yield();
-            }
-            return handle;
         }
 
     }

@@ -12,7 +12,6 @@ using com.spacepuppy.Collections;
 using com.spacepuppy.Utils;
 
 using com.spacepuppyeditor.Internal;
-using UnityEditor.SearchService;
 
 namespace com.spacepuppyeditor.Settings
 {
@@ -52,8 +51,13 @@ namespace com.spacepuppyeditor.Settings
         [ReorderableArray]
         private List<SceneAsset> _scenes;
 
-        [SerializeField]
+#if HAS_OSX_EXTENSIONS
+        [SerializeField, EnumPopupExcluding(3)] //3 = BuildTarget.StandaloneOSXUniversal
         private BuildTarget _buildTarget = BuildTarget.StandaloneWindows;
+#else
+        [SerializeField, EnumPopupExcluding(3,4,27)] //3,4,27 are all the OSX alts that are deprecated
+        private BuildTarget _buildTarget = BuildTarget.StandaloneWindows;
+#endif
 
         [SerializeField]
         [EnumFlags]

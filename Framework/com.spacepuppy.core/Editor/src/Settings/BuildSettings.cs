@@ -16,6 +16,7 @@ using com.spacepuppyeditor.Internal;
 namespace com.spacepuppyeditor.Settings
 {
 
+    [Infobox("To support MacOS builds properly you must add the define HAS_OSX_EXTENSIONS as a csc.rsp file in the com.spacepuppy.core/Editor folder along side the asmdef as well as have the macos module installed.")]
     [CreateAssetMenu(fileName = "BuildSettings", menuName = "Spacepuppy Build Pipeline/Build Settings")]
     public class BuildSettings : ScriptableObject
     {
@@ -54,8 +55,16 @@ namespace com.spacepuppyeditor.Settings
 #if HAS_OSX_EXTENSIONS
         [SerializeField, EnumPopupExcluding(3)] //3 = BuildTarget.StandaloneOSXUniversal
         private BuildTarget _buildTarget = BuildTarget.StandaloneWindows;
+        [SerializeField, EnumPopupExcluding((int)UnityEditor.Build.OSArchitecture.x86)]
+        private UnityEditor.Build.OSArchitecture _macosArchitecture = UnityEditor.Build.OSArchitecture.x64ARM64;
+        public UnityEditor.Build.OSArchitecture MacOSArchitecture
+        {
+            get => _macosArchitecture;
+            set => _macosArchitecture = value;
+        }
+        private bool EditorOnly_DisplayIfOSX => _buildTarget == BuildTarget.StandaloneOSX;
 #else
-        [SerializeField, EnumPopupExcluding(3,4,27)] //3,4,27 are all the OSX alts that are deprecated
+        [SerializeField, EnumPopupExcluding(3, 4, 27)] //3,4,27 are all the OSX alts that are deprecated
         private BuildTarget _buildTarget = BuildTarget.StandaloneWindows;
 #endif
 
@@ -523,7 +532,7 @@ namespace com.spacepuppyeditor.Settings
                     {
                         case BuildTarget.StandaloneOSX:
                             //case BuildTarget.StandaloneOSXUniversal:
-                            UnityEditor.OSXStandalone.UserBuildSettings.architecture = UnityEditor.Build.OSArchitecture.x64ARM64; //TODO - make this configurable???
+                            UnityEditor.OSXStandalone.UserBuildSettings.architecture = settings.MacOSArchitecture; //TODO - make this configurable???
                             break;
                         case BuildTarget.StandaloneOSXIntel:
                         case BuildTarget.StandaloneOSXIntel64:
@@ -719,6 +728,7 @@ namespace com.spacepuppyeditor.Settings
         public const string PROP_BOOTSCENE = "_bootScene";
         public const string PROP_SCENES = "_scenes";
         public const string PROP_BUILDTARGET = "_buildTarget";
+        public const string PROP_MACOSARCHITECTURE = "_macosArchitecture";
         public const string PROP_BUILDOPTIONS = "_buildOptions";
         public const string PROP_INPUTSETTINGS = "_inputSettings";
         public const string PROP_DEFINESYMBOLS = "_defineSymbols";
@@ -805,6 +815,12 @@ namespace com.spacepuppyeditor.Settings
         {
             //TODO - upgrade this to more specialized build options gui
             this.DrawPropertyField(PROP_BUILDTARGET);
+#if HAS_OSX_EXTENSIONS
+            if (this.serializedObject.FindProperty(PROP_BUILDTARGET).GetEnumValue<BuildTarget>() == BuildTarget.StandaloneOSX)
+            {
+                this.DrawPropertyField(PROP_MACOSARCHITECTURE);
+            }
+#endif
             this.DrawPropertyField(PROP_BUILDOPTIONS);
 
             var propDefineSymbols = this.serializedObject.FindProperty(PROP_DEFINESYMBOLS);

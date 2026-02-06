@@ -743,4 +743,16 @@ namespace com.spacepuppy
 
     #endregion
 
+    /// <summary>
+    /// Calls a method of shape (PropertyDrawer drawer) on the targetObject (first if multitarget) to configure the PropertyDrawer when initialized.
+    /// </summary>
+    public class ConfigurePropertyDrawerAttribute : SPPropertyAttribute
+    {
+        public string callback;
+        public ConfigurePropertyDrawerAttribute(string callback)
+        {
+            this.callback = callback;
+        }
+    }
+
 }

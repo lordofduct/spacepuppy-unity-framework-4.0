@@ -76,6 +76,8 @@ namespace com.spacepuppyeditor.Internal
         private Dictionary<int, IPropertyHandler> _table = new Dictionary<int, IPropertyHandler>();
         private Dictionary<int, object> _states = new Dictionary<int, object>();
 
+        internal int Count => _table.Count;
+
         public IPropertyHandler GetHandler(SerializedProperty property)
         {
             if (property == null) throw new System.ArgumentNullException(nameof(property));
@@ -105,6 +107,14 @@ namespace com.spacepuppyeditor.Internal
             {
                 _table[hash] = handler;
             }
+        }
+
+        public void PurgeHandler(SerializedProperty property)
+        {
+            if (property == null) throw new System.ArgumentNullException(nameof(property));
+
+            var hash = GetPropertyHash(property);
+            _table.Remove(hash);
         }
 
         public void Clear()

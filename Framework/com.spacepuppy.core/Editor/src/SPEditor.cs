@@ -85,6 +85,7 @@ namespace com.spacepuppyeditor
                 }
             }
             _addons = null;
+            ScriptAttributeUtility.CleanCachedPropertyHandlers(this.serializedObject);
         }
 
         #endregion

@@ -140,6 +140,13 @@ namespace com.spacepuppyeditor.Internal
                     var isListType = property.isArray && !(property.propertyType == SerializedPropertyType.String);
                     result = new MultiPropertyAttributePropertyHandler(property, fieldInfo, isListType, attribs);
                     _handlerCache.SetHandler(property, result);
+
+                    var configcallback = attribs.OfType<ConfigurePropertyDrawerAttribute>().FirstOrDefault();
+                    if (configcallback != null)
+                    {
+                        com.spacepuppy.Dynamic.DynamicUtil.InvokeMethod(property.serializedObject.targetObject, configcallback.callback, (result as MultiPropertyAttributePropertyHandler).InternalDrawer);
+                    }
+
                     return result;
                 }
             }
@@ -273,6 +280,23 @@ namespace com.spacepuppyeditor.Internal
                 return monoScript.GetClass();
         }
          */
+
+        //#####################
+        // Clean Cached PropertyHandler/s
+
+        internal static void CleanCachedPropertyHandler(SerializedProperty property)
+        {
+            _handlerCache.PurgeHandler(property);
+        }
+
+        internal static void CleanCachedPropertyHandlers(SerializedObject serializedObject)
+        {
+            SerializedProperty iterator = serializedObject.GetIterator();
+            for (bool enterChildren = true; iterator.NextVisible(enterChildren); enterChildren = false)
+            {
+                _handlerCache.PurgeHandler(iterator);
+            }
+        }
 
         #endregion
 

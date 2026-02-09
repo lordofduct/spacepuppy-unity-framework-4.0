@@ -173,7 +173,7 @@ namespace com.spacepuppy.Motor
             }
         }
 
-        public IEnumerable<IMovementStyle> CurrentStack { get { return _styleStack; } }
+        public IReadOnlyCollection<IMovementStyle> CurrentStack { get { return _styleStack; } }
 
         #endregion
 

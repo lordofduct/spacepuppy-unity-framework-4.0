@@ -884,6 +884,32 @@ namespace com.spacepuppy.Utils
             }
             return -1;
         }
+        public static int IndexOf_RO<T>(this IReadOnlyList<T> lst, T element)
+        {
+            if (lst is IList<T> rwlst) return rwlst.IndexOf(element);
+
+            for (int i = 0; i < lst.Count; i++)
+            {
+                if (EqualityComparer<T>.Default.Equals(lst[i], element)) return i;
+            }
+            return -1;
+        }
+        public static int IndexOf_RO<T>(this IReadOnlyList<T> lst, System.Func<T, bool> predicate)
+        {
+            for (int i = 0; i < lst.Count; i++)
+            {
+                if (predicate(lst[i])) return i;
+            }
+            return -1;
+        }
+        public static int IndexOf_RO<T, TArg>(this IReadOnlyList<T> lst, TArg arg, System.Func<T, TArg, bool> predicate)
+        {
+            for (int i = 0; i < lst.Count; i++)
+            {
+                if (predicate(lst[i], arg)) return i;
+            }
+            return -1;
+        }
 
         public static bool InBounds(this System.Array arr, int index)
         {

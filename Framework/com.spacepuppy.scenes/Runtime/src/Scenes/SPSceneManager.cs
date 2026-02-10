@@ -265,7 +265,7 @@ namespace com.spacepuppy.Scenes
         {
             if (_disposed) return default;
             this.OnBeforeSceneUnloaded(scene);
-            return SceneManager.UnloadSceneAsync(scene).AsAsyncWaitHandle();
+            return SceneManager.UnloadSceneAsync(scene).AsAsyncWaitHandleOrComplete();
         }
 
         #endregion

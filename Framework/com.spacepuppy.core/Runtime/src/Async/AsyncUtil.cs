@@ -63,12 +63,27 @@ namespace com.spacepuppy.Async
         public static AsyncWaitHandle AsAsyncWaitHandle(this Task task)
         {
             if (task == null) throw new System.ArgumentNullException(nameof(task));
+            if (task.IsCompleted) return AsyncWaitHandle.CompletedHandle;
+            return new AsyncWaitHandle(TaskAsyncWaitHandleProvider<object>.Default, task);
+        }
+
+        public static AsyncWaitHandle AsAsyncWaitHandleOrComplete(this Task task)
+        {
+            if (task == null || task.IsCompleted) return AsyncWaitHandle.CompletedHandle;
             return new AsyncWaitHandle(TaskAsyncWaitHandleProvider<object>.Default, task);
         }
 
         public static AsyncWaitHandle<T> AsAsyncWaitHandle<T>(this Task<T> task)
         {
             if (task == null) throw new System.ArgumentNullException(nameof(task));
+            if (task.IsCompleted) return AsyncWaitHandle<T>.Result(task.Result);
+            return new AsyncWaitHandle<T>(TaskAsyncWaitHandleProvider<T>.Default, task);
+        }
+
+        public static AsyncWaitHandle<T> AsAsyncWaitHandleOrComplete<T>(this Task<T> task)
+        {
+            if (task == null) return AsyncWaitHandle<T>.Empty;
+            if (task.IsCompleted) return AsyncWaitHandle<T>.Result(task.Result);
             return new AsyncWaitHandle<T>(TaskAsyncWaitHandleProvider<T>.Default, task);
         }
 
@@ -78,9 +93,21 @@ namespace com.spacepuppy.Async
             return new AsyncWaitHandle(AsyncOperationAsyncWaitHandleProvider.Default, op);
         }
 
+        public static AsyncWaitHandle AsAsyncWaitHandleOrComplete(this UnityEngine.AsyncOperation op)
+        {
+            if (op == null) return AsyncWaitHandle.CompletedHandle;
+            return new AsyncWaitHandle(AsyncOperationAsyncWaitHandleProvider.Default, op);
+        }
+
         public static Task AsTask(this UnityEngine.AsyncOperation op)
         {
             if (op == null) throw new System.ArgumentNullException(nameof(op));
+            return new AsyncWaitHandle(AsyncOperationAsyncWaitHandleProvider.Default, op).AsTask();
+        }
+
+        public static Task AsTaskOrComplete(this UnityEngine.AsyncOperation op)
+        {
+            if (op == null || (!GameLoop.InvokeRequired && op.isDone)) return Task.CompletedTask;
             return new AsyncWaitHandle(AsyncOperationAsyncWaitHandleProvider.Default, op).AsTask();
         }
 

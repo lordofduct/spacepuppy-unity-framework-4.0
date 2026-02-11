@@ -75,7 +75,7 @@ namespace com.spacepuppy.Events
             if (targ == null) return;
 
             var aoe = targ.ActivateOn;
-            if ((aoe & ActivateEvent.OnLateStart) != 0 && !GameLoop.LateUpdateWasCalled)
+            if ((aoe & ActivateEvent.OnLateStart) != 0 && !GameLoop.EndOfFrameWasCalled) //we use EOF since Start occurs at weird times
             {
                 GameLoop.LateUpdateHandle.BeginInvoke(() =>
                 {

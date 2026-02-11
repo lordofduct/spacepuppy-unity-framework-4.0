@@ -81,6 +81,9 @@ namespace com.spacepuppy
 
         private static int _currentFrame;
         private static int _currentLateFrame;
+        private static int _currentEndOfFrame;
+
+        private Coroutine _eofCoroutine;
 
         #endregion
 
@@ -141,6 +144,26 @@ namespace com.spacepuppy
             {
                 Destroy(this);
             }
+            else
+            {
+                this.StartEndOfFrameRoutine();
+            }
+        }
+
+        protected override void OnEnable()
+        {
+            base.OnEnable();
+
+            if (this.started)
+            {
+                this.StartEndOfFrameRoutine();
+            }
+        }
+
+        protected override void OnDisable()
+        {
+            this.StopEndOfFrameRoutine();
+            base.OnDisable();
         }
 
         #endregion
@@ -270,6 +293,11 @@ namespace com.spacepuppy
         public static bool LateUpdateWasCalled
         {
             get { return _currentLateFrame == UnityEngine.Time.frameCount; }
+        }
+
+        public static bool EndOfFrameWasCalled
+        {
+            get { return _currentEndOfFrame == UnityEngine.Time.frameCount; }
         }
 
         #endregion
@@ -448,7 +476,7 @@ namespace com.spacepuppy
 
             _lateUpdatePump.Update();
             OnLateUpdate?.Invoke(this, e);
-            _currentLateFrame = UnityEngine.Time.frameCount;
+            _currentLateFrame = Time.frameCount;
         }
 
         private void _tardyUpdateHook_LateUpdate(object sender, System.EventArgs e)
@@ -460,6 +488,39 @@ namespace com.spacepuppy
 
             //Track exit of update loop
             _currentSequence = UpdateSequence.None;
+        }
+
+        //EndOfFrame
+
+        void StartEndOfFrameRoutine()
+        {
+            if (_eofCoroutine != null)
+            {
+                var r = _eofCoroutine;
+                _eofCoroutine = null;
+                this.StopCoroutine(r);
+            }
+            _eofCoroutine = this.StartCoroutine(this.EndOfFrameRoutine_Callback());
+        }
+
+        void StopEndOfFrameRoutine()
+        {
+            if (_eofCoroutine != null)
+            {
+                var r = _eofCoroutine;
+                _eofCoroutine = null;
+                this.StopCoroutine(r);
+            }
+        }
+
+        System.Collections.IEnumerator EndOfFrameRoutine_Callback()
+        {
+            var eof = new WaitForEndOfFrame();
+            while (this.isActiveAndEnabled)
+            {
+                yield return eof;
+                _currentEndOfFrame = UnityEngine.Time.frameCount;
+            }
         }
 
         #endregion

@@ -26,6 +26,8 @@ namespace com.spacepuppy.Render.Events
         private VariantReference _value;
         [SerializeField()]
         private SetMode _mode;
+        [SerializeField]
+        private bool _useMaterialPropertyBlockIfAvailable;
 
         #endregion
 
@@ -46,20 +48,20 @@ namespace com.spacepuppy.Render.Events
             switch (_mode)
             {
                 case SetMode.Set:
-                    _target.SetValue(_value.Value);
+                    _target.SetValue(_value.Value, _useMaterialPropertyBlockIfAvailable);
                     return true;
                 case SetMode.Increment:
                     {
-                        var v = _target.GetValue();
+                        var v = _target.GetValue(_useMaterialPropertyBlockIfAvailable);
                         v = Evaluator.TrySum(v, _value.Value);
-                        _target.SetValue(v);
+                        _target.SetValue(v, _useMaterialPropertyBlockIfAvailable);
                         return true;
                     }
                 case SetMode.Decrement:
                     {
-                        var v = _target.GetValue();
+                        var v = _target.GetValue(_useMaterialPropertyBlockIfAvailable);
                         v = Evaluator.TryDifference(v, _value.Value);
-                        _target.SetValue(v);
+                        _target.SetValue(v, _useMaterialPropertyBlockIfAvailable);
                         return true;
                     }
             }

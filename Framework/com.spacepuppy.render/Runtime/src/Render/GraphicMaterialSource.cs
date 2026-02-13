@@ -18,7 +18,7 @@ namespace com.spacepuppy.Render
         [DefaultFromSelf]
         [ForceFromSelf(EntityRelativity.Self)]
         private UnityEngine.UI.Graphic _graphics;
-        [SerializeField()]
+        [SerializeField, EnumPopupExcluding((int)MaterialSourceUniquessModes.UsePropertyBlock)]
         private MaterialSourceUniquessModes _mode;
 
         [System.NonSerialized()]
@@ -92,6 +92,8 @@ namespace com.spacepuppy.Render
                     case MaterialSourceUniquessModes.MakeUniqueOnStart:
                     case MaterialSourceUniquessModes.MakeUniqueOnAccess:
                         return this.GetUniqueMaterial();
+                    case MaterialSourceUniquessModes.UsePropertyBlock:
+                        return _graphics.material ?? _graphics.defaultMaterial; //behave like 'UseSharedBehaviour', shouldn't ever be configured this way, but this is fallback behaviour.
                 }
                 return null;
             }
@@ -111,6 +113,9 @@ namespace com.spacepuppy.Render
         {
             get { return _unique; }
         }
+
+        public override bool CanUsePropertyBlock => false;
+        public override bool UsePropertyBlock => false;
 
         #endregion
 

@@ -17,8 +17,18 @@ namespace com.spacepuppy.Render
         Material Material { get; set; }
         
         bool IsUnique { get; }
+        /// <summary>
+        /// Returns true if the source supports GetPropertyBlock and SetPropertyBlock methods.
+        /// </summary>
+        bool CanUsePropertyBlock { get; }
+        /// <summary>
+        /// Returns true if the source expects to be accessed by GetPropertyBlock and SetPropertyBlock methods.
+        /// </summary>
+        bool UsePropertyBlock { get; }
 
         Material GetUniqueMaterial();
+        void GetPropertyBlock(MaterialPropertyBlock block);
+        void SetPropertyBlock(MaterialPropertyBlock block);
 
     }
 
@@ -30,7 +40,7 @@ namespace com.spacepuppy.Render
 
         #region Fields
 
-        [SerializeField]
+        [SerializeField, Tooltip("These are properties available if this is targeted dynamically, such as with i_SetValue.")]
         private ForwardedMaterialProperty[] _forwardedMaterialProps;
 
         #endregion
@@ -38,9 +48,13 @@ namespace com.spacepuppy.Render
         #region IMaterialSource Interface
 
         public abstract bool IsUnique { get; }
+        public abstract bool CanUsePropertyBlock { get; }
+        public abstract bool UsePropertyBlock { get; }
         public abstract Material Material { get; set; }
 
         public abstract Material GetUniqueMaterial();
+        public virtual void GetPropertyBlock(MaterialPropertyBlock block) { }
+        public virtual void SetPropertyBlock(MaterialPropertyBlock block) { }
 
         #endregion
 
@@ -50,19 +64,48 @@ namespace com.spacepuppy.Render
         {
             if(_forwardedMaterialProps?.Length > 0)
             {
-                for(int i = 0; i < _forwardedMaterialProps.Length; i++)
+                var mat = this.Material;
+                if (mat == null) return false;
+
+                if (this.UsePropertyBlock)
                 {
-                    if (_forwardedMaterialProps[i].Name == sMemberName)
+                    for (int i = 0; i < _forwardedMaterialProps.Length; i++)
                     {
-                        try
+                        if (_forwardedMaterialProps[i].Name == sMemberName)
                         {
-                            var mat = this.Material;
-                            if (mat == null || !mat.HasProperty(_forwardedMaterialProps[i].Name)) return false;
-                            MaterialUtil.SetProperty(mat, _forwardedMaterialProps[i].Name, _forwardedMaterialProps[i].ValueType, value);
+                            try
+                            {
+                                if (!mat.HasProperty(_forwardedMaterialProps[i].Name)) return false;
+
+                                using (var token = MaterialUtil.GetTempPropertyBlock())
+                                {
+                                    this.GetPropertyBlock(token.block);
+                                    MaterialUtil.SetProperty(token.block, _forwardedMaterialProps[i].Name, _forwardedMaterialProps[i].ValueType, value);
+                                    this.SetPropertyBlock(token.block);
+                                }
+                            }
+                            catch
+                            {
+                                return false;
+                            }
                         }
-                        catch
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < _forwardedMaterialProps.Length; i++)
+                    {
+                        if (_forwardedMaterialProps[i].Name == sMemberName)
                         {
-                            return false;
+                            try
+                            {
+                                if (!mat.HasProperty(_forwardedMaterialProps[i].Name)) return false;
+                                MaterialUtil.SetProperty(mat, _forwardedMaterialProps[i].Name, _forwardedMaterialProps[i].ValueType, value);
+                            }
+                            catch
+                            {
+                                return false;
+                            }
                         }
                     }
                 }

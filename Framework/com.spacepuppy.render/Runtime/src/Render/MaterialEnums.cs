@@ -23,6 +23,7 @@
         UseSharedMaterial = 0,
         MakeUniqueOnStart = 1,
         MakeUniqueOnAccess = 2,
+        UsePropertyBlock = 3,
     }
 
 }

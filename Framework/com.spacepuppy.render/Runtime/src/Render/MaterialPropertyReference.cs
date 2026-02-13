@@ -21,7 +21,6 @@ namespace com.spacepuppy.Render
         [SerializeField]
         private MaterialPropertyValueTypeMember _member;
 
-
         #endregion
 
         #region CONSTRUCTOR
@@ -94,306 +93,160 @@ namespace com.spacepuppy.Render
 
         #region Methods
 
-        public void SetValue(object value)
+        public void SetValue(object value, bool useMaterialPropertyBlockIfAvailable = false)
         {
-            var mat = this.Material;
-            if (mat == null) return;
-
-            MaterialUtil.SetProperty(mat, _propertyName, _valueType, _member, value);
+            using (var setter = MaterialUtil.GetMaterialPropertySetter(_material, useMaterialPropertyBlockIfAvailable))
+            {
+                setter.SetProperty(_propertyName, _valueType, _member, value);
+            }
         }
 
-        public void SetValue(float value)
+        public void SetValue(float value, bool useMaterialPropertyBlockIfAvailable = false)
         {
             if (_valueType != MaterialPropertyValueType.Float) return;
+            if (!_material) return;
 
-            var mat = this.Material;
-            if (mat == null) return;
-
-            switch (_valueType)
+            using (var setter = MaterialUtil.GetMaterialPropertySetter(_material, useMaterialPropertyBlockIfAvailable))
             {
-                case MaterialPropertyValueType.Float:
-                    mat.SetFloat(_propertyName, value);
-                    break;
-                case MaterialPropertyValueType.Color:
-                    {
-                        switch (_member)
+                switch (_valueType)
+                {
+                    case MaterialPropertyValueType.Float:
+                        setter.SetFloat(_propertyName, value);
+                        break;
+                    case MaterialPropertyValueType.Color:
                         {
-                            case MaterialPropertyValueTypeMember.None:
-                                //do nothing
-                                break;
-                            case MaterialPropertyValueTypeMember.X:
-                                {
-                                    var c = mat.GetColor(_propertyName);
-                                    c.r = value;
-                                    mat.SetColor(_propertyName, c);
-                                }
-                                break;
-                            case MaterialPropertyValueTypeMember.Y:
-                                {
-                                    var c = mat.GetColor(_propertyName);
-                                    c.g = value;
-                                    mat.SetColor(_propertyName, c);
-                                }
-                                break;
-                            case MaterialPropertyValueTypeMember.Z:
-                                {
-                                    var c = mat.GetColor(_propertyName);
-                                    c.b = value;
-                                    mat.SetColor(_propertyName, c);
-                                }
-                                break;
-                            case MaterialPropertyValueTypeMember.W:
-                                {
-                                    var c = mat.GetColor(_propertyName);
-                                    c.a = value;
-                                    mat.SetColor(_propertyName, c);
-                                }
-                                break;
+                            switch (_member)
+                            {
+                                case MaterialPropertyValueTypeMember.None:
+                                    //do nothing
+                                    break;
+                                default:
+                                    setter.SetProperty(_propertyName, _valueType, _member, value); //REFACTOR? - this causes minor GC in a function intended to be GC free, but it's not used a lot so will refactor later
+                                    break;
+                            }
                         }
-                    }
-                    break;
-                case MaterialPropertyValueType.Vector:
-                    {
-                        switch (_member)
+                        break;
+                    case MaterialPropertyValueType.Vector:
                         {
-                            case MaterialPropertyValueTypeMember.None:
-                                mat.SetVector(_propertyName, ConvertUtil.ToVector4(value));
-                                break;
-                            case MaterialPropertyValueTypeMember.X:
-                                {
-                                    var v = mat.GetVector(_propertyName);
-                                    v.x = value;
-                                    mat.SetVector(_propertyName, v);
-                                }
-                                break;
-                            case MaterialPropertyValueTypeMember.Y:
-                                {
-                                    var v = mat.GetVector(_propertyName);
-                                    v.y = value;
-                                    mat.SetVector(_propertyName, v);
-                                }
-                                break;
-                            case MaterialPropertyValueTypeMember.Z:
-                                {
-                                    var v = mat.GetVector(_propertyName);
-                                    v.z = value;
-                                    mat.SetVector(_propertyName, v);
-                                }
-                                break;
-                            case MaterialPropertyValueTypeMember.W:
-                                {
-                                    var v = mat.GetVector(_propertyName);
-                                    v.w = value;
-                                    mat.SetVector(_propertyName, v);
-                                }
-                                break;
+                            switch (_member)
+                            {
+                                case MaterialPropertyValueTypeMember.None:
+                                    setter.SetVector(_propertyName, ConvertUtil.ToVector4(value));
+                                    break;
+                                default:
+                                    setter.SetProperty(_propertyName, _valueType, _member, value); //REFACTOR? - this causes minor GC in a function intended to be GC free, but it's not used a lot so will refactor later
+                                    break;
+                            }
                         }
-                    }
-                    break;
-                case MaterialPropertyValueType.Texture:
-                    //do nothing
-                    break;
+                        break;
+                    case MaterialPropertyValueType.Texture:
+                        //do nothing
+                        break;
+                }
             }
         }
 
-        public void SetValue(Color value)
+        public void SetValue(Color value, bool useMaterialPropertyBlockIfAvailable = false)
         {
             if (_valueType != MaterialPropertyValueType.Color) return;
+            if (!_material) return;
 
-            var mat = this.Material;
-
-            if (mat == null) return;
-
-            switch (_valueType)
+            using (var setter = MaterialUtil.GetMaterialPropertySetter(_material, useMaterialPropertyBlockIfAvailable))
             {
-                case MaterialPropertyValueType.Float:
-                    //do nothing
-                    break;
-                case MaterialPropertyValueType.Color:
-                    {
-                        switch (_member)
+                switch (_valueType)
+                {
+                    case MaterialPropertyValueType.Float:
+                        //do nothing
+                        break;
+                    case MaterialPropertyValueType.Color:
                         {
-                            case MaterialPropertyValueTypeMember.None:
-                                mat.SetColor(_propertyName, value);
-                                break;
-                            case MaterialPropertyValueTypeMember.X:
-                                {
-                                    var c = mat.GetColor(_propertyName);
-                                    c.r = value.r;
-                                    mat.SetColor(_propertyName, c);
-                                }
-                                break;
-                            case MaterialPropertyValueTypeMember.Y:
-                                {
-                                    var c = mat.GetColor(_propertyName);
-                                    c.g = value.g;
-                                    mat.SetColor(_propertyName, c);
-                                }
-                                break;
-                            case MaterialPropertyValueTypeMember.Z:
-                                {
-                                    var c = mat.GetColor(_propertyName);
-                                    c.b = value.b;
-                                    mat.SetColor(_propertyName, c);
-                                }
-                                break;
-                            case MaterialPropertyValueTypeMember.W:
-                                {
-                                    var c = mat.GetColor(_propertyName);
-                                    c.a = value.a;
-                                    mat.SetColor(_propertyName, c);
-                                }
-                                break;
+                            switch (_member)
+                            {
+                                case MaterialPropertyValueTypeMember.None:
+                                    setter.SetColor(_propertyName, value);
+                                    break;
+                                default:
+                                    setter.SetProperty(_propertyName, _valueType, _member, value); //REFACTOR? - this causes minor GC in a function intended to be GC free, but it's not used a lot so will refactor later
+                                    break;
+                            }
                         }
-                    }
-                    break;
-                case MaterialPropertyValueType.Vector:
-                    {
-                        switch (_member)
+                        break;
+                    case MaterialPropertyValueType.Vector:
                         {
-                            case MaterialPropertyValueTypeMember.None:
-                                mat.SetVector(_propertyName, ConvertUtil.ToVector4(value));
-                                break;
-                            case MaterialPropertyValueTypeMember.X:
-                                {
-                                    var v = mat.GetVector(_propertyName);
-                                    v.x = value.r;
-                                    mat.SetVector(_propertyName, v);
-                                }
-                                break;
-                            case MaterialPropertyValueTypeMember.Y:
-                                {
-                                    var v = mat.GetVector(_propertyName);
-                                    v.y = value.g;
-                                    mat.SetVector(_propertyName, v);
-                                }
-                                break;
-                            case MaterialPropertyValueTypeMember.Z:
-                                {
-                                    var v = mat.GetVector(_propertyName);
-                                    v.z = value.b;
-                                    mat.SetVector(_propertyName, v);
-                                }
-                                break;
-                            case MaterialPropertyValueTypeMember.W:
-                                {
-                                    var v = mat.GetVector(_propertyName);
-                                    v.w = value.a;
-                                    mat.SetVector(_propertyName, v);
-                                }
-                                break;
+                            switch (_member)
+                            {
+                                case MaterialPropertyValueTypeMember.None:
+                                    setter.SetVector(_propertyName, ConvertUtil.ToVector4(value));
+                                    break;
+                                default:
+                                    setter.SetProperty(_propertyName, _valueType, _member, value); //REFACTOR? - this causes minor GC in a function intended to be GC free, but it's not used a lot so will refactor later
+                                    break;
+                            }
                         }
-                    }
-                    break;
-                case MaterialPropertyValueType.Texture:
-                    //do nothing
-                    break;
+                        break;
+                    case MaterialPropertyValueType.Texture:
+                        //do nothing
+                        break;
+                }
             }
         }
 
-        public void SetValue(Vector4 value)
+        public void SetValue(Vector4 value, bool useMaterialPropertyBlockIfAvailable = false)
         {
             if (_valueType != MaterialPropertyValueType.Vector) return;
+            if (!_material) return;
 
-            var mat = this.Material;
-
-            if (mat == null) return;
-
-            switch (_valueType)
+            using (var setter = MaterialUtil.GetMaterialPropertySetter(_material, useMaterialPropertyBlockIfAvailable))
             {
-                case MaterialPropertyValueType.Float:
-                    //do nothing
-                    break;
-                case MaterialPropertyValueType.Color:
-                    {
-                        switch (_member)
+                switch (_valueType)
+                {
+                    case MaterialPropertyValueType.Float:
+                        //do nothing
+                        break;
+                    case MaterialPropertyValueType.Color:
                         {
-                            case MaterialPropertyValueTypeMember.None:
-                                mat.SetColor(_propertyName, ConvertUtil.ToColor(value));
-                                break;
-                            case MaterialPropertyValueTypeMember.X:
-                                {
-                                    var c = mat.GetColor(_propertyName);
-                                    c.r = value.x;
-                                    mat.SetColor(_propertyName, c);
-                                }
-                                break;
-                            case MaterialPropertyValueTypeMember.Y:
-                                {
-                                    var c = mat.GetColor(_propertyName);
-                                    c.g = value.y;
-                                    mat.SetColor(_propertyName, c);
-                                }
-                                break;
-                            case MaterialPropertyValueTypeMember.Z:
-                                {
-                                    var c = mat.GetColor(_propertyName);
-                                    c.b = value.z;
-                                    mat.SetColor(_propertyName, c);
-                                }
-                                break;
-                            case MaterialPropertyValueTypeMember.W:
-                                {
-                                    var c = mat.GetColor(_propertyName);
-                                    c.a = value.w;
-                                    mat.SetColor(_propertyName, c);
-                                }
-                                break;
+                            switch (_member)
+                            {
+                                case MaterialPropertyValueTypeMember.None:
+                                    setter.SetColor(_propertyName, ConvertUtil.ToColor(value));
+                                    break;
+                                default:
+                                    setter.SetProperty(_propertyName, _valueType, _member, value); //REFACTOR? - this causes minor GC in a function intended to be GC free, but it's not used a lot so will refactor later
+                                    break;
+                            }
                         }
-                    }
-                    break;
-                case MaterialPropertyValueType.Vector:
-                    {
-                        switch (_member)
+                        break;
+                    case MaterialPropertyValueType.Vector:
                         {
-                            case MaterialPropertyValueTypeMember.None:
-                                mat.SetVector(_propertyName, value);
-                                break;
-                            case MaterialPropertyValueTypeMember.X:
-                                {
-                                    var v = mat.GetVector(_propertyName);
-                                    v.x = value.x;
-                                    mat.SetVector(_propertyName, v);
-                                }
-                                break;
-                            case MaterialPropertyValueTypeMember.Y:
-                                {
-                                    var v = mat.GetVector(_propertyName);
-                                    v.y = value.y;
-                                    mat.SetVector(_propertyName, v);
-                                }
-                                break;
-                            case MaterialPropertyValueTypeMember.Z:
-                                {
-                                    var v = mat.GetVector(_propertyName);
-                                    v.z = value.z;
-                                    mat.SetVector(_propertyName, v);
-                                }
-                                break;
-                            case MaterialPropertyValueTypeMember.W:
-                                {
-                                    var v = mat.GetVector(_propertyName);
-                                    v.w = value.w;
-                                    mat.SetVector(_propertyName, v);
-                                }
-                                break;
+                            switch (_member)
+                            {
+                                case MaterialPropertyValueTypeMember.None:
+                                    setter.SetVector(_propertyName, value);
+                                    break;
+                                default:
+                                    setter.SetProperty(_propertyName, _valueType, _member, value); //REFACTOR? - this causes minor GC in a function intended to be GC free, but it's not used a lot so will refactor later
+                                    break;
+                            }
                         }
-                    }
-                    break;
-                case MaterialPropertyValueType.Texture:
-                    //do nothing
-                    break;
+                        break;
+                    case MaterialPropertyValueType.Texture:
+                        //do nothing
+                        break;
+                }
             }
         }
 
-        public object GetValue()
+        public object GetValue(bool useMaterialPropertyBlockIfAvailable = false)
         {
             var mat = this.Material;
             if (mat == null) return null;
 
             try
             {
-                return MaterialUtil.GetProperty(mat, _propertyName, _valueType, _member);
+                using (var getter = MaterialUtil.GetMaterialPropertyGetter(_material, useMaterialPropertyBlockIfAvailable))
+                {
+                    return getter.GetProperty(_propertyName, _valueType, _member);
+                }
             }
             catch { }
 

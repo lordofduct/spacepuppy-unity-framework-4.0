@@ -113,6 +113,8 @@ namespace com.spacepuppy.Render
                         }
                     case MaterialSourceUniquessModes.MakeUniqueOnAccess:
                         return this.GetUniqueMaterial();
+                    case MaterialSourceUniquessModes.UsePropertyBlock:
+                        return _renderer.sharedMaterial;
                 }
                 return null;
             }
@@ -130,6 +132,9 @@ namespace com.spacepuppy.Render
         {
             get { return _uniqueMaterials != null; }
         }
+
+        public override bool CanUsePropertyBlock => _renderer != null;
+        public override bool UsePropertyBlock => _renderer != null && _mode == MaterialSourceUniquessModes.UsePropertyBlock;
 
         public int MaterialCount
         {
@@ -269,6 +274,27 @@ namespace com.spacepuppy.Render
                     }
                 }
             }
+        }
+
+
+        public override void GetPropertyBlock(MaterialPropertyBlock block)
+        {
+            if (_renderer) _renderer.GetPropertyBlock(block);
+        }
+
+        public void GetPropertyBlockAt(MaterialPropertyBlock block, int materialIndex)
+        {
+            if (_renderer) _renderer.GetPropertyBlock(block, materialIndex);
+        }
+
+        public override void SetPropertyBlock(MaterialPropertyBlock block)
+        {
+            if (_renderer) _renderer.SetPropertyBlock(block);
+        }
+
+        public void SetPropertyBlockAt(MaterialPropertyBlock block, int materialIndex)
+        {
+            if (_renderer) _renderer.SetPropertyBlock(block, materialIndex);
         }
 
         #endregion

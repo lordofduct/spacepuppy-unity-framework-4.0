@@ -53,7 +53,10 @@ namespace com.spacepuppy.Render
         /// Does not reflect if the material is truly unique. But suggests the possibly of uniqueness if 
         /// 'GetUniqueMaterial' were called.
         /// </summary>
-        public override bool IsUnique => _primarySource.IsUnique;
+        public override bool IsUnique => _primarySource && _primarySource.IsUnique;
+
+        public override bool CanUsePropertyBlock => _primarySource && _primarySource.CanUsePropertyBlock;
+        public override bool UsePropertyBlock => _primarySource && _primarySource.UsePropertyBlock;
 
         #endregion
 
@@ -68,6 +71,16 @@ namespace com.spacepuppy.Render
             if (!_primarySource) return null;
 
             return _primarySource.GetUniqueMaterialAt(_materialIndex);
+        }
+
+        public override void GetPropertyBlock(MaterialPropertyBlock block)
+        {
+            if (_primarySource) _primarySource.GetPropertyBlockAt(block, _materialIndex);
+        }
+
+        public override void SetPropertyBlock(MaterialPropertyBlock block)
+        {
+            if (_primarySource) _primarySource.SetPropertyBlockAt(block, _materialIndex);
         }
 
         #endregion

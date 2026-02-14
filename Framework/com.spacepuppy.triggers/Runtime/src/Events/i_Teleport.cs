@@ -9,6 +9,12 @@ namespace com.spacepuppy.Events
     public class i_Teleport : AutoTriggerable
     {
 
+        public enum TransformScope
+        {
+            Global = 0,
+            Local = 1
+        }
+
         #region Fields
 
         [SerializeField()]
@@ -18,6 +24,9 @@ namespace com.spacepuppy.Events
         [SerializeField()]
         [TriggerableTargetObject.Config(typeof(Transform))]
         private TriggerableTargetObject _location = new TriggerableTargetObject();
+
+        [SerializeField]
+        private TransformScope _scope;
 
         [SerializeField]
         private bool _orientWithLocationRotation;
@@ -60,9 +69,23 @@ namespace com.spacepuppy.Events
             var loc = _location.GetTarget<Transform>(arg);
             if (targ == null || loc == null) return false;
 
-            targ.position = loc.position;
-            if (_orientWithLocationRotation)
-                targ.rotation = loc.rotation;
+            switch (_scope)
+            {
+                case TransformScope.Global:
+                    targ.position = loc.position;
+                    if (_orientWithLocationRotation)
+                    {
+                        targ.rotation = loc.rotation;
+                    }
+                    break;
+                case TransformScope.Local:
+                    targ.localPosition = targ.ParentInverseTransformPoint(loc.position);
+                    if (_orientWithLocationRotation)
+                    {
+                        targ.localRotation = targ.ParentInverseTransformRotation(loc.rotation);
+                    }
+                    break;
+            }
 
             return true;
         }

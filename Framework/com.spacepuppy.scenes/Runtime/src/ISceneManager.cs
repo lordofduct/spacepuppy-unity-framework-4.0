@@ -59,11 +59,19 @@ namespace com.spacepuppy
         /// </remarks>
         LoadSceneInternalResult LoadSceneInternal(SceneRef sceneName, LoadSceneParameters parameters, LoadSceneBehaviour behaviour);
 
+        /// <summary>
+        /// While loading a scene this returns the related LoadSceneOptions for a scene. 
+        /// Can be called like Services.Get<ISceneManager>()?.FindRelatedLoadSceneOptions(this.gameObject.scene) during Awake. 
+        /// </summary>
+        /// <param name="scene"></param>
+        /// <returns></returns>
+        LoadSceneOptions FindRelatedLoadSceneOptions(Scene scene);
+
     }
 
     /// <summary>
     /// ISceneManager extension methods for retrieving Scene's at runtime assume that UnityEngine.SceneManagement.SceneManager is being used. 
-    /// If you need to create a SceneManager that gets even more granular, use this interface to force calls into your cusom scene manager 
+    /// If you need to create a SceneManager that gets even more granular, use this interface to force calls into your custom scene manager 
     /// for handling methods that retrieve the current active scenes.
     /// </summary>
     public interface IOverridingSceneManager : ISceneManager

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using com.spacepuppy.Async;
 using com.spacepuppy.Utils;
 
+
 #if SP_UNITASK
 using Cysharp.Threading.Tasks;
 #endif
@@ -50,6 +51,10 @@ namespace com.spacepuppy.Scenes
         private List<LoadSceneInternalResult> _additiveResults;
         private LoadSceneOptions _parent;
 
+        private int _temporaryCurrentlyLoadingSceneId = int.MinValue; //only valid during 'LoadScene' when 'LoadSceneInternal' is being called.
+
+        private Dictionary<string, object> _persistentTokens;
+
         #endregion
 
         #region Properties
@@ -75,6 +80,31 @@ namespace com.spacepuppy.Scenes
         {
             get;
             set;
+        }
+
+        /// <summary>
+        /// Access a dictionary of persistent tokens stored by name.
+        /// </summary>
+        /// <param name="tokenid"></param>
+        /// <returns></returns>
+        /// <exception cref="System.ArgumentNullException"></exception>
+        public object this[string tokenid]
+        {
+            get
+            {
+                if (tokenid == null) throw new System.ArgumentNullException(nameof(tokenid));
+                if (_persistentTokens?.TryGetValue(tokenid, out object token) ?? false)
+                {
+                    return token;
+                }
+                return null;
+            }
+            set
+            {
+                if (tokenid == null) throw new System.ArgumentNullException(nameof(value));
+                if (_persistentTokens == null) _persistentTokens = new();
+                _persistentTokens[tokenid] = value;
+            }
         }
 
         /// <summary>
@@ -154,7 +184,9 @@ namespace com.spacepuppy.Scenes
         protected LoadSceneInternalResult LoadScene(SceneRef scene, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async)
         {
             this.BeforeSceneLoadCalled?.Invoke(this, this);
+            _temporaryCurrentlyLoadingSceneId = scene.GetBuildIndex();
             var result = this.SceneManager?.LoadSceneInternal(scene, new LoadSceneParameters(mode), behaviour) ?? SceneManagerUtils.LoadSceneInternal(scene, new LoadSceneParameters(mode), behaviour);
+            _temporaryCurrentlyLoadingSceneId = int.MinValue;
             if (result.IsValid)
             {
                 this.RegisterHandlesScene(result);
@@ -165,7 +197,9 @@ namespace com.spacepuppy.Scenes
         protected LoadSceneInternalResult LoadScene(string sceneName, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async)
         {
             this.BeforeSceneLoadCalled?.Invoke(this, this);
+            _temporaryCurrentlyLoadingSceneId = SceneUtility.GetBuildIndexByScenePath(sceneName);
             var result = this.SceneManager?.LoadSceneInternal(new SceneRef(sceneName), new LoadSceneParameters(mode), behaviour) ?? SceneManagerUtils.LoadSceneInternal(sceneName, new LoadSceneParameters(mode), behaviour);
+            _temporaryCurrentlyLoadingSceneId = int.MinValue;
             if (result.IsValid)
             {
                 this.RegisterHandlesScene(result);
@@ -176,7 +210,9 @@ namespace com.spacepuppy.Scenes
         protected LoadSceneInternalResult LoadScene(int index, LoadSceneMode mode = LoadSceneMode.Single, LoadSceneBehaviour behaviour = LoadSceneBehaviour.Async)
         {
             this.BeforeSceneLoadCalled?.Invoke(this, this);
+            _temporaryCurrentlyLoadingSceneId = index;
             var result = this.SceneManager?.LoadSceneInternal(new SceneRef(SceneUtility.GetScenePathByBuildIndex(index)), new LoadSceneParameters(mode), behaviour) ?? SceneManagerUtils.LoadSceneInternal(index, new LoadSceneParameters(mode), behaviour);
+            _temporaryCurrentlyLoadingSceneId = int.MinValue;
             if (result.IsValid)
             {
                 this.RegisterHandlesScene(result);
@@ -304,7 +340,11 @@ namespace com.spacepuppy.Scenes
         {
             if (!scene.IsValid()) return false;
 
-            if (_primaryResult.Scene == scene)
+            if (scene.buildIndex == _temporaryCurrentlyLoadingSceneId && _temporaryCurrentlyLoadingSceneId >= 0)
+            {
+                return true;
+            }
+            else if (_primaryResult.Scene == scene)
             {
                 return true;
             }

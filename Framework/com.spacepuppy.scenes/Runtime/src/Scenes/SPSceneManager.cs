@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
+using System.Linq;
 
 using com.spacepuppy.Async;
 using com.spacepuppy.Utils;
@@ -123,6 +124,8 @@ namespace com.spacepuppy.Scenes
 
         public virtual LoadSceneInternalResult LoadSceneInternal(SceneRef scene, LoadSceneParameters parameters, LoadSceneBehaviour behaviour) => SceneManagerUtils.LoadSceneInternal(scene, parameters, behaviour);
 
+        public LoadSceneOptions FindRelatedLoadSceneOptions(Scene scene) => _implementation.FindRelatedLoadSceneOptions(scene);
+
         #endregion
 
     }
@@ -141,6 +144,7 @@ namespace com.spacepuppy.Scenes
         private SceneUnloadedEventArgs _unloadArgs;
         private ActiveSceneChangedEventArgs _activeChangeArgs;
 
+        private LoadSceneOptions _currentLoadSceneOptions;
         private HashSet<LoadSceneOptions> _activeLoadOptions = new HashSet<LoadSceneOptions>();
         private System.EventHandler<LoadSceneOptions> _sceneLoadOptionsCompleteCallback;
         private System.EventHandler<LoadSceneOptions> _sceneLoadOptionsBeforeLoadSceneCalledCallback;
@@ -235,6 +239,7 @@ namespace com.spacepuppy.Scenes
             {
                 if (_activeLoadOptions.Add(options))
                 {
+                    _currentLoadSceneOptions = options;
                     if (_sceneLoadOptionsBeforeLoadSceneCalledCallback == null) _sceneLoadOptionsBeforeLoadSceneCalledCallback = (s, e) =>
                     {
                         if (!_disposed) this.OnBeforeSceneLoaded(e);
@@ -242,6 +247,7 @@ namespace com.spacepuppy.Scenes
                     if (_sceneLoadOptionsCompleteCallback == null) _sceneLoadOptionsCompleteCallback = (s, e) =>
                     {
                         _activeLoadOptions.Remove(e);
+                        if (object.ReferenceEquals(e, _currentLoadSceneOptions)) _currentLoadSceneOptions = null;
                         e.BeforeSceneLoadCalled -= _sceneLoadOptionsBeforeLoadSceneCalledCallback;
                         e.Complete -= _sceneLoadOptionsCompleteCallback;
                         if (!_disposed) this.OnCompletedLoad(e);
@@ -266,6 +272,15 @@ namespace com.spacepuppy.Scenes
             if (_disposed) return default;
             this.OnBeforeSceneUnloaded(scene);
             return SceneManager.UnloadSceneAsync(scene).AsAsyncWaitHandleOrComplete();
+        }
+
+        public LoadSceneOptions FindRelatedLoadSceneOptions(Scene scene)
+        {
+            foreach (var options in this.ActivateLoadOptions)
+            {
+                if (options.HandlesScene(scene)) return options;
+            }
+            return _currentLoadSceneOptions;
         }
 
         #endregion

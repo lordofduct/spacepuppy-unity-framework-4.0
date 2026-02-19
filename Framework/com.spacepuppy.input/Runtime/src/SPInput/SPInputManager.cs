@@ -17,16 +17,6 @@ namespace com.spacepuppy.SPInput
         private IInputDevice _default_main;
         private IInputDevice _override_main;
 
-        [SerializeField]
-        private bool _monitorJoystickHotplug;
-        [SerializeField]
-        private float _joystickHotplugPollingFrequency = 1f;
-
-        [System.NonSerialized]
-        private string[] _hotplugJoystickNames;
-        [System.NonSerialized]
-        private double _lastHotplugTest;
-
         #endregion
 
         #region CONSTRUCTOR
@@ -42,37 +32,9 @@ namespace com.spacepuppy.SPInput
 
         }
 
-        protected override void OnValidAwake()
-        {
-            base.OnValidAwake();
-
-            if (_monitorJoystickHotplug)
-            {
-                _hotplugJoystickNames = Input.GetJoystickNames();
-                _lastHotplugTest = Time.unscaledTimeAsDouble;
-            }
-            else
-            {
-                _hotplugJoystickNames = null;
-                _lastHotplugTest = double.NegativeInfinity;
-            }
-        }
-
         #endregion
 
         #region Properties
-
-        public bool MonitorJoystickHotplug
-        {
-            get => _monitorJoystickHotplug;
-            set => _monitorJoystickHotplug = value;
-        }
-
-        public float JoystickHotplugPollingFrequency
-        {
-            get => _joystickHotplugPollingFrequency;
-            set => _joystickHotplugPollingFrequency = value;
-        }
 
         #endregion
 
@@ -92,34 +54,11 @@ namespace com.spacepuppy.SPInput
         /// </summary>
         protected virtual void Update()
         {
-            if (_monitorJoystickHotplug && (Time.unscaledTimeAsDouble - _lastHotplugTest) >= _joystickHotplugPollingFrequency)
-            {
-                var names = Input.GetJoystickNames();
-                _lastHotplugTest = Time.unscaledTimeAsDouble;
-                if (_hotplugJoystickNames == null || _hotplugJoystickNames.Length != names.Length || !_hotplugJoystickNames.SequenceEqual(names, System.StringComparer.Ordinal))
-                {
-                    _hotplugJoystickNames = names;
-                    this.OnJoystickHotplugged();
-                }
-            }
-
             var e = _dict.GetEnumerator();
             while (e.MoveNext())
             {
                 if (e.Current.Value.Active) e.Current.Value.Update();
             }
-        }
-
-        /// <summary>
-        /// Retrieves the joystick names array.
-        /// </summary>
-        /// <remarks>note that this is a cached if polling is active and modifying the collection may cause JoystickHotplugged event to raise</remarks>
-        /// <returns></returns>
-        protected string[] GetJoystickNames() => _hotplugJoystickNames ?? Input.GetJoystickNames();
-
-        protected virtual void OnJoystickHotplugged()
-        {
-            Messaging.Broadcast<IJoystickHotpluggedGlobalHandler, IInputManager>(this, (o, a) => o.OnJoystickHotplugged(a));
         }
 
         #endregion
@@ -282,11 +221,6 @@ namespace com.spacepuppy.SPInput
 
         #endregion
 
-    }
-
-    public interface IJoystickHotpluggedGlobalHandler
-    {
-        void OnJoystickHotplugged(IInputManager inputmanager);
     }
 
 }

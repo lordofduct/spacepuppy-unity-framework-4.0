@@ -15,6 +15,13 @@ namespace com.spacepuppy.Tween
     public sealed class SPTween : ServiceComponent<SPTween>, IService
     {
 
+        private static IEqualityComparer<object> _tweenIdComparer = EqualityComparer<object>.Default;
+        public static IEqualityComparer<object> TweenIdComparer
+        {
+            get => _tweenIdComparer;
+            set => _tweenIdComparer = value ?? EqualityComparer<object>.Default;
+        }
+
         #region Singleton Interface
 
         private const string SPECIAL_NAME = "Spacepuppy.SPTween";
@@ -155,7 +162,7 @@ namespace com.spacepuppy.Tween
                 var e = _instance._runningTweens.GetEnumerator();
                 while (e.MoveNext())
                 {
-                    if (e.Current.Id == id) lst.Add(e.Current);
+                    if (SPTween._tweenIdComparer.Equals(e.Current.Id, id)) lst.Add(e.Current);
                 }
 
                 var e2 = lst.GetEnumerator();
@@ -402,7 +409,7 @@ namespace com.spacepuppy.Tween
                 //if (object.ReferenceEquals(x.TokenUid, null)) return object.ReferenceEquals(y.TokenUid, null);
                 //if (object.ReferenceEquals(y.TokenUid, null)) return false;
                 //return x.Target.Equals(y.Target) && x.TokenUid.Equals(y.TokenUid);
-                return EqualityComparer<object>.Default.Equals(x.Target, y.Target) && EqualityComparer<object>.Default.Equals(x.TokenUid, y.TokenUid);
+                return SPTween._tweenIdComparer.Equals(x.Target, y.Target) && SPTween._tweenIdComparer.Equals(x.TokenUid, y.TokenUid);
             }
 
             public int GetHashCode(TokenPairing obj)
@@ -410,7 +417,8 @@ namespace com.spacepuppy.Tween
                 //int a = (!object.ReferenceEquals(obj.Target, null)) ? obj.Target.GetHashCode() : 0;
                 //int b = (!object.ReferenceEquals(obj.TokenUid, null)) ? obj.TokenUid.GetHashCode() : 0;
                 //return a ^ b;
-                return (obj.Target?.GetHashCode() ?? 0) ^ (obj.Target?.GetHashCode() ?? 0);
+                //return (obj.Target?.GetHashCode() ?? 0) ^ (obj.TokenUid?.GetHashCode() ?? 0);
+                return SPTween._tweenIdComparer.GetHashCode(obj.Target) ^ SPTween._tweenIdComparer.GetHashCode(obj.TokenUid);
             }
         }
 

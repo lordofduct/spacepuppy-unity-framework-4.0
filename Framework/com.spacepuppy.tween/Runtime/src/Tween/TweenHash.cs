@@ -58,7 +58,7 @@ namespace com.spacepuppy.Tween
         {
             if (target == null) throw new System.ArgumentNullException(nameof(target));
             _targ = target;
-            _id = id;
+            _id = id ?? target;
             _curveFactory = curveFactory ?? SPTween.CurveFactory;
         }
 
@@ -788,7 +788,7 @@ namespace com.spacepuppy.Tween
             if (_pool.TryGetInstance(out result))
             {
                 result._targ = target;
-                result._id = id;
+                result._id = id ?? target;
                 result._curveFactory = curveFactory ?? SPTween.CurveFactory;
             }
             else

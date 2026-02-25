@@ -33,10 +33,12 @@ namespace com.spacepuppy.SPInput.Legacy
 
         #region CONSTRUCTOR
 
-        private void Start()
+        protected override void Start()
         {
             _hotplugJoystickNames = Input.GetJoystickNames();
             _lastHotplugTest = Time.unscaledTimeAsDouble;
+
+            base.Start();
         }
 
         #endregion

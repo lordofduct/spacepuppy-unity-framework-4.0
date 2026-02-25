@@ -10,6 +10,9 @@ namespace com.spacepuppy.Events
 
         #region Fields
 
+        [SerializeField, Tooltip("This always fires as 'guaranteed' due to the way OnDisable works.")]
+        private SPTimePeriod _delay;
+
         [SerializeField()]
         private SPEvent _trigger = new SPEvent();
 
@@ -27,7 +30,17 @@ namespace com.spacepuppy.Events
         {
             base.OnDisable();
 
-            _trigger.ActivateTrigger(this, null);
+            if (_delay.Seconds > 0f)
+            {
+                this.InvokeGuaranteed(() =>
+                {
+                    _trigger.ActivateTrigger(this, null);
+                }, _delay.Seconds, _delay.TimeSupplier);
+            }
+            else
+            {
+                _trigger.ActivateTrigger(this, null);
+            }
         }
 
         #endregion

@@ -968,6 +968,15 @@ namespace com.spacepuppy.Utils
             }
             return default;
         }
+        public static T AtIndexOrDefault<T>(this IList<T> lst, int index, T defaultValue)
+        {
+            if (index >= 0 && index < lst?.Count)
+            {
+                return lst[index];
+            }
+            return defaultValue;
+        }
+
 
         public static T AtIndexOrDefault_RO<T>(this IReadOnlyList<T> lst, int index)
         {
@@ -976,6 +985,14 @@ namespace com.spacepuppy.Utils
                 return lst[index];
             }
             return default;
+        }
+        public static T AtIndexOrDefault_RO<T>(this IReadOnlyList<T> lst, int index, T defaultValue)
+        {
+            if (index >= 0 && index < lst?.Count)
+            {
+                return lst[index];
+            }
+            return defaultValue;
         }
 
         #endregion

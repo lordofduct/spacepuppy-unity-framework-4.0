@@ -227,6 +227,7 @@ namespace com.spacepuppy.Waypoints.Events
                 _path.Path.EstimateNearestWaypoint(targ.position, arclength / 100, out playheadpos); //TODO - make segementlength configurable???
                 playheadpos *= dur;
             }
+            if (_reverse) playheadpos = dur - playheadpos;
 
             var tween = SPTween.Tween(targ)
                                .UseCurve(curve)

@@ -51,7 +51,7 @@ namespace com.spacepuppy.Collections
     /// won't change until unlocked.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class LockingEnumerable<TCollection, TValue> : LockingEnumerable, ICollection<TValue> where TCollection : ICollection<TValue>
+    public class LockingEnumerable<TCollection, TValue> : LockingEnumerable, IReadOnlyCollection<TValue>, ICollection<TValue> where TCollection : ICollection<TValue>
     {
 
         protected internal enum States

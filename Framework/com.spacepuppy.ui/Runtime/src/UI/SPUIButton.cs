@@ -31,6 +31,9 @@ namespace com.spacepuppy.UI
         [TimeUnitsSelector("Seconds")]
         private float _clickDuration = float.PositiveInfinity;
 
+        [SerializeField, Tooltip("The amount of distance you're allowed to move the cursor during a click.")]
+        private float _clickDragTolerance = float.PositiveInfinity;
+
         [SerializeField, EnumFlags]
         private ButtonMask _acceptedButtons = ButtonMask.Left;
 
@@ -56,6 +59,12 @@ namespace com.spacepuppy.UI
         {
             get => _clickDuration;
             set => _clickDuration = value;
+        }
+
+        public float ClickDragTolerance
+        {
+            get => _clickDragTolerance;
+            set => _clickDragTolerance = value;
         }
 
         public SPEvent OnClick => _onClick;
@@ -119,8 +128,8 @@ namespace com.spacepuppy.UI
             try
             {
                 this.CurrentClickButton = ebtn;
-                double delta = Time.unscaledTimeAsDouble - _lastDownTime;
-                if (delta >= 0f && delta <= _clickDuration)
+                if ((float.IsPositiveInfinity(_clickDuration) || (Time.unscaledTimeAsDouble - _lastDownTime) < _clickDuration) &&
+                    (float.IsPositiveInfinity(_clickDragTolerance) || (eventData.position - eventData.pressPosition).magnitude < _clickDragTolerance))
                 {
                     SignalOnClick();
                 }

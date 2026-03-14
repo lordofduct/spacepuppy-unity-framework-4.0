@@ -7,6 +7,7 @@ using com.spacepuppy.Spawn;
 using com.spacepuppy.Utils;
 
 using com.spacepuppyeditor.Core.Project;
+using com.spacepuppyeditor.Windows;
 
 namespace com.spacepuppyeditor
 {
@@ -153,7 +154,7 @@ namespace com.spacepuppyeditor
                     typeof(UnityEngine.Object),
                     false,
                     false,
-                    (ref UnityEngine.Object o) => _owner.AssetArrayDrawer.DragDropElementFilter(o) != null
+                    (ref SearchReference sref) => _owner.AssetArrayDrawer.DragDropElementFilter(sref.GetTarget() as UnityEngine.Object) != null
                 );
             }
 

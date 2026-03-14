@@ -1567,7 +1567,7 @@ namespace com.spacepuppyeditor
 
         #region AdvancedObjectField
 
-        public static UnityEngine.Object AdvancedObjectField(Rect position, GUIContent label, UnityEngine.Object asset, System.Type objType, bool allowSceneObjects, bool allowProxy, SearchFilter<UnityEngine.Object> filter = null, int maxVisibleCount = UnityObjectDropDownWindowSelector.DEFAULT_MAXCOUNT)
+        public static UnityEngine.Object AdvancedObjectField(Rect position, GUIContent label, UnityEngine.Object asset, System.Type objType, bool allowSceneObjects, bool allowProxy, SearchFilter filter = null, int maxVisibleCount = UnityObjectDropDownWindowSelector.DEFAULT_MAXCOUNT)
         {
             UnityEngine.Object result;
             if (SpacepuppySettings.UseAdvancedObjectField)
@@ -1590,14 +1590,25 @@ namespace com.spacepuppyeditor
                     {
                         result = ObjUtil.GetAsFromSource(objType, result, false) as UnityEngine.Object;
                     }
-                    if (result && filter != null && !filter(ref result)) result = null;
+                    if (filter != null && result)
+                    {
+                        var r = new SearchReference(result);
+                        if (filter(ref r))
+                        {
+                            result = r.GetTarget() as UnityEngine.Object;
+                        }
+                        else
+                        {
+                            result = null;
+                        }
+                    }
                 }
             }
 
             return result;
         }
 
-        public static T AdvancedObjectField<T>(Rect position, GUIContent label, SerializedProperty property, bool allowSceneObjects, SearchFilter<T> filter = null, int maxVisibleCount = UnityObjectDropDownWindowSelector.DEFAULT_MAXCOUNT) where T : class
+        public static T AdvancedObjectField<T>(Rect position, GUIContent label, SerializedProperty property, bool allowSceneObjects, SearchFilter filter = null, int maxVisibleCount = UnityObjectDropDownWindowSelector.DEFAULT_MAXCOUNT) where T : class
         {
             T result = property.objectReferenceValue as T;
             if (SpacepuppySettings.UseAdvancedObjectField)
@@ -1613,7 +1624,8 @@ namespace com.spacepuppyeditor
                 if (EditorGUI.EndChangeCheck())
                 {
                     var ot = ObjUtil.GetAsFromSource<T>(oresult);
-                    if (ot.IsNullOrDestroyed() || (filter != null && !filter(ref ot))) ot = null;
+                    var sr = new SearchReference(ot as UnityEngine.Object);
+                    if (ot.IsNullOrDestroyed() || (filter != null && !filter(ref sr))) ot = null;
 
                     result = ot;
                     property.objectReferenceValue = oresult;
@@ -1623,7 +1635,7 @@ namespace com.spacepuppyeditor
             return result;
         }
 
-        public static T AdvancedObjectField<T>(Rect position, GUIContent label, T asset, bool allowSceneObjects, SearchFilter<T> filter = null, int maxVisibleCount = UnityObjectDropDownWindowSelector.DEFAULT_MAXCOUNT) where T : class
+        public static T AdvancedObjectField<T>(Rect position, GUIContent label, T asset, bool allowSceneObjects, SearchFilter filter = null, int maxVisibleCount = UnityObjectDropDownWindowSelector.DEFAULT_MAXCOUNT) where T : class
         {
 
             T result = asset;
@@ -1640,7 +1652,8 @@ namespace com.spacepuppyeditor
                 if (EditorGUI.EndChangeCheck())
                 {
                     var ot = ObjUtil.GetAsFromSource<T>(oresult);
-                    if (ot.IsNullOrDestroyed() || (filter != null && !filter(ref ot))) ot = null;
+                    var sr = new SearchReference(ot as UnityEngine.Object);
+                    if (ot.IsNullOrDestroyed() || (filter != null && !filter(ref sr))) ot = null;
 
                     result = ot;
                 }

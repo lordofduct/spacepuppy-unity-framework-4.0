@@ -9,7 +9,223 @@ using com.spacepuppy.Utils;
 namespace com.spacepuppyeditor.Windows
 {
 
-    public delegate bool SearchFilter<T>(ref T obj);
+    public delegate bool SearchFilter(ref SearchReference obj);
+
+    public struct SearchReference
+    {
+
+        public static SearchReference Empty => default;
+
+        private object _target;
+        private System.Type _coercedType;
+        internal SearchReference(AssetInfo target)
+        {
+            _target = target;
+            _coercedType = null;
+        }
+        public SearchReference(UnityEngine.Object target)
+        {
+            _target = target;
+            _coercedType = null;
+        }
+        public SearchReference(System.Type target)
+        {
+            _target = target;
+            _coercedType = null;
+        }
+
+        public object ConfiguredTarget => _target;
+
+        public bool HasReference => _target != null;
+
+        /// <summary>
+        /// Returns true if this is a reference to an asset from the AssetDatabase. 
+        /// If true the asset may not be loaded into memory and a call to 'GetAsset' can be slow.
+        /// </summary>
+        public bool IsAssetReference => _target is AssetInfo;
+
+        public string Name
+        {
+            get
+            {
+                switch (_target)
+                {
+                    case AssetInfo ai:
+                        return ai.name;
+                    case UnityEngine.Object o:
+                        return o.name;
+                    case System.Type tp:
+                        return tp.Name;
+                    default:
+                        return string.Empty;
+                }
+            }
+        }
+
+        /// <summary>
+        /// The path of the Asset if it's an Asset found through the AssetDatabase (see: IsAssetReference). 
+        /// The fullname if it's a type. And the name of the object otherwise.
+        /// </summary>
+        public string Path
+        {
+            get
+            {
+                switch (_target)
+                {
+                    case AssetInfo ai:
+                        return ai.path;
+                    case UnityEngine.Object o:
+                        return o.name;
+                    case System.Type tp:
+                        return tp.FullName;
+                    default:
+                        return null;
+                }
+            }
+        }
+
+        public System.Type Type
+        {
+            get
+            {
+                switch (_target)
+                {
+                    case AssetInfo ai:
+                        return _coercedType != null ? _coercedType : ai.type;
+                    case UnityEngine.Object o:
+                        return o.GetType();
+                    case System.Type tp:
+                        return tp;
+                    default:
+                        return null;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Returns the object referenced. If IsAssetReference is true this may be slow.
+        /// </summary>
+        /// <returns></returns>
+        public object GetTarget()
+        {
+            switch (_target)
+            {
+                case AssetInfo ai:
+                    {
+                        var result = ai.GetAsset();
+                        if (_coercedType != null) result = ObjUtil.GetAsFromSource(_coercedType, _target) as UnityEngine.Object;
+                        return result;
+                    }
+                case UnityEngine.Object o:
+                    return o;
+                case System.Type tp:
+                    return tp;
+                default:
+                    return null;
+            }
+        }
+
+        /// <summary>
+        /// Changes the target asset into a different type if it's supported. Otherwise returns false.
+        /// Next time GetAsset is called it will be this new type or null if it couldn't be converted.
+        /// </summary>
+        /// <param name="type"></param>
+        public bool TryConvert(System.Type type)
+        {
+            switch (_target)
+            {
+                case AssetInfo ai:
+                    if (ai.SupportsType(type))
+                    {
+                        _coercedType = type;
+                        return true;
+                    }
+                    return false;
+                case UnityEngine.Object o:
+                    {
+                        _coercedType = null;
+                        var newref = ObjUtil.GetAsFromSource(type, _target) as UnityEngine.Object;
+                        if (newref)
+                        {
+                            _target = newref;
+                            return true;
+                        }
+                        else
+                        {
+                            return false;
+                        }
+                    }
+                case System.Type tp:
+                    _coercedType = null;
+                    return false;
+                default:
+                    _coercedType = null;
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// Returns true if the target object is the type, or is a GameObjectSource that contains the type. 
+        /// </summary>
+        /// <param name="tp"></param>
+        /// <returns></returns>
+        public bool SupportsType(System.Type tp)
+        {
+            switch (_target)
+            {
+                case AssetInfo ai:
+                    return ai.SupportsType(tp);
+                case UnityEngine.Object o:
+                    return tp.IsInstanceOfType(o) || (GameObjectUtil.TryGetGameObjectFromSource(o, out GameObject go) && go.HasComponent(tp));
+                case System.Type innertype:
+                    return TypeUtil.IsType(tp, innertype);
+                default:
+                    return false;
+            }
+        }
+
+        public static bool Filter(ref UnityEngine.Object uo, SearchFilter filter)
+        {
+            if (filter == null) return true;
+
+            var sref = new SearchReference()
+            {
+                _target = uo
+            };
+            if (filter(ref sref))
+            {
+                uo = sref.GetTarget() as UnityEngine.Object;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public override bool Equals(object obj)
+        {
+            switch (obj)
+            {
+                case SearchReference sref:
+                    return sref._target == _target;
+                case AssetInfo ai:
+                    return _target is AssetInfo innerAI && innerAI == ai;
+                case UnityEngine.Object uo:
+                    return object.ReferenceEquals(_target, uo);
+                case System.Type tp:
+                    return _target is System.Type innerType && innerType == tp;
+                default:
+                    return false;
+            }
+        }
+
+        public override int GetHashCode()
+        {
+            return _target?.GetHashCode() ?? 0;
+        }
+
+    }
 
     public interface ISearchDropDownSelector : IEqualityComparer<object>
     {
@@ -21,9 +237,8 @@ namespace com.spacepuppyeditor.Windows
 
     public struct SearchDropDownElement
     {
-        public GUIContent Content;
-        public object Element;
-        public object Aux;
+        public GUIContent content;
+        public SearchReference searchReference;
     }
 
 
@@ -206,7 +421,7 @@ namespace com.spacepuppyeditor.Windows
                             }
                             if (current.type == EventType.Repaint)
                             {
-                                _style.componentButton.Draw(rect, e.Content, false, false, selectedFlag, selectedFlag);
+                                _style.componentButton.Draw(rect, e.content, false, false, selectedFlag, selectedFlag);
                             }
                             if (current.type == EventType.MouseUp && rect.Contains(current.mousePosition))
                             {
@@ -293,7 +508,7 @@ namespace com.spacepuppyeditor.Windows
                 _window = null;
                 if (CallbackInfo.instance != null && el != null)
                 {
-                    CallbackInfo.instance.SignalChange(_selector, el.Value.Element);
+                    CallbackInfo.instance.SignalChange(_selector, el.Value.searchReference.GetTarget());
                 }
             }
         }
@@ -312,7 +527,7 @@ namespace com.spacepuppyeditor.Windows
             if (!string.IsNullOrEmpty(id)) EditorPrefs.SetString(id, _search);
 
             _searchElements.Clear();
-            var e = _selector?.GetElements(this)?.Where(o => o.Content != null);
+            var e = _selector?.GetElements(this)?.Where(o => o.content != null);
             if (e != null && _selector.MaxCount > 0)
             {
                 _searchElements.AddRange(TakeWithElipsis(e, _selector.MaxCount));
@@ -339,8 +554,8 @@ namespace com.spacepuppyeditor.Windows
                     _searchHasEllipsis = true;
                     yield return new SearchDropDownElement()
                     {
-                        Content = new GUIContent("..."),
-                        Element = null
+                        content = new GUIContent("..."),
+                        searchReference = SearchReference.Empty
                     };
                     yield break;
                 }
@@ -597,7 +812,7 @@ namespace com.spacepuppyeditor.Windows
         /// </summary>
         public virtual System.Type ObjectType { get; set; } = typeof(T);
 
-        public SearchFilter<T> Filter { get; set; }
+        public SearchFilter Filter { get; set; }
 
         public virtual ShowDropDownCallbackDelegate ShowDropDownCallback { get; set; }
 
@@ -699,7 +914,7 @@ namespace com.spacepuppyeditor.Windows
 #endif
         }
 
-        private static UnityEngine.Object HandleDragAndDrop(bool isDragging, bool isDropping, UnityEngine.Object asset, System.Type objType, SearchFilter<T> filter, bool allowSceneObjects, bool allowProxy)
+        private static UnityEngine.Object HandleDragAndDrop(bool isDragging, bool isDropping, UnityEngine.Object asset, System.Type objType, SearchFilter filter, bool allowSceneObjects, bool allowProxy)
         {
             if (!isDragging && !isDropping) return asset;
 
@@ -710,15 +925,15 @@ namespace com.spacepuppyeditor.Windows
                 if (allowSceneObjects)
                 {
                     validDrag = DragAndDrop.objectReferences.Any(o => {
-                        var ot = ObjUtil.GetAsFromSource(types, o);
-                        return ot != null && (filter == null || (ot is T ott && filter(ref ott)));
+                        var ot = ObjUtil.GetAsFromSource(types, o) as UnityEngine.Object;
+                        return SearchReference.Filter(ref ot, filter);
                     });
                 }
                 else
                 {
                     validDrag = DragAndDrop.objectReferences.Any(o => {
-                        var ot = ObjUtil.GetAsFromSource(types, o);
-                        return ot != null && !string.IsNullOrEmpty(AssetDatabase.GetAssetPath(o)) && (filter == null || (ot is T ott && filter(ref ott)));
+                        var ot = ObjUtil.GetAsFromSource(types, o) as UnityEngine.Object;
+                        return ot != null && !string.IsNullOrEmpty(AssetDatabase.GetAssetPath(o)) && SearchReference.Filter(ref ot, filter);
                     });
                 }
 
@@ -739,9 +954,9 @@ namespace com.spacepuppyeditor.Windows
                         entry = DragAndDrop.objectReferences.Select(o =>
                         {
                             o = ObjUtil.GetAsFromSource(types, o) as UnityEngine.Object;
-                            if (o is T ot && filter(ref ot))
+                            if (SearchReference.Filter(ref o, filter))
                             {
-                                return ot as UnityEngine.Object;
+                                return o;
                             }
                             else
                             {

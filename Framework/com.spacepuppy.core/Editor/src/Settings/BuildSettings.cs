@@ -9,9 +9,12 @@ using System.Threading.Tasks;
 
 using com.spacepuppy;
 using com.spacepuppy.Collections;
+using com.spacepuppy.Project;
 using com.spacepuppy.Utils;
 
+using com.spacepuppyeditor.Core;
 using com.spacepuppyeditor.Internal;
+using com.spacepuppyeditor.Windows;
 
 namespace com.spacepuppyeditor.Settings
 {
@@ -48,9 +51,8 @@ namespace com.spacepuppyeditor.Settings
         [SerializeField]
         private SceneAsset _bootScene;
 
-        [SerializeField]
-        [ReorderableArray]
-        private List<SceneAsset> _scenes;
+        [SerializeField, ReorderableArray, TypeRestriction(typeof(SceneAsset))]
+        private List<UnityEngine.Object> _scenes;
 
 #if HAS_OSX_EXTENSIONS
         [SerializeField, EnumPopupExcluding(3)] //3 = BuildTarget.StandaloneOSXUniversal
@@ -96,7 +98,7 @@ namespace com.spacepuppyeditor.Settings
             set { _bootScene = value; }
         }
 
-        public IList<SceneAsset> Scenes
+        public IList<UnityEngine.Object> Scenes
         {
             get { return _scenes; }
         }
@@ -165,7 +167,15 @@ namespace com.spacepuppyeditor.Settings
 
                 foreach (var scene in this.Scenes)
                 {
-                    lst.Add(AssetDatabase.GetAssetPath(scene));
+                    switch (scene)
+                    {
+                        case SceneAsset sa:
+                            lst.Add(AssetDatabase.GetAssetPath(sa));
+                            break;
+                        case QueryableAssetSet qas:
+                            lst.AddRange(qas.GetAllAssets<SceneAsset>().Select(o => AssetDatabase.GetAssetPath(o)));
+                            break;
+                    }
                 }
 
                 return lst.ToArray();
@@ -377,6 +387,17 @@ namespace com.spacepuppyeditor.Settings
 #else
             return PlayerSettings.GetScriptingDefineSymbolsForGroup(buildGroup) ?? string.Empty;
 #endif
+        }
+
+
+        internal static readonly System.Type[] ValidSceneTypes = new System.Type[] { typeof(SceneAsset), typeof(QueryableAssetSet) };
+        public static bool IsValidSceneObject(object obj)
+        {
+            foreach (var tp in ValidSceneTypes)
+            {
+                if (tp != null && tp.IsInstanceOfType(obj)) return true;
+            }
+            return false;
         }
 
         #endregion
@@ -753,16 +774,6 @@ namespace com.spacepuppyeditor.Settings
 
         #region Methods
 
-        protected override void OnEnable()
-        {
-            base.OnEnable();
-
-            _scenesDrawer.FormatElementLabel = (p, i, b1, b2) =>
-            {
-                return string.Format("Scene #{0}", i + 1);
-            };
-        }
-
         protected override void OnSPInspectorGUI()
         {
             this.serializedObject.Update();
@@ -865,14 +876,6 @@ namespace com.spacepuppyeditor.Settings
                 }
             }
         }
-        void _symbolsListDrawer_Header(Rect area)
-        {
-
-        }
-        void _symbolsListDrawer_DrawElement(Rect rect, int index, bool isActive, bool isFocused)
-        {
-
-        }
 
         public virtual void DrawInputSettings()
         {
@@ -952,9 +955,44 @@ namespace com.spacepuppyeditor.Settings
         class SceneArrayPropertyDrawer : com.spacepuppyeditor.Core.ReorderableArrayPropertyDrawer
         {
 
-            public SceneArrayPropertyDrawer() : base(typeof(SceneAsset))
-            {
+            private List<string> _elementLabels = new();
 
+            public SceneArrayPropertyDrawer() : base(null)
+            {
+                this.DragDropElementFilter = (o) => BuildSettings.IsValidSceneObject(o) ? o : null;
+                this.InternalDrawer = new TypeRestrictionPropertyDrawer()
+                {
+                    InheritsFromTypes = BuildSettings.ValidSceneTypes,
+                    HideTypeDropDown = true,
+                    AllowProxy = false,
+                    AllowSceneObjects = false,
+                };
+                this.FormatElementLabel = (p, i, b1, b2) =>
+                {
+                    //return string.Format("Scene #{0}", i + 1);
+                    return i >= 0 && i < _elementLabels.Count ? _elementLabels[i] : string.Format("Scene #{0}", i + 1);
+                };
+            }
+
+            public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+            {
+                _elementLabels.Clear();
+                int cnt = 1;
+                for (int i = 0; i < property.arraySize; i++)
+                {
+                    if (property.GetArrayElementAtIndex(i).objectReferenceValue is QueryableAssetSet qas)
+                    {
+                        _elementLabels.Add("Scene Group");
+                        cnt += Mathf.Max(1, qas.GetAllAssets<SceneAsset>().Count());
+                    }
+                    else
+                    {
+                        _elementLabels.Add(string.Format("Scene #{0}", cnt));
+                        cnt++;
+                    }
+                }
+
+                base.OnGUI(position, property, label);
             }
 
             protected override CachedReorderableList GetList(SerializedProperty property, GUIContent label)

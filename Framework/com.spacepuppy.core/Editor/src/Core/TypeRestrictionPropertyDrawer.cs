@@ -150,23 +150,23 @@ namespace com.spacepuppyeditor.Core
                 UnityEngine.Object targ;
                 if (allInheritableTypes.Length > 1 || isNonStandardUnityType || this.AllowProxy)
                 {
-                    SearchFilter<UnityEngine.Object> filter = null;
+                    SearchFilter filter = null;
                     if (this.AllowProxy)
                     {
                         if (this.RestrictProxyResolvedType)
                         {
                             //filter = o => o && ((TypeUtil.IsType(o.GetType(), allInheritableTypes) || ObjUtil.GetAsFromSource(allInheritableTypes, o) != null)) || (o is IProxy p && TypeUtil.IsType(p.GetTargetType(), allInheritableTypes));
-                            filter = (ref UnityEngine.Object o) =>
+                            filter = (ref SearchReference sref) =>
                             {
-                                if (!o) return false;
-                                if (TypeUtil.IsType(o.GetType(), allInheritableTypes)) return true;
-                                if (o is IProxy p && TypeUtil.IsType(p.GetTargetType(), allInheritableTypes)) return true;
+                                if (!sref.HasReference) return false;
+                                if (TypeUtil.IsType(sref.Type, allInheritableTypes)) return true;
+                                if (TypeUtil.IsType(sref.Type, typeof(IProxy)) && sref.GetTarget() is IProxy p && TypeUtil.IsType(p.GetTargetType(), allInheritableTypes)) return true;
 
-                                var ot = ObjUtil.GetAsFromSource(allInheritableTypes, o) as UnityEngine.Object;
-                                if (ot)
+                                var copy = sref;
+                                var first = allInheritableTypes.FirstOrDefault(o => copy.SupportsType(o));
+                                if (first != null)
                                 {
-                                    o = ot;
-                                    return true;
+                                    return sref.TryConvert(first);
                                 }
 
                                 return false;
@@ -175,17 +175,17 @@ namespace com.spacepuppyeditor.Core
                         else
                         {
                             //filter = o => o && ((TypeUtil.IsType(o.GetType(), allInheritableTypes) || ObjUtil.GetAsFromSource(allInheritableTypes, o) != null)) || (o is IProxy);
-                            filter = (ref UnityEngine.Object o) =>
+                            filter = (ref SearchReference sref) =>
                             {
-                                if (!o) return false;
-                                if (TypeUtil.IsType(o.GetType(), allInheritableTypes)) return true;
-                                if (o is IProxy) return true;
+                                if (!sref.HasReference) return false;
+                                if (TypeUtil.IsType(sref.Type, allInheritableTypes)) return true;
+                                if (TypeUtil.IsType(sref.Type, typeof(IProxy))) return true;
 
-                                var ot = ObjUtil.GetAsFromSource(allInheritableTypes, o) as UnityEngine.Object;
-                                if (ot)
+                                var copy = sref;
+                                var first = allInheritableTypes.FirstOrDefault(o => copy.SupportsType(o));
+                                if (first != null)
                                 {
-                                    o = ot;
-                                    return true;
+                                    return sref.TryConvert(first);
                                 }
 
                                 return false;
@@ -195,16 +195,16 @@ namespace com.spacepuppyeditor.Core
                     else
                     {
                         //filter = o => o && (TypeUtil.IsType(o.GetType(), allInheritableTypes) || ObjUtil.GetAsFromSource(allInheritableTypes, o) != null);
-                        filter = (ref UnityEngine.Object o) =>
+                        filter = (ref SearchReference sref) =>
                         {
-                            if (!o) return false;
-                            if (TypeUtil.IsType(o.GetType(), allInheritableTypes)) return true;
+                            if (!sref.HasReference) return false;
+                            if (TypeUtil.IsType(sref.Type, allInheritableTypes)) return true;
 
-                            var ot = ObjUtil.GetAsFromSource(allInheritableTypes, o) as UnityEngine.Object;
-                            if (ot)
+                            var copy = sref;
+                            var first = allInheritableTypes.FirstOrDefault(o => copy.SupportsType(o));
+                            if (first != null)
                             {
-                                o = ot;
-                                return true;
+                                return sref.TryConvert(first);
                             }
 
                             return false;

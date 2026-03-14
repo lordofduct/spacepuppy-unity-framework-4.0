@@ -7,6 +7,7 @@ using com.spacepuppy;
 using com.spacepuppy.Collections;
 using com.spacepuppy.Project;
 using com.spacepuppy.Utils;
+using com.spacepuppyeditor.Windows;
 
 namespace com.spacepuppyeditor.Core.Project
 {
@@ -222,7 +223,7 @@ namespace com.spacepuppyeditor.Core.Project
                         typeof(UnityEngine.Object),
                         false,
                         true,
-                        (ref UnityEngine.Object o) => _owner._reorderableArrayDrawer.DragDropElementFilter(o) != null);
+                        (ref SearchReference o) => _owner._reorderableArrayDrawer.DragDropElementFilter(o.GetTarget() as UnityEngine.Object) != null);
                     if (EditorGUI.EndChangeCheck())
                     {
                         obj = _owner._reorderableArrayDrawer.DragDropElementFilter(obj);

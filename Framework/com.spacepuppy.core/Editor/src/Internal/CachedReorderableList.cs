@@ -724,7 +724,7 @@ namespace com.spacepuppyeditor.Internal
         {
             if (property == null) throw new System.ArgumentNullException(nameof(property));
 
-            Debug.Log($"name:{property.name}, type:{property.propertyType}, hasChildren:{property.hasChildren}, isArray:{property.isArray}");
+            //Debug.Log($"name:{property.name}, type:{property.propertyType}, hasChildren:{property.hasChildren}, isArray:{property.isArray}");
             switch (property.propertyType)
             {
                 case SerializedPropertyType.Integer:

@@ -1294,14 +1294,39 @@ namespace com.spacepuppyeditor
             return c;
         }
 
+        static System.Type[] REDUCED_EXPECTED_TYPES = new System.Type[] { typeof(ScriptableObject), typeof(GameObject), typeof(Transform), typeof(Rigidbody), typeof(MonoBehaviour) };
         public static GUIContent ObjectContent(UnityEngine.Object obj, System.Type expectedType, bool useProxyIconIfRelevant)
         {
-            var content = EditorGUIUtility.ObjectContent(obj, obj != null ? obj.GetType() : expectedType).Clone();
-            if (obj != null && expectedType != null && !expectedType.IsInstanceOfType(obj) && useProxyIconIfRelevant)
+            if (obj)
             {
-                content.image = EditorGUIUtility.IconContent("_Help")?.image ?? IconHelper.GetIcon(IconHelper.Icon.DiamondPurple);
+                var content = EditorGUIUtility.ObjectContent(obj, obj.GetType()).Clone();
+                if (expectedType != null && !expectedType.IsInstanceOfType(obj) && useProxyIconIfRelevant)
+                {
+                    content.image = EditorGUIUtility.IconContent("_Help")?.image ?? IconHelper.GetIcon(IconHelper.Icon.DiamondPurple);
+                }
+                return content;
             }
-            return content;
+            else if (expectedType != null)
+            {
+                if (TypeUtil.IsType(expectedType, typeof(MonoBehaviour)))
+                {
+                    return EditorGUIUtility.IconContent("Prefab Icon")?.Clone() ?? EditorHelper.TempContent("");
+                }
+                else if (TypeUtil.IsType(expectedType, typeof(ScriptableObject)))
+                {
+                    return EditorGUIUtility.IconContent("ScriptableObject Icon")?.Clone() ?? EditorHelper.TempContent("");
+                }
+                else
+                {
+                    return EditorGUIUtility.ObjectContent(null, expectedType).Clone();
+                }
+            }
+            else
+            {
+                var content = new GUIContent(string.Empty, string.Empty);
+                content.image = EditorGUIUtility.IconContent("_Help")?.image ?? IconHelper.GetIcon(IconHelper.Icon.DiamondPurple);
+                return content;
+            }
         }
 
         #endregion

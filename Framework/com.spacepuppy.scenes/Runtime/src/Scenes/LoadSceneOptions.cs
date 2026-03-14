@@ -93,7 +93,8 @@ namespace com.spacepuppy.Scenes
             get
             {
                 if (tokenid == null) throw new System.ArgumentNullException(nameof(tokenid));
-                if (_persistentTokens?.TryGetValue(tokenid, out object token) ?? false)
+                object token = null;
+                if (_persistentTokens?.TryGetValue(tokenid, out token) ?? false)
                 {
                     return token;
                 }

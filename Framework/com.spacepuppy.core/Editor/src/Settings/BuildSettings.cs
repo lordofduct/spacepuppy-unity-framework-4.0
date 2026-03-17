@@ -19,6 +19,19 @@ using com.spacepuppyeditor.Windows;
 namespace com.spacepuppyeditor.Settings
 {
 
+    [System.AttributeUsage(System.AttributeTargets.Method, AllowMultiple = false)]
+    public class BuildSetingsAuxiliaryButtonCallbackAttribute : System.Attribute
+    {
+        public string label;
+        public int order;
+
+        public BuildSetingsAuxiliaryButtonCallbackAttribute(string label, int order = 0)
+        {
+            this.label = label;
+            this.order = order;
+        }
+    }
+
     [Infobox("To support MacOS builds properly you must add the define HAS_OSX_EXTENSIONS as a csc.rsp file in the com.spacepuppy.core/Editor folder along side the asmdef as well as have the macos module installed.")]
     [CreateAssetMenu(fileName = "BuildSettings", menuName = "Spacepuppy Build Pipeline/Build Settings")]
     public class BuildSettings : ScriptableObject
@@ -806,6 +819,7 @@ namespace com.spacepuppyeditor.Settings
 
             EditorGUILayout.Space();
 
+            this.DrawAuxiliaryBuildButtons();
             this.DrawBuildButtons();
         }
 
@@ -887,19 +901,40 @@ namespace com.spacepuppyeditor.Settings
             this.DrawPropertyField(PROP_PLAYERSETTINGSOVERRIDES);
         }
 
+        public virtual void DrawAuxiliaryBuildButtons()
+        {
+            var arr_auxbuttons = TypeCache.GetMethodsWithAttribute<BuildSetingsAuxiliaryButtonCallbackAttribute>().Select(o => (o, o.GetCustomAttribute<BuildSetingsAuxiliaryButtonCallbackAttribute>())).OrderBy(o => o.Item2.order).ToArray();
+
+            for (int i = 0; i < arr_auxbuttons.Length; i++)
+            {
+                var entry = arr_auxbuttons[i];
+                if (GUILayout.Button(entry.Item2.label))
+                {
+                    try
+                    {
+                        entry.Item1.Invoke(null, new object[] { this.target });
+                    }
+                    catch (System.Exception ex)
+                    {
+                        Debug.LogException(ex);
+                    }
+                }
+            }
+        }
+
         public virtual void DrawBuildButtons()
         {
-            if (GUILayout.Button("Build"))
+            if (GUILayout.Button(EditorHelper.TempContent("Sync To Active Build Target", "Copies the symbols, inputsettings, and scenes to the currently active build target found in File->Build Settings.")))
             {
-                EditorHelper.Invoke(() => this.DoBuild(BuildSettings.PostBuildOption.OpenFolder));
+                this.SyncToGlobalBuild();
             }
             if (GUILayout.Button("Build & Run"))
             {
                 EditorHelper.Invoke(() => this.DoBuild(BuildSettings.PostBuildOption.OpenFolderAndRun));
             }
-            if (GUILayout.Button(EditorHelper.TempContent("Sync To Active Build Target", "Copies the symbols, inputsettings, and scenes to the currently active build target found in File->Build Settings.")))
+            if (GUILayout.Button("Build"))
             {
-                this.SyncToGlobalBuild();
+                EditorHelper.Invoke(() => this.DoBuild(BuildSettings.PostBuildOption.OpenFolder));
             }
         }
 

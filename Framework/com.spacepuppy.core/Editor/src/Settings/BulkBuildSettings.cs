@@ -2,9 +2,10 @@
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 
 using com.spacepuppy;
-using static com.spacepuppyeditor.Settings.BuildSettings;
 
 namespace com.spacepuppyeditor.Settings
 {
@@ -19,6 +20,19 @@ namespace com.spacepuppyeditor.Settings
     public class BulkBuildPostBuildCallbackAttribute : System.Attribute
     {
 
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Method, AllowMultiple = false)]
+    public class BulkBuildAuxiliaryButtonCallbackAttribute : System.Attribute
+    {
+        public string label;
+        public int order;
+
+        public BulkBuildAuxiliaryButtonCallbackAttribute(string label, int order = 0)
+        {
+            this.label = label;
+            this.order = order;
+        }
     }
 
     [CreateAssetMenu(fileName = "BulkBuildSettings", menuName = "Spacepuppy Build Pipeline/Bulk Build Settings")]
@@ -179,15 +193,44 @@ namespace com.spacepuppyeditor.Settings
     public class BulkBuildSettingsEditor : SPEditor
     {
 
+        public const int BUILD_BUTTON_ORDER = 1000;
+
         protected override void OnSPInspectorGUI()
         {
             base.OnSPInspectorGUI();
 
             EditorGUILayout.Space(5f);
+            bool needAnotherSpace = false;
+
+            var arr_auxbuttons = TypeCache.GetMethodsWithAttribute<BulkBuildAuxiliaryButtonCallbackAttribute>().Select(o => (o, o.GetCustomAttribute<BulkBuildAuxiliaryButtonCallbackAttribute>())).OrderBy(o => o.Item2.order).ToArray();
+            int next_auxbuttonindex = 0;
+            if (arr_auxbuttons.Length > 0)
+            {
+                for (int i = next_auxbuttonindex; i < arr_auxbuttons.Length; i++)
+                {
+                    var entry = arr_auxbuttons[i];
+                    if (entry.Item2.order >= BUILD_BUTTON_ORDER) break;
+
+                    next_auxbuttonindex = i + 1;
+                    needAnotherSpace = true;
+                    if (GUILayout.Button(entry.Item2.label))
+                    {
+                        try
+                        {
+                            entry.Item1.Invoke(null, new object[] { this.target });
+                        }
+                        catch (System.Exception ex)
+                        {
+                            Debug.LogException(ex);
+                        }
+                    }
+                }
+            }
 
             var arr_pre = TypeCache.GetMethodsWithAttribute<BulkBuildPreBuildCallbackAttribute>();
             if (arr_pre.Count > 0)
             {
+                needAnotherSpace = true;
                 if (GUILayout.Button("Run Only BulkBuildPreBuildCallbacks"))
                 {
                     foreach (var m in arr_pre)
@@ -208,6 +251,7 @@ namespace com.spacepuppyeditor.Settings
             var arr_post = TypeCache.GetMethodsWithAttribute<BulkBuildPostBuildCallbackAttribute>();
             if (arr_post.Count > 0)
             {
+                needAnotherSpace = true;
                 if (GUILayout.Button("Run Only BulkBuildPostBuildCallbacks"))
                 {
                     foreach (var m in arr_post)
@@ -222,10 +266,9 @@ namespace com.spacepuppyeditor.Settings
                         }
                     }
                 }
-
-                EditorGUILayout.Space(5f);
             }
 
+            if (needAnotherSpace) EditorGUILayout.Space(5f);
             if (GUILayout.Button("Build"))
             {
                 if (EditorUtility.DisplayDialog("Build?", "Confirm that you want to perform a bulk build.", "Yes", "Cancel"))
@@ -234,6 +277,29 @@ namespace com.spacepuppyeditor.Settings
                     if (settings == null) return;
 
                     settings.Build();
+                }
+            }
+
+            if (next_auxbuttonindex < arr_auxbuttons.Length)
+            {
+                if (needAnotherSpace) EditorGUILayout.Space(5f);
+
+                for (int i = next_auxbuttonindex; i < arr_auxbuttons.Length; i++)
+                {
+                    var entry = arr_auxbuttons[i];
+
+                    next_auxbuttonindex = i + 1;
+                    if (GUILayout.Button(entry.Item2.label))
+                    {
+                        try
+                        {
+                            entry.Item1.Invoke(null, new object[] { this.target });
+                        }
+                        catch (System.Exception ex)
+                        {
+                            Debug.LogException(ex);
+                        }
+                    }
                 }
             }
         }

@@ -46,9 +46,16 @@ namespace com.spacepuppyeditor.Core
             string units;
             if (!_unitsCache.TryGetValue(hash, out units))
             {
-                if (!string.IsNullOrEmpty(defaultUnits) && (calculator.TimeUnits?.Contains(defaultUnits) ?? false))
+                if (!string.IsNullOrEmpty(defaultUnits) && calculator.TimeUnits != null)
                 {
-                    units = defaultUnits;
+                    for (int i = 0; i < calculator.TimeUnits.Length; i++)
+                    {
+                        if (string.Equals(calculator.TimeUnits[i], defaultUnits, System.StringComparison.OrdinalIgnoreCase))
+                        {
+                            units = calculator.TimeUnits[i];
+                            break;
+                        }
+                    }
                 }
             }
 
@@ -326,12 +333,12 @@ namespace com.spacepuppyeditor.Core
 
             private string[] _units = new string[]
             {
-                "Milliseconds",
-                "Seconds",
-                "Minutes",
-                "Hours",
-                "Days",
-                "Years"
+                SPTime.UNITS_MILLISECONDS,
+                SPTime.UNITS_SECONDS,
+                SPTime.UNITS_MINUTES,
+                SPTime.UNITS_HOURS,
+                SPTime.UNITS_DAYS,
+                SPTime.UNITS_YEARS
             };
 
             public virtual string[] TimeUnits
@@ -341,7 +348,7 @@ namespace com.spacepuppyeditor.Core
 
             public virtual string DefaultUnits
             {
-                get { return "Seconds"; }
+                get { return SPTime.UNITS_SECONDS; }
             }
 
             public virtual double SecondsToTimeUnits(string units, double seconds)
@@ -350,18 +357,18 @@ namespace com.spacepuppyeditor.Core
 
                 switch (units)
                 {
-                    case "Milliseconds":
+                    case SPTime.UNITS_MILLISECONDS:
                         return span.TotalMilliseconds;
-                    case "Seconds":
+                    case SPTime.UNITS_SECONDS:
                         //return span.TotalSeconds;
                         return seconds;
-                    case "Minutes":
+                    case SPTime.UNITS_MINUTES:
                         return span.TotalMinutes;
-                    case "Hours":
+                    case SPTime.UNITS_HOURS:
                         return span.TotalHours;
-                    case "Days":
+                    case SPTime.UNITS_DAYS:
                         return span.TotalDays;
-                    case "Years":
+                    case SPTime.UNITS_YEARS:
                         return span.Ticks / (System.TimeSpan.TicksPerDay * DAYS_IN_YEAR);
                     default:
                         return seconds;
@@ -372,17 +379,17 @@ namespace com.spacepuppyeditor.Core
             {
                 switch (units)
                 {
-                    case "Milliseconds":
+                    case SPTime.UNITS_MILLISECONDS:
                         return System.TimeSpan.FromMilliseconds(time).TotalSeconds;
-                    case "Seconds":
+                    case SPTime.UNITS_SECONDS:
                         return time;
-                    case "Minutes":
+                    case SPTime.UNITS_MINUTES:
                         return System.TimeSpan.FromMinutes(time).TotalSeconds;
-                    case "Hours":
+                    case SPTime.UNITS_HOURS:
                         return System.TimeSpan.FromHours(time).TotalSeconds;
-                    case "Days":
+                    case SPTime.UNITS_DAYS:
                         return System.TimeSpan.FromDays(time).TotalSeconds;
-                    case "Years":
+                    case SPTime.UNITS_YEARS:
                         return System.TimeSpan.FromTicks((long)(time * System.TimeSpan.TicksPerDay * DAYS_IN_YEAR)).TotalSeconds;
                     default:
                         return time;

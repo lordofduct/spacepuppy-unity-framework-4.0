@@ -39,6 +39,13 @@ namespace com.spacepuppy
         public const string ID_REAL = "time.default.real"; //TODO - refactor name to be 'unscaled', needs some special case handling to ensure existing projects don't break
         public const string ID_SMOOTH = "time.default.smooth";
 
+        public const string UNITS_MILLISECONDS = "Milliseconds";
+        public const string UNITS_SECONDS = "Seconds";
+        public const string UNITS_MINUTES = "Minutes";
+        public const string UNITS_HOURS = "Hours";
+        public const string UNITS_DAYS = "Days";
+        public const string UNITS_YEARS = "Years";
+
         #region Fields
 
         [SerializeField()]

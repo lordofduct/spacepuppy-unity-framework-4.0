@@ -7,6 +7,7 @@ using com.spacepuppy.Dynamic;
 using com.spacepuppy.Events;
 using System.Reflection;
 using com.spacepuppy.Utils;
+using System.Linq;
 
 namespace com.spacepuppyeditor.Windows
 {
@@ -36,8 +37,13 @@ namespace com.spacepuppyeditor.Windows
         private static SPEventNavigatorWindow _openWindow;
 
         private GameObject _currentTarget;
-        private List<SPEventSourceInfo> _eventSources = new();
+        private bool _includeInactiveSources;
+        private int _maxDepth = 5;
+
+        private SPEventSourceInfo[] _eventSources;
         private TrackedListenerToken<System.Action> _token;
+
+        private Texture _gameobjectIcon;
 
         private Vector2 _scrollPos;
 
@@ -45,15 +51,17 @@ namespace com.spacepuppyeditor.Windows
         {
             _scrollPos = default;
             _currentTarget = null;
-            _eventSources.Clear();
+            _eventSources = null;
             _token.Dispose();
             _token = DelegateRef<System.Action>.Create(o => Selection.selectionChanged += o, o => Selection.selectionChanged -= o).AddTrackedListener(Selection_OnSelectionChanged);
+
+            _gameobjectIcon = EditorGUIUtility.IconContent("GameObject Icon").image;
         }
 
         private void OnDisable()
         {
             _currentTarget = null;
-            _eventSources.Clear();
+            _eventSources = null;
             _token.Dispose();
         }
 
@@ -62,50 +70,90 @@ namespace com.spacepuppyeditor.Windows
             if (Selection.activeGameObject != _currentTarget)
             {
                 _currentTarget = Selection.activeGameObject;
-                this.RefillEventSources();
+                _eventSources = FindEventSources(_currentTarget, _includeInactiveSources).ToArray();
             }
 
             EditorGUILayout.ObjectField("Selected Object", _currentTarget, typeof(GameObject), true);
+            EditorGUILayout.BeginHorizontal();
+            _includeInactiveSources = EditorGUILayout.Toggle("Include Inactive", _includeInactiveSources);
+            _maxDepth = EditorGUILayout.IntField("Max Depth", _maxDepth);
+            EditorGUILayout.EndHorizontal();
 
             _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos);
 
             EditorGUILayout.BeginVertical(EditorStyles.helpBox, GUILayout.ExpandHeight(true));
-            var icon = EditorGUIUtility.IconContent("GameObject Icon").image;
-            foreach (var entry in _eventSources)
+            if (_eventSources?.Length > 0)
             {
-                var c = EditorHelper.TempContent(entry.description);
-
-                var h = EditorStyles.label.CalcHeight(c, EditorGUIUtility.currentViewWidth);
-                var r = EditorGUILayout.GetControlRect(false, h);
-
-                c.image = icon;
-                if (GUI.Button(r, c, EditorStyles.label))
+                for (int i = 0; i < _eventSources.Length; i++)
                 {
-                    EditorGUIUtility.PingObject(entry.source);
+                    _eventSources[i] = this.DrawEntry(_eventSources[i], 0);
                 }
             }
+            EditorGUI.indentLevel = 0;
             EditorGUILayout.EndVertical();
             EditorGUILayout.EndScrollView();
+        }
+
+        SPEventSourceInfo DrawEntry(SPEventSourceInfo entry, int depth)
+        {
+            var c = EditorHelper.TempContent(entry.description);
+
+            const float MARGIN_FOLDOUT = 15f;
+            var h = EditorStyles.label.CalcHeight(c, EditorGUIUtility.currentViewWidth);
+            EditorGUI.indentLevel = depth;
+            var rect_foldout = EditorGUILayout.GetControlRect(false, h);
+            var rect_indent = EditorGUI.IndentedRect(rect_foldout);
+            var rect_button = new Rect(rect_indent.xMin + MARGIN_FOLDOUT, rect_indent.yMin, rect_indent.width - MARGIN_FOLDOUT, rect_indent.height);
+            //var rect_button = EditorGUILayout.GetControlRect(false, h);
+
+            c.image = _gameobjectIcon;
+            if (entry.subinfos == null || entry.subinfos.Length > 0)
+            {
+                entry.expanded = EditorGUI.Foldout(rect_foldout, entry.expanded, GUIContent.none);
+            }
+            if (GUI.Button(rect_button, c, EditorStyles.label))
+            {
+                EditorGUIUtility.PingObject(entry.source);
+            }
+
+            if (entry.expanded && entry.source)
+            {
+                if (depth < 5)
+                {
+                    if (entry.subinfos == null) entry.subinfos = FindEventSources(entry.source.gameObject, _includeInactiveSources).ToArray();
+
+                    for (int i = 0; i < entry.subinfos.Length; i++)
+                    {
+                        entry.subinfos[i] = this.DrawEntry(entry.subinfos[i], depth + 1);
+                    }
+                }
+                else
+                {
+                    EditorGUI.indentLevel++;
+                    EditorGUILayout.LabelField("...");
+                }
+            }
+
+            return entry;
         }
 
         void Selection_OnSelectionChanged()
         {
             _currentTarget = null;
-            _eventSources.Clear();
+            _eventSources = null;
             this.Repaint();
         }
 
-        void RefillEventSources()
+        static IEnumerable<SPEventSourceInfo> FindEventSources(GameObject target, bool includeInactiveSources)
         {
-            _eventSources.Clear();
-            if (_currentTarget == null) return;
+            if (target == null) yield break;
 
-            var sc = _currentTarget.scene;
-            if (!sc.IsValid()) return;
+            var sc = target.scene;
+            if (!sc.IsValid()) yield break;
 
             foreach (var go in sc.GetRootGameObjects())
             {
-                foreach (var c in go.GetComponentsInChildren<MonoBehaviour>())
+                foreach (var c in go.GetComponentsInChildren<MonoBehaviour>(includeInactiveSources))
                 {
                     foreach (var m in DynamicUtil.GetMembersDirect(c, true, System.Reflection.MemberTypes.Field))
                     {
@@ -117,15 +165,15 @@ namespace com.spacepuppyeditor.Windows
                             foreach (var targ in spev.Targets)
                             {
                                 var tgo = GameObjectUtil.GetGameObjectFromSource(targ.Target);
-                                if (tgo == _currentTarget)
+                                if (tgo == target)
                                 {
                                     var evnm = string.IsNullOrEmpty(spev.ObservableTriggerId) ? "Unnamed SPEvent" : spev.ObservableTriggerId;
-                                    _eventSources.Add(new SPEventSourceInfo()
+                                    yield return new SPEventSourceInfo()
                                     {
                                         source = c,
                                         eventName = evnm,
                                         description = $"{c.name}.{c.GetType().Name}->{evnm}",
-                                    });
+                                    };
                                 }
                             }
                         }
@@ -143,6 +191,8 @@ namespace com.spacepuppyeditor.Windows
             public MonoBehaviour source;
             public string eventName;
             public string description;
+            public bool expanded;
+            public SPEventSourceInfo[] subinfos;
         }
 
         #endregion

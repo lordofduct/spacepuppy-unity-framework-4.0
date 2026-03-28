@@ -125,6 +125,17 @@ namespace com.spacepuppy.Events
 
         #endregion
 
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            if (Application.isPlaying && this.isActiveAndEnabled)
+            {
+                _onTriggerHook.Dispose();
+                if (_mediator != null) _onTriggerHook = _mediator.OnTriggered_ref().AddTrackedListener(this.OnMediatorTriggeredCallback);
+            }
+        }
+#endif
+
     }
 
 }

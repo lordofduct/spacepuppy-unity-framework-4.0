@@ -286,6 +286,52 @@ namespace com.spacepuppyeditor.Events
         private void DrawAdvanced_CallMethodOnSelected(Rect area, SerializedProperty property)
         {
             var targProp = property.FindPropertyRelative(EventTriggerTargetPropertyDrawer.PROP_TRIGGERABLETARG);
+
+            Rect rect;
+            var drect = area; //the rect that we'll keep resizing
+            static Rect CalcNextRect(ref Rect sourceRect)
+            {
+                var pos = new Rect(sourceRect.xMin, sourceRect.yMin + 1f, sourceRect.width, EditorGUIUtility.singleLineHeight);
+                sourceRect = new Rect(pos.xMin, pos.yMax, sourceRect.width, sourceRect.height - EditorGUIUtility.singleLineHeight + 1);
+                return pos;
+            }
+
+            void DrawMethodObjSwapField(ref Rect drect, string label)
+            {
+                rect = CalcNextRect(ref drect);
+                var targType = targProp.objectReferenceValue?.GetType() ?? typeof(UnityEngine.Object);
+
+                var clabel = new GUIContent(label);
+
+                //var r0 = new Rect(rect.xMin, rect.yMin, rect.width * 0.6f, rect.height);
+                //var r1 = new Rect(r0.xMax + 1, rect.yMin, rect.width - r0.width - 1, rect.height);
+
+                //var r1 = new Rect(rect.xMin, rect.yMin, rect.width * 0.35f, rect.height);
+                //var r0 = new Rect(r1.xMax + 1, rect.yMin, rect.width - r1.width - 1, rect.height);
+
+                //float labelWidth = EditorStyles.label.CalcSize(clabel).x;
+                //float boxWidth = Mathf.Max(rect.width * 0.35f, rect.width - labelWidth);
+                //var r1 = new Rect(rect.xMin, rect.yMin, boxWidth, rect.height);
+                //var r0 = new Rect(r1.xMax + 1, rect.yMin, rect.width - r1.width - 1, rect.height);
+
+                float boxWidth = EditorGUIUtility.labelWidth + 16f; //fills the gap of the label and 'Value' for any args
+                var r1 = new Rect(rect.xMin, rect.yMin, boxWidth, rect.height);
+                var r0 = new Rect(r1.xMax + 1, rect.yMin, rect.width - r1.width - 1, rect.height);
+
+                EditorGUI.LabelField(r0, clabel);
+
+                EditorGUI.BeginChangeCheck();
+                var newtarg = EditorGUI.ObjectField(r1, GUIContent.none, targProp.objectReferenceValue, targType, true);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    newtarg = ObjUtil.GetAsFromSource(targType, newtarg) as UnityEngine.Object;
+                    if (newtarg)
+                    {
+                        targProp.objectReferenceValue = newtarg;
+                    }
+                }
+            }
+
             var targObj = targProp.objectReferenceValue;
             System.Reflection.MemberInfo selectedMember = null;
             if (targObj)
@@ -299,12 +345,15 @@ namespace com.spacepuppyeditor.Events
                 case System.Reflection.MemberTypes.Field:
                 case System.Reflection.MemberTypes.Property:
                     {
+                        _callMethodModeExtraLines = 1;
                         var paramType = DynamicUtil.GetInputType_RespectingDynamicProperty(selectedMember, targObj);
 
                         var sb = StringUtil.GetTempStringBuilder();
-                        sb.Append($"{targObj.name} : {targObj.GetType().Name}.{selectedMember.Name} : ");
+                        //sb.Append($"{targObj.name} : {targObj.GetType().Name}.{selectedMember.Name} : ");
+                        sb.Append($".{selectedMember.Name} : ");
                         sb.Append(paramType?.Name ?? "*");
                         string methodDescriptor = StringUtil.Release(sb);
+                        DrawMethodObjSwapField(ref drect, methodDescriptor);
 
                         var argArrayProp = property.FindPropertyRelative(EventTriggerTargetPropertyDrawer.PROP_TRIGGERABLEARGS);
                         if (argArrayProp.arraySize != 1)
@@ -313,7 +362,7 @@ namespace com.spacepuppyeditor.Events
                             argArrayProp.serializedObject.ApplyModifiedProperties();
                         }
 
-                        var argRect = new Rect(area.xMin, area.yMin, area.width, EditorGUIUtility.singleLineHeight);
+                        rect = CalcNextRect(ref drect);
                         var argProp = argArrayProp.GetArrayElementAtIndex(0);
 
                         if (paramType == typeof(object))
@@ -325,7 +374,7 @@ namespace com.spacepuppyeditor.Events
                             _variantDrawer.CurrentTriggerArgIndex = 0;
 
                             string title = string.Format("Arg {0}: {1} ({2})", 0, selectedMember.Name, paramType?.Name ?? "dynamic");
-                            _variantDrawer.OnGUI(argRect, argProp, EditorHelper.TempContent(title, "A parameter to be passed to the method if needed."));
+                            _variantDrawer.OnGUI(rect, argProp, EditorHelper.TempContent(title, "A parameter to be passed to the method if needed."));
                         }
                         else
                         {
@@ -335,7 +384,7 @@ namespace com.spacepuppyeditor.Events
                             _variantDrawer.CurrentTriggerArgIndex = 0;
 
                             string title = string.Format("Arg {0}: {1} ({2})", 0, selectedMember.Name, paramType?.Name ?? "dynamic");
-                            _variantDrawer.OnGUI(argRect, argProp, EditorHelper.TempContent(title, "A parameter to be passed to the method if needed."));
+                            _variantDrawer.OnGUI(rect, argProp, EditorHelper.TempContent(title, "A parameter to be passed to the method if needed."));
                         }
                     }
                     break;
@@ -345,12 +394,9 @@ namespace com.spacepuppyeditor.Events
                         var parr = (selectedMember != null) ? DynamicUtil.GetDynamicParameterInfo(selectedMember) : null;
                         if (parr == null || parr.Length == 0)
                         {
-                            string methodDescriptor = targObj != null && selectedMember != null ? $"{targObj.name} : {targObj.GetType().Name}.{selectedMember.Name}()" : "Undefined member name.";
-
                             //NO PARAMETERS
                             _callMethodModeExtraLines = 0;
 
-                            var argRect = new Rect(area.xMin, area.yMin, area.width, EditorGUIUtility.singleLineHeight);
                             var argArrayProp = property.FindPropertyRelative(EventTriggerTargetPropertyDrawer.PROP_TRIGGERABLEARGS);
                             if (argArrayProp.arraySize > 0)
                             {
@@ -358,14 +404,32 @@ namespace com.spacepuppyeditor.Events
                                 argArrayProp.serializedObject.ApplyModifiedProperties();
                             }
 
+                            //string methodDescriptor = targObj != null && selectedMember != null ? $"{targObj.name} : {targObj.GetType().Name}.{selectedMember.Name}()" : "Undefined member name.";
+                            string methodDescriptor = selectedMember != null ? $".{selectedMember.Name}()" : "Undefined member name.";
+                            DrawMethodObjSwapField(ref drect, methodDescriptor);
+
+                            /*
                             var cache = SPGUI.Disable();
-                            EditorGUI.LabelField(argRect, GUIContent.none, new GUIContent(methodDescriptor));
+                            rect = CalcNextRect(ref drect);
+                            EditorGUI.LabelField(rect, GUIContent.none, new GUIContent(methodDescriptor));
                             cache.Reset();
+                            */
                         }
                         else
                         {
+                            //MULTIPLE PARAMETERS - special case, does not support trigger event arg
+                            _callMethodModeExtraLines = parr.Length;
+
+                            var argArrayProp = property.FindPropertyRelative(EventTriggerTargetPropertyDrawer.PROP_TRIGGERABLEARGS);
+                            if (argArrayProp.arraySize != parr.Length)
+                            {
+                                argArrayProp.arraySize = parr.Length;
+                                argArrayProp.serializedObject.ApplyModifiedProperties();
+                            }
+
                             var sb = StringUtil.GetTempStringBuilder();
-                            sb.Append($"{targObj.name} : {targObj.GetType().Name}.{selectedMember.Name}(");
+                            //sb.Append($"{targObj.name} : {targObj.GetType().Name}.{selectedMember.Name}(");
+                            sb.Append($".{selectedMember.Name}(");
                             for (int i = 0; i < parr.Length; i++)
                             {
                                 sb.Append(parr[i].ParameterType.Name);
@@ -375,28 +439,22 @@ namespace com.spacepuppyeditor.Events
                             }
                             sb.Append(")");
                             string methodDescriptor = StringUtil.Release(sb);
+                            DrawMethodObjSwapField(ref drect, methodDescriptor);
 
-                            //MULTIPLE PARAMETERS - special case, does not support trigger event arg
-                            _callMethodModeExtraLines = parr.Length;
-
-                            var argArrayProp = property.FindPropertyRelative(EventTriggerTargetPropertyDrawer.PROP_TRIGGERABLEARGS);
-
-                            if (argArrayProp.arraySize != parr.Length)
-                            {
-                                argArrayProp.arraySize = parr.Length;
-                                argArrayProp.serializedObject.ApplyModifiedProperties();
-                            }
-
+                            /*
                             var cache = SPGUI.Disable();
-                            EditorGUI.LabelField(new Rect(area.xMin, area.yMin, area.width, EditorGUIUtility.singleLineHeight), GUIContent.none, new GUIContent(methodDescriptor));
+                            rect = CalcNextRect(ref drect);
+                            EditorGUI.LabelField(rect, GUIContent.none, new GUIContent(methodDescriptor));
                             cache.Reset();
+                            */
 
                             for (int i = 0; i < parr.Length; i++)
                             {
                                 var paramType = parr[i].ParameterType;
                                 if (parr.Length == 1 && TypeUtil.IsType(paramType, typeof(IDynamicProperty))) paramType = typeof(object);
 
-                                var argRect = new Rect(area.xMin, area.yMin + (i + 1) * EditorGUIUtility.singleLineHeight, area.width, EditorGUIUtility.singleLineHeight);
+                                //rect = new Rect(area.xMin, area.yMin + (i + 1) * EditorGUIUtility.singleLineHeight, area.width, EditorGUIUtility.singleLineHeight);
+                                rect = CalcNextRect(ref drect);
                                 var argProp = argArrayProp.GetArrayElementAtIndex(i);
 
                                 if (paramType == typeof(object))
@@ -408,7 +466,7 @@ namespace com.spacepuppyeditor.Events
                                     _variantDrawer.CurrentTriggerArgIndex = i;
 
                                     string title = string.Format("Arg {0}: {1} ({2})", i, parr[i].ParameterName, parr[i].ParameterType?.Name ?? "dynamic");
-                                    _variantDrawer.OnGUI(argRect, argProp, EditorHelper.TempContent(title, "A parameter to be passed to the method if needed."));
+                                    _variantDrawer.OnGUI(rect, argProp, EditorHelper.TempContent(title, "A parameter to be passed to the method if needed."));
                                 }
                                 else
                                 {
@@ -418,7 +476,7 @@ namespace com.spacepuppyeditor.Events
                                     _variantDrawer.CurrentTriggerArgIndex = i;
 
                                     string title = string.Format("Arg {0}: {1} ({2})", i, parr[i].ParameterName, parr[i].ParameterType?.Name ?? "dynamic");
-                                    _variantDrawer.OnGUI(argRect, argProp, EditorHelper.TempContent(title, "A parameter to be passed to the method if needed."));
+                                    _variantDrawer.OnGUI(rect, argProp, EditorHelper.TempContent(title, "A parameter to be passed to the method if needed."));
                                 }
                             }
                         }

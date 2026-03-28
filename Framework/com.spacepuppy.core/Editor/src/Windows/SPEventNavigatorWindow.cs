@@ -8,6 +8,8 @@ using com.spacepuppy.Events;
 using System.Reflection;
 using com.spacepuppy.Utils;
 using System.Linq;
+using Unity.EditorCoroutines.Editor;
+using System.Runtime.CompilerServices;
 
 namespace com.spacepuppyeditor.Windows
 {
@@ -38,10 +40,14 @@ namespace com.spacepuppyeditor.Windows
 
         private GameObject _currentTarget;
         private bool _includeInactiveSources;
+        private bool _includeAlternateSources;
         private int _maxDepth = 5;
 
-        private SPEventSourceInfo[] _eventSources;
+        private List<SPEventSourceInfo> _eventSources;
+        private List<SPEventSourceInfo> _alternateSources;
         private TrackedListenerToken<System.Action> _token;
+        private EditorCoroutine _routine;
+        private int _guiFrame;
 
         private Texture _gameobjectIcon;
 
@@ -50,8 +56,7 @@ namespace com.spacepuppyeditor.Windows
         private void OnEnable()
         {
             _scrollPos = default;
-            _currentTarget = null;
-            _eventSources = null;
+            this.PurgeSources();
             _token.Dispose();
             _token = DelegateRef<System.Action>.Create(o => Selection.selectionChanged += o, o => Selection.selectionChanged -= o).AddTrackedListener(Selection_OnSelectionChanged);
 
@@ -60,36 +65,73 @@ namespace com.spacepuppyeditor.Windows
 
         private void OnDisable()
         {
-            _currentTarget = null;
-            _eventSources = null;
+            this.PurgeSources();
             _token.Dispose();
         }
 
         private void OnGUI()
         {
+            _guiFrame++;
             if (Selection.activeGameObject != _currentTarget)
             {
+                this.PurgeSources();
                 _currentTarget = Selection.activeGameObject;
-                _eventSources = FindEventSources(_currentTarget, _includeInactiveSources).ToArray();
+
+
+                //_eventSources = FindEventSources(_currentTarget, _includeInactiveSources).ToList();
+                //if (_includeAlternateSources) _alternateSources = FindAlternateSources(_currentTarget, _includeInactiveSources).ToList();
+                _routine = EditorCoroutineUtility.StartCoroutine(AsyncFindRootSources(_currentTarget, _includeInactiveSources, _includeAlternateSources), this);
             }
 
             EditorGUILayout.ObjectField("Selected Object", _currentTarget, typeof(GameObject), true);
             EditorGUILayout.BeginHorizontal();
             _includeInactiveSources = EditorGUILayout.Toggle("Include Inactive", _includeInactiveSources);
             _maxDepth = EditorGUILayout.IntField("Max Depth", _maxDepth);
+            _includeAlternateSources = EditorGUILayout.Toggle("Include ALL Refs", _includeAlternateSources);
             EditorGUILayout.EndHorizontal();
 
             _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos);
 
             EditorGUILayout.BeginVertical(EditorStyles.helpBox, GUILayout.ExpandHeight(true));
-            if (_eventSources?.Length > 0)
+            bool drewEvents = false;
+            if (_eventSources?.Count > 0)
             {
-                for (int i = 0; i < _eventSources.Length; i++)
+                drewEvents = true;
+                for (int i = 0; i < _eventSources.Count; i++)
                 {
                     _eventSources[i] = this.DrawEntry(_eventSources[i], 0);
                 }
             }
+            if (_alternateSources?.Count > 0)
+            {
+                if (drewEvents) EditorGUILayout.Space(20f);
+                drewEvents = true;
+
+                EditorGUILayout.LabelField("Alternate Sources:");
+                for (int i = 0; i < _alternateSources.Count; i++)
+                {
+                    _alternateSources[i] = this.DrawAlternateEntry(_alternateSources[i]);
+                }
+            }
             EditorGUI.indentLevel = 0;
+
+            if (_routine != null)
+            {
+                if (drewEvents) EditorGUILayout.Space(10f);
+                switch (Mathf.Abs(_guiFrame % 3))
+                {
+                    case 0:
+                        EditorGUILayout.LabelField("Processing.");
+                        break;
+                    case 1:
+                        EditorGUILayout.LabelField("Processing..");
+                        break;
+                    case 2:
+                        EditorGUILayout.LabelField("Processing...");
+                        break;
+                }
+            }
+
             EditorGUILayout.EndVertical();
             EditorGUILayout.EndScrollView();
         }
@@ -137,10 +179,26 @@ namespace com.spacepuppyeditor.Windows
             return entry;
         }
 
+        SPEventSourceInfo DrawAlternateEntry(SPEventSourceInfo entry)
+        {
+            var c = EditorHelper.TempContent(entry.description);
+
+            var h = EditorStyles.label.CalcHeight(c, EditorGUIUtility.currentViewWidth);
+            EditorGUI.indentLevel = 0;
+            var rect_button = EditorGUILayout.GetControlRect(false, h);
+
+            c.image = _gameobjectIcon;
+            if (GUI.Button(rect_button, c, EditorStyles.label))
+            {
+                EditorGUIUtility.PingObject(entry.source);
+            }
+
+            return entry;
+        }
+
         void Selection_OnSelectionChanged()
         {
-            _currentTarget = null;
-            _eventSources = null;
+            this.PurgeSources();
             this.Repaint();
         }
 
@@ -155,30 +213,129 @@ namespace com.spacepuppyeditor.Windows
             {
                 foreach (var c in go.GetComponentsInChildren<MonoBehaviour>(includeInactiveSources))
                 {
-                    foreach (var m in DynamicUtil.GetMembersDirect(c, true, System.Reflection.MemberTypes.Field))
+                    foreach (var s in FindEventSources(target, c))
                     {
-                        var field = m as FieldInfo;
+                        yield return s;
+                    }
+                }
+            }
+        }
+        static IEnumerable<SPEventSourceInfo> FindEventSources(GameObject target, Component source)
+        {
+            var c = source;
+            foreach (var m in DynamicUtil.GetMembersDirect(c, true, System.Reflection.MemberTypes.Field))
+            {
+                var field = m as FieldInfo;
 
-                        if (TypeUtil.IsType(field?.FieldType, typeof(BaseSPEvent)))
+                if (TypeUtil.IsType(field?.FieldType, typeof(BaseSPEvent)))
+                {
+                    var spev = field.GetValue(c) as BaseSPEvent;
+                    foreach (var targ in spev.Targets)
+                    {
+                        var tgo = GameObjectUtil.GetGameObjectFromSource(targ.Target);
+                        if (tgo == target)
                         {
-                            var spev = field.GetValue(c) as BaseSPEvent;
-                            foreach (var targ in spev.Targets)
+                            var evnm = string.IsNullOrEmpty(spev.ObservableTriggerId) ? "Unnamed SPEvent" : spev.ObservableTriggerId;
+                            yield return new SPEventSourceInfo()
                             {
-                                var tgo = GameObjectUtil.GetGameObjectFromSource(targ.Target);
-                                if (tgo == target)
-                                {
-                                    var evnm = string.IsNullOrEmpty(spev.ObservableTriggerId) ? "Unnamed SPEvent" : spev.ObservableTriggerId;
-                                    yield return new SPEventSourceInfo()
-                                    {
-                                        source = c,
-                                        eventName = evnm,
-                                        description = $"{c.name}.{c.GetType().Name}->{evnm}",
-                                    };
-                                }
-                            }
+                                source = c,
+                                eventName = evnm,
+                                description = $"{c.name}.{c.GetType().Name}->{evnm}",
+                            };
                         }
                     }
                 }
+            }
+        }
+
+        static IEnumerable<SPEventSourceInfo> FindAlternateSources(GameObject target, Component source)
+        {
+            // Use a SerializedObject to iterate over properties efficiently
+            SerializedObject serializedObject = new SerializedObject(source);
+            SerializedProperty property = serializedObject.GetIterator();
+
+            while (property.NextVisible(true))
+            {
+                if (property.propertyType == SerializedPropertyType.ObjectReference)
+                {
+                    var tgo = GameObjectUtil.GetGameObjectFromSource(property.objectReferenceValue);
+                    if (tgo && tgo == target)
+                    {
+                        yield return new SPEventSourceInfo()
+                        {
+                            source = source,
+                            eventName = property.name,
+                            description = property.propertyPath,
+                        };
+                    }
+                }
+            }
+        }
+
+
+        System.Collections.IEnumerator AsyncFindRootSources(GameObject target, bool includeInactiveSources, bool includeAlternateSources)
+        {
+            if (target == null) yield break;
+
+            var sc = target.scene;
+            if (!sc.IsValid()) yield break;
+
+            var events = new List<SPEventSourceInfo>();
+            var alts = new List<SPEventSourceInfo>();
+            //set these here so that way OnGUI draws them as we fill them. But we fill via events/alts in case the user changes selection
+            _eventSources = events;
+            _alternateSources = alts;
+
+            var allcomponents = sc.GetRootGameObjects().SelectMany(o => o.GetComponentsInChildren<Component>(includeInactiveSources)).ToArray();
+
+            var interval = System.TimeSpan.FromSeconds(1d / 5d);
+            var stopwatch = new System.Diagnostics.Stopwatch();
+            stopwatch.Start();
+            foreach (Component c in allcomponents) //this is usually very fast so we stick to it first
+            {
+                foreach (var s in FindEventSources(target, c))
+                {
+                    events.Add(s);
+                }
+
+                if (stopwatch.Elapsed > interval * 5)
+                {
+                    this.Repaint();
+                    yield return null;
+                    stopwatch.Restart();
+                }
+            }
+            if (includeAlternateSources)
+            {
+                foreach (Component c in allcomponents) //this is slow, do it last
+                {
+                    foreach (var s in FindAlternateSources(target, c))
+                    {
+                        alts.Add(s);
+                    }
+
+                    if (stopwatch.Elapsed > interval)
+                    {
+                        this.Repaint();
+                        yield return null;
+                        stopwatch.Restart();
+                    }
+                }
+            }
+            stopwatch.Stop();
+            _routine = null;
+            this.Repaint();
+        }
+
+        void PurgeSources()
+        {
+            _currentTarget = null;
+            _eventSources = null;
+            _alternateSources = null;
+            if (_routine != null)
+            {
+                EditorCoroutineUtility.StopCoroutine(_routine);
+                _routine = null;
             }
         }
 
@@ -188,7 +345,7 @@ namespace com.spacepuppyeditor.Windows
 
         struct SPEventSourceInfo
         {
-            public MonoBehaviour source;
+            public Component source;
             public string eventName;
             public string description;
             public bool expanded;

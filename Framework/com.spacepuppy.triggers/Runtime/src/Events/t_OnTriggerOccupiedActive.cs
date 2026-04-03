@@ -34,6 +34,9 @@ namespace com.spacepuppy.Events
         private float _activeScanInterval;
 
         [SerializeField]
+        private GameObject _isOccupiedState;
+
+        [SerializeField]
         [SPEvent.Config("first occupying object (GameObject)")]
         private SPEvent _onTriggerOccupied = new SPEvent("OnTriggerOccupied");
 
@@ -66,6 +69,7 @@ namespace com.spacepuppy.Events
             base.Start();
 
             this.ResolveCompoundTrigger();
+            _isOccupiedState.TrySetActive(_activeObjects.Count > 0);
         }
 
         protected override void OnEnable()
@@ -73,6 +77,7 @@ namespace com.spacepuppy.Events
             base.OnEnable();
 
             this.ResolveCompoundTrigger();
+            _isOccupiedState.TrySetActive(_activeObjects.Count > 0);
             if (_activelyScanning && _activeObjects.Count > 0) this.StartUpdate();
         }
 
@@ -124,6 +129,12 @@ namespace com.spacepuppy.Events
             }
         }
 
+        public GameObject IsOccupedState
+        {
+            get => _isOccupiedState;
+            set => _isOccupiedState = value;
+        }
+
         public SPEvent OnTriggerOccupied
         {
             get { return _onTriggerOccupied; }
@@ -169,11 +180,13 @@ namespace com.spacepuppy.Events
             if (_activeObjects.Count == 0)
             {
                 _activeObjects.Add(obj);
+                _isOccupiedState.TrySetActive(_activeObjects.Count > 0);
                 _onTriggerOccupied.ActivateTrigger(this, _reduceOccupantsToEntityRoot ? obj.FindRoot() : obj);
             }
             else
             {
                 _activeObjects.Add(obj);
+                _isOccupiedState.TrySetActive(_activeObjects.Count > 0);
             }
         }
 
@@ -188,7 +201,12 @@ namespace com.spacepuppy.Events
             //remove active objects
             if (_activeObjects.Remove(obj) && _activeObjects.Count == 0)
             {
+                _isOccupiedState.TrySetActive(_activeObjects.Count > 0);
                 _onTriggerLastExited.ActivateTrigger(this, _reduceOccupantsToEntityRoot ? obj.FindRoot() : obj);
+            }
+            else
+            {
+                _isOccupiedState.TrySetActive(_activeObjects.Count > 0);
             }
         }
 
@@ -311,6 +329,7 @@ namespace com.spacepuppy.Events
                     if (_activeObjects.Count == 0)
                     {
                         var obj = toRemove.FirstOrDefault();
+                        _isOccupiedState.TrySetActive(false);
                         _onTriggerLastExited.ActivateTrigger(this, _reduceOccupantsToEntityRoot ? obj.FindRoot() : obj);
                     }
                     else if (_onUpdate.HasReceivers)
@@ -322,6 +341,7 @@ namespace com.spacepuppy.Events
                 else if (_activeObjects.Count > 0)
                 {
                     var obj = _activeObjects.FirstOrDefault();
+                    _isOccupiedState.TrySetActive(true);
                     _onTriggerOccupied.ActivateTrigger(this, _reduceOccupantsToEntityRoot ? obj.FindRoot() : obj);
                 }
             }

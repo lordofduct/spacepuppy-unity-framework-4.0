@@ -17,6 +17,14 @@ namespace com.spacepuppyeditor.Windows
     public class SPEventNavigatorWindow : EditorWindow
     {
 
+        [System.Flags]
+        public enum OptionFlags
+        {
+            IncludeInactive = 1,
+            IncludeAlternateSources = 2,
+            ShowFullPath = 4
+        }
+
         #region Menu Entries
 
         [MenuItem("Spacepuppy/SPEvent Navigator", priority = int.MaxValue - 1)]
@@ -39,8 +47,8 @@ namespace com.spacepuppyeditor.Windows
         private static SPEventNavigatorWindow _openWindow;
 
         private GameObject _currentTarget;
-        private bool _includeInactiveSources;
-        private bool _includeAlternateSources;
+        private bool _enabled = true;
+        private OptionFlags _options;
         private int _maxDepth = 5;
 
         private List<SPEventSourceInfo> _eventSources;
@@ -72,22 +80,28 @@ namespace com.spacepuppyeditor.Windows
         private void OnGUI()
         {
             _guiFrame++;
-            if (Selection.activeGameObject != _currentTarget)
+            if (_enabled && Selection.activeGameObject != _currentTarget)
             {
                 this.PurgeSources();
                 _currentTarget = Selection.activeGameObject;
 
-
                 //_eventSources = FindEventSources(_currentTarget, _includeInactiveSources).ToList();
                 //if (_includeAlternateSources) _alternateSources = FindAlternateSources(_currentTarget, _includeInactiveSources).ToList();
-                _routine = EditorCoroutineUtility.StartCoroutine(AsyncFindRootSources(_currentTarget, _includeInactiveSources, _includeAlternateSources), this);
+                _routine = EditorCoroutineUtility.StartCoroutine(AsyncFindSourcesInScene(_currentTarget, _options), this);
             }
+
+            EditorGUI.BeginChangeCheck();
+            _enabled = EditorGUILayout.ToggleLeft("Enabled", _enabled);
+            if (EditorGUI.EndChangeCheck()) this.PurgeSources();
 
             EditorGUILayout.ObjectField("Selected Object", _currentTarget, typeof(GameObject), true);
             EditorGUILayout.BeginHorizontal();
-            _includeInactiveSources = EditorGUILayout.Toggle("Include Inactive", _includeInactiveSources);
+
+            EditorGUI.BeginChangeCheck();
+            _options = (OptionFlags)EditorGUILayout.EnumFlagsField("Options", _options);
+            if (EditorGUI.EndChangeCheck()) this.PurgeSources();
+
             _maxDepth = EditorGUILayout.IntField("Max Depth", _maxDepth);
-            _includeAlternateSources = EditorGUILayout.Toggle("Include ALL Refs", _includeAlternateSources);
             EditorGUILayout.EndHorizontal();
 
             _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos);
@@ -162,7 +176,7 @@ namespace com.spacepuppyeditor.Windows
             {
                 if (depth < 5)
                 {
-                    if (entry.subinfos == null) entry.subinfos = FindEventSources(entry.source.gameObject, _includeInactiveSources).ToArray();
+                    if (entry.subinfos == null) entry.subinfos = FindEventSourcesInScene(entry.source.gameObject, _options).ToArray();
 
                     for (int i = 0; i < entry.subinfos.Length; i++)
                     {
@@ -202,7 +216,7 @@ namespace com.spacepuppyeditor.Windows
             this.Repaint();
         }
 
-        static IEnumerable<SPEventSourceInfo> FindEventSources(GameObject target, bool includeInactiveSources)
+        static IEnumerable<SPEventSourceInfo> FindEventSourcesInScene(GameObject target, OptionFlags options)
         {
             if (target == null) yield break;
 
@@ -211,16 +225,16 @@ namespace com.spacepuppyeditor.Windows
 
             foreach (var go in sc.GetRootGameObjects())
             {
-                foreach (var c in go.GetComponentsInChildren<MonoBehaviour>(includeInactiveSources))
+                foreach (var c in go.GetComponentsInChildren<MonoBehaviour>(options.HasFlagT(OptionFlags.IncludeInactive)))
                 {
-                    foreach (var s in FindEventSources(target, c))
+                    foreach (var s in FindEventSources(target, c, options.HasFlagT(OptionFlags.ShowFullPath)))
                     {
                         yield return s;
                     }
                 }
             }
         }
-        static IEnumerable<SPEventSourceInfo> FindEventSources(GameObject target, Component source)
+        static IEnumerable<SPEventSourceInfo> FindEventSources(GameObject target, Component source, bool showFullPath)
         {
             var c = source;
             foreach (var m in DynamicUtil.GetMembersDirect(c, true, System.Reflection.MemberTypes.Field))
@@ -240,7 +254,7 @@ namespace com.spacepuppyeditor.Windows
                             {
                                 source = c,
                                 eventName = evnm,
-                                description = $"{c.name}.{c.GetType().Name}->{evnm}",
+                                description = showFullPath ? $"{c.transform.GetFullPathName()}.{c.GetType().Name}->{evnm}" : $"{c.name}.{c.GetType().Name}->{evnm}",
                             };
                         }
                     }
@@ -248,7 +262,7 @@ namespace com.spacepuppyeditor.Windows
             }
         }
 
-        static IEnumerable<SPEventSourceInfo> FindAlternateSources(GameObject target, Component source)
+        static IEnumerable<SPEventSourceInfo> FindAlternateSources(GameObject target, Component source, bool showFullPath)
         {
             // Use a SerializedObject to iterate over properties efficiently
             SerializedObject serializedObject = new SerializedObject(source);
@@ -265,7 +279,7 @@ namespace com.spacepuppyeditor.Windows
                         {
                             source = source,
                             eventName = property.name,
-                            description = property.propertyPath,
+                            description = showFullPath ? $"{source.transform.GetFullPathName()}.{source.GetType().Name}->{property.propertyPath}" : $"{source.name}.{source.GetType().Name}->{property.propertyPath}",
                         };
                     }
                 }
@@ -273,27 +287,28 @@ namespace com.spacepuppyeditor.Windows
         }
 
 
-        System.Collections.IEnumerator AsyncFindRootSources(GameObject target, bool includeInactiveSources, bool includeAlternateSources)
+        System.Collections.IEnumerator AsyncFindSourcesInScene(GameObject target, OptionFlags options)
         {
             if (target == null) yield break;
 
             var sc = target.scene;
             if (!sc.IsValid()) yield break;
 
+            bool showFullPath = options.HasFlagT(OptionFlags.ShowFullPath);
             var events = new List<SPEventSourceInfo>();
             var alts = new List<SPEventSourceInfo>();
             //set these here so that way OnGUI draws them as we fill them. But we fill via events/alts in case the user changes selection
             _eventSources = events;
             _alternateSources = alts;
 
-            var allcomponents = sc.GetRootGameObjects().SelectMany(o => o.GetComponentsInChildren<Component>(includeInactiveSources)).ToArray();
+            var allcomponents = sc.GetRootGameObjects().SelectMany(o => o.GetComponentsInChildren<Component>(options.HasFlagT(OptionFlags.IncludeInactive))).ToArray();
 
             var interval = System.TimeSpan.FromSeconds(1d / 5d);
             var stopwatch = new System.Diagnostics.Stopwatch();
             stopwatch.Start();
             foreach (Component c in allcomponents) //this is usually very fast so we stick to it first
             {
-                foreach (var s in FindEventSources(target, c))
+                foreach (var s in FindEventSources(target, c, showFullPath))
                 {
                     events.Add(s);
                 }
@@ -305,11 +320,11 @@ namespace com.spacepuppyeditor.Windows
                     stopwatch.Restart();
                 }
             }
-            if (includeAlternateSources)
+            if (options.HasFlagT(OptionFlags.IncludeAlternateSources))
             {
                 foreach (Component c in allcomponents) //this is slow, do it last
                 {
-                    foreach (var s in FindAlternateSources(target, c))
+                    foreach (var s in FindAlternateSources(target, c, showFullPath))
                     {
                         alts.Add(s);
                     }

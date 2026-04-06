@@ -19,13 +19,77 @@ namespace com.spacepuppyeditor.Events
         {
             base.OnSPInspectorGUI();
 
-            if (Application.isPlaying)
+            if (!Application.isPlaying || this.serializedObject.isEditingMultipleObjects) return;
+
+            if (this.target is i_TriggerStateMachine machine)
             {
-                if (GUILayout.Button("Next State") && this.target is i_TriggerStateMachine machine)
+                if (GUILayout.Button("Previous State"))
+                {
+                    machine.GoToPreviousState(i_TriggerStateMachine.WrapMode.Loop);
+                }
+                if (GUILayout.Button("Next State"))
                 {
                     machine.GoToNextState(i_TriggerStateMachine.WrapMode.Loop);
                 }
             }
+        }
+
+    }
+
+    [CustomEditor(typeof(i_TriggerStateMachineWithHistory))]
+    public class i_TriggerStateMachineWithHistoryInspector : SPEditor
+    {
+
+        private bool _historyFoldout;
+
+        protected override void OnSPInspectorGUI()
+        {
+            base.OnSPInspectorGUI();
+
+            if (!Application.isPlaying || this.serializedObject.isEditingMultipleObjects) return;
+
+            if (this.target is i_TriggerStateMachine machine)
+            {
+                if (GUILayout.Button("Previous State"))
+                {
+                    machine.GoToPreviousState(i_TriggerStateMachine.WrapMode.Loop);
+                }
+                if (GUILayout.Button("Next State"))
+                {
+                    machine.GoToNextState(i_TriggerStateMachine.WrapMode.Loop);
+                }
+            }
+            this.DrawDefaultInspectorFooters();
+
+            if (this.target is i_TriggerStateMachineWithHistory historymachine)
+            {
+                EditorGUILayout.BeginVertical("box");
+                var style = new GUIStyle(EditorStyles.boldLabel);
+                style.alignment = TextAnchor.MiddleCenter;
+
+                var r = EditorGUILayout.GetControlRect();
+                GUI.Label(r, "History", style);
+                _historyFoldout = EditorGUI.Foldout(r, _historyFoldout, GUIContent.none, true);
+
+                if (_historyFoldout)
+                {
+                    const int MAX_CNT = 5;
+                    int cnt = 0;
+                    foreach (var i in historymachine.History)
+                    {
+                        if (i < 0 || i >= historymachine.States.Count) continue;
+
+                        cnt++;
+                        if (cnt > MAX_CNT) break;
+
+                        string sid = historymachine.States[i].Id;
+                        EditorGUILayout.LabelField($"{sid} [{i}]");
+                    }
+                }
+
+                EditorGUILayout.EndVertical();
+            }
+
         }
 
     }

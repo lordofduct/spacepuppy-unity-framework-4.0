@@ -16,6 +16,7 @@ namespace com.spacepuppy.Collections
         private int _count;
         private int _rear;
         private int _version;
+        private bool _enumeratesAsStack;
 
         #endregion
 
@@ -64,6 +65,19 @@ namespace com.spacepuppy.Collections
         public int Size
         {
             get => _buffer.Length;
+        }
+
+        /// <summary>
+        /// If true the returned Enumerable will enumerate as a stack where the first entry is what would return from 'Pop'.
+        /// </summary>
+        public bool EnumeratesAsStack
+        {
+            get => _enumeratesAsStack;
+            set
+            {
+                _enumeratesAsStack = value;
+                _version++;
+            }
         }
 
         #endregion
@@ -281,33 +295,40 @@ namespace com.spacepuppy.Collections
             {
                 if (stack == null) throw new ArgumentNullException(nameof(stack));
                 _stack = stack;
-                _index = -1;
+                _index = _stack._enumeratesAsStack ? _stack._count : -1;
                 _version = _stack._version;
             }
 
-            public T Current => _stack[_index];
+            public T Current => _index >= 0 && _index < _stack?.Count ? _stack[_index] : default;
 
-            object IEnumerator.Current => _stack[_index];
+            object IEnumerator.Current => _index >= 0 && _index < _stack?.Count ? _stack[_index] : default;
 
             public bool MoveNext()
             {
                 if (_stack == null || _stack._version != _version) throw new InvalidOperationException("The collection was modified after the enumerator was created.");
 
-                _index = Math.Min(_index + 1, _stack._count);
-                return _index < _stack._count;
+                if (_stack._enumeratesAsStack)
+                {
+                    _index--;
+                    return _index >= 0;
+                }
+                else
+                {
+                    _index++;
+                    return _index < _stack._count;
+                }
             }
 
             void IEnumerator.Reset()
             {
-                _index = 0;
+                _index = (_stack?._enumeratesAsStack ?? false) ? _stack._count : -1;
             }
 
             void IDisposable.Dispose()
             {
                 _stack = null;
-                _index = 0;
+                _index = -1;
             }
-
         }
 
         #endregion

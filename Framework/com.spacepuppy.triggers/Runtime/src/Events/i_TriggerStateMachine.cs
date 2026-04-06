@@ -219,6 +219,8 @@ namespace com.spacepuppy.Events
 
             [System.NonSerialized]
             private int? _currentState = null;
+            [System.NonSerialized]
+            private int? _lastState = null;
 
             [System.NonSerialized]
             private int _transitionVersion;
@@ -245,12 +247,26 @@ namespace com.spacepuppy.Events
 
             public int? CurrentStateIndex => _currentState;
 
+            public int? LastStateIndex => _lastState;
+
             public StateInfo? CurrentState
             {
                 get
                 {
                     if (_currentState == null || _currentState < 0 || _currentState >= _states.Count) return null;
                     return _states[_currentState.Value];
+                }
+            }
+
+            /// <summary>
+            /// Set with StateChanged event. ExitingState event will still reflect the state prior to that.
+            /// </summary>
+            public StateInfo? LastState
+            {
+                get
+                {
+                    if (_lastState == null || _lastState < 0 || _lastState >= _states.Count) return null;
+                    return _states[_lastState.Value];
                 }
             }
 
@@ -336,32 +352,35 @@ namespace com.spacepuppy.Events
 
                         _transitionVersion++;
                         int v = _transitionVersion;
+                        var stateindex = this.CurrentStateIndex;
                         var state = this.CurrentState;
                         this.ExitingState?.Invoke(this, System.EventArgs.Empty);
                         trans.OnExit(this, state, index >= 0 && index < this.Count ? this[index] : null).OnComplete(o =>
                         {
                             if (v != _transitionVersion) return;
                             _transitionVersion = 0;
-                            this.CompleteStateTransition(state, index);
+                            this.CompleteStateTransition(stateindex, index);
                         });
                     }
                     else
                     {
                         this.ExitingState?.Invoke(this, System.EventArgs.Empty);
-                        this.CompleteStateTransition(this.CurrentState, index);
+                        this.CompleteStateTransition(this.CurrentStateIndex, index);
                     }
                 }
                 else
                 {
-                    this.CompleteStateTransition(this.CurrentState, index);
+                    this.CompleteStateTransition(this.CurrentStateIndex, index);
                 }
             }
 
-            private void CompleteStateTransition(StateInfo? laststate, int index)
+            private void CompleteStateTransition(int? laststateindex, int index)
             {
                 //first disable, then enable, this way you can use the OnDisable and OnEnable of the states to perform actions predictably
                 bool signal = _currentState != index;
+                _lastState = laststateindex;
                 _currentState = index;
+
                 (this.Owner?.StateActivator ?? StandardStateActivator.Default).Activate(this);
 
                 if (signal)
@@ -369,6 +388,7 @@ namespace com.spacepuppy.Events
                     this.StateChanged?.Invoke(this, System.EventArgs.Empty);
 
                     var trans = this.Owner?.StateTransition;
+                    var laststate = this.LastState;
                     var currentstate = this.CurrentState;
                     this.EnteringState?.Invoke(this, System.EventArgs.Empty);
                     if (trans != null)

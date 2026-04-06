@@ -31,6 +31,7 @@ namespace com.spacepuppyeditor
         private ConstantlyRepaintEditorAttribute _constantlyRepaint;
 
         private bool _runtimeValuesFoldoutOpen = false;
+        private bool _footersWereDrawn;
 
         #endregion
 
@@ -106,8 +107,9 @@ namespace com.spacepuppyeditor
 
             //draw header infobox if needed
             this.DrawDefaultInspectorHeader();
+            _footersWereDrawn = false;
             this.OnSPInspectorGUI();
-            this.DrawDefaultInspectorFooters();
+            if (!_footersWereDrawn) this.DrawDefaultInspectorFooters();
 
             if (EditorGUI.EndChangeCheck())
             {
@@ -364,8 +366,12 @@ namespace com.spacepuppyeditor
             }
         }
 
-        private void DrawDefaultInspectorFooters()
+        /// <summary>
+        /// Calling this during OnSPInspectorGUI will supercede automatic drawing of it. Allowing you to control when the footer is drawn.
+        /// </summary>
+        protected virtual void DrawDefaultInspectorFooters()
         {
+            _footersWereDrawn = true;
             if (_addons != null)
             {
                 foreach (var d in _addons)

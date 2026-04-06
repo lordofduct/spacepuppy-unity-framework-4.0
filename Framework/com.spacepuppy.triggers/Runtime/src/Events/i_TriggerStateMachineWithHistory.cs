@@ -25,6 +25,9 @@ namespace com.spacepuppy.Events
         [System.NonSerialized]
         private FiniteDeque<int> _checkpoints;
 
+        [System.NonSerialized]
+        private bool _goingToHistoryState;
+
         #endregion
 
         #region CONSTRUCTOR
@@ -33,17 +36,24 @@ namespace com.spacepuppy.Events
         {
             base.Awake();
 
-            _history = new FiniteDeque<int>(_maxHistory > MIN_HISTORICAL_COUNT ? _maxHistory : MIN_HISTORICAL_COUNT);
-            _checkpoints = new FiniteDeque<int>(_maxCheckpoints > MIN_HISTORICAL_COUNT ? _maxCheckpoints : MIN_HISTORICAL_COUNT);
+            _history = new FiniteDeque<int>(_maxHistory > MIN_HISTORICAL_COUNT ? _maxHistory : MIN_HISTORICAL_COUNT)
+            {
+                EnumeratesAsStack = true,
+            };
+            _checkpoints = new FiniteDeque<int>(_maxCheckpoints > MIN_HISTORICAL_COUNT ? _maxCheckpoints : MIN_HISTORICAL_COUNT)
+            {
+                EnumeratesAsStack = true,
+            };
+            this.StateChanged += this.I_TriggerStateMachineWithHistory_StateChanged;
         }
 
         #endregion
 
         #region Properties
 
-        public System.Collections.Generic.IEnumerable<int> History => _history;
+        public IIndexedEnumerable<int> History => _history;
 
-        public System.Collections.Generic.IEnumerable<int> Checkpoints => _checkpoints;
+        public IIndexedEnumerable<int> Checkpoints => _checkpoints;
 
         [ShowNonSerializedProperty("Last Active State")]
         public int? LastActiveState => _history.Count > 0 ? _history.PeekPop() : (int?)null;
@@ -59,7 +69,15 @@ namespace com.spacepuppy.Events
         {
             if (_history.Count > 0)
             {
-                base.GoToState(_history.Pop()); //call base to avoid signaling a new history entry in the override below
+                try
+                {
+                    _goingToHistoryState = true; //avoid signaling a new history entry in the override below
+                    this.GoToState(_history.Pop());
+                }
+                finally
+                {
+                    _goingToHistoryState = false;
+                }
             }
         }
 
@@ -73,7 +91,16 @@ namespace com.spacepuppy.Events
                 index = _history.Pop();
                 count--;
             }
-            base.GoToState(index); //call base to avoid signaling a new history entry in the override below
+
+            try
+            {
+                _goingToHistoryState = true; //avoid signaling a new history entry in the override below
+                this.GoToState(index);
+            }
+            finally
+            {
+                _goingToHistoryState = false;
+            }
         }
 
         public void RegisterCheckpoint(int index)
@@ -112,10 +139,12 @@ namespace com.spacepuppy.Events
             this.GoToState(index);
         }
 
-        public override void GoToState(int index)
+        private void I_TriggerStateMachineWithHistory_StateChanged(object sender, System.EventArgs e)
         {
-            if (this.CurrentStateIndex != null) _history.Push(this.CurrentStateIndex.Value);
-            base.GoToState(index);
+            if (!_goingToHistoryState && this.States.LastStateIndex != null)
+            {
+                _history.Push(this.States.LastStateIndex.Value);
+            }
         }
 
         #endregion

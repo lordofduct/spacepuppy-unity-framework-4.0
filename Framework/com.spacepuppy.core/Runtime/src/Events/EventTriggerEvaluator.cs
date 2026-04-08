@@ -170,6 +170,10 @@ namespace com.spacepuppy.Events
                     trig = p.GetTarget_IgnoringParams(incomingarg) as ITriggerable;
                 }
             }
+            else
+            {
+                trig = target as ITriggerable;
+            }
 
             if (trig?.CanTrigger ?? false)
             {

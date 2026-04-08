@@ -94,6 +94,18 @@ namespace com.spacepuppy.Utils
             return null;
         }
 
+        /// <summary>
+        /// Returns true if both are the same GameObject or attached to the same GameObject.
+        /// </summary>
+        /// <param name="objA"></param>
+        /// <param name="objB"></param>
+        /// <param name="respectProxy"></param>
+        /// <returns></returns>
+        public static bool IsRelatedGameObjectSource(object objA, object objB, bool respectProxy = false)
+        {
+            return TryGetGameObjectFromSource(objA, out GameObject goA, respectProxy) && TryGetGameObjectFromSource(objB, out GameObject goB, respectProxy) && goA == goB;
+        }
+
         #endregion
 
         #region Kill Extension Methods

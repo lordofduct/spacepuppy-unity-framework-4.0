@@ -10,11 +10,13 @@ using com.spacepuppy.Utils;
 using System.Linq;
 using Unity.EditorCoroutines.Editor;
 using System.Runtime.CompilerServices;
+using UnityEditor.SceneManagement;
+using com.spacepuppy.Collections;
 
 namespace com.spacepuppyeditor.Windows
 {
 
-    public class SPEventNavigatorWindow : EditorWindow
+    public sealed class SPEventNavigatorWindow : EditorWindow
     {
 
         [System.Flags]
@@ -22,7 +24,8 @@ namespace com.spacepuppyeditor.Windows
         {
             IncludeInactive = 1,
             IncludeAlternateSources = 2,
-            ShowFullPath = 4
+            IncludeOtherScenesAndPrefabs = 4,
+            ShowFullPath = 8,
         }
 
         #region Menu Entries
@@ -46,20 +49,28 @@ namespace com.spacepuppyeditor.Windows
 
         private static SPEventNavigatorWindow _openWindow;
 
-        private GameObject _currentTarget;
+        private UnityEngine.Object _currentTarget;
         private bool _enabled = true;
         private OptionFlags _options;
         private int _maxDepth = 5;
 
         private List<SPEventSourceInfo> _eventSources;
         private List<SPEventSourceInfo> _alternateSources;
+        private List<SPEventSourceInfo> _otherScenesAndPrefabs;
         private TrackedListenerToken<System.Action> _token;
         private EditorCoroutine _routine;
         private int _guiFrame;
 
+        private AssetSearchWindow.AssetSearchQuery _query = new AssetSearchWindow.AssetSearchQuery();
+
         private Texture _gameobjectIcon;
 
         private Vector2 _scrollPos;
+
+        private void Awake()
+        {
+            this.titleContent = new GUIContent("Spacepuppy Event Navigator", "Searches active scenes for anything targeting the current selection via an SPEvent.");
+        }
 
         private void OnEnable()
         {
@@ -80,90 +91,141 @@ namespace com.spacepuppyeditor.Windows
         private void OnGUI()
         {
             _guiFrame++;
-            if (_enabled && Selection.activeGameObject != _currentTarget)
+            if (_enabled && Selection.activeObject != _currentTarget)
             {
                 this.PurgeSources();
-                _currentTarget = Selection.activeGameObject;
-
-                //_eventSources = FindEventSources(_currentTarget, _includeInactiveSources).ToList();
-                //if (_includeAlternateSources) _alternateSources = FindAlternateSources(_currentTarget, _includeInactiveSources).ToList();
-                _routine = EditorCoroutineUtility.StartCoroutine(AsyncFindSourcesInScene(_currentTarget, _options), this);
-            }
-
-            EditorGUI.BeginChangeCheck();
-            _enabled = EditorGUILayout.ToggleLeft("Enabled", _enabled);
-            if (EditorGUI.EndChangeCheck()) this.PurgeSources();
-
-            EditorGUILayout.ObjectField("Selected Object", _currentTarget, typeof(GameObject), true);
-            EditorGUILayout.BeginHorizontal();
-
-            EditorGUI.BeginChangeCheck();
-            _options = (OptionFlags)EditorGUILayout.EnumFlagsField("Options", _options);
-            if (EditorGUI.EndChangeCheck()) this.PurgeSources();
-
-            _maxDepth = EditorGUILayout.IntField("Max Depth", _maxDepth);
-            EditorGUILayout.EndHorizontal();
-
-            _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos);
-
-            EditorGUILayout.BeginVertical(EditorStyles.helpBox, GUILayout.ExpandHeight(true));
-            bool drewEvents = false;
-            if (_eventSources?.Count > 0)
-            {
-                drewEvents = true;
-                for (int i = 0; i < _eventSources.Count; i++)
+                if (Selection.activeGameObject)
                 {
-                    _eventSources[i] = this.DrawEntry(_eventSources[i], 0);
+                    _currentTarget = Selection.activeGameObject;
+                    _routine = EditorCoroutineUtility.StartCoroutine(FirstLevelFindAllSourcesByOptions_Async(_currentTarget, _options), this);
                 }
-            }
-            if (_alternateSources?.Count > 0)
-            {
-                if (drewEvents) EditorGUILayout.Space(20f);
-                drewEvents = true;
-
-                EditorGUILayout.LabelField("Alternate Sources:");
-                for (int i = 0; i < _alternateSources.Count; i++)
+                else if (Selection.activeObject is ScriptableObject so)
                 {
-                    _alternateSources[i] = this.DrawAlternateEntry(_alternateSources[i]);
+                    _currentTarget = so;
+                    _routine = EditorCoroutineUtility.StartCoroutine(FirstLevelFindAllSourcesByOptions_Async(_currentTarget, _options), this);
                 }
-            }
-            EditorGUI.indentLevel = 0;
-
-            if (_routine != null)
-            {
-                if (drewEvents) EditorGUILayout.Space(10f);
-                switch (Mathf.Abs(_guiFrame % 3))
+                else if (Selection.activeObject)
                 {
-                    case 0:
-                        EditorGUILayout.LabelField("Processing.");
-                        break;
-                    case 1:
-                        EditorGUILayout.LabelField("Processing..");
-                        break;
-                    case 2:
-                        EditorGUILayout.LabelField("Processing...");
-                        break;
+                    _currentTarget = Selection.activeObject;
                 }
             }
 
-            EditorGUILayout.EndVertical();
-            EditorGUILayout.EndScrollView();
+            //line 1
+            {
+                EditorGUILayout.BeginHorizontal();
+
+                EditorGUI.BeginChangeCheck();
+                _enabled = EditorGUILayout.ToggleLeft("Enabled", _enabled);
+                if (EditorGUI.EndChangeCheck()) this.PurgeSources();
+
+                GUILayout.FlexibleSpace();
+
+                if (GUILayout.Button("Refresh"))
+                {
+                    this.PurgeSources();
+                    if (_currentTarget)
+                    {
+                        _routine = EditorCoroutineUtility.StartCoroutine(FirstLevelFindAllSourcesByOptions_Async(_currentTarget, _options), this);
+                    }
+                }
+
+                EditorGUILayout.EndHorizontal();
+            }
+
+            //line 2
+            {
+                EditorGUILayout.ObjectField("Selected Object", _currentTarget, typeof(GameObject), true);
+            }
+
+            //line 3
+            {
+                EditorGUILayout.BeginHorizontal();
+
+                EditorGUI.BeginChangeCheck();
+                _options = (OptionFlags)EditorGUILayout.EnumFlagsField("Options", _options);
+                if (EditorGUI.EndChangeCheck()) this.PurgeSources();
+
+                _maxDepth = EditorGUILayout.IntField("Max Depth", _maxDepth);
+                EditorGUILayout.EndHorizontal();
+            }
+
+            //scrollbox
+            {
+                _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos);
+
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox, GUILayout.ExpandHeight(true));
+                bool drewEvents = false;
+                if (_eventSources?.Count > 0)
+                {
+                    drewEvents = true;
+                    for (int i = 0; i < _eventSources.Count; i++)
+                    {
+                        _eventSources[i] = this.DrawEntry(_eventSources[i], 0);
+                    }
+                    EditorGUI.indentLevel = 0;
+                }
+                if (_alternateSources?.Count > 0)
+                {
+                    if (drewEvents) EditorGUILayout.Space(20f);
+                    drewEvents = true;
+
+                    EditorGUILayout.LabelField("Alternate Sources:");
+                    for (int i = 0; i < _alternateSources.Count; i++)
+                    {
+                        _alternateSources[i] = this.DrawAlternateEntry(_alternateSources[i]);
+                    }
+                    EditorGUI.indentLevel = 0;
+                }
+                if (_otherScenesAndPrefabs?.Count > 0)
+                {
+                    if (drewEvents) EditorGUILayout.Space(20f);
+                    drewEvents = true;
+
+                    EditorGUILayout.LabelField("Other Scenes & Prefabs:");
+                    for (int i = 0; i < _otherScenesAndPrefabs.Count; i++)
+                    {
+                        _otherScenesAndPrefabs[i] = this.DrawAlternateEntry(_otherScenesAndPrefabs[i]);
+                    }
+                    EditorGUI.indentLevel = 0;
+                }
+
+                if (_routine != null)
+                {
+                    if (drewEvents) EditorGUILayout.Space(10f);
+                    switch (Mathf.Abs(_guiFrame % 3))
+                    {
+                        case 0:
+                            EditorGUILayout.LabelField("Processing.");
+                            break;
+                        case 1:
+                            EditorGUILayout.LabelField("Processing..");
+                            break;
+                        case 2:
+                            EditorGUILayout.LabelField("Processing...");
+                            break;
+                    }
+                }
+
+                EditorGUILayout.EndVertical();
+                EditorGUILayout.EndScrollView();
+            }
         }
 
         SPEventSourceInfo DrawEntry(SPEventSourceInfo entry, int depth)
         {
             var c = EditorHelper.TempContent(entry.description);
+            bool showfoldout = (entry.subinfos == null || entry.subinfos.Length > 0);
 
             const float MARGIN_FOLDOUT = 15f;
             var h = EditorStyles.label.CalcHeight(c, EditorGUIUtility.currentViewWidth);
             EditorGUI.indentLevel = depth;
             var rect_foldout = EditorGUILayout.GetControlRect(false, h);
             var rect_indent = EditorGUI.IndentedRect(rect_foldout);
-            var rect_button = new Rect(rect_indent.xMin + MARGIN_FOLDOUT, rect_indent.yMin, rect_indent.width - MARGIN_FOLDOUT, rect_indent.height);
+            var rect_button = (showfoldout || depth > 0) ? new Rect(rect_indent.xMin + MARGIN_FOLDOUT, rect_indent.yMin, rect_indent.width - MARGIN_FOLDOUT, rect_indent.height) : rect_indent;
             //var rect_button = EditorGUILayout.GetControlRect(false, h);
 
             c.image = _gameobjectIcon;
-            if (entry.subinfos == null || entry.subinfos.Length > 0)
+            if (showfoldout)
             {
                 entry.expanded = EditorGUI.Foldout(rect_foldout, entry.expanded, GUIContent.none);
             }
@@ -176,7 +238,7 @@ namespace com.spacepuppyeditor.Windows
             {
                 if (depth < 5)
                 {
-                    if (entry.subinfos == null) entry.subinfos = FindEventSourcesInScene(entry.source.gameObject, _options).ToArray();
+                    if (entry.subinfos == null) entry.subinfos = FindEventSourcesInOpenScenes(entry.source, _options).ToArray();
 
                     for (int i = 0; i < entry.subinfos.Length; i++)
                     {
@@ -216,25 +278,133 @@ namespace com.spacepuppyeditor.Windows
             this.Repaint();
         }
 
-        static IEnumerable<SPEventSourceInfo> FindEventSourcesInScene(GameObject target, OptionFlags options)
+        void PurgeSources()
+        {
+            _currentTarget = null;
+            _eventSources = null;
+            _alternateSources = null;
+            _otherScenesAndPrefabs = null;
+            if (_routine != null)
+            {
+                EditorCoroutineUtility.StopCoroutine(_routine);
+                _routine = null;
+            }
+        }
+
+        System.Collections.IEnumerator FirstLevelFindAllSourcesByOptions_Async(UnityEngine.Object target, OptionFlags options)
         {
             if (target == null) yield break;
 
-            var sc = target.scene;
-            if (!sc.IsValid()) yield break;
+            bool showFullPath = options.HasFlagT(OptionFlags.ShowFullPath);
+            var events = new List<SPEventSourceInfo>();
+            var alts = new List<SPEventSourceInfo>();
+            var others = new List<SPEventSourceInfo>();
+            //set these here so that way OnGUI draws them as we fill them. But we fill via events/alts in case the user changes selection
+            _eventSources = events;
+            _alternateSources = alts;
+            _otherScenesAndPrefabs = others;
 
-            foreach (var go in sc.GetRootGameObjects())
+            var interval = System.TimeSpan.FromSeconds(1d / 5d);
+            var stopwatch = new System.Diagnostics.Stopwatch();
+            stopwatch.Start();
+            for (int i = 0; i < EditorSceneManager.sceneCount; i++)
             {
-                foreach (var c in go.GetComponentsInChildren<MonoBehaviour>(options.HasFlagT(OptionFlags.IncludeInactive)))
+                var sc = EditorSceneManager.GetSceneAt(i);
+
+                var allcomponents = sc.GetRootGameObjects().SelectMany(o => o.GetComponentsInChildren<Component>(options.HasFlagT(OptionFlags.IncludeInactive))).ToArray();
+
+                foreach (Component c in allcomponents) //this is usually very fast so we stick to it first
                 {
-                    foreach (var s in FindEventSources(target, c, options.HasFlagT(OptionFlags.ShowFullPath)))
+                    foreach (var s in FindEventSourcesOnComponent(target, c, showFullPath))
                     {
-                        yield return s;
+                        events.Add(s);
+                    }
+
+                    if (stopwatch.Elapsed > interval * 5)
+                    {
+                        this.Repaint();
+                        yield return null;
+                        stopwatch.Restart();
+                    }
+                }
+                if (options.HasFlagT(OptionFlags.IncludeAlternateSources))
+                {
+                    foreach (Component c in allcomponents) //this is slow, do it last
+                    {
+                        foreach (var s in FindAlternateSourcesOnComponent(target, c, showFullPath))
+                        {
+                            alts.Add(s);
+                        }
+
+                        if (stopwatch.Elapsed > interval)
+                        {
+                            this.Repaint();
+                            yield return null;
+                            stopwatch.Restart();
+                        }
+                    }
+                }
+            }
+
+            if (options.HasFlagT(OptionFlags.IncludeOtherScenesAndPrefabs) && EditorUtility.IsPersistent(target))
+            {
+                _query.Cancel();
+                _query.Clear();
+                _ = _query.SearchEverythingForTargetAsset(target);
+
+                int processedCount = 0;
+                while (_query.IsProcessing || processedCount < _query.OutputRefs.Count)
+                {
+                    yield return null;
+                    if (processedCount < _query.OutputRefs.Count)
+                    {
+                        int cnt = _query.OutputRefs.Count;
+                        for (int i = processedCount; i < cnt; i++)
+                        {
+                            var r = _query.OutputRefs[i];
+                            others.Add(new SPEventSourceInfo()
+                            {
+                                source = r.obj,
+                                eventName = string.Empty,
+                                description = r.path,
+                                expanded = false,
+                                subinfos = ArrayUtil.Empty<SPEventSourceInfo>()
+                            });
+                        }
+                        processedCount = cnt;
+                    }
+                }
+
+                _query.Cancel();
+                _query.Clear();
+            }
+
+            stopwatch.Stop();
+            _routine = null;
+            this.Repaint();
+        }
+
+        static IEnumerable<SPEventSourceInfo> FindEventSourcesInOpenScenes(UnityEngine.Object target, OptionFlags options)
+        {
+            if (target == null) yield break;
+
+            for (int i = 0; i < EditorSceneManager.sceneCount; i++)
+            {
+                var sc = EditorSceneManager.GetSceneAt(i);
+                foreach (var go in sc.GetRootGameObjects())
+                {
+                    foreach (var c in go.GetComponentsInChildren<MonoBehaviour>(options.HasFlagT(OptionFlags.IncludeInactive)))
+                    {
+                        if (target == c) continue;
+                        foreach (var s in FindEventSourcesOnComponent(target, c, options.HasFlagT(OptionFlags.ShowFullPath)))
+                        {
+                            yield return s;
+                        }
                     }
                 }
             }
         }
-        static IEnumerable<SPEventSourceInfo> FindEventSources(GameObject target, Component source, bool showFullPath)
+        static IEnumerable<SPEventSourceInfo> FindEventSourcesOnComponent(UnityEngine.Object target, Component source, bool showFullPath)
         {
             var c = source;
             foreach (var m in DynamicUtil.GetMembersDirect(c, true, System.Reflection.MemberTypes.Field))
@@ -244,10 +414,9 @@ namespace com.spacepuppyeditor.Windows
                 if (TypeUtil.IsType(field?.FieldType, typeof(BaseSPEvent)))
                 {
                     var spev = field.GetValue(c) as BaseSPEvent;
-                    foreach (var targ in spev.Targets)
+                    foreach (var evtarg in spev.Targets)
                     {
-                        var tgo = GameObjectUtil.GetGameObjectFromSource(targ.Target);
-                        if (tgo == target)
+                        if (evtarg.Target && (evtarg.Target == target || GameObjectUtil.IsRelatedGameObjectSource(evtarg.Target, target)))
                         {
                             var evnm = string.IsNullOrEmpty(spev.ObservableTriggerId) ? "Unnamed SPEvent" : spev.ObservableTriggerId;
                             yield return new SPEventSourceInfo()
@@ -262,7 +431,7 @@ namespace com.spacepuppyeditor.Windows
             }
         }
 
-        static IEnumerable<SPEventSourceInfo> FindAlternateSources(GameObject target, Component source, bool showFullPath)
+        static IEnumerable<SPEventSourceInfo> FindAlternateSourcesOnComponent(UnityEngine.Object target, Component source, bool showFullPath)
         {
             // Use a SerializedObject to iterate over properties efficiently
             SerializedObject serializedObject = new SerializedObject(source);
@@ -272,8 +441,8 @@ namespace com.spacepuppyeditor.Windows
             {
                 if (property.propertyType == SerializedPropertyType.ObjectReference)
                 {
-                    var tgo = GameObjectUtil.GetGameObjectFromSource(property.objectReferenceValue);
-                    if (tgo && tgo == target)
+                    var objref = property.objectReferenceValue;
+                    if (objref && (objref == target || GameObjectUtil.IsRelatedGameObjectSource(objref, target)))
                     {
                         yield return new SPEventSourceInfo()
                         {
@@ -286,81 +455,13 @@ namespace com.spacepuppyeditor.Windows
             }
         }
 
-
-        System.Collections.IEnumerator AsyncFindSourcesInScene(GameObject target, OptionFlags options)
-        {
-            if (target == null) yield break;
-
-            var sc = target.scene;
-            if (!sc.IsValid()) yield break;
-
-            bool showFullPath = options.HasFlagT(OptionFlags.ShowFullPath);
-            var events = new List<SPEventSourceInfo>();
-            var alts = new List<SPEventSourceInfo>();
-            //set these here so that way OnGUI draws them as we fill them. But we fill via events/alts in case the user changes selection
-            _eventSources = events;
-            _alternateSources = alts;
-
-            var allcomponents = sc.GetRootGameObjects().SelectMany(o => o.GetComponentsInChildren<Component>(options.HasFlagT(OptionFlags.IncludeInactive))).ToArray();
-
-            var interval = System.TimeSpan.FromSeconds(1d / 5d);
-            var stopwatch = new System.Diagnostics.Stopwatch();
-            stopwatch.Start();
-            foreach (Component c in allcomponents) //this is usually very fast so we stick to it first
-            {
-                foreach (var s in FindEventSources(target, c, showFullPath))
-                {
-                    events.Add(s);
-                }
-
-                if (stopwatch.Elapsed > interval * 5)
-                {
-                    this.Repaint();
-                    yield return null;
-                    stopwatch.Restart();
-                }
-            }
-            if (options.HasFlagT(OptionFlags.IncludeAlternateSources))
-            {
-                foreach (Component c in allcomponents) //this is slow, do it last
-                {
-                    foreach (var s in FindAlternateSources(target, c, showFullPath))
-                    {
-                        alts.Add(s);
-                    }
-
-                    if (stopwatch.Elapsed > interval)
-                    {
-                        this.Repaint();
-                        yield return null;
-                        stopwatch.Restart();
-                    }
-                }
-            }
-            stopwatch.Stop();
-            _routine = null;
-            this.Repaint();
-        }
-
-        void PurgeSources()
-        {
-            _currentTarget = null;
-            _eventSources = null;
-            _alternateSources = null;
-            if (_routine != null)
-            {
-                EditorCoroutineUtility.StopCoroutine(_routine);
-                _routine = null;
-            }
-        }
-
         #endregion
 
         #region Special Types
 
         struct SPEventSourceInfo
         {
-            public Component source;
+            public UnityEngine.Object source;
             public string eventName;
             public string description;
             public bool expanded;

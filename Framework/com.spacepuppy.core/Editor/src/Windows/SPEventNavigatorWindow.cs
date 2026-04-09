@@ -98,9 +98,9 @@ namespace com.spacepuppyeditor.Windows
                     _currentTarget = Selection.activeGameObject;
                     _routine = EditorCoroutineUtility.StartCoroutine(FirstLevelFindAllSourcesByOptions_Async(_currentTarget, _options), this);
                 }
-                else if (Selection.activeObject is ScriptableObject so)
+                else if (EditorUtility.IsPersistent(Selection.activeObject) && !(Selection.activeObject is UnityEditor.DefaultAsset))
                 {
-                    _currentTarget = so;
+                    _currentTarget = Selection.activeObject;
                     _routine = EditorCoroutineUtility.StartCoroutine(FirstLevelFindAllSourcesByOptions_Async(_currentTarget, _options), this);
                 }
                 else if (Selection.activeObject)
@@ -339,6 +339,25 @@ namespace com.spacepuppyeditor.Windows
                             this.Repaint();
                             yield return null;
                             stopwatch.Restart();
+                        }
+                    }
+
+                    if (GameObjectUtil.TryGetGameObjectFromSource(target, out GameObject tgo) && EditorUtility.IsPersistent(tgo))
+                    {
+                        var assetpath = AssetDatabase.GetAssetPath(tgo);
+                        foreach (var t in sc.GetRootGameObjects().SelectMany(o => o.GetComponentsInChildren<Transform>(options.HasFlagT(OptionFlags.IncludeInactive))))
+                        {
+                            if (PrefabUtility.IsAnyPrefabInstanceRoot(t.gameObject) && PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(t.gameObject) == assetpath)
+                            {
+                                alts.Add(new SPEventSourceInfo()
+                                {
+                                    source = t.gameObject,
+                                    eventName = string.Empty,
+                                    description = $"Prefab: {t.GetFullPathName()}",
+                                    expanded = false,
+                                    subinfos = ArrayUtil.Empty<SPEventSourceInfo>(),
+                                });
+                            }
                         }
                     }
                 }

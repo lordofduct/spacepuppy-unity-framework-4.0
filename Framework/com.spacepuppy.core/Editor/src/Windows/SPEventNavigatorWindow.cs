@@ -1,17 +1,16 @@
 using UnityEngine;
 using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine.SceneManagement;
+using Unity.EditorCoroutines.Editor;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 
 using com.spacepuppy;
 using com.spacepuppy.Dynamic;
 using com.spacepuppy.Events;
-using System.Reflection;
 using com.spacepuppy.Utils;
-using System.Linq;
-using Unity.EditorCoroutines.Editor;
-using System.Runtime.CompilerServices;
-using UnityEditor.SceneManagement;
-using com.spacepuppy.Collections;
 
 namespace com.spacepuppyeditor.Windows
 {
@@ -307,10 +306,9 @@ namespace com.spacepuppyeditor.Windows
             var interval = System.TimeSpan.FromSeconds(1d / 5d);
             var stopwatch = new System.Diagnostics.Stopwatch();
             stopwatch.Start();
-            for (int i = 0; i < EditorSceneManager.sceneCount; i++)
-            {
-                var sc = EditorSceneManager.GetSceneAt(i);
 
+            foreach (var sc in GetActiveScenes())
+            {
                 var allcomponents = sc.GetRootGameObjects().SelectMany(o => o.GetComponentsInChildren<Component>(options.HasFlagT(OptionFlags.IncludeInactive))).ToArray();
 
                 foreach (Component c in allcomponents) //this is usually very fast so we stick to it first
@@ -366,7 +364,7 @@ namespace com.spacepuppyeditor.Windows
                             {
                                 source = r.obj,
                                 eventName = string.Empty,
-                                description = r.path,
+                                description = "Assets: " + r.path,
                                 expanded = false,
                                 subinfos = ArrayUtil.Empty<SPEventSourceInfo>()
                             });
@@ -388,9 +386,8 @@ namespace com.spacepuppyeditor.Windows
         {
             if (target == null) yield break;
 
-            for (int i = 0; i < EditorSceneManager.sceneCount; i++)
+            foreach (var sc in GetActiveScenes())
             {
-                var sc = EditorSceneManager.GetSceneAt(i);
                 foreach (var go in sc.GetRootGameObjects())
                 {
                     foreach (var c in go.GetComponentsInChildren<MonoBehaviour>(options.HasFlagT(OptionFlags.IncludeInactive)))
@@ -423,7 +420,7 @@ namespace com.spacepuppyeditor.Windows
                             {
                                 source = c,
                                 eventName = evnm,
-                                description = showFullPath ? $"{c.transform.GetFullPathName()}.{c.GetType().Name}->{evnm}" : $"{c.name}.{c.GetType().Name}->{evnm}",
+                                description = showFullPath ? $"{c.gameObject.scene.name}: {c.transform.GetFullPathName()}.{c.GetType().Name}->{evnm}" : $"{c.name}.{c.GetType().Name}->{evnm}",
                             };
                         }
                     }
@@ -448,10 +445,27 @@ namespace com.spacepuppyeditor.Windows
                         {
                             source = source,
                             eventName = property.name,
-                            description = showFullPath ? $"{source.transform.GetFullPathName()}.{source.GetType().Name}->{property.propertyPath}" : $"{source.name}.{source.GetType().Name}->{property.propertyPath}",
+                            description = showFullPath ? $"{source.gameObject.scene.name}: {source.transform.GetFullPathName()}.{source.GetType().Name}->{property.propertyPath}" : $"{source.name}.{source.GetType().Name}->{property.propertyPath}",
                         };
                     }
                 }
+            }
+        }
+
+
+        static IEnumerable<Scene> GetActiveScenes()
+        {
+            //if a prefabstage is open, we only show that
+            var prefabstage = PrefabStageUtility.GetCurrentPrefabStage();
+            if (prefabstage != null)
+            {
+                yield return prefabstage.scene;
+                yield break;
+            }
+
+            for (int i = 0; i < EditorSceneManager.sceneCount; i++)
+            {
+                yield return EditorSceneManager.GetSceneAt(i);
             }
         }
 

@@ -65,7 +65,7 @@ namespace com.spacepuppyeditor.Settings
         private SceneAsset _bootScene;
 
         [SerializeField, ReorderableArray, TypeRestriction(typeof(SceneAsset))]
-        private List<UnityEngine.Object> _scenes;
+        private List<UnityEngine.Object> _scenes = new();
 
 #if HAS_OSX_EXTENSIONS
         [SerializeField, EnumPopupExcluding(3)] //3 = BuildTarget.StandaloneOSXUniversal

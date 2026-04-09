@@ -52,16 +52,16 @@ namespace com.spacepuppyeditor.Settings
 
         [SerializeField]
         [ReorderableArray]
-        private List<BuildSettings> _builds;
+        private List<BuildSettings> _builds = new();
 
         [SerializeField, EnumFlags, UnityEngine.Serialization.FormerlySerializedAs("_postBuildScriptRunOptions")]
         private ScriptOptions _buildScriptRunOptions;
 
         [SerializeField, ReorderableArray]
-        private List<string> _preBuildScripts;
+        private List<string> _preBuildScripts = new();
 
         [SerializeField, ReorderableArray]
-        private List<string> _postBuildScripts;
+        private List<string> _postBuildScripts = new();
 
         #endregion
 

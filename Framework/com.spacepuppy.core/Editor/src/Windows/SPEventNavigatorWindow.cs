@@ -449,6 +449,8 @@ namespace com.spacepuppyeditor.Windows
 
         static IEnumerable<SPEventSourceInfo> FindAlternateSourcesOnComponent(UnityEngine.Object target, Component source, bool showFullPath)
         {
+            if (!source) yield break;
+
             // Use a SerializedObject to iterate over properties efficiently
             SerializedObject serializedObject = new SerializedObject(source);
             SerializedProperty property = serializedObject.GetIterator();

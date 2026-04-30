@@ -33,6 +33,9 @@ namespace com.spacepuppyeditor
         private bool _runtimeValuesFoldoutOpen = false;
         private bool _footersWereDrawn;
 
+        //TODO - currently for some unknown reason unity creates editors for null objects at editor time when it's been left open a while. This is to capture that. Once determined why that happens we should come up with a better solution.
+        private bool _validatedEditor;
+
         #endregion
 
         #region CONSTRUCTOR
@@ -55,6 +58,15 @@ namespace com.spacepuppyeditor
 
         protected virtual void OnEnable()
         {
+            try
+            {
+                _validatedEditor = this.serializedObject != null;
+            }
+            catch (System.Exception ex)
+            {
+                _validatedEditor = false;
+            }
+
             var tp = this.target.GetType();
             var fields = tp.GetMembers(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Static);
             foreach (var f in fields)
@@ -86,7 +98,10 @@ namespace com.spacepuppyeditor
                 }
             }
             _addons = null;
-            ScriptAttributeUtility.CleanCachedPropertyHandlers(this.serializedObject);
+            if (_validatedEditor)
+            {
+                ScriptAttributeUtility.CleanCachedPropertyHandlers(this.serializedObject);
+            }
         }
 
         #endregion

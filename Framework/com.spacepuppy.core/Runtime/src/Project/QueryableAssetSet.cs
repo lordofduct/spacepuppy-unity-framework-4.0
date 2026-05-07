@@ -16,7 +16,7 @@ namespace com.spacepuppy.Project
     /// editor time. 
     /// </summary>
     [CreateAssetMenu(fileName = "AssetSet", menuName = "Spacepuppy/Asset Set")]
-    public class QueryableAssetSet : ScriptableObject, IAssetSet, IGuidAssetSet, IAssetGuidIdentifiable, IReadOnlyDictionary<string, UnityEngine.Object>, IReadOnlyDictionary<System.Guid, UnityEngine.Object>, IEnumerable<UnityEngine.Object>
+    public class QueryableAssetSet : ScriptableObject, IAssetSet, IGuidAssetSet, IAssetGuidIdentifiable, IEnumerable<UnityEngine.Object> //, IReadOnlyDictionary<string, UnityEngine.Object>, IReadOnlyDictionary<System.Guid, UnityEngine.Object>
     {
 
 #if UNITY_EDITOR
@@ -57,6 +57,10 @@ namespace com.spacepuppy.Project
 
         [System.NonSerialized]
         private object _lastShallowFilteredCollection;
+        [System.NonSerialized]
+        private NameDictionary _nameDict;
+        [System.NonSerialized]
+        private AssetGuidDictionary _guidDict;
 
         [System.NonSerialized]
         private int _version;
@@ -135,6 +139,9 @@ namespace com.spacepuppy.Project
             }
         }
 
+        public NameDictionary ByNameDictionary => (_nameDict ??= new NameDictionary(this));
+        public AssetGuidDictionary ByAssetGuidDictionary => (_guidDict ??= new AssetGuidDictionary(this));
+
         /// <summary>
         /// Internal access to the asset array. You should use this only for reading. 
         /// If you need to manipulate the collection use the public methods to ensure 
@@ -185,6 +192,32 @@ namespace com.spacepuppy.Project
         }
 
         public void ReindexAssetSet() => this.SetupTable();
+
+        public int GetCount(bool shallow = false)
+        {
+            if (!_clean && !this.SetupTable()) return 0;
+
+            if (!shallow && _nested && _assets != null)
+            {
+                int cnt = _table.Count;
+                foreach (var o in _table.Values)
+                {
+                    if (o is QueryableAssetSet qas)
+                    {
+                        cnt += qas.GetCount(shallow);
+                    }
+                    else if (o is IAssetSet subset)
+                    {
+                        cnt += subset.GetAllAssetNames().Count();
+                    }
+                }
+                return cnt;
+            }
+            else
+            {
+                return _table.Count;
+            }
+        }
 
         public IEnumerable<string> GetAllAssetNames(bool shallow = false)
         {
@@ -921,83 +954,6 @@ namespace com.spacepuppy.Project
 
         #endregion
 
-        #region IReadOnlyDictionary<string, UnityEngine.Object> Interface
-
-        IEnumerable<string> IReadOnlyDictionary<string, UnityEngine.Object>.Keys => this.GetAllAssetNames();
-
-        IEnumerable<UnityEngine.Object> IReadOnlyDictionary<string, UnityEngine.Object>.Values => this.GetAllAssets();
-
-        int IReadOnlyCollection<KeyValuePair<string, UnityEngine.Object>>.Count
-        {
-            get
-            {
-                if (!_clean && !this.SetupTable()) return 0;
-
-                return _nested ? this.GetAllAssetNames().Count() : _table.Count;
-            }
-        }
-
-        UnityEngine.Object IReadOnlyDictionary<string, UnityEngine.Object>.this[string key] => this.GetAsset(key);
-
-        bool IReadOnlyDictionary<string, Object>.ContainsKey(string key) => this.Contains(key);
-
-        bool IReadOnlyDictionary<string, Object>.TryGetValue(string key, out Object value) => this.TryGetAsset(key, out value);
-
-        IEnumerator<KeyValuePair<string, Object>> IEnumerable<KeyValuePair<string, UnityEngine.Object>>.GetEnumerator()
-        {
-            if (!_clean && !this.SetupTable()) return Enumerable.Empty<KeyValuePair<string, UnityEngine.Object>>().GetEnumerator();
-
-            if (_nested)
-            {
-                return this.GetAllAssetNames().Select(o => new KeyValuePair<string, UnityEngine.Object>(o, this.GetAsset(o))).GetEnumerator();
-            }
-            else
-            {
-                return _table.GetEnumerator();
-            }
-        }
-
-        #endregion
-
-        #region IReadOnlyDictionary<System.Guid, UnityEngine.Object> Interface
-
-        IEnumerable<System.Guid> IReadOnlyDictionary<System.Guid, UnityEngine.Object>.Keys => this.GetAssetGuids();
-
-        IEnumerable<UnityEngine.Object> IReadOnlyDictionary<System.Guid, UnityEngine.Object>.Values
-        {
-            get
-            {
-                if (!_clean && !this.SetupTable()) return Enumerable.Empty<UnityEngine.Object>();
-
-                return _nested ? this.GetAssetGuids().Select(o => this.GetAsset(o)) : (_guidTable?.Values ?? Enumerable.Empty<UnityEngine.Object>());
-            }
-        }
-
-        int IReadOnlyCollection<KeyValuePair<System.Guid, UnityEngine.Object>>.Count
-        {
-            get
-            {
-                if (!_clean && !this.SetupTable()) return 0;
-
-                return _nested ? this.GetAssetGuids().Count() : (_guidTable?.Count ?? 0);
-            }
-        }
-
-        UnityEngine.Object IReadOnlyDictionary<System.Guid, UnityEngine.Object>.this[System.Guid key] => this.GetAsset(key);
-
-        bool IReadOnlyDictionary<System.Guid, Object>.ContainsKey(System.Guid key) => this.Contains(key);
-
-        bool IReadOnlyDictionary<System.Guid, Object>.TryGetValue(System.Guid key, out Object value) => this.TryGetAsset(key, out value);
-
-        IEnumerator<KeyValuePair<System.Guid, Object>> IEnumerable<KeyValuePair<System.Guid, UnityEngine.Object>>.GetEnumerator()
-        {
-            if (!_clean && !this.SetupTable()) return Enumerable.Empty<KeyValuePair<System.Guid, UnityEngine.Object>>().GetEnumerator();
-            if (_guidTable == null) return Enumerable.Empty<KeyValuePair<System.Guid, UnityEngine.Object>>().GetEnumerator();
-            return _guidTable.GetEnumerator();
-        }
-
-        #endregion
-
         #region IEnumerable Interface
 
         public IEnumerator<UnityEngine.Object> GetEnumerator()
@@ -1172,6 +1128,198 @@ namespace com.spacepuppy.Project
             IEnumerator<T> IEnumerable<T>.GetEnumerator() => this;
             System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => this;
         }
+
+
+        public class NameDictionary : IReadOnlyDictionary<string, UnityEngine.Object>
+        {
+
+            #region Fields
+
+            protected QueryableAssetSet _assets;
+
+            #endregion
+
+            #region CONSTRUCTOR
+
+            internal NameDictionary(QueryableAssetSet assets)
+            {
+                if (assets == null) throw new System.ArgumentNullException(nameof(assets));
+                _assets = assets;
+            }
+
+            #endregion
+
+            #region IReadOnlyDictionary Interface
+
+            public Object this[string key] => _assets.GetAsset(key);
+
+            public IEnumerable<string> Keys => _assets.GetAllAssetNames();
+
+            public IEnumerable<Object> Values => _assets.GetAllAssets();
+
+            public int Count
+            {
+                get
+                {
+                    if (!_assets._clean && !_assets.SetupTable()) return 0;
+                    return _assets._nested ? _assets.GetAllAssetNames().Count() : _assets._table.Count;
+                }
+            }
+            public int GetCount(bool shallow = false)
+            {
+                if (!_assets._clean && !_assets.SetupTable()) return 0;
+
+                if (shallow)
+                {
+                    return _assets._table.Count;
+                }
+                else
+                {
+                    return _assets.GetAllAssetNames().Count();
+                }
+            }
+
+            public bool ContainsKey(string key) => _assets.Contains(key);
+
+            public bool TryGetValue(string key, out Object value) => _assets.TryGetAsset(key, out value);
+
+            public IEnumerator<KeyValuePair<string, Object>> GetEnumerator(bool shallow = false)
+            {
+                if (!_assets._clean && !_assets.SetupTable()) return Enumerable.Empty<KeyValuePair<string, UnityEngine.Object>>().GetEnumerator();
+
+                if (!shallow && _assets._nested)
+                {
+                    return _assets.GetAllAssetNames().Select(o => new KeyValuePair<string, UnityEngine.Object>(o, _assets.GetAsset(o))).GetEnumerator();
+                }
+                else
+                {
+                    return _assets._table.GetEnumerator();
+                }
+            }
+
+            IEnumerator<KeyValuePair<string, Object>> IEnumerable<KeyValuePair<string, Object>>.GetEnumerator() => this.GetEnumerator();
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => this.GetEnumerator();
+
+            #endregion
+
+        }
+
+        public class AssetGuidDictionary : IReadOnlyDictionary<System.Guid, UnityEngine.Object>
+        {
+
+            #region Fields
+
+            protected QueryableAssetSet _assets;
+
+            #endregion
+
+            #region CONSTRUCTOR
+
+            internal AssetGuidDictionary(QueryableAssetSet assets)
+            {
+                if (assets == null) throw new System.ArgumentNullException(nameof(assets));
+                _assets = assets;
+            }
+
+            #endregion
+
+            #region IReadOnlyDictionary Interface
+
+            public Object this[System.Guid key] => _assets.GetAsset(key);
+
+            public IEnumerable<System.Guid> Keys => _assets.GetAssetGuids();
+
+            public IEnumerable<Object> Values
+            {
+                get
+                {
+                    if (!_assets._clean && !_assets.SetupTable()) return Enumerable.Empty<UnityEngine.Object>();
+
+                    return _assets._nested ? _assets.GetAssetGuids().Select(o => _assets.GetAsset(o)) : (_assets._guidTable?.Values ?? Enumerable.Empty<UnityEngine.Object>());
+                }
+            }
+
+            public int Count
+            {
+                get
+                {
+                    if (!_assets._clean && !_assets.SetupTable()) return 0;
+
+                    return _assets._nested ? _assets.GetAssetGuids().Count() : (_assets._guidTable?.Count ?? 0);
+                }
+            }
+            public int GetCount(bool shallow = false)
+            {
+                if (!_assets._clean && !_assets.SetupTable()) return 0;
+
+                if (shallow)
+                {
+                    return _assets._guidTable?.Count ?? 0;
+                }
+                else
+                {
+                    return _assets.GetAssetGuids().Count();
+                }
+            }
+
+
+            public bool ContainsKey(System.Guid key) => _assets.Contains(key);
+
+            public bool TryGetValue(System.Guid key, out Object value) => _assets.TryGetAsset(key, out value);
+
+            public IEnumerator<KeyValuePair<System.Guid, Object>> GetEnumerator(bool shallow = false)
+            {
+                if (!_assets._clean && !_assets.SetupTable()) return Enumerable.Empty<KeyValuePair<System.Guid, UnityEngine.Object>>().GetEnumerator();
+
+                if (!shallow && _assets._nested)
+                {
+                    return _assets.GetAssetGuids().Select(g => new KeyValuePair<System.Guid, UnityEngine.Object>(g, _assets.GetAsset(g))).GetEnumerator();
+                }
+                else
+                {
+                    if (_assets._guidTable == null) return Enumerable.Empty<KeyValuePair<System.Guid, UnityEngine.Object>>().GetEnumerator();
+                    return _assets._guidTable.GetEnumerator();
+                }
+            }
+
+            IEnumerator<KeyValuePair<System.Guid, Object>> IEnumerable<KeyValuePair<System.Guid, Object>>.GetEnumerator() => this.GetEnumerator();
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => this.GetEnumerator();
+
+            #endregion
+
+        }
+
+        /*
+         * TODO - do we want to actually reveal this?
+         * 
+        public class ShallowIndexedCollection : IReadOnlyList<UnityEngine.Object>
+        {
+
+            #region Fields
+
+            protected QueryableAssetSet _assets;
+
+            #endregion
+
+            #region CONSTRUCTOR
+
+            internal ShallowIndexedCollection(QueryableAssetSet assets)
+            {
+                if (assets == null) throw new System.ArgumentNullException(nameof(assets));
+                _assets = assets;
+            }
+
+            #endregion
+
+            public UnityEngine.Object this[int index] => _assets._assets[index];
+
+            public int Count => _assets._assets?.Length ?? 0;
+
+            public IEnumerator<UnityEngine.Object> GetEnumerator() => (_assets._assets as IEnumerable<UnityEngine.Object>)?.GetEnumerator() ?? Enumerable.Empty<UnityEngine.Object>().GetEnumerator();
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => this.GetEnumerator();
+
+        }
+        */
 
         #endregion
 

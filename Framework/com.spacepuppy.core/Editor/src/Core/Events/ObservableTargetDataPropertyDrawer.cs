@@ -52,6 +52,8 @@ namespace com.spacepuppyeditor.Events
 
             if (targProp.objectReferenceValue is IObservableTrigger)
             {
+                EditorGUI.BeginProperty(position, label, property);
+
                 var targ = targProp.objectReferenceValue as IObservableTrigger;
                 var owner = new SerializedObject(targProp.objectReferenceValue);
 
@@ -63,6 +65,8 @@ namespace com.spacepuppyeditor.Events
                 {
                     indexProp.intValue = newValue;
                 }
+
+                EditorGUI.EndProperty();
             }
             else
             {

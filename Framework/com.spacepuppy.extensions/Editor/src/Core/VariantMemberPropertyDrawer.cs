@@ -31,7 +31,10 @@ namespace com.spacepuppyeditor.Core
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
-            position = EditorGUI.PrefixLabel(position, label);
+
+            EditorGUI.BeginProperty(position, label, property);
+
+            position = SPEditorGUI.SafePrefixLabel(position, label);
             EditorHelper.SuppressIndentLevel();
 
             try
@@ -165,6 +168,7 @@ namespace com.spacepuppyeditor.Core
             finally
             {
                 EditorHelper.ResumeIndentLevel();
+                EditorGUI.EndProperty();
             }
         }
 

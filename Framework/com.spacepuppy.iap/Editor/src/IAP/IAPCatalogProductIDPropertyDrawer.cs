@@ -34,6 +34,8 @@ namespace com.spacepuppyeditor.IAP
                 return;
             }
 
+            EditorGUI.BeginProperty(position, label, property);
+
             var r0 = new Rect(position.xMin, position.yMin, position.width, EditorGUIUtility.singleLineHeight);
             var r1 = new Rect(r0.xMin, r0.yMax, r0.width, r0.height);
 
@@ -62,6 +64,8 @@ namespace com.spacepuppyeditor.IAP
             {
                 ProductCatalogEditor.ShowWindow();
             }
+
+            EditorGUI.EndProperty();
         }
 
     }

@@ -25,7 +25,9 @@ namespace com.spacepuppyeditor.Core
                 if (attrib.max < max && attrib.max > FixedCurrency.MIN_VALUE) max = (decimal)attrib.max;
             }
 
-            position = EditorGUI.PrefixLabel(position, label);
+            EditorGUI.BeginProperty(position, label, property);
+
+            position = SPEditorGUI.SafePrefixLabel(position, label);
 
             var valueProp = property.FindPropertyRelative("_value");
             FixedCurrency value = FixedCurrency.FromRawValue(valueProp.longValue);
@@ -47,6 +49,7 @@ namespace com.spacepuppyeditor.Core
                 valueProp.longValue = value.RawValue;
             }
 
+            EditorGUI.EndProperty();
         }
 
     }

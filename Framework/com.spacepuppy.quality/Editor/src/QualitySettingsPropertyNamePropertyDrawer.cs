@@ -45,6 +45,8 @@ namespace com.spacepuppyeditor.Quality
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            EditorGUI.BeginProperty(position, label, property);
+
             var attrib = this.attribute as QualitySettingsPropertyNameAttribute;
             if (attrib?.allowCustom ?? false)
             {
@@ -60,6 +62,8 @@ namespace com.spacepuppyeditor.Quality
                     property.stringValue = ni >= 0 && ni < _options.Length ? _options[ni] : string.Empty;
                 }
             }
+
+            EditorGUI.EndProperty();
         }
 
     }

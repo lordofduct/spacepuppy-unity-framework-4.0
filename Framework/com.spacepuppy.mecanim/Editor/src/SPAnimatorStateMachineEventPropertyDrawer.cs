@@ -131,6 +131,9 @@ namespace com.spacepuppyeditor.Mecanim
             const float PAD = 4f;
 
             var elprop = _targetList.serializedProperty.GetArrayElementAtIndex(index);
+
+            EditorGUI.BeginProperty(area, GUIContent.none, elprop);
+
             var actprop = elprop.FindPropertyRelative(PROP_ACTION);
             var idprop = elprop.FindPropertyRelative(PROP_ID);
             var valprop = elprop.FindPropertyRelative(PROP_VALUE);
@@ -210,6 +213,7 @@ namespace com.spacepuppyeditor.Mecanim
                         var tw = Mathf.Max(0f, area.width - r0.width - PAD - PAD);
                         var r1 = new Rect(r0.xMax + PAD, area.yMin, Mathf.Min(28f, tw * 0.95f), area.height);
                         var r2 = new Rect(r1.xMax + PAD, area.yMin, Mathf.Max(0f, tw - r1.width), area.height);
+
                         EditorGUI.LabelField(r1, "Key:");
                         idprop.stringValue = EditorGUI.TextField(r2, idprop.stringValue);
                     }
@@ -225,6 +229,7 @@ namespace com.spacepuppyeditor.Mecanim
                     break;
             }
 
+            EditorGUI.EndProperty();
         }
 
         private void IDPropField(Rect rect, SerializedProperty idprop, GUIContent label, AnimatorControllerParameterType paramtype)

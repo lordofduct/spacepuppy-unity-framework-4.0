@@ -32,6 +32,8 @@ namespace com.spacepuppyeditor.Tween
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            EditorGUI.BeginProperty(position, label, property);
+
             var style = property.GetEnumValue<EaseStyle>();
             int index = _entries.IndexOf(o => o.Value == style);;
             EditorGUI.BeginChangeCheck();
@@ -40,6 +42,8 @@ namespace com.spacepuppyeditor.Tween
             {
                 property.SetEnumValue(index >= 0 && index < _entries.Length ? _entries[index].Value : EaseStyle.Linear);
             }
+
+            EditorGUI.EndProperty();
         }
 
         public struct EasePopupEntry

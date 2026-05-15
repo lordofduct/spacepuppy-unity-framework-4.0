@@ -20,6 +20,8 @@ namespace com.spacepuppyeditor.Core
             var valueProp = property.FindPropertyRelative("_value");
             float value;
 
+            EditorGUI.BeginProperty(position, label, property);
+
             position = SPEditorGUI.SafePrefixLabel(position, label);
             if (this.fieldInfo.GetCustomAttribute<DiscreteFloat.HideInfinityCheckbox>() == null)
             {
@@ -55,6 +57,8 @@ namespace com.spacepuppyeditor.Core
 
                 valueProp.floatValue = value;
             }
+
+            EditorGUI.EndProperty();
         }
 
         private float NormalizeBasedOnAttribs(float value)
@@ -116,6 +120,8 @@ namespace com.spacepuppyeditor.Core
             string shortlabel, longlabel;
             GetLabels(out shortlabel, out longlabel);
 
+            EditorGUI.BeginProperty(position, label, property);
+
             position = SPEditorGUI.SafePrefixLabel(position, label);
             var r0 = new Rect(position.xMin, position.yMin, WIDTH_INFTOGGLE, EditorGUIUtility.singleLineHeight);
             var r1 = new Rect(r0.xMax, r0.yMin, Mathf.Max(0f, position.width - r0.width), EditorGUIUtility.singleLineHeight);
@@ -156,6 +162,8 @@ namespace com.spacepuppyeditor.Core
                     }
                 }
             }
+
+            EditorGUI.EndProperty();
         }
 
         void GetLabels(out string shortlabel, out string longlabel)
@@ -194,6 +202,8 @@ namespace com.spacepuppyeditor.Core
 
             string shortlabel, longlabel;
             GetLabels(out shortlabel, out longlabel);
+
+            EditorGUI.BeginProperty(position, label, property);
 
             position = SPEditorGUI.SafePrefixLabel(position, label);
             var r0 = new Rect(position.xMin, position.yMin, WIDTH_INFTOGGLE, EditorGUIUtility.singleLineHeight);
@@ -235,6 +245,8 @@ namespace com.spacepuppyeditor.Core
                     }
                 }
             }
+
+            EditorGUI.EndProperty();
         }
 
         void GetLabels(out string shortlabel, out string longlabel)

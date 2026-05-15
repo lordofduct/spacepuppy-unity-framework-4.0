@@ -63,6 +63,8 @@ namespace com.spacepuppyeditor.Core
 
         private void DrawVector2(Rect position, SerializedProperty property, GUIContent label)
         {
+            EditorGUI.BeginProperty(position, label, property);
+
             position = EditorGUI.PrefixLabel(position, label);
             EditorHelper.SuppressIndentLevel();
 
@@ -135,11 +137,14 @@ namespace com.spacepuppyeditor.Core
             finally
             {
                 EditorHelper.ResumeIndentLevel();
+                EditorGUI.EndProperty();
             }
         }
 
         private void DrawVector3(Rect position, SerializedProperty property, GUIContent label)
         {
+            EditorGUI.BeginProperty(position, label, property);
+
             position = EditorGUI.PrefixLabel(position, label);
             EditorHelper.SuppressIndentLevel();
 
@@ -224,11 +229,14 @@ namespace com.spacepuppyeditor.Core
             finally
             {
                 EditorHelper.ResumeIndentLevel();
+                EditorGUI.EndProperty();
             }
         }
 
         private void DrawVector4(Rect position, SerializedProperty property, GUIContent label)
         {
+            EditorGUI.BeginProperty(position, label, property);
+
             position = EditorGUI.PrefixLabel(position, label);
             EditorHelper.SuppressIndentLevel();
 
@@ -259,6 +267,7 @@ namespace com.spacepuppyeditor.Core
             finally
             {
                 EditorHelper.ResumeIndentLevel();
+                EditorGUI.EndProperty();
             }
         }
 

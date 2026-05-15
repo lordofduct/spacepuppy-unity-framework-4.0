@@ -29,6 +29,8 @@ namespace com.spacepuppyeditor.Motor
             }
             else
             {
+                EditorGUI.BeginProperty(position, label, property);
+
                 var dirProp = property.FindPropertyRelative(PROP_DIR);
                 var strProp = property.FindPropertyRelative(PROP_STRENGTH);
                 var modeProp = property.FindPropertyRelative(PROP_FORCEMODE);
@@ -39,6 +41,8 @@ namespace com.spacepuppyeditor.Motor
                 var r2 = new Rect(r1.xMax, r1.yMin, position.width - r1.width, r1.height);
                 property.isExpanded = EditorGUI.Foldout(r1, property.isExpanded, label, true);
                 EditorGUI.LabelField(r2, content);
+
+                EditorGUI.EndProperty();
             }
         }
 

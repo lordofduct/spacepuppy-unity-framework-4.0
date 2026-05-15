@@ -285,12 +285,16 @@ namespace com.spacepuppyeditor.Project
                         var textRect = new Rect(area.xMin, area.yMin + labelRect.height + 2f, area.width, area.height - labelRect.height - 3f);
 
                         var label = EditorHelper.TempContent("Element " + index.ToString("00"));
+                        EditorGUI.BeginProperty(area, label, element);
+
                         if (this.ElementLabelCallback != null)
                             this.ElementLabelCallback(labelRect, element, label, index);
                         else
                             EditorGUI.LabelField(labelRect, label);
 
                         element.stringValue = EditorGUI.TextArea(textRect, element.stringValue);
+
+                        EditorGUI.EndProperty();
                     }
                     break;
                 case Mode.TextSource:
@@ -302,12 +306,16 @@ namespace com.spacepuppyeditor.Project
                         var textRect = new Rect(area.xMin, area.yMin + labelRect.height + 2f, area.width, area.height - labelRect.height - 3f);
 
                         var label = EditorHelper.TempContent("Element " + index.ToString("00"));
+                        EditorGUI.BeginProperty(area, label, element);
+
                         if (this.ElementLabelCallback != null)
                             this.ElementLabelCallback(labelRect, element, label, index);
                         else
                             EditorGUI.LabelField(labelRect, label);
 
                         EditorGUI.TextArea(textRect, src[index]);
+
+                        EditorGUI.EndProperty();
                     }
                     break;
                 case Mode.TextAsset:
@@ -319,12 +327,16 @@ namespace com.spacepuppyeditor.Project
                         var textRect = new Rect(area.xMin, area.yMin + labelRect.height + 2f, area.width, area.height - labelRect.height - 3f);
 
                         var label = EditorHelper.TempContent("Element " + index.ToString("00"));
+                        EditorGUI.BeginProperty(area, label, element);
+
                         if (this.ElementLabelCallback != null)
                             this.ElementLabelCallback(labelRect, element, label, index);
                         else
                             EditorGUI.LabelField(labelRect, label);
 
                         EditorGUI.TextArea(textRect, StringUtil.TryGetText(src));
+
+                        EditorGUI.EndProperty();
                     }
                     break;
             }

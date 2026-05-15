@@ -26,6 +26,8 @@ namespace com.spacepuppyeditor.Core
             var p3 = property.FindPropertyRelative("Patch");
             var p4 = property.FindPropertyRelative("Build");
 
+            EditorGUI.BeginProperty(position, label, property);
+
             position = EditorGUI.PrefixLabel(position, label);
             EditorHelper.SuppressIndentLevel();
 
@@ -60,6 +62,7 @@ namespace com.spacepuppyeditor.Core
             finally
             {
                 EditorHelper.ResumeIndentLevel();
+                EditorGUI.EndProperty();
             }
         }
 

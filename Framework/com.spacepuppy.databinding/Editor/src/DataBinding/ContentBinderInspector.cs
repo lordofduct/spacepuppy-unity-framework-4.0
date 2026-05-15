@@ -99,46 +99,55 @@ namespace com.spacepuppyeditor.DataBinding
                 return;
             }
 
-            string value;
+            EditorGUI.BeginProperty(position, label, property);
 
-            var sob = property.serializedObject;
-            Component target;
-            DataBindingContext context;
-            ISourceBindingProtocol protocol;
-            if (sob.isEditingMultipleObjects ||
-                (target = sob.targetObject as Component) == null ||
-                (context = target.GetComponent<DataBindingContext>()) == null ||
-                (protocol = context.BindingProtocol) == null)
+            try
             {
+                string value;
+
+                var sob = property.serializedObject;
+                Component target;
+                DataBindingContext context;
+                ISourceBindingProtocol protocol;
+                if (sob.isEditingMultipleObjects ||
+                    (target = sob.targetObject as Component) == null ||
+                    (context = target.GetComponent<DataBindingContext>()) == null ||
+                    (protocol = context.BindingProtocol) == null)
+                {
+                    EditorGUI.BeginChangeCheck();
+                    value = EditorGUI.TextField(position, label, property.stringValue);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        property.stringValue = value;
+                    }
+                    return;
+                }
+
+                var pftp = protocol.PreferredSourceType;
+                if (pftp != null) label = EditorHelper.TempContent(string.Format("{0} (type: {1})", label.text, pftp.Name), label.tooltip);
+
+                var keys = protocol.GetDefinedKeys(context);
+                if (keys == null || !keys.Any())
+                {
+                    EditorGUI.BeginChangeCheck();
+                    value = EditorGUI.TextField(position, label, property.stringValue);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        property.stringValue = value;
+                    }
+                    return;
+                }
+
                 EditorGUI.BeginChangeCheck();
-                value = EditorGUI.TextField(position, label, property.stringValue);
+                value = SPEditorGUI.OptionPopupWithCustom(position, label, property.stringValue, keys.ToArray());
                 if (EditorGUI.EndChangeCheck())
                 {
                     property.stringValue = value;
                 }
-                return;
             }
-
-            var pftp = protocol.PreferredSourceType;
-            if (pftp != null) label = EditorHelper.TempContent(string.Format("{0} (type: {1})", label.text, pftp.Name), label.tooltip);
-
-            var keys = protocol.GetDefinedKeys(context);
-            if (keys == null || !keys.Any())
+            finally
             {
-                EditorGUI.BeginChangeCheck();
-                value = EditorGUI.TextField(position, label, property.stringValue);
-                if (EditorGUI.EndChangeCheck())
-                {
-                    property.stringValue = value;
-                }
-                return;
-            }
-
-            EditorGUI.BeginChangeCheck();
-            value = SPEditorGUI.OptionPopupWithCustom(position, label, property.stringValue, keys.ToArray());
-            if (EditorGUI.EndChangeCheck())
-            {
-                property.stringValue = value;
+                EditorGUI.EndProperty();
             }
         }
 

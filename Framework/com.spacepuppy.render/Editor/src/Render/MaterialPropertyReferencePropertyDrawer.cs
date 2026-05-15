@@ -34,132 +34,140 @@ namespace com.spacepuppyeditor.Render
         {
             if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
 
+            EditorGUI.BeginProperty(position, label, property);
+
             //property.isExpanded = EditorGUI.Foldout(new Rect(position.xMin, position.yMin, 15f, EditorGUIUtility.singleLineHeight), property.isExpanded, GUIContent.none);
             position = EditorGUI.PrefixLabel(position, label);
-
 
             //START DRAW WITH NO INDENTS
             EditorHelper.SuppressIndentLevel();
 
-
-            var r0 = new Rect(position.xMin, position.yMin, position.width / 2f, position.height);
-            var r1 = new Rect(r0.xMax, r0.yMin, position.width - r0.width, r0.height);
-
-            var matProp = property.FindPropertyRelative(PROP_MATERIAL);
-            var valTypeProp = property.FindPropertyRelative(PROP_VALUETYPE);
-            var memberProp = property.FindPropertyRelative(PROP_VALUEMEMBER);
-            var propNameProp = property.FindPropertyRelative(PROP_PROPERTYNAME);
-
-            SPEditorGUI.PropertyField(r1, matProp, GUIContent.none);
-
-            var mat = MaterialUtil.GetMaterialFromSource(matProp.objectReferenceValue);
-            if (mat != null && mat.shader != null)
+            try
             {
-                int cnt = ShaderUtil.GetPropertyCount(mat.shader);
-                using (var infoLst = TempCollection.GetList<PropInfo>(cnt))
-                using (var contentLst = TempCollection.GetList<GUIContent>(cnt))
+
+
+
+                var r0 = new Rect(position.xMin, position.yMin, position.width / 2f, position.height);
+                var r1 = new Rect(r0.xMax, r0.yMin, position.width - r0.width, r0.height);
+
+                var matProp = property.FindPropertyRelative(PROP_MATERIAL);
+                var valTypeProp = property.FindPropertyRelative(PROP_VALUETYPE);
+                var memberProp = property.FindPropertyRelative(PROP_VALUEMEMBER);
+                var propNameProp = property.FindPropertyRelative(PROP_PROPERTYNAME);
+
+                SPEditorGUI.PropertyField(r1, matProp, GUIContent.none);
+
+                var mat = MaterialUtil.GetMaterialFromSource(matProp.objectReferenceValue);
+                if (mat != null && mat.shader != null)
                 {
-                    int index = -1;
-
-                    for (int i = 0; i < cnt; i++)
+                    int cnt = ShaderUtil.GetPropertyCount(mat.shader);
+                    using (var infoLst = TempCollection.GetList<PropInfo>(cnt))
+                    using (var contentLst = TempCollection.GetList<GUIContent>(cnt))
                     {
-                        var nm = ShaderUtil.GetPropertyName(mat.shader, i);
-                        var tp = ShaderUtil.GetPropertyType(mat.shader, i);
+                        int index = -1;
 
-                        switch (tp)
+                        for (int i = 0; i < cnt; i++)
                         {
-                            case ShaderUtil.ShaderPropertyType.Float:
-                                {
-                                    if (propNameProp.stringValue == nm) index = infoLst.Count;
-                                    infoLst.Add(new PropInfo(nm, MaterialPropertyValueType.Float));
-                                    contentLst.Add(EditorHelper.TempContent(nm + " (float)"));
-                                }
-                                break;
-                            case ShaderUtil.ShaderPropertyType.Range:
-                                {
-                                    if (propNameProp.stringValue == nm) index = infoLst.Count;
-                                    infoLst.Add(new PropInfo(nm, MaterialPropertyValueType.Float));
-                                    var min = ShaderUtil.GetRangeLimits(mat.shader, i, 1);
-                                    var max = ShaderUtil.GetRangeLimits(mat.shader, i, 2);
-                                    contentLst.Add(EditorHelper.TempContent(string.Format("{0} (Range [{1}, {2}]])", nm, min, max)));
-                                }
-                                break;
-                            case ShaderUtil.ShaderPropertyType.Color:
-                                {
-                                    if (propNameProp.stringValue == nm && memberProp.GetEnumValue<MaterialPropertyValueTypeMember>() == MaterialPropertyValueTypeMember.None) index = infoLst.Count;
-                                    infoLst.Add(new PropInfo(nm, MaterialPropertyValueType.Color));
-                                    contentLst.Add(EditorHelper.TempContent(nm + " (color)"));
+                            var nm = ShaderUtil.GetPropertyName(mat.shader, i);
+                            var tp = ShaderUtil.GetPropertyType(mat.shader, i);
 
-                                    //sub members
-                                    if (propNameProp.stringValue == nm && memberProp.GetEnumValue<MaterialPropertyValueTypeMember>() == MaterialPropertyValueTypeMember.X) index = infoLst.Count;
-                                    infoLst.Add(new PropInfo(nm, MaterialPropertyValueType.Color, MaterialPropertyValueTypeMember.X));
-                                    contentLst.Add(EditorHelper.TempContent(nm + ".r (float)"));
+                            switch (tp)
+                            {
+                                case ShaderUtil.ShaderPropertyType.Float:
+                                    {
+                                        if (propNameProp.stringValue == nm) index = infoLst.Count;
+                                        infoLst.Add(new PropInfo(nm, MaterialPropertyValueType.Float));
+                                        contentLst.Add(EditorHelper.TempContent(nm + " (float)"));
+                                    }
+                                    break;
+                                case ShaderUtil.ShaderPropertyType.Range:
+                                    {
+                                        if (propNameProp.stringValue == nm) index = infoLst.Count;
+                                        infoLst.Add(new PropInfo(nm, MaterialPropertyValueType.Float));
+                                        var min = ShaderUtil.GetRangeLimits(mat.shader, i, 1);
+                                        var max = ShaderUtil.GetRangeLimits(mat.shader, i, 2);
+                                        contentLst.Add(EditorHelper.TempContent(string.Format("{0} (Range [{1}, {2}]])", nm, min, max)));
+                                    }
+                                    break;
+                                case ShaderUtil.ShaderPropertyType.Color:
+                                    {
+                                        if (propNameProp.stringValue == nm && memberProp.GetEnumValue<MaterialPropertyValueTypeMember>() == MaterialPropertyValueTypeMember.None) index = infoLst.Count;
+                                        infoLst.Add(new PropInfo(nm, MaterialPropertyValueType.Color));
+                                        contentLst.Add(EditorHelper.TempContent(nm + " (color)"));
 
-                                    if (propNameProp.stringValue == nm && memberProp.GetEnumValue<MaterialPropertyValueTypeMember>() == MaterialPropertyValueTypeMember.Y) index = infoLst.Count;
-                                    infoLst.Add(new PropInfo(nm, MaterialPropertyValueType.Color, MaterialPropertyValueTypeMember.Y));
-                                    contentLst.Add(EditorHelper.TempContent(nm + ".g (float)"));
+                                        //sub members
+                                        if (propNameProp.stringValue == nm && memberProp.GetEnumValue<MaterialPropertyValueTypeMember>() == MaterialPropertyValueTypeMember.X) index = infoLst.Count;
+                                        infoLst.Add(new PropInfo(nm, MaterialPropertyValueType.Color, MaterialPropertyValueTypeMember.X));
+                                        contentLst.Add(EditorHelper.TempContent(nm + ".r (float)"));
 
-                                    if (propNameProp.stringValue == nm && memberProp.GetEnumValue<MaterialPropertyValueTypeMember>() == MaterialPropertyValueTypeMember.Z) index = infoLst.Count;
-                                    infoLst.Add(new PropInfo(nm, MaterialPropertyValueType.Color, MaterialPropertyValueTypeMember.Z));
-                                    contentLst.Add(EditorHelper.TempContent(nm + ".b (float)"));
+                                        if (propNameProp.stringValue == nm && memberProp.GetEnumValue<MaterialPropertyValueTypeMember>() == MaterialPropertyValueTypeMember.Y) index = infoLst.Count;
+                                        infoLst.Add(new PropInfo(nm, MaterialPropertyValueType.Color, MaterialPropertyValueTypeMember.Y));
+                                        contentLst.Add(EditorHelper.TempContent(nm + ".g (float)"));
 
-                                    if (propNameProp.stringValue == nm && memberProp.GetEnumValue<MaterialPropertyValueTypeMember>() == MaterialPropertyValueTypeMember.W) index = infoLst.Count;
-                                    infoLst.Add(new PropInfo(nm, MaterialPropertyValueType.Color, MaterialPropertyValueTypeMember.W));
-                                    contentLst.Add(EditorHelper.TempContent(nm + ".a (float)"));
-                                }
-                                break;
-                            case ShaderUtil.ShaderPropertyType.Vector:
-                                {
-                                    if (propNameProp.stringValue == nm && memberProp.GetEnumValue<MaterialPropertyValueTypeMember>() == MaterialPropertyValueTypeMember.None) index = infoLst.Count;
-                                    infoLst.Add(new PropInfo(nm, MaterialPropertyValueType.Vector));
-                                    contentLst.Add(EditorHelper.TempContent(nm + " (vector)"));
+                                        if (propNameProp.stringValue == nm && memberProp.GetEnumValue<MaterialPropertyValueTypeMember>() == MaterialPropertyValueTypeMember.Z) index = infoLst.Count;
+                                        infoLst.Add(new PropInfo(nm, MaterialPropertyValueType.Color, MaterialPropertyValueTypeMember.Z));
+                                        contentLst.Add(EditorHelper.TempContent(nm + ".b (float)"));
 
-                                    //sub members
-                                    if (propNameProp.stringValue == nm && memberProp.GetEnumValue<MaterialPropertyValueTypeMember>() == MaterialPropertyValueTypeMember.X) index = infoLst.Count;
-                                    infoLst.Add(new PropInfo(nm, MaterialPropertyValueType.Vector, MaterialPropertyValueTypeMember.X));
-                                    contentLst.Add(EditorHelper.TempContent(nm + ".x (float)"));
+                                        if (propNameProp.stringValue == nm && memberProp.GetEnumValue<MaterialPropertyValueTypeMember>() == MaterialPropertyValueTypeMember.W) index = infoLst.Count;
+                                        infoLst.Add(new PropInfo(nm, MaterialPropertyValueType.Color, MaterialPropertyValueTypeMember.W));
+                                        contentLst.Add(EditorHelper.TempContent(nm + ".a (float)"));
+                                    }
+                                    break;
+                                case ShaderUtil.ShaderPropertyType.Vector:
+                                    {
+                                        if (propNameProp.stringValue == nm && memberProp.GetEnumValue<MaterialPropertyValueTypeMember>() == MaterialPropertyValueTypeMember.None) index = infoLst.Count;
+                                        infoLst.Add(new PropInfo(nm, MaterialPropertyValueType.Vector));
+                                        contentLst.Add(EditorHelper.TempContent(nm + " (vector)"));
 
-                                    if (propNameProp.stringValue == nm && memberProp.GetEnumValue<MaterialPropertyValueTypeMember>() == MaterialPropertyValueTypeMember.Y) index = infoLst.Count;
-                                    infoLst.Add(new PropInfo(nm, MaterialPropertyValueType.Vector, MaterialPropertyValueTypeMember.Y));
-                                    contentLst.Add(EditorHelper.TempContent(nm + ".y (float)"));
+                                        //sub members
+                                        if (propNameProp.stringValue == nm && memberProp.GetEnumValue<MaterialPropertyValueTypeMember>() == MaterialPropertyValueTypeMember.X) index = infoLst.Count;
+                                        infoLst.Add(new PropInfo(nm, MaterialPropertyValueType.Vector, MaterialPropertyValueTypeMember.X));
+                                        contentLst.Add(EditorHelper.TempContent(nm + ".x (float)"));
 
-                                    if (propNameProp.stringValue == nm && memberProp.GetEnumValue<MaterialPropertyValueTypeMember>() == MaterialPropertyValueTypeMember.Z) index = infoLst.Count;
-                                    infoLst.Add(new PropInfo(nm, MaterialPropertyValueType.Vector, MaterialPropertyValueTypeMember.Z));
-                                    contentLst.Add(EditorHelper.TempContent(nm + ".z (float)"));
+                                        if (propNameProp.stringValue == nm && memberProp.GetEnumValue<MaterialPropertyValueTypeMember>() == MaterialPropertyValueTypeMember.Y) index = infoLst.Count;
+                                        infoLst.Add(new PropInfo(nm, MaterialPropertyValueType.Vector, MaterialPropertyValueTypeMember.Y));
+                                        contentLst.Add(EditorHelper.TempContent(nm + ".y (float)"));
 
-                                    if (propNameProp.stringValue == nm && memberProp.GetEnumValue<MaterialPropertyValueTypeMember>() == MaterialPropertyValueTypeMember.W) index = infoLst.Count;
-                                    infoLst.Add(new PropInfo(nm, MaterialPropertyValueType.Vector, MaterialPropertyValueTypeMember.W));
-                                    contentLst.Add(EditorHelper.TempContent(nm + ".w (float)"));
-                                }
-                                break;
+                                        if (propNameProp.stringValue == nm && memberProp.GetEnumValue<MaterialPropertyValueTypeMember>() == MaterialPropertyValueTypeMember.Z) index = infoLst.Count;
+                                        infoLst.Add(new PropInfo(nm, MaterialPropertyValueType.Vector, MaterialPropertyValueTypeMember.Z));
+                                        contentLst.Add(EditorHelper.TempContent(nm + ".z (float)"));
+
+                                        if (propNameProp.stringValue == nm && memberProp.GetEnumValue<MaterialPropertyValueTypeMember>() == MaterialPropertyValueTypeMember.W) index = infoLst.Count;
+                                        infoLst.Add(new PropInfo(nm, MaterialPropertyValueType.Vector, MaterialPropertyValueTypeMember.W));
+                                        contentLst.Add(EditorHelper.TempContent(nm + ".w (float)"));
+                                    }
+                                    break;
+                            }
                         }
-                    }
 
-                    EditorGUI.BeginChangeCheck();
-                    index = EditorGUI.Popup(r0, index, contentLst.ToArray());
+                        EditorGUI.BeginChangeCheck();
+                        index = EditorGUI.Popup(r0, index, contentLst.ToArray());
 
-                    if (EditorGUI.EndChangeCheck())
-                    {
-                        if (index < 0)
+                        if (EditorGUI.EndChangeCheck())
                         {
-                            valTypeProp.SetEnumValue(MaterialPropertyValueType.Float);
-                            memberProp.SetEnumValue(MaterialPropertyValueTypeMember.None);
-                            propNameProp.stringValue = string.Empty;
-                        }
-                        else
-                        {
-                            var info = infoLst[index];
-                            valTypeProp.SetEnumValue(info.ValueType);
-                            memberProp.SetEnumValue(info.MemberType);
-                            propNameProp.stringValue = info.Name;
+                            if (index < 0)
+                            {
+                                valTypeProp.SetEnumValue(MaterialPropertyValueType.Float);
+                                memberProp.SetEnumValue(MaterialPropertyValueTypeMember.None);
+                                propNameProp.stringValue = string.Empty;
+                            }
+                            else
+                            {
+                                var info = infoLst[index];
+                                valTypeProp.SetEnumValue(info.ValueType);
+                                memberProp.SetEnumValue(info.MemberType);
+                                propNameProp.stringValue = info.Name;
+                            }
                         }
                     }
                 }
             }
-
-
-            //SET INDENT BACK
-            EditorHelper.ResumeIndentLevel();
+            finally
+            {
+                //SET INDENT BACK
+                EditorHelper.ResumeIndentLevel();
+                EditorGUI.EndProperty();
+            }
         }
 
 

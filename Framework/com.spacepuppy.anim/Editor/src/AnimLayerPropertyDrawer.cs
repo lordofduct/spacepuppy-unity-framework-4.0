@@ -30,6 +30,8 @@ namespace com.spacepuppyeditor.Anim
                 return;
             }
 
+            EditorGUI.BeginProperty(position, label, property);
+
             position = EditorGUI.PrefixLabel(position, label);
             EditorHelper.SuppressIndentLevel();
 
@@ -66,6 +68,7 @@ namespace com.spacepuppyeditor.Anim
             finally
             {
                 EditorHelper.ResumeIndentLevel();
+                EditorGUI.EndProperty();
             }
         }
 

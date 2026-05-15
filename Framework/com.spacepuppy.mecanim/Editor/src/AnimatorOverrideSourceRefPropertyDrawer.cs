@@ -29,11 +29,13 @@ namespace com.spacepuppyeditor.Mecanim
         {
             if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
 
+            EditorGUI.BeginProperty(position, label, property);
+
             var objProp = property.FindPropertyRelative(PROP_OBJ);
             var treatNullsProp = property.FindPropertyRelative(PROP_TREATNULLS);
             if (objProp.objectReferenceValue is AnimatorOverrideController)
             {
-                position = EditorGUI.PrefixLabel(position, label);
+                position = SPEditorGUI.SafePrefixLabel(position, label);
                 EditorHelper.SuppressIndentLevel();
 
                 try
@@ -57,6 +59,8 @@ namespace com.spacepuppyeditor.Mecanim
                 treatNullsProp.boolValue = false;
                 objProp.objectReferenceValue = SPEditorGUI.ObjectFieldX(position, label, objProp.objectReferenceValue, ObjFilter, true);
             }
+
+            EditorGUI.EndProperty();
         }
 
         private static bool ObjFilter(UnityEngine.Object o)

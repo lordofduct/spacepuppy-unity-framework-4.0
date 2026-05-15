@@ -110,6 +110,8 @@ namespace com.spacepuppyeditor
             {
                 if (EditorHelper.AssertMultiObjectEditingNotSupported(area, property, label)) return;
 
+                EditorGUI.BeginProperty(area, label, property);
+
                 const float MARGIN = 1.0f;
                 const float WEIGHT_FIELD_WIDTH = 60f;
                 const float PERC_FIELD_WIDTH = 45f;
@@ -156,6 +158,8 @@ namespace com.spacepuppyeditor
                     false,
                     (ref SearchReference sref) => _owner.AssetArrayDrawer.DragDropElementFilter(sref.GetTarget() as UnityEngine.Object) != null
                 );
+
+                EditorGUI.EndProperty();
             }
 
         }

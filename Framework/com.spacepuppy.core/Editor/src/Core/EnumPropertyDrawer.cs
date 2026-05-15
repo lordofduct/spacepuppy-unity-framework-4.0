@@ -25,6 +25,8 @@ namespace com.spacepuppyeditor.Core
             }
             else
             {
+                EditorGUI.BeginProperty(position, label, property);
+
                 System.Enum e = property.GetEnumValue(tp);
                 EditorGUI.BeginChangeCheck();
                 e = SPEditorGUI.EnumPopup(position, label, e);
@@ -32,6 +34,8 @@ namespace com.spacepuppyeditor.Core
                 {
                     property.SetEnumValue(e);
                 }
+
+                EditorGUI.EndProperty();
             }
         }
 

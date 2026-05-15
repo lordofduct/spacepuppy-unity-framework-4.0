@@ -1091,6 +1091,8 @@ namespace com.spacepuppyeditor.Settings
             var propValue = property.FindPropertyRelative(PROP_VALUE);
             var propRef = property.FindPropertyRelative(PROP_REF);
 
+            EditorGUI.BeginProperty(position, label, property);
+
             int index = System.Array.IndexOf(_knownPlayerSettingPropNames, propName.stringValue);
             EditorGUI.BeginChangeCheck();
             index = EditorGUI.Popup(r0, GUIContent.none, index, _knownPlayerSettingPropNamesPretty);
@@ -1191,6 +1193,8 @@ namespace com.spacepuppyeditor.Settings
                         break;
                 }
             }
+
+            EditorGUI.EndProperty();
         }
 
     }

@@ -38,10 +38,12 @@ namespace com.spacepuppyeditor.Core
             var r0 = new Rect(position.xMin, position.yMin, WIDTH_INFTOGGLE, EditorGUIUtility.singleLineHeight);
             var r1 = new Rect(r0.xMax, r0.yMin, Mathf.Max(0f, position.width - r0.width), EditorGUIUtility.singleLineHeight);
 
-            switch(property.propertyType)
+            switch (property.propertyType)
             {
                 case SerializedPropertyType.Integer when property.type == "long":
                     {
+                        EditorGUI.BeginProperty(position, label, property);
+
                         bool isinf = property.longValue <= MAX_INF_VALUE;
                         EditorGUI.BeginChangeCheck();
                         isinf = EditorGUI.ToggleLeft(r0, shortlabel, isinf);
@@ -68,10 +70,14 @@ namespace com.spacepuppyeditor.Core
                         {
                             property.longValue = EditorGUI.LongField(r1, property.longValue);
                         }
+
+                        EditorGUI.EndProperty();
                     }
                     break;
                 case SerializedPropertyType.Integer:
                     {
+                        EditorGUI.BeginProperty(position, label, property);
+
                         bool isinf = property.intValue <= MAX_INF_VALUE;
                         EditorGUI.BeginChangeCheck();
                         isinf = EditorGUI.ToggleLeft(r0, shortlabel, isinf);
@@ -98,10 +104,14 @@ namespace com.spacepuppyeditor.Core
                         {
                             property.intValue = EditorGUI.IntField(r1, property.intValue);
                         }
+
+                        EditorGUI.EndProperty();
                     }
                     break;
                 case SerializedPropertyType.Float when property.type == "double":
                     {
+                        EditorGUI.BeginProperty(position, label, property);
+
                         bool isinf = property.doubleValue <= MAX_INF_VALUE;
                         EditorGUI.BeginChangeCheck();
                         isinf = EditorGUI.ToggleLeft(r0, shortlabel, isinf);
@@ -128,10 +138,14 @@ namespace com.spacepuppyeditor.Core
                         {
                             property.doubleValue = EditorGUI.DoubleField(r1, property.doubleValue);
                         }
+
+                        EditorGUI.EndProperty();
                     }
                     break;
                 case SerializedPropertyType.Float:
                     {
+                        EditorGUI.BeginProperty(position, label, property);
+
                         bool isinf = property.floatValue <= MAX_INF_VALUE;
                         EditorGUI.BeginChangeCheck();
                         isinf = EditorGUI.ToggleLeft(r0, shortlabel, isinf);
@@ -158,6 +172,8 @@ namespace com.spacepuppyeditor.Core
                         {
                             property.floatValue = EditorGUI.FloatField(r1, property.floatValue);
                         }
+
+                        EditorGUI.EndProperty();
                     }
                     break;
                 default:

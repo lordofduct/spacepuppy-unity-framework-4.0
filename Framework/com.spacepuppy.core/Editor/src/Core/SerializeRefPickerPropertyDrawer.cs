@@ -230,35 +230,43 @@ namespace com.spacepuppyeditor.Core
             var anames = allownull ? info.Value.AvailableTypeNamesWithNull : info.Value.AvailableTypeNames;
 
             int index = atypes.IndexOf(tp);
-            EditorGUI.BeginChangeCheck();
-            index = EditorGUI.Popup(position, label ?? GUIContent.none, index, anames);
-            if (EditorGUI.EndChangeCheck())
+            EditorGUI.BeginProperty(position, label, property);
+            try
             {
-                if (index >= 0 && atypes[index] != tp)
+                EditorGUI.BeginChangeCheck();
+                index = EditorGUI.Popup(position, label ?? GUIContent.none, index, anames);
+                if (EditorGUI.EndChangeCheck())
                 {
-                    tp = atypes[index];
-                    if (tp != null)
+                    if (index >= 0 && atypes[index] != tp)
                     {
-                        var oldobj = property.managedReferenceValue;
-                        var newobj = System.Activator.CreateInstance(tp);
-                        if (oldobj != null)
+                        tp = atypes[index];
+                        if (tp != null)
                         {
-                            var token = StateToken.GetToken();
-                            token.CopyFrom(oldobj);
-                            token.CopyTo(newobj);
-                            StateToken.ReleaseTempToken(token);
+                            var oldobj = property.managedReferenceValue;
+                            var newobj = System.Activator.CreateInstance(tp);
+                            if (oldobj != null)
+                            {
+                                var token = StateToken.GetToken();
+                                token.CopyFrom(oldobj);
+                                token.CopyTo(newobj);
+                                StateToken.ReleaseTempToken(token);
+                            }
+                            //property.managedReferenceValue = newobj;
+                            EditorHelper.SetTargetObjectOfProperty(property, newobj);
                         }
-                        //property.managedReferenceValue = newobj;
-                        EditorHelper.SetTargetObjectOfProperty(property, newobj);
+                        else
+                        {
+                            //property.managedReferenceValue = null;
+                            EditorHelper.SetTargetObjectOfProperty(property, null);
+                        }
+                        com.spacepuppyeditor.Internal.ScriptAttributeUtility.ResetPropertyHandler(property, true);
+                        return true;
                     }
-                    else
-                    {
-                        //property.managedReferenceValue = null;
-                        EditorHelper.SetTargetObjectOfProperty(property, null);
-                    }
-                    com.spacepuppyeditor.Internal.ScriptAttributeUtility.ResetPropertyHandler(property, true);
-                    return true;
                 }
+            }
+            finally
+            {
+                EditorGUI.EndProperty();
             }
 
             return false;

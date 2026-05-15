@@ -59,6 +59,9 @@ namespace com.spacepuppyeditor.Mecanim
                     //layer
                     rline = new Rect(position.xMin, rline.yMax, position.width, EditorGUIUtility.singleLineHeight);
                     var layerProp = property.FindPropertyRelative(PROP_LAYER);
+
+                    EditorGUI.BeginProperty(rline, label, layerProp);
+
                     r = EditorGUI.PrefixLabel(rline, EditorHelper.TempContent("Layer"));
                     r0 = new Rect(r.xMin, r.yMin, 20f, r.height);
                     r1 = new Rect(r.xMin + 20f, r.yMin, r.width - 20f, r.height);
@@ -75,12 +78,16 @@ namespace com.spacepuppyeditor.Mecanim
                         EditorGUI.LabelField(r1, "Toggle checkbox to target specific layer by index.");
                     }
                     EditorHelper.ResumeIndentLevel();
+                    EditorGUI.EndProperty();
 
                     bool useFixedTime = property.FindPropertyRelative(PROP_USEFIXEDTIME).boolValue;
 
                     //crossfade dur
                     rline = new Rect(position.xMin, rline.yMax, position.width, EditorGUIUtility.singleLineHeight);
                     var crossfadeProp = property.FindPropertyRelative(PROP_CROSSFADEDUR);
+
+                    EditorGUI.BeginProperty(rline, label, crossfadeProp);
+
                     r = EditorGUI.PrefixLabel(rline, EditorHelper.TempContent("Cross Fade Duration"));
                     r0 = new Rect(r.xMin, r.yMin, 20f, r.height);
                     r1 = new Rect(r.xMin + 20f, r.yMin, r.width - 20f, r.height);
@@ -117,10 +124,14 @@ namespace com.spacepuppyeditor.Mecanim
                         }
                     }
                     EditorHelper.ResumeIndentLevel();
+                    EditorGUI.EndProperty();
 
                     //offset time
                     rline = new Rect(position.xMin, rline.yMax, position.width, EditorGUIUtility.singleLineHeight);
                     var offsetProp = property.FindPropertyRelative(PROP_STARTOFFSET);
+
+                    EditorGUI.BeginProperty(rline, label, offsetProp);
+
                     r = EditorGUI.PrefixLabel(rline, EditorHelper.TempContent("Start Offset"));
                     r0 = new Rect(r.xMin, r.yMin, 20f, r.height);
                     r1 = new Rect(r.xMin + 20f, r.yMin, r.width - 20f, r.height);
@@ -157,6 +168,7 @@ namespace com.spacepuppyeditor.Mecanim
                         }
                     }
                     EditorHelper.ResumeIndentLevel();
+                    EditorGUI.EndProperty();
 
                     //UseFixedTime
                     rline = new Rect(position.xMin, rline.yMax, position.width, EditorGUIUtility.singleLineHeight);

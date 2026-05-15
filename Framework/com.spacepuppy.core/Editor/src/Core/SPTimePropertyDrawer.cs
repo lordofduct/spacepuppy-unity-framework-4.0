@@ -20,12 +20,16 @@ namespace com.spacepuppyeditor.Core
         {
             if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
 
+            EditorGUI.BeginProperty(position, label, property);
+
             position = SPEditorGUI.SafePrefixLabel(position, label);
 
             var attrib = this.fieldInfo.GetCustomAttributes(typeof(SPTime.Config), false).FirstOrDefault() as SPTime.Config;
             var availNames = (attrib != null) ? attrib.AvailableCustomTimeNames : null;
 
-            SPTimePropertyDrawer.DrawTimeSupplier_SansPrefixLabel(position, property, position.width, availNames); 
+            SPTimePropertyDrawer.DrawTimeSupplier_SansPrefixLabel(position, property, position.width, availNames);
+
+            EditorGUI.EndProperty();
         }
 
 

@@ -19,8 +19,12 @@ namespace com.spacepuppyeditor.Core
         {
             if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
 
+            EditorGUI.BeginProperty(position, label, property);
+
             position = SPEditorGUI.SafePrefixLabel(position, label);
             this.DrawTimePeriodSansLabel(position, property);
+
+            EditorGUI.EndProperty();
         }
 
         protected virtual void DrawTimePeriodSansLabel(Rect position, SerializedProperty property)
@@ -70,8 +74,12 @@ namespace com.spacepuppyeditor.Core
         {
             if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
 
+            EditorGUI.BeginProperty(position, label, property);
+
             position = SPEditorGUI.SafePrefixLabel(position, label);
             this.DrawTimePeriodSansLabel(position, property);
+
+            EditorGUI.EndProperty();
         }
 
         protected virtual void DrawTimePeriodSansLabel(Rect position, SerializedProperty property)

@@ -99,10 +99,13 @@ namespace com.spacepuppyeditor.Core
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
+
+            EditorGUI.BeginProperty(position, label, property);
             position = EditorGUI.PrefixLabel(position, label);
             EditorHelper.SuppressIndentLevel();
             this.OnGUI(position, property);
             EditorHelper.ResumeIndentLevel();
+            EditorGUI.EndProperty();
         }
 
         public void OnGUI(Rect position, SerializedProperty property)

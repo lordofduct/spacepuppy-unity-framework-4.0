@@ -22,6 +22,8 @@ namespace com.spacepuppyeditor.Core
                 return;
             }
 
+            EditorGUI.BeginProperty(position, label, property);
+
             EditorGUI.BeginChangeCheck();
             System.Enum evalue = property.GetEnumValue(enumType);
             var attrib = this.attribute as EnumPopupExcludingAttribute;
@@ -39,6 +41,8 @@ namespace com.spacepuppyeditor.Core
             {
                 property.SetEnumValue(value);
             }
+
+            EditorGUI.EndProperty();
         }
 
     }

@@ -29,6 +29,8 @@ namespace com.spacepuppyeditor.Core
                 _options = _layers.Select(o => new GUIContent(o.Name)).ToArray();
             }
 
+            EditorGUI.BeginProperty(position, label, property);
+
             EditorGUI.BeginChangeCheck();
             int index = _layers.IndexOf(o => o.Layer == property.intValue);
             index = EditorGUI.Popup(position, label, index, _options);
@@ -36,6 +38,8 @@ namespace com.spacepuppyeditor.Core
             {
                 property.intValue = index >= 0 ? _layers[index].Layer : 0;
             }
+
+            EditorGUI.EndProperty();
         }
 
     }

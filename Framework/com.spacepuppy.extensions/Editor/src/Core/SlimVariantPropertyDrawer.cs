@@ -38,6 +38,9 @@ namespace com.spacepuppyeditor.Core
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
+
+            EditorGUI.BeginProperty(position, label, property);
+
             position = SPEditorGUI.SafePrefixLabel(position, label);
 
             var restrictTo = this.RestrictToType_Resolved;
@@ -70,6 +73,8 @@ namespace com.spacepuppyeditor.Core
 
                 this.DrawValueField(r1, property, vtype);
             }
+
+            EditorGUI.EndProperty();
         }
 
         protected void DrawValueField(Rect position, SerializedProperty property, VariantType vtype)

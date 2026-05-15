@@ -79,7 +79,9 @@ namespace com.spacepuppyeditor.Tween
         {
             if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
 
-            position = EditorGUI.PrefixLabel(position, label);
+            EditorGUI.BeginProperty(position, label, property);
+
+            position = SPEditorGUI.SafePrefixLabel(position, label);
 
             var tp = property.GetManagedReferenceType();
             EaseStyle? style = tp == typeof(EaseStyleSelector) ? (EaseStyle?)property.FindPropertyRelative(EaseStyleSelector.PROP_STYLE).GetEnumValue<EaseStyle>() : null;
@@ -129,6 +131,8 @@ namespace com.spacepuppyeditor.Tween
                     }
                     break;
             }
+
+            EditorGUI.EndProperty();
         }
     }
 

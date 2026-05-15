@@ -40,6 +40,8 @@ namespace com.spacepuppyeditor.Core
                 }
             }
 
+            EditorGUI.BeginProperty(position, label, property);
+
             EditorGUI.BeginChangeCheck();
             mask = EditorGUI.MaskField(position, label, mask, tags);
 
@@ -64,6 +66,7 @@ namespace com.spacepuppyeditor.Core
                 property.serializedObject.Update();
             }
 
+            EditorGUI.EndProperty();
         }
 
     }

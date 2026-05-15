@@ -55,6 +55,8 @@ namespace com.spacepuppyeditor.Statistics
             var catprop = property.FindPropertyRelative(PROP_CATEGORY);
             var tokenprop = property.FindPropertyRelative(PROP_TOKEN);
 
+            EditorGUI.BeginProperty(position, label, property);
+
             position = SPEditorGUI.SafePrefixLabel(position, label);
             var r0 = new Rect(position.xMin, position.yMin, Mathf.FloorToInt(position.width / 2f), position.height);
             var r1 = new Rect(r0.xMax + 1, position.yMin, position.width - r0.width - 1, position.height);
@@ -115,6 +117,8 @@ namespace com.spacepuppyeditor.Statistics
             {
                 tokenprop.stringValue = string.Empty;
             }
+
+            EditorGUI.EndProperty();
         }
 
         void DrawAsString(Rect position, SerializedProperty property, GUIContent label)
@@ -185,6 +189,8 @@ namespace com.spacepuppyeditor.Statistics
                 return;
             }
 
+            EditorGUI.BeginProperty(position, label, property);
+
             position = SPEditorGUI.SafePrefixLabel(position, label);
             string scategory = null;
             var sfilter = this.CategoryFilter;
@@ -236,6 +242,8 @@ namespace com.spacepuppyeditor.Statistics
             {
                 property.stringValue = EditorGUI.TextField(position, property.stringValue);
             }
+
+            EditorGUI.EndProperty();
         }
 
 

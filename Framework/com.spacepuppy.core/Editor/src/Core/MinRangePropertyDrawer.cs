@@ -20,20 +20,24 @@ namespace com.spacepuppyeditor.Core
             switch(attrib != null ? property.propertyType : SerializedPropertyType.Generic)
             {
                 case SerializedPropertyType.Float:
+                    EditorGUI.BeginProperty(position, label, property);
                     EditorGUI.BeginChangeCheck();
                     var fval = Mathf.Max(EditorGUI.FloatField(position, label, property.floatValue), attrib.Min);
                     if (EditorGUI.EndChangeCheck())
                     {
                         property.floatValue = fval;
                     }
+                    EditorGUI.EndProperty();
                     break;
                 case SerializedPropertyType.Integer:
+                    EditorGUI.BeginProperty(position, label, property);
                     EditorGUI.BeginChangeCheck();
                     var ival = (int)Mathf.Max(EditorGUI.IntField(position, label, property.intValue), attrib.Min);
                     if (EditorGUI.EndChangeCheck())
                     {
                         property.intValue = ival;
                     }
+                    EditorGUI.EndProperty();
                     break;
                 default:
                     SPEditorGUI.DefaultPropertyField(position, property, label);

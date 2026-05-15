@@ -27,13 +27,11 @@ namespace com.spacepuppyeditor.Core
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-            if (property.serializedObject.isEditingMultipleObjects)
-            {
-                EditorGUI.LabelField(position, label, EditorHelper.TempContent("Multi-Object editing not supported."));
-                return;
-            }
+            if (EditorHelper.AssertMultiObjectEditingNotSupported(position, property, label)) return;
 
             const float DROPDOWN_WIDTH = 75f;
+
+            EditorGUI.BeginProperty(position, label, property);
 
             var drawArea = SPEditorGUI.SafePrefixLabel(position, label);
             var labelArea = new Rect(position.xMin, position.yMin, position.width - drawArea.width - 1f, position.height);
@@ -97,6 +95,8 @@ namespace com.spacepuppyeditor.Core
                     }
                     break;
             }
+
+            EditorGUI.EndProperty();
         }
 
         static CurveType GetCurveType(object obj)

@@ -919,90 +919,80 @@ namespace com.spacepuppy.Utils
         private static class GlobalMessagePool<T> where T : class
         {
 
-            private enum ExecutingState
-            {
-                None,
-                Executing,
-                CleaningUp
-            }
-
             public static event System.Action HasReceiversChanged;
-            private static HashSet<T> _receivers;
-            private static ExecutingState _state;
-            private static TempHashSet<T> _toAdd;
-            private static TempHashSet<T> _toRemove;
+            private static HashSet<T> _receivers = new HashSet<T>();
+            private static TempHashSet<T> _buffer;
+            private static int _executionStackId = 0;
 
             public static int Count
             {
                 get { return _receivers?.Count ?? 0; }
             }
 
-            public static bool IsExecuting => _state != ExecutingState.None;
+            public static bool IsExecuting => _executionStackId > 0;
 
             public static void Add(T listener)
             {
-                if (_receivers == null) _receivers = new HashSet<T>();
-
-                switch (_state)
+                lock (_receivers)
                 {
-                    case ExecutingState.None:
+                    if (_executionStackId == 0)
+                    {
                         if (_receivers.Add(listener) && _receivers.Count == 1)
                         {
                             HasReceiversChanged?.Invoke();
                         }
-                        break;
-                    case ExecutingState.Executing:
-                        if (_toAdd == null) _toAdd = TempCollection.GetSet<T>();
-                        _toAdd.Add(listener);
-                        break;
-                    case ExecutingState.CleaningUp:
-                        if (_receivers.Add(listener) && _receivers.Count == 1)
-                        {
-                            HasReceiversChanged?.Invoke();
-                        }
-                        break;
+                    }
+                    else if (_buffer != null)
+                    {
+                        _buffer.Add(listener);
+                    }
+                    else
+                    {
+                        _buffer = TempCollection.GetSet<T>(_receivers);
+                        _buffer.Add(listener);
+                    }
                 }
             }
 
             public static void Remove(T listener)
             {
-                if (_receivers == null || _receivers.Count == 0) return;
+                if (_receivers.Count == 0) return;
 
-                switch (_state)
+                lock (_receivers)
                 {
-                    case ExecutingState.None:
+                    if (_executionStackId == 0)
+                    {
                         if (_receivers.Remove(listener) && _receivers.Count == 0)
                         {
                             HasReceiversChanged?.Invoke();
                         }
-                        break;
-                    case ExecutingState.Executing:
-                        if (_toRemove == null) _toRemove = TempCollection.GetSet<T>();
-                        _toRemove.Add(listener);
-                        break;
-                    case ExecutingState.CleaningUp:
-                        if (_receivers.Remove(listener) && _receivers.Count == 0)
-                        {
-                            HasReceiversChanged?.Invoke();
-                        }
-                        break;
+                    }
+                    else if (_buffer != null)
+                    {
+                        _buffer.Remove(listener);
+                    }
+                    else
+                    {
+                        _buffer = TempCollection.GetSet<T>(_receivers);
+                        _buffer.Remove(listener);
+                    }
                 }
             }
 
             public static bool Contains(T listener)
             {
-                return _receivers != null && _receivers.Contains(listener);
+                return _receivers.Contains(listener);
             }
 
             public static T[] CopyReceivers()
             {
-                if (_receivers == null || _receivers.Count == 0) return ArrayUtil.Empty<T>();
+                if (_receivers.Count == 0) return ArrayUtil.Empty<T>();
                 return _receivers.ToArray();
             }
 
             public static int CopyReceivers(ICollection<T> coll)
             {
-                if (_receivers == null || _receivers.Count == 0) return 0;
+                if (_receivers.Count == 0) return 0;
 
                 int cnt = coll.Count;
                 var e = _receivers.GetEnumerator();
@@ -1013,12 +1003,34 @@ namespace com.spacepuppy.Utils
                 return coll.Count - cnt;
             }
 
+            static void PostExecutionCleanUp()
+            {
+                _executionStackId = 0;
+                if (_buffer != null)
+                {
+                    var buffer = _buffer;
+                    _buffer = null;
+
+                    int cnt = _receivers.Count;
+                    _receivers.Clear();
+                    foreach (var o in buffer)
+                    {
+                        _receivers.Add(o);
+                    }
+                    buffer.Dispose();
+
+                    if ((cnt > 0 && _receivers.Count == 0) || (cnt == 0 && _receivers.Count > 0))
+                    {
+                        HasReceiversChanged?.Invoke();
+                    }
+                }
+            }
+
             public static void Signal(System.Action<T> functor)
             {
-                if (_state != ExecutingState.None) throw new System.InvalidOperationException("Can not globally broadcast a message currently executing.");
-                if (_receivers == null || _receivers.Count == 0) return;
+                if (_receivers.Count == 0) return;
 
-                _state = ExecutingState.Executing;
+                _executionStackId++;
                 try
                 {
                     var e = _receivers.GetEnumerator();
@@ -1029,7 +1041,7 @@ namespace com.spacepuppy.Utils
                             //skip & remove destroyed objects
                             Remove(e.Current);
                         }
-                        else
+                        else if (_buffer?.Contains(e.Current) ?? true)
                         {
                             try
                             {
@@ -1044,45 +1056,19 @@ namespace com.spacepuppy.Utils
                 }
                 finally
                 {
-                    _state = ExecutingState.CleaningUp;
-
-                    int cnt = _receivers.Count;
-                    if (_toRemove != null)
+                    _executionStackId--;
+                    if (_executionStackId <= 0)
                     {
-                        var e = _toRemove.GetEnumerator();
-                        while (e.MoveNext())
-                        {
-                            _receivers.Remove(e.Current);
-                        }
-                        _toRemove.Dispose();
-                        _toRemove = null;
-                    }
-
-                    if (_toAdd != null)
-                    {
-                        var e = _toAdd.GetEnumerator();
-                        while (e.MoveNext())
-                        {
-                            _receivers.Add(e.Current);
-                        }
-                        _toAdd.Dispose();
-                        _toAdd = null;
-                    }
-
-                    _state = ExecutingState.None;
-                    if ((cnt > 0 && _receivers.Count == 0) || (cnt == 0 && _receivers.Count > 0))
-                    {
-                        HasReceiversChanged?.Invoke();
+                        PostExecutionCleanUp();
                     }
                 }
             }
 
             public static void Signal<TArg>(TArg arg, System.Action<T, TArg> functor)
             {
-                if (_state != ExecutingState.None) throw new System.InvalidOperationException("Can not globally broadcast a message currently executing.");
-                if (_receivers == null || _receivers.Count == 0) return;
+                if (_receivers.Count == 0) return;
 
-                _state = ExecutingState.Executing;
+                _executionStackId++;
                 try
                 {
                     var e = _receivers.GetEnumerator();
@@ -1093,7 +1079,7 @@ namespace com.spacepuppy.Utils
                             //skip & remove destroyed objects
                             Remove(e.Current);
                         }
-                        else
+                        else if (_buffer?.Contains(e.Current) ?? true)
                         {
                             try
                             {
@@ -1108,45 +1094,19 @@ namespace com.spacepuppy.Utils
                 }
                 finally
                 {
-                    _state = ExecutingState.CleaningUp;
-
-                    int cnt = _receivers.Count;
-                    if (_toRemove != null)
+                    _executionStackId--;
+                    if (_executionStackId <= 0)
                     {
-                        var e = _toRemove.GetEnumerator();
-                        while (e.MoveNext())
-                        {
-                            _receivers.Remove(e.Current);
-                        }
-                        _toRemove.Dispose();
-                        _toRemove = null;
-                    }
-
-                    if (_toAdd != null)
-                    {
-                        var e = _toAdd.GetEnumerator();
-                        while (e.MoveNext())
-                        {
-                            _receivers.Add(e.Current);
-                        }
-                        _toAdd.Dispose();
-                        _toAdd = null;
-                    }
-
-                    _state = ExecutingState.None;
-                    if ((cnt > 0 && _receivers.Count == 0) || (cnt == 0 && _receivers.Count > 0))
-                    {
-                        HasReceiversChanged?.Invoke();
+                        PostExecutionCleanUp();
                     }
                 }
             }
 
             public static void Signal(System.Action<T> functor, System.Comparison<T> sort)
             {
-                if (_state != ExecutingState.None) throw new System.InvalidOperationException("Can not globally broadcast a message currently executing.");
-                if (_receivers == null || _receivers.Count == 0) return;
+                if (_receivers.Count == 0) return;
 
-                _state = ExecutingState.Executing;
+                _executionStackId++;
                 try
                 {
                     using (var lst = TempCollection.GetList<T>(_receivers))
@@ -1156,9 +1116,9 @@ namespace com.spacepuppy.Utils
                         {
                             if (o is UnityEngine.Object uo && uo == null)
                             {
-                                _receivers.Remove(o);
+                                Remove(o);
                             }
-                            else
+                            else if (_buffer?.Contains(o) ?? true)
                             {
                                 try
                                 {
@@ -1174,17 +1134,19 @@ namespace com.spacepuppy.Utils
                 }
                 finally
                 {
-                    _state = ExecutingState.None;
-                    if (_receivers.Count == 0) HasReceiversChanged?.Invoke();
+                    _executionStackId--;
+                    if (_executionStackId <= 0)
+                    {
+                        PostExecutionCleanUp();
+                    }
                 }
             }
 
             public static void Signal<TArg>(TArg arg, System.Action<T, TArg> functor, System.Comparison<T> sort)
             {
-                if (_state != ExecutingState.None) throw new System.InvalidOperationException("Can not globally broadcast a message currently executing.");
-                if (_receivers == null || _receivers.Count == 0) return;
+                if (_receivers.Count == 0) return;
 
-                _state = ExecutingState.Executing;
+                _executionStackId++;
                 try
                 {
                     using (var lst = TempCollection.GetList<T>(_receivers))
@@ -1194,9 +1156,9 @@ namespace com.spacepuppy.Utils
                         {
                             if (o is UnityEngine.Object uo && uo == null)
                             {
-                                _receivers.Remove(o);
+                                Remove(o);
                             }
-                            else
+                            else if (_buffer?.Contains(o) ?? true)
                             {
                                 try
                                 {
@@ -1212,8 +1174,11 @@ namespace com.spacepuppy.Utils
                 }
                 finally
                 {
-                    _state = ExecutingState.None;
-                    if (_receivers.Count == 0) HasReceiversChanged?.Invoke();
+                    _executionStackId--;
+                    if (_executionStackId <= 0)
+                    {
+                        PostExecutionCleanUp();
+                    }
                 }
             }
 

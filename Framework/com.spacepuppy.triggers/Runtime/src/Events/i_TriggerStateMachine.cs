@@ -842,6 +842,18 @@ namespace com.spacepuppy.Events
             }
         }
 
+
+        /// <summary>
+        /// Defines a script that drives a statemachines current state as well as facilitates editor logic for state names.
+        /// </summary>
+        public interface IStateDriverComponent : IComponent
+        {
+            i_TriggerStateMachine StateMachine { get; }
+            bool AllowUserDefinedStates => false;
+            IEnumerable<string> GetStateIds();
+            void Sync();
+        }
+
         #endregion
 
     }

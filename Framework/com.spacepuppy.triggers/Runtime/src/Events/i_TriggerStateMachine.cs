@@ -66,7 +66,9 @@ namespace com.spacepuppy.Events
         {
             base.Start();
 
-            if (_states.CurrentState == null || _returnToInitialStateOnEnable)
+            bool overridechange = _states.StateChangedFlag;
+            _states.StateChangedFlag = false;
+            if (_states.CurrentState == null || (!overridechange && _returnToInitialStateOnEnable))
             {
                 _states.GoToState(_initialState);
             }
@@ -76,10 +78,19 @@ namespace com.spacepuppy.Events
         {
             base.OnEnable();
 
-            if (_returnToInitialStateOnEnable && this.started)
+            bool overridechange = _states.StateChangedFlag;
+            _states.StateChangedFlag = false;
+            if (!overridechange && _returnToInitialStateOnEnable && this.started)
             {
                 _states.GoToState(_initialState);
             }
+        }
+
+        protected override void OnDisable()
+        {
+            base.OnDisable();
+
+            _states.StateChangedFlag = false;
         }
 
         #endregion
@@ -272,6 +283,11 @@ namespace com.spacepuppy.Events
 
             public i_TriggerStateMachine Owner { get; internal set; }
 
+            /// <summary>
+            /// Set true when a state transition occurs.
+            /// </summary>
+            internal bool StateChangedFlag { get; set; }
+
             #endregion
 
             #region Methods
@@ -340,6 +356,7 @@ namespace com.spacepuppy.Events
 
             public virtual void GoToState(int index)
             {
+                this.StateChangedFlag = true;
                 if (_currentState != index && _currentState >= 0)
                 {
                     var trans = this.Owner?.StateTransition;

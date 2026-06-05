@@ -2,6 +2,7 @@
 
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace com.spacepuppy.Events
 {
@@ -25,7 +26,7 @@ namespace com.spacepuppy.Events
         private SPEvent _trigger = new SPEvent();
 
         [System.NonSerialized()]
-        private HashSet<ObservableTargetData> _activatedTriggers = new HashSet<ObservableTargetData>();
+        private HashSet<IObservableTrigger> _activatedTriggers = new HashSet<IObservableTrigger>();
         [System.NonSerialized()]
         private bool _triggered;
 
@@ -85,7 +86,7 @@ namespace com.spacepuppy.Events
             for (int i = 0; i < _observedTargets.Count; i++)
             {
                 targ = _observedTargets[i];
-                if(targ != null)
+                if (targ != null)
                 {
                     targ.Init();
                     targ.TriggerActivated += d;
@@ -112,10 +113,20 @@ namespace com.spacepuppy.Events
         {
             if (_triggered) return;
 
-            var targ = sender as ObservableTargetData;
+            var targ = sender as IObservableTrigger;
             if (targ != null) _activatedTriggers.Add(targ);
 
-            if (_activatedTriggers.SetEquals(_observedTargets))
+            bool all = true;
+            foreach (var o in _observedTargets)
+            {
+                if (!_activatedTriggers.Contains(o.Target))
+                {
+                    all = false;
+                    return;
+                }
+            }
+
+            if (all)
             {
                 _activatedTriggers.Clear();
                 if (this._resetOnTriggered)

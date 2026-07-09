@@ -110,7 +110,25 @@ namespace com.spacepuppy.UI
 
         #region Methods
 
-        public void Sync() => this.Sync(_target ? SelectableOverride.GetCurrentSelectionState(_target) : SelectionState.Normal);
+        public void Sync()
+        {
+            //this.Sync(_target ? SelectableOverride.GetCurrentSelectionState(_target) : SelectionState.Normal);
+            if (_target)
+            {
+                if (_target.TryGetComponent(out SelectableOverride over))
+                {
+                    this.Sync(over.CurrentSelectionState);
+                }
+                else
+                {
+                    this.Sync(SelectableOverride.GetCurrentSelectionState(_target));
+                }
+            }
+            else
+            {
+                this.Sync(SelectionState.Normal);
+            }
+        }
         void Sync(SelectionState state)
         {
             _lastKnownState = state;

@@ -26,6 +26,12 @@ namespace com.spacepuppy.UI
             Selected,
             Disabled,
         }
+        /// <summary>
+        /// Return the 'currentSelectionState' of the Selectable, regardless of of it's got a SelectableOverride. 
+        /// If a SelectableOverride is attached, use that instead. 
+        /// </summary>
+        /// <param name="selectable"></param>
+        /// <returns></returns>
         public static SelectionState GetCurrentSelectionState(Selectable selectable) => (SelectionState)SelectableProtectedHook.GetCurrentSelectionState_Internal(selectable);
 
         #region Fields

@@ -38,26 +38,33 @@ namespace com.spacepuppyeditor.UI
 
         bool EditorHelper.ISerializedWrapperHelper.SetValue(SerializedProperty property, object value)
         {
-            if (ObjUtil.GetAsFromSource(value, out UnityEngine.UI.Text txt))
-            {
-                property.FindPropertyRelative("_target").objectReferenceValue = txt;
-            }
-            else if (ObjUtil.GetAsFromSource(value, out UnityEngine.UI.InputField ifld))
-            {
-                property.FindPropertyRelative("_target").objectReferenceValue = ifld;
-            }
-            else if (ObjUtil.GetAsFromSource(value, out TMPro.TMP_Text tmp_txt))
-            {
-                property.FindPropertyRelative("_target").objectReferenceValue = tmp_txt;
-            }
-            else if (ObjUtil.GetAsFromSource(value, out TMPro.TMP_InputField tmp_ifld))
-            {
-                property.FindPropertyRelative("_target").objectReferenceValue = tmp_ifld;
-            }
-            else
-            {
-                property.FindPropertyRelative("_target").objectReferenceValue = null;
-            }
+            //            if (ObjUtil.GetAsFromSource(value, out com.spacepuppy.Project.ITextField tf) && tf is UnityEngine.Object)
+            //            {
+            //                property.FindPropertyRelative("_target").objectReferenceValue = tf as UnityEngine.Object;
+            //            }
+            //            else if (ObjUtil.GetAsFromSource(value, out UnityEngine.UI.Text txt))
+            //            {
+            //                property.FindPropertyRelative("_target").objectReferenceValue = txt;
+            //            }
+            //            else if (ObjUtil.GetAsFromSource(value, out UnityEngine.UI.InputField ifld))
+            //            {
+            //                property.FindPropertyRelative("_target").objectReferenceValue = ifld;
+            //            }
+            //#if SP_TMPRO
+            //            else if (ObjUtil.GetAsFromSource(value, out TMPro.TMP_Text tmp_txt))
+            //            {
+            //                property.FindPropertyRelative("_target").objectReferenceValue = tmp_txt;
+            //            }
+            //            else if (ObjUtil.GetAsFromSource(value, out TMPro.TMP_InputField tmp_ifld))
+            //            {
+            //                property.FindPropertyRelative("_target").objectReferenceValue = tmp_ifld;
+            //            }
+            //#endif
+            //            else
+            //            {
+            //                property.FindPropertyRelative("_target").objectReferenceValue = null;
+            //            }
+            property.FindPropertyRelative("_target").objectReferenceValue = StringUtil.GetAsTextBindingTarget(value, true);
             return true;
         }
 

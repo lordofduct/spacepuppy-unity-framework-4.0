@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 
 using com.spacepuppy.Collections;
+using ITextField = com.spacepuppy.Project.ITextField;
 
 namespace com.spacepuppy.Utils
 {
@@ -462,19 +463,19 @@ namespace com.spacepuppy.Utils
         #region Text Binders
 
 #if SP_TMPRO
-        private static readonly System.Type[] _availableTextTargTypes = new System.Type[] { typeof(UnityEngine.TextAsset), typeof(UnityEngine.UI.Text), typeof(UnityEngine.UI.InputField), typeof(TMPro.TMP_Text), typeof(TMPro.TMP_InputField) };
-        private static readonly System.Type[] _availableTextInputTargTypes = new System.Type[] { typeof(UnityEngine.UI.InputField), typeof(TMPro.TMP_InputField) };
+        private static readonly System.Type[] _availableTextTargTypes = new System.Type[] { typeof(UnityEngine.TextAsset), typeof(UnityEngine.UI.Text), typeof(UnityEngine.UI.InputField), typeof(TMPro.TMP_Text), typeof(TMPro.TMP_InputField), typeof(ITextField) };
+        private static readonly System.Type[] _availableTextInputTargTypes = new System.Type[] { typeof(UnityEngine.UI.InputField), typeof(TMPro.TMP_InputField), typeof(ITextField) };
 #else
-        private static readonly System.Type[] _availableTextTargTypes = new System.Type[] { typeof(UnityEngine.TextAsset), typeof(UnityEngine.UI.Text), typeof(UnityEngine.UI.InputField) };
-        private static readonly System.Type[] _availableTextInputTargTypes = new System.Type[] { typeof(UnityEngine.UI.InputField) };
+        private static readonly System.Type[] _availableTextTargTypes = new System.Type[] { typeof(UnityEngine.TextAsset), typeof(UnityEngine.UI.Text), typeof(UnityEngine.UI.InputField), typeof(ITextField) };
+        private static readonly System.Type[] _availableTextInputTargTypes = new System.Type[] { typeof(UnityEngine.UI.InputField), typeof(ITextField) };
 #endif
 
 #if SP_TMPRO
-        private static readonly System.Type[] _availableTextTargTypes_WithProxy = new System.Type[] { typeof(UnityEngine.TextAsset), typeof(UnityEngine.UI.Text), typeof(UnityEngine.UI.InputField), typeof(TMPro.TMP_Text), typeof(TMPro.TMP_InputField), typeof(IProxy) };
-        private static readonly System.Type[] _availableTextInputTargTypes_WithProxy = new System.Type[] { typeof(UnityEngine.UI.InputField), typeof(TMPro.TMP_InputField), typeof(IProxy) };
+        private static readonly System.Type[] _availableTextTargTypes_WithProxy = new System.Type[] { typeof(UnityEngine.TextAsset), typeof(UnityEngine.UI.Text), typeof(UnityEngine.UI.InputField), typeof(TMPro.TMP_Text), typeof(TMPro.TMP_InputField), typeof(ITextField), typeof(IProxy) };
+        private static readonly System.Type[] _availableTextInputTargTypes_WithProxy = new System.Type[] { typeof(UnityEngine.UI.InputField), typeof(TMPro.TMP_InputField), typeof(ITextField), typeof(IProxy) };
 #else
-        private static readonly System.Type[] _availableTextTargTypes_WithProxy  = new System.Type[] {typeof(UnityEngine.TextAsset), typeof(UnityEngine.UI.Text), typeof(UnityEngine.UI.InputField), typeof(IProxy) };
-        private static readonly System.Type[] _availableTextInputTargTypes_WithProxy  = new System.Type[] { typeof(UnityEngine.UI.InputField), typeof(IProxy) };
+        private static readonly System.Type[] _availableTextTargTypes_WithProxy  = new System.Type[] {typeof(UnityEngine.TextAsset), typeof(UnityEngine.UI.Text), typeof(UnityEngine.UI.InputField), typeof(ITextField), typeof(IProxy) };
+        private static readonly System.Type[] _availableTextInputTargTypes_WithProxy  = new System.Type[] { typeof(UnityEngine.UI.InputField), typeof(ITextField), typeof(IProxy) };
 #endif
 
         public static UnityEngine.Object GetAsTextBindingTarget(object obj, bool preserveProxy = false) => preserveProxy ? ObjUtil.GetAsFromSource(_availableTextTargTypes_WithProxy, obj) as UnityEngine.Object : ObjUtil.GetAsFromSource(_availableTextTargTypes, obj, true) as UnityEngine.Object;
@@ -492,6 +493,8 @@ namespace com.spacepuppy.Utils
             {
                 case UnityEngine.TextAsset ta:
                     return ta.text;
+                case ITextField tf:
+                    return tf.text;
                 case UnityEngine.UI.Text utxt:
                     return utxt.text;
                 case UnityEngine.UI.InputField uifld:
@@ -518,6 +521,9 @@ namespace com.spacepuppy.Utils
             {
                 case UnityEngine.TextAsset ta:
                     return false; //TextAsset is readonly
+                case ITextField tf:
+                    tf.text = stxt;
+                    return true;
                 case UnityEngine.UI.Text utxt:
                     utxt.text = stxt;
                     return true;
@@ -546,6 +552,8 @@ namespace com.spacepuppy.Utils
         {
             switch (StringUtil.GetAsTextBindingTarget(target, false))
             {
+                case ITextField tf:
+                    return tf.color;
                 case UnityEngine.UI.Text utxt:
                     return utxt.color;
                 case UnityEngine.UI.InputField uifld:
@@ -570,6 +578,9 @@ namespace com.spacepuppy.Utils
         {
             switch (StringUtil.GetAsTextBindingTarget(target, false))
             {
+                case ITextField tf:
+                    tf.color = c;
+                    return true;
                 case UnityEngine.UI.Text utxt:
                     utxt.color = c;
                     return true;

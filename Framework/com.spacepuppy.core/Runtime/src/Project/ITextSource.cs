@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace com.spacepuppy.Project
 {
@@ -13,6 +11,13 @@ namespace com.spacepuppy.Project
         string this[int index] { get; }
         int Count { get; }
 
+    }
+
+    public interface ITextField
+    {
+        string text { get; set; }
+        UnityEngine.Color color { get; set; }
+        
     }
 
 }

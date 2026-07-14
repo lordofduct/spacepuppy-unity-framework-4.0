@@ -1,6 +1,7 @@
 using UnityEngine;
 
 using com.spacepuppy.Utils;
+using ITextField = com.spacepuppy.Project.ITextField;
 
 namespace com.spacepuppy.Statistics.UI
 {
@@ -24,18 +25,18 @@ namespace com.spacepuppy.Statistics.UI
         [SerializeField, DefaultFromSelf]
         [RespectsIProxy]
 #if SP_TMPRO
-        [TypeRestriction(typeof(UnityEngine.UI.Text), typeof(UnityEngine.UI.InputField), typeof(TMPro.TMP_Text), typeof(TMPro.TMP_InputField), typeof(IProxy), AllowProxy = true)]
+        [TypeRestriction(typeof(UnityEngine.UI.Text), typeof(UnityEngine.UI.InputField), typeof(TMPro.TMP_Text), typeof(TMPro.TMP_InputField), typeof(ITextField), typeof(IProxy), AllowProxy = true)]
 #else
-        [TypeRestriction(typeof(UnityEngine.UI.Text), typeof(UnityEngine.UI.InputField), typeof(IProxy), AllowProxy = true)]
+        [TypeRestriction(typeof(UnityEngine.UI.Text), typeof(UnityEngine.UI.InputField), typeof(ITextField), typeof(IProxy), AllowProxy = true)]
 #endif
         private UnityEngine.Object _valueTarget;
 
         [SerializeField, DefaultFromSelf]
         [RespectsIProxy]
 #if SP_TMPRO
-        [TypeRestriction(typeof(UnityEngine.UI.Text), typeof(UnityEngine.UI.InputField), typeof(TMPro.TMP_Text), typeof(TMPro.TMP_InputField), typeof(IProxy), AllowProxy = true)]
+        [TypeRestriction(typeof(UnityEngine.UI.Text), typeof(UnityEngine.UI.InputField), typeof(TMPro.TMP_Text), typeof(TMPro.TMP_InputField), typeof(ITextField), typeof(IProxy), AllowProxy = true)]
 #else
-        [TypeRestriction(typeof(UnityEngine.UI.Text), typeof(UnityEngine.UI.InputField), typeof(IProxy), AllowProxy = true)]
+        [TypeRestriction(typeof(UnityEngine.UI.Text), typeof(UnityEngine.UI.InputField), typeof(ITextField), typeof(IProxy), AllowProxy = true)]
 #endif
         private UnityEngine.Object _nameTarget;
 

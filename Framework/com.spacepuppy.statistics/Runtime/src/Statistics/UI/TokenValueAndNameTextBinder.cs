@@ -11,6 +11,7 @@ namespace com.spacepuppy.Statistics.UI
 
         public enum DisplayModes
         {
+            Callback = -2,
             Nullable = -1,
             Double = 0,
             Int = 1,
@@ -111,6 +112,8 @@ namespace com.spacepuppy.Statistics.UI
             set => _nameFormatting = value;
         }
 
+        public System.Func<IStatisticsTokenLedger, StatId, string> FormatCallback { get; set; }
+
         #endregion
 
         #region Methods
@@ -129,6 +132,9 @@ namespace com.spacepuppy.Statistics.UI
                 string stxt = string.Empty;
                 switch (_displayMode)
                 {
+                    case DisplayModes.Callback:
+                        stxt = this.FormatCallback?.Invoke(service, _statId) ?? string.Empty;
+                        break;
                     case DisplayModes.Nullable:
                         stxt = string.IsNullOrEmpty(_valueFormatting) ? ConvertUtil.ToString(service.GetStat(_statId)) : string.Format(_valueFormatting, service.GetStat(_statId));
                         break;

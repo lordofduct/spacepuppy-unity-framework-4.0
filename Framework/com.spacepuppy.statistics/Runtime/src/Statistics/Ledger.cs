@@ -1088,7 +1088,7 @@ namespace com.spacepuppy.Statistics
         /// </summary>
         public class MaximumStatModifier : IStatModifier
         {
-            public static readonly StandardStatModifier Default = new();
+            public static readonly MaximumStatModifier Default = new();
 
             public bool AdjustStat(Ledger ledger, StatId stat, double amount)
             {

@@ -468,7 +468,20 @@ namespace com.spacepuppyeditor.Settings
                     Undo.RecordObject(settings, "Build - Version Increment");
                     settings.Version.Build++;
                     EditorHelper.CommitDirectChanges(settings, true);
-                    PlayerSettings.bundleVersion = settings.Version.ToString();
+                    switch (settings.BuildTarget)
+                    {
+                        case BuildTarget.iOS:
+                            {
+                                var v = settings.Version;
+                                PlayerSettings.bundleVersion = $"{v.Major}.{v.Minor}.{v.Patch}";
+                                PlayerSettings.iOS.buildNumber = v.Build.ToString();
+                            }
+                            break;
+                        default:
+                            PlayerSettings.bundleVersion = settings.Version.ToString();
+                            break;
+                    }
+
                     AssetDatabase.SaveAssets();
 
                     //build

@@ -10,7 +10,7 @@ using com.spacepuppyeditor;
 
 using com.spacepuppy.IAP.Events;
 
-namespace com.vivariumeditor.Events
+namespace com.spacepuppyeditor.IAP.Events
 {
 
     [CustomEditor(typeof(i_PerformIAPPurchase))]

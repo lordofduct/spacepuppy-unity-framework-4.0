@@ -145,6 +145,27 @@ namespace com.spacepuppy
         }
         public EventHandlerRef<OnTriggeredTempEventArgs> OnTriggered_ref() => EventHandlerRef<OnTriggeredTempEventArgs>.Create(this, (o, l) => o.OnTriggered += l, (o, l) => o.OnTriggered -= l);
 
+        public event System.EventHandler OnTargetsChanged
+        {
+            add
+            {
+                CrossDomainHook hook;
+                if (FindHook(this, out hook))
+                {
+                    hook.OnTargetsChanged += value;
+                }
+            }
+            remove
+            {
+                CrossDomainHook hook;
+                if (FindHook(this, out hook, true))
+                {
+                    hook.OnTargetsChanged -= value;
+                }
+            }
+        }
+        public EventHandlerRef OnTargetsChanged_ref() => EventHandlerRef.Create(this, (o, l) => o.OnTargetsChanged += l, (o, l) => o.OnTargetsChanged -= l);
+
         #region Fields
 
         [SerializeField]
@@ -211,7 +232,7 @@ namespace com.spacepuppy
 
         #region Methods
 
-        public Deque<object> GetTargetsCollection(bool createIfNull = false)
+        Deque<object> GetTargetsCollection(bool createIfNull = false)
         {
             CrossDomainHook hook;
             if (FindHook(this, out hook))
@@ -224,29 +245,67 @@ namespace com.spacepuppy
                 return null;
             }
         }
+        public IEnumerable<object> GetProxyTargets() => this.GetTargetsCollection() ?? Enumerable.Empty<object>();
 
         public bool SetProxyTarget(object target)
         {
             var coll = this.GetTargetsCollection(true);
             if (coll == null) return false;
 
+            bool signal = coll.Count > 0;
             coll.Clear();
-            if (target != null) coll.Push(target);
+            if (target != null)
+            {
+                coll.Push(target);
+                signal = true;
+            }
+            if (signal) this.SignalTargetsChanged();
             return true;
         }
 
-        public void ClearProxyTargets() => this.GetTargetsCollection(false)?.Clear();
+        public void ClearProxyTargets()
+        {
+            var coll = this.GetTargetsCollection(false);
+            if (coll != null && coll.Count > 0)
+            {
+                coll.Clear();
+                this.SignalTargetsChanged();
+            }
+        }
 
         public void PushProxyTarget(object target)
         {
             if (target == null) throw new System.ArgumentNullException(nameof(target));
             this.GetTargetsCollection(true).Push(target);
+            this.SignalTargetsChanged();
         }
 
         public object PopProxyTarget()
         {
             var coll = this.GetTargetsCollection(false);
-            return coll?.Count > 0 ? coll.Pop() : null;
+            if (coll?.Count > 0)
+            {
+                var inst = coll.Pop();
+                this.SignalTargetsChanged();
+                return inst;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        public bool RemoveProxyTarget(object target)
+        {
+            if (this.GetTargetsCollection(false)?.Remove(target) ?? false)
+            {
+                this.SignalTargetsChanged();
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         public IRadicalWaitHandle WaitForNextTrigger()
@@ -304,6 +363,14 @@ namespace com.spacepuppy
                     h.SignalComplete();
                     (h as System.IDisposable).Dispose();
                 }
+            }
+        }
+
+        void SignalTargetsChanged()
+        {
+            if (FindHook(this, out CrossDomainHook hook))
+            {
+                hook.OnTargetsChanged?.Invoke(this, System.EventArgs.Empty);
             }
         }
 
@@ -391,6 +458,7 @@ namespace com.spacepuppy
         private class CrossDomainHook
         {
             public System.EventHandler<OnTriggeredTempEventArgs> OnTriggered;
+            public System.EventHandler OnTargetsChanged;
             public RadicalWaitHandle Handle;
             public Deque<object> Targets;
             public int RefCount;

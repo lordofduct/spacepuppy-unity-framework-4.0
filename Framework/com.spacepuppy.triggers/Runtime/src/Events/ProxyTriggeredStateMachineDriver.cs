@@ -3,12 +3,14 @@ using System.Collections.Generic;
 
 using com.spacepuppy.Project;
 using com.spacepuppy.Utils;
+using System.Linq;
 
 namespace com.spacepuppy.Events
 {
 
+    [Infobox("When a proxy is triggered the respective state is enabled.")]
     [RequireComponent(typeof(i_TriggerStateMachine))]
-    public sealed class TriggerStateMachineProxyLink : SPComponent, IMStartOrEnableReceiver
+    public sealed class ProxyTriggeredStateMachineDriver : SPComponent, IMStartOrEnableReceiver
     {
 
         #region Fields
@@ -29,6 +31,8 @@ namespace com.spacepuppy.Events
         void IMStartOrEnableReceiver.OnStartOrEnable()
         {
             if (_stateMachine.Value == null) _stateMachine.Value = this.GetComponent<IStateMachine>();
+
+            _eventTokens.Dispose();
             for (int i = 0; i < _links.Count; i++)
             {
                 if (_links[i].Proxy) _eventTokens += _links[i].Proxy.OnTriggered_ref().AddTrackedListener(Proxy_OnTriggered);

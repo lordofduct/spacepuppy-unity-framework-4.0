@@ -53,7 +53,7 @@ namespace com.spacepuppyeditor
             return edited;
         }
 
-        [SPUpgrade.YamlUpgradeCallback(typeof(TriggerStateMachineProxyLink))]
+        [SPUpgrade.YamlUpgradeCallback(typeof(ProxyTriggeredStateMachineDriver))]
         static bool UpgradeAssetYAML_TriggerStateMachineProxyLink(string assetPath)
         {
             bool edited = false;
@@ -61,7 +61,7 @@ namespace com.spacepuppyeditor
             {
                 AssetRawTextReader.SerailizedFieldResult field;
                 string ln;
-                while ((ln = reader.ReadUntilScript(typeof(TriggerStateMachineProxyLink))) != null)
+                while ((ln = reader.ReadUntilScript(typeof(ProxyTriggeredStateMachineDriver))) != null)
                 {
                     if (reader.SeekUntilSerializedField("_stateMachine", out field, true) && !(reader.Peek(1)?.Contains("_obj:") ?? false)) //the field is no longer named this so this is our test for re-processing
                     {

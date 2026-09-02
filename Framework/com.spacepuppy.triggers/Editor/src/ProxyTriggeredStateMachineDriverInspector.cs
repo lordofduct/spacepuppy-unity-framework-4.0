@@ -10,8 +10,8 @@ using com.spacepuppyeditor.Internal;
 namespace com.spacepuppyeditor.Events
 {
 
-    [CustomEditor(typeof(TriggerStateMachineProxyLink))]
-    public class TriggerStateMachineProxyLinkInspector : SPEditor
+    [CustomEditor(typeof(ProxyTriggeredStateMachineDriver))]
+    public class ProxyTriggeredStateMachineDriverInspector : SPEditor
     {
 
         private const string PROP_STATEMACHINE = "_stateMachine";
@@ -70,8 +70,8 @@ namespace com.spacepuppyeditor.Events
         private void _lstDrawer_DrawElement(Rect area, int index, bool isActive, bool isFocused)
         {
             var prop_element = _lst_drawer.serializedProperty.GetArrayElementAtIndex(index);
-            var prop_id = prop_element.FindPropertyRelative(nameof(TriggerStateMachineProxyLink.ProxyLink.Id));
-            var prop_proxy = prop_element.FindPropertyRelative(nameof(TriggerStateMachineProxyLink.ProxyLink.Proxy));
+            var prop_id = prop_element.FindPropertyRelative(nameof(ProxyTriggeredStateMachineDriver.ProxyLink.Id));
+            var prop_proxy = prop_element.FindPropertyRelative(nameof(ProxyTriggeredStateMachineDriver.ProxyLink.Proxy));
 
             var r0 = new Rect(area.xMin, area.yMin, Mathf.Floor(area.width * 0.4f), area.height);
             var r1 = new Rect(r0.xMax + 1, area.yMin, area.width - r0.width - 1, area.height);

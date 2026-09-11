@@ -21,6 +21,9 @@ namespace com.spacepuppy.Events
         [Tooltip("One or Many, if many they will be randomly selected by the weights supplied.")]
         private AudioClipEntry[] _clips = ArrayUtil.Empty<AudioClipEntry>();
 
+        [SerializeField]
+        private float _volumeScale = 1f;
+
         [SerializeField()]
         private AudioInterruptMode _interrupt = AudioInterruptMode.StopIfPlaying;
 
@@ -50,6 +53,12 @@ namespace com.spacepuppy.Events
         {
             get { return _clips; }
             set { _clips = value ?? ArrayUtil.Empty<AudioClipEntry>(); }
+        }
+
+        public float VolumeScale
+        {
+            get => _volumeScale;
+            set => _volumeScale = value;
         }
 
         public AudioInterruptMode Interrupt
@@ -150,14 +159,14 @@ namespace com.spacepuppy.Events
             {
                 if (this && this.isActiveAndEnabled && _onAudioComplete.HasReceivers)
                 {
-                    src.PlayOneShot(clip, _interrupt, () =>
+                    src.PlayOneShot(clip, _volumeScale, _interrupt, () =>
                     {
                         if (this && this.isActiveAndEnabled) _onAudioComplete.ActivateTrigger(this, null);
                     });
                 }
                 else
                 {
-                    src.PlayOneShot(clip, _interrupt);
+                    src.PlayOneShot(clip, _volumeScale, _interrupt);
                 }
             }
         }

@@ -12,7 +12,7 @@ namespace com.spacepuppyeditor.Spawn
     public static class SpawnMenu
     {
 
-        [MenuItem(SPMenu.MENU_NAME_ROOT + "/Create Default SpawnPool", priority = SPMenu.MENU_PRIORITY_SINGLETON + 1)]
+        [MenuItem(SPMenu.MENU_NAME_ROOT + "/Create Default SpawnPool", priority = SPMenu.MENU_PRIORITY_GROUP3)]
         public static void CreateDefaultSpawnPool()
         {
             if (!SpawnPool.HasRegisteredPrimaryPool) SpawnPool.FindOrCreatePrimaryPool();

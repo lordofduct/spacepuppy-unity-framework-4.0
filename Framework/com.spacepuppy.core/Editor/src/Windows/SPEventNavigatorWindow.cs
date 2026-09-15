@@ -29,7 +29,7 @@ namespace com.spacepuppyeditor.Windows
 
         #region Menu Entries
 
-        [MenuItem("Spacepuppy/SPEvent Navigator", priority = int.MaxValue - 1)]
+        [MenuItem("Spacepuppy/SPEvent Navigator", priority = SPMenu.MENU_PRIORITY_GROUP4 - 1)]
         public static void OpenWindow()
         {
             if (_openWindow == null)

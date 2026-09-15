@@ -29,9 +29,13 @@ namespace com.spacepuppyeditor
         public const int MENU_PRIORITY_MODELS = MENU_PRIORITY_GROUP3 - 1;
         public const int MENU_PRIORITY_TOOLS = MENU_PRIORITY_GROUP4 - 1;
 
-        public const int MENU_PRIORITY_SINGLETON = 1000000;
-
         #region Special Menu Entries
+
+        [MenuItem(SPMenu.MENU_NAME_ROOT + "/Open Persistent Data Path", priority = SPMenu.MENU_PRIORITY_GROUP4 - 2)]
+        public static void OpenPersistentDataFolder()
+        {
+            EditorUtility.RevealInFinder(Application.persistentDataPath);
+        }
 
         [MenuItem(SPMenu.MENU_NAME_SETTINGS + "/Sync TagData", priority = SPMenu.MENU_PRIORITY_SETTINGS)]
         public static void SyncTagData()

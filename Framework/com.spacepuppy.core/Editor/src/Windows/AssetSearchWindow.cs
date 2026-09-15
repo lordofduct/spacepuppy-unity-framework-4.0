@@ -18,7 +18,7 @@ namespace com.spacepuppyeditor.Windows
 
         #region Menu Entries
 
-        [MenuItem("Spacepuppy/Search...", priority = int.MaxValue)]
+        [MenuItem("Spacepuppy/Search...", priority = SPMenu.MENU_PRIORITY_GROUP4)]
         public static void OpenWindow()
         {
             if (_openWindow == null)

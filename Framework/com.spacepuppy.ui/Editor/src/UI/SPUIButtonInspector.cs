@@ -20,6 +20,7 @@ namespace com.spacepuppyeditor.UI
             EditorGUILayout.Space();
             base.serializedObject.Update();
             SPEditorGUILayout.PropertyField(this.serializedObject.FindProperty("_onClick"));
+            SPEditorGUILayout.PropertyField(this.serializedObject.FindProperty("_disableBubblingOnClickMessage"));
             SPEditorGUILayout.PropertyField(this.serializedObject.FindProperty("_clickDuration"));
             SPEditorGUILayout.PropertyField(this.serializedObject.FindProperty("_clickDragTolerance"));
             SPEditorGUILayout.PropertyField(this.serializedObject.FindProperty("_acceptedButtons"));

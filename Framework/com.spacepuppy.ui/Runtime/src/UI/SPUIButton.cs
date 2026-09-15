@@ -28,6 +28,9 @@ namespace com.spacepuppy.UI
         private SPEvent _onClick = new SPEvent("OnClick");
 
         [SerializeField]
+        private bool _disableBubblingOnClickMessage;
+
+        [SerializeField]
         [TimeUnitsSelector("Seconds")]
         private float _clickDuration = float.PositiveInfinity;
 
@@ -67,6 +70,12 @@ namespace com.spacepuppy.UI
             set => _clickDragTolerance = value;
         }
 
+        public bool DisableBubblingOnClickMessage
+        {
+            get => _disableBubblingOnClickMessage;
+            set => _disableBubblingOnClickMessage = value;
+        }
+
         public SPEvent OnClick => _onClick;
 
         /// <summary>
@@ -84,6 +93,7 @@ namespace com.spacepuppy.UI
             if (!this.IsActive() || !IsInteractable()) return;
 
             _onClick.ActivateTrigger(this, null);
+            if (!_disableBubblingOnClickMessage) Messaging.SignalUpwards<IBubbledOnClick, SPUIButton>(this.gameObject, this, (o, a) => o.OnClick(a));
         }
 
         public override void OnPointerDown(PointerEventData eventData)
@@ -195,6 +205,15 @@ namespace com.spacepuppy.UI
         protected virtual BaseSPEvent[] GetEvents()
         {
             return new BaseSPEvent[] { _onClick };
+        }
+
+        #endregion
+
+        #region Message Types
+
+        public interface IBubbledOnClick
+        {
+            void OnClick(SPUIButton btn);
         }
 
         #endregion

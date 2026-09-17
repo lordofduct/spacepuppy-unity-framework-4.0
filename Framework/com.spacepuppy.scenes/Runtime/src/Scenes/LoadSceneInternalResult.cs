@@ -1,3 +1,12 @@
+/*
+ * In Unity 2023.1 the extension method AsyncOperationAwaitableExtensions.GetAwaiter(AsyncOperation) was added.
+ * In UniTask 2.3.2 the extension method UnityAsyncExtensions.GetAwaiter(AsyncOperation) was conditionally removed.
+ * Here we favor the UnityEngine.AsyncOperationAwaitableExtensions implementation if it exists and we're in a newer version of UniTask, otherwise we fall back on UniTask.
+ */
+#if UNITY_2023_1_OR_NEWER && (!SP_UNITASK || SP_UNITASK_2_3_2_OR_NEWER)
+#define PREFER_UNITY_ASYNCOPERATION_GETAWAITER
+using UnityEngine;
+#endif
 using UnityEngine.SceneManagement;
 using com.spacepuppy.Scenes;
 using com.spacepuppy.Async;
@@ -5,8 +14,6 @@ using AsyncOperation = UnityEngine.AsyncOperation;
 
 #if SP_UNITASK
 using Cysharp.Threading.Tasks;
-#elif UNITY_2023_1_OR_NEWER
-using UnityEngine;
 #endif
 
 namespace com.spacepuppy.Scenes
@@ -65,7 +72,7 @@ namespace com.spacepuppy.Scenes
         public async System.Threading.Tasks.Task<LoadSceneInternalResult> AsTask()
         {
             if (Op == null) return this;
-#if UNITY_2023_1_OR_NEWER
+#if SP_UNITASK || PREFER_UNITY_ASYNCOPERATION_GETAWAITER
             await Op;
 #else
             await Op.AsTask();

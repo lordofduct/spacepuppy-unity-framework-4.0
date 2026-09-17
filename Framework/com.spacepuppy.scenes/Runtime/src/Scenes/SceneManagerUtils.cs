@@ -213,7 +213,7 @@ namespace com.spacepuppy.Scenes
         {
             await handle;
 #else
-        private static async System.Threading.Tasks.Task<(SceneInstance, UnityLoadResult)> DoLoadAddressableScene(AsyncOperationHandle<SceneInstance> handle, LoadSceneMode mode)
+        private static async System.Threading.Tasks.Task<(SceneInstance, LoadSceneInternalResult)> DoLoadAddressableScene(AsyncOperationHandle<SceneInstance> handle, LoadSceneMode mode)
         {
             await handle.Task;
 #endif

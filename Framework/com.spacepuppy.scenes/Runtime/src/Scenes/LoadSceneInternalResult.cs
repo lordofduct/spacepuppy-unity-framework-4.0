@@ -1,10 +1,12 @@
-using UnityEngine;
 using UnityEngine.SceneManagement;
 using com.spacepuppy.Scenes;
 using com.spacepuppy.Async;
+using AsyncOperation = UnityEngine.AsyncOperation;
 
 #if SP_UNITASK
 using Cysharp.Threading.Tasks;
+#elif UNITY_2023_1_OR_NEWER
+using UnityEngine;
 #endif
 
 namespace com.spacepuppy.Scenes
@@ -63,8 +65,11 @@ namespace com.spacepuppy.Scenes
         public async System.Threading.Tasks.Task<LoadSceneInternalResult> AsTask()
         {
             if (Op == null) return this;
-
+#if UNITY_2023_1_OR_NEWER
+            await Op;
+#else
             await Op.AsTask();
+#endif
             return this;
         }
 

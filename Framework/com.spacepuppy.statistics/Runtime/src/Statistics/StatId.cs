@@ -129,8 +129,8 @@ namespace com.spacepuppy.Statistics
                 index = token.IndexOf(SEPERATOR);
                 if (index >= 0)
                 {
-                    token = token.Substring(0, index);
                     aux = token.Substring(index + 1);
+                    token = token.Substring(0, index);
                 }
                 return new StatId(cat, token, aux);
             }

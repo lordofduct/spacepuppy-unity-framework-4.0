@@ -88,6 +88,8 @@ namespace com.spacepuppy.UI
 
         #region Methods
 
+        public new bool IsPressed() => base.IsPressed();
+
         private void SignalOnClick()
         {
             if (!this.IsActive() || !IsInteractable()) return;

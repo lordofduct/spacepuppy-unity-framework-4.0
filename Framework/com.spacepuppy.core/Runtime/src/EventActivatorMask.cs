@@ -70,7 +70,51 @@ namespace com.spacepuppy
 
         }
 
-        [System.Serializable]
+        [System.Serializable, SerializeRefLabel("Any Of")]
+        public class AnyFilters : IMode
+        {
+
+            [SerializeReference]
+            [ReorderableArray(DrawElementAtBottom = true, AlwaysExpanded = true, ElementLabelFormatString = "Filter {0:00}")]
+            [SerializeRefPicker(typeof(IMode), AlwaysExpanded = true)]
+            public IMode[] filters;
+
+            public bool Intersects(Object obj)
+            {
+                if (filters == null || filters.Length == 0) return false;
+
+                for (int i = 0; i < filters.Length; i++)
+                {
+                    if (filters[i]?.Intersects(obj) ?? true) return true;
+                }
+                return false;
+            }
+
+        }
+
+        [System.Serializable, SerializeRefLabel("All Of")]
+        public class AllFilters : IMode
+        {
+
+            [SerializeReference]
+            [ReorderableArray(DrawElementAtBottom = true, AlwaysExpanded = true, ElementLabelFormatString = "Filter {0:00}")]
+            [SerializeRefPicker(typeof(IMode), AlwaysExpanded = true)]
+            public IMode[] filters;
+
+            public bool Intersects(Object obj)
+            {
+                if (filters == null || filters.Length == 0) return false;
+
+                for (int i = 0; i < filters.Length; i++)
+                {
+                    if (!(filters[i]?.Intersects(obj) ?? false)) return false;
+                }
+                return true;
+            }
+
+        }
+
+        [System.Serializable, System.Obsolete("Replaced by AllFilters"), SerializeRefLabel("Many Filters (obsolete - use 'All Of')", Order = 999999999)]
         public class ManyFilters : IMode
         {
 

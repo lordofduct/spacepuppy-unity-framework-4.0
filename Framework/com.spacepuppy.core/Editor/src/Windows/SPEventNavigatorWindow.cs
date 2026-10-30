@@ -12,6 +12,8 @@ using com.spacepuppy.Dynamic;
 using com.spacepuppy.Events;
 using com.spacepuppy.Utils;
 
+using com.spacepuppyeditor.Events;
+
 namespace com.spacepuppyeditor.Windows
 {
 
@@ -56,7 +58,7 @@ namespace com.spacepuppyeditor.Windows
         private List<SPEventSourceInfo> _eventSources;
         private List<SPEventSourceInfo> _alternateSources;
         private List<SPEventSourceInfo> _otherScenesAndPrefabs;
-        private TrackedListenerToken<System.Action> _token;
+        private MultiTrackedListenerToken _eventHooksToken;
         private EditorCoroutine _routine;
         private int _guiFrame;
 
@@ -75,8 +77,9 @@ namespace com.spacepuppyeditor.Windows
         {
             _scrollPos = default;
             this.PurgeSources();
-            _token.Dispose();
-            _token = DelegateRef<System.Action>.Create(o => Selection.selectionChanged += o, o => Selection.selectionChanged -= o).AddTrackedListener(Selection_OnSelectionChanged);
+            _eventHooksToken.Dispose();
+            _eventHooksToken += DelegateRef<System.Action>.Create(o => Selection.selectionChanged += o, o => Selection.selectionChanged -= o).AddTrackedListener(Selection_OnSelectionChanged);
+            _eventHooksToken += com.spacepuppyeditor.Events.EventTriggerEvaluatorInspector.OnTargetTriggerInEditor_ref().AddTrackedListener(EventTriggerEvaluatorInspector_OnTargetTriggerInEditor);
 
             _gameobjectIcon = EditorGUIUtility.IconContent("GameObject Icon").image;
         }
@@ -84,7 +87,7 @@ namespace com.spacepuppyeditor.Windows
         private void OnDisable()
         {
             this.PurgeSources();
-            _token.Dispose();
+            _eventHooksToken.Dispose();
         }
 
         private void OnGUI()
@@ -488,6 +491,21 @@ namespace com.spacepuppyeditor.Windows
             {
                 yield return EditorSceneManager.GetSceneAt(i);
             }
+        }
+
+
+
+
+        void EventTriggerEvaluatorInspector_OnTargetTriggerInEditor(object sender, EventTriggerEvaluatorInspector.OnTargetTriggerInEditorEventArgs e)
+        {
+            if (!_currentTarget) return;
+            if (!Application.isPlaying) return;
+
+            var go = GameObjectUtil.GetGameObjectFromSource(e.target);
+            if (!object.ReferenceEquals(go, _currentTarget)) return;
+
+            //TODO - expand on this functionality to have better logging, for now I'm just going to log that it was triggered which includes the call stack
+            Debug.Log($"SPEvent Trigger Evaluated [{_currentTarget.name}]:{e.activationType}", _currentTarget);
         }
 
         #endregion

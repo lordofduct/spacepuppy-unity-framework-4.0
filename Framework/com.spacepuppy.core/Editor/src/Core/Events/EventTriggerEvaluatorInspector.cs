@@ -14,6 +14,9 @@ namespace com.spacepuppyeditor.Events
     internal static class EventTriggerEvaluatorInspector
     {
 
+        internal static System.EventHandler<OnTargetTriggerInEditorEventArgs> OnTargetTriggerInEditor;
+        internal static EventHandlerRef<OnTargetTriggerInEditorEventArgs> OnTargetTriggerInEditor_ref() => EventHandlerRef<OnTargetTriggerInEditorEventArgs>.Create((l) => OnTargetTriggerInEditor += l, (l) => OnTargetTriggerInEditor -= l);
+
         #region Fields
 
         public const long COOLDOWN_TRIGGERED = System.TimeSpan.TicksPerSecond * 1;
@@ -38,11 +41,23 @@ namespace com.spacepuppyeditor.Events
 
         #region Methods
 
-        private static void SignalTriggered(object obj, object incomingarg, bool wastriggercall)
+        private static void SignalTriggered(object obj, object incomingarg, TriggerActivationType activationType)
         {
-            if(obj is IProxy p)
+            if (obj is IProxy p)
             {
-                if(!wastriggercall || !(obj is ITriggerable))
+                bool wastriggercall;
+                switch (activationType)
+                {
+                    case TriggerActivationType.TriggerAllOnTarget:
+                    case TriggerActivationType.TriggerSelectedTarget:
+                        wastriggercall = true;
+                        break;
+                    default:
+                        wastriggercall = false;
+                        break;
+                }
+
+                if (!wastriggercall || !(obj is ITriggerable))
                 {
                     obj = p.GetTarget_IgnoringParams(incomingarg);
                 }
@@ -56,6 +71,17 @@ namespace com.spacepuppyeditor.Events
                     int id = go.GetInstanceID();
                     _triggered[id] = COOLDOWN_TRIGGERED;
                 }
+            }
+
+            var d = OnTargetTriggerInEditor;
+            if (d != null)
+            {
+                d.Invoke(null, new OnTargetTriggerInEditorEventArgs()
+                {
+                    target = obj,
+                    incomingarg = incomingarg,
+                    activationType = activationType,
+                });
             }
         }
 
@@ -103,7 +129,14 @@ namespace com.spacepuppyeditor.Events
         #endregion
 
         #region Special Types
-        
+
+        public class OnTargetTriggerInEditorEventArgs : System.EventArgs
+        {
+            public object target;
+            public object incomingarg;
+            public TriggerActivationType activationType;
+        }
+
         /// <summary>
         /// Evaluator used while in the editor and triggering when the game is not in play.
         /// </summary>
@@ -137,7 +170,7 @@ namespace com.spacepuppyeditor.Events
 
             void EventTriggerEvaluator.IEvaluator.TriggerAllOnTarget(object target, object incomingarg, object sender, object arg)
             {
-                SignalTriggered(target, incomingarg, true);
+                SignalTriggered(target, incomingarg, TriggerActivationType.TriggerAllOnTarget);
                 if (Application.isPlaying)
                 {
                     ResolvedCurrent.TriggerAllOnTarget(target, incomingarg, sender, arg);
@@ -150,31 +183,31 @@ namespace com.spacepuppyeditor.Events
 
             void EventTriggerEvaluator.IEvaluator.TriggerSelectedTarget(object target, object incomingarg, object sender, object arg)
             {
-                SignalTriggered(target, incomingarg, true);
+                SignalTriggered(target, incomingarg, TriggerActivationType.TriggerSelectedTarget);
                 ResolvedCurrent.TriggerSelectedTarget(target, incomingarg, sender, arg);
             }
 
             void EventTriggerEvaluator.IEvaluator.CallMethodOnSelectedTarget(object target, object incomingarg, string methodName, object[] args)
             {
-                SignalTriggered(target, incomingarg, false);
+                SignalTriggered(target, incomingarg, TriggerActivationType.CallMethodOnSelectedTarget);
                 ResolvedCurrent.CallMethodOnSelectedTarget(target, incomingarg, methodName, args);
             }
 
             void EventTriggerEvaluator.IEvaluator.SendMessageToTarget(object target, object incomingarg, string message, object arg)
             {
-                SignalTriggered(target, incomingarg, false);
+                SignalTriggered(target, incomingarg, TriggerActivationType.SendMessage);
                 ResolvedCurrent.SendMessageToTarget(target, incomingarg, message, arg);
             }
 
             void EventTriggerEvaluator.IEvaluator.EnableTarget(object target, object incomingarg, EnableMode mode)
             {
-                SignalTriggered(target, incomingarg, false);
+                SignalTriggered(target, incomingarg, TriggerActivationType.EnableTarget);
                 ResolvedCurrent.EnableTarget(target, incomingarg, mode);
             }
 
             void EventTriggerEvaluator.IEvaluator.DestroyTarget(object target, object incomingarg)
             {
-                SignalTriggered(target, incomingarg, false);
+                SignalTriggered(target, incomingarg, TriggerActivationType.DestroyTarget);
                 ResolvedCurrent.DestroyTarget(target, incomingarg);
             }
 

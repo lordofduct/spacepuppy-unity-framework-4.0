@@ -384,12 +384,12 @@ namespace com.spacepuppyeditor.Windows
                             if (allowProxy)
                             {
                                 sceneresults = GenericSearchDropDownWindow.GetSceneObjects<UnityEngine.Object>()
-                                                                     .Where(o => ObjUtil.GetAsFromSource(types, o) != null);
+                                                                     .Where(o => ObjUtil.CoerceAs(types, o) != null);
                             }
                             else
                             {
                                 sceneresults = GenericSearchDropDownWindow.GetSceneObjects<T>().Cast<UnityEngine.Object>();
-                                if (objType != typeof(T)) sceneresults = sceneresults.Where(o => ObjUtil.GetAsFromSource(objType, o) != null);
+                                if (objType != typeof(T)) sceneresults = sceneresults.Where(o => ObjUtil.CoerceAs(objType, o) != null);
                             }
                         }
 

@@ -155,7 +155,7 @@ namespace com.spacepuppyeditor.Core
                     {
                         if (this.RestrictProxyResolvedType)
                         {
-                            //filter = o => o && ((TypeUtil.IsType(o.GetType(), allInheritableTypes) || ObjUtil.GetAsFromSource(allInheritableTypes, o) != null)) || (o is IProxy p && TypeUtil.IsType(p.GetTargetType(), allInheritableTypes));
+                            //filter = o => o && ((TypeUtil.IsType(o.GetType(), allInheritableTypes) || ObjUtil.CoerceAs(allInheritableTypes, o) != null)) || (o is IProxy p && TypeUtil.IsType(p.GetTargetType(), allInheritableTypes));
                             filter = (ref SearchReference sref) =>
                             {
                                 if (!sref.HasReference) return false;
@@ -174,7 +174,7 @@ namespace com.spacepuppyeditor.Core
                         }
                         else
                         {
-                            //filter = o => o && ((TypeUtil.IsType(o.GetType(), allInheritableTypes) || ObjUtil.GetAsFromSource(allInheritableTypes, o) != null)) || (o is IProxy);
+                            //filter = o => o && ((TypeUtil.IsType(o.GetType(), allInheritableTypes) || ObjUtil.CoerceAs(allInheritableTypes, o) != null)) || (o is IProxy);
                             filter = (ref SearchReference sref) =>
                             {
                                 if (!sref.HasReference) return false;
@@ -194,7 +194,7 @@ namespace com.spacepuppyeditor.Core
                     }
                     else
                     {
-                        //filter = o => o && (TypeUtil.IsType(o.GetType(), allInheritableTypes) || ObjUtil.GetAsFromSource(allInheritableTypes, o) != null);
+                        //filter = o => o && (TypeUtil.IsType(o.GetType(), allInheritableTypes) || ObjUtil.CoerceAs(allInheritableTypes, o) != null);
                         filter = (ref SearchReference sref) =>
                         {
                             if (!sref.HasReference) return false;
@@ -223,12 +223,12 @@ namespace com.spacepuppyeditor.Core
                 {
                     var fieldCompType = (TypeUtil.IsType(fieldType, typeof(Component))) ? fieldType : typeof(Component);
                     targ = SPEditorGUI.ComponentField(position, label, property.objectReferenceValue as Component, inheritsFromType, this.AllowSceneObjects, fieldCompType);
-                    targ = (allInheritableTypes.Length > 1 ? ObjUtil.GetAsFromSource(allInheritableTypes, targ) : ObjUtil.GetAsFromSource(inheritsFromType, targ)) as UnityEngine.Object;
+                    targ = (allInheritableTypes.Length > 1 ? ObjUtil.CoerceAs(allInheritableTypes, targ) : ObjUtil.CoerceAs(inheritsFromType, targ)) as UnityEngine.Object;
                 }
                 else
                 {
                     targ = EditorGUI.ObjectField(position, label, property.objectReferenceValue, inheritsFromType, this.AllowSceneObjects);
-                    targ = (allInheritableTypes.Length > 1 ? ObjUtil.GetAsFromSource(allInheritableTypes, targ) : ObjUtil.GetAsFromSource(inheritsFromType, targ)) as UnityEngine.Object;
+                    targ = (allInheritableTypes.Length > 1 ? ObjUtil.CoerceAs(allInheritableTypes, targ) : ObjUtil.CoerceAs(inheritsFromType, targ)) as UnityEngine.Object;
                 }
 
                 property.objectReferenceValue = targ;

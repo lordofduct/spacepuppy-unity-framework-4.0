@@ -1582,13 +1582,13 @@ namespace com.spacepuppyeditor
                 result = EditorGUI.ObjectField(position, label, asset, tp, allowSceneObjects);
                 if (EditorGUI.EndChangeCheck())
                 {
-                    if (allowProxy && ObjUtil.GetAsFromSource(result, out IProxy p, false) && p is UnityEngine.Object po)
+                    if (allowProxy && ObjUtil.CoerceAs(result, out IProxy p, false) && p is UnityEngine.Object po)
                     {
                         result = po;
                     }
                     else
                     {
-                        result = ObjUtil.GetAsFromSource(objType, result, false) as UnityEngine.Object;
+                        result = ObjUtil.CoerceAs(objType, result, false) as UnityEngine.Object;
                     }
                     if (filter != null && result)
                     {
@@ -1623,7 +1623,7 @@ namespace com.spacepuppyeditor
                 var oresult = EditorGUI.ObjectField(position, label, property.objectReferenceValue, tp, allowSceneObjects);
                 if (EditorGUI.EndChangeCheck())
                 {
-                    var ot = ObjUtil.GetAsFromSource<T>(oresult);
+                    var ot = ObjUtil.CoerceAs<T>(oresult);
                     var sr = new SearchReference(ot as UnityEngine.Object);
                     if (ot.IsNullOrDestroyed() || (filter != null && !filter(ref sr))) ot = null;
 
@@ -1651,7 +1651,7 @@ namespace com.spacepuppyeditor
                 var oresult = EditorGUI.ObjectField(position, label, asset as UnityEngine.Object, tp, allowSceneObjects);
                 if (EditorGUI.EndChangeCheck())
                 {
-                    var ot = ObjUtil.GetAsFromSource<T>(oresult);
+                    var ot = ObjUtil.CoerceAs<T>(oresult);
                     var sr = new SearchReference(ot as UnityEngine.Object);
                     if (ot.IsNullOrDestroyed() || (filter != null && !filter(ref sr))) ot = null;
 

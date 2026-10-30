@@ -113,7 +113,7 @@ namespace com.spacepuppyeditor.Windows
                 case AssetInfo ai:
                     {
                         var result = ai.GetAsset();
-                        if (_coercedType != null) result = ObjUtil.GetAsFromSource(_coercedType, _target) as UnityEngine.Object;
+                        if (_coercedType != null) result = ObjUtil.CoerceAs(_coercedType, _target) as UnityEngine.Object;
                         return result;
                     }
                 case UnityEngine.Object o:
@@ -144,7 +144,7 @@ namespace com.spacepuppyeditor.Windows
                 case UnityEngine.Object o:
                     {
                         _coercedType = null;
-                        var newref = ObjUtil.GetAsFromSource(type, _target) as UnityEngine.Object;
+                        var newref = ObjUtil.CoerceAs(type, _target) as UnityEngine.Object;
                         if (newref)
                         {
                             _target = newref;
@@ -785,7 +785,7 @@ namespace com.spacepuppyeditor.Windows
             }
             else if (ComponentUtil.IsAcceptableComponentType(typeof(T)))
             {
-                return _sceneObjects.Select(o => ObjUtil.GetAsFromSource<T>(o)).Where(o => o != null) ?? Enumerable.Empty<T>();
+                return _sceneObjects.Select(o => ObjUtil.CoerceAs<T>(o)).Where(o => o != null) ?? Enumerable.Empty<T>();
             }
             else
             {
@@ -925,14 +925,14 @@ namespace com.spacepuppyeditor.Windows
                 if (allowSceneObjects)
                 {
                     validDrag = DragAndDrop.objectReferences.Any(o => {
-                        var ot = ObjUtil.GetAsFromSource(types, o) as UnityEngine.Object;
+                        var ot = ObjUtil.CoerceAs(types, o) as UnityEngine.Object;
                         return SearchReference.Filter(ref ot, filter);
                     });
                 }
                 else
                 {
                     validDrag = DragAndDrop.objectReferences.Any(o => {
-                        var ot = ObjUtil.GetAsFromSource(types, o) as UnityEngine.Object;
+                        var ot = ObjUtil.CoerceAs(types, o) as UnityEngine.Object;
                         return ot != null && !string.IsNullOrEmpty(AssetDatabase.GetAssetPath(o)) && SearchReference.Filter(ref ot, filter);
                     });
                 }
@@ -947,13 +947,13 @@ namespace com.spacepuppyeditor.Windows
                     UnityEngine.Object entry;
                     if (filter == null)
                     {
-                        entry = DragAndDrop.objectReferences.Select(o => ObjUtil.GetAsFromSource(types, o) as UnityEngine.Object).FirstOrDefault(o => o != null);
+                        entry = DragAndDrop.objectReferences.Select(o => ObjUtil.CoerceAs(types, o) as UnityEngine.Object).FirstOrDefault(o => o != null);
                     }
                     else
                     {
                         entry = DragAndDrop.objectReferences.Select(o =>
                         {
-                            o = ObjUtil.GetAsFromSource(types, o) as UnityEngine.Object;
+                            o = ObjUtil.CoerceAs(types, o) as UnityEngine.Object;
                             if (SearchReference.Filter(ref o, filter))
                             {
                                 return o;

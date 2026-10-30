@@ -464,6 +464,7 @@ namespace com.spacepuppy.Utils
             return (obj is UnityEngine.Object && (obj as UnityEngine.Object) == null) ? null : obj;
         }
 
+        /// <remarks>Will search for SPEntity up the hierarchy if prompted to get the object as SPEntity.</remarks>
         public static T GetAsFromSource<T>(object obj) where T : class
         {
             obj = obj.SanitizeRef();
@@ -477,17 +478,16 @@ namespace com.spacepuppy.Utils
             if (go != null)
             {
                 var tp = typeof(T);
-                //Obsolete - removing entity lookup, use SPEntity.Pool.GetFromSource instead
-                //if (typeof(SPEntity).IsAssignableFrom(tp))
-                //    return SPEntity.Pool.GetFromSource(tp, go) as T;
-                //else
-                if (ComponentUtil.IsAcceptableComponentType(tp))
+                if (typeof(SPEntity).IsAssignableFrom(tp))
+                    return SPEntity.Pool.GetFromSource(tp, go) as T;
+                else if (ComponentUtil.IsAcceptableComponentType(tp))
                     return go.GetComponent(tp) as T;
             }
 
             return null;
         }
 
+        /// <remarks>Will search for SPEntity up the hierarchy if prompted to get the object as SPEntity.</remarks>
         public static T GetAsFromSource<T>(object obj, bool respectProxy) where T : class
         {
             obj = respectProxy ? obj.ReduceIfProxyAs(typeof(T)) : obj.SanitizeRef();
@@ -502,17 +502,16 @@ namespace com.spacepuppy.Utils
             if (go != null)
             {
                 var tp = typeof(T);
-                //Obsolete - removing entity lookup, use SPEntity.Pool.GetFromSource instead
-                //if (typeof(SPEntity).IsAssignableFrom(tp))
-                //    return SPEntity.Pool.GetFromSource(tp, go) as T;
-                //else
-                if (ComponentUtil.IsAcceptableComponentType(tp))
+                if (typeof(SPEntity).IsAssignableFrom(tp))
+                    return SPEntity.Pool.GetFromSource(tp, go) as T;
+                else if (ComponentUtil.IsAcceptableComponentType(tp))
                     return go.GetComponent(tp) as T;
             }
 
             return null;
         }
 
+        /// <remarks>Will search for SPEntity up the hierarchy if prompted to get the object as SPEntity.</remarks>
         public static bool GetAsFromSource<T>(object obj, out T result, bool respectProxy = false) where T : class
         {
             result = null;
@@ -541,17 +540,15 @@ namespace com.spacepuppy.Utils
             if (go != null)
             {
                 var tp = typeof(T);
-                //Obsolete - removing entity lookup, use SPEntity.Pool.GetFromSource instead
-                //if (typeof(SPEntity).IsAssignableFrom(tp))
-                //{
-                //    var uobj = SPEntity.Pool.GetFromSource(tp, go);
-                //    if (uobj == null) return false;
+                if (typeof(SPEntity).IsAssignableFrom(tp))
+                {
+                    var uobj = SPEntity.Pool.GetFromSource(tp, go);
+                    if (uobj == null) return false;
 
-                //    result = uobj as T;
-                //    return result != null;
-                //}
-                //else
-                if (ComponentUtil.IsAcceptableComponentType(tp))
+                    result = uobj as T;
+                    return result != null;
+                }
+                else if (ComponentUtil.IsAcceptableComponentType(tp))
                 {
                     var uobj = go.GetComponent(tp);
                     if (uobj == null) return false;
@@ -564,6 +561,7 @@ namespace com.spacepuppy.Utils
             return false;
         }
 
+        /// <remarks>Will search for SPEntity up the hierarchy if prompted to get the object as SPEntity.</remarks>
         public static object GetAsFromSource(System.Type tp, object obj)
         {
             obj = obj.SanitizeRef();
@@ -581,17 +579,16 @@ namespace com.spacepuppy.Utils
 
             if (go != null)
             {
-                //Obsolete - removing entity lookup, use SPEntity.Pool.GetFromSource instead
-                //if (typeof(SPEntity).IsAssignableFrom(tp))
-                //    return SPEntity.Pool.GetFromSource(tp, go);
-                //else
-                if (ComponentUtil.IsAcceptableComponentType(tp))
+                if (typeof(SPEntity).IsAssignableFrom(tp))
+                    return SPEntity.Pool.GetFromSource(tp, go);
+                else if (ComponentUtil.IsAcceptableComponentType(tp))
                     return go.GetComponent(tp);
             }
 
             return null;
         }
 
+        /// <remarks>Will search for SPEntity up the hierarchy if prompted to get the object as SPEntity.</remarks>
         public static object GetAsFromSource(System.Type tp, object obj, bool respectProxy)
         {
             obj = respectProxy ? obj.ReduceIfProxyAs(tp) : obj.SanitizeRef();
@@ -609,17 +606,16 @@ namespace com.spacepuppy.Utils
 
             if (go != null)
             {
-                //Obsolete - removing entity lookup, use SPEntity.Pool.GetFromSource instead
-                //if (typeof(SPEntity).IsAssignableFrom(tp))
-                //    return SPEntity.Pool.GetFromSource(tp, go);
-                //else
-                if (ComponentUtil.IsAcceptableComponentType(tp))
+                if (typeof(SPEntity).IsAssignableFrom(tp))
+                    return SPEntity.Pool.GetFromSource(tp, go);
+                else if (ComponentUtil.IsAcceptableComponentType(tp))
                     return go.GetComponent(tp);
             }
 
             return null;
         }
 
+        /// <remarks>Will search for SPEntity up the hierarchy if prompted to get the object as SPEntity.</remarks>
         public static bool GetAsFromSource(System.Type tp, object obj, out object result, bool respectProxy = false)
         {
             result = null;
@@ -651,17 +647,15 @@ namespace com.spacepuppy.Utils
 
             if (go != null)
             {
-                //Obsolete - removing entity lookup, use SPEntity.Pool.GetFromSource instead
-                //if (typeof(SPEntity).IsAssignableFrom(tp))
-                //{
-                //    var uobj = SPEntity.Pool.GetFromSource(tp, go);
-                //    if (uobj == null) return false;
+                if (typeof(SPEntity).IsAssignableFrom(tp))
+                {
+                    var uobj = SPEntity.Pool.GetFromSource(tp, go);
+                    if (uobj == null) return false;
 
-                //    result = uobj;
-                //    return true;
-                //}
-                //else
-                if (ComponentUtil.IsAcceptableComponentType(tp))
+                    result = uobj;
+                    return true;
+                }
+                else if (ComponentUtil.IsAcceptableComponentType(tp))
                 {
                     var uobj = go.GetComponent(tp);
                     if (uobj == null) return false;
@@ -682,6 +676,7 @@ namespace com.spacepuppy.Utils
         /// <param name="obj"></param>
         /// <param name="respectProxy"></param>
         /// <returns></returns>
+        /// <remarks>Will search for SPEntity up the hierarchy if prompted to get the object as SPEntity.</remarks>
         public static object GetAsFromSource(System.Type[] types, object obj, bool respectProxy = false)
         {
             object result;
@@ -696,6 +691,7 @@ namespace com.spacepuppy.Utils
         /// <param name="obj"></param>
         /// <param name="respectProxy"></param>
         /// <returns></returns>
+        /// <remarks>Will search for SPEntity up the hierarchy if prompted to get the object as SPEntity.</remarks>
         public static bool GetAsFromSource(System.Type[] types, object obj, out object result, bool respectProxy = false)
         {
             if (types != null)
@@ -712,6 +708,233 @@ namespace com.spacepuppy.Utils
                 foreach (var tp in types)
                 {
                     if (GetAsFromSource(tp, obj, out result, respectProxy)) return true;
+                }
+            }
+
+            result = null;
+            return false;
+        }
+
+        /// <remarks>Unlike GetAsFromSource this does not treate SPEntity in any special way..</remarks>
+        public static T CoerceAs<T>(object obj) where T : class
+        {
+            obj = obj.SanitizeRef();
+            if (obj == null) return null;
+            if (obj is T o1) return o1;
+            if (obj is IComponent ic && ic.component is T o2) return o2;
+
+            var go = GameObjectUtil.GetGameObjectFromSource(obj);
+            if (go is T g) return g;
+
+            if (go != null)
+            {
+                var tp = typeof(T);
+                if (ComponentUtil.IsAcceptableComponentType(tp))
+                    return go.GetComponent(tp) as T;
+            }
+
+            return null;
+        }
+
+        /// <remarks>Unlike GetAsFromSource this does not treate SPEntity in any special way..</remarks>
+        public static T CoerceAs<T>(object obj, bool respectProxy) where T : class
+        {
+            obj = respectProxy ? obj.ReduceIfProxyAs(typeof(T)) : obj.SanitizeRef();
+            if (obj == null) return null;
+
+            if (obj is T o1) return o1;
+            if (obj is IComponent ic && ic.component is T o2) return o2;
+
+            var go = GameObjectUtil.GetGameObjectFromSource(obj);
+            if (go is T g) return g;
+
+            if (go != null)
+            {
+                var tp = typeof(T);
+                if (ComponentUtil.IsAcceptableComponentType(tp))
+                    return go.GetComponent(tp) as T;
+            }
+
+            return null;
+        }
+
+        /// <remarks>Unlike GetAsFromSource this does not treate SPEntity in any special way..</remarks>
+        public static bool CoerceAs<T>(object obj, out T result, bool respectProxy = false) where T : class
+        {
+            result = null;
+
+            obj = respectProxy ? obj.ReduceIfProxyAs(typeof(T)) : obj.SanitizeRef();
+            if (obj == null) return false;
+
+            if (obj is T o1)
+            {
+                result = o1;
+                return true;
+            }
+            if (obj is IComponent ic && ic.component is T o2)
+            {
+                result = o2;
+                return true;
+            }
+
+            var go = GameObjectUtil.GetGameObjectFromSource(obj);
+            if (go is T g)
+            {
+                result = g;
+                return true;
+            }
+
+            if (go != null)
+            {
+                var tp = typeof(T);
+                if (ComponentUtil.IsAcceptableComponentType(tp))
+                {
+                    var uobj = go.GetComponent(tp);
+                    if (uobj == null) return false;
+
+                    result = uobj as T;
+                    return result != null;
+                }
+            }
+
+            return false;
+        }
+
+        /// <remarks>Unlike GetAsFromSource this does not treate SPEntity in any special way..</remarks>
+        public static object CoerceAs(System.Type tp, object obj)
+        {
+            obj = obj.SanitizeRef();
+            if (obj == null) return null;
+
+            if (tp.IsInstanceOfType(obj)) return obj;
+            if (obj is IComponent)
+            {
+                var c = (obj as IComponent).component;
+                if (!object.ReferenceEquals(c, null) && tp.IsInstanceOfType(c)) return c;
+            }
+
+            var go = GameObjectUtil.GetGameObjectFromSource(obj);
+            if (tp == typeof(UnityEngine.GameObject)) return go;
+
+            if (go != null)
+            {
+                if (ComponentUtil.IsAcceptableComponentType(tp))
+                    return go.GetComponent(tp);
+            }
+
+            return null;
+        }
+
+        /// <remarks>Unlike GetAsFromSource this does not treate SPEntity in any special way..</remarks>
+        public static object CoerceAs(System.Type tp, object obj, bool respectProxy)
+        {
+            obj = respectProxy ? obj.ReduceIfProxyAs(tp) : obj.SanitizeRef();
+            if (obj == null) return null;
+
+            if (tp.IsInstanceOfType(obj)) return obj;
+            if (obj is IComponent)
+            {
+                var c = (obj as IComponent).component;
+                if (!object.ReferenceEquals(c, null) && tp.IsInstanceOfType(c)) return c;
+            }
+
+            var go = GameObjectUtil.GetGameObjectFromSource(obj);
+            if (tp == typeof(UnityEngine.GameObject)) return go;
+
+            if (go != null)
+            {
+                if (ComponentUtil.IsAcceptableComponentType(tp))
+                    return go.GetComponent(tp);
+            }
+
+            return null;
+        }
+
+        /// <remarks>Unlike GetAsFromSource this does not treate SPEntity in any special way..</remarks>
+        public static bool CoerceAs(System.Type tp, object obj, out object result, bool respectProxy = false)
+        {
+            result = null;
+
+            obj = respectProxy ? obj.ReduceIfProxyAs(tp) : obj.SanitizeRef();
+            if (obj == null) return false;
+
+            if (tp.IsInstanceOfType(obj))
+            {
+                result = obj;
+                return true;
+            }
+            if (obj is IComponent)
+            {
+                var c = (obj as IComponent).component;
+                if (!object.ReferenceEquals(c, null) && tp.IsInstanceOfType(c))
+                {
+                    result = c;
+                    return true;
+                }
+            }
+
+            var go = GameObjectUtil.GetGameObjectFromSource(obj);
+            if (tp == typeof(UnityEngine.GameObject))
+            {
+                result = go;
+                return true;
+            }
+
+            if (go != null)
+            {
+                if (ComponentUtil.IsAcceptableComponentType(tp))
+                {
+                    var uobj = go.GetComponent(tp);
+                    if (uobj == null) return false;
+
+                    result = uobj;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Returns a ref to the object as the first type in the array that it can resolve as.
+        /// Unlike GetAsFromSource this does not treate SPEntity in any special way.
+        /// </summary>
+        /// <param name="tp"></param>
+        /// <param name="obj"></param>
+        /// <param name="result"></param>
+        /// <param name="respectProxy"></param>
+        /// <returns></returns>
+        public static object CoerceAs(System.Type[] types, object obj, bool respectProxy = false)
+        {
+            object result;
+            CoerceAs(types, obj, out result, respectProxy);
+            return result;
+        }
+
+        /// <summary>
+        /// Returns a ref to the object as the first type in the array that it can resolve as. 
+        /// Unlike GetAsFromSource this does not treate SPEntity in any special way.
+        /// </summary>
+        /// <param name="types"></param>
+        /// <param name="obj"></param>
+        /// <param name="respectProxy"></param>
+        /// <returns></returns>
+        public static bool CoerceAs(System.Type[] types, object obj, out object result, bool respectProxy = false)
+        {
+            if (types != null)
+            {
+                foreach (var tp in types)
+                {
+                    if (tp?.IsInstanceOfType(obj) ?? false)
+                    {
+                        result = obj;
+                        return true;
+                    }
+                }
+
+                foreach (var tp in types)
+                {
+                    if (CoerceAs(tp, obj, out result, respectProxy)) return true;
                 }
             }
 
@@ -784,14 +1007,12 @@ namespace com.spacepuppy.Utils
                 if (go != null)
                 {
                     var tp = typeof(T);
-                    //Obsolete - removing entity lookup, use SPEntity.Pool.GetFromSource instead
-                    //if (typeof(SPEntity).IsAssignableFrom(tp))
-                    //{
-                    //    var entity = SPEntity.Pool.GetFromSource(tp, go) as T;
-                    //    if (entity != null && set.Add(entity)) coll.Add(entity);
-                    //}
-                    //else
-                    if (typeof(UnityEngine.GameObject).IsAssignableFrom(tp))
+                    if (typeof(SPEntity).IsAssignableFrom(tp))
+                    {
+                        var entity = SPEntity.Pool.GetFromSource(tp, go) as T;
+                        if (entity != null && set.Add(entity)) coll.Add(entity);
+                    }
+                    else if (typeof(UnityEngine.GameObject).IsAssignableFrom(tp))
                     {
                         if (includeChildren)
                         {
@@ -866,14 +1087,12 @@ namespace com.spacepuppy.Utils
                 var go = GameObjectUtil.GetGameObjectFromSource(obj);
                 if (go != null)
                 {
-                    //Obsolete - removing entity lookup, use SPEntity.Pool.GetFromSource instead
-                    //if (typeof(SPEntity).IsAssignableFrom(tp))
-                    //{
-                    //    var entity = SPEntity.Pool.GetFromSource(tp, go);
-                    //    if (entity != null) set.Add(entity);
-                    //}
-                    //else
-                    if (typeof(UnityEngine.GameObject).IsAssignableFrom(tp))
+                    if (typeof(SPEntity).IsAssignableFrom(tp))
+                    {
+                        var entity = SPEntity.Pool.GetFromSource(tp, go);
+                        if (entity != null) set.Add(entity);
+                    }
+                    else if (typeof(UnityEngine.GameObject).IsAssignableFrom(tp))
                     {
                         if (includeChildren)
                         {
